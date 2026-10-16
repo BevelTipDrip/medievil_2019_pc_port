@@ -667,14 +667,24 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     // MediEvil: in the uncapped mode a lower in-game limit still applies on top.
     const bool env_limit = std::getenv("GOW3_FPS_LIMIT") != nullptr;
     const bool fixed_limit = env_limit || EmulatorSettings.GetVblankFrequency() == 480;
+    // A limit at or above the vblank rate adds nothing (the vblank already paces the flips) and
+    // a second clock of the same period beat against it: a flip ready at a vblank a moment
+    // before its slot waited a whole extra vblank (stutter with a 60 FPS limit at 60 Hz,
+    // MediEvil issue #3).
+    const u32 vblank_hz = EmulatorSettings.GetVblankFrequency();
     const auto current_limit = [&] {
-        const u32 user = u32(Gow3Settings::Get().fps_limit.load());
-        if (!fixed_limit) {
-            return user;
+        // -1: half the display refresh, so each frame shows for exactly two refreshes.
+        const int raw = Gow3Settings::Get().fps_limit.load();
+        const u32 user = raw < 0 ? Gow3DisplayRefreshHz() / 2 : u32(raw);
+        u32 limit = user;
+        if (fixed_limit) {
+            const u32 base = EmulatorSettings.GetFrameLimit();
+            limit = !env_limit && user && (!base || user < base) ? user : base;
         }
-        const u32 base = EmulatorSettings.GetFrameLimit();
-        return !env_limit && user && (!base || user < base) ? user : base;
+        return limit >= vblank_hz ? 0u : limit;
     };
+    // Slots count as reached within half a vblank: timer jitter must not cost a whole vblank.
+    const auto slot_slack = std::chrono::nanoseconds(500000000 / std::max(vblank_hz, 1u));
     u32 frame_limit = current_limit();
     auto frame_period = frame_limit ? std::chrono::nanoseconds(1000000000 / frame_limit)
                                     : std::chrono::nanoseconds(0);
@@ -716,7 +726,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         // Check if it's time to take a request.
         auto& vblank_status = main_port.vblank_status;
         const auto now = std::chrono::steady_clock::now();
-        const bool flip_slot = !frame_limit || now >= next_flip;
+        const bool flip_slot = !frame_limit || now + slot_slack >= next_flip;
         if (flip_slot && vblank_status.count % (main_port.flip_rate + 1) == 0) {
             const auto request = receive_request();
             if (request && frame_limit) {
@@ -778,11 +788,11 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
                     break; // next vblank
                 }
             }
-            if (std::chrono::steady_clock::now() < next_flip) {
-                if (next_flip >= tick_deadline) {
+            if (std::chrono::steady_clock::now() + slot_slack < next_flip) {
+                if (next_flip - slot_slack >= tick_deadline) {
                     break;
                 }
-                std::this_thread::sleep_until(next_flip);
+                std::this_thread::sleep_until(next_flip - slot_slack);
             }
             const auto now = std::chrono::steady_clock::now();
             const auto request = receive_request();

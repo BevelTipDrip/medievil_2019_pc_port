@@ -129,8 +129,31 @@ static LONG fatal_exception(EXCEPTION_POINTERS *info) {
                 (void *)record->ExceptionInformation[1],where,GetCurrentThreadId());
     else
         fprintf(stderr,"Fault: exception 0x%08lx at %s (thread %lu)\n",record->ExceptionCode,where,GetCurrentThreadId());
+    /* The thread's name (SetThreadDescription: the port's threads and the game's own). */
+    typedef HRESULT (WINAPI *GetDescription)(HANDLE, PWSTR *);
+    GetDescription get_description=(GetDescription)(void *)GetProcAddress(GetModuleHandleA("kernel32.dll"),"GetThreadDescription");
+    PWSTR thread_name=NULL;
+    if (get_description && SUCCEEDED(get_description(GetCurrentThread(),&thread_name)) && thread_name) {
+        if (thread_name[0]) fprintf(stderr,"  thread name: %ls\n",thread_name);
+        LocalFree(thread_name);
+    }
     fprintf(stderr,"  rax=%016llx rbx=%016llx rcx=%016llx rdx=%016llx\n  rsi=%016llx rdi=%016llx rbp=%016llx rsp=%016llx\n",
             c->Rax,c->Rbx,c->Rcx,c->Rdx,c->Rsi,c->Rdi,c->Rbp,c->Rsp);
+    /* Host frames from the x64 unwind data (the rbp chain below stops at code without frame
+     * pointers, such as the port's optimized C++). */
+    {
+        CONTEXT u=*c;
+        for (int depth=0; depth<24 && u.Rip; ++depth) {
+            DWORD64 base=0;
+            RUNTIME_FUNCTION *fn=RtlLookupFunctionEntry(u.Rip,&base,NULL);
+            describe_address(where,sizeof(where),(uintptr_t)u.Rip);
+            fprintf(stderr,"  unwind #%d %s\n",depth,where);
+            if (!fn) break;
+            void *handler_data=NULL;
+            DWORD64 frame=0;
+            RtlVirtualUnwind(UNW_FLAG_NHANDLER,base,u.Rip,fn,&u,&handler_data,&frame,NULL);
+        }
+    }
     if (gpu_enabled) gow3gpu_dump_guest_writes(info);
     /* Top stack words: after a call through a null pointer [rsp] is the caller's return address. */
     uintptr_t words[8];

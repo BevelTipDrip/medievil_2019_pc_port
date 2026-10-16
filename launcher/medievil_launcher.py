@@ -39,7 +39,7 @@ APP_NAME = 'MediEvil'
 MAX_LOG_LINES = 6000
 NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
 # This build. New versions are on the GitHub releases page (the automatic updater is off).
-VERSION = '1.3.1'
+VERSION = '1.3.2'
 RELEASES_API = None
 RELEASES_PAGE = 'https://github.com/bc160201983/medievil_2019_pc_port/releases'
 UPDATE_DIR = Path(tempfile.gettempdir()) / 'medievil-update'
@@ -137,7 +137,8 @@ INI_DEFAULTS = {'upscaler': 'off', 'preset': '1', 'sharpen': '1', 'sharpness': '
                 'render_resolution': 'native', 'engine_fps': '60', 'fsr1': '0', 'rcas': '1',
                 'rcas_strength': '75', 'frames_queued': '1', 'ue4_quality': 'console', 'cheat_very_hard': '0', 'cheat_double_jumps': '0', 'cheat_menu': '0', 'cheat_infinite_ammo': '0', 'ue4_upscale': 'off'}
 DISPLAY_MODES = [('windowed', ('Windowed',)), ('borderless', ('Borderless',)), ('fullscreen', ('Fullscreen',))]
-FPS_LIMITS = [('30', ('30',)), ('60', ('60',)), ('120', ('120',)), ('240', ('240',)), ('0', ('Unlimited',))]
+FPS_LIMITS = [('30', ('30',)), ('60', ('60',)), ('120', ('120',)), ('240', ('240',)), ('0', ('Unlimited',)),
+              ('-1', ('Half display refresh (smoothest)',))]
 APP_DEFAULTS = {'ui_language': 'en', 'game_dir': os.environ.get('GOW3_GAME_DIR', str(PORT_DIR.parent / 'medieval' / 'CUSA11227')), 'user_dir': '',
                 'mods_dir': '', 'mods_enabled': True, 'patches_dir': '', 'language': '1',
                 'player_name': '', 'hdr': False, 'draw_pipe': '', 'readbacks': '',
@@ -987,7 +988,9 @@ class Launcher:
                    'that limit (also set Frame rate limit to Unlimited or higher). Applied at start.'),
                  restart=True)
         self.row(f, _('Frame rate limit'), self.choice(f, 'fps_limit', 'ini', FPS_LIMITS),
-                 _('Caps the frame rate below the engine frame rate; a lower limit saves power.'))
+                 _('Caps the frame rate below the engine frame rate; a lower limit saves power. "Half display '
+                   'refresh" shows every frame for exactly two refreshes of your screen (for example 72 FPS on '
+                   '144 Hz): the smoothest picture, with Engine frame rate 120.'))
         self.row(f, _('Frames queued'), self.choice(f, 'frames_queued', 'ini', FRAMES_QUEUED),
                  _('1 is the lowest input latency; more can raise FPS when the graphics card is the limit.'))
         self.section(f, _('Resolution and quality'))
@@ -1422,7 +1425,8 @@ class Launcher:
         engine = self.var('engine_fps', 'ini').get()
         resolution = dict((v, t[0]) for v, t in RESOLUTION_CHOICES).get(self.var('render_resolution', 'ini').get(), '?')
         return _('{} · {} · {} · VSync {}').format(
-            _(mode), _(resolution), _('up to {} FPS').format(engine) if limit == '0' or int(limit) >= int(engine)
+            _(mode), _(resolution), _('half display refresh') if limit == '-1'
+            else _('up to {} FPS').format(engine) if limit == '0' or int(limit) >= int(engine)
             else _('{} FPS').format(limit),
             _('on') if self.var('vsync', 'ini').get() else _('off'))
 

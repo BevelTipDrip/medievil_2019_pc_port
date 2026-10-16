@@ -757,6 +757,7 @@ public:
             func(current_cmdbuf);
             return;
         }
+        ChunkGuard guard{chunk_lock};
         if (!record_chunk->Push(std::forward<Func>(func))) {
             full_chunks.push_back(std::move(record_chunk));
             record_chunk = AcquireChunk();
@@ -777,6 +778,11 @@ public:
         if (!IsRecordingDeferred()) {
             return;
         }
+        ChunkGuard guard{chunk_lock};
+        ReserveRecordDataLocked(bytes);
+    }
+
+    void ReserveRecordDataLocked(size_t bytes) {
         if (bytes + 1024 > RecordChunk::Capacity) {
             bytes = 0; // RecordData() places it out of line; keep room for the command
         }
@@ -795,7 +801,8 @@ public:
         }
         // Room for the data and the command that follows it, so both stay in one chunk.
         const size_t bytes = data.size_bytes();
-        ReserveRecordData(bytes + alignof(T));
+        ChunkGuard guard{chunk_lock};
+        ReserveRecordDataLocked(bytes + alignof(T));
         auto* dst = static_cast<T*>(record_chunk->Allocate(bytes, alignof(T)));
         if (!dst) {
             dst = static_cast<T*>(record_chunk->AllocateOversized(bytes));
@@ -933,6 +940,22 @@ private:
     bool is_rendering = false;
     // gow3: threaded recording
     std::unique_ptr<RecordChunk> record_chunk;
+    // gow3: record_chunk and full_chunks are used by one producer at a time, but a second thread
+    // recording while KickRecording() had handed the chunk to the recorder (record_chunk briefly
+    // null) wrote into a null chunk: EndRendering crash in a MediEvil level (issue #2). A spin
+    // lock (uncontended: one atomic exchange) keeps every use of the chunk whole.
+    std::atomic_flag chunk_lock{};
+    struct ChunkGuard {
+        std::atomic_flag& flag;
+        explicit ChunkGuard(std::atomic_flag& flag_) : flag{flag_} {
+            while (flag.test_and_set(std::memory_order_acquire)) {
+                __builtin_ia32_pause();
+            }
+        }
+        ~ChunkGuard() {
+            flag.clear(std::memory_order_release);
+        }
+    };
     std::atomic<std::thread::id> recording_owner{}; // see OwnsRecording()
     std::vector<std::unique_ptr<RecordChunk>> full_chunks;
     std::mutex recorder_mutex;

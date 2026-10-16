@@ -24,6 +24,7 @@
 extern Gow3ActorSlot gow3_actor_slots[2];
 extern "C" void runtime_restart(void); // src/probe.c: starts run.py again, ends this process
 extern "C" void runtime_ue4_request_setres(const char* text); // src/runtime_extra.c: live r.SetRes
+u32 Gow3DisplayRefreshHz(); // gow3gpu.cpp: the display refresh rate
 #include "common/elf_info.h"
 #include "imgui.h"
 #include "imgui_internal.h" // RegisterUserTexture (save pictures)
@@ -421,11 +422,17 @@ void PerformanceTab() {
     auto& s = Gow3Settings::Get();
     ImGui::SeparatorText("Live");
     if (BeginRows("##live")) {
-        static const char* const fps_labels[] = {"30", "60", "120", "240", "Unlimited"};
+        static const char* const fps_labels[] = {"30", "60", "120", "240", "Unlimited",
+                                                 "Half display refresh (smoothest)"};
         ChoiceRow("Frame rate limit", s.fps_limit, fps_labels, G::FpsLimits.data(), int(G::FpsLimits.size()),
                   "Caps the frame rate. The engine frame rate (below) is the highest it can go.");
-        const int effective = G::EffectiveFps(s.fps_limit, s.startup_engine_fps);
-        if (s.fps_limit == 0 || effective < s.fps_limit) {
+        const int limit = s.fps_limit < 0 ? int(Gow3DisplayRefreshHz() / 2) : s.fps_limit.load();
+        const int effective = G::EffectiveFps(limit, s.startup_engine_fps);
+        if (s.fps_limit < 0) {
+            char text[64];
+            std::snprintf(text, sizeof(text), "%d FPS (%u Hz display)", effective, Gow3DisplayRefreshHz());
+            InfoRow("Effective limit", text);
+        } else if (limit == 0 || effective < limit) {
             char text[48];
             std::snprintf(text, sizeof(text), "%d FPS (engine frame rate)", effective);
             InfoRow("Effective limit", text);
@@ -443,15 +450,26 @@ void PerformanceTab() {
         ImGui::SeparatorText("Game resolution now");
         static constexpr const char* labels[] = {"1080p", "1440p", "1800p", "4K"};
         static constexpr const char* values[] = {"1920x1080", "2560x1440", "3200x1800", "3840x2160"};
+        // The 1440p, 1800p and 4K render resolutions supersample (r.ScreenPercentage up to 200):
+        // a larger output on top of that ran out of the PS4 memory budget (1800p at 200% needs
+        // 6400x3600 targets: crash). Those keep 1080p.
+        const bool supersampling = s.startup_render_resolution >= 3 && s.startup_render_resolution <= 5;
         for (int i = 0; i < 4; ++i) {
             if (i) {
                 ImGui::SameLine();
             }
+            ImGui::BeginDisabled(supersampling && i > 0);
             if (ImGui::Button(labels[i])) {
                 runtime_ue4_request_setres(values[i]);
             }
+            ImGui::EndDisabled();
         }
-        ImGui::TextWrapped("Switches the game's output now. Use 1080p for the debug menu (R3), then switch back.");
+        ImGui::TextWrapped(supersampling
+                               ? "Unavailable with the 1440p / 1800p / 4K render resolutions (they already "
+                                 "draw the scene larger; more would run out of game memory). Choose Native "
+                                 "or a native output mode to switch the output size here."
+                               : "Switches the game's output now. Use 1080p for the debug menu (R3), then "
+                                 "switch back.");
     }
     ImGui::SeparatorText("Applied on restart");
     if (BeginRows("##restart")) {

@@ -233,6 +233,7 @@ void Scheduler::KickRecording(bool force) {
     recording_owner.store(std::this_thread::get_id(), std::memory_order_relaxed);
     // Callers kick where nobody holds the raw command buffer: deferral resumes.
     direct_mode = false;
+    ChunkGuard guard{chunk_lock};
     // Batches of tens of KiB keep the queue handoff cheap relative to the work it carries.
     if (!force && full_chunks.empty() && record_chunk->Size() < 32 * 1024) {
         return;

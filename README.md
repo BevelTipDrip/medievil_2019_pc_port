@@ -31,6 +31,9 @@ Captured on Windows 11 (RTX 5080) with this port.
   (`SmoothedFrameRateRange`, applied with VSync on), raised by the config override pak; game speed
   stays normal. Frames are shown as soon as they are ready (a 480 Hz virtual vblank with a frame
   limit), so pacing stays even. An RTX 5080 runs menus at 120 and levels at about 90 to 120 FPS.
+- **Smooth frame pacing on any monitor**: Frame rate limit "Half display refresh (smoothest)" shows
+  every frame for exactly two refreshes (72 FPS on 144 Hz, 100 FPS on 200 Hz; with Engine frame
+  rate 120). 60 FPS on a 144/165 Hz screen cannot be shown evenly and looks like stutter.
 - Audio (Wwise through AudioOut, ATRAC9 and AAC).
 - Controller (DualSense, Xbox and others, through SDL3) and keyboard, both remappable.
 - Saving and loading; save backups before every start.
@@ -78,6 +81,9 @@ Captured on Windows 11 (RTX 5080) with this port.
 ### Known limits
 
 - Above 60 FPS, the busiest levels are limited by the port's GPU command translation (one thread).
+- "Game resolution now" (in-game menu) works with Native and the native output modes; with the
+  1440p / 1800p / 4K render resolutions (supersampling) it stays at 1080p, as a larger output on top
+  runs out of the game's PS4 memory.
 - After a live resolution change the debug menu's gamepad navigation cannot reach its right-hand
   column: switch to 1080p (in-game menu > Performance) to use the cheats, then back.
 - All patches and cheats are for MediEvil 01.00 (the base game, CUSA11227); do not install the

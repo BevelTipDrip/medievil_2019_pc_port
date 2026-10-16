@@ -16,7 +16,8 @@ inline constexpr std::array<const char*, DisplayModeCount> DisplayModeNames = {
     "Windowed", "Borderless", "Fullscreen"};
 
 /// Present rate limits; 0 = unlimited.
-inline constexpr std::array<int, 5> FpsLimits = {30, 60, 120, 240, 0};
+/// -1: half the display refresh (each frame shows for exactly two refreshes: even pacing).
+inline constexpr std::array<int, 6> FpsLimits = {30, 60, 120, 240, 0, -1};
 
 /// Game patch suffixes ("Resolution Patch - <name>"); "native" is no resolution patch.
 /// Unreal Engine 4 (MediEvil): the scene scale; the *_native ones change the game's output size.
