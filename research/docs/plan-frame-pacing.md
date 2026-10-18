@@ -559,3 +559,15 @@ fixes (#4).
 | R3 | Pool free-run search with a hint | `pool_take_locked` share; FPS / p99 |
 
 
+
+### T-M1b result (2026-10-18 18:29-18:39, launched by Claude with the user's go; build `3c5704e`; log `data/t-m1b-kept.log` + `.times`)
+
+95 in-game windows. **Views ~3,400** (T-M1 ~13,400; boot 2,356 vs 4,546), **52 kept-view unmaps in the whole run**
+(T-M1 ~50 per 5 s), kept 436,826 vs reused 441,680, **2 slow host calls** in game (max 2.6 ms). Worst frame per
+window: 41 ≤ 15 ms, 44 15-25 ms, 10 > 25 ms; none of the 10 has slow host calls. They are:
+- 18:31:12-18:33:09: frames of 0.2-1.6 s with texture cache churn (+431..+756 images, ~1 GB uploads per 5 s), a few
+  compiles: content loading / streaming. The `Stall:` lines attribute almost none of it to the port's waits
+  (readback, GPU ticks, recorder, host copies, compiles): the time is spent elsewhere (likely the game's own loading;
+  unconfirmed).
+- 18:37:43 and 18:38:37: single 81-83 ms frames, no host calls, compiles, texture activity or port waits.
+Asked the user where these happened (loading / transition / the camera-pan spots).
