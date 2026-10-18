@@ -246,6 +246,27 @@ Build `684cd8f` (hang fix L4 + dumps), scripted, `-Samples`, 4K boot, `console`.
   `VirtualProtect` (#4 collector fixes; also why the same overlap repeats); (3) flip waiting on the GPU on stage B.
   Next profile: gameplay only (start sampling in the level), to separate menus / loads.
 
+## H1 + C1: one cause? (2026-10-18)
+
+**Repro scenario (the user):** load into the Graveyard level and leave the game idle. Freeze (H1) after ~2 min in
+run i2-profile-4k; crash (C1) after ~4 min in run i2-profile-4k-2. Run 2's crash was at a cutscene / level load.
+
+Hypothesis H-race: stage A submits (readback → `Finish` → `SubmitExecution`) **while stage B is still recording**.
+- H1 showed exactly that state: stage B recorded host copies into the chunk after stage A's kick.
+- C1 fits the same race: if stage A hands over and submits stage B's chunk in the middle of a draw, the draw's first
+  commands (index / vertex buffer binds, from `EmitVertexBuffers` / `EmitIndexBuffer`, `vk_rasterizer.cpp:1004-1007`)
+  end in one command buffer, and `bindPipeline` + `drawIndexed` (the `DrawRecord` lambda, `:1122-1137`) in the next,
+  where no index buffer is bound: the driver reads a null object at `vkCmdDrawIndexed` (both crashes), after a
+  `vkCmdBindPipeline` that returned.
+- So one race, two outcomes: pending host copies → H1 freeze; split draw → C1 crash. Run 2's crash predates fix L4, so
+  the race is upstream's; L4 only stops it from freezing (and may turn some freezes into crashes).
+- Not shown yet: how stage B records while stage A runs a command callback (`ProcessCommands` drains first,
+  `liverpool.cpp:91`).
+
+Test T-race: the Graveyard idle scenario with the two-stage pipeline off (`GOW3_DRAW_PIPE=0`), ~10 minutes. Neither
+freeze nor crash → H-race very likely; then find the path where stage B records during stage A's submit. A crash or
+freeze anyway → the race is elsewhere (recorder vs. presenter?), next is the validation layer.
+
 ## C1 next: catch it when it happens
 
 The crash is rare and timing-dependent, so reproduction runs are unreliable. Better: make every crash leave a full
