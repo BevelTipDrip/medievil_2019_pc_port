@@ -97,6 +97,11 @@ MGS2-Lab tools worth copying the *pattern* of (read only, `C:\Users\Ty\MGS2-Lab\
    empty log and no `out/` (two wasted builds, 2026-10-18). Use `research/tools/build-clang64.sh`, and check
    `out/build.log` for `build.sh exit: 0`, not the wrapper's exit code.
 2. Plain `python` is 3.8: use `py -3.14`.
+6. **The user's PowerShell blocks `.ps1` scripts** (no execution policy set at any scope = `Restricted`; admin does not
+   help; Claude's own sessions run with `Bypass`, so they never see it). Give the user commands as
+   `powershell -ExecutionPolicy Bypass -Command "& '<script.ps1>' <args>"` from a normal (non-admin) window; `-Command`,
+   not `-File`, when an argument is a hashtable (`-Env @{...}`). Permanent alternative is the user's call:
+   `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
 5. **Never rewrite docs with Windows PowerShell `Get-Content -Raw | Set-Content`**: 5.1 reads UTF-8 without BOM as
    ANSI and writes a BOM, so `→` became `â†’` in two docs (2026-10-18, restored from git). Edit with the Edit tool or
    Python (`read_text/write_text(encoding='utf-8')`).
