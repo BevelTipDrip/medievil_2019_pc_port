@@ -182,6 +182,39 @@ Stage B's own breakdown is not in the log: **a sampling profile is the next meas
   CPU threads (or the write-fault cost) may share the limit. The sampling profile has to cover the game's threads too.
   Also 390-604 ms single-frame hitches during play (s 30, 45, 48): streaming / loads, separate item.
 
+## H1. Freeze on the last frame (run i2-profile-4k, 2026-10-18 03:35-03:37)
+
+- Scripted run with `-Samples -Env @{GOW3_UE4_BOOT_4K='1'}`, 4K_native. The log confirms the 4K boot:
+  `Patches: CUSA11227; 13 writes from ['Native 4K framebuffer pool (512 MB)', '4K display metrics at boot']`, no
+  `Native output: r.SetRes`, no `second open refused` → **I1's log evidence collected.**
+  ([data/i2-profile-4k.log](data/i2-profile-4k.log); it ends at 03:37:28, ~2 minutes after the start at 03:35:40:
+  that is the freeze, the log is complete.)
+- The game froze on a frame. **Not a fault** (no report, no dump): the process stayed alive, ~1.2 cores busy.
+- Snapshot with `cdb -pv` (non-invasive) + PDB; raw output in
+  `C:\Users\Ty\MediEvil\research-data\hang-2026-10-18-i2-profile-4k\` (`stacks.txt`, `counters*.txt`):
+  - Thread 9 `shadPS4:GpuCommandProcessor` (stage A) spins in `Scheduler::WaitHostCopies` (yield loop) ←
+    `SubmitExecution` ← `Finish` ← `BufferCache::DownloadMemory` ← `ReadMemory` lambda ← `Liverpool::SendCommand` ←
+    `ProcessCommands`: a readback the game asked for (`vk_scheduler.cpp:217-228`).
+  - Recorder (`gow3:VkRecorder`), stage B (`gow3:DrawRec`, in `DrawPipe::Run` atomic wait) and every `Gow3Copy` pool
+    thread are idle.
+  - Scheduler `0x54aa6048`: `host_copies_issued = 0x7a4fdf`, `host_copies_done = 0x7a4fd6` (**9 copies never run**),
+    `queued_chunks = 0`, recorder sleeping, **`recording_owner = 0xb21c` = stage B's thread**, current `record_chunk`
+    holds `0x45f0` bytes (17.9 KiB) of recorded commands **never handed to the recorder**.
+- Mechanism: `WaitHostCopies` kicks the current chunk **once** (`KickRecording(true)`) and then only spins. Host copies
+  recorded after that kick (here by stage B, last owner; also possible: a `RecordHostCopy` seq taken before the kick
+  but pushed after it, since `++host_copies_issued` happens outside `chunk_lock`) stay in a chunk nobody hands over:
+  stage B kicks by itself only at 32 KiB (`vk_scheduler.cpp:239`) and then sleeps waiting for packets. Stage A waits
+  forever → frozen frame. How stage B came to record after stage A's drain + kick is not established from the snapshot
+  (`ProcessCommands` drains first, `liverpool.cpp:91`); the fix does not depend on it.
+- Bloodborne has the same one-kick wait (`bloodborne_pc/.../vk_scheduler.cpp:457-463`), but its readbacks avoid
+  `Finish()` there (candidate #2 in plan-gpu-threading.md).
+- **Fix L4 (lab):** in the wait loop, `KickRecording(true)` again every 256 spins. Safe: `Record()` and `KickRecording()`
+  both hold `chunk_lock` (`vk_scheduler.h:760`, `vk_scheduler.cpp:237`, the 1.3.2 race fix); an empty chunk returns at
+  once. Built clean 2026-10-18 03:43 into `out/gpu-pdb`, not installed (the frozen game held the exe). Not yet run.
+- Likely an upstream bug (draw pipe is on by default at 8+ threads): PR candidate once it holds in runs.
+- Test T-H1: same scripted run and route; no freeze over a long session. Rare and timing-dependent like C1, so
+  "no freeze" needs several sessions before it counts.
+
 ## C1 next: catch it when it happens
 
 The crash is rare and timing-dependent, so reproduction runs are unreliable. Better: make every crash leave a full
