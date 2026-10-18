@@ -432,6 +432,22 @@ those runs (R1 build, growing live images, position): watch for it. Validation-l
 Heavy view with the fix on (windows 250-254): 114 FPS, ~2800 draws/frame, GPU ticks 0.5-0.8%, uploads 5-9 MiB.
 WPR CPU trace `research-data\wpr\heavy-v3.etl` (906 MB, 15 s, the user ran it facing the heavy direction).
 
+Read (`etw_threads.py --functions 15 --threads 5`, output `research-data\wpr\heavy-v3-functions.txt`; `etw_stacks.py`
+attached stacks to few samples this time, not used): four threads at about one core each, a serial pipeline.
+
+| Thread | Cores | Main costs |
+|---|---|---|
+| `RenderThread 1` | 0.98 | 62% guest code, **~29% `NtDelayExecution`/yield** (the query-result spin, waits on stage A) |
+| `gow3:DrawRec` (stage B) | 0.94 | `DrawPipe::Run` 19%, ~17% sleeping/yield: has slack |
+| `shadPS4:GpuCommandProcessor` (stage A) | 0.91 | `PostDraw` 11.4%, **`std::bitset` test/ref 13.1%**, memcpy 6.9%, `vma_index` + `cached_region` 6.6%, sleep ~12% |
+| `gow3:VkRecorder` | 0.85 | `RecorderThread` 59%, NVIDIA driver ~4% |
+
+Stage A is the bottleneck (the render thread waits on it, stage B idles part of the time). **Fix P1** (no toggle,
+same behaviour): `RegDirty::blocks` was a `std::bitset<1664>`; on glibc `PostDraw` walks it with `_Find_first` /
+`_Find_next`, but libc++ (our clang64 build) has neither, so the fallback tested all 1664 bits per draw (~2800
+draws/frame). Now a 26-word array with a `countr_zero` `ForEach` (also used by `RegDelta::Capture`). Next stage A
+candidates: `PostDraw` itself, `vma_index`/`cached_region` (guest memory region lookups per draw).
+
 ## Lead C: texture-cache churn (second)
 
 `BindResources` → `ResolveOverlap` → `FreeImage` → `SignalImpl::Protect` → `VirtualProtect` (~11% of stage B).
