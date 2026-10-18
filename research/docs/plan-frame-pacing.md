@@ -571,3 +571,21 @@ window: 41 ≤ 15 ms, 44 15-25 ms, 10 > 25 ms; none of the 10 has slow host call
   unconfirmed).
 - 18:37:43 and 18:38:37: single 81-83 ms frames, no host calls, compiles, texture activity or port waits.
 Asked the user where these happened (loading / transition / the camera-pan spots).
+
+**The user, on T-M1b:** the repeatable hitch is still there, as are others when looking in certain areas; no
+prolonged bursts any more; 18:31-18:33 was panning back and forth at the hitch spot (1% lows ~40 FPS, average ~200);
+the broken effects are dynamic / spot-light shadows. The 18:33:07 stalls (`gamepad connected`) were the DualSense
+being switched back on after it idled off: written off.
+
+Stall reports of the panning hitches (full `Stall:` blocks): two kinds.
+- **A, streaming**: 504-626 ms frames with **195-273 images registered and 300-400 MB of image uploads in that frame**
+  (GPU thread 60-110 ms on CPU; image create 3-8 ms, refresh 9-13 ms, resident 5-17 ms): UE4 streaming textures /
+  mips in. `TextureCache::UnmapMemory` frees every image in a guest range the game unmaps (pool decommits when mips
+  stream out), so each stream-in is a new image and a full upload.
+- **B, no GPU work**: 1,642 / 257 / 143 / 81 ms frames with 0 images, ~0 uploads and the port's waits near 0: time
+  on the game's side or uncounted; needs a trace of one.
+**Diagnostic C2** (`GOW3_TEXCACHE_STATS`): per report, images freed by guest unmaps and how many of them are created
+again within ~30 s (count, MiB), and the top 8 created images by description (size, type, format, levels / layers,
+tiled / linear, binding). If most stream-in uploads are re-creations, the cache to add is: keep images freed by an
+unmap, and on re-creation at the same address with the same description and unchanged guest data (hash), reuse them
+without an upload. Test T-C2: pan at the hitch spot; F9 (ring buffer) right after a kind B frame.
