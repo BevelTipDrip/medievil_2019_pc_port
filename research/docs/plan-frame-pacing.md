@@ -172,6 +172,17 @@ with llvm-symbolizer; xperf 8.1 does not read the lld PDB). Output `research-dat
 Next: R2 rwlock handle lookup O(1); R3 pool free-run search with a hint; then find which runtime call makes thread
 44384's sleeps / yields.
 
+**R2 built (`cf9e201`):** live rwlocks in an open-addressing pointer set (≤ half full, rebuilt at 4x live; deleted
+slots hold a private sentinel, never 1 = destroyed handle); same lock, holders and error codes.
+`tests/test_rwlock_registry.c` (5000 locks, rebuilds, own-lock errors, garbage / destroyed / freed handles,
+re-creation, lazy init, 4 threads) passes on the new code **and on the original file** (same behaviour).
+**R3 built (`2097554`):** per-chunk `free_hint` (all pages below it used); same first-fit run as before. Checked
+against the old functions on 200,000 random takes and partial gives: identical runs and page maps (scratch harness,
+not in the repo). No switches: behaviour-identical data-structure changes, covered by those checks instead.
+Built 12:42, installed. Test T-R23: the Graveyard spot of `wpr-graveyard` (its steady windows 149-164: ~3,010-3,030
+draws/frame, ~82 FPS, R1 on, stale on) + a WPR trace to confirm `find_locked` / `pool_take_locked` are gone and see
+what the game threads do next.
+
 Candidate R1 (if stale looks right): in stale mode, skip `ProcessDownloadImages`' `WaitHostCopies` (switch to
 restore it). If stale looks wrong: targeted waits instead (only for copies reading the protected pages, Bloodborne #1).
 
