@@ -406,3 +406,16 @@ circled the broken areas in frame 24679 (right of Dan along the path; lower left
 
 Then, by what T-I2a shows: plan-gpu-threading.md T1 (host-copy waits), parallel recording (T7), or a stage-B-specific
 fix. Each as its own stage with before/after numbers on the same route.
+
+**Live toggle test (2026-10-18 19:30-19:40, launched by Claude with the user's go; log `data/t-v1-toggles.log`),
+Dan at the torch with the box visible:** A draw preparation off (12288), B render-state memo off (1<<44), C two-stage
+draw pipeline off (1<<37), E all general optimizations off (bits 0-19 and 32-46 = 140733194436607): **the box stays in
+every case.** Not caused by the port's optimizations.
+
+**Corrected reading of eid 4727 / 4578:** the same 445 vertices at 0x20598E8000 in both captures (static data, not
+stale memory); dimensions and 4 cm posts fit the iron fence's real 3D bars, drawn depth-only (an opaque caster needs
+no pixel shader). It sits right at the torch (depth down to 0.04), so its bars smear into a wide streaky shape in the
+512² map; the lighter lines in it are the gaps. The inputs look legitimate, so the projection shader decides "fully
+shadowed" inside the box where the fence should give stripes. Next: RenderDoc shader debugging of eid 6479 at
+(3360,1512) in `v1-shadow_frame24679.rdc`: the shadow-map coordinate it computes, the sampled depths, the receiver
+depth and the comparison (scale / offset, tiling, bias or compare direction).
