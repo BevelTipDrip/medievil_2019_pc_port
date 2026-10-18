@@ -12,6 +12,7 @@
 #include <functional>
 
 #include "gow3_copy.h"
+#include "gow3_sampler.h"
 #include "video_core/renderer_vulkan/vk_gpu_profiler.h"
 #include "gow3_toggles.h"
 #include "video_core/renderer_vulkan/vk_wait_diagnostics.h"
@@ -275,6 +276,7 @@ void Scheduler::SyncRecording() {
 
 void Scheduler::RecorderThread(std::stop_token stoken) {
     Common::SetCurrentThreadName("gow3:VkRecorder");
+    Gow3Sampler::SampleCurrentThread("VkRecorder");
     while (true) {
         // Spin briefly before sleeping: the next chunk usually follows within microseconds,
         // and a sleeping recorder costs the GPU thread a wake-up syscall per kick. With few
