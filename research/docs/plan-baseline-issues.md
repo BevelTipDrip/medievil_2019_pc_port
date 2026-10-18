@@ -299,6 +299,15 @@ own drain does nothing off stage A (vk_rasterizer.cpp:412), so `ProcessCommands`
 buffer being ended (could turn the hang into the crash); with the race fixed it has no job. Built clean 04:17,
 installed. Test T-L5: Graveyard idle, two-stage pipeline **on**, 15+ minutes, more than one session.
 
+**T-L5 session 1 (2026-10-18 10:29-10:48, the user, from `research\tools\launcher.cmd`):** build `bc0e1d6`,
+two-stage pipeline on (105+ `Draw pipe:` lines), 4K boot, console, Graveyard. **No fault, no freeze in ~19 minutes,
+clean exit** (the user: "a pretty long run, no crashes"). Log [data/t-l5-pipe-on-2026-10-18.log](data/t-l5-pipe-on-2026-10-18.log).
+Pacing over the run (229 windows of 5 s): FPS min 34.8 / p10 91.4 / median 102.3 / p90 133.4; frame-time stddev
+median 1.95 ms; p99 median 13.53 ms, max 39.68 ms. Against the pipe-off run in the same scenario (median 85.2 FPS,
+p99 16.8 ms, worst p99 74.7 ms): ~20% faster with better p99, a bit more spread (frames over 1.5x median). The fix's
+own cost: `commands` drains ~37/s, 0.1% of stage A. Before-fix pipe-on stats for this scenario do not exist (those
+runs froze / crashed, scripted runs had no stats then). One more session before calling it verified.
+
 Secondary path (not fixed, lower likelihood: it exists with the pipe off too, which ran clean): stage B faulting on a
 guest read between its buffer binds and the draw (motion-vector hashing of bone palettes / indices,
 vk_rasterizer.cpp:1049, 1070-1080, only for motion draws) runs the readback inline. Option: emit the vertex / index
