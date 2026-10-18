@@ -16,6 +16,7 @@
 #endif
 #ifdef _WIN32
 #include <windows.h>
+#include <dbghelp.h>
 #else
 #include <sys/mman.h>
 #include <malloc.h>
@@ -116,6 +117,39 @@ static void describe_address(char *out, size_t size, uintptr_t address) {
     }
     snprintf(out,size,"%p",(void *)address);
 }
+/* Crash dumps (GOW3_CRASH_DUMP: 0 off, full = all memory, default = host memory without the
+ * guest's mapped section): fatal_exception ends the process inside the first-chance handler, so
+ * Windows Error Reporting never writes one. <user dir>\crashdumps, set in main. */
+static char crash_dump_dir[MAX_PATH];
+static void write_crash_dump(EXCEPTION_POINTERS *info) {
+    const char *mode=getenv("GOW3_CRASH_DUMP");
+    if (!crash_dump_dir[0] || (mode && !strcmp(mode,"0"))) return;
+    typedef BOOL (WINAPI *WriteDump)(HANDLE, DWORD, HANDLE, MINIDUMP_TYPE, PMINIDUMP_EXCEPTION_INFORMATION,
+                                     PMINIDUMP_USER_STREAM_INFORMATION, PMINIDUMP_CALLBACK_INFORMATION);
+    HMODULE dbghelp=LoadLibraryA("dbghelp.dll");
+    WriteDump write_dump=dbghelp ? (WriteDump)(void *)GetProcAddress(dbghelp,"MiniDumpWriteDump") : NULL;
+    if (!write_dump) { fputs("Crash dump: dbghelp.dll unavailable\n",stderr); return; }
+    /* Private read-write memory is the host's heaps and stacks (recorded commands, GPU state);
+     * guest memory is a mapped section view and stays out unless "full". */
+    MINIDUMP_TYPE type=(MINIDUMP_TYPE)(MiniDumpWithPrivateReadWriteMemory|MiniDumpWithDataSegs|
+                                       MiniDumpWithHandleData|MiniDumpWithThreadInfo|MiniDumpWithFullMemoryInfo|
+                                       MiniDumpWithUnloadedModules|MiniDumpWithIndirectlyReferencedMemory);
+    if (mode && !strcmp(mode,"full")) type=(MINIDUMP_TYPE)(type|MiniDumpWithFullMemory);
+    CreateDirectoryA(crash_dump_dir,NULL);
+    SYSTEMTIME now; GetLocalTime(&now);
+    char path[MAX_PATH+64];
+    snprintf(path,sizeof(path),"%s\\medievil-%04u%02u%02u-%02u%02u%02u-%lu.dmp",crash_dump_dir,now.wYear,now.wMonth,
+             now.wDay,now.wHour,now.wMinute,now.wSecond,GetCurrentProcessId());
+    HANDLE file=CreateFileA(path,GENERIC_WRITE,0,NULL,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
+    if (file==INVALID_HANDLE_VALUE) { fprintf(stderr,"Crash dump: cannot create %s (%lu)\n",path,GetLastError()); return; }
+    MINIDUMP_EXCEPTION_INFORMATION exception={GetCurrentThreadId(),info,FALSE};
+    /* Written from the faulting thread while the others run: good enough for diagnostics. */
+    const BOOL written=write_dump(GetCurrentProcess(),GetCurrentProcessId(),file,type,&exception,NULL,NULL);
+    const DWORD error=written ? 0 : GetLastError();
+    CloseHandle(file);
+    if (written) fprintf(stderr,"Crash dump: %s\n",path);
+    else fprintf(stderr,"Crash dump: MiniDumpWriteDump failed (0x%08lx)\n",error);
+}
 static int fatal_reported;
 static LONG fatal_exception(EXCEPTION_POINTERS *info) {
     if (__atomic_exchange_n(&fatal_reported,1,__ATOMIC_ACQ_REL)) { Sleep(INFINITE); }
@@ -173,6 +207,8 @@ static LONG fatal_exception(EXCEPTION_POINTERS *info) {
         fprintf(stderr,"  #%d %s\n",depth,where);
         rbp=frame[0];
     }
+    fflush(NULL);
+    write_crash_dump(info);
     fflush(NULL);
     TerminateProcess(GetCurrentProcess(),3);
     return EXCEPTION_CONTINUE_SEARCH;
@@ -643,6 +679,7 @@ int main(int argc, char **argv) {
     gow3gpu_register_kernel();
 #ifdef _WIN32
     SYSTEM_INFO system_info; GetSystemInfo(&system_info); page_size = system_info.dwPageSize;
+    snprintf(crash_dump_dir,sizeof(crash_dump_dir),"%s\\crashdumps",user_dir ? user_dir : "user");
     AddVectoredExceptionHandler(1, vectored_fault);
     SetUnhandledExceptionFilter(unhandled_fault);
     if (getenv("GOW3_STRICT_HANDLES")) {
