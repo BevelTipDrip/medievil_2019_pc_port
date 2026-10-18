@@ -365,6 +365,15 @@ those are V1, pre-existing; the user can trigger them reliably (capture target).
 "Some shadows occasionally drawn wrong (like they're just a big box instead of the shape of the actual shadow)",
 seen before stale readbacks were turned on. Not investigated yet (RenderDoc capture when it shows).
 
+**Persistent repro (the user, 2026-10-18):** with Dan near a light source, he has his correct shadow from the light,
+and in addition a **black transparent box on the ground near him** that moves with his idle animation and jitters at
+low amplitude with it. Fits a per-object / projected shadow pass: a bounds box drawn over the ground that should
+sample a shadow depth map or mask but reads black (texture never written, wrong view / format, or a cache lookup
+that resolves to the wrong image). Also seen: such effects appearing / disappearing at the moment of the pool commit
+hitches (T-M1), probably because spawning them allocates memory. Plan: RenderDoc capture standing still near a torch;
+find the draw that writes the box, inspect its bound textures and blend state, then the port's handling of that
+texture (texture cache: block / format views, depth-as-texture, readbacks).
+
 ## Tests (one change per launch, the user's go each time)
 
 | Test | Change from run 1 | Answers |
