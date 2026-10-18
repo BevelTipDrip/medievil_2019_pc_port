@@ -24,10 +24,13 @@ $wpr = if (Test-Path $adk) { $adk } else { 'wpr' }
 Write-Host 'Recording starts in 5 s: switch back to the game.'
 Start-Sleep -Seconds 5
 & $wpr -start $WprProfile -filemode
+# Wall-clock bounds, to line the trace up with the game log's .times file (tee_run.py).
+"start $(Get-Date -Format 'HH:mm:ss.fff')" | Out-File -Encoding utf8 (Join-Path $dir "$Tag.times.txt")
 Write-Host "Recording $Seconds s..."
 Start-Sleep -Seconds $Seconds
 # -skipPdbGen: no NGEN / embedded PDB generation at the merge (not needed for this game).
 # Reading: full CPU-profile traces lose events, and xperf then reports "corrupt" (0x80070570)
 # unless given -tle (tolerate lost events) and -tti: xperf -tle -tti -i <etl> ...
+"stop $(Get-Date -Format 'HH:mm:ss.fff')" | Out-File -Encoding utf8 -Append (Join-Path $dir "$Tag.times.txt")
 & $wpr -stop $etl "MediEvil $Tag" -skipPdbGen
 Write-Host "Saved $etl"
