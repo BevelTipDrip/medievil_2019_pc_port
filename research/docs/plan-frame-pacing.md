@@ -401,6 +401,26 @@ switch still expands once. Report counts "volume views". Risks: a partial-slice 
 (logged as a warning); a storage-bound 2D side is not covered (would still show as expands). Test T-V3: same route,
 `GOW3_TEXCACHE_STATS=1`, validation layer once for the view/barrier rules.
 
+### T-V3 result (2026-10-18 15:45-16:10, launched by Claude with the user's go; build `1f18217`; log `data/t-v3-volume-views.log`)
+
+Fix on for the whole run (toggle file `research-data\toggles.txt` = 0, never flipped). Expands **0** per window
+in menu, map and level (only one-off mip growth of a 2048² R16F at boot); no partial-clear warnings, view-type
+errors or "resolve failed". The user: main menu ~240 FPS; map / level select **~70 → ~200 FPS** (stats: 183-198,
+stddev 0.1-0.3 ms); level "fairly good", most directions 200+ FPS; heavy graveyard view 1% lows **~60 → ~100**.
+
+| Heavy view, 5 s window | T-C1 (fix off) | T-V3 |
+|---|---|---|
+| FPS | ~97 (911 draws/frame spot) | 115-123 |
+| draws/frame | — | 2670-2890 |
+| uploads | 31 GB | 0-15 MiB |
+| blocked on GPU ticks | 32% | 0.1-0.4% |
+
+The heavy view is now **CPU-bound on draw submission** (~330k draws/s through stage A + B; the user: GPU usage
+55-60%): a different mechanism, next lead (GPU threading / per-draw cost, see plan-gpu-threading.md). Still open
+for V3: volumetric fog correctness (the user: "I think it's working", wants checks): live A/B with toggle bit 58 at
+a foggy spot with screenshots, and one validation-layer run. Remaining ~450 MiB / 5 s of ordinary refresh uploads on
+the map screen: not investigated.
+
 ## Lead C: texture-cache churn (second)
 
 `BindResources` → `ResolveOverlap` → `FreeImage` → `SignalImpl::Protect` → `VirtualProtect` (~11% of stage B).
