@@ -153,3 +153,6 @@ fixes (#4).
 | P0 | Measurement: Graveyard route, `-Samples`, `GOW3_PERF_DIAG=1`, no code change | Readback profile: images, copies vs CPU accesses; stage B profile in gameplay |
 | R1 | Per P0 (likely: skip readbacks of images the CPU never touches) | Stage B EOP share, FPS / p99 vs baseline; no black surfaces (the user) |
 | C1x | Texture churn, per measurement | `VirtualProtect` share, FPS / p99 |
+
+R1 visuals (the user, 2026-10-18): run B showed no additional visual issues.
+
