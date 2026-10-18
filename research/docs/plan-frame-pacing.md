@@ -293,6 +293,24 @@ vk_presenter.cpp:538-556, or query / command memory reuse). **Do not retry R4a w
 with Frames queued 2, or after the sync point is found with `GOW3_PERF_DIAG=1`, which lists the waiting call sites).
 Directions kept: faster stage A decode; answer occlusion queries earlier (the answer is synthetic, "always visible").
 
+### GPU wait sites (2026-10-18 14:20, `GOW3_PERF_DIAG=1`, current build without R4a; run `perfdiag-heavy`)
+
+Log [data/perfdiag-heavy.log](data/perfdiag-heavy.log), 156 windows (none reached ≥ 2,500 draws/frame). `Wait
+profile` lines summed per 5 s window:
+
+| Site | Calls | Semaphore wait | Max single | What |
+|---|---|---|---|---|
+| **vk_presenter.cpp:553** | ~837 | **~869 ms (~17%)** | 69.7 ms | "Frames queued" bound: the flip (on stage B) waits for the GPU frame `frames_ahead` (= 1) flips back (vk_presenter.cpp:538-556) |
+| **buffer_cache.cpp:213** | ~31 | **~246 ms (~5%)** | **60.7 ms** | `DownloadMemory` → `scheduler.Finish()`: a full GPU drain per guest buffer readback (~8 ms average) |
+| buffer.cpp:276, texture_cache.cpp:137 | | < 1 ms | | negligible |
+
+Reading: with the GPU at ~50%, the presenter wait is latency (the GPU still has the previous frame queued), not
+throughput; R4a's regression fits (more frames reached this wait). Buffer readbacks are rare but each drains the
+GPU (up to 61 ms): a likely source of the spikes.
+Next: **F1** Frames queued = 2 (existing setting, `frames_queued` / `GOW3_FRAMES_AHEAD`; +1 frame of input latency);
+**R5** Bloodborne's readback queue (plan-gpu-threading.md #2: wait only for the GPU work that wrote the range, on its
+own queue, instead of `Finish()`).
+
 ## Lead C: texture-cache churn (second)
 
 `BindResources` → `ResolveOverlap` → `FreeImage` → `SignalImpl::Protect` → `VirtualProtect` (~11% of stage B).
