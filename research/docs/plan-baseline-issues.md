@@ -337,6 +337,16 @@ opens in cdb, `.ecxr` gives the faulting context. Built clean (no new warnings).
 `GOW3_SAMPLE_FILE` too (`Gow3Sampler::SampleCurrentThread("VkRecorder")`); before, only `GpuCmd` (stage A) and
 `DrawRec` (stage B) were. The game's own threads are not covered by it: use Windows Performance Recorder for them.
 
+## S1. Silent exit with code 5 at startup (2026-10-18 12:53, once)
+
+First launch of the R2 + R3 build (`2097554`, run `t-r23`): the process exited with code 5 about 8 s in, right
+after `Runtime: mapped flexible memory 0000001201000000, size=6291456` — where a good run goes on with the PSN toolkit
+(`libSceNpToolkit2`) creating `Toolkit::NP::Main` / `Notifications` / `AbortThread`. No fault report, no dump, no
+error line, no `The game exited` line from run.py. The runtime has no `exit(5)` (probably the game or the toolkit
+giving up after an error). Log [data/t-r23.log](data/t-r23.log). The immediate retry (`t-r23-retry`) started
+normally. Not seen in the ~12 launches before R2 / R3: **watch every launch**; if it repeats, start with R2 and R3
+reverted one at a time.
+
 ## V1. Shadows sometimes drawn as a big box (the user, 2026-10-18)
 
 "Some shadows occasionally drawn wrong (like they're just a big box instead of the shape of the actual shadow)",
