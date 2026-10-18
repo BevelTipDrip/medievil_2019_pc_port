@@ -103,6 +103,36 @@ does not block reads), no deadlock; the next submission still waits for its copi
 Test (A/B, same scenario, both stale on, both `-Samples`, no perf diag): A = `-Tag r1-a-stale`, B = `-Env
 @{GOW3_STALE_SKIP_COPY_WAIT='1'} -Tag r1-b-skip`; Graveyard, idle at the same spot ~4 min each.
 
+### R1 A/B (2026-10-18, A 11:46-11:53, B 11:54-12:01, launched by Claude with the user's go)
+
+Both stale on, `-Samples`, 4K boot, no perf diag. Logs [data/r1-a-stale.log](data/r1-a-stale.log),
+[data/r1-b-skip.log](data/r1-b-skip.log); per-window tables with `research/tools/series.py <log> --rows`. No faults.
+The two idle views differed (A ~1,136 draws/frame, B ~1,800), so compare windows of similar draw counts.
+
+| | A (R1 off) | B (R1 on) |
+|---|---|---|
+| Stage B: `RunEventWriteEop` → `ProcessDownloadImages` | 19.7% | **gone** |
+| Stage B idle (waiting for packets) | 24.3% | **34.5%** |
+| Stage B other yields | (in the EOP wait) | `WaitDeferredSignals` ~8.5%, `RunEventWriteEos` ~1.8% |
+| Stage A idle (delay + wait) | ~54% | ~53% |
+| FPS ~1,150 draws/frame | ~144 (windows 71-94) | ~136-138 (39, 41, 46) |
+| FPS ~1,800 draws/frame | ~96-103 (31-35) | 90-98 (21-25), ~110 (63-71) |
+| FPS ~2,800-3,000 draws/frame | 88-91 (59-67) | 82-93 (48-49, 55-57) |
+| Blocked on host copies / copy threads (all threads) | ~9-13% / ~10% | ~5-9% / ~5-6% |
+
+Reading: R1 removes its target completely, but FPS at matching draw counts is unchanged within the noise of
+different views. Stage B now idles more; stage A was already idle about half the time. **Neither GPU-side thread is
+the limit any more: work arrives too slowly from the game's own threads.** Prime suspect: 80-117k page-tracking
+write faults per second on the game's threads (each a full Windows exception, VEH; cost not measured). Needs a
+whole-process profile (Windows Performance Recorder, `wpr -start CPU`, admin). R1: keep (removes ~20% of stage B
+for free); visuals in B: the user to confirm.
+
+Menu vs game (the user: "in the menu the frame times are quite good"; run A): menu ~447 draws/frame, ~140 FPS,
+stddev 0.5 / p99 9 ms, stage B ~90%, GPU-tick waits ~20%; Graveyard standing ~1,136 draws, ~144 FPS, 0.7 / 10 ms;
+heavier views ~2,700-2,900 draws, 83-91 FPS, 1.0 / 15 ms. Stage B ~90% everywhere, so FPS follows draws per frame;
+menu draws cost ~2.5x more stage-B time each. In the level the draw count changes with the view (the swing).
+Separate: 300-3,700 ms windows at loads / transitions.
+
 Candidate R1 (if stale looks right): in stale mode, skip `ProcessDownloadImages`' `WaitHostCopies` (switch to
 restore it). If stale looks wrong: targeted waits instead (only for copies reading the protected pages, Bloodborne #1).
 
