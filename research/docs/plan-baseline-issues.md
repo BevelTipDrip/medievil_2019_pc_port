@@ -337,6 +337,11 @@ opens in cdb, `.ecxr` gives the faulting context. Built clean (no new warnings).
 `GOW3_SAMPLE_FILE` too (`Gow3Sampler::SampleCurrentThread("VkRecorder")`); before, only `GpuCmd` (stage A) and
 `DrawRec` (stage B) were. The game's own threads are not covered by it: use Windows Performance Recorder for them.
 
+## V1. Shadows sometimes drawn as a big box (the user, 2026-10-18)
+
+"Some shadows occasionally drawn wrong (like they're just a big box instead of the shape of the actual shadow)",
+seen before stale readbacks were turned on. Not investigated yet (RenderDoc capture when it shows).
+
 ## Tests (one change per launch, the user's go each time)
 
 | Test | Change from run 1 | Answers |

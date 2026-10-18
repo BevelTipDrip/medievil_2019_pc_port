@@ -92,6 +92,17 @@ Log [data/p0-stale-on.log](data/p0-stale-on.log), samples `research-data\samples
   diag on). Needs the same scenario.
 - Visuals with stale on: **the user to report.**
 
+**The user (2026-10-18): stale on, "I didn't see any glaring issues."** The one visual bug seen, shadows sometimes
+drawn as a big box instead of their shape, was there before (logged as V1 in plan-baseline-issues.md).
+
+**R1 built (lab change L6, 2026-10-18 11:44):** `skip_copy_wait` (`GOW3_STALE_SKIP_COPY_WAIT=1`, needs stale) skips
+`ProcessDownloadImages`' `WaitHostCopies`; startup line adds "; no host copy wait at end of pipe". Reasoning for the
+retire question: upload copies only read guest memory and write staging; a worker reading a retired image's bytes
+while `RetireReadbacks` writes them sees the GPU's newer output (as PS4 memory would), no fault (write protection
+does not block reads), no deadlock; the next submission still waits for its copies in `SubmitExecution`.
+Test (A/B, same scenario, both stale on, both `-Samples`, no perf diag): A = `-Tag r1-a-stale`, B = `-Env
+@{GOW3_STALE_SKIP_COPY_WAIT='1'} -Tag r1-b-skip`; Graveyard, idle at the same spot ~4 min each.
+
 Candidate R1 (if stale looks right): in stale mode, skip `ProcessDownloadImages`' `WaitHostCopies` (switch to
 restore it). If stale looks wrong: targeted waits instead (only for copies reading the protected pages, Bloodborne #1).
 
