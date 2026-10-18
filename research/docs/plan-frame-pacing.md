@@ -62,6 +62,39 @@ run.py:89 passes it as `GOW3_STALE_READBACK`). Launch: `run-game.ps1 -Samples -E
 GOW3_PERF_DIAG='1'} -Tag p0-stale-on`. Compare with the T-L5 baseline (stale off, no diag); the diag adds some
 overhead. The user watches for wrong lighting / objects.
 
+### P0 results (2026-10-18 11:22-11:38, launched by Claude with the user's go)
+
+Log [data/p0-stale-on.log](data/p0-stale-on.log), samples `research-data\samples\p0-stale-on\` (exe + PDB beside them).
+~16 min, no fault, clean exit. 193 windows of 5 s.
+- **Readbacks:** 575,820 queued, 575,813 completed, **0 waits** (stale on), pending peak ~0 MiB. Five images make
+  up almost all of it:
+
+  | Image | Size / format | Copies | Windows |
+  |---|---|---|---|
+  | 0x201faaaa00 / ab00 / ac00 | 8x8 / 4x4 / 2x2 R16Sfloat (one mip chain) | 143,931 each | 192 |
+  | 0x2003180000 | 1x1 R32G32Sfloat | 37,091 | 100 |
+  | 0x2000aa0000 | 1x1 R32G32Sfloat | 34,911 | 92 |
+
+  Shapes suggest UE4's eye adaptation / average luminance (inferred, not checked in a capture). "CPU accesses while
+  pending" = 0 for all, **but in stale mode CPU reads do not fault, so only writes are counted**: no CPU writes;
+  reads unknown. The black-surfaces fix may also be about the GPU reading this memory another way (as a buffer),
+  not the CPU: to find out before skipping readbacks.
+- **Stage B profile** (557,930 samples): `RunEventWriteEop` → `ProcessDownloadImages` **16.7%**, all yielding inside
+  the inlined `WaitHostCopies`: ~7.45% its host-copy loop, ~7.3% `Gow3Copy::WaitAsync` (shown under its
+  `WaitTimer`). Same as before stale was on (15.3%): the wait does not depend on stale. `VirtualProtect` 8.4%
+  (was 10.9%), `ResolveOverlap` 10.0%, `FreeImage` 5.7%, flip `Semaphore::Wait` 3.1%.
+- **So ~15% of stage B is waiting for all copy work at every EOP to read back ~5 tiny images per frame.**
+- The wait's reason (texture_cache.cpp:163: "upload workers must finish reading RAM before these pages become
+  inaccessible") holds when pending pages are **read**-protected (stale off). With stale on they are only
+  **write**-protected, so upload workers can still read them. Remaining question: `RetireReadbacks` writes guest
+  memory (`TryWriteBacking`) that an upload worker could be reading at that moment.
+- FPS: median 132.3 / p10 84.4 / min 20.5 vs T-L5 baseline 102.3 / 91.4 / 34.8, **not comparable** (gameplay vs idle,
+  diag on). Needs the same scenario.
+- Visuals with stale on: **the user to report.**
+
+Candidate R1 (if stale looks right): in stale mode, skip `ProcessDownloadImages`' `WaitHostCopies` (switch to
+restore it). If stale looks wrong: targeted waits instead (only for copies reading the protected pages, Bloodborne #1).
+
 ## Lead C: texture-cache churn (second)
 
 `BindResources` → `ResolveOverlap` → `FreeImage` → `SignalImpl::Protect` → `VirtualProtect` (~11% of stage B).
