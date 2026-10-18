@@ -494,6 +494,30 @@ view of the section per page (`MiViewMayContainPage`). Suspect: the effect's gue
 views carve_host unmapped and re-mapped, region count; any call over 1 ms printed with its size. Test T-H1: trigger
 the effect where the user knows it appears, `GOW3_HOST_MAP_STATS=1`.
 
+### T-H1 result (2026-10-18 17:50-18:00, launched by Claude with the user's go; build `2618b9c`; log `data/t-h1-hostmap.log` + `.times`)
+
+Steady play, per 5 s: **~60,000 host maps, ~30,000 unmaps, ~30,000 protects** (~7 GB mapped; mostly 64 KiB), ~300 ms
+of unmap time, max <0.7 ms; host regions (= section views) **4,734 at boot → ~14,900**. Episode at 17:58:49.5-52.9
+(window ending 17:58:54: 96 FPS, p99 24 ms): the same 64 KiB maps / unmaps take **1-17 ms each** (~150 slow calls),
+unmap time 1452 ms per 5 s. Ring-buffer capture `effect-2.etl` (saved 17:58:52.8, the user pressed F9 at the effect):
+the System worker at one core for ~10 s, 55% `MiViewMayContainPage`, 4% `MiTrimSection`: the same signature.
+
+Who maps: the log has 3 printed guest maps in the whole run, so not `sceKernelMapDirectMemory` / flexible. The 2:1
+map:unmap ratio is **`sceKernelMemoryPoolCommit` / `Decommit`** (UE4's pooled allocator): a decommit unmaps the view
+and maps a reserved placeholder (1 unmap + 1 map), a commit maps a view (1 map), and `pool_take_locked` hands out the
+first free pages, so a recommit rarely gets its old pages and always creates a new view.
+
+**Fix M1** (toggle bit 31 = 2147483648 restores the old path; Windows only): `pool_decommit` keeps the view
+(`VirtualProtect` `PAGE_NOACCESS`, GPU unmap hook as before, VMA reserved); `pool_commit` first takes the pages a kept
+view at that address maps (`pool_take_at_locked`) when they are free, and `host_map` then only changes the protection
+of a view that already maps exactly that physical range (`host_view_reusable`). Otherwise the old path (the kept view
+is unmapped by `carve_host`). Same data semantics (a commit never cleared pages). Stats: "pool views kept N, reused N".
+Expected: unmaps and new views per 5 s near 0, region count stops growing, no episodes. Open question: whether the
+trims are triggered by view deletion (expected to stop) or by the number of views (would need fewer views).
+
+The user (2026-10-18): also specific places where panning the camera past them causes massive, repeatable frame time
+spikes. To check under M1 with the same stats (pool commits in bursts, or something else).
+
 ## Lead C: texture-cache churn (second)
 
 `BindResources` → `ResolveOverlap` → `FreeImage` → `SignalImpl::Protect` → `VirtualProtect` (~11% of stage B).
