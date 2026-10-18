@@ -454,15 +454,6 @@ private:
         const char* value = std::getenv("GOW3_STALE_READBACK");
         return value && value[0] == '1';
     }();
-    /// gow3: GOW3_STALE_SKIP_COPY_WAIT=1 (needs stale readbacks). ProcessDownloadImages waits for
-    /// every host copy so that upload workers stop reading pages before a pending copy makes
-    /// them inaccessible; stale mode only write-protects them, so reads go on and the wait has
-    /// no job. MediEvil: ~15% of the draw recording thread, at every end of pipe, for ~5 tiny
-    /// exposure readbacks per frame.
-    const bool skip_copy_wait = stale_readbacks && [] {
-        const char* value = std::getenv("GOW3_STALE_SKIP_COPY_WAIT");
-        return value && value[0] == '1';
-    }();
     template <bool track>
     void WatchReadback(VAddr address, u64 size);
     struct ReadbackImageStat {
