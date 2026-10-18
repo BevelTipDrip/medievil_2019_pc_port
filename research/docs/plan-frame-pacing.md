@@ -344,6 +344,30 @@ by size and format, protection changes, per 5 s) and optionally a frame capture 
   groups, lookups fast / slow (avg candidates walked), overlaps, expands, uploads (count, MiB), alias syncs / copies,
   GPU memory vs collector trigger / pressure. Test T-C0: start area 1-2 min, progress, return to the start area.
 
+### T-C0 result (2026-10-18 15:10-15:15): the cache re-creates and re-uploads ~20 images per frame
+
+Log [data/t-c0-texcache.log](data/t-c0-texcache.log); joined per window with `research/tools/texcache_series.py`.
+
+| | Menu (rows 12-33) | Start area before progressing (39-42) | After progressing, start area (54-69) |
+|---|---|---|---|
+| FPS | 240 | 143-174 | **~91** (stddev ~4 ms) |
+| live images | 79 | ~600 | **~850** |
+| created = expanded per 5 s | 7,200 | 13-15 k | ~9.2 k (**~20 per frame**) |
+| uploads per 5 s | ~9.9 GB | 22.6-27.1 GB (**~30 MB/frame**) | **~29.6 GB (~65 MB/frame, ~5.9 GB/s)** |
+| blocked on GPU completion | ~57-62% | 15-25% | **36-39%** |
+| GPU memory | 2.4 GB | 3.7 GB | 4.4 GB (collector trigger 7.1 GB: never runs) |
+
+The user: "GPU sitting at 52C, but usage is 80%, that's indicative of massive quantities of data saturating the
+bus." Matches: ~6 GB/s of guest-memory uploads, copy / bus bound. **Every image creation is an `ExpandImage`**
+(created ≈ expands), which (texture_cache.cpp:859-876) creates a new image, **uploads all of its guest memory
+(`RefreshImage` on the new, dirty image)**, copies the old one into it and frees the old one. Per-frame upload volume
+doubles as content loads (30 → 65 MB): the accumulation. Bloodborne's `ExpandImage` / `ResolveOverlap` are identical
+(not fixed there). Suspected ping-pong: `ResolveOverlap` expands on equal address + equal size when either side is
+Color3D (:659-663): memory used as 2D and as 3D in one frame (UE4's color-grading LUT renders slices, then samples a
+volume) would re-create and re-upload it at every switch. Also possible: block-compressed views (:655-657), bigger
+resources (:684-687). The diagnostic now also lists the top expanded images per 5 s: address, reason (block view /
+2D/3D / bigger), old → new size, type, format, levels / layers, KiB. Test T-C1: same route as T-C0.
+
 ## Lead C: texture-cache churn (second)
 
 `BindResources` → `ResolveOverlap` → `FreeImage` → `SignalImpl::Protect` → `VirtualProtect` (~11% of stage B).
