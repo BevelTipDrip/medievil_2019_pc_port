@@ -518,6 +518,25 @@ trims are triggered by view deletion (expected to stop) or by the number of view
 The user (2026-10-18): also specific places where panning the camera past them causes massive, repeatable frame time
 spikes. To check under M1 with the same stats (pool commits in bursts, or something else).
 
+### T-M1 result (2026-10-18 18:10-18:20, launched by Claude with the user's go; build `40a416a`; log `data/t-m1-poolviews.log` + `.times`)
+
+M1 on for the whole run. **Unmaps 0 in every window**; kept ≈ reused (e.g. 18,900 / 18,900 per 5 s); regions level
+off at ~13,400 (T-H1: still growing past 14,900). After the level settled: minutes of flat pacing (stddev 0.25-0.6 ms,
+worst frames 8-12 ms) and **no 2-5 s episodes**. First ~20 s unsteady (the user): the level load (18:10:31-18:11:05,
+regions 8,200 → 11,200, one 1 s frame). Heavy view 116-131 FPS at 2,500-3,000 draws/frame.
+
+**The repeatable hitch** (the user: completely repeatable; a broken effect appears / disappears at that moment;
+captures `m1-1.etl` saved 18:12:42.5, `m1-2.etl` saved 18:14:19.6): windows with worst frames 42-92 ms, and each has
+slow host calls again, all the same kind: **a map that unmaps one kept view, 8-37 ms** (e.g. 18:14:06.3: 37.2 ms,
+18:14:16.0: 20.2 ms). Reuse misses: the kept view's pages were handed to a commit elsewhere (`pool_take_locked` takes
+the first free page, kept or not), so the next commit at its address has to unmap it, and a view unmap with ~13,000
+views stalls on the kernel. ~50 misses per 5 s out of ~15,000 commits, each one a hitch frame.
+
+**Fix M1b**: pool pages freed by a keeping decommit are `POOL_KEPT`, not free; `pool_take_locked` hands out free pages
+first and kept ones only when none are free (same capacity); `pool_take_at_locked` takes free or kept. Expected: the
+miss unmaps (and their hitches) near 0. The broken effect is likely the trigger, not the cause: when it spawns, UE4
+commits memory for it (its rendering bug V1 is separate; a RenderDoc capture of it is still wanted).
+
 ## Lead C: texture-cache churn (second)
 
 `BindResources` → `ResolveOverlap` → `FreeImage` → `SignalImpl::Protect` → `VirtualProtect` (~11% of stage B).
