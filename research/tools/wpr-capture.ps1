@@ -6,7 +6,9 @@
 # and writes C:\Users\Ty\MediEvil\research-data\wpr\<tag>.etl.
 # The full CPU profile (stacks) writes ~1 GB per 15-45 s: light profile, 20 s and a free-space check
 # by default; -WprProfile CPU for stacks.
-param([int]$Seconds = 20, [string]$Tag = 'capture', [string]$WprProfile = 'CPU.light', [int]$MinFreeGB = 10)
+# -Delay 0 starts at once (wpr-hotkey.ps1 calls it so, from a key press inside the game).
+param([int]$Seconds = 20, [string]$Tag = 'capture', [string]$WprProfile = 'CPU.light', [int]$MinFreeGB = 10,
+      [int]$Delay = 5)
 $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     throw 'Run this from an administrator PowerShell (WPR needs it).'
@@ -21,8 +23,10 @@ $etl = Join-Path $dir "$Tag.etl"
 $adk = 'C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\wpr.exe'
 $wpr = if (Test-Path $adk) { $adk } else { 'wpr' }
 & $wpr -cancel 2>$null | Out-Null
-Write-Host 'Recording starts in 5 s: switch back to the game.'
-Start-Sleep -Seconds 5
+if ($Delay -gt 0) {
+    Write-Host "Recording starts in $Delay s: switch back to the game."
+    Start-Sleep -Seconds $Delay
+}
 & $wpr -start $WprProfile -filemode
 # Wall-clock bounds, to line the trace up with the game log's .times file (tee_run.py).
 "start $(Get-Date -Format 'HH:mm:ss.fff')" | Out-File -Encoding utf8 (Join-Path $dir "$Tag.times.txt")
