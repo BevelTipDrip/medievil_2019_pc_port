@@ -368,6 +368,39 @@ volume) would re-create and re-upload it at every switch. Also possible: block-c
 resources (:684-687). The diagnostic now also lists the top expanded images per 5 s: address, reason (block view /
 2D/3D / bigger), old → new size, type, format, levels / layers, KiB. Test T-C1: same route as T-C0.
 
+**The user (2026-10-18), the lens for the fix:** "any fullscreen effect or filter that converts the framebuffer to a
+texture (or similar action) and keeps it in system memory is okay on the PS4, because it has unified memory, but on
+the PC, it goes across the PCI-E bus. If anything like that is going on, it will kill frametimes." Applies both ways
+here: downloads (the per-frame render-target readbacks of `GOW3_READBACK_LINEAR`) and uploads (every `ExpandImage`
+re-uploading guest memory). Goal: such images never leave GPU memory unless the CPU really reads them.
+
+### T-C1 result (2026-10-18 15:20-15:30, launched by Claude with the user's go; build `4035556`; log `data/t-c1-expands.log`)
+
+Every in-game expand is one pattern: **a volume switching between a 2D array (64 layers, the render target writing its
+slices) and a 3D image (the texture sampling it)**, twice per use, each switch a full `RefreshImage` from guest memory.
+
+| Address | Image | Likely UE4 resource | Expands / 5 s (in game) |
+|---|---|---|---|
+| `0x2010000000`, `0x200ee00000`, `0x201ba00000` | 64×64×64 RGBA16F, 2 MiB | translucency lighting volumes | 976–1952 each |
+| `0x206c000000` | 240×135×64 RGBA16F, 16 MiB | volumetric fog grid (1/8 of 1080p × 64) | 976 = **15.6 GB** |
+| `0x200ec80000` | 32×32×32 A2B10G10R10, 128 KiB | colour grading LUT | menu: 2400 |
+
+In-game window (n=50): 9760 expands = 9760 uploads = 31.3 GB per 5 s (**≈6 GB/s over PCIe**), 97 FPS, GPU ticks 32%.
+Menu: 7200 expands, 10 GB per 5 s. More of these volumes appear as the level progresses (fog grid, more lighting
+volumes), consistent with the "degrades with new content" observation; T-C0's growing live-image count is separate
+(GC never runs below the trigger) and harmless by itself. Cause (`ResolveOverlap`): equal address, equal
+`guest_size`, either side `Color3D` → `ExpandImage`, regardless of direction, so it never settles.
+
+**Fix V3 (`VolumeSliceViews`, toggle bit 58 = 288230376151711744 in `GOW3_TOGGLE_FILE` switches it off live):**
+a 2D render target with one layer per slice of a same-sized 3D image (1 level, compatible format) renders into the
+volume through a 2D array view; 3D images are already created `e2DArrayCompatible`. Needed with it:
+`FindImage` keeps the volume (its 1 layer < 64 was "picked up wrong" → freed), `Image::GetBarriers` and
+`Runtime::ClearImage` use layer 0 count 1 for volumes (Vulkan rule; depth slices cannot be selected), and a 2D array
+view of a volume carries attachment usage only (spec). Expected: in-game uploads ≈0 for these, the first 2D→3D
+switch still expands once. Report counts "volume views". Risks: a partial-slice clear now clears the whole volume
+(logged as a warning); a storage-bound 2D side is not covered (would still show as expands). Test T-V3: same route,
+`GOW3_TEXCACHE_STATS=1`, validation layer once for the view/barrier rules.
+
 ## Lead C: texture-cache churn (second)
 
 `BindResources` → `ResolveOverlap` → `FreeImage` → `SignalImpl::Protect` → `VirtualProtect` (~11% of stage B).
