@@ -87,11 +87,17 @@ Liverpool::~Liverpool() {
 }
 
 void Liverpool::ProcessCommands() {
-    if (num_commands && rasterizer) {
-        rasterizer->DrainDrawPipe(Vulkan::DrawPipe::ReasonCommands); // gow3: commands touch the caches
-    }
     // Process incoming commands with high priority
     while (num_commands) {
+        // gow3: commands touch the caches and record into the scheduler (readbacks: DownloadMemory
+        // copies and Finish()es), so the draw recording thread must be idle. Drained per command:
+        // draining only when the first check saw one let a command that arrived between the two
+        // checks run beside the recording thread, two threads in the scheduler (MediEvil: hang in
+        // WaitHostCopies, a draw split across command buffers crashing in vkCmdDrawIndexed).
+        // Same fix as the Bloodborne port's 0.3 (4d4d208).
+        if (rasterizer) {
+            rasterizer->DrainDrawPipe(Vulkan::DrawPipe::ReasonCommands);
+        }
         Common::UniqueFunction<void> callback{};
         {
             std::scoped_lock lk{submit_mutex};
