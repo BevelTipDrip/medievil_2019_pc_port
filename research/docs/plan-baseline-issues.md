@@ -355,6 +355,10 @@ than I recall seeing down there before." Build `7dcd6a0` lab (R1-R3), `stale_rea
 change when GPU-written data reaches the game (R2 / R3 behaviour-identical by test; the race fix changes thread
 order only). Open: what "broken" looks like; whether the torches were right earlier today. Bisect: same torch with
 `stale_readback=0`, then with R1 off.
+**Resolved 2026-10-18 (the user):** broken = "black transparent flickering boxes"; torches were right in earlier
+runs. V2a (stale off, so R1 off): torches correct. V2b (stale **on**, R1 off): torches correct. **Cause: R1**
+(`GOW3_STALE_SKIP_COPY_WAIT`), reverted in `6b86c75`. Stale readbacks cleared and kept. The box shadows remain:
+those are V1, pre-existing; the user can trigger them reliably (capture target).
 
 ## V1. Shadows sometimes drawn as a big box (the user, 2026-10-18)
 

@@ -323,6 +323,27 @@ copy scene color or reuse render-target memory under another format each frame �
 re-created every frame. Next: per-view A/B (flat vs oscillating view) with Lead-C counters (images freed / re-created
 by size and format, protection changes, per 5 s) and optionally a frame capture of the bad view.
 
+### R1 reverted; performance degrades with new content (2026-10-18 14:40-15:10)
+
+- **R1 caused V2** (torches as black flickering boxes; bisect in plan-baseline-issues.md): reverted `6b86c75`.
+  Things not to retry: skipping `ProcessDownloadImages`' host-copy wait, even in stale mode.
+- Run V2b (stale on, R1 off; [data/v2b-stale-on-r1-off.log](data/v2b-stale-on-r1-off.log)), same view ~975-990
+  draws/frame: before a level restart (windows 55-67) ~88 FPS, frame-time stddev ~3.5-3.9 ms, p99 ~16.2 ms,
+  **blocked on GPU completion ~41%**, stage B ~56%; after the restart (70-80) **~108.6 FPS, stddev ~0.1 ms, p99
+  ~9.4 ms**, blocked ~25%, stage B ~96%. Same draws, so not scene cost.
+- The user: "If I stay in the same area after restarting the level, performance stays the same, but if I progress a
+  bit, the frametimes start oscillating, and even returning to the earlier area shows the same oscillating."
+  **Accumulation from new content**, cleared by a level restart.
+- Suspect (Lead C, Bloodborne #4 "FPS fell the longer they played"): the image collector only runs above a GPU-memory
+  trigger (texture_cache.cpp:1420: `if (total_used_memory < trigger_gc_memory) return;`), high on a 24 GB card, so
+  images (stale variants, aliases) pile up; lookups that miss `find_image_cache` (invalidated by every registration,
+  `registry_generation`) walk all images overlapping a range (`ForEachImageInRegion` → `ResolveOverlap`), and alias
+  syncs / re-uploads are GPU copies with barriers (many small serialized GPU jobs: GPU ~50% busy yet the CPU waits).
+  Inferred; to measure.
+- Lab diagnostic **`GOW3_TEXCACHE_STATS=1`**: per 5 s, live registered images (+created −freed), slots, alias
+  groups, lookups fast / slow (avg candidates walked), overlaps, expands, uploads (count, MiB), alias syncs / copies,
+  GPU memory vs collector trigger / pressure. Test T-C0: start area 1-2 min, progress, return to the start area.
+
 ## Lead C: texture-cache churn (second)
 
 `BindResources` → `ResolveOverlap` → `FreeImage` → `SignalImpl::Protect` → `VirtualProtect` (~11% of stage B).
