@@ -186,6 +186,26 @@ what the game threads do next.
 Candidate R1 (if stale looks right): in stale mode, skip `ProcessDownloadImages`' `WaitHostCopies` (switch to
 restore it). If stale looks wrong: targeted waits instead (only for copies reading the protected pages, Bloodborne #1).
 
+### T-R23 result (2026-10-18 12:55-13:00, launched by Claude with the user's go; build `2097554`)
+
+First launch exited silently with code 5 at startup (S1 in plan-baseline-issues.md); the retry ran normally. The
+user: "the 1% lows seem much much better. When looking at an area that previously dropped to 50-60 fps 1% lows, it's
+closer to 80." Log [data/t-r23-retry.log](data/t-r23-retry.log), trace `research-data\wpr\graveyard-r23.etl`,
+per-thread `graveyard-r23-threads.txt`.
+
+Same Graveyard spot vs `wpr-graveyard` (R1 only), windows with worst frame < 200 ms:
+
+| Draws/frame | Before: windows / FPS median / FPS min / p99 median / p99 worst | After |
+|---|---|---|
+| 2,600-3,100 | 70 / 81.2 / 71.3 / 16.7 ms / 31.7 ms | 70 / **94.7** / **80.7** / **14.6 ms** / 29.6 ms |
+| 1,700-2,000 | 66 / 118.9 / 72.2 / 12.8 / 22.0 | 7 / 116.9 / 109.6 / 12.3 / 15.3 (too few windows) |
+
+**+17% median FPS, +13% lowest window, p99 -13% in the heavy view.** Trace: `find_locked` gone (main thread 81.9%
+game code, was 71.6% + 11.8%); `pool_take_locked` 0.3% on the busiest game thread (was 7.5%), gone from the
+pool-heavy thread (was 28.7%). Process 5.91 cores (was 4.79); stage A / B / recorder ~0.9 core each (were ~0.65):
+the GPU side is fed faster. Busiest game thread now **0.97 cores**: 62.7% game code, **13.9% NtDelayExecution +
+12.8% syscall entry + 1.6% KeYieldExecution** (~28%: short sleeps / yields; which runtime call: next).
+
 ## Lead C: texture-cache churn (second)
 
 `BindResources` → `ResolveOverlap` → `FreeImage` → `SignalImpl::Protect` → `VirtualProtect` (~11% of stage B).
