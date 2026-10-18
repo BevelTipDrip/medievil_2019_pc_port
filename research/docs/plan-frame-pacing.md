@@ -246,6 +246,32 @@ xperf also recovers thread names. Output `research-data\wpr\graveyard-stacks2-sp
   GhidraOrbis); if it is a GPU label / fence, measure when the runtime writes it vs. when the render thread starts
   waiting (candidate R4: publish earlier).
 
+### What the render thread waits for (2026-10-18, Ghidra 12.1.4 + GhidraOrbis, no launch)
+
+Headless decompile (`research/tools/ghidra/DecompileAt.java`; project `research-data\ghidra\proj`, `-noanalysis`,
+24 s; Ghidra's image base 0x1000000 = guest+0; output [data/ghidra-decompile-occlusion-wait.txt](data/ghidra-decompile-occlusion-wait.txt)):
+- `0x689ed0` (2 call sites to the spin loop, reached indirectly) reads a result object `p` in two modes:
+  state 1: 8 or 16 pairs of u64 at `p+0x38` (16 when `0x3bef580` returns 1, likely the PS4 Pro check: twice the
+  render backends), ready when **bit 63 is set in all**, result = Σ(end − begin): **a GPU occlusion query** (per-RB
+  ZPASS counters); state 2: u64 at `p+0x40` non-zero, scaled by a tick frequency: **a timestamp query**. If not
+  ready and the caller asks to wait, it calls `0x689c10`: the `Sleep(0)` loop (with the task-graph processing and a
+  timeout). Inferred: UE4's `RHIGetRenderQueryResult(…, bWait=true)` (no symbols; from the data layout).
+- The port answers occlusion queries **synthetically when stage A decodes the event**: `liverpool.cpp:1129-1138`
+  (`ZPASS_DONE` / `PixelPipeStatDump` → every RB counter written with the valid bit and an ever-growing count: always
+  "visible"). So the render thread waits until the frame that issued the queries has been submitted (RHI thread) and
+  **decoded by stage A**, which runs ~90% busy with a backlog.
+- MGS2 / Peace Walker busy-wait fixes (read only; `MGS4-SSAA-AspectRatio-Enabler` `pw/src/features/busy_wait.cpp`,
+  `MGS2-Lab` `src/fixes/busy_loop_fix.cpp`): PW's render thread spinning on `Sleep(0)` was fixed with an **event set by
+  the producer** (2 ms timeout, shutdown-safe), not a timer ("it is not waiting on a clock"); timers only for clock
+  waits (PW ticker, MGS2 frame wait: sleep min(remaining − 3 ms, 50 ms) on a high-resolution timer, spin the rest;
+  `timeBeginPeriod(1)` held). PW: 122% → ~24% of a core.
+- **Test R4a (no runtime change):** `r.NumBufferedOcclusionQueries` (in the binary, UE 4.21 default 1: "More frames
+  reduces the chance of stalling the CPU waiting for results, but increases out of date query artifacts") = 2 through
+  the override pak: UE4 reads queries two frames old, long decoded. Artifacts barely apply: the port reports
+  everything visible. New opt-in `GOW3_UE4_CVARS="name=value;…"` (scripts/ue4_override.py) for it and later cvar
+  experiments. Measure with `GOW3_WAIT_SITES=1` at the same spot vs run `wait-sites`. If the spin remains:
+  `r.AllowOcclusionQueries=0`, or an event-style wait in the runtime (signal when stage A writes the results).
+
 ## Lead C: texture-cache churn (second)
 
 `BindResources` → `ResolveOverlap` → `FreeImage` → `SignalImpl::Protect` → `VirtualProtect` (~11% of stage B).

@@ -1,0 +1,661 @@
+﻿INFO  Using log config file: jar:file:/C:/Users/Ty/MediEvil/tools/ghidra_12.1.4_PUBLIC/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml (LoggingInitialization)  
+INFO  Using log file: C:\Users\Ty\AppData\Roaming\ghidra\ghidra_12.1.4_PUBLIC\application.log (LoggingInitialization)  
+INFO  Loading user preferences: C:\Users\Ty\AppData\Roaming\ghidra\ghidra_12.1.4_PUBLIC\preferences (Preferences)  
+INFO  Loading previous preferences: C:\Users\Ty\AppData\Roaming\ghidra\ghidra_12.1.3_PUBLIC\preferences (Preferences)  
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (732 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Random Number Generator initialization complete: SHA1PRNG (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (2629 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 62 extension points (21 false positives) (ClassSearcher)  
+INFO  HEADLESS Script Paths:
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Features\SwiftDemangler\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Debug\Debugger-rmi-trace\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Debug\Debugger\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Features\VersionTracking\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Processors\DATA\ghidra_scripts
+    C:\Users\Ty\MediEvil\research-data\ghidra\scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Processors\PIC\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Features\MicrosoftCodeAnalyzer\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Processors\8051\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Features\PDB\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Features\SystemEmulation\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Features\Base\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Features\BytePatterns\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Processors\Atmel\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Extensions\GhidraOrbis\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Features\WildcardAssembler\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Features\PyGhidra\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Features\DecompilerDependent\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Features\BSim\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Features\GnuDemangler\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Features\Decompiler\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Features\FileFormats\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Processors\JVM\ghidra_scripts
+    C:\Users\Ty\MediEvil\tools\ghidra_12.1.4_PUBLIC\Ghidra\Features\FunctionID\ghidra_scripts (HeadlessAnalyzer)  
+INFO  HEADLESS: execution starts (HeadlessAnalyzer)  
+INFO  Creating project: C:\Users\Ty\MediEvil\research-data\ghidra\proj\medievil (HeadlessAnalyzer)  
+INFO  Creating project: C:\Users\Ty\MediEvil\research-data\ghidra\proj\medievil (DefaultProject)  
+INFO  REPORT: Processing input files:  (HeadlessAnalyzer)  
+INFO       project: C:\Users\Ty\MediEvil\research-data\ghidra\proj\medievil (HeadlessAnalyzer)  
+INFO  IMPORTING: file:///C:/Users/Ty/MediEvil/Game Files/CUSA11227/eboot.bin (HeadlessAnalyzer)  
+INFO  Using Loader: Orbis SELF (ProgramLoader)  
+INFO  Using Language/Compiler: x86:LE:64:default:gcc (ProgramLoader)  
+INFO  Using Library Search Path: [., C:\WINDOWS\SysWOW64, C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot\bin, C:\WINDOWS\Sun\Java\bin, C:\WINDOWS\system32, C:\WINDOWS, C:\Program Files\Oculus\Support\oculus-runtime, C:\Program Files\Eclipse Adoptium\jdk-17.0.8.7-hotspot\bin, C:\Windows\system32, C:\Windows, C:\Windows\System32\Wbem, C:\Windows\System32\WindowsPowerShell\v1.0\, C:\Windows\System32\OpenSSH\, C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\110\Tools\Binn\, C:\Program Files (x86)\Microsoft SQL Server\120\Tools\Binn\, C:\Program Files\Microsoft SQL Server\120\Tools\Binn\, C:\Program Files\Microsoft SQL Server\120\DTS\Binn\, C:\Program Files (x86)\Windows Kits\8.1\Windows Performance Toolkit\, C:\Program Files\dotnet\, C:\Program Files\Git\cmd, C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common, C:\WINDOWS\System32\Wbem, C:\WINDOWS\System32\WindowsPowerShell\v1.0\, C:\WINDOWS\System32\OpenSSH\, C:\Program Files\PuTTY\, C:\Program Files\NVIDIA Corporation\NVIDIA app\NvDLISR, ", C:\Python310, C:\Program Files\Python310\Scripts", C:\Hunspell, C:\Users\Ty\AppData\Local\Programs\Python\Python38\Scripts\, C:\Users\Ty\AppData\Local\Programs\Python\Python38\, C:\Users\Ty\.cargo\bin, C:\Program Files (x86)\Arm GNU Toolchain arm-none-eabi\12.2 mpacbti-bet1\bin, C:\Users\Ty\AppData\Local\Microsoft\WindowsApps, C:\Program Files\CMake\bin, C:\Users\Ty\AppData\Local\Programs\Microsoft VS Code\bin, C:\Program Files\Python310\Scripts, C:\Users\Ty\AppData\Roaming\Python\Python310\Scripts, C:\Users\Ty\.dotnet\tools, C:\Users\Ty\AppData\Local\Python\bin] (ProgramLoader)  
+INFO  OrbisElfHeader: Parsed Dynamic String Table. FileOffset: 0x59cd638, AddrOffset: 0x18, Size: 17503 (OrbisElfHeader)  
+INFO  OrbisElfHeader: Parsed Dynamic Symbol Table. FileOffset: 0x59d1a98, AddrOffset: 0x4478, Size: 22344, EntrySize: 24 (OrbisElfHeader)  
+INFO  OrbisElfHeader: Parsed Relocation Table (SCE_RELA). FileOffset: 0x59dc820, AddrOffset: 0xf200, Size: 13245144, EntrySize: 24 (OrbisElfHeader)  
+INFO  OrbisElfHeader: Parsed Relocation Table (SCE_JMPREL). FileOffset: 0x59d71e0, AddrOffset: 0x9bc0, Size: 22080, EntrySize: 24 (OrbisElfHeader)  
+INFO  OrbisElfHeader: Parsed Relocation Table (SCE_RELA). FileOffset: 0x59dc820, AddrOffset: 0xf200, Size: 13245144, EntrySize: 24 (OrbisElfHeader)  
+INFO  OrbisElfHeader: Parsed Relocation Table (SCE_JMPREL). FileOffset: 0x59d71e0, AddrOffset: 0x9bc0, Size: 22080, EntrySize: 24 (OrbisElfHeader)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 52 -> libSceGameCustomDataDialog.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 74 -> libSceAjm.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 21 -> libSceAppContent.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 75 -> libSceAudio3d.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 5 -> libSceAudioOut.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 73 -> libSceAvPlayer.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 63 -> libSceCommonDialog.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 12 -> libSceCompanionHttpd.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 77 -> libSceContentExport.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 68 -> libSceErrorDialog.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 10 -> libSceFios2.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 25 -> libSceGameLiveStreaming.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 0 -> libSceGnmDriver.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 57 -> libSceHttp.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 27 -> libSceIme.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 28 -> libSceImeDialog.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 51 -> libSceInvitationDialog.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 69 -> libSceJson2.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 35 -> libSceMouse.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 76 -> libSceMove.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 30 -> libSceMsgDialog.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 55 -> libSceNet.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 56 -> libSceNetCtl.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 4 -> libSceNgs2.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 50 -> libSceNpAuth.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 47 -> libSceNpCommerce.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 59 -> libSceNpCommon.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 60 -> libSceNpManager.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 66 -> libSceNpSns.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 61 -> libSceNpMatching2.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 64 -> libSceNpProfileDialog.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 62 -> libSceNpScore.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 48 -> libSceNpSnsFacebookDialog.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 45 -> libSceNpToolkit2.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 20 -> libSceNpTrophy.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 71 -> libSceNpTus.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 49 -> libSceNpUtility.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 46 -> libSceNpWebApi.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 1 -> libScePad.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 16 -> libScePlayGo.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 36 -> libSceRandom.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 53 -> libSceRtc.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 22 -> libSceSaveData.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 23 -> libSceSaveDataDialog.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 32 -> libSceScreenShot.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 34 -> libSceSharePlay.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 70 -> libSceSigninDialog.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 37 -> libSceSocialScreen.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 58 -> libSceSsl.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 7 -> libSceSysmodule.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 54 -> libSceSystemService.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 44 -> libSceSystemServicePlatformPrivacy.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 9 -> libSceUserService.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 8 -> libSceVideoOut.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 33 -> libSceVideoRecording.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 67 -> libSceVoiceQoS.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 65 -> libSceWebBrowserDialog.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 79 -> libc.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 29 -> libSceCoredump.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 11 -> libScePosix.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: Registered Import Library. ID: 78 -> libkernel.prx (OrbisElfExtension)  
+INFO  OrbisElfExtension: fixing eh_frame_hdr at address 05a64274 (OrbisElfExtension)  
+INFO  OrbisElfExtension: fixing eh_frame referenced from eh_frame_hdr at address 05092af0 (OrbisElfExtension)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06411780 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06411800 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064118f0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06411548 (External Location = byV+FWlAnB4#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064115b0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064115d0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06411690 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06411a00 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06411a50 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06411a18 (External Location = byV+FWlAnB4#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06411a90 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06411b00 (External Location = 9ByRMdo7ywg#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06411b70 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06411bc0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064159f0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06415a40 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06415b00 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06415b20 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06419b60 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06419bb8 (External Location = byV+FWlAnB4#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641a370 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641a390 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641a3f0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641a410 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641a430 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641a4e0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641a640 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641a660 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641a6d0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641a720 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641a7a0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641a820 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641a930 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641aa40 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641adc0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641ae50 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641ae70 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641b1a0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641b1c0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641b1e0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641b200 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641b360 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641b380 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641b3a0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641b3c0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641b3e0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641b490 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641b4b0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641b4d0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641b640 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641b660 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641e5c0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641e5e0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641e600 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641e810 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641e8e0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641e9b0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641ea60 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641eab0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641eb00 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641ec70 (External Location = byV+FWlAnB4#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641ed20 (External Location = 9ByRMdo7ywg#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641edb0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641ee50 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641eec0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f020 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f040 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f0f0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f2c0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f340 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f430 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f4a0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f4c0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f550 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f5a0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f770 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f790 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f7b0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f820 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f838 (External Location = byV+FWlAnB4#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f850 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f8a0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f8c0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f8e0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f900 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641f920 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641fac0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641fc40 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641fc60 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641fcd0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641fd20 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641fd70 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641fdc0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641fe10 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641fe60 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0641fe80 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06420040 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064200c0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06420140 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06420230 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064204e0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064206b0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064208c0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064209e0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06420c70 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06420e40 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06420e90 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06420f30 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06420f50 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06421030 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06421050 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06421070 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064210c0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064212a0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06421460 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06421620 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064217e0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064219c0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06421a10 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06421c30 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06421c90 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06421cb0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06421cd0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06421cf0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06421d70 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06421e60 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06421f90 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06421fb0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06422090 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06422250 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06422430 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06422450 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06422470 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06422490 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064224b0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064224d0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064224f0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06422510 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06422790 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064227b0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064227d0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064228b0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064229f0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06422ad0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06422c40 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06422e20 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06422f30 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06422f50 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06423130 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06423150 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06423170 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06423190 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064231e0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06424720 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06424740 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06424880 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064248a0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06424980 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06424a10 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06424a60 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06424a80 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06424b20 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06424b80 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06424bd0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06424cc0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06424ce0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06424d40 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06424d90 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06424e40 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06424eb0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06424f00 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06425010 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06425060 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064250b0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06425100 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064251d0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064251f0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06425210 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064252c0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064252e0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06425300 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064253b0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064253d0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06425490 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06425650 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06425670 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06425690 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064256b0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06425700 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06425720 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06425740 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064259c0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06425ba0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06425d70 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06425f10 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06425f60 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06425fb0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06426010 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06426060 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064260d0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06426200 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06426340 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06426360 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06426430 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06426f20 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06426fe0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06427000 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06427080 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064273e0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06427490 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06427540 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064275f0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064276a0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06427750 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06427770 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06427790 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064277b0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06427890 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064278b0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 064278d0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06427950 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06427990 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 06427bb0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d0e0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d130 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d190 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d1e0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d230 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d280 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d320 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d340 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d390 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d4a0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d4c0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d510 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d680 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d6e0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d740 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d7a0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d800 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d860 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d8c0 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d920 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d940 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+WARN  EXTERNAL Data ELF Relocation with offset: at 0644d530 (External Location = pZ9WXcClPO8#BP#5+0x10) (ElfRelocationHandler)  
+INFO  Additional info:
+Loading file:///C:/Users/Ty/MediEvil/Game Files/CUSA11227/eboot.bin?MD5=26ac9a3c47bf966f0de6ba58d97a003f...
+Skipping zero-length segment [.comment,null] at address OTHER:00000000
+Skipping zero-length segment [.libversion,null] at address OTHER:00000000
+------------------------------------------------
+
+Linking the External Programs of 'eboot.bin' to imported libraries...
+  [libSceGnmDriver.prx] -> not found in project
+  [libScePad.prx] -> not found in project
+  [libSceNet.prx] -> not found in project
+  [libSceNetCtl.prx] -> not found in project
+  [libSceNgs2.prx] -> not found in project
+  [libSceAudioOut.prx] -> not found in project
+  [libSceAjm.prx] -> not found in project
+  [libSceSysmodule.prx] -> not found in project
+  [libSceVideoOut.prx] -> not found in project
+  [libSceUserService.prx] -> not found in project
+  [libSceFios2.prx] -> not found in project
+  [libkernel.prx] -> not found in project
+  [libSceCompanionHttpd.prx] -> not found in project
+  [libSceSsl.prx] -> not found in project
+  [libSceHttp.prx] -> not found in project
+  [libScePlayGo.prx] -> not found in project
+  [libSceNpCommon.prx] -> not found in project
+  [libSceNpManager.prx] -> not found in project
+  [libSceNpMatching2.prx] -> not found in project
+  [libSceNpTrophy.prx] -> not found in project
+  [libSceAppContent.prx] -> not found in project
+  [libSceSaveData.prx] -> not found in project
+  [libSceSaveDataDialog.prx] -> not found in project
+  [libSceCommonDialog.prx] -> not found in project
+  [libSceGameLiveStreaming.prx] -> not found in project
+  [libSceSystemService.prx] -> not found in project
+  [libSceIme.prx] -> not found in project
+  [libSceImeDialog.prx] -> not found in project
+  [libSceMsgDialog.prx] -> not found in project
+  [libSceNpCommerce.prx] -> not found in project
+  [libSceScreenShot.prx] -> not found in project
+  [libSceVideoRecording.prx] -> not found in project
+  [libSceSharePlay.prx] -> not found in project
+  [libSceMouse.prx] -> not found in project
+  [libSceRandom.prx] -> not found in project
+  [libSceSocialScreen.prx] -> not found in project
+  [libSceRtc.prx] -> not found in project
+  [libSceNpToolkit2.prx] -> not found in project
+  [libSceNpWebApi.prx] -> not found in project
+  [libSceNpSnsFacebookDialog.prx] -> not found in project
+  [libSceNpUtility.prx] -> not found in project
+  [libSceNpAuth.prx] -> not found in project
+  [libSceInvitationDialog.prx] -> not found in project
+  [libSceGameCustomDataDialog.prx] -> not found in project
+  [libSceNpScoreRanking.prx] -> not found in project
+  [libSceNpProfileDialog.prx] -> not found in project
+  [libSceWebBrowserDialog.prx] -> not found in project
+  [libSceNpSns.prx] -> not found in project
+  [libSceVoiceQoS.prx] -> not found in project
+  [libSceErrorDialog.prx] -> not found in project
+  [libSceJson2.prx] -> not found in project
+  [libSceSigninDialog.prx] -> not found in project
+  [libSceNpTus.prx] -> not found in project
+  [libSceAvPlayer.prx] -> not found in project
+  [libSceAudio3d.prx] -> not found in project
+  [libSceMove.prx] -> not found in project
+  [libSceContentExport.prx] -> not found in project
+  [libc.prx] -> not found in project
+------------------------------------------------
+
+Resolving External Symbols of [/eboot.bin] - 920 unresolved symbols, no external libraries configured - skipping
+ (ProgramLoader)  
+INFO  IMPORTING: Loaded 0 additional files (HeadlessAnalyzer)  
+INFO  REPORT: Execute script: DecompileAt.java '689c10' '689ed0' '73ba40' '8e51d0'  (HeadlessAnalyzer)  
+INFO  SCRIPT: C:\Users\Ty\MediEvil\research-data\ghidra\scripts\DecompileAt.java (HeadlessAnalyzer)  
+INFO  DecompileAt.java> image base 01000000, language x86:LE:64:default (GhidraScript)  
+INFO  DecompileAt.java> 
+== guest+0x689c10 = 01689c10 FUN_01689c10 (GhidraScript)  
+INFO  DecompileAt.java>    referenced from 05aa7448 (INDIRECTION) (GhidraScript)  
+INFO  DecompileAt.java> 
+/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */
+
+undefined8 FUN_01689c10(long param_1,byte *param_2)
+
+{
+  long lVar1;
+  double dVar2;
+  undefined4 uVar3;
+  char cVar4;
+  int iVar5;
+  ulong uVar6;
+  ulong uVar7;
+  long *plVar8;
+  ulong uVar9;
+  ulong *puVar10;
+  double dVar11;
+  undefined1 auVar12 [16];
+  undefined1 auVar13 [16];
+  
+  uVar6 = func_0x04bf0680();
+  uVar7 = func_0x04bf0680();
+  uVar3 = uRam0000000006600654;
+  if (*param_2 == 0) {
+    auVar13._8_8_ = 0;
+    auVar13._0_8_ = uVar7;
+    auVar13 = vpunpckldq_avx(auVar13,_DAT_04c59eb0);
+    auVar13 = vsubpd_avx(auVar13,_DAT_04c59ec0);
+    dVar2 = dRam0000000006605c18 * (auVar13._0_8_ + auVar13._8_8_);
+    do {
+      func_0x018e51d0(0);
+      cVar4 = func_0x0173ba40();
+      if (cVar4 != '\0') {
+        plVar8 = (long *)func_0x016d0970();
+        (**(code **)(*plVar8 + 0x38))(plVar8,uVar3);
+      }
+      if (*(int *)(param_1 + 0x58) == 2) {
+        *param_2 = **(long **)(param_1 + 0x40) != 0;
+LAB_01689d1a:
+        dVar11 = _DAT_04c5a468;
+      }
+      else {
+        lVar1 = *(long *)(param_1 + 0x38);
+        iVar5 = func_0x04bef580();
+        dVar11 = _DAT_04c5a460;
+        puVar10 = (ulong *)(lVar1 + 8);
+        uVar9 = 0;
+        uVar7 = 0x8000000000000000;
+        do {
+          uVar9 = uVar9 + 1;
+          uVar7 = uVar7 & puVar10[-1] & *puVar10;
+          puVar10 = puVar10 + 2;
+        } while (uVar9 < (ulong)(iVar5 == 1) * 8 + 8);
+        iVar5 = *(int *)(param_1 + 0x58);
+        *param_2 = (byte)(uVar7 >> 0x3f);
+        if (iVar5 == 2) goto LAB_01689d1a;
+      }
+      uVar7 = func_0x04bf0680();
+      auVar12._8_8_ = 0;
+      auVar12._0_8_ = uVar7;
+      auVar13 = vpunpckldq_avx(auVar12,_DAT_04c59eb0);
+      auVar13 = vsubpd_avx(auVar13,_DAT_04c59ec0);
+      if (dVar11 < (auVar13._0_8_ + auVar13._8_8_) * dRam0000000006605c18 - dVar2) {
+        return 0;
+      }
+    } while (*param_2 == 0);
+  }
+  uVar7 = func_0x04bf0680();
+  iRam0000000006b3c4a8 = iRam0000000006b3c4a8 + 1;
+  iRam0000000006b3c49c = (iRam0000000006b3c49c - (int)(uVar6 >> 10)) + (int)(uVar7 >> 10);
+  return 0x6b3c401;
+}
+
+ (GhidraScript)  
+INFO  DecompileAt.java> 
+== guest+0x689ed0 = 01689ed0 FUN_01689ed0 (GhidraScript)  
+INFO  DecompileAt.java>    referenced from 05aa7458 (INDIRECTION) (GhidraScript)  
+INFO  DecompileAt.java> 
+/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */
+
+ulong FUN_01689ed0(long param_1,long param_2,undefined8 *param_3,char param_4)
+
+{
+  undefined8 uVar1;
+  char cVar2;
+  byte bVar3;
+  int iVar4;
+  ulong uVar5;
+  long lVar6;
+  ulong uVar7;
+  ulong *puVar8;
+  long *plVar9;
+  byte bVar10;
+  byte bStack_39;
+  long lStack_38;
+  
+  plVar9 = _DAT_0644da90;
+  lStack_38 = *_DAT_0644da90;
+  bStack_39 = 1;
+  bVar3 = *(byte *)(param_2 + 0x50);
+  if (((bVar3 & 2) == 0) ||
+     ((cRam0000000006b2f7ca == '\0' && (uRam0000000006805698 == *(uint *)(param_2 + 0x54))))) {
+LAB_01689f05:
+    uVar5 = 0;
+    if (*plVar9 != lStack_38) goto LAB_0168a0e0;
+  }
+  else {
+    bVar10 = 1;
+    if ((bVar3 & 1) == 0) {
+      if (*(int *)(param_2 + 0x58) == 2) {
+        bStack_39 = **(long **)(param_2 + 0x40) != 0;
+        if ((!(bool)bStack_39) && (param_4 != '\0')) {
+          param_1 = param_2;
+          cVar2 = FUN_01689c10(param_2,&bStack_39);
+          if (cVar2 == '\0') goto LAB_01689f05;
+          bVar3 = *(byte *)(param_2 + 0x50);
+        }
+        bVar10 = bStack_39;
+        *(byte *)(param_2 + 0x50) = bVar3 & 0xfe | bStack_39;
+        if (bStack_39 == 0) {
+          bVar10 = 0;
+          *(undefined8 *)(param_2 + 0x48) = 0;
+        }
+        else {
+          uVar5 = **(ulong **)(param_2 + 0x40);
+          uVar7 = func_0x04bef5d0();
+          *(ulong *)(param_2 + 0x48) = uVar5 / (uVar7 / 1000000);
+        }
+      }
+      else if (*(int *)(param_2 + 0x58) == 1) {
+        lVar6 = *(long *)(param_2 + 0x38);
+        iVar4 = func_0x04bef580();
+        plVar9 = _DAT_0644da90;
+        uVar5 = 0x8000000000000000;
+        puVar8 = (ulong *)(lVar6 + 8);
+        uVar7 = 0;
+        do {
+          uVar7 = uVar7 + 1;
+          uVar5 = uVar5 & puVar8[-1] & *puVar8;
+          puVar8 = puVar8 + 2;
+        } while (uVar7 < (ulong)(iVar4 == 1) * 8 + 8);
+        bStack_39 = (byte)(uVar5 >> 0x3f);
+        if (((-1 < (long)uVar5) && (param_4 != '\0')) &&
+           (param_1 = param_2, cVar2 = FUN_01689c10(param_2,&bStack_39), cVar2 == '\0'))
+        goto LAB_01689f05;
+        bVar10 = bStack_39;
+        *(byte *)(param_2 + 0x50) = *(byte *)(param_2 + 0x50) & 0xfe | bStack_39;
+        if (bStack_39 == 0) {
+          lVar6 = 0;
+        }
+        else {
+          lVar6 = *(long *)(param_2 + 0x38);
+          iVar4 = func_0x04bef580();
+          plVar9 = (long *)(lVar6 + 8);
+          uVar5 = 0;
+          lVar6 = 0;
+          do {
+            uVar5 = uVar5 + 1;
+            lVar6 = (lVar6 + *plVar9) - plVar9[-1];
+            plVar9 = plVar9 + 2;
+          } while (uVar5 < (ulong)(iVar4 == 1) * 8 + 8);
+        }
+        plVar9 = _DAT_0644da90;
+        *(long *)(param_2 + 0x48) = lVar6;
+      }
+    }
+    uVar1 = *(undefined8 *)(param_2 + 0x48);
+    *param_3 = uVar1;
+    uVar5 = CONCAT71((int7)((ulong)uVar1 >> 8),bVar10 != 0);
+    if (*plVar9 != lStack_38) {
+LAB_0168a0e0:
+      func_0x04bf05b0();
+      uVar5 = 0;
+      if (*(undefined8 **)(param_1 + 0x140) != (undefined8 *)0x0) {
+        **(undefined8 **)(param_1 + 0x140) = 1;
+        uVar5 = (ulong)uRam0000000006805698;
+        *(uint *)(param_1 + 0x148) = uRam0000000006805698;
+      }
+      return uVar5;
+    }
+  }
+  return uVar5;
+}
+
+ (GhidraScript)  
+INFO  DecompileAt.java> 
+== guest+0x73ba40 = 0173ba40 FUN_0173ba40 (GhidraScript)  
+INFO  DecompileAt.java>    referenced from 05aac6d8 (INDIRECTION) (GhidraScript)  
+INFO  DecompileAt.java>    referenced from 01689c89 (UNCONDITIONAL_CALL) in FUN_01689c10 (GhidraScript)  
+INFO  DecompileAt.java> 
+bool FUN_0173ba40(void)
+
+{
+  int iVar1;
+  bool bVar2;
+  
+  if (lRam000000000681c768 == 0) {
+    bVar2 = false;
+  }
+  else {
+    iVar1 = func_0x04bf0690();
+    bVar2 = iVar1 == *(int *)(lRam000000000681c768 + 0x44);
+  }
+  return bVar2;
+}
+
+ (GhidraScript)  
+INFO  DecompileAt.java> 
+== guest+0x8e51d0 = 018e51d0 FUN_018e51d0 (GhidraScript)  
+INFO  DecompileAt.java>    referenced from 05ab5698 (INDIRECTION) (GhidraScript)  
+INFO  DecompileAt.java>    referenced from 01689c84 (UNCONDITIONAL_CALL) in FUN_01689c10 (GhidraScript)  
+INFO  DecompileAt.java> 
+/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */
+
+void FUN_018e51d0(float param_1)
+
+{
+  (*_DAT_0644fe10)((long)((double)param_1 * _DAT_04c88560));
+  return;
+}
+
+ (GhidraScript)  
+INFO  /eboot.bin: file created (Ty) (LocalFileSystem)  
+INFO  REPORT: Save succeeded for: /eboot.bin (medievil:/eboot.bin) (HeadlessAnalyzer)  
+INFO  REPORT: Import succeeded (HeadlessAnalyzer)  
