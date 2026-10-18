@@ -374,6 +374,28 @@ hitches (T-M1), probably because spawning them allocates memory. Plan: RenderDoc
 find the draw that writes the box, inspect its bound textures and blend state, then the port's handling of that
 texture (texture cache: block / format views, depth-as-texture, readbacks).
 
+**RenderDoc captures (2026-10-18 19:08-19:11, launched by Claude with the user's go; `run.py` `GOW3_RENDERDOC`;
+`research-dataenderdoc1-shadow_frame22745.rdc`, `_frame24679.rdc`; scripts `research/tools/renderdoc/`).** The user
+circled the broken areas in frame 24679 (right of Dan along the path; lower left).
+- Spot / per-object shadow maps (512² / 1024² D16) are cleared and rendered each frame with real depth (e.g. min
+  0.27-0.47 to 1.0); UE4 projects each with a 36-index box (`min` blend into R / A of the shadow mask, R8G8B8A8 4K at
+  0x2036000000), as designed.
+- Pixel history, inside the right box (4K 3360,1512): projection eid 6479 writes **R = 0.000** (fully shadowed); just
+  above it (3360,1308) the same draw writes 1.000. Lower left (720,1872): eid 6636 writes 0.565.
+- eid 6479 reads the 512² map 0x2019f00000, rendered at eid 4715 (Dan's sword: 3492 indices, fine) and **eid 4727
+  (2346 indices): a solid streaked slab** covering much of the map at depth down to 0.0377.
+- eid 4727's vertices (raw, guest buffer 0x20598E8000, position-only stream) are **not Dan**: a flat object ~3.2 m x
+  3.4 m x 0.2 m with box corners (a fence / wall section). **eid 4727 has no pixel shader** (`ResourceId::0`). A
+  masked (alpha-tested) card drawn depth-only without its discarding pixel shader casts a solid shadow: everything
+  behind it from the light goes black inside the projection box (which follows Dan's bounds, hence it moves and
+  jitters with his idle animation).
+- The port drops the fragment stage only when the PS program address is 0 (`RefreshGraphicsStages`). Either the
+  game draws it without a PS (then PS4 would show the same) or the port used the wrong register state for this draw.
+  Suspect: the draw-preparation workers (pipelines prepared from register snapshots). Live test: toggle bits 8192
+  (prepared draws) / 4096 (prepared resources) at the torch; the box disappearing confirms it.
+- Separately, the 1024² cached map 0x2076200000 (not re-rendered this frame) has solid zero-depth strips along its
+  right and bottom edges: the lower-left partial darkening; check after the first fix.
+
 ## Tests (one change per launch, the user's go each time)
 
 | Test | Change from run 1 | Answers |
