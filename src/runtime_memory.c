@@ -692,7 +692,9 @@ static ABI int32_t direct_available(int64_t low, int64_t high, uint64_t alignmen
 /* Memory pools: Expand adds direct memory to the pool, Reserve takes virtual space, Commit maps
  * free pool pages into it (possibly as several physical runs), Decommit gives them back. */
 #define POOL_CHUNKS 64
-static struct { uint64_t phys, pages; unsigned char *used; } pool_chunks[POOL_CHUNKS];
+/* free_hint: every page below it is used. Commits searched from page 0 each time, under the
+ * memory write lock (MediEvil: up to 28.7% of a game thread in that scan). */
+static struct { uint64_t phys, pages, free_hint; unsigned char *used; } pool_chunks[POOL_CHUNKS];
 static ABI int32_t pool_expand(int64_t low, int64_t high, uint64_t size, uint64_t alignment, int64_t *out) {
     if (!out || !size || size%(64*1024)) return INVALID;
     int32_t r=direct_allocate(low,high,size,alignment ? alignment : 64*1024,0,out);
@@ -701,7 +703,8 @@ static ABI int32_t pool_expand(int64_t low, int64_t high, uint64_t size, uint64_
     int slot=-1;
     for (int i=0;i<POOL_CHUNKS;++i) if (!pool_chunks[i].pages) { slot=i; break; }
     unsigned char *used=slot>=0 ? calloc(size/PAGE,1) : NULL;
-    if (used) pool_chunks[slot].phys=(uint64_t)*out, pool_chunks[slot].pages=size/PAGE, pool_chunks[slot].used=used;
+    if (used) pool_chunks[slot].phys=(uint64_t)*out, pool_chunks[slot].pages=size/PAGE, pool_chunks[slot].free_hint=0,
+              pool_chunks[slot].used=used;
     write_unlock();
     if (!used) return NO_MEMORY;
     printf("Runtime: memory pool expanded by %" PRIu64 " bytes at 0x%" PRIx64 "\n",size,(uint64_t)*out);
@@ -712,13 +715,17 @@ static ABI int32_t pool_reserve(void *address, uint64_t size, uint64_t alignment
     *out=address;
     return reserve_range(out,size,flags,alignment ? alignment : 64*1024);
 }
-/* Longest free run (at most want pages) in the pool; marks it used. */
+/* The first free run (at most want pages) in the pool; marks it used. */
 static int pool_take_locked(uint64_t want, uint64_t *phys, uint64_t *pages) {
-    for (int c=0;c<POOL_CHUNKS;++c) for (uint64_t p=0;p<pool_chunks[c].pages;) {
-        if (pool_chunks[c].used[p]) { ++p; continue; }
+    for (int c=0;c<POOL_CHUNKS;++c) {
+        uint64_t p=pool_chunks[c].free_hint;
+        while (p<pool_chunks[c].pages && pool_chunks[c].used[p]) ++p;
+        pool_chunks[c].free_hint=p;
+        if (p>=pool_chunks[c].pages) continue;
         uint64_t n=0;
         while (p+n<pool_chunks[c].pages && n<want && !pool_chunks[c].used[p+n]) ++n;
         memset(pool_chunks[c].used+p,1,n);
+        pool_chunks[c].free_hint=p+n;
         *phys=pool_chunks[c].phys+p*PAGE; *pages=n;
         return 1;
     }
@@ -727,7 +734,9 @@ static int pool_take_locked(uint64_t want, uint64_t *phys, uint64_t *pages) {
 static void pool_give_locked(uint64_t phys, uint64_t size) {
     for (int c=0;c<POOL_CHUNKS;++c)
         if (pool_chunks[c].pages && phys>=pool_chunks[c].phys && phys<pool_chunks[c].phys+pool_chunks[c].pages*PAGE) {
-            memset(pool_chunks[c].used+(phys-pool_chunks[c].phys)/PAGE,0,size/PAGE);
+            const uint64_t first=(phys-pool_chunks[c].phys)/PAGE;
+            memset(pool_chunks[c].used+first,0,size/PAGE);
+            if (first<pool_chunks[c].free_hint) pool_chunks[c].free_hint=first;
             return;
         }
 }
