@@ -219,7 +219,15 @@ void Scheduler::WaitHostCopies() {
         Gow3Stats::WaitTimer timer{Gow3Stats::host_copies_wait_ns};
         Gow3Stats::host_copy_waits.fetch_add(1, std::memory_order_relaxed);
         KickRecording(true);
-        while (host_copies_done.load(std::memory_order_acquire) < host_copies_issued) {
+        for (u32 spins = 1; host_copies_done.load(std::memory_order_acquire) < host_copies_issued;
+             ++spins) {
+            // Copies recorded after the kick (stage B, or a seq taken before the kick but pushed
+            // after it) sit in a chunk nobody else hands over: stage B only kicks at 32 KiB and
+            // then sleeps, and this thread waited for them forever (frozen frame, MediEvil).
+            // Kicking takes chunk_lock like Record(), and an empty chunk returns at once.
+            if (!(spins & 255)) {
+                KickRecording(true);
+            }
             std::this_thread::yield();
         }
     }
