@@ -469,6 +469,31 @@ timestamps**, so whether windows 140-141 fall inside the trace is unknown. Tooli
 `<tag>.times.txt` (start / stop). Next: capture during an episode with both timelines; compare stage B's functions
 and off-CPU waits (a CSwitch-based profile would show the latter) inside vs outside it.
 
+### Episode captured: the kernel trims the guest memory section (2026-10-18 17:25-17:37, launched by Claude with the user's go; build `5cd037e`; log `data/t-episode.log` + `.times`)
+
+Hotkey captures (`wpr-hotkey.ps1`, F9, 30 s, profile CPU): `heavy-episode-1.etl` from 17:27:59.7 (window ending
+17:28:03: 88 FPS, stddev 7.8 ms, p99 46 ms) and `heavy-episode-2.etl` from 17:29:25.0 (window ending 17:29:28: 134
+FPS, p99 23 ms); both followed by steady 200+ FPS. An episode at 17:27:38-43 preceded both captures: not WPR.
+**The user: both times the frame rate tanked, one of the broken transparent effects (V1) covered a good part of the
+screen; it disappears after a few seconds and could not be brought back.**
+
+Capture 1, seconds 0-2 (episode) vs 3+ (scratch `procs.py`, `sysfn.py`, `waits.py` over the CSwitch / ReadyThread
+records):
+- The game's threads do about a third of their normal work; the game has half its usual samples (off CPU).
+- The `System` process uses one core (0.07 after): one `ExpWorkerThread` (tid 45048), **78% `MiViewMayContainPage`,
+  6% `MiTrimSection`**: the memory manager trimming a section. RAM 64 GB, 41 GB free: not memory pressure.
+- **`RenderThread 1` blocked on `WrPushLock` 200-300 ms per second, readied by that System thread** (~2000
+  wake-ups/s); from second 3: ~0. The GPU threads then wait for work (`WrAlertByThreadId` 410-790 ms/s vs 130-320).
+- On CPU, the game's threads spend <1% in memory-manager code: they wait, they do not work.
+
+The guest memory is one pagefile-backed section (`runtime_memory.c` `pool`), mapped twice: `backing_base` (the whole
+section) and one view per guest region. `carve_host` unmaps **whole** views overlapping a newly mapped / unmapped
+range and maps the parts outside it again; unmapping a view makes the kernel trim its pages, checking each other
+view of the section per page (`MiViewMayContainPage`). Suspect: the effect's guest map / unmap inside a large region.
+**Diagnostic H1** (`GOW3_HOST_MAP_STATS=1`, lab): host map / unmap / protect calls, MiB, time and max per 5 s,
+views carve_host unmapped and re-mapped, region count; any call over 1 ms printed with its size. Test T-H1: trigger
+the effect where the user knows it appears, `GOW3_HOST_MAP_STATS=1`.
+
 ## Lead C: texture-cache churn (second)
 
 `BindResources` → `ResolveOverlap` → `FreeImage` → `SignalImpl::Protect` → `VirtualProtect` (~11% of stage B).
