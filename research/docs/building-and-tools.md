@@ -97,5 +97,10 @@ MGS2-Lab tools worth copying the *pattern* of (read only, `C:\Users\Ty\MGS2-Lab\
    empty log and no `out/` (two wasted builds, 2026-10-18). Use `research/tools/build-clang64.sh`, and check
    `out/build.log` for `build.sh exit: 0`, not the wrapper's exit code.
 2. Plain `python` is 3.8: use `py -3.14`.
+5. **Never rewrite docs with Windows PowerShell `Get-Content -Raw | Set-Content`**: 5.1 reads UTF-8 without BOM as
+   ANSI and writes a BOM, so `→` became `â†’` in two docs (2026-10-18, restored from git). Edit with the Edit tool or
+   Python (`read_text/write_text(encoding='utf-8')`).
+4. **PowerShell: `git commit -F - @'...'@` does not pipe the message**: the here-string becomes extra arguments
+   (pathspecs) and nothing is committed. Write the message to a file and use `git commit -F <file> -- <paths>`.
 3. **In bash, `exit` inside a `{ ... } > log` group ends the whole script**, not the group: `build-pdb.sh --install`
    silently skipped its copy step (2026-10-18). Logged groups in `research/tools/*.sh` use `( ... )` subshells.

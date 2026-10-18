@@ -30,7 +30,10 @@ Entry point for every session. **Keep it current:** when a stage lands, update
 - **Anything for upstream goes through [pr-checklist.md](pr-checklist.md)** and its `pr-<topic>.md` record: one
   change per PR, clean coherent code, proof of what it does, how, and how it fits. The user reads it before any push.
 
-Open: commit policy on `lab` (commit freely, or ask each time?) and a private remote for `lab` are not decided yet.
+- **Commit freely on `lab`** (the user, 2026-10-18): one commit per change, message says why, ends with the
+  attribution line. `lab` stays local. Pushing anything still needs the user's go.
+
+Open: a private remote for `lab` is not decided yet.
 
 ## Current state (2026-10-18)
 

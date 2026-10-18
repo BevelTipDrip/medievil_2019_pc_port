@@ -1,6 +1,6 @@
 # PR: Windows: write a minidump when the runtime reports a fatal fault
 
-Status: draft (lab change L1, uncommitted on `lab`; not proposed). Branch: (later) `feat/crash-dump` from `main`.
+Status: draft (lab change L1, `b01661e` on `lab`; not proposed). Branch: (later) `feat/crash-dump` from `main`.
 Plan: [plan-baseline-issues.md](plan-baseline-issues.md) C1. Checklist: [pr-checklist.md](pr-checklist.md).
 
 ## What
