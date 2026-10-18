@@ -421,6 +421,17 @@ for V3: volumetric fog correctness (the user: "I think it's working", wants chec
 a foggy spot with screenshots, and one validation-layer run. Remaining ~450 MiB / 5 s of ordinary refresh uploads on
 the map screen: not investigated.
 
+### Fog A/B and heavy-view trace (2026-10-18 16:00-16:20, launched by Claude with the user's go; build `1f18217`; log `data/t-v3-fog-heavy.log`)
+
+Live A/B with toggle bit 58, twice, at a foggy spot. **The user: "I see no difference, fog is definitely present with
+the fix on"**: V3 does not break volumetric fog. With the fix off the old path returns fully (windows 127-134:
+~10,500 expands, ~33 GB uploads per 5 s, ~105 FPS; FPS "only halves"). The frame-time oscillation of earlier runs did
+**not** return with the fix off (stddev 0.1-0.7 ms), so the uploads alone do not cause it; it needed more on top in
+those runs (R1 build, growing live images, position): watch for it. Validation-layer run still to do.
+
+Heavy view with the fix on (windows 250-254): 114 FPS, ~2800 draws/frame, GPU ticks 0.5-0.8%, uploads 5-9 MiB.
+WPR CPU trace `research-data\wpr\heavy-v3.etl` (906 MB, 15 s, the user ran it facing the heavy direction).
+
 ## Lead C: texture-cache churn (second)
 
 `BindResources` → `ResolveOverlap` → `FreeImage` → `SignalImpl::Protect` → `VirtualProtect` (~11% of stage B).
