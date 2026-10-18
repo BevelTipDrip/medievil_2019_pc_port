@@ -1,6 +1,10 @@
 # Starts the game through run.py with research switches, for test runs the user launches (one change
 # per launch). Backs up medievil.ini next to it first and prints exactly what this launch changes.
-# The log is user\last_run.log as usual; -Tag copies it to research\docs\data\<tag>.log afterwards.
+# run.py only prints (the launcher is what writes user\last_run.log): the output is shown here and
+# written to research\docs\data\<tag>.log by tee_run.py. Launcher-only settings (Two-stage GPU
+# pipeline, GPU readbacks, patch selection) are not applied: their defaults are, or pass them by -Env.
+# The user's PowerShell blocks scripts: run it as
+#   powershell -ExecutionPolicy Bypass -Command "& '<this file>' -Env @{NAME='value'} -Tag name"
 #   -Validation   Khronos validation layer (GOW3_VK_VALIDATION=1): names bad handles; much slower
 #   -Samples      GPU-thread sampling profiler (GOW3_SAMPLE_FILE) into research-data\samples\<tag>
 #   -TextureHelper  parallel texture binding (GOW3_TEXTURE_HELPER=1)
@@ -30,12 +34,7 @@ Get-Content $ini | Where-Object { $_ -match '^(render_resolution|ue4_quality|eng
     ForEach-Object { Write-Host "  $_" }
 foreach ($k in $set.Keys) { Write-Host "  env $k=$($set[$k])"; Set-Item "env:$k" $set[$k] }
 
+$log = Join-Path $Port "research\docs\data\$Tag.log"
 Push-Location $Port
-try { py -3.14 run.py } finally { Pop-Location }
-
-$log = Join-Path $Port 'user\last_run.log'
-if (Test-Path $log) {
-    $saved = Join-Path $Port "research\docs\data\$Tag.log"
-    Copy-Item $log $saved
-    Write-Host "Log saved: $saved"
-}
+try { py -3.14 (Join-Path $PSScriptRoot 'tee_run.py') $log py -3.14 run.py } finally { Pop-Location }
+Write-Host "Log saved: $log"

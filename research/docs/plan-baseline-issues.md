@@ -78,6 +78,20 @@ boot'`, **no** `Native output: r.SetRes`, **no** `second open refused`; the pict
 and the debug menu fully navigable with the DualSense. If `second open refused` appears, the query came after the
 main open: next attempt is an alias handle for a second open.
 
+### T-I1b result (2026-10-18 ~03:20-03:25): not verified yet
+
+- The user: "that fixed the menu-bug for 4k output, it can be navigated now."
+- But the only log is from **03:20**: a **launcher** run at `4K_native` (`Patches: ... 11 writes from ['Native 4K
+  framebuffer pool (512 MB)']`, `Native output: r.SetRes 3840x2160 (live resolution change)`): the **old** path, not
+  the 4K boot. Saved as [data/launcher-4k-native-live-setres-2026-10-18-0320.log](data/launcher-4k-native-live-setres-2026-10-18-0320.log).
+- The scripted run started at 03:23 (`medievil.ini.bak-i1-boot4k`) left no log: **`run-game.ps1` bug**: run.py only
+  prints, the launcher is what writes `last_run.log`, so the script copied the stale 03:20 log. Fixed: the script now
+  runs run.py through `research/tools/tee_run.py`, which writes the output to `data\<tag>.log` (UTF-8) as the
+  launcher does (tested with a dummy command: output, UTF-8 and exit code pass through).
+- Open: which run did the user test the menus in? If the 03:20 launcher run (live r.SetRes) navigated fully, H1a is
+  in doubt (run 1's menus failed with the same path, but run 1 was `ultra`, this was `console`). **Re-run T-I1b with
+  the fixed script, then A/B against the launcher's live path at the same quality.**
+
 If H1a holds, fix directions (to research): (a) after `r.SetRes`, do what UE4 does after a normal resolution change so
 UMG navigation uses the new geometry; (b) start the game at 3840x2160 so no live change is needed (the comment at
 `src/runtime_extra.c:555-560` says the base PS4 renderer sizes its buffers from the display size at start: look at
