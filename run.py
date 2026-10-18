@@ -225,6 +225,11 @@ def main():
                    '--patches', str(out / 'patches.bin'), '--app0', str(game),
                    '--user', str(user_dir),
                    '--timeout', env.get('GOW3_TIMEOUT', '0'), *args]
+        if capture := env.get('GOW3_RENDERDOC'):
+            # Diagnostics: run under RenderDoc (its capture key, F12 / Print Screen, saves a frame
+            # to <capture>_frameN.rdc); -w waits for the game, so the log still follows it.
+            renderdoc = env.get('GOW3_RENDERDOC_CMD', r'C:\Program Files\RenderDoc\renderdoccmd.exe')
+            command = [renderdoc, 'capture', '-w', '-c', capture, *command]
         # No stdin: an inherited pipe (shells such as Git Bash) cost the game its console output.
         return subprocess.run(command, stdin=subprocess.DEVNULL, creationflags=no_console()).returncode
     finally:
