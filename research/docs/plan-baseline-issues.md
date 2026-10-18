@@ -267,6 +267,14 @@ Test T-race: the Graveyard idle scenario with the two-stage pipeline off (`GOW3_
 freeze nor crash → H-race very likely; then find the path where stage B records during stage A's submit. A crash or
 freeze anyway → the race is elsewhere (recorder vs. presenter?), next is the validation layer.
 
+### T-race result (2026-10-18 04:01-04:10, launched by Claude with the user's go)
+
+`GOW3_DRAW_PIPE=0` + 4K boot, build `5247265`, Graveyard idle (the user). Log
+[data/t-race-drawpipe-off.log](data/t-race-drawpipe-off.log): no `Draw pipe:` lines (pipeline really off), **no fault,
+no freeze in ~9 minutes**, clean exit (code 0); FPS per 5 s window min 55.7 / median 85.1 / max 239.7 (106 windows).
+The two runs with the pipeline on failed at ~2 min (H1) and ~4 min (C1) in the same scenario. One run: moderate
+evidence for H-race, not proof. Next: find the path where stage B records during stage A's submit.
+
 ## C1 next: catch it when it happens
 
 The crash is rare and timing-dependent, so reproduction runs are unreliable. Better: make every crash leave a full
