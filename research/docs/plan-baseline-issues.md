@@ -347,6 +347,15 @@ giving up after an error). Log [data/t-r23.log](data/t-r23.log). The immediate r
 normally. Not seen in the ~12 launches before R2 / R3: **watch every launch**; if it repeats, start with R2 and R3
 reverted one at a time.
 
+## V2. Fire / torches broken, more box shadows (the user, 2026-10-18, run `perfdiag-heavy`)
+
+"I loaded into the starting area … It looks like fire/torches were broken, and I saw more of those broken 'shadows'
+than I recall seeing down there before." Build `7dcd6a0` lab (R1-R3), `stale_readback=1`,
+`GOW3_STALE_SKIP_COPY_WAIT=1`, 4K boot, console, `GOW3_PERF_DIAG=1`. Possible regression: stale readbacks and R1
+change when GPU-written data reaches the game (R2 / R3 behaviour-identical by test; the race fix changes thread
+order only). Open: what "broken" looks like; whether the torches were right earlier today. Bisect: same torch with
+`stale_readback=0`, then with R1 off.
+
 ## V1. Shadows sometimes drawn as a big box (the user, 2026-10-18)
 
 "Some shadows occasionally drawn wrong (like they're just a big box instead of the shape of the actual shadow)",

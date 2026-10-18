@@ -311,6 +311,18 @@ Next: **F1** Frames queued = 2 (existing setting, `frames_queued` / `GOW3_FRAMES
 **R5** Bloodborne's readback queue (plan-gpu-threading.md #2: wait only for the GPU work that wrote the range, on its
 own queue, instead of `Finish()`).
 
+**F1 (Frames queued 2): declined by the user (2026-10-18):** "buffering extra frames isn't going to get us what we
+need here, the issues are too systemic … a nice way to get some extra stability when all that's left is the
+occasional stutter or frame drop."
+
+**The user, same run (starting area):** "Looking at certain areas would give me a flat frame graph … other areas
+caused an unsteady oscillating frame rate. So certain effects are likely one of the major contributors, something in
+the CPU to GPU translator is probably taking forever to handle these. I imagine there is A LOT of repeated work."
+Fits Lead C (stage B ~12% in `ResolveOverlap` → `FreeImage` → `VirtualProtect`): fire / heat haze / translucency
+copy scene color or reuse render-target memory under another format each frame → overlapping images freed and
+re-created every frame. Next: per-view A/B (flat vs oscillating view) with Lead-C counters (images freed / re-created
+by size and format, protection changes, per 5 s) and optionally a frame capture of the bad view.
+
 ## Lead C: texture-cache churn (second)
 
 `BindResources` → `ResolveOverlap` → `FreeImage` → `SignalImpl::Protect` → `VirtualProtect` (~11% of stage B).
