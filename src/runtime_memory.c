@@ -140,7 +140,7 @@ static void win_fail(const char *what, uintptr_t address, uint64_t size) {
 enum { HOST_MAP, HOST_UNMAP, HOST_PROTECT };
 static struct {
     uint64_t calls[3], bytes[3], ns[3], max_ns[3];
-    uint64_t views_unmapped, unmapped_bytes, views_remapped, remapped_bytes;
+    uint64_t views_unmapped, unmapped_bytes, views_remapped, remapped_bytes, views_kept, views_reused;
 } host_stats; /* atomic */
 static uint64_t host_stats_next; /* atomic */
 static int host_stats_enabled(void) {
@@ -180,8 +180,10 @@ static void host_stats_record(int op, uintptr_t address, uint64_t size, uint64_t
     }
     const uint64_t vu=host_stats_take(&host_stats.views_unmapped), ub=host_stats_take(&host_stats.unmapped_bytes),
                    vr=host_stats_take(&host_stats.views_remapped), rb=host_stats_take(&host_stats.remapped_bytes);
-    printf("carve: %" PRIu64 " views unmapped (%" PRIu64 " MiB), %" PRIu64 " mapped again (%" PRIu64 " MiB); %zu regions\n",
-           vu,ub>>20,vr,rb>>20,region_count);
+    const uint64_t vk=host_stats_take(&host_stats.views_kept), vre=host_stats_take(&host_stats.views_reused);
+    printf("carve: %" PRIu64 " views unmapped (%" PRIu64 " MiB), %" PRIu64 " mapped again (%" PRIu64 " MiB); "
+           "pool views kept %" PRIu64 ", reused %" PRIu64 "; %zu regions\n",
+           vu,ub>>20,vr,rb>>20,vk,vre,region_count);
 }
 static size_t region_index(uintptr_t a) { /* first region with end > a */
     size_t lo=0, hi=region_count;
@@ -280,7 +282,27 @@ static size_t carve_host(uintptr_t a, uintptr_t b) {
     free(runs);
     return at;
 }
+/* Pool views kept across a decommit (pool_decommit, toggle bit 31): a commit that gets the same
+ * physical pages back only changes the protection; no view is unmapped or mapped. */
+static int host_view_reusable(uintptr_t address, uint64_t size, uint64_t phys) {
+    size_t i=region_index(address);
+    return i<region_count && regions[i].mapped && regions[i].start<=address && address+size<=regions[i].end &&
+           regions[i].phys+(address-regions[i].start)==phys;
+}
+/* The physical address a kept view maps at `address`, and how many bytes of it follow. */
+static int host_view_phys(uintptr_t address, uint64_t *phys, uint64_t *bytes) {
+    size_t i=region_index(address);
+    if (i==region_count || !regions[i].mapped || regions[i].start>address) return 0;
+    *phys=regions[i].phys+(address-regions[i].start); *bytes=regions[i].end-address;
+    return 1;
+}
 static int host_map_impl(uintptr_t address, uint64_t size, int prot, int reserved, uint64_t phys) {
+    if (!reserved && host_view_reusable(address,size,phys)) {
+        DWORD old;
+        if (!VirtualProtect((void *)address,size,win_prot(prot),&old)) win_fail("VirtualProtect",address,size);
+        if (host_stats_enabled()) HOST_STAT_ADD(views_reused,1);
+        return 0;
+    }
     size_t i=carve_host(address,address+size);
     if (reserved) return 0;
     regions[i].phys=phys; regions[i].mapped=1;
@@ -311,6 +333,11 @@ static int host_map(uintptr_t address, uint64_t size, int prot, int reserved, ui
 }
 static int host_unmap(uintptr_t address, uint64_t size) {
     HOST_TIMED(HOST_UNMAP,address,size,(carve_host(address,address+size),0));
+}
+static int host_keep_view(uintptr_t address, uint64_t size) {
+    DWORD old;
+    if (host_stats_enabled()) HOST_STAT_ADD(views_kept,1);
+    return VirtualProtect((void *)address,size,PAGE_NOACCESS,&old) ? 0 : -1;
 }
 static int host_protect(uintptr_t address, uint64_t size, int prot) {
     HOST_TIMED(HOST_PROTECT,address,size,host_protect_impl(address,size,prot));
@@ -346,6 +373,8 @@ static int host_map(uintptr_t address, uint64_t size, int prot, int reserved, ui
     return mapped==MAP_FAILED ? -1 : 0;
 }
 static int host_unmap(uintptr_t address, uint64_t size) { return munmap((void *)address,size); }
+static int host_view_phys(uintptr_t address, uint64_t *phys, uint64_t *bytes) { (void)address; (void)phys; (void)bytes; return 0; }
+static int host_keep_view(uintptr_t address, uint64_t size) { (void)address; (void)size; return -1; }
 static int host_protect(uintptr_t address, uint64_t size, int prot) { return mprotect((void *)address,size,prot); }
 static void host_discard(uint64_t phys, uint64_t size) {
     fallocate(pool_fd,FALLOC_FL_PUNCH_HOLE|FALLOC_FL_KEEP_SIZE,(off_t)phys,(off_t)size);
@@ -761,6 +790,7 @@ static ABI int32_t direct_available(int64_t low, int64_t high, uint64_t alignmen
 }
 /* Memory pools: Expand adds direct memory to the pool, Reserve takes virtual space, Commit maps
  * free pool pages into it (possibly as several physical runs), Decommit gives them back. */
+extern uint64_t runtime_disabled_optimizations;
 #define POOL_CHUNKS 64
 /* free_hint: every page below it is used. Commits searched from page 0 each time, under the
  * memory write lock (MediEvil: up to 28.7% of a game thread in that scan). */
@@ -801,6 +831,35 @@ static int pool_take_locked(uint64_t want, uint64_t *phys, uint64_t *pages) {
     }
     return 0;
 }
+/* Takes up to `want` free pages starting exactly at `phys` (a kept view's pages); 0 if none. */
+static int pool_take_at_locked(uint64_t phys, uint64_t want, uint64_t *pages) {
+    for (int c=0;c<POOL_CHUNKS;++c)
+        if (pool_chunks[c].pages && phys>=pool_chunks[c].phys && phys<pool_chunks[c].phys+pool_chunks[c].pages*PAGE) {
+            const uint64_t first=(phys-pool_chunks[c].phys)/PAGE;
+            uint64_t n=0;
+            while (first+n<pool_chunks[c].pages && n<want && !pool_chunks[c].used[first+n]) ++n;
+            if (!n) return 0;
+            memset(pool_chunks[c].used+first,1,n);
+            if (pool_chunks[c].free_hint==first) pool_chunks[c].free_hint=first+n;
+            *pages=n;
+            return 1;
+        }
+    return 0;
+}
+/* gow3 (Windows): UE4 commits and decommits 64 KiB pool pages ~6000 times a second (MediEvil,
+ * T-H1). Unmapping and mapping a view of the guest memory section each time left ~15000 views,
+ * and the kernel's section trims (MiTrimSection, one System worker for seconds) then blocked the
+ * render thread on a push lock: 2-5 s frame pacing episodes. A decommit now keeps the view,
+ * inaccessible, and a commit at that address takes the same physical pages back when they are
+ * free, so it only changes the protection. Toggle bit 31 restores unmapping. */
+#define POOL_KEEP_VIEWS UINT64_C(0x80000000)
+static int pool_keep_views(void) {
+#ifdef _WIN32
+    return !(__atomic_load_n(&runtime_disabled_optimizations,__ATOMIC_RELAXED) & POOL_KEEP_VIEWS);
+#else
+    return 0;
+#endif
+}
 static void pool_give_locked(uint64_t phys, uint64_t size) {
     for (int c=0;c<POOL_CHUNKS;++c)
         if (pool_chunks[c].pages && phys>=pool_chunks[c].phys && phys<pool_chunks[c].phys+pool_chunks[c].pages*PAGE) {
@@ -817,8 +876,14 @@ static ABI int32_t pool_commit(void *address, uint64_t size, int type, int prot,
     for (uint64_t done=0; done<size;) {
         uint64_t phys, pages;
         write_lock();
-        if (!pool_take_locked((size-done)/PAGE,&phys,&pages)) { write_unlock(); return NO_MEMORY; }
         void *at=(char *)address+done;
+        uint64_t kept_bytes;
+        int got=0;
+        if (pool_keep_views() && host_view_phys((uintptr_t)at,&phys,&kept_bytes)) {
+            const uint64_t want=size-done<kept_bytes ? size-done : kept_bytes;
+            got=pool_take_at_locked(phys,want/PAGE,&pages);
+        }
+        if (!got && !pool_take_locked((size-done)/PAGE,&phys,&pages)) { write_unlock(); return NO_MEMORY; }
         int32_t r=place(&at,pages*PAGE,prot,MAP_FIXED_FLAG,PAGE,KIND_DIRECT,type,phys);
         if (r) pool_give_locked(phys,pages*PAGE);
         write_unlock();
@@ -840,7 +905,13 @@ static ABI int32_t pool_decommit(void *address, uint64_t size, int flags) {
         if (i>=vma_count || vmas[i].start>=end) { write_unlock(); break; }
         uintptr_t a=vmas[i].start>at ? vmas[i].start : at, b=vmas[i].end<end ? vmas[i].end : end;
         int32_t r=0;
-        if (vmas[i].kind!=KIND_RESERVED) {
+        if (vmas[i].kind==KIND_DIRECT && pool_keep_views()) {
+            pool_give_locked(vmas[i].phys+(a-vmas[i].start),b-a);
+            queue_hook(HOOK_UNMAP,a,b-a);
+            r=host_keep_view(a,b-a);
+            drop_range(a,b);
+            if (!r && vma_insert(vma_index(a),(Vma){a,b,KIND_RESERVED,0,0,0})) r=NO_MEMORY;
+        } else if (vmas[i].kind!=KIND_RESERVED) {
             if (vmas[i].kind==KIND_DIRECT) pool_give_locked(vmas[i].phys+(a-vmas[i].start),b-a);
             r=unmap_locked(a,b-a);
             void *p=(void *)a;
@@ -917,7 +988,8 @@ void *runtime_low_map(size_t size, int prot) {
  * 131072 large guest memory copies split across copy threads (GOW3_COPY_THREADS),
  * 262144 with GOW3_ASYNC_FENCES=1: wait for guest copies at fences again,
  * 524288 small guest copies batched for the copy threads instead of the recording thread,
- * 1073741824 the lock-free UpdateImage path for clean, tracked images. */
+ * 1073741824 the lock-free UpdateImage path for clean, tracked images,
+ * 2147483648 (Windows) pool views kept across a decommit (pool_decommit). */
 /* Bits 32 and up: the draw pipeline and related GPU thread work (gpu/shim/gow3_toggles.h);
  * 288230376151711744 (bit 58) volumes rendered slice by slice through 2D array views. */
 uint64_t runtime_disabled_optimizations;
