@@ -44,4 +44,25 @@
             <Line Type="bytes" Address="0x00ce1c85" Value="00020000"/>
         </PatchList>
     </Metadata>
+    <!-- UE4's PS4 display metrics (0xb68fd0, and the work area at 0xb6d640) are computed once and
+         cached: 1920x1080 unless r.PS4Allow4kOutput (int at 0x5b1d1d8, read-only, 0 by default) is
+         set, then 3840x2160 when VideoOut reports a display taller than 1080. Only the game's
+         PS4_Neo_4k device profile sets it. A live r.SetRes to 4K later left these at 1080p, and the
+         menus' gamepad navigation stopped at the old 1080p area. This takes the 4K branch whatever
+         the cvar says; run.py selects it with a 3840x2160 VideoOut (GOW3_UE4_BOOT_4K=1). -->
+    <Metadata Title="MediEvil"
+              Name="4K display metrics at boot"
+              Note="Starts the game at 3840x2160 with a 4K VideoOut (render resolution 4K native). Requires the Native 4K framebuffer pool."
+              Author="medievil_pc"
+              PatchVer="1.0"
+              AppVer="01.00"
+              AppElf="eboot.bin"
+              isEnabled="false">
+        <PatchList>
+            <!-- je past the 4K query when r.PS4Allow4kOutput == 0 -> nop nop (display metrics) -->
+            <Line Type="bytes" Address="0x00f69032" Value="9090"/>
+            <!-- same in the work area function -->
+            <Line Type="bytes" Address="0x00f6d696" Value="9090"/>
+        </PatchList>
+    </Metadata>
 </Patch>

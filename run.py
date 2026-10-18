@@ -134,7 +134,15 @@ def main():
         import ue4_override
         # Native output: the runtime sets the game's r.SetRes live once it runs (runtime_extra.c).
         if output := ue4_override.NATIVE_OUTPUT.get(graphics['render_resolution']):
-            env.setdefault('GOW3_UE4_SETRES', output)
+            if output == '3840x2160' and env.get('GOW3_UE4_BOOT_4K') == '1':
+                # Or the game starts at 4K itself, as on a PS4 Pro with a 4K TV: a 3840x2160 VideoOut
+                # and its 4K display-metrics branch (patches/MediEvil.xml). A live change leaves the
+                # menus' navigation at the 1080p area.
+                env.setdefault('GOW3_INTERNAL_WIDTH', '3840')
+                env.setdefault('GOW3_INTERNAL_HEIGHT', '2160')
+                env['GOW3_PATCHES'] = ';'.join(n for n in (env.get('GOW3_PATCHES', ''), '4K display metrics at boot') if n)
+            else:
+                env.setdefault('GOW3_UE4_SETRES', output)
     for key, value in profile['env'].items():
         env.setdefault(key, value)
     profile_ue4 = bool(profile.get('ue4_render_scale'))

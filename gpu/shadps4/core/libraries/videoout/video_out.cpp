@@ -309,7 +309,8 @@ s32 PS4_SYSV_ABI sceVideoOutOpen(Libraries::UserService::OrbisUserServiceUserId 
     int handle = driver->Open(params);
 
     if (handle < 0) {
-        LOG_ERROR(Lib_VideoOut, "All available handles are open");
+        // gow3: one main port: a second open (a display query while the game's port is open) fails.
+        LOG_WARNING(Lib_VideoOut, "gow3: main port already open: second open refused (busy)");
         return ORBIS_VIDEO_OUT_ERROR_RESOURCE_BUSY;
     }
 
@@ -317,6 +318,11 @@ s32 PS4_SYSV_ABI sceVideoOutOpen(Libraries::UserService::OrbisUserServiceUserId 
 }
 
 s32 PS4_SYSV_ABI sceVideoOutClose(s32 handle) {
+    // gow3: Close takes no handle check itself: closing a refused second open must not close
+    // the game's main port.
+    if (!driver->GetPort(handle)) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
+    }
     driver->Close(handle);
     return ORBIS_OK;
 }
