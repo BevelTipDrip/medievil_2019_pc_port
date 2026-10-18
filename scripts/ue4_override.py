@@ -317,6 +317,14 @@ def apply(game, resolution='native', quality='console', fps=60, debug_menu=False
     scale = TEMPORAL_UPSCALE.get(upscale) if not percentage else None
     if scale:
         values.update({'r.ScreenPercentage': scale, 'r.TemporalAA.Upsampling': '1'})
+    # Extra console variables for experiments, "name=value;name=value" (GOW3_UE4_CVARS); they win
+    # over the presets above.
+    extra = {}
+    for item in os.environ.get('GOW3_UE4_CVARS', '').split(';'):
+        name, sep, value = item.partition('=')
+        if sep and name.strip():
+            extra[name.strip()] = value.strip()
+    values.update(extra)
     engine = frame_rate_range(fps) if fps > 60 else {}
     if not values and not engine and not debug_menu and not infinite_ammo:
         pak.unlink(missing_ok=True)
@@ -336,7 +344,8 @@ def apply(game, resolution='native', quality='console', fps=60, debug_menu=False
             f'{f" (r.setres={output})" if output else ""}'
             f'{f", temporal upscaling {upscale} ({scale}%)" if scale else ""}, {quality} quality, '
             f'{f"up to {fps}" if fps > 60 else 60} FPS{", debug menu (R3)" if debug_menu else ""}'
-            f'{", unlimited ammo" if infinite_ammo else ""}')
+            f'{", unlimited ammo" if infinite_ammo else ""}'
+            f'{"; extra cvars " + ", ".join(f"{k}={v}" for k, v in extra.items()) if extra else ""}')
 
 
 if __name__ == '__main__':
