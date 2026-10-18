@@ -1,0 +1,17 @@
+$$ WinDbg setup for medievil-runtime.exe (run with: $$>< this file; research/tools/windbg.ps1 does it).
+$$ Symbols: Microsoft's server (cached outside git) + the PDB lab build (research/tools/build-pdb.sh --install).
+.symfix+ C:\Users\Ty\MediEvil\research-data\symbols
+.sympath+ C:\Users\Ty\MediEvil\medievil_2019_pc_port\out
+.reload
+$$ First-chance access violations are normal: the GPU page tracker write-protects guest pages and
+$$ resolves the faults in its vectored handler (src/probe.c vectored_fault), many per second.
+sxd av
+$$ Illegal instructions: SSE4a emulation on Intel CPUs (src/runtime_sse4a.c); none on AMD.
+sxd ii
+$$ C++ exceptions thrown and caught inside drivers/libraries.
+sxi eh
+$$ A real fault: fatal_exception prints its report and calls TerminateProcess from inside the
+$$ first-chance handler, so a second-chance break never comes. Stop at its entry instead:
+$$ rcx = EXCEPTION_POINTERS* (ExceptionRecord at +0, ContextRecord at +8).
+bp medievil_runtime!fatal_exception ".echo ==== medievil-runtime fault ====; .exr poi(@rcx); .cxr poi(@rcx+8); r; kv 40"
+.echo MediEvil WinDbg setup loaded: av/ii first-chance ignored, break on fatal_exception.

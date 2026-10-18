@@ -1,0 +1,296 @@
+# Per-second series from baseline-run1-2026-10-18.log (Perf / Frame pacing / Draw pipe lines). n = second.
+  1 fps=67.4   worst=394.1   med=16.96  sd=22.73   p99 24.21   draws/frame=3     A_wait=15.9  B_busy=17.7  blk_hostcopy=0.4   blk_gpu=0.0   writefaults/s=26247
+  2 fps=83.7   worst=347.8   med=5.54   sd=22.25   p99 18.47   draws/frame=40    A_wait=72.5  B_busy=79.4  blk_hostcopy=2.6   blk_gpu=12.7  writefaults/s=50126
+  3 fps=217.1  worst=279.4   med=4.16   sd=9.48    p99 7.50    draws/frame=54    A_wait=82.7  B_busy=89.9  blk_hostcopy=3.8   blk_gpu=43.4  writefaults/s=106843
+  4 fps=239.5  worst=10.6    med=2.32   sd=2.32    p99 10.46   draws/frame=53    A_wait=82.8  B_busy=90.0  blk_hostcopy=3.9   blk_gpu=58.4  writefaults/s=117460
+  5 fps=239.4  worst=22.7    med=4.05   sd=2.20    p99 10.62   draws/frame=53    A_wait=43.4  B_busy=51.2  blk_hostcopy=4.1   blk_gpu=46.9  writefaults/s=117400
+  6 fps=239.7  worst=9.8     med=4.10   sd=1.21    p99 6.67    draws/frame=52    A_wait=83.3  B_busy=90.9  blk_hostcopy=4.6   blk_gpu=25.8  writefaults/s=117392
+  7 fps=239.7  worst=10.9    med=2.26   sd=2.41    p99 10.61   draws/frame=52    A_wait=82.4  B_busy=90.7  blk_hostcopy=4.4   blk_gpu=57.6  writefaults/s=117467
+  8 fps=239.7  worst=10.9    med=2.36   sd=2.51    p99 10.71   draws/frame=52    A_wait=63.2  B_busy=71.3  blk_hostcopy=5.3   blk_gpu=53.9  writefaults/s=117305
+  9 fps=240.0  worst=6.6     med=4.06   sd=2.03    p99 10.39   draws/frame=54    A_wait=28.9  B_busy=37.6  blk_hostcopy=6.9   blk_gpu=24.0  writefaults/s=116896
+ 10 fps=239.9  worst=15.5    med=4.10   sd=0.74    p99 6.04    draws/frame=52    A_wait=70.7  B_busy=78.5  blk_hostcopy=5.4   blk_gpu=0.0   writefaults/s=117617
+ 11 fps=239.4  worst=19.5    med=4.12   sd=0.94    p99 5.79    draws/frame=52    A_wait=80.7  B_busy=88.2  blk_hostcopy=5.2   blk_gpu=47.8  writefaults/s=117371
+ 12 fps=240.0  worst=9.7     med=4.08   sd=1.39    p99 8.41    draws/frame=52    A_wait=81.7  B_busy=89.8  blk_hostcopy=5.0   blk_gpu=52.6  writefaults/s=117369
+ 13 fps=236.1  worst=93.8    med=4.19   sd=1.44    p99 6.23    draws/frame=52    A_wait=76.4  B_busy=84.3  blk_hostcopy=4.7   blk_gpu=53.9  writefaults/s=117541
+ 14 fps=235.1  worst=86.4    med=4.09   sd=2.94    p99 6.19    draws/frame=52    A_wait=37.1  B_busy=45.0  blk_hostcopy=5.9   blk_gpu=40.8  writefaults/s=115852
+ 15 fps=237.0  worst=77.7    med=4.10   sd=2.64    p99 5.66    draws/frame=52    A_wait=30.9  B_busy=39.3  blk_hostcopy=7.5   blk_gpu=0.1   writefaults/s=115114
+ 16 fps=239.1  worst=13.3    med=4.09   sd=2.34    p99 6.58    draws/frame=52    A_wait=83.5  B_busy=90.9  blk_hostcopy=5.0   blk_gpu=3.1   writefaults/s=115792
+ 17 fps=239.6  worst=10.9    med=2.24   sd=2.41    p99 10.56   draws/frame=52    A_wait=83.2  B_busy=91.0  blk_hostcopy=4.2   blk_gpu=57.4  writefaults/s=117310
+ 18 fps=239.7  worst=10.9    med=2.27   sd=2.42    p99 10.60   draws/frame=52    A_wait=81.7  B_busy=90.2  blk_hostcopy=4.3   blk_gpu=57.3  writefaults/s=117456
+ 19 fps=239.8  worst=10.9    med=2.33   sd=2.48    p99 10.63   draws/frame=52    A_wait=83.4  B_busy=90.7  blk_hostcopy=4.3   blk_gpu=56.0  writefaults/s=117459
+ 20 fps=238.3  worst=28.9    med=2.32   sd=2.53    p99 10.65   draws/frame=52    A_wait=83.0  B_busy=90.5  blk_hostcopy=4.3   blk_gpu=55.8  writefaults/s=116788
+ 21 fps=240.0  worst=11.0    med=2.67   sd=2.41    p99 10.66   draws/frame=52    A_wait=83.3  B_busy=90.9  blk_hostcopy=4.3   blk_gpu=57.1  writefaults/s=117592
+ 22 fps=239.9  worst=10.8    med=2.68   sd=2.45    p99 10.64   draws/frame=52    A_wait=83.5  B_busy=90.9  blk_hostcopy=4.1   blk_gpu=57.4  writefaults/s=117603
+ 23 fps=239.8  worst=10.7    med=2.66   sd=2.45    p99 10.65   draws/frame=52    A_wait=83.7  B_busy=91.1  blk_hostcopy=4.1   blk_gpu=57.6  writefaults/s=117454
+ 24 fps=240.0  worst=10.9    med=2.65   sd=2.46    p99 10.67   draws/frame=52    A_wait=83.6  B_busy=91.1  blk_hostcopy=4.3   blk_gpu=57.3  writefaults/s=117758
+ 25 fps=240.1  worst=14.3    med=2.66   sd=2.49    p99 10.69   draws/frame=52    A_wait=83.5  B_busy=91.0  blk_hostcopy=4.5   blk_gpu=57.2  writefaults/s=117507
+ 26 fps=240.0  worst=12.5    med=2.67   sd=2.48    p99 10.67   draws/frame=52    A_wait=83.5  B_busy=90.8  blk_hostcopy=4.3   blk_gpu=57.2  writefaults/s=117497
+ 27 fps=239.0  worst=14.8    med=4.08   sd=1.40    p99 9.46    draws/frame=52    A_wait=42.8  B_busy=49.7  blk_hostcopy=5.6   blk_gpu=14.2  writefaults/s=117386
+ 28 fps=240.0  worst=6.6     med=4.09   sd=0.75    p99 6.04    draws/frame=52    A_wait=29.3  B_busy=37.7  blk_hostcopy=5.1   blk_gpu=0.0   writefaults/s=117601
+ 29 fps=231.8  worst=66.9    med=4.10   sd=2.50    p99 9.82    draws/frame=52    A_wait=39.9  B_busy=37.7  blk_hostcopy=5.7   blk_gpu=0.0   writefaults/s=111768
+ 30 fps=149.3  worst=99.2    med=4.55   sd=7.06    p99 42.44   draws/frame=52    A_wait=72.0  B_busy=55.6  blk_hostcopy=20.6  blk_gpu=1.4   writefaults/s=74903
+ 31 fps=213.7  worst=20.3    med=4.09   sd=2.48    p99 14.86   draws/frame=52    A_wait=82.5  B_busy=83.8  blk_hostcopy=42.5  blk_gpu=0.0   writefaults/s=101388
+ 32 fps=175.8  worst=22.3    med=4.40   sd=3.39    p99 16.55   draws/frame=52    A_wait=87.7  B_busy=87.8  blk_hostcopy=55.4  blk_gpu=0.0   writefaults/s=85156
+ 33 fps=185.8  worst=21.8    med=4.25   sd=3.42    p99 18.65   draws/frame=52    A_wait=88.2  B_busy=88.6  blk_hostcopy=53.6  blk_gpu=0.0   writefaults/s=89356
+ 34 fps=103.7  worst=26.5    med=7.29   sd=5.92    p99 25.08   draws/frame=52    A_wait=91.3  B_busy=90.3  blk_hostcopy=69.5  blk_gpu=0.0   writefaults/s=53377
+ 35 fps=156.2  worst=25.3    med=4.74   sd=4.23    p99 19.73   draws/frame=52    A_wait=89.9  B_busy=88.3  blk_hostcopy=59.2  blk_gpu=0.0   writefaults/s=74124
+ 36 fps=152.1  worst=22.6    med=4.82   sd=3.93    p99 17.65   draws/frame=52    A_wait=89.4  B_busy=88.9  blk_hostcopy=59.4  blk_gpu=0.0   writefaults/s=75520
+ 37 fps=199.6  worst=17.7    med=4.05   sd=2.30    p99 12.70   draws/frame=52    A_wait=81.5  B_busy=84.0  blk_hostcopy=47.1  blk_gpu=0.0   writefaults/s=101537
+ 38 fps=229.6  worst=22.0    med=4.04   sd=1.64    p99 11.13   draws/frame=52    A_wait=76.8  B_busy=80.1  blk_hostcopy=39.9  blk_gpu=0.0   writefaults/s=113546
+ 39 fps=230.4  worst=18.1    med=4.05   sd=1.54    p99 10.83   draws/frame=52    A_wait=76.3  B_busy=79.0  blk_hostcopy=37.7  blk_gpu=0.5   writefaults/s=112631
+ 40 fps=231.4  worst=15.4    med=4.03   sd=1.57    p99 10.77   draws/frame=52    A_wait=76.4  B_busy=79.6  blk_hostcopy=38.6  blk_gpu=0.0   writefaults/s=113435
+ 41 fps=236.5  worst=12.2    med=4.06   sd=1.14    p99 8.88    draws/frame=52    A_wait=75.5  B_busy=78.7  blk_hostcopy=31.4  blk_gpu=2.7   writefaults/s=115513
+ 42 fps=208.4  worst=16.6    med=4.06   sd=2.28    p99 13.22   draws/frame=52    A_wait=71.8  B_busy=75.8  blk_hostcopy=46.2  blk_gpu=0.0   writefaults/s=102629
+ 43 fps=239.9  worst=16.6    med=4.09   sd=0.83    p99 5.66    draws/frame=52    A_wait=26.2  B_busy=35.3  blk_hostcopy=7.7   blk_gpu=0.0   writefaults/s=117500
+ 44 fps=74.7   worst=1265.5  med=9.35   sd=69.78   p99 43.24   draws/frame=658   A_wait=26.4  B_busy=57.9  blk_hostcopy=7.3   blk_gpu=2.1   writefaults/s=33211
+ 45 fps=146.2  worst=18.2    med=6.52   sd=1.04    p99 12.54   draws/frame=547   A_wait=59.3  B_busy=88.5  blk_hostcopy=9.2   blk_gpu=17.6  writefaults/s=98625
+ 46 fps=146.4  worst=15.5    med=6.79   sd=0.57    p99 7.73    draws/frame=561   A_wait=51.2  B_busy=86.6  blk_hostcopy=8.9   blk_gpu=20.4  writefaults/s=100250
+ 47 fps=144.3  worst=14.6    med=6.89   sd=0.86    p99 8.71    draws/frame=575   A_wait=50.7  B_busy=85.4  blk_hostcopy=11.5  blk_gpu=12.5  writefaults/s=110848
+ 48 fps=181.6  worst=13.6    med=5.40   sd=0.51    p99 6.52    draws/frame=224   A_wait=62.5  B_busy=88.8  blk_hostcopy=12.1  blk_gpu=19.1  writefaults/s=112444
+ 49 fps=172.8  worst=13.7    med=5.45   sd=0.87    p99 7.46    draws/frame=313   A_wait=56.5  B_busy=87.9  blk_hostcopy=12.7  blk_gpu=18.9  writefaults/s=105692
+ 50 fps=138.9  worst=13.9    med=7.19   sd=0.31    p99 7.70    draws/frame=488   A_wait=57.1  B_busy=87.5  blk_hostcopy=11.4  blk_gpu=22.3  writefaults/s=92716
+ 51 fps=138.4  worst=8.0     med=7.21   sd=0.13    p99 7.80    draws/frame=472   A_wait=56.5  B_busy=87.3  blk_hostcopy=11.2  blk_gpu=23.7  writefaults/s=91957
+ 52 fps=138.3  worst=8.0     med=7.22   sd=0.11    p99 7.65    draws/frame=474   A_wait=56.1  B_busy=86.9  blk_hostcopy=11.1  blk_gpu=23.9  writefaults/s=91803
+ 53 fps=138.2  worst=8.6     med=7.22   sd=0.14    p99 7.74    draws/frame=470   A_wait=57.0  B_busy=87.3  blk_hostcopy=10.9  blk_gpu=23.5  writefaults/s=92215
+ 54 fps=138.5  worst=8.1     med=7.21   sd=0.13    p99 7.73    draws/frame=466   A_wait=49.4  B_busy=76.7  blk_hostcopy=11.1  blk_gpu=23.6  writefaults/s=92045
+ 55 fps=176.9  worst=241.1   med=4.54   sd=8.20    p99 17.36   draws/frame=128   A_wait=41.4  B_busy=51.5  blk_hostcopy=6.9   blk_gpu=5.8   writefaults/s=97696
+ 56 fps=239.6  worst=10.8    med=4.07   sd=1.75    p99 10.39   draws/frame=52    A_wait=77.7  B_busy=86.8  blk_hostcopy=5.7   blk_gpu=42.7  writefaults/s=117232
+ 57 fps=239.9  worst=11.0    med=2.34   sd=2.66    p99 10.65   draws/frame=52    A_wait=78.5  B_busy=88.0  blk_hostcopy=5.6   blk_gpu=51.6  writefaults/s=117682
+ 58 fps=239.5  worst=10.9    med=2.31   sd=2.67    p99 10.70   draws/frame=52    A_wait=78.7  B_busy=88.0  blk_hostcopy=5.5   blk_gpu=51.7  writefaults/s=117331
+ 59 fps=239.9  worst=10.9    med=2.30   sd=2.66    p99 10.76   draws/frame=52    A_wait=78.8  B_busy=88.3  blk_hostcopy=5.5   blk_gpu=51.7  writefaults/s=117593
+ 60 fps=239.5  worst=11.0    med=2.31   sd=2.67    p99 10.70   draws/frame=52    A_wait=79.2  B_busy=88.2  blk_hostcopy=5.4   blk_gpu=52.3  writefaults/s=117396
+ 61 fps=239.7  worst=11.0    med=2.31   sd=2.67    p99 10.74   draws/frame=52    A_wait=79.2  B_busy=88.6  blk_hostcopy=5.5   blk_gpu=51.8  writefaults/s=117276
+ 62 fps=239.9  worst=10.9    med=2.30   sd=2.67    p99 10.69   draws/frame=53    A_wait=79.8  B_busy=88.9  blk_hostcopy=5.6   blk_gpu=53.0  writefaults/s=117566
+ 63 fps=239.5  worst=10.9    med=2.26   sd=2.69    p99 10.73   draws/frame=52    A_wait=79.8  B_busy=88.7  blk_hostcopy=5.2   blk_gpu=52.8  writefaults/s=117458
+ 64 fps=239.9  worst=11.0    med=2.27   sd=2.69    p99 10.73   draws/frame=52    A_wait=79.9  B_busy=88.6  blk_hostcopy=5.2   blk_gpu=52.8  writefaults/s=117455
+ 65 fps=239.8  worst=11.0    med=2.25   sd=2.67    p99 10.76   draws/frame=52    A_wait=79.6  B_busy=88.6  blk_hostcopy=5.1   blk_gpu=52.8  writefaults/s=117449
+ 66 fps=239.6  worst=10.9    med=2.28   sd=2.73    p99 10.71   draws/frame=52    A_wait=79.4  B_busy=88.6  blk_hostcopy=5.3   blk_gpu=52.8  writefaults/s=117456
+ 67 fps=239.6  worst=10.9    med=2.30   sd=2.67    p99 10.74   draws/frame=52    A_wait=40.1  B_busy=45.0  blk_hostcopy=5.6   blk_gpu=52.1  writefaults/s=117465
+ 68 fps=63.5   worst=1353.6  med=14.53  sd=104.00  p99 76.69   draws/frame=40    A_wait=45.5  B_busy=61.0  blk_hostcopy=0.8   blk_gpu=5.9   writefaults/s=23528
+ 69 fps=112.7  worst=383.1   med=8.08   sd=15.82   p99 13.30   draws/frame=465   A_wait=70.7  B_busy=94.2  blk_hostcopy=8.1   blk_gpu=42.8  writefaults/s=46530
+ 70 fps=125.2  worst=21.6    med=7.95   sd=0.77    p99 8.50    draws/frame=515   A_wait=69.1  B_busy=93.9  blk_hostcopy=9.1   blk_gpu=43.7  writefaults/s=61565
+ 71 fps=133.2  worst=12.6    med=7.42   sd=0.29    p99 8.01    draws/frame=473   A_wait=69.5  B_busy=93.7  blk_hostcopy=9.7   blk_gpu=42.1  writefaults/s=70755
+ 72 fps=151.0  worst=10.2    med=7.05   sd=0.67    p99 7.39    draws/frame=420   A_wait=65.4  B_busy=93.2  blk_hostcopy=10.1  blk_gpu=42.2  writefaults/s=71570
+ 73 fps=119.9  worst=18.5    med=8.97   sd=1.36    p99 9.66    draws/frame=593   A_wait=52.0  B_busy=95.3  blk_hostcopy=9.1   blk_gpu=30.3  writefaults/s=77100
+ 74 fps=110.2  worst=9.5     med=9.07   sd=0.11    p99 9.43    draws/frame=904   A_wait=53.1  B_busy=95.5  blk_hostcopy=8.6   blk_gpu=24.8  writefaults/s=74430
+ 75 fps=115.5  worst=10.1    med=9.02   sd=0.70    p99 9.40    draws/frame=770   A_wait=71.6  B_busy=94.0  blk_hostcopy=7.9   blk_gpu=35.1  writefaults/s=45997
+ 76 fps=156.0  worst=11.1    med=5.92   sd=0.87    p99 7.85    draws/frame=381   A_wait=66.5  B_busy=92.5  blk_hostcopy=9.0   blk_gpu=49.5  writefaults/s=52091
+ 77 fps=170.6  worst=6.1     med=5.86   sd=0.07    p99 6.07    draws/frame=360   A_wait=66.7  B_busy=92.4  blk_hostcopy=9.7   blk_gpu=42.6  writefaults/s=87312
+ 78 fps=171.1  worst=6.2     med=5.84   sd=0.07    p99 6.06    draws/frame=358   A_wait=66.6  B_busy=91.9  blk_hostcopy=10.0  blk_gpu=43.2  writefaults/s=75313
+ 79 fps=171.1  worst=6.1     med=5.85   sd=0.07    p99 6.04    draws/frame=357   A_wait=71.2  B_busy=93.3  blk_hostcopy=9.6   blk_gpu=45.2  writefaults/s=74449
+ 80 fps=137.7  worst=10.5    med=7.46   sd=0.68    p99 7.96    draws/frame=517   A_wait=66.6  B_busy=93.4  blk_hostcopy=6.9   blk_gpu=53.6  writefaults/s=13327
+ 81 fps=120.2  worst=33.9    med=7.36   sd=1.89    p99 12.32   draws/frame=785   A_wait=44.8  B_busy=91.0  blk_hostcopy=7.8   blk_gpu=31.6  writefaults/s=42493
+ 82 fps=111.0  worst=60.9    med=9.32   sd=2.69    p99 16.41   draws/frame=916   A_wait=47.3  B_busy=91.8  blk_hostcopy=8.3   blk_gpu=16.6  writefaults/s=82852
+ 83 fps=116.7  worst=18.0    med=9.37   sd=1.46    p99 11.07   draws/frame=1021  A_wait=47.3  B_busy=94.3  blk_hostcopy=9.5   blk_gpu=13.3  writefaults/s=87465
+ 84 fps=103.5  worst=17.5    med=9.59   sd=0.66    p99 10.51   draws/frame=981   A_wait=52.3  B_busy=94.3  blk_hostcopy=8.7   blk_gpu=16.8  writefaults/s=78577
+ 85 fps=103.9  worst=15.7    med=9.58   sd=0.49    p99 11.29   draws/frame=895   A_wait=55.8  B_busy=94.9  blk_hostcopy=9.1   blk_gpu=15.3  writefaults/s=79302
+ 86 fps=104.8  worst=19.1    med=9.46   sd=0.59    p99 10.57   draws/frame=790   A_wait=56.4  B_busy=95.5  blk_hostcopy=9.4   blk_gpu=18.9  writefaults/s=79675
+ 87 fps=105.7  worst=17.1    med=9.42   sd=0.56    p99 10.33   draws/frame=744   A_wait=59.2  B_busy=95.0  blk_hostcopy=9.8   blk_gpu=19.3  writefaults/s=79848
+ 88 fps=106.2  worst=16.8    med=9.33   sd=0.50    p99 10.68   draws/frame=679   A_wait=65.1  B_busy=95.9  blk_hostcopy=8.8   blk_gpu=21.1  writefaults/s=80861
+ 89 fps=106.3  worst=10.0    med=9.40   sd=0.11    p99 9.77    draws/frame=648   A_wait=63.3  B_busy=95.8  blk_hostcopy=9.6   blk_gpu=22.6  writefaults/s=80945
+ 90 fps=105.8  worst=14.5    med=9.43   sd=0.34    p99 9.94    draws/frame=658   A_wait=66.1  B_busy=95.0  blk_hostcopy=9.0   blk_gpu=23.3  writefaults/s=76838
+ 91 fps=105.9  worst=10.4    med=9.43   sd=0.08    p99 9.74    draws/frame=655   A_wait=66.7  B_busy=94.6  blk_hostcopy=8.1   blk_gpu=30.0  writefaults/s=53560
+ 92 fps=105.8  worst=10.0    med=9.44   sd=0.08    p99 9.75    draws/frame=662   A_wait=66.5  B_busy=94.6  blk_hostcopy=7.9   blk_gpu=31.4  writefaults/s=53523
+ 93 fps=105.9  worst=10.0    med=9.44   sd=0.07    p99 9.68    draws/frame=657   A_wait=66.6  B_busy=94.6  blk_hostcopy=7.4   blk_gpu=31.8  writefaults/s=53551
+ 94 fps=105.9  worst=11.2    med=9.44   sd=0.11    p99 9.74    draws/frame=657   A_wait=66.8  B_busy=94.5  blk_hostcopy=7.9   blk_gpu=32.0  writefaults/s=53528
+ 95 fps=105.8  worst=9.8     med=9.45   sd=0.07    p99 9.70    draws/frame=665   A_wait=66.9  B_busy=94.6  blk_hostcopy=7.6   blk_gpu=30.9  writefaults/s=53496
+ 96 fps=105.8  worst=10.0    med=9.44   sd=0.07    p99 9.69    draws/frame=664   A_wait=67.5  B_busy=94.8  blk_hostcopy=7.8   blk_gpu=31.7  writefaults/s=53514
+ 97 fps=105.9  worst=10.0    med=9.44   sd=0.07    p99 9.70    draws/frame=657   A_wait=67.2  B_busy=94.6  blk_hostcopy=7.9   blk_gpu=32.1  writefaults/s=53516
+ 98 fps=105.9  worst=10.0    med=9.44   sd=0.08    p99 9.71    draws/frame=657   A_wait=66.6  B_busy=94.6  blk_hostcopy=7.5   blk_gpu=32.1  writefaults/s=53514
+ 99 fps=105.9  worst=9.9     med=9.44   sd=0.07    p99 9.71    draws/frame=657   A_wait=65.9  B_busy=94.8  blk_hostcopy=7.8   blk_gpu=31.4  writefaults/s=53531
+100 fps=105.9  worst=9.9     med=9.44   sd=0.07    p99 9.71    draws/frame=657   A_wait=66.9  B_busy=94.8  blk_hostcopy=7.9   blk_gpu=31.0  writefaults/s=53531
+101 fps=105.9  worst=9.9     med=9.44   sd=0.07    p99 9.68    draws/frame=657   A_wait=65.9  B_busy=94.6  blk_hostcopy=7.7   blk_gpu=31.1  writefaults/s=53499
+102 fps=106.2  worst=9.9     med=9.42   sd=0.09    p99 9.71    draws/frame=651   A_wait=62.0  B_busy=95.7  blk_hostcopy=7.8   blk_gpu=29.5  writefaults/s=60312
+103 fps=106.7  worst=15.8    med=9.33   sd=0.41    p99 9.74    draws/frame=643   A_wait=69.0  B_busy=95.7  blk_hostcopy=9.0   blk_gpu=22.1  writefaults/s=81018
+104 fps=104.9  worst=15.7    med=9.52   sd=0.28    p99 9.84    draws/frame=557   A_wait=69.1  B_busy=95.8  blk_hostcopy=8.7   blk_gpu=26.4  writefaults/s=79091
+105 fps=105.0  worst=15.4    med=9.50   sd=0.27    p99 9.92    draws/frame=557   A_wait=69.6  B_busy=95.5  blk_hostcopy=7.8   blk_gpu=27.7  writefaults/s=79372
+106 fps=105.0  worst=15.6    med=9.51   sd=0.28    p99 9.77    draws/frame=557   A_wait=69.7  B_busy=95.6  blk_hostcopy=7.6   blk_gpu=27.1  writefaults/s=79432
+107 fps=104.8  worst=17.7    med=9.52   sd=0.37    p99 9.84    draws/frame=556   A_wait=66.3  B_busy=95.4  blk_hostcopy=8.2   blk_gpu=26.1  writefaults/s=79259
+108 fps=107.0  worst=19.9    med=9.24   sd=0.96    p99 15.74   draws/frame=636   A_wait=60.6  B_busy=95.5  blk_hostcopy=8.6   blk_gpu=22.8  writefaults/s=81172
+109 fps=109.2  worst=22.4    med=9.07   sd=0.84    p99 12.76   draws/frame=677   A_wait=48.6  B_busy=93.6  blk_hostcopy=9.0   blk_gpu=20.7  writefaults/s=82784
+110 fps=105.1  worst=17.7    med=9.60   sd=0.61    p99 10.11   draws/frame=1004  A_wait=51.2  B_busy=93.6  blk_hostcopy=7.9   blk_gpu=16.5  writefaults/s=79799
+111 fps=104.1  worst=17.3    med=9.49   sd=0.92    p99 16.66   draws/frame=971   A_wait=51.3  B_busy=94.8  blk_hostcopy=8.6   blk_gpu=16.7  writefaults/s=79304
+112 fps=108.1  worst=19.9    med=9.10   sd=0.82    p99 14.62   draws/frame=773   A_wait=48.0  B_busy=93.4  blk_hostcopy=9.1   blk_gpu=20.7  writefaults/s=80771
+113 fps=118.9  worst=13.7    med=9.09   sd=1.35    p99 10.34   draws/frame=932   A_wait=48.7  B_busy=93.3  blk_hostcopy=8.6   blk_gpu=15.6  writefaults/s=88335
+114 fps=107.2  worst=18.4    med=9.49   sd=0.96    p99 10.87   draws/frame=946   A_wait=45.4  B_busy=93.2  blk_hostcopy=8.5   blk_gpu=17.2  writefaults/s=81290
+115 fps=101.7  worst=18.0    med=9.70   sd=0.82    p99 12.73   draws/frame=1120  A_wait=47.5  B_busy=92.1  blk_hostcopy=8.3   blk_gpu=11.5  writefaults/s=77521
+116 fps=130.9  worst=18.5    med=6.85   sd=1.66    p99 14.34   draws/frame=751   A_wait=56.2  B_busy=92.7  blk_hostcopy=8.5   blk_gpu=19.8  writefaults/s=94247
+117 fps=129.3  worst=18.0    med=6.95   sd=1.50    p99 13.23   draws/frame=719   A_wait=59.3  B_busy=92.2  blk_hostcopy=9.5   blk_gpu=20.6  writefaults/s=90177
+118 fps=145.1  worst=17.3    med=6.82   sd=0.68    p99 8.66    draws/frame=472   A_wait=57.5  B_busy=92.2  blk_hostcopy=9.9   blk_gpu=26.7  writefaults/s=94471
+119 fps=133.2  worst=16.3    med=6.80   sd=1.50    p99 13.13   draws/frame=730   A_wait=55.7  B_busy=91.7  blk_hostcopy=8.7   blk_gpu=19.8  writefaults/s=92425
+120 fps=143.8  worst=15.8    med=6.89   sd=0.75    p99 11.09   draws/frame=468   A_wait=64.1  B_busy=92.9  blk_hostcopy=9.2   blk_gpu=27.3  writefaults/s=95486
+121 fps=145.6  worst=17.4    med=6.78   sd=0.84    p99 13.08   draws/frame=474   A_wait=51.5  B_busy=89.0  blk_hostcopy=9.4   blk_gpu=29.1  writefaults/s=94180
+122 fps=137.4  worst=20.3    med=7.05   sd=1.22    p99 14.03   draws/frame=767   A_wait=56.9  B_busy=92.3  blk_hostcopy=9.1   blk_gpu=16.7  writefaults/s=94735
+123 fps=121.9  worst=20.6    med=7.13   sd=2.01    p99 17.90   draws/frame=753   A_wait=39.1  B_busy=90.9  blk_hostcopy=10.0  blk_gpu=19.8  writefaults/s=85682
+124 fps=109.5  worst=18.3    med=9.06   sd=0.49    p99 10.26   draws/frame=1048  A_wait=61.2  B_busy=94.9  blk_hostcopy=8.9   blk_gpu=12.9  writefaults/s=82803
+125 fps=108.8  worst=18.2    med=8.96   sd=0.72    p99 10.81   draws/frame=712   A_wait=42.3  B_busy=92.4  blk_hostcopy=8.7   blk_gpu=19.5  writefaults/s=79563
+126 fps=118.2  worst=18.1    med=9.16   sd=1.56    p99 11.00   draws/frame=998   A_wait=44.8  B_busy=90.0  blk_hostcopy=9.4   blk_gpu=11.5  writefaults/s=88757
+127 fps=103.7  worst=18.1    med=9.72   sd=0.86    p99 10.96   draws/frame=1214  A_wait=44.5  B_busy=89.8  blk_hostcopy=7.5   blk_gpu=14.0  writefaults/s=59505
+128 fps=102.9  worst=13.0    med=9.69   sd=0.23    p99 10.45   draws/frame=1264  A_wait=46.2  B_busy=90.3  blk_hostcopy=7.3   blk_gpu=13.5  writefaults/s=51880
+129 fps=102.7  worst=10.3    med=9.73   sd=0.09    p99 10.09   draws/frame=1270  A_wait=44.6  B_busy=90.1  blk_hostcopy=7.2   blk_gpu=16.2  writefaults/s=51743
+130 fps=103.5  worst=10.7    med=9.65   sd=0.16    p99 10.25   draws/frame=1252  A_wait=42.0  B_busy=93.0  blk_hostcopy=7.8   blk_gpu=12.3  writefaults/s=59537
+131 fps=106.3  worst=17.2    med=9.35   sd=0.53    p99 10.26   draws/frame=1023  A_wait=52.0  B_busy=93.8  blk_hostcopy=9.9   blk_gpu=12.1  writefaults/s=80755
+132 fps=104.4  worst=44.5    med=9.03   sd=1.79    p99 12.13   draws/frame=697   A_wait=58.3  B_busy=94.4  blk_hostcopy=10.9  blk_gpu=21.1  writefaults/s=75251
+133 fps=114.4  worst=15.3    med=9.15   sd=1.12    p99 10.95   draws/frame=690   A_wait=60.2  B_busy=94.1  blk_hostcopy=11.9  blk_gpu=17.3  writefaults/s=84084
+134 fps=112.9  worst=20.7    med=8.89   sd=0.88    p99 10.33   draws/frame=573   A_wait=69.2  B_busy=94.9  blk_hostcopy=11.0  blk_gpu=20.7  writefaults/s=84972
+135 fps=106.1  worst=26.6    med=9.24   sd=1.57    p99 15.72   draws/frame=508   A_wait=66.4  B_busy=92.1  blk_hostcopy=11.4  blk_gpu=26.1  writefaults/s=79887
+136 fps=110.9  worst=22.9    med=8.75   sd=1.23    p99 15.65   draws/frame=493   A_wait=49.1  B_busy=90.1  blk_hostcopy=12.1  blk_gpu=23.5  writefaults/s=83338
+137 fps=95.8   worst=20.2    med=10.52  sd=1.33    p99 16.04   draws/frame=1727  A_wait=33.4  B_busy=84.4  blk_hostcopy=7.7   blk_gpu=5.2   writefaults/s=64190
+138 fps=95.3   worst=13.1    med=10.30  sd=0.59    p99 12.37   draws/frame=2080  A_wait=31.4  B_busy=86.2  blk_hostcopy=6.3   blk_gpu=1.6   writefaults/s=55476
+139 fps=119.7  worst=15.9    med=7.56   sd=1.31    p99 11.59   draws/frame=1301  A_wait=33.9  B_busy=82.6  blk_hostcopy=8.4   blk_gpu=4.0   writefaults/s=89291
+140 fps=134.6  worst=13.2    med=7.34   sd=0.49    p99 9.39    draws/frame=1194  A_wait=33.4  B_busy=81.8  blk_hostcopy=8.2   blk_gpu=6.4   writefaults/s=94203
+141 fps=135.6  worst=13.3    med=7.31   sd=0.41    p99 8.94    draws/frame=1117  A_wait=40.1  B_busy=82.2  blk_hostcopy=7.8   blk_gpu=6.7   writefaults/s=86185
+142 fps=135.0  worst=11.9    med=7.28   sd=0.53    p99 9.67    draws/frame=908   A_wait=40.3  B_busy=86.5  blk_hostcopy=8.1   blk_gpu=9.9   writefaults/s=93070
+143 fps=113.6  worst=18.0    med=9.13   sd=1.46    p99 16.91   draws/frame=898   A_wait=55.7  B_busy=94.0  blk_hostcopy=10.3  blk_gpu=12.9  writefaults/s=83721
+144 fps=122.1  worst=18.9    med=8.80   sd=1.57    p99 11.85   draws/frame=615   A_wait=55.5  B_busy=90.3  blk_hostcopy=11.8  blk_gpu=16.3  writefaults/s=84750
+145 fps=156.8  worst=8.1     med=6.33   sd=0.29    p99 7.03    draws/frame=495   A_wait=59.3  B_busy=91.6  blk_hostcopy=12.9  blk_gpu=22.1  writefaults/s=97264
+146 fps=121.7  worst=25.2    med=6.46   sd=4.03    p99 20.63   draws/frame=403   A_wait=39.5  B_busy=61.0  blk_hostcopy=9.2   blk_gpu=15.5  writefaults/s=73022
+147 fps=41.9   worst=1230.1  med=14.62  sd=84.60   p99 90.38   draws/frame=788   A_wait=48.5  B_busy=72.0  blk_hostcopy=4.6   blk_gpu=22.9  writefaults/s=23375
+148 fps=63.2   worst=29.6    med=14.77  sd=3.47    p99 27.66   draws/frame=816   A_wait=66.0  B_busy=93.9  blk_hostcopy=6.2   blk_gpu=31.9  writefaults/s=40385
+149 fps=63.2   worst=22.7    med=14.89  sd=2.43    p99 21.79   draws/frame=843   A_wait=67.3  B_busy=96.8  blk_hostcopy=6.2   blk_gpu=31.4  writefaults/s=46213
+150 fps=62.8   worst=23.0    med=15.02  sd=2.40    p99 21.92   draws/frame=844   A_wait=67.2  B_busy=96.6  blk_hostcopy=6.4   blk_gpu=31.4  writefaults/s=46060
+151 fps=63.5   worst=22.5    med=14.79  sd=2.42    p99 21.96   draws/frame=839   A_wait=67.0  B_busy=96.7  blk_hostcopy=6.4   blk_gpu=30.8  writefaults/s=46415
+152 fps=63.3   worst=22.0    med=14.85  sd=2.43    p99 21.70   draws/frame=842   A_wait=65.1  B_busy=96.8  blk_hostcopy=6.6   blk_gpu=29.8  writefaults/s=46380
+153 fps=64.2   worst=21.7    med=14.60  sd=2.41    p99 21.61   draws/frame=835   A_wait=64.1  B_busy=96.6  blk_hostcopy=6.7   blk_gpu=27.2  writefaults/s=46918
+154 fps=64.3   worst=23.3    med=14.62  sd=2.43    p99 21.66   draws/frame=837   A_wait=64.0  B_busy=96.5  blk_hostcopy=6.6   blk_gpu=26.5  writefaults/s=47030
+155 fps=63.4   worst=22.4    med=14.82  sd=2.42    p99 21.79   draws/frame=848   A_wait=64.9  B_busy=96.8  blk_hostcopy=6.9   blk_gpu=28.5  writefaults/s=46327
+156 fps=63.5   worst=23.6    med=14.74  sd=2.44    p99 21.76   draws/frame=841   A_wait=64.3  B_busy=96.6  blk_hostcopy=6.7   blk_gpu=28.2  writefaults/s=46570
+157 fps=63.5   worst=22.1    med=14.72  sd=2.38    p99 21.62   draws/frame=839   A_wait=64.7  B_busy=96.5  blk_hostcopy=6.5   blk_gpu=28.9  writefaults/s=46571
+158 fps=64.8   worst=21.9    med=14.47  sd=2.38    p99 21.52   draws/frame=840   A_wait=63.0  B_busy=96.3  blk_hostcopy=6.9   blk_gpu=26.7  writefaults/s=47479
+159 fps=63.5   worst=33.1    med=13.42  sd=4.60    p99 28.09   draws/frame=792   A_wait=55.6  B_busy=84.1  blk_hostcopy=6.9   blk_gpu=30.4  writefaults/s=47434
+160 fps=65.0   worst=27.6    med=14.14  sd=3.93    p99 27.25   draws/frame=801   A_wait=57.5  B_busy=87.3  blk_hostcopy=6.6   blk_gpu=31.1  writefaults/s=47989
+161 fps=70.2   worst=24.4    med=13.28  sd=2.40    p99 20.21   draws/frame=774   A_wait=62.2  B_busy=95.9  blk_hostcopy=6.6   blk_gpu=27.2  writefaults/s=50468
+162 fps=66.1   worst=31.9    med=13.20  sd=4.02    p99 27.84   draws/frame=811   A_wait=30.7  B_busy=45.4  blk_hostcopy=6.4   blk_gpu=28.8  writefaults/s=47474
+163 fps=56.9   worst=84.1    med=16.96  sd=7.30    p99 69.52   draws/frame=26    A_wait=14.8  B_busy=47.3  blk_hostcopy=0.4   blk_gpu=0.8   writefaults/s=28625
+164 fps=79.7   worst=800.4   med=8.35   sd=39.96   p99 40.17   draws/frame=1604  A_wait=24.7  B_busy=84.0  blk_hostcopy=5.0   blk_gpu=0.7   writefaults/s=56297
+165 fps=126.5  worst=15.3    med=7.76   sd=1.08    p99 14.21   draws/frame=1620  A_wait=28.6  B_busy=86.5  blk_hostcopy=8.1   blk_gpu=1.6   writefaults/s=92385
+166 fps=129.3  worst=20.3    med=7.09   sd=1.52    p99 13.32   draws/frame=1377  A_wait=29.3  B_busy=86.1  blk_hostcopy=8.9   blk_gpu=3.0   writefaults/s=93180
+167 fps=115.9  worst=23.7    med=7.89   sd=2.82    p99 20.87   draws/frame=1457  A_wait=43.8  B_busy=92.4  blk_hostcopy=9.5   blk_gpu=4.9   writefaults/s=90394
+168 fps=77.6   worst=25.8    med=14.54  sd=5.09    p99 24.60   draws/frame=2340  A_wait=42.0  B_busy=93.9  blk_hostcopy=11.3  blk_gpu=8.3   writefaults/s=69085
+169 fps=74.7   worst=27.0    med=14.39  sd=4.47    p99 25.58   draws/frame=2530  A_wait=40.6  B_busy=93.8  blk_hostcopy=11.4  blk_gpu=4.2   writefaults/s=71894
+170 fps=62.4   worst=26.1    med=15.73  sd=3.14    p99 24.79   draws/frame=3509  A_wait=41.3  B_busy=95.8  blk_hostcopy=11.3  blk_gpu=4.7   writefaults/s=47778
+171 fps=58.0   worst=32.9    med=16.36  sd=2.93    p99 29.02   draws/frame=3767  A_wait=43.5  B_busy=94.7  blk_hostcopy=11.1  blk_gpu=2.3   writefaults/s=44373
+172 fps=96.0   worst=24.8    med=8.42   sd=3.82    p99 22.89   draws/frame=1819  A_wait=43.0  B_busy=94.1  blk_hostcopy=11.4  blk_gpu=4.1   writefaults/s=69975
+173 fps=66.2   worst=25.3    med=14.49  sd=3.05    p99 23.80   draws/frame=3149  A_wait=49.0  B_busy=95.0  blk_hostcopy=10.7  blk_gpu=6.8   writefaults/s=50638
+174 fps=125.1  worst=21.0    med=7.28   sd=1.89    p99 17.18   draws/frame=1155  A_wait=47.2  B_busy=96.5  blk_hostcopy=13.1  blk_gpu=4.7   writefaults/s=88526
+175 fps=122.3  worst=17.4    med=7.80   sd=1.46    p99 14.16   draws/frame=1232  A_wait=46.5  B_busy=95.3  blk_hostcopy=10.5  blk_gpu=4.9   writefaults/s=85542
+176 fps=96.5   worst=27.0    med=9.11   sd=3.48    p99 22.38   draws/frame=1876  A_wait=51.0  B_busy=96.4  blk_hostcopy=9.7   blk_gpu=5.4   writefaults/s=68777
+177 fps=126.0  worst=19.9    med=7.45   sd=1.64    p99 13.97   draws/frame=1070  A_wait=50.3  B_busy=94.9  blk_hostcopy=12.7  blk_gpu=5.6   writefaults/s=89611
+178 fps=108.2  worst=19.3    med=8.76   sd=2.34    p99 18.03   draws/frame=1433  A_wait=55.2  B_busy=96.3  blk_hostcopy=9.6   blk_gpu=5.8   writefaults/s=77256
+179 fps=127.5  worst=15.1    med=7.24   sd=1.53    p99 12.76   draws/frame=1167  A_wait=47.2  B_busy=96.4  blk_hostcopy=9.0   blk_gpu=8.6   writefaults/s=72905
+180 fps=83.1   worst=29.6    med=9.91   sd=4.41    p99 25.87   draws/frame=1944  A_wait=42.1  B_busy=93.3  blk_hostcopy=9.5   blk_gpu=5.9   writefaults/s=84224
+181 fps=58.8   worst=29.4    med=17.26  sd=4.32    p99 28.92   draws/frame=3047  A_wait=39.9  B_busy=91.4  blk_hostcopy=11.1  blk_gpu=6.3   writefaults/s=88512
+182 fps=73.6   worst=29.4    med=13.17  sd=5.33    p99 27.34   draws/frame=2133  A_wait=52.2  B_busy=96.6  blk_hostcopy=11.4  blk_gpu=8.7   writefaults/s=80964
+183 fps=127.5  worst=21.2    med=7.49   sd=1.58    p99 14.74   draws/frame=1097  A_wait=44.2  B_busy=94.9  blk_hostcopy=14.9  blk_gpu=4.2   writefaults/s=84128
+184 fps=107.9  worst=19.1    med=8.72   sd=1.93    p99 16.86   draws/frame=1452  A_wait=43.4  B_busy=95.2  blk_hostcopy=12.6  blk_gpu=4.9   writefaults/s=80290
+185 fps=77.0   worst=24.5    med=12.68  sd=3.47    p99 22.78   draws/frame=2349  A_wait=42.5  B_busy=96.1  blk_hostcopy=12.2  blk_gpu=6.3   writefaults/s=58052
+186 fps=81.4   worst=24.9    med=13.62  sd=3.75    p99 22.80   draws/frame=2295  A_wait=39.8  B_busy=95.4  blk_hostcopy=13.0  blk_gpu=4.3   writefaults/s=60023
+187 fps=61.6   worst=27.4    med=15.62  sd=2.37    p99 24.48   draws/frame=3454  A_wait=47.1  B_busy=95.0  blk_hostcopy=12.2  blk_gpu=4.1   writefaults/s=46961
+188 fps=107.3  worst=24.7    med=8.42   sd=2.79    p99 21.30   draws/frame=1292  A_wait=50.1  B_busy=95.3  blk_hostcopy=12.1  blk_gpu=7.8   writefaults/s=75299
+189 fps=107.5  worst=22.9    med=7.75   sd=3.36    p99 21.47   draws/frame=1333  A_wait=43.8  B_busy=93.6  blk_hostcopy=14.5  blk_gpu=6.2   writefaults/s=74917
+190 fps=94.4   worst=27.6    med=9.76   sd=3.22    p99 21.94   draws/frame=1716  A_wait=44.4  B_busy=94.8  blk_hostcopy=12.2  blk_gpu=7.4   writefaults/s=70351
+191 fps=89.2   worst=28.7    med=10.19  sd=3.40    p99 22.81   draws/frame=1893  A_wait=47.6  B_busy=96.3  blk_hostcopy=12.5  blk_gpu=6.2   writefaults/s=66675
+192 fps=92.1   worst=31.2    med=9.94   sd=2.72    p99 21.86   draws/frame=1759  A_wait=46.1  B_busy=96.2  blk_hostcopy=11.0  blk_gpu=6.8   writefaults/s=70095
+193 fps=102.3  worst=27.2    med=9.25   sd=2.22    p99 18.28   draws/frame=1493  A_wait=45.9  B_busy=96.0  blk_hostcopy=11.0  blk_gpu=5.7   writefaults/s=84214
+194 fps=104.7  worst=26.8    med=8.79   sd=2.68    p99 20.02   draws/frame=1371  A_wait=45.9  B_busy=96.3  blk_hostcopy=14.7  blk_gpu=3.6   writefaults/s=81872
+195 fps=108.9  worst=31.7    med=8.24   sd=2.76    p99 20.02   draws/frame=1174  A_wait=50.4  B_busy=95.6  blk_hostcopy=13.9  blk_gpu=4.8   writefaults/s=77351
+196 fps=104.0  worst=26.0    med=7.67   sd=3.85    p99 22.69   draws/frame=1499  A_wait=37.5  B_busy=93.7  blk_hostcopy=15.0  blk_gpu=4.4   writefaults/s=71414
+197 fps=72.2   worst=25.0    med=14.42  sd=3.37    p99 22.96   draws/frame=2805  A_wait=40.5  B_busy=96.1  blk_hostcopy=12.4  blk_gpu=4.3   writefaults/s=55062
+198 fps=76.9   worst=30.8    med=13.25  sd=4.16    p99 25.76   draws/frame=2458  A_wait=52.3  B_busy=94.7  blk_hostcopy=12.7  blk_gpu=5.1   writefaults/s=58287
+199 fps=125.0  worst=20.6    med=7.42   sd=1.86    p99 17.46   draws/frame=989   A_wait=43.8  B_busy=94.4  blk_hostcopy=15.4  blk_gpu=7.9   writefaults/s=82083
+200 fps=77.0   worst=30.9    med=12.79  sd=3.96    p99 24.50   draws/frame=2350  A_wait=39.6  B_busy=92.4  blk_hostcopy=12.9  blk_gpu=5.8   writefaults/s=56871
+201 fps=76.8   worst=32.2    med=11.23  sd=4.56    p99 28.35   draws/frame=2244  A_wait=46.6  B_busy=94.2  blk_hostcopy=12.2  blk_gpu=4.9   writefaults/s=64251
+202 fps=84.4   worst=28.5    med=11.19  sd=3.30    p99 22.64   draws/frame=1751  A_wait=41.9  B_busy=95.9  blk_hostcopy=12.0  blk_gpu=4.1   writefaults/s=71703
+203 fps=66.6   worst=34.5    med=14.52  sd=2.45    p99 23.83   draws/frame=2931  A_wait=38.3  B_busy=95.7  blk_hostcopy=12.5  blk_gpu=2.6   writefaults/s=64044
+204 fps=55.6   worst=29.3    med=17.31  sd=2.70    p99 28.41   draws/frame=2919  A_wait=39.4  B_busy=94.3  blk_hostcopy=13.1  blk_gpu=3.6   writefaults/s=72047
+205 fps=61.4   worst=27.8    med=15.52  sd=2.76    p99 26.30   draws/frame=2503  A_wait=42.4  B_busy=95.3  blk_hostcopy=13.5  blk_gpu=3.9   writefaults/s=55143
+206 fps=70.3   worst=35.7    med=14.05  sd=2.96    p99 25.89   draws/frame=2070  A_wait=54.4  B_busy=96.2  blk_hostcopy=13.3  blk_gpu=2.6   writefaults/s=57339
+207 fps=94.1   worst=24.0    med=9.86   sd=2.09    p99 21.58   draws/frame=1102  A_wait=54.6  B_busy=95.5  blk_hostcopy=15.1  blk_gpu=3.2   writefaults/s=71879
+208 fps=94.5   worst=31.9    med=9.91   sd=2.36    p99 20.39   draws/frame=1112  A_wait=52.2  B_busy=95.4  blk_hostcopy=14.4  blk_gpu=3.4   writefaults/s=65674
+209 fps=83.0   worst=32.5    med=10.54  sd=3.44    p99 25.23   draws/frame=1467  A_wait=47.0  B_busy=93.5  blk_hostcopy=13.7  blk_gpu=4.8   writefaults/s=60037
+210 fps=81.1   worst=26.2    med=11.40  sd=2.72    p99 22.33   draws/frame=1434  A_wait=50.4  B_busy=93.9  blk_hostcopy=13.8  blk_gpu=5.0   writefaults/s=59701
+211 fps=92.5   worst=30.4    med=9.91   sd=3.88    p99 25.84   draws/frame=1301  A_wait=43.1  B_busy=94.8  blk_hostcopy=13.2  blk_gpu=4.6   writefaults/s=71961
+212 fps=77.7   worst=29.7    med=12.14  sd=2.85    p99 23.96   draws/frame=1863  A_wait=47.8  B_busy=95.7  blk_hostcopy=13.2  blk_gpu=2.8   writefaults/s=59240
+213 fps=93.3   worst=27.0    med=10.45  sd=2.89    p99 23.06   draws/frame=1339  A_wait=49.2  B_busy=96.5  blk_hostcopy=14.7  blk_gpu=2.5   writefaults/s=65718
+214 fps=114.4  worst=26.7    med=8.19   sd=2.11    p99 18.10   draws/frame=1145  A_wait=52.1  B_busy=97.3  blk_hostcopy=15.2  blk_gpu=1.3   writefaults/s=75488
+215 fps=133.1  worst=11.2    med=7.34   sd=0.90    p99 11.00   draws/frame=1004  A_wait=51.1  B_busy=97.2  blk_hostcopy=17.0  blk_gpu=0.0   writefaults/s=82947
+216 fps=134.1  worst=12.4    med=7.27   sd=0.91    p99 10.72   draws/frame=1016  A_wait=50.4  B_busy=97.2  blk_hostcopy=15.8  blk_gpu=0.0   writefaults/s=83186
+217 fps=133.6  worst=12.1    med=7.26   sd=0.95    p99 11.01   draws/frame=993   A_wait=45.2  B_busy=96.7  blk_hostcopy=16.3  blk_gpu=0.0   writefaults/s=82952
+218 fps=95.4   worst=22.7    med=10.27  sd=1.59    p99 17.79   draws/frame=1574  A_wait=43.0  B_busy=94.6  blk_hostcopy=13.4  blk_gpu=1.5   writefaults/s=69602
+219 fps=67.8   worst=33.1    med=14.83  sd=4.40    p99 28.35   draws/frame=2639  A_wait=39.7  B_busy=91.6  blk_hostcopy=11.1  blk_gpu=4.4   writefaults/s=57308
+220 fps=62.6   worst=29.4    med=15.49  sd=4.66    p99 28.60   draws/frame=2072  A_wait=38.8  B_busy=93.3  blk_hostcopy=12.0  blk_gpu=6.3   writefaults/s=80670
+221 fps=73.6   worst=37.4    med=12.06  sd=4.58    p99 28.01   draws/frame=2075  A_wait=46.5  B_busy=96.8  blk_hostcopy=12.2  blk_gpu=5.3   writefaults/s=59526
+222 fps=103.9  worst=22.2    med=9.32   sd=1.51    p99 16.85   draws/frame=1293  A_wait=51.6  B_busy=96.5  blk_hostcopy=13.2  blk_gpu=1.5   writefaults/s=75371
+223 fps=110.3  worst=35.3    med=8.64   sd=2.43    p99 19.33   draws/frame=1071  A_wait=46.1  B_busy=95.6  blk_hostcopy=14.0  blk_gpu=1.6   writefaults/s=85148
+224 fps=97.3   worst=21.3    med=9.79   sd=1.97    p99 20.09   draws/frame=1385  A_wait=45.8  B_busy=95.8  blk_hostcopy=12.4  blk_gpu=2.4   writefaults/s=75234
+225 fps=99.4   worst=20.8    med=9.74   sd=1.74    p99 18.27   draws/frame=1330  A_wait=54.7  B_busy=96.6  blk_hostcopy=14.2  blk_gpu=2.2   writefaults/s=71652
+226 fps=116.5  worst=18.5    med=8.20   sd=1.52    p99 14.99   draws/frame=933   A_wait=52.8  B_busy=96.6  blk_hostcopy=14.5  blk_gpu=0.8   writefaults/s=78353
+227 fps=112.8  worst=17.6    med=8.57   sd=1.49    p99 14.97   draws/frame=1030  A_wait=51.7  B_busy=96.7  blk_hostcopy=14.2  blk_gpu=0.9   writefaults/s=77179
+228 fps=111.8  worst=16.2    med=8.82   sd=0.87    p99 12.82   draws/frame=1055  A_wait=51.8  B_busy=94.4  blk_hostcopy=17.8  blk_gpu=0.7   writefaults/s=77935
+229 fps=116.3  worst=18.9    med=8.33   sd=1.34    p99 16.28   draws/frame=1029  A_wait=51.8  B_busy=94.0  blk_hostcopy=18.0  blk_gpu=2.8   writefaults/s=77878
+230 fps=114.6  worst=18.1    med=8.56   sd=1.27    p99 16.28   draws/frame=1065  A_wait=52.3  B_busy=96.2  blk_hostcopy=16.4  blk_gpu=4.0   writefaults/s=77839
+231 fps=115.4  worst=15.0    med=8.54   sd=0.88    p99 11.45   draws/frame=1015  A_wait=55.5  B_busy=94.2  blk_hostcopy=15.2  blk_gpu=0.6   writefaults/s=92550
+232 fps=117.7  worst=17.3    med=8.28   sd=1.22    p99 16.05   draws/frame=919   A_wait=57.7  B_busy=96.2  blk_hostcopy=18.3  blk_gpu=4.8   writefaults/s=81028
+233 fps=126.2  worst=9.6     med=7.82   sd=0.42    p99 9.26    draws/frame=898   A_wait=55.7  B_busy=95.8  blk_hostcopy=19.5  blk_gpu=1.7   writefaults/s=82455
+234 fps=126.2  worst=12.5    med=7.80   sd=0.48    p99 9.22    draws/frame=902   A_wait=58.0  B_busy=95.2  blk_hostcopy=19.4  blk_gpu=1.4   writefaults/s=82516
+235 fps=129.6  worst=14.6    med=7.58   sd=0.56    p99 9.35    draws/frame=818   A_wait=56.2  B_busy=89.9  blk_hostcopy=19.9  blk_gpu=1.9   writefaults/s=83757
+236 fps=64.7   worst=39.0    med=9.25   sd=8.05    p99 27.14   draws/frame=902   A_wait=56.3  B_busy=93.3  blk_hostcopy=15.0  blk_gpu=0.2   writefaults/s=220183
+237 fps=108.2  worst=39.3    med=7.50   sd=4.88    p99 28.95   draws/frame=973   A_wait=37.7  B_busy=96.8  blk_hostcopy=17.6  blk_gpu=2.7   writefaults/s=110910
+238 fps=51.2   worst=28.9    med=19.71  sd=2.34    p99 28.21   draws/frame=3915  A_wait=41.2  B_busy=94.4  blk_hostcopy=11.7  blk_gpu=1.2   writefaults/s=83973
+239 fps=54.5   worst=42.7    med=16.53  sd=4.41    p99 32.89   draws/frame=3227  A_wait=41.7  B_busy=95.1  blk_hostcopy=11.5  blk_gpu=2.5   writefaults/s=102576
+240 fps=82.6   worst=24.1    med=11.32  sd=2.86    p99 21.82   draws/frame=2012  A_wait=45.0  B_busy=95.2  blk_hostcopy=12.0  blk_gpu=2.5   writefaults/s=62098
+241 fps=84.1   worst=32.4    med=10.06  sd=5.09    p99 27.76   draws/frame=1556  A_wait=45.1  B_busy=94.9  blk_hostcopy=13.5  blk_gpu=2.5   writefaults/s=113506
+242 fps=52.0   worst=37.5    med=18.15  sd=6.30    p99 35.10   draws/frame=1861  A_wait=44.6  B_busy=94.2  blk_hostcopy=12.7  blk_gpu=2.6   writefaults/s=189167
+243 fps=84.2   worst=30.3    med=9.81   sd=5.11    p99 26.93   draws/frame=1328  A_wait=40.2  B_busy=90.8  blk_hostcopy=14.4  blk_gpu=1.5   writefaults/s=129436
+244 fps=52.6   worst=29.3    med=17.21  sd=4.07    p99 28.55   draws/frame=2605  A_wait=42.4  B_busy=92.3  blk_hostcopy=12.2  blk_gpu=2.0   writefaults/s=121958
+245 fps=50.3   worst=31.6    med=18.63  sd=5.01    p99 30.49   draws/frame=2131  A_wait=50.4  B_busy=94.9  blk_hostcopy=12.1  blk_gpu=3.2   writefaults/s=145257
+246 fps=88.7   worst=27.4    med=9.65   sd=3.45    p99 23.84   draws/frame=1246  A_wait=47.2  B_busy=96.0  blk_hostcopy=14.7  blk_gpu=2.1   writefaults/s=87413
+247 fps=75.5   worst=27.3    med=13.71  sd=3.50    p99 23.60   draws/frame=1851  A_wait=53.1  B_busy=90.7  blk_hostcopy=14.2  blk_gpu=2.5   writefaults/s=77955
+248 fps=41.8   worst=41.0    med=24.40  sd=4.09    p99 33.49   draws/frame=1430  A_wait=49.4  B_busy=94.4  blk_hostcopy=13.4  blk_gpu=2.5   writefaults/s=238923
+249 fps=79.9   worst=29.8    med=11.67  sd=4.00    p99 26.93   draws/frame=1371  A_wait=50.4  B_busy=96.9  blk_hostcopy=14.3  blk_gpu=2.3   writefaults/s=92077
+250 fps=103.0  worst=31.1    med=9.14   sd=2.36    p99 18.28   draws/frame=1213  A_wait=56.8  B_busy=93.4  blk_hostcopy=14.9  blk_gpu=1.7   writefaults/s=72830
+251 fps=43.1   worst=35.1    med=24.59  sd=5.35    p99 34.23   draws/frame=1356  A_wait=44.5  B_busy=96.0  blk_hostcopy=13.2  blk_gpu=1.2   writefaults/s=239871
+252 fps=81.6   worst=26.4    med=11.70  sd=2.32    p99 22.60   draws/frame=1563  A_wait=48.7  B_busy=95.8  blk_hostcopy=13.7  blk_gpu=2.5   writefaults/s=59408
+253 fps=98.6   worst=30.0    med=9.39   sd=2.69    p99 20.71   draws/frame=1268  A_wait=43.9  B_busy=92.3  blk_hostcopy=14.6  blk_gpu=2.7   writefaults/s=70776
+254 fps=88.6   worst=24.4    med=10.44  sd=3.47    p99 22.89   draws/frame=1615  A_wait=45.6  B_busy=95.9  blk_hostcopy=14.2  blk_gpu=6.1   writefaults/s=65635
+255 fps=83.5   worst=26.5    med=11.10  sd=2.87    p99 23.35   draws/frame=1554  A_wait=42.9  B_busy=95.6  blk_hostcopy=11.0  blk_gpu=2.3   writefaults/s=68823
+256 fps=75.8   worst=47.7    med=11.02  sd=6.10    p99 38.28   draws/frame=1712  A_wait=48.5  B_busy=96.2  blk_hostcopy=12.3  blk_gpu=2.2   writefaults/s=106579
+257 fps=108.4  worst=22.1    med=8.77   sd=1.85    p99 16.43   draws/frame=1102  A_wait=56.2  B_busy=97.1  blk_hostcopy=14.2  blk_gpu=1.6   writefaults/s=75600
+258 fps=123.5  worst=18.0    med=7.86   sd=1.18    p99 12.58   draws/frame=888   A_wait=45.8  B_busy=93.8  blk_hostcopy=16.9  blk_gpu=0.7   writefaults/s=83631
+259 fps=89.6   worst=26.4    med=9.60   sd=3.67    p99 24.02   draws/frame=1643  A_wait=45.5  B_busy=94.2  blk_hostcopy=13.5  blk_gpu=4.8   writefaults/s=65213
+260 fps=83.2   worst=49.1    med=9.07   sd=6.63    p99 35.80   draws/frame=1530  A_wait=52.2  B_busy=97.4  blk_hostcopy=12.2  blk_gpu=1.3   writefaults/s=121568
+261 fps=116.2  worst=20.8    med=8.33   sd=1.50    p99 15.15   draws/frame=1001  A_wait=51.5  B_busy=95.6  blk_hostcopy=15.5  blk_gpu=0.3   writefaults/s=82510
+262 fps=122.1  worst=15.2    med=8.16   sd=0.58    p99 9.54    draws/frame=992   A_wait=56.4  B_busy=95.4  blk_hostcopy=19.0  blk_gpu=0.8   writefaults/s=82513
+263 fps=100.9  worst=27.2    med=7.86   sd=4.29    p99 23.44   draws/frame=551   A_wait=28.9  B_busy=45.9  blk_hostcopy=14.4  blk_gpu=0.1   writefaults/s=66191
+264 fps=74.2   worst=683.2   med=8.19   sd=35.36   p99 34.24   draws/frame=961   A_wait=44.3  B_busy=90.4  blk_hostcopy=4.9   blk_gpu=1.4   writefaults/s=50159
+265 fps=117.2  worst=41.8    med=8.42   sd=1.78    p99 14.36   draws/frame=1616  A_wait=45.6  B_busy=96.9  blk_hostcopy=8.1   blk_gpu=0.8   writefaults/s=87200
+266 fps=119.4  worst=11.8    med=8.32   sd=0.64    p99 9.94    draws/frame=1631  A_wait=48.0  B_busy=96.3  blk_hostcopy=8.0   blk_gpu=0.1   writefaults/s=90119
+267 fps=119.3  worst=20.3    med=8.20   sd=1.40    p99 16.07   draws/frame=1251  A_wait=49.9  B_busy=95.6  blk_hostcopy=10.4  blk_gpu=3.6   writefaults/s=90075
+268 fps=115.9  worst=15.5    med=8.49   sd=0.80    p99 12.46   draws/frame=797   A_wait=72.1  B_busy=96.5  blk_hostcopy=9.3   blk_gpu=13.9  writefaults/s=83051
+269 fps=112.5  worst=11.2    med=8.93   sd=0.40    p99 9.84    draws/frame=769   A_wait=59.4  B_busy=96.8  blk_hostcopy=9.7   blk_gpu=13.6  writefaults/s=80047
+270 fps=118.7  worst=32.2    med=8.67   sd=1.50    p99 10.56   draws/frame=569   A_wait=73.7  B_busy=95.3  blk_hostcopy=10.4  blk_gpu=21.5  writefaults/s=81411
+271 fps=132.5  worst=75.4    med=7.38   sd=2.65    p99 8.06    draws/frame=356   A_wait=73.9  B_busy=93.8  blk_hostcopy=11.4  blk_gpu=36.8  writefaults/s=74871
+272 fps=126.1  worst=15.9    med=7.30   sd=1.13    p99 9.68    draws/frame=366   A_wait=69.3  B_busy=94.9  blk_hostcopy=11.6  blk_gpu=29.3  writefaults/s=72328
+273 fps=135.1  worst=10.0    med=7.34   sd=0.36    p99 9.37    draws/frame=334   A_wait=68.6  B_busy=92.6  blk_hostcopy=9.6   blk_gpu=28.0  writefaults/s=78686
+274 fps=121.6  worst=21.2    med=7.25   sd=1.52    p99 10.20   draws/frame=355   A_wait=76.3  B_busy=95.4  blk_hostcopy=9.5   blk_gpu=32.9  writefaults/s=72228
+275 fps=115.7  worst=22.6    med=9.47   sd=1.34    p99 11.05   draws/frame=344   A_wait=74.5  B_busy=95.0  blk_hostcopy=9.4   blk_gpu=35.4  writefaults/s=60617
+276 fps=121.6  worst=31.3    med=7.31   sd=1.86    p99 12.32   draws/frame=482   A_wait=71.4  B_busy=95.8  blk_hostcopy=11.7  blk_gpu=24.9  writefaults/s=74875
+277 fps=108.4  worst=33.4    med=9.34   sd=1.70    p99 14.62   draws/frame=413   A_wait=75.1  B_busy=96.2  blk_hostcopy=8.7   blk_gpu=33.1  writefaults/s=51562
+278 fps=114.5  worst=10.5    med=8.72   sd=0.10    p99 9.03    draws/frame=471   A_wait=74.7  B_busy=96.1  blk_hostcopy=9.6   blk_gpu=25.8  writefaults/s=57844
+279 fps=114.6  worst=16.7    med=8.72   sd=0.47    p99 9.06    draws/frame=471   A_wait=65.8  B_busy=96.4  blk_hostcopy=10.7  blk_gpu=24.1  writefaults/s=60901
+280 fps=103.2  worst=19.1    med=9.61   sd=1.23    p99 17.56   draws/frame=858   A_wait=63.4  B_busy=94.1  blk_hostcopy=10.4  blk_gpu=10.8  writefaults/s=77354
+281 fps=106.5  worst=20.0    med=9.09   sd=1.24    p99 17.27   draws/frame=501   A_wait=72.6  B_busy=96.2  blk_hostcopy=11.2  blk_gpu=17.4  writefaults/s=73547
+282 fps=109.9  worst=16.6    med=8.95   sd=0.77    p99 14.92   draws/frame=457   A_wait=71.3  B_busy=96.4  blk_hostcopy=12.1  blk_gpu=17.9  writefaults/s=76399
+283 fps=113.5  worst=21.7    med=8.75   sd=0.75    p99 10.96   draws/frame=488   A_wait=64.4  B_busy=96.0  blk_hostcopy=11.8  blk_gpu=16.3  writefaults/s=78064
+284 fps=112.8  worst=19.4    med=8.86   sd=1.34    p99 14.71   draws/frame=871   A_wait=60.5  B_busy=96.4  blk_hostcopy=10.4  blk_gpu=10.2  writefaults/s=82711
+285 fps=121.2  worst=15.4    med=8.55   sd=1.43    p99 12.45   draws/frame=750   A_wait=55.6  B_busy=96.1  blk_hostcopy=12.5  blk_gpu=8.2   writefaults/s=87897
+286 fps=103.1  worst=19.5    med=9.40   sd=1.07    p99 12.79   draws/frame=899   A_wait=60.6  B_busy=95.0  blk_hostcopy=9.4   blk_gpu=8.6   writefaults/s=77457
+287 fps=109.6  worst=19.2    med=8.87   sd=1.04    p99 16.45   draws/frame=556   A_wait=69.3  B_busy=96.1  blk_hostcopy=10.5  blk_gpu=17.6  writefaults/s=76325
+288 fps=104.4  worst=18.6    med=9.53   sd=1.10    p99 15.03   draws/frame=1130  A_wait=48.3  B_busy=96.3  blk_hostcopy=9.5   blk_gpu=8.7   writefaults/s=74996
+289 fps=122.7  worst=20.8    med=8.40   sd=1.57    p99 10.99   draws/frame=923   A_wait=56.5  B_busy=93.3  blk_hostcopy=11.6  blk_gpu=3.6   writefaults/s=88319
+290 fps=143.8  worst=12.5    med=6.93   sd=0.33    p99 7.63    draws/frame=628   A_wait=36.5  B_busy=55.3  blk_hostcopy=12.2  blk_gpu=16.4  writefaults/s=84922
+291 fps=60.0   worst=672.8   med=14.56  sd=38.24   p99 36.72   draws/frame=506   A_wait=72.6  B_busy=94.6  blk_hostcopy=4.7   blk_gpu=11.6  writefaults/s=32182
+292 fps=67.0   worst=32.1    med=14.84  sd=1.41    p99 20.62   draws/frame=820   A_wait=72.0  B_busy=97.3  blk_hostcopy=10.1  blk_gpu=17.4  writefaults/s=38728
+293 fps=67.5   worst=15.7    med=14.74  sd=0.33    p99 15.63   draws/frame=878   A_wait=70.6  B_busy=97.4  blk_hostcopy=10.7  blk_gpu=14.5  writefaults/s=49789
+294 fps=65.2   worst=16.0    med=15.32  sd=0.17    p99 15.89   draws/frame=891   A_wait=69.7  B_busy=97.3  blk_hostcopy=11.0  blk_gpu=15.1  writefaults/s=49143
+295 fps=68.4   worst=15.2    med=14.62  sd=0.19    p99 15.14   draws/frame=831   A_wait=70.2  B_busy=97.2  blk_hostcopy=10.7  blk_gpu=14.5  writefaults/s=49839
