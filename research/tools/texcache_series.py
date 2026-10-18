@@ -13,7 +13,7 @@ STATS = re.compile(r'^Frame stats: ' + NUM + r' FPS.*?' + NUM + r' draws/frame.*
 PACE = re.compile(r'^Frame pacing: median ' + NUM + r' ms, stddev ' + NUM + r' ms, p99 ' + NUM)
 CACHE = re.compile(r'^Texture cache stats \(5 s\): (\d+) images registered \(\+(\d+) -(\d+)\).*?lookups fast (\d+) '
                    r'slow (\d+) \(avg ' + NUM + r' candidates\); overlaps (\d+), expands (\d+); uploads (\d+) \('
-                   + NUM + r' MiB\); alias syncs (\d+), copies (\d+); GPU memory (\d+) MiB')
+                   + NUM + r' MiB\); alias syncs (\d+), copies (\d+)(?:, volume views (\d+))?; GPU memory (\d+) MiB')
 
 ap = argparse.ArgumentParser()
 ap.add_argument('log')
@@ -28,9 +28,9 @@ for line in open(a.log, encoding='utf-8', errors='replace'):
         row.update(sd=float(m[2]), p99=float(m[3]))
     elif row is not None and (m := CACHE.match(line)):
         row.update(live=int(m[1]), created=int(m[2]), slow=int(m[5]), cand=float(m[6]), overlaps=int(m[7]),
-                   expands=int(m[8]), upmib=float(m[10]), syncs=int(m[11]), gpumib=int(m[13]))
+                   expands=int(m[8]), upmib=float(m[10]), syncs=int(m[11]), vviews=int(m[13] or 0), gpumib=int(m[14]))
 cols = ['fps', 'sd', 'p99', 'draws', 'gpu', 'live', 'created', 'expands', 'overlaps', 'upmib', 'slow', 'cand',
-        'syncs', 'gpumib']
+        'syncs', 'vviews', 'gpumib']
 print('   n ' + ' '.join(f'{c:>8}' for c in cols))
 for i, r in enumerate(rows, 1):
     if i % a.every == 0:

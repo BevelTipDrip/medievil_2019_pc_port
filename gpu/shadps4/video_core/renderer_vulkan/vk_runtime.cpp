@@ -690,13 +690,23 @@ void Runtime::ClearImage(VideoCore::Image* dst, const VideoCore::SubresourceRang
         FlushBarriers();
     }
 
-    const vk::ImageSubresourceRange vk_range = {
+    vk::ImageSubresourceRange vk_range = {
         .aspectMask = vk::ImageAspectFlagBits::eColor,
         .baseMipLevel = range.base.level,
         .levelCount = range.extent.levels,
         .baseArrayLayer = range.base.layer,
         .layerCount = range.extent.layers,
     };
+    if (dst->info.props.is_volume) {
+        // gow3: the layers of a render target view of a volume are its depth slices; a clear
+        // covers the whole volume (Vulkan: layer 0, count 1 for 3D images).
+        if (range.base.layer != 0 || range.extent.layers != dst->info.size.depth) {
+            LOG_WARNING(Render_Vulkan, "Clearing slices {}+{} clears the whole {}-slice volume",
+                        range.base.layer, range.extent.layers, dst->info.size.depth);
+        }
+        vk_range.baseArrayLayer = 0;
+        vk_range.layerCount = 1;
+    }
     scheduler.Record([image = dst->GetImage(), color = clear_value.color,
                       vk_range](vk::CommandBuffer cmdbuf) {
         cmdbuf.clearColorImage(image, vk::ImageLayout::eTransferDstOptimal, color, vk_range);

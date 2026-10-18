@@ -96,6 +96,11 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
     if (!info.is_storage) {
         usage_ci.usage &= ~vk::ImageUsageFlagBits::eStorage;
     }
+    if (image.info.props.is_volume && info.type == AmdGpu::ImageType::Color2DArray) {
+        // gow3: a 2D array view of a 3D image may only be an attachment (2D-array compatible).
+        usage_ci.usage &= vk::ImageUsageFlagBits::eColorAttachment |
+                          vk::ImageUsageFlagBits::eAttachmentFeedbackLoopEXT;
+    }
     vk::ImageViewMinLodCreateInfoEXT min_lod_ci{};
     if (info.min_lod != 0 && instance.IsImageViewMinLodSupported()) {
         const float last_level =

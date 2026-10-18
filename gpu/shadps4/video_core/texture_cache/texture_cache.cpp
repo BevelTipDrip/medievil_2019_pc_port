@@ -31,7 +31,7 @@ namespace {
 // restored it: these show which part grows. Off: one load per counter.
 struct CacheStats {
     std::atomic<u64> fast_lookups, slow_lookups, slow_candidates, overlaps, expands, registered,
-        unregistered, refreshes, refresh_bytes, alias_copies, alias_syncs;
+        unregistered, refreshes, refresh_bytes, alias_copies, alias_syncs, volume_views;
 };
 CacheStats cache_stats;
 bool CacheStatsEnabled() {
@@ -45,6 +45,20 @@ bool CacheStatsEnabled() {
     do {                                                                                           \
         if (CacheStatsEnabled()) cache_stats.name.fetch_add((n), std::memory_order_relaxed);      \
     } while (0)
+
+// gow3: a volume the guest renders slice by slice and samples as 3D: a 2D render target with
+// one layer per depth slice at the address of a 3D image of the same size. 3D images are
+// created 2D-array compatible, so it renders through a 2D array view of the volume.
+bool IsVolumeSliceTarget(const ImageInfo& info, TextureCache::BindingType binding,
+                         const ImageInfo& volume) {
+    return binding == TextureCache::BindingType::RenderTarget &&
+           volume.type == AmdGpu::ImageType::Color3D && info.type != AmdGpu::ImageType::Color3D &&
+           info.size.width == volume.size.width && info.size.height == volume.size.height &&
+           info.resources.layers == volume.size.depth && info.resources.levels == 1 &&
+           volume.resources.levels == 1 &&
+           IsVulkanFormatCompatible(volume.pixel_format, info.pixel_format) &&
+           !Gow3Toggle::Disabled(Gow3Toggle::VolumeSliceViews);
+}
 } // namespace
 
 static constexpr u64 PageShift = 12;
@@ -656,6 +670,14 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
             return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
+        // gow3: MediEvil's colour grading LUT and translucency lighting volumes switched
+        // between a 2D array (render target) and a 3D image (texture) several times a frame,
+        // each switch a full re-upload from guest memory: about 2 GB/s over PCIe (T-C1).
+        if (IsVolumeSliceTarget(image_info, binding, cache_image.info)) {
+            CACHE_STAT(volume_views, 1);
+            return {cache_image_id, -1, -1};
+        }
+
         if (image_info.guest_size == cache_image.info.guest_size &&
             (image_info.type == AmdGpu::ImageType::Color3D ||
              cache_image.info.type == AmdGpu::ImageType::Color3D)) {
@@ -993,7 +1015,8 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
         if (exact_fmt && info.pixel_format != image_resolved.info.pixel_format) {
             // Cannot reuse this image as we need the exact requested format.
             image_id = {};
-        } else if (image_resolved.info.resources < info.resources) {
+        } else if (image_resolved.info.resources < info.resources &&
+                   !IsVolumeSliceTarget(info, desc.type, image_resolved.info)) {
             // The image was clearly picked up wrong.
             FreeImage(image_id);
             image_id = {};
@@ -1609,7 +1632,7 @@ void TextureCache::RunGarbageCollector() {
             std::printf("Texture cache stats (5 s): %llu images registered (+%llu -%llu), %zu slots, "
                         "%zu alias groups; lookups fast %llu slow %llu (avg %.1f candidates); "
                         "overlaps %llu, expands %llu; uploads %llu (%.1f MiB); alias syncs %llu, "
-                        "copies %llu; GPU memory %llu MiB, collector trigger %llu / pressure %llu MiB, "
+                        "copies %llu, volume views %llu; GPU memory %llu MiB, collector trigger %llu / pressure %llu MiB, "
                         "tick %llu\n",
                         (unsigned long long)live_registered, (unsigned long long)reg,
                         (unsigned long long)unreg, slot_images.size(), alias_states.size(),
@@ -1621,6 +1644,7 @@ void TextureCache::RunGarbageCollector() {
                         take(cache_stats.refresh_bytes) / 1048576.0,
                         (unsigned long long)take(cache_stats.alias_syncs),
                         (unsigned long long)take(cache_stats.alias_copies),
+                        (unsigned long long)take(cache_stats.volume_views),
                         (unsigned long long)(total_used_memory >> 20),
                         (unsigned long long)(trigger_gc_memory >> 20),
                         (unsigned long long)(pressure_gc_memory >> 20), (unsigned long long)gc_tick);

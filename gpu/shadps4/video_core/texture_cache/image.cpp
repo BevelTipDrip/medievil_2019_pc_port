@@ -303,6 +303,12 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
                         std::optional<SubresourceRange> subres_range) {
     auto& last_state = backing->state;
     auto& subresource_states = backing->subresource_states;
+    // gow3: a 3D image has one array layer; the layers of a 2D array view of it are depth
+    // slices, which a barrier cannot select (Vulkan: layer 0, count 1), so it covers the volume.
+    if (subres_range && info.props.is_volume) {
+        subres_range->base.layer = 0;
+        subres_range->extent.layers = 1;
+    }
 
     const bool needs_partial_transition =
         subres_range &&
