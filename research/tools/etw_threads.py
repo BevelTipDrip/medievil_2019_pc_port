@@ -1,11 +1,14 @@
 """Per-thread CPU of one process from an xperf dumper export (xperf -i x.etl -o x.csv -a dumper).
 
     py -3.14 etw_threads.py <dump.csv> <pid> [--exe out/medievil-runtime.exe] [--top 30]
+                            [--functions N] [--threads 8] [--slice SECONDS]
 
 SampledProfile events (1 kHz per CPU) are counted per thread and per module of the sampled address
 ("Unknown" = no Windows image: the game's own PS4 code in this port). Thread start addresses
 (T-DCStart / T-Start) inside the executable are named with llvm-symbolizer, which tells the port's
 threads apart (the trace has no thread names). Cores = samples / 1000 / seconds.
+--slice prints, per time slice, the cores of the --threads busiest threads without the samples in
+sleep / yield calls (SPIN functions): what changes during a short episode such as a frame pacing burst.
 """
 import argparse
 import collections
@@ -14,6 +17,9 @@ import shutil
 import subprocess
 import sys
 
+# Sleep(0) / yield spins count as samples but are no work.
+SPIN = ('ntdll.dll!NtDelayExecution', 'ntoskrnl.exe!KiSystemServiceUser', 'ntoskrnl.exe!KeYieldExecution',
+        'ntdll.dll!RtlDelayExecution', 'ntdll.dll!NtYieldExecution')
 ADDR = re.compile(r'([^!,]+)!(0x[0-9a-fA-F]+|"Unknown"|[^,]+)')
 
 
@@ -27,6 +33,7 @@ def main():
                     help='also list the N busiest functions of each of the first --threads threads '
                          '(needs a dump made with -symbols for Windows modules)')
     ap.add_argument('--threads', type=int, default=8)
+    ap.add_argument('--slice', type=float, default=0, help='seconds per slice of the per-slice table')
     a = ap.parse_args()
     proc = re.compile(r'\(\s*' + re.escape(a.pid) + r'\)')
     samples = collections.Counter()
@@ -34,6 +41,7 @@ def main():
     functions = collections.defaultdict(collections.Counter)
     starts, image_base = {}, None
     first = last = None
+    sliced = collections.defaultdict(collections.Counter)  # (slice, tid) -> work samples
     with open(a.dump, encoding='utf-8', errors='replace') as f:
         for line in f:
             kind = line.split(',', 1)[0].strip()
@@ -51,6 +59,8 @@ def main():
                 # may hold commas (templates), so the sampled function is read from the right.
                 where = p[-3]
                 functions[tid][where] += 1
+                if a.slice and where not in SPIN:
+                    sliced[int((ts - first) / 1e6 / a.slice)][tid] += 1
                 modules[tid][where.split('!')[0].strip('"') if '!' in where else where] += 1
             elif kind in ('T-DCStart', 'T-Start'):
                 starts.setdefault(int(p[3]), p[-1])
@@ -77,6 +87,13 @@ def main():
         top = ', '.join(f'{m} {c * 100 // n}%' for m, c in modules[tid].most_common(3))
         start = names.get(tid) or starts.get(tid, '?').split('!')[-1][:40]
         print(f'{tid:6d} {n / 1000 / seconds:6.2f}  {game * 100 / n:8.0f}%  {top[:60]:60}|  {start}')
+    if a.slice:
+        busiest = [tid for tid, _ in samples.most_common(a.threads)]
+        label = lambda tid: (names.get(tid) or starts.get(tid, '?').split('!')[-1])[-14:]
+        print(f'\nwork cores per {a.slice:g} s slice (sleep / yield samples left out)')
+        print(f'{"t (s)":>6} ' + ' '.join(f'{label(tid):>14}' for tid in busiest))
+        for i in sorted(sliced):
+            print(f'{i * a.slice:6.1f} ' + ' '.join(f'{sliced[i][tid] / 1000 / a.slice:14.2f}' for tid in busiest))
     if not a.functions:
         return
     # The port's own addresses: grouped by function name (llvm-symbolizer), the rest as exported.
