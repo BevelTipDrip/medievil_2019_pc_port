@@ -42,6 +42,26 @@ Fix directions, by what P0 shows:
    protected (Bloodborne's targeted host-copy waits, plan-gpu-threading.md #1, `daa7165`).
 3. Move readback recording off stage B (Bloodborne's readback queue, #2).
 
+### The launcher's "GPU data" settings (read 2026-10-18, the user asked)
+
+| Launcher | Setting / env | MediEvil value | Effect (code) |
+|---|---|---|---|
+| Deferred GPU readbacks | `deferred_readback` → `GOW3_DEFERRED_READBACK` (texture_cache.h:446-449) | on | Image downloads recorded in a batch, published when the GPU passes them, pages watched meanwhile; a CPU touch waits for that copy only (`ResolveReadbacks`). Off: `scheduler.Finish()` per batch (texture_cache.cpp:240-257). |
+| Game reads GPU data without waiting | `stale_readback` → `GOW3_STALE_READBACK` (texture_cache.h:450-457), needs deferred | **off** (MediEvil's `ac900f8` changed the launcher default from on, no reason given; launcher hint: "switch it off if lighting or objects look wrong") | `WatchReadback` (texture_cache.cpp:80-86): off = pages read- and write-protected, a CPU read of a pending image faults and waits for the GPU; on = only writes blocked, reads see the copy published last (one frame stale). Byte rule (:108-114): a write outside a small copy's bytes on the same page does not wait. GoW3 (`cc3563a`): 40.9 → 66.5 FPS in its reference scene. `scripts/graphics_options.py:17` still defaults it to 1 when the ini lacks the key (one of the pre-existing test failures). |
+| GPU readbacks (Relaxed / Off / Precise) | `GOW3_READBACKS` 1/0/2 (emulator_settings.h:30) | Relaxed | **Buffers**, not images. Relaxed: a CPU touch of a GPU-written region downloads it first (memory_tracker.h:85, region_manager.h:163). Precise: also read-protects pages when the GPU marks them (region_manager.h:106). Off: GPU buffer writes never reach the CPU. |
+| Two-stage GPU pipeline | `GOW3_DRAW_PIPE` | Auto | Stage A / B split; stable since L5. |
+| (not in the UI) | `GOW3_READBACK_LINEAR=1` from the game profile | on | Every linear render target used is queued for download (`FindRenderTarget`, texture_cache.cpp:1057-1060): "otherwise surfaces turn black". |
+
+Each watch / unwatch is a `Protect` → `VirtualProtect`, so the per-frame render-target readbacks are likely part of
+stage B's ~11% `VirtualProtect` too, not only `FreeImage`.
+
+### P0 run setup (2026-10-18, the user: both in one launch)
+
+`medievil.ini` backed up to `medievil.ini.bak-before-p0`, then **`stale_readback=0` → `1`** (byte-level edit, one line;
+run.py:89 passes it as `GOW3_STALE_READBACK`). Launch: `run-game.ps1 -Samples -Env @{GOW3_UE4_BOOT_4K='1';
+GOW3_PERF_DIAG='1'} -Tag p0-stale-on`. Compare with the T-L5 baseline (stale off, no diag); the diag adds some
+overhead. The user watches for wrong lighting / objects.
+
 ## Lead C: texture-cache churn (second)
 
 `BindResources` → `ResolveOverlap` → `FreeImage` → `SignalImpl::Protect` → `VirtualProtect` (~11% of stage B).
