@@ -99,8 +99,9 @@ Captured on Windows 11 (RTX 5080) with this port.
 - After a live resolution change the debug menu's gamepad navigation cannot reach its right-hand
   column: switch to 1080p (in-game menu > Performance) to use the cheats, then back.
 - All patches and cheats are for MediEvil 01.00 (the base game: CUSA11227, or CUSA12982 in
-  Europe); do not install the 01.02 update. On 01.02 the game may start, but native output, the
-  FPS unlock and the cheat edits stay off (they are made for the 01.00 executable).
+  Europe); do not install the 01.02 update. On 01.02 the game may start, but native output and
+  the built-in executable patches (such as the 4K framebuffer pool) stay off, and cheat edits that
+  do not match the 01.02 files are skipped (the log says which).
 - Experimental PS4 Pro mode (`GOW3_NEO=1`) stops in the texture cache.
 
 ## Download and play
