@@ -262,6 +262,7 @@ DEBUG_HUD_EDITS = [
 # The debug menu's first resolution button follows the native output setting: the base PS4
 # renderer makes its buffers at the display size at start, so only a live r.SetRes switches.
 # Command and label keep their lengths (the game's own 18 and 22 characters).
+SUPERSAMPLING = ('1440p', '1800p', '4K')
 NATIVE_BUTTON = {'720p_native': (b'r.SetRes 1280x720 ', b'Cinematic Mode (720p) '),
                  '1440p_native': (b'r.SetRes 2560x1440', b'Cinematic Mode (1440p)'),
                  '1800p_native': (b'r.SetRes 3200x1800', b'Cinematic Mode (1800p)'),
@@ -278,6 +279,13 @@ def debug_hud(game, resolution='native'):
         command, label = NATIVE_BUTTON[resolution]
         data = data.replace(b'r.SetRes 3840x2160\0', command + b'\0', 1)
         data = data.replace(b'Cinematic Mode (2160p)\0', label + b'\0')
+    elif resolution in SUPERSAMPLING:
+        # A larger output on top of a supersampled scene runs out of the game's PS4 memory (the
+        # crash of "Cinematic Mode" at 4K): both buttons keep 1080p, as the in-game menu's do.
+        data = data.replace(b'r.SetRes 3840x2160\0', b'r.SetRes 1920x1080\0', 1)
+        data = data.replace(b'Cinematic Mode (2160p)\0', b'Cinematic Mode (1080p)\0')
+        data = data.replace(b'\x1fr.SetRes 2560x1440 \0', b'\x1fr.SetRes 1920x1080 \0', 1)
+        data = data.replace(b'Render 2560x1440 (1440p)\0', b'Render 1920x1080 (1080p)\0')
     return data
 
 
