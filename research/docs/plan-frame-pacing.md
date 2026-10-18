@@ -448,6 +448,27 @@ same behaviour): `RegDirty::blocks` was a `std::bitset<1664>`; on glibc `PostDra
 draws/frame). Now a 26-word array with a `countr_zero` `ForEach` (also used by `RegDelta::Capture`). Next stage A
 candidates: `PostDraw` itself, `vma_index`/`cached_region` (guest memory region lookups per draw).
 
+### T-P1 result (2026-10-18 16:25-16:50, launched by Claude with the user's go; build `5cd037e`; log `data/t-p1-bitset.log`)
+
+Heavy view (windows 28-32, ~2750 draws/frame): **124-131 FPS** (T-V3: 114-123, ~+8%); the user: "1% lows are
+improved". New observation, the user: "every 30 seconds or so there's a big oscillation in the frametimes that lasts
+2-5 seconds", later "it went away after a while"; at another spot (1057 draws/frame, ~190 FPS, GPU 65-80%) it came
+back. **Not caused by P1**: the same windows exist before it (`t-v3-fog-heavy` windows 237-238: 91 / 83 FPS, stddev
+3.9 / 4.5 ms). Signature (windows 140-141 vs 139 / 142): FPS halves (185 → 94), draws/frame unchanged, uploads 0,
+GPU ticks 20% → 6%, and **stage B gets ~3x slower per draw** (busy 75% → 92% at 257k → 108k draws/s: ~2.9 → ~8.5
+µs/draw); compute drains ~120 → ~580 µs each. The same work runs slower: CPU speed, core sharing, contention or a
+wait counted inside stage B's busy time (`ChunkGuard` / `ReserveRecordDataLocked` = recorder ring space), not more
+work.
+
+WPR trace `heavy-p1.etl` (20 s at the second spot; `etw_threads --slice 1`, output `heavy-p1-slices.txt`): every
+thread flat for all 41 s at 0.5-0.6 work cores, none saturated. CPU is a Ryzen 7 7800X3D (8 cores / 16 threads, no
+E-cores; power plan Balanced): no slow-core migration. Per-second core placement (scratch `smt.py`): threads move
+between cores too often (main core 20-35% of samples) to show SMT sharing either way. **Unresolved: the log had no
+timestamps**, so whether windows 140-141 fall inside the trace is unknown. Tooling now: `tee_run.py` writes
+`<log>.times` (line number → local time, at the tee, so ~flush resolution) and `wpr-capture.ps1` writes
+`<tag>.times.txt` (start / stop). Next: capture during an episode with both timelines; compare stage B's functions
+and off-CPU waits (a CSwitch-based profile would show the latter) inside vs outside it.
+
 ## Lead C: texture-cache churn (second)
 
 `BindResources` → `ResolveOverlap` → `FreeImage` → `SignalImpl::Protect` → `VirtualProtect` (~11% of stage B).
