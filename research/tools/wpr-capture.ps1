@@ -17,11 +17,17 @@ New-Item -ItemType Directory -Force $dir | Out-Null
 $free = (Get-PSDrive C).Free / 1GB
 if ($free -lt $MinFreeGB) { throw ("Only {0:N1} GB free on C: (need {1}): the trace and its merge need room." -f $free, $MinFreeGB) }
 $etl = Join-Path $dir "$Tag.etl"
-wpr -cancel 2>$null | Out-Null
+# The ADK's WPR (Windows Performance Toolkit, installed 2026-10-18) if present, else Windows' own.
+$adk = 'C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\wpr.exe'
+$wpr = if (Test-Path $adk) { $adk } else { 'wpr' }
+& $wpr -cancel 2>$null | Out-Null
 Write-Host 'Recording starts in 5 s: switch back to the game.'
 Start-Sleep -Seconds 5
-wpr -start $WprProfile -filemode
+& $wpr -start $WprProfile -filemode
 Write-Host "Recording $Seconds s..."
 Start-Sleep -Seconds $Seconds
-wpr -stop $etl "MediEvil $Tag"
+# -skipPdbGen: no NGEN / embedded PDB generation at the merge. Both full CPU-profile traces came
+# out unreadable (0x80070570, also to the current xperf) while light ones read fine; that step
+# is the suspect.
+& $wpr -stop $etl "MediEvil $Tag" -skipPdbGen
 Write-Host "Saved $etl"
