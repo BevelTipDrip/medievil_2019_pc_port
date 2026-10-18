@@ -215,6 +215,37 @@ Stage B's own breakdown is not in the log: **a sampling profile is the next meas
 - Test T-H1: same scripted run and route; no freeze over a long session. Rare and timing-dependent like C1, so
   "no freeze" needs several sessions before it counts.
 
+## Run i2-profile-4k-2 (2026-10-18 03:47-03:52): C1 again, first profile
+
+Build `684cd8f` (hang fix L4 + dumps), scripted, `-Samples`, 4K boot, `console`. Launched by Claude with the user's go.
+- **C1 reproduced** after ~4 minutes: `Fault: read access to 0000000000000130 at nvoglv64.dll+0xe19d80`, thread
+  `gow3:VkRecorder`, `#0 medievil-runtime.exe+0x13c8e2` = `Scheduler::RecorderThread+0x422` (same site as run 2).
+  Exit code 3. Log [data/i2-profile-4k-2.log](data/i2-profile-4k-2.log). No freeze (H1) in those 4 minutes.
+- **Dump failed:** `MiniDumpWriteDump failed (0x80070057)` (E_INVALIDARG), 0-byte file. The injected-fault test had
+  passed; in game the memory-walking types fail (likely the placeholder reservations / mapped views). **Fix L1b:** fall
+  back type by type (memory types → indirectly referenced → stacks/threads/handles → normal), delete the file if all
+  fail, log each failure. Success path re-tested (injected fault: type 0x1a65, 184 MB); the fallback path waits for a
+  real crash.
+- Scripted runs had no per-second stats: the launcher always sets `GOW3_FRAME_STATS=1`
+  (`launcher/medievil_launcher.py:333`); `run-game.ps1` now does too.
+- **Profile** (`research-data\samples\i2-profile-4k-2\`, ~150k samples per thread over the whole session: menus,
+  loading and play mixed). The samples are offsets into the 03:47 exe, which had been replaced: rebuilt from the same
+  source (`684cd8f`, verified by the absence of L1b's string) into `build-684cd8f\`. `run-game.ps1 -Samples` now
+  copies the exe and PDB next to the samples. Stage B (`DrawRec`, the bottleneck thread), share of all its samples:
+
+  | Share | Where | What |
+  |---|---|---|
+  | 36% | `DrawPipe::Run` atomic wait | idle (waiting for packets) |
+  | 15.3% | `RunEventWriteEop` (liverpool.cpp:267) → `TextureCache::ProcessDownloadImages` (texture_cache.cpp:165), yield / `SwitchToThread`; incl. `WaitHostCopies` 6.7% | end-of-pipe events wait for image readbacks on stage B |
+  | ~12% (10.9% in the syscall) | `BindResources` → `TextureCache::ResolveOverlap` → `FreeImage` → `SignalImpl::Protect` (page_manager.cpp:388) → `runtime_memory_gpu_protect` → `VirtualProtect` | image churn: overlapping images freed / re-created, a protection syscall each |
+  | 5% | `sceVideoOutSubmitEopFlip` → `SubmitFlip` → `Semaphore::Wait` | the flip waits for the GPU on stage B |
+  | ~23% | `RunDrawPacket`, `DrawRecord`, `BindTextures`, `ResolveVertexBuffers`, `FindTargetMemoized` | translation work |
+
+  Reading: about half of stage B's busy time is waits and syscalls, not translation. Leads: (1) image readbacks
+  processed at EOP on stage B (plan-gpu-threading.md #2, readback queue); (2) texture-cache overlap churn and per-image
+  `VirtualProtect` (#4 collector fixes; also why the same overlap repeats); (3) flip waiting on the GPU on stage B.
+  Next profile: gameplay only (start sampling in the level), to separate menus / loads.
+
 ## C1 next: catch it when it happens
 
 The crash is rare and timing-dependent, so reproduction runs are unreliable. Better: make every crash leave a full

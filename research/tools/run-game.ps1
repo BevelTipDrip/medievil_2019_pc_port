@@ -19,12 +19,16 @@ if (Get-Process medievil-runtime -ErrorAction SilentlyContinue) { throw 'medievi
 $ini = Join-Path $Port 'medievil.ini'
 if (Test-Path $ini) { Copy-Item $ini "$ini.bak-$Tag" }
 
-$set = [ordered]@{ GOW3_GAME_DIR = $Game }
+# GOW3_FRAME_STATS: the per-second Perf / Frame stats / Draw pipe / Stall lines the launcher's runs log.
+$set = [ordered]@{ GOW3_GAME_DIR = $Game; GOW3_FRAME_STATS = '1' }
 if ($Validation) { $set.GOW3_VK_VALIDATION = '1'; $set.VK_ADD_LAYER_PATH = 'C:\msys64\clang64\bin' }
 if ($Samples) {
     $dir = "C:\Users\Ty\MediEvil\research-data\samples\$Tag"
     New-Item -ItemType Directory -Force $dir | Out-Null
     $set.GOW3_SAMPLE_FILE = "$dir\samples"
+    # The samples are offsets into this exact exe: keep it (and its PDB) with them.
+    Copy-Item (Join-Path $Port 'out\medievil-runtime.exe') $dir
+    if (Test-Path (Join-Path $Port 'out\medievil-runtime.pdb')) { Copy-Item (Join-Path $Port 'out\medievil-runtime.pdb') $dir }
 }
 if ($TextureHelper) { $set.GOW3_TEXTURE_HELPER = '1' }
 foreach ($k in $Env.Keys) { $set[$k] = [string]$Env[$k] }
