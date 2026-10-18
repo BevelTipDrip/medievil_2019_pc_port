@@ -815,17 +815,32 @@ static ABI int32_t pool_reserve(void *address, uint64_t size, uint64_t alignment
     *out=address;
     return reserve_range(out,size,flags,alignment ? alignment : 64*1024);
 }
-/* The first free run (at most want pages) in the pool; marks it used. */
+/* Pool page states (pool_chunks[].used): free, taken, or free but still mapped by a view kept
+ * at its last address (pool_decommit), which a commit there takes back without a new view. */
+enum { POOL_FREE, POOL_TAKEN, POOL_KEPT };
+/* The first free run (at most want pages) in the pool; marks it taken. Pages a kept view waits
+ * for are only handed out when no other page is free: taking them makes the next commit at the
+ * view's address unmap it, which stalls on the kernel (8-37 ms with ~13000 views, T-M1). */
 static int pool_take_locked(uint64_t want, uint64_t *phys, uint64_t *pages) {
     for (int c=0;c<POOL_CHUNKS;++c) {
         uint64_t p=pool_chunks[c].free_hint;
-        while (p<pool_chunks[c].pages && pool_chunks[c].used[p]) ++p;
+        while (p<pool_chunks[c].pages && pool_chunks[c].used[p]!=POOL_FREE) ++p;
         pool_chunks[c].free_hint=p;
         if (p>=pool_chunks[c].pages) continue;
         uint64_t n=0;
-        while (p+n<pool_chunks[c].pages && n<want && !pool_chunks[c].used[p+n]) ++n;
-        memset(pool_chunks[c].used+p,1,n);
+        while (p+n<pool_chunks[c].pages && n<want && pool_chunks[c].used[p+n]==POOL_FREE) ++n;
+        memset(pool_chunks[c].used+p,POOL_TAKEN,n);
         pool_chunks[c].free_hint=p+n;
+        *phys=pool_chunks[c].phys+p*PAGE; *pages=n;
+        return 1;
+    }
+    for (int c=0;c<POOL_CHUNKS;++c) {
+        uint64_t p=0;
+        while (p<pool_chunks[c].pages && pool_chunks[c].used[p]!=POOL_KEPT) ++p;
+        if (p>=pool_chunks[c].pages) continue;
+        uint64_t n=0;
+        while (p+n<pool_chunks[c].pages && n<want && pool_chunks[c].used[p+n]==POOL_KEPT) ++n;
+        memset(pool_chunks[c].used+p,POOL_TAKEN,n);
         *phys=pool_chunks[c].phys+p*PAGE; *pages=n;
         return 1;
     }
@@ -837,9 +852,9 @@ static int pool_take_at_locked(uint64_t phys, uint64_t want, uint64_t *pages) {
         if (pool_chunks[c].pages && phys>=pool_chunks[c].phys && phys<pool_chunks[c].phys+pool_chunks[c].pages*PAGE) {
             const uint64_t first=(phys-pool_chunks[c].phys)/PAGE;
             uint64_t n=0;
-            while (first+n<pool_chunks[c].pages && n<want && !pool_chunks[c].used[first+n]) ++n;
+            while (first+n<pool_chunks[c].pages && n<want && pool_chunks[c].used[first+n]!=POOL_TAKEN) ++n;
             if (!n) return 0;
-            memset(pool_chunks[c].used+first,1,n);
+            memset(pool_chunks[c].used+first,POOL_TAKEN,n);
             if (pool_chunks[c].free_hint==first) pool_chunks[c].free_hint=first+n;
             *pages=n;
             return 1;
@@ -860,12 +875,12 @@ static int pool_keep_views(void) {
     return 0;
 #endif
 }
-static void pool_give_locked(uint64_t phys, uint64_t size) {
+static void pool_give_locked(uint64_t phys, uint64_t size, int state) {
     for (int c=0;c<POOL_CHUNKS;++c)
         if (pool_chunks[c].pages && phys>=pool_chunks[c].phys && phys<pool_chunks[c].phys+pool_chunks[c].pages*PAGE) {
             const uint64_t first=(phys-pool_chunks[c].phys)/PAGE;
-            memset(pool_chunks[c].used+first,0,size/PAGE);
-            if (first<pool_chunks[c].free_hint) pool_chunks[c].free_hint=first;
+            memset(pool_chunks[c].used+first,state,size/PAGE);
+            if (state==POOL_FREE && first<pool_chunks[c].free_hint) pool_chunks[c].free_hint=first;
             return;
         }
 }
@@ -885,7 +900,7 @@ static ABI int32_t pool_commit(void *address, uint64_t size, int type, int prot,
         }
         if (!got && !pool_take_locked((size-done)/PAGE,&phys,&pages)) { write_unlock(); return NO_MEMORY; }
         int32_t r=place(&at,pages*PAGE,prot,MAP_FIXED_FLAG,PAGE,KIND_DIRECT,type,phys);
-        if (r) pool_give_locked(phys,pages*PAGE);
+        if (r) pool_give_locked(phys,pages*PAGE,POOL_FREE);
         write_unlock();
         flush_hooks();
         if (r) return r;
@@ -906,13 +921,13 @@ static ABI int32_t pool_decommit(void *address, uint64_t size, int flags) {
         uintptr_t a=vmas[i].start>at ? vmas[i].start : at, b=vmas[i].end<end ? vmas[i].end : end;
         int32_t r=0;
         if (vmas[i].kind==KIND_DIRECT && pool_keep_views()) {
-            pool_give_locked(vmas[i].phys+(a-vmas[i].start),b-a);
+            pool_give_locked(vmas[i].phys+(a-vmas[i].start),b-a,POOL_KEPT);
             queue_hook(HOOK_UNMAP,a,b-a);
             r=host_keep_view(a,b-a);
             drop_range(a,b);
             if (!r && vma_insert(vma_index(a),(Vma){a,b,KIND_RESERVED,0,0,0})) r=NO_MEMORY;
         } else if (vmas[i].kind!=KIND_RESERVED) {
-            if (vmas[i].kind==KIND_DIRECT) pool_give_locked(vmas[i].phys+(a-vmas[i].start),b-a);
+            if (vmas[i].kind==KIND_DIRECT) pool_give_locked(vmas[i].phys+(a-vmas[i].start),b-a,POOL_FREE);
             r=unmap_locked(a,b-a);
             void *p=(void *)a;
             if (!r) r=place(&p,b-a,0,MAP_FIXED_FLAG,PAGE,KIND_RESERVED,0,0);
