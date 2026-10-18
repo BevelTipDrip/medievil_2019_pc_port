@@ -520,6 +520,12 @@ private:
     std::atomic<u64> registry_generation{0};
     /// gow3: GOW3_TEXCACHE_STATS: expands by image and reason since the last report (under mutex).
     std::unordered_map<std::string, u64> expand_sites;
+    /// gow3: GOW3_TEXCACHE_STATS: images created since the last report, by description and binding;
+    /// images freed by a guest unmap in the last ~30 s (address / size / format / extent key ->
+    /// report number), to count how many come back as new images (under mutex).
+    std::unordered_map<std::string, u64> create_sites;
+    std::unordered_map<u64, u64> unmapped_recently;
+    u64 stats_reports = 0;
     std::mutex samplers_mutex;
     std::mutex download_images_mutex;
     struct MetaDataInfo {

@@ -31,7 +31,8 @@ namespace {
 // restored it: these show which part grows. Off: one load per counter.
 struct CacheStats {
     std::atomic<u64> fast_lookups, slow_lookups, slow_candidates, overlaps, expands, registered,
-        unregistered, refreshes, refresh_bytes, alias_copies, alias_syncs, volume_views;
+        unregistered, refreshes, refresh_bytes, alias_copies, alias_syncs, volume_views, unmap_frees,
+        unmap_free_bytes, recreated, recreated_bytes;
 };
 CacheStats cache_stats;
 bool CacheStatsEnabled() {
@@ -49,6 +50,14 @@ bool CacheStatsEnabled() {
 // gow3: a volume the guest renders slice by slice and samples as 3D: a 2D render target with
 // one layer per depth slice at the address of a 3D image of the same size. 3D images are
 // created 2D-array compatible, so it renders through a 2D array view of the volume.
+// gow3: GOW3_TEXCACHE_STATS: identifies an image across a free and a later re-creation.
+u64 RecreateKey(const ImageInfo& info) {
+    u64 key = info.guest_address ^ u64(info.guest_size) << 20 ^ u64(info.pixel_format) << 44 ^
+              u64(info.size.width) << 8 ^ u64(info.size.height) << 30;
+    key = (key ^ key >> 33) * 0xFF51AFD7ED558CCDull;
+    return key ^ key >> 33;
+}
+
 bool IsVolumeSliceTarget(const ImageInfo& info, TextureCache::BindingType binding,
                          const ImageInfo& volume) {
     return binding == TextureCache::BindingType::RenderTarget &&
@@ -565,6 +574,12 @@ void TextureCache::UnmapMemory(VAddr cpu_addr, size_t size) {
     ImageIds deleted_images;
     ForEachImageInRegion(cpu_addr, size, [&](ImageId id, Image&) { deleted_images.push_back(id); });
     for (const ImageId id : deleted_images) {
+        if (CacheStatsEnabled()) {
+            const ImageInfo& info = slot_images[id].info;
+            CACHE_STAT(unmap_frees, 1);
+            CACHE_STAT(unmap_free_bytes, info.guest_size);
+            unmapped_recently[RecreateKey(info)] = stats_reports;
+        }
         // TODO: Download image data back to host.
         FreeImage(id);
     }
@@ -1025,6 +1040,24 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     }
     // Create and register a new image
     if (!image_id) {
+        if (CacheStatsEnabled()) {
+            // Which images are created, and how many were freed by a guest unmap shortly before
+            // (MediEvil: hundreds per frame while panning, T-M1b).
+            if (const auto it = unmapped_recently.find(RecreateKey(info)); it != unmapped_recently.end()) {
+                CACHE_STAT(recreated, 1);
+                CACHE_STAT(recreated_bytes, info.guest_size);
+                unmapped_recently.erase(it);
+            }
+            static constexpr const char* bindings[] = {"texture", "storage", "render target",
+                                                       "depth target", "video out"};
+            char key[160];
+            std::snprintf(key, sizeof(key), "%ux%ux%u t%d %s L%u/%u %s %s, %llu KiB", info.size.width,
+                          info.size.height, info.size.depth, int(info.type),
+                          vk::to_string(info.pixel_format).c_str(), info.resources.levels,
+                          info.resources.layers, info.props.is_tiled ? "tiled" : "linear",
+                          bindings[u32(desc.type)], (unsigned long long)(info.guest_size >> 10));
+            ++create_sites[key];
+        }
         image_id = slot_images.insert(instance, runtime, slot_image_views, info);
         RegisterImage(image_id);
     }
@@ -1656,6 +1689,20 @@ void TextureCache::RunGarbageCollector() {
                 std::printf("  expand %6llu x  %s\n", (unsigned long long)top[i].first, top[i].second.c_str());
             }
             expand_sites.clear();
+            const u64 frees = take(cache_stats.unmap_frees), free_bytes = take(cache_stats.unmap_free_bytes),
+                      recreated = take(cache_stats.recreated), recreated_bytes = take(cache_stats.recreated_bytes);
+            std::printf("  freed by guest unmaps %llu (%.1f MiB); created again within ~30 s %llu (%.1f MiB)\n",
+                        (unsigned long long)frees, free_bytes / 1048576.0, (unsigned long long)recreated,
+                        recreated_bytes / 1048576.0);
+            top.clear();
+            for (const auto& [key, count] : create_sites) top.emplace_back(count, key);
+            std::sort(top.begin(), top.end(), std::greater<>{});
+            for (size_t i = 0; i < top.size() && i < 8; ++i) {
+                std::printf("  create %6llu x  %s\n", (unsigned long long)top[i].first, top[i].second.c_str());
+            }
+            create_sites.clear();
+            ++stats_reports;
+            std::erase_if(unmapped_recently, [&](const auto& entry) { return stats_reports - entry.second > 6; });
         }
     }
 }
