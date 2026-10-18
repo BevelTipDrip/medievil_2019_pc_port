@@ -106,6 +106,12 @@ uint64_t runtime_memory_flexible_available(void);
 uintptr_t runtime_extra_resolve(const char *name);
 void runtime_extra_report(void);
 unsigned char *runtime_image_base(void);
+/* GOW3_WAIT_SITES=1: guest yield / sleep call sites (runtime_waitsites.c). kind: 0 yield,
+ * 1 pthread_yield, 2 usleep(0), 3 usleep, 4 nanosleep. */
+int runtime_wait_sites_enabled(void);
+void runtime_wait_site(void *return_address, unsigned kind, uint64_t ns);
+#define RUNTIME_WAIT_SITE(kind, ns) \
+    do { if (runtime_wait_sites_enabled()) runtime_wait_site(__builtin_return_address(0), (kind), (ns)); } while (0)
 void runtime_ue4_setres_poll(void);
 void runtime_ue4_request_setres(const char *text);
 void runtime_sse4a_install(unsigned char *image, size_t image_size, unsigned char *stubs, size_t stubs_size);
