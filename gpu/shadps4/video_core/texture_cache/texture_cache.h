@@ -518,6 +518,8 @@ private:
     };
     std::array<FindImageCacheEntry, 1024> find_image_cache{};
     std::atomic<u64> registry_generation{0};
+    /// gow3: GOW3_TEXCACHE_STATS: expands by image and reason since the last report (under mutex).
+    std::unordered_map<std::string, u64> expand_sites;
     std::mutex samplers_mutex;
     std::mutex download_images_mutex;
     struct MetaDataInfo {

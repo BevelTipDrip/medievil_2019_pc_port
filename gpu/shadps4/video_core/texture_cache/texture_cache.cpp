@@ -858,6 +858,24 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
 ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     CACHE_STAT(expands, 1);
+    if (CacheStatsEnabled()) {
+        // Which images are expanded, from what to what (the busiest are printed with the stats).
+        const ImageInfo& old = slot_images[image_id].info;
+        const char* why = info.props.is_block && !old.props.is_block ? "block view"
+                          : (info.type == AmdGpu::ImageType::Color3D) !=
+                                    (old.type == AmdGpu::ImageType::Color3D)
+                              ? "2D/3D"
+                              : "bigger";
+        char key[192];
+        std::snprintf(key, sizeof(key), "%#llx %s: %ux%ux%u t%d %s L%u/%u -> %ux%ux%u t%d %s L%u/%u, %llu KiB",
+                      (unsigned long long)info.guest_address, why, old.size.width, old.size.height,
+                      old.size.depth, int(old.type), vk::to_string(old.pixel_format).c_str(),
+                      old.resources.levels, old.resources.layers, info.size.width, info.size.height,
+                      info.size.depth, int(info.type), vk::to_string(info.pixel_format).c_str(),
+                      info.resources.levels, info.resources.layers,
+                      (unsigned long long)(info.guest_size >> 10));
+        ++expand_sites[key];
+    }
     const auto new_image_id = slot_images.insert(instance, runtime, slot_image_views, info);
     RegisterImage(new_image_id);
 
@@ -1606,6 +1624,14 @@ void TextureCache::RunGarbageCollector() {
                         (unsigned long long)(total_used_memory >> 20),
                         (unsigned long long)(trigger_gc_memory >> 20),
                         (unsigned long long)(pressure_gc_memory >> 20), (unsigned long long)gc_tick);
+            std::scoped_lock lock{mutex};
+            std::vector<std::pair<u64, std::string>> top;
+            for (const auto& [key, count] : expand_sites) top.emplace_back(count, key);
+            std::sort(top.begin(), top.end(), std::greater<>{});
+            for (size_t i = 0; i < top.size() && i < 8; ++i) {
+                std::printf("  expand %6llu x  %s\n", (unsigned long long)top[i].first, top[i].second.c_str());
+            }
+            expand_sites.clear();
         }
     }
 }
