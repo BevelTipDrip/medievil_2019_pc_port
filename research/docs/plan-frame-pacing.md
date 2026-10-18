@@ -272,6 +272,27 @@ Headless decompile (`research/tools/ghidra/DecompileAt.java`; project `research-
   experiments. Measure with `GOW3_WAIT_SITES=1` at the same spot vs run `wait-sites`. If the spin remains:
   `r.AllowOcclusionQueries=0`, or an event-style wait in the runtime (signal when stage A writes the results).
 
+### R4a result (2026-10-18 14:05-14:15, launched by Claude with the user's go): **rejected**
+
+`GOW3_UE4_CVARS='r.NumBufferedOcclusionQueries=2'` (+ 4K boot, R1, `GOW3_WAIT_SITES=1`), Graveyard. Log
+[data/r4a-occlusion2.log](data/r4a-occlusion2.log). The spin at guest+0x689c89 fell from ~1.3 M to **~100 k calls/s**,
+but the heavy view got slower:
+
+| 2,900-3,300 draws/frame | T-R23 (no R4a) | R4a |
+|---|---|---|
+| windows | 161 | 23 |
+| FPS median / min | **94.3 / 80.7** | 75.3 / 74.6 |
+| p99 | **14.6 ms** | 16.2 ms |
+| blocked on GPU ticks | **1.3%** | **21.9%** |
+
+The user: GPU at ~50% in the busy area, frame rate "rapidly jumping between 75 FPS and" higher, "performance may be
+somewhat worse … I don't believe we're actually waiting on the GPU." Right: "GPU ticks" is CPU waiting for submitted
+work to finish (`Scheduler::Wait`), a sync stall, not GPU throughput. Inferred: the occlusion wait throttled the
+render thread; without it the render thread runs into a harder sync point (likely "Frames queued = 1",
+vk_presenter.cpp:538-556, or query / command memory reuse). **Do not retry R4a without a new reason** (e.g. together
+with Frames queued 2, or after the sync point is found with `GOW3_PERF_DIAG=1`, which lists the waiting call sites).
+Directions kept: faster stage A decode; answer occlusion queries earlier (the answer is synthetic, "always visible").
+
 ## Lead C: texture-cache churn (second)
 
 `BindResources` → `ResolveOverlap` → `FreeImage` → `SignalImpl::Protect` → `VirtualProtect` (~11% of stage B).
