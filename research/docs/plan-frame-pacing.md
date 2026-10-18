@@ -138,10 +138,10 @@ Separate: 300-3,700 ms windows at loads / transitions.
 ### Whole-process trace (2026-10-18 12:14-12:15, WPR CPU.light 20 s, the user recorded; build `e384aa1`, R1 on)
 
 Trace `research-data\wpr\graveyard.etl` (198 MB; the first attempt, full CPU profile, 2.1 GB, came out "corrupt"
-(0x80070570) with the disk nearly full. **Corrected 13:25:** a second full-profile trace (`graveyard-stacks.etl`,
-947 MB, 49 GB free) fails the same way while the light-profile traces read fine: the old Windows 8.1 xperf cannot
-read the full profile's format from WPR 10.0.26100 (stacks); the disk was probably not the cause. A current WPT is
-only in the Windows ADK (`Microsoft.WindowsADK`).) Tools: `xperf -a profile -detail` (modules / functions; a symbol path holding only the game
+(0x80070570) with the disk nearly full. **Corrected twice; final, 13:50:** the traces were never corrupt. Full-profile
+traces lose events (e.g. 17,250 in `graveyard-stacks2.etl`), and xperf, old and new, then refuses them with
+0x80070570 unless given **`-tle -tti`** (tolerate lost events / time inversions); the same file reads with them. Not
+the disk, not the format. Current WPT 10.0.28000 installed from the ADK (WPT feature only) anyway.) Tools: `xperf -a profile -detail` (modules / functions; a symbol path holding only the game
 process's Windows modules, `research-data\symbols-game`, makes it take seconds instead of decoding every process);
 `xperf -a dumper` + `research/tools/etw_threads.py` (per-thread cores and functions; the port's addresses resolved
 with llvm-symbolizer; xperf 8.1 does not read the lld PDB). Output `research-data\wpr\graveyard-threads.txt`.
@@ -208,6 +208,27 @@ game code, was 71.6% + 11.8%); `pool_take_locked` 0.3% on the busiest game threa
 pool-heavy thread (was 28.7%). Process 5.91 cores (was 4.79); stage A / B / recorder ~0.9 core each (were ~0.65):
 the GPU side is fed faster. Busiest game thread now **0.97 cores**: 62.7% game code, **13.9% NtDelayExecution +
 12.8% syscall entry + 1.6% KeYieldExecution** (~28%: short sleeps / yields; which runtime call: next).
+
+### Wait sites (2026-10-18 13:40, `GOW3_WAIT_SITES=1`, lab diagnostic `9f088f1`, run `wait-sites`)
+
+Graveyard, standing (~112 FPS), every 5 s report the same ([data/wait-sites.log](data/wait-sites.log)):
+
+| Calls/s | Kind | Site | Note |
+|---|---|---|---|
+| **~1,300,000** | usleep(0) | guest+0x689c89 | spin-wait loop (below) |
+| ~450 | usleep (~7.7 ms) | guest+0x8d7b67 | |
+| ~260-300 | usleep(0) | guest+0x8d7b67 | |
+| ~80-90 | usleep(0) | guest+0x27273f9 | |
+| 30 each | usleep (33 ms) | guest+0x5f315f5, 0x5f7180a (NP toolkit module), 0x170448d | periodic threads |
+
+**guest+0x689c89 is a spin-wait:** function 0x689c10 (2 direct callers, 0x689fc6 / 0x68a054) reads a clock twice
+(0x3bf0680), then loops `Sleep(0.0)` (call 0x8e51d0 → usleep(0); each a `SwitchToThread`) → `0x73ba40` ("is the
+current thread the one in global [rip+0x50e0d1b]+0x44?") → if so a singleton's vtable +0x38 with a thread index
+(pattern of UE4's task graph `ProcessThreadUntilIdle`) → checks `[rbx+0x58] == 2` / `[rbx+0x40]` and sets `*done`.
+Inferred: a UE4 wait-for-task / fence loop; exact function not identified yet. 1.3 M yields/s is the busiest game
+thread's ~28% short sleeps / yields, and on SMT (7800X3D) it can slow the sibling hyperthread too. The real question
+is what it waits for: the stacks trace (`graveyard-stacks2.etl`, 858 MB) shows which thread spins and what the others
+do.
 
 ## Lead C: texture-cache churn (second)
 

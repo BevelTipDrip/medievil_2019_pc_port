@@ -4,8 +4,8 @@
 #   powershell -ExecutionPolicy Bypass -File <this file> -Seconds 20 -Tag graveyard
 # Start it once the game is at the scene to measure; it waits 5 s (time to switch back), records,
 # and writes C:\Users\Ty\MediEvil\research-data\wpr\<tag>.etl.
-# The full CPU profile (stacks) writes ~1 GB per 15-45 s and the Windows 8.1 xperf here cannot read it
-# (reports 0x80070570, corrupt): light profile, 20 s and a free-space check by default.
+# The full CPU profile (stacks) writes ~1 GB per 15-45 s: light profile, 20 s and a free-space check
+# by default; -WprProfile CPU for stacks.
 param([int]$Seconds = 20, [string]$Tag = 'capture', [string]$WprProfile = 'CPU.light', [int]$MinFreeGB = 10)
 $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -26,8 +26,8 @@ Start-Sleep -Seconds 5
 & $wpr -start $WprProfile -filemode
 Write-Host "Recording $Seconds s..."
 Start-Sleep -Seconds $Seconds
-# -skipPdbGen: no NGEN / embedded PDB generation at the merge. Both full CPU-profile traces came
-# out unreadable (0x80070570, also to the current xperf) while light ones read fine; that step
-# is the suspect.
+# -skipPdbGen: no NGEN / embedded PDB generation at the merge (not needed for this game).
+# Reading: full CPU-profile traces lose events, and xperf then reports "corrupt" (0x80070570)
+# unless given -tle (tolerate lost events) and -tti: xperf -tle -tti -i <etl> ...
 & $wpr -stop $etl "MediEvil $Tag" -skipPdbGen
 Write-Host "Saved $etl"
