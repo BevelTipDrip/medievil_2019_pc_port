@@ -120,6 +120,8 @@ The two idle views differed (A ~1,136 draws/frame, B ~1,800), so compare windows
 | FPS ~2,800-3,000 draws/frame | 88-91 (59-67) | 82-93 (48-49, 55-57) |
 | Blocked on host copies / copy threads (all threads) | ~9-13% / ~10% | ~5-9% / ~5-6% |
 
+R1 visuals (the user, 2026-10-18): run B showed no additional visual issues.
+
 Reading: R1 removes its target completely, but FPS at matching draw counts is unchanged within the noise of
 different views. Stage B now idles more; stage A was already idle about half the time. **Neither GPU-side thread is
 the limit any more: work arrives too slowly from the game's own threads.** Prime suspect: 80-117k page-tracking
@@ -132,6 +134,43 @@ stddev 0.5 / p99 9 ms, stage B ~90%, GPU-tick waits ~20%; Graveyard standing ~1,
 heavier views ~2,700-2,900 draws, 83-91 FPS, 1.0 / 15 ms. Stage B ~90% everywhere, so FPS follows draws per frame;
 menu draws cost ~2.5x more stage-B time each. In the level the draw count changes with the view (the swing).
 Separate: 300-3,700 ms windows at loads / transitions.
+
+### Whole-process trace (2026-10-18 12:14-12:15, WPR CPU.light 20 s, the user recorded; build `e384aa1`, R1 on)
+
+Trace `research-data\wpr\graveyard.etl` (198 MB; the first attempt, full CPU profile, 2.1 GB, came out corrupt with
+the disk nearly full). Tools: `xperf -a profile -detail` (modules / functions; a symbol path holding only the game
+process's Windows modules, `research-data\symbols-game`, makes it take seconds instead of decoding every process);
+`xperf -a dumper` + `research/tools/etw_threads.py` (per-thread cores and functions; the port's addresses resolved
+with llvm-symbolizer; xperf 8.1 does not read the lld PDB). Output `research-data\wpr\graveyard-threads.txt`.
+
+- The game process used **4.79 cores**: port 1.74, game's PS4 code ("Unknown" image) 1.10, kernel 0.67, ntdll 0.52,
+  ucrtbase (memcpy etc.) 0.41, NVIDIA driver 0.17.
+- **Not the faults:** exception dispatch ~0%, kernel page-fault entry ~1%, protection changes ~1.3% of the process.
+  The "write faults/s" stat counts **pages**, not exceptions (`CountWriteFaults`, region_manager.h:239-246: one per
+  protected page in a range marked CPU-modified; one fault unprotects a window of up to 64 pages). Suspect refuted.
+- Per thread (no thread names in the trace; identified by their functions):
+
+  | Thread | Cores | Is | Time |
+  |---|---|---|---|
+  | 44384 | 0.81 | busiest game thread | 56% game code; **13.1% NtDelayExecution + 12.1% syscall entry + 1.4% KeYieldExecution** (short sleeps / yields); **7.5% `pool_take_locked`** |
+  | 37004 | 0.69 | stage B (`DrawPipe::Run`) | 15% spin in Run, 8% delay, 6.3% `MiSetWsleProtection`, draw work |
+  | 46896 | 0.66 | stage A (`ProcessGraphics`, `PostDraw`) | decode; ~12% delay |
+  | 35788 | 0.63 | Vulkan recorder | 61% in `RecorderThread` itself (spin-wait) |
+  | 48692 | 0.34 | game main thread | 72% game code; **11.8% `find_locked`** |
+  | 40592 | 0.25 | game thread | **28.7% `pool_take_locked`**; 20% game code |
+
+- Reading: GPU-side threads spin / idle waiting for work; the busiest game thread does ~0.46 core of real game work
+  and spends ~27% of its running time in short sleeps / yields. Two runtime algorithms on game threads:
+  - **`find_locked`** (src/runtime_rwlock.c:42-45): every PS4 rwlock call validates its handle by walking a linked list
+    of all rwlocks ever created, under one global mutex.
+  - **`pool_take_locked`** (src/runtime_memory.c:716-727): every direct-memory commit scans the pool's page map byte by
+    byte from page 0, under the runtime's global memory write lock (which the GPU threads' `vma_index` /
+    `cached_region` lookups also need).
+- "Frames queued" (= 1) bounds the **GPU command thread** to N frames ahead of the GPU (vk_presenter.cpp:538-556),
+  not the game thread: less likely the cause; cheap test later.
+
+Next: R2 rwlock handle lookup O(1); R3 pool free-run search with a hint; then find which runtime call makes thread
+44384's sleeps / yields.
 
 Candidate R1 (if stale looks right): in stale mode, skip `ProcessDownloadImages`' `WaitHostCopies` (switch to
 restore it). If stale looks wrong: targeted waits instead (only for copies reading the protected pages, Bloodborne #1).
@@ -153,6 +192,7 @@ fixes (#4).
 | P0 | Measurement: Graveyard route, `-Samples`, `GOW3_PERF_DIAG=1`, no code change | Readback profile: images, copies vs CPU accesses; stage B profile in gameplay |
 | R1 | Per P0 (likely: skip readbacks of images the CPU never touches) | Stage B EOP share, FPS / p99 vs baseline; no black surfaces (the user) |
 | C1x | Texture churn, per measurement | `VirtualProtect` share, FPS / p99 |
-
-R1 visuals (the user, 2026-10-18): run B showed no additional visual issues.
+| R1 done | Skip the EOP host copy wait in stale mode (`e384aa1`) | Verified: stage B EOP share 19.7% → 0; FPS unchanged (limit moved upstream); no visual issues (the user) |
+| R2 | rwlock handle lookup O(1) | `find_locked` share on game threads; FPS / p99 |
+| R3 | Pool free-run search with a hint | `pool_take_locked` share; FPS / p99 |
 
