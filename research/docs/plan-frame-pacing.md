@@ -230,6 +230,22 @@ thread's ~28% short sleeps / yields, and on SMT (7800X3D) it can slow the siblin
 is what it waits for: the stacks trace (`graveyard-stacks2.etl`, 858 MB) shows which thread spins and what the others
 do.
 
+### Stacks trace (2026-10-18 13:46, `graveyard-stacks2.etl`, WPR CPU 15 s, read with `xperf -tle -tti`)
+
+Exported with symbols (5.5 GB dump); `research/tools/etw_stacks.py` attaches Stack records to samples; the current
+xperf also recovers thread names. Output `research-data\wpr\graveyard-stacks2-spin.txt`.
+- **The spinner is UE4's `RenderThread 1`** (0.98 core: 56% game code, ~28% in the `guest+0x689c89` loop's
+  `SwitchToThread` → `NtDelayExecution`, + 4.9% `runtime_wait_site`, the diagnostic's own cost). Others: stage B 0.89,
+  stage A 0.88, VkRecorder 0.82, (unnamed, 81% game code: likely the game thread) 0.39, `RHIThread` 0.28.
+- Stack walks stop at the first guest frame (no Windows unwind data for PS4 code): callers of 0x689c10 have to come
+  from static analysis.
+- Reading: the render thread is the busiest game-side thread and a third of its time is waiting. Inferred: on PS4 a
+  render thread typically waits on GPU progress (a label / fence written at end of pipe before reusing command or ring
+  memory); in this port those labels are written by the GPU-side pipeline, so late publishing would show as this wait.
+- Next (no launch): decompile 0x689c10, its callers 0x689fc6 / 0x68a054 and the state at `[rbx+0x58]` in Ghidra (with
+  GhidraOrbis); if it is a GPU label / fence, measure when the runtime writes it vs. when the render thread starts
+  waiting (candidate R4: publish earlier).
+
 ## Lead C: texture-cache churn (second)
 
 `BindResources` → `ResolveOverlap` → `FreeImage` → `SignalImpl::Protect` → `VirtualProtect` (~11% of stage B).
