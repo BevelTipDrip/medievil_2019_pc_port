@@ -275,6 +275,35 @@ no freeze in ~9 minutes**, clean exit (code 0); FPS per 5 s window min 55.7 / me
 The two runs with the pipeline on failed at ~2 min (H1) and ~4 min (C1) in the same scenario. One run: moderate
 evidence for H-race, not proof. Next: find the path where stage B records during stage A's submit.
 
+### Root cause found (2026-10-18, read-only trace + checked by hand)
+
+**`Liverpool::ProcessCommands` drained stage B only when its first `num_commands` check saw a command**
+(`liverpool.cpp:89-104` before the fix). `num_commands` is atomic and `SendCommand` (liverpool.h:134-152) adds to it
+from any thread; `ProcessCommands` runs once per PM4 packet (liverpool.cpp:141, 406, 737, 1370) while stage B is busy.
+A command queued by a guest thread between the check and the loop ran on stage A **beside stage B**: readbacks
+(`BufferCache::ReadMemory` → `DownloadMemory`: `CopyBuffer` record + `Finish()`, buffer_cache.cpp:179-213),
+`TextureCache::ResolveReadbacks` (`Wait`/`Flush`), non-EOP flips (`PrepareFrame` on `draw_scheduler`). On Windows a
+guest thread's fault posts these with `assume_locks=false` (page_manager.cpp:69-84), and `Rasterizer::ReadMemory`'s
+own drain does nothing off stage A (vk_rasterizer.cpp:412), so `ProcessCommands` was the only drain.
+- H1: stage A in `SubmitExecution` kicks (owner = A); stage B keeps drawing, `RecordHostCopy`s (non-atomic
+  `++host_copies_issued` on two threads, vk_scheduler.h:837-843), ends each draw with a non-forced `KickRecording()`
+  (owner = B, chunk < 32 KiB stays), runs out of packets and sleeps → stage A waits forever. Matches the snapshot.
+- C1 (inferred, consistent): stage A's `SubmitExecution` ends rendering, submits, allocates a new command buffer and
+  invalidates dynamic state while stage B is between its buffer binds (`EmitVertexBuffers`/`EmitIndexBuffer`) and its
+  `bindPipeline` + `drawIndexed` → the draw lands in a command buffer with no index buffer bound.
+- **The Bloodborne port found and fixed exactly this in 0.3 (`4d4d208`)**: drain inside the loop, per command, with a
+  comment naming "null chunk crashes …, lost chunks, hangs". Its `WaitHostCopies` has no re-kick: root cause fixed.
+
+**Fix L5 (`bc0e1d6`):** drain before every queued command (Bloodborne's change, attributed). **`684cd8f` reverted
+(`a07f709`):** under the race its re-kick handed stage B's chunks to the recorder after `SyncRecording`, into a command
+buffer being ended (could turn the hang into the crash); with the race fixed it has no job. Built clean 04:17,
+installed. Test T-L5: Graveyard idle, two-stage pipeline **on**, 15+ minutes, more than one session.
+
+Secondary path (not fixed, lower likelihood: it exists with the pipe off too, which ran clean): stage B faulting on a
+guest read between its buffer binds and the draw (motion-vector hashing of bone palettes / indices,
+vk_rasterizer.cpp:1049, 1070-1080, only for motion draws) runs the readback inline. Option: emit the vertex / index
+binds after that block. Optional diagnostic: Bloodborne's `ProducerScope` check (two threads in the scheduler).
+
 ## C1 next: catch it when it happens
 
 The crash is rare and timing-dependent, so reproduction runs are unreliable. Better: make every crash leave a full
