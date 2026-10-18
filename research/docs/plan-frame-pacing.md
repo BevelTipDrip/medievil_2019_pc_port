@@ -137,8 +137,11 @@ Separate: 300-3,700 ms windows at loads / transitions.
 
 ### Whole-process trace (2026-10-18 12:14-12:15, WPR CPU.light 20 s, the user recorded; build `e384aa1`, R1 on)
 
-Trace `research-data\wpr\graveyard.etl` (198 MB; the first attempt, full CPU profile, 2.1 GB, came out corrupt with
-the disk nearly full). Tools: `xperf -a profile -detail` (modules / functions; a symbol path holding only the game
+Trace `research-data\wpr\graveyard.etl` (198 MB; the first attempt, full CPU profile, 2.1 GB, came out "corrupt"
+(0x80070570) with the disk nearly full. **Corrected 13:25:** a second full-profile trace (`graveyard-stacks.etl`,
+947 MB, 49 GB free) fails the same way while the light-profile traces read fine: the old Windows 8.1 xperf cannot
+read the full profile's format from WPR 10.0.26100 (stacks); the disk was probably not the cause. A current WPT is
+only in the Windows ADK (`Microsoft.WindowsADK`).) Tools: `xperf -a profile -detail` (modules / functions; a symbol path holding only the game
 process's Windows modules, `research-data\symbols-game`, makes it take seconds instead of decoding every process);
 `xperf -a dumper` + `research/tools/etw_threads.py` (per-thread cores and functions; the port's addresses resolved
 with llvm-symbolizer; xperf 8.1 does not read the lld PDB). Output `research-data\wpr\graveyard-threads.txt`.
@@ -226,4 +229,5 @@ fixes (#4).
 | R1 done | Skip the EOP host copy wait in stale mode (`e384aa1`) | Verified: stage B EOP share 19.7% → 0; FPS unchanged (limit moved upstream); no visual issues (the user) |
 | R2 | rwlock handle lookup O(1) | `find_locked` share on game threads; FPS / p99 |
 | R3 | Pool free-run search with a hint | `pool_take_locked` share; FPS / p99 |
+
 

@@ -4,8 +4,8 @@
 #   powershell -ExecutionPolicy Bypass -File <this file> -Seconds 20 -Tag graveyard
 # Start it once the game is at the scene to measure; it waits 5 s (time to switch back), records,
 # and writes C:\Users\Ty\MediEvil\research-data\wpr\<tag>.etl.
-# The full CPU profile wrote 2.1 GB in 45 s (system-wide stacks) and came out corrupt
-# (0x80070570) with the disk nearly full: light profile, 20 s and a free-space check by default.
+# The full CPU profile (stacks) writes ~1 GB per 15-45 s and the Windows 8.1 xperf here cannot read it
+# (reports 0x80070570, corrupt): light profile, 20 s and a free-space check by default.
 param([int]$Seconds = 20, [string]$Tag = 'capture', [string]$WprProfile = 'CPU.light', [int]$MinFreeGB = 10)
 $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
