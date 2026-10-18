@@ -133,6 +133,56 @@ static void win_fail(const char *what, uintptr_t address, uint64_t size) {
     fprintf(stderr,"STOP: %s failed at %p (+0x%" PRIx64 "), error %lu\n",what,(void *)address,size,GetLastError());
     exit(21);
 }
+/* GOW3_HOST_MAP_STATS=1 (diagnostics): host map / unmap / protect calls, their time, and the
+ * views carve_host unmapped and mapped again, per 5 s; any call over 1 ms is printed when it
+ * happens. MediEvil's frame pacing episodes are the render thread waiting on a kernel push lock
+ * while a System worker trims the guest memory section (MiTrimSection, 2026-10-18). Off: one load. */
+enum { HOST_MAP, HOST_UNMAP, HOST_PROTECT };
+static struct {
+    uint64_t calls[3], bytes[3], ns[3], max_ns[3];
+    uint64_t views_unmapped, unmapped_bytes, views_remapped, remapped_bytes;
+} host_stats; /* atomic */
+static uint64_t host_stats_next; /* atomic */
+static int host_stats_enabled(void) {
+    static int enabled=-1;
+    if (enabled<0) { const char *v=getenv("GOW3_HOST_MAP_STATS"); enabled=v && v[0]=='1'; }
+    return enabled;
+}
+static uint64_t host_now_ns(void) {
+    static LARGE_INTEGER frequency;
+    LARGE_INTEGER t;
+    if (!frequency.QuadPart) QueryPerformanceFrequency(&frequency);
+    QueryPerformanceCounter(&t);
+    return (uint64_t)((double)t.QuadPart*1e9/(double)frequency.QuadPart);
+}
+#define HOST_STAT_ADD(field,n) __atomic_fetch_add(&host_stats.field,(uint64_t)(n),__ATOMIC_RELAXED)
+static uint64_t host_stats_take(uint64_t *field) { return __atomic_exchange_n(field,0,__ATOMIC_RELAXED); }
+static void host_stats_record(int op, uintptr_t address, uint64_t size, uint64_t start_ns,
+                              uint64_t views_before, uint64_t unmapped_before) {
+    static const char *const names[]={"map","unmap","protect"};
+    const uint64_t now=host_now_ns(), ns=now-start_ns;
+    HOST_STAT_ADD(calls[op],1); HOST_STAT_ADD(bytes[op],size); HOST_STAT_ADD(ns[op],ns);
+    for (uint64_t max=__atomic_load_n(&host_stats.max_ns[op],__ATOMIC_RELAXED);
+         ns>max && !__atomic_compare_exchange_n(&host_stats.max_ns[op],&max,ns,1,__ATOMIC_RELAXED,__ATOMIC_RELAXED);) {}
+    if (ns>1000000)
+        printf("Host map stats: slow %s %p +0x%" PRIx64 ": %.1f ms, %" PRIu64 " views unmapped (%" PRIu64 " MiB), %zu regions\n",
+               names[op],(void *)address,size,ns/1e6,
+               __atomic_load_n(&host_stats.views_unmapped,__ATOMIC_RELAXED)-views_before,
+               (__atomic_load_n(&host_stats.unmapped_bytes,__ATOMIC_RELAXED)-unmapped_before)>>20,region_count);
+    uint64_t next=__atomic_load_n(&host_stats_next,__ATOMIC_RELAXED);
+    if (next && now<next) return;
+    if (!__atomic_compare_exchange_n(&host_stats_next,&next,now+UINT64_C(5000000000),0,__ATOMIC_RELAXED,__ATOMIC_RELAXED) || !next) return;
+    printf("Host map stats (5 s): ");
+    for (int i=0;i<3;++i) {
+        const uint64_t c=host_stats_take(&host_stats.calls[i]), by=host_stats_take(&host_stats.bytes[i]),
+                       t=host_stats_take(&host_stats.ns[i]), mx=host_stats_take(&host_stats.max_ns[i]);
+        printf("%s %" PRIu64 " (%" PRIu64 " MiB, %.1f ms, max %.2f ms); ",names[i],c,by>>20,t/1e6,mx/1e6);
+    }
+    const uint64_t vu=host_stats_take(&host_stats.views_unmapped), ub=host_stats_take(&host_stats.unmapped_bytes),
+                   vr=host_stats_take(&host_stats.views_remapped), rb=host_stats_take(&host_stats.remapped_bytes);
+    printf("carve: %" PRIu64 " views unmapped (%" PRIu64 " MiB), %" PRIu64 " mapped again (%" PRIu64 " MiB); %zu regions\n",
+           vu,ub>>20,vr,rb>>20,region_count);
+}
 static size_t region_index(uintptr_t a) { /* first region with end > a */
     size_t lo=0, hi=region_count;
     while (lo<hi) { size_t mid=(lo+hi)/2; if (regions[mid].end<=a) lo=mid+1; else hi=mid; }
@@ -191,6 +241,7 @@ static size_t carve_host(uintptr_t a, uintptr_t b) {
     if (keep_left) left_runs=nruns=save_protections(lo,a,&runs,nruns,&capacity);
     if (keep_right) nruns=save_protections(b,hi,&runs,nruns,&capacity);
     for (size_t i=first;i<last;++i) if (regions[i].mapped) {
+        if (host_stats_enabled()) { HOST_STAT_ADD(views_unmapped,1); HOST_STAT_ADD(unmapped_bytes,regions[i].end-regions[i].start); }
         if (!UnmapViewOfFile2(GetCurrentProcess(),(void *)regions[i].start,MEM_PRESERVE_PLACEHOLDER))
             win_fail("UnmapViewOfFile2",regions[i].start,regions[i].end-regions[i].start);
     }
@@ -204,6 +255,7 @@ static size_t carve_host(uintptr_t a, uintptr_t b) {
         regions[at].end=a;
         region_insert(at+1,(HostRegion){a,hi,0,0});
         if (keep_left) {
+            if (host_stats_enabled()) { HOST_STAT_ADD(views_remapped,1); HOST_STAT_ADD(remapped_bytes,a-lo); }
             regions[at].phys=left.phys; regions[at].mapped=1;
             view_map(&regions[at],PAGE_READWRITE);
         }
@@ -214,6 +266,7 @@ static size_t carve_host(uintptr_t a, uintptr_t b) {
         regions[at].end=b;
         region_insert(at+1,(HostRegion){b,hi,0,0});
         if (keep_right) {
+            if (host_stats_enabled()) { HOST_STAT_ADD(views_remapped,1); HOST_STAT_ADD(remapped_bytes,hi-b); }
             regions[at+1].phys=right.phys+(b-right.start); regions[at+1].mapped=1;
             view_map(&regions[at+1],PAGE_READWRITE);
         }
@@ -227,15 +280,14 @@ static size_t carve_host(uintptr_t a, uintptr_t b) {
     free(runs);
     return at;
 }
-static int host_map(uintptr_t address, uint64_t size, int prot, int reserved, uint64_t phys) {
+static int host_map_impl(uintptr_t address, uint64_t size, int prot, int reserved, uint64_t phys) {
     size_t i=carve_host(address,address+size);
     if (reserved) return 0;
     regions[i].phys=phys; regions[i].mapped=1;
     view_map(&regions[i],win_prot(prot));
     return 0;
 }
-static int host_unmap(uintptr_t address, uint64_t size) { carve_host(address,address+size); return 0; }
-static int host_protect(uintptr_t address, uint64_t size, int prot) {
+static int host_protect_impl(uintptr_t address, uint64_t size, int prot) {
     DWORD protect=win_prot(prot), old;
     uintptr_t end=address+size;
     for (size_t i=region_index(address); i<region_count && regions[i].start<end; ++i) {
@@ -244,6 +296,24 @@ static int host_protect(uintptr_t address, uint64_t size, int prot) {
         if (!VirtualProtect((void *)a,b-a,protect,&old)) return -1;
     }
     return 0;
+}
+#define HOST_TIMED(op,address,size,call) do {                                                   \
+        if (!host_stats_enabled()) return (call);                                               \
+        const uint64_t views=__atomic_load_n(&host_stats.views_unmapped,__ATOMIC_RELAXED),        \
+                       unmapped=__atomic_load_n(&host_stats.unmapped_bytes,__ATOMIC_RELAXED),     \
+                       start=host_now_ns();                                                     \
+        const int result=(call);                                                                \
+        host_stats_record(op,address,size,start,views,unmapped);                                \
+        return result;                                                                          \
+    } while (0)
+static int host_map(uintptr_t address, uint64_t size, int prot, int reserved, uint64_t phys) {
+    HOST_TIMED(HOST_MAP,address,size,host_map_impl(address,size,prot,reserved,phys));
+}
+static int host_unmap(uintptr_t address, uint64_t size) {
+    HOST_TIMED(HOST_UNMAP,address,size,(carve_host(address,address+size),0));
+}
+static int host_protect(uintptr_t address, uint64_t size, int prot) {
+    HOST_TIMED(HOST_PROTECT,address,size,host_protect_impl(address,size,prot));
 }
 /* Released pages read as zero when reused, like the memfd's punched holes. */
 static void host_discard(uint64_t phys, uint64_t size) { memset(backing_base+phys,0,size); }
