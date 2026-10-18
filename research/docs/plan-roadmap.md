@@ -39,7 +39,7 @@ number once a stage is proposed upstream ([pr-checklist.md](pr-checklist.md)).
 | C1 Crash in vkCmdDrawIndexed (recorder thread) | not reproduced | | | Run 2 cutscene / level load: NVIDIA driver null read under `DrawRecord` lambda. Run 3 same place: no crash (non-deterministic). [plan-baseline-issues.md](plan-baseline-issues.md) |
 | L1 Minidump on fatal fault | built, tested (injected fault) | `b01661e` | draft [pr-crash-dump.md](pr-crash-dump.md) | `user\crashdumps\`, `GOW3_CRASH_DUMP=0/full`. Installed in `out/` 2026-10-18 02:51 |
 | L2 Sample the VkRecorder thread | built | `151dadb` | no (diagnostic) | `GOW3_SAMPLE_FILE` now also writes `<prefix>-VkRecorder.txt` |
-| I1 Menu navigation | cause confirmed; fix attempt 1 built | `ebf85f4` | | The user, run 3: menus work at `native` → live r.SetRes (4K_native) breaks them. L3: boot at 4K like a PS4 Pro on a 4K TV (`GOW3_UE4_BOOT_4K=1`): patch + 4K VideoOut, no live change. Test T-I1b. |
+| I1 Menu navigation | **verified** (the user, 2026-10-18; log to collect) | `ebf85f4` | | The user, run 3: menus work at `native` → live r.SetRes (4K_native) breaks them. L3: boot at 4K like a PS4 Pro on a 4K TV (`GOW3_UE4_BOOT_4K=1`): patch + 4K VideoOut, no live change. Test T-I1b. |
 | I2 Frame pacing (stage B bound) | not started | | | Stage B 93-97% busy, FPS follows draws/frame. Tests T-I2a profile, T-I2b texture helper |
 | P1 Baseline profile | not started | | | Scene(s) to be chosen with the user |
 | V1 Pattern scan for version-specific addresses | not started | | | The user's idea, 2026-10-18; upstream candidate. r.SetRes (`runtime_extra.c:560-583`), 4K pool patch |

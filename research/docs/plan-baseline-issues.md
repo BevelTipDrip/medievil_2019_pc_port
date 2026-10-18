@@ -88,9 +88,11 @@ main open: next attempt is an alias handle for a second open.
   prints, the launcher is what writes `last_run.log`, so the script copied the stale 03:20 log. Fixed: the script now
   runs run.py through `research/tools/tee_run.py`, which writes the output to `data\<tag>.log` (UTF-8) as the
   launcher does (tested with a dummy command: output, UTF-8 and exit code pass through).
-- Open: which run did the user test the menus in? If the 03:20 launcher run (live r.SetRes) navigated fully, H1a is
-  in doubt (run 1's menus failed with the same path, but run 1 was `ultra`, this was `console`). **Re-run T-I1b with
-  the fixed script, then A/B against the launcher's live path at the same quality.**
+- **The user (2026-10-18): the menus were checked in the scripted run (`GOW3_UE4_BOOT_4K=1`); the 03:20 launcher run
+  was closed right after opening (Alt+F4).** → **I1 fix verified in game by the user** (4K output, menus fully
+  navigable with the DualSense). H1a stands.
+- Caveat: that run has no log (script bug above), so the log-side expectations (patch line, no live r.SetRes, no
+  refused second open) are unconfirmed. Get them from the next scripted 4K run before this becomes a PR.
 
 If H1a holds, fix directions (to research): (a) after `r.SetRes`, do what UE4 does after a normal resolution change so
 UMG navigation uses the new geometry; (b) start the game at 3840x2160 so no live change is needed (the comment at

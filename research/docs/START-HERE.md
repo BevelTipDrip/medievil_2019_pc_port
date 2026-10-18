@@ -47,7 +47,7 @@ Open: a private remote for `lab` is not decided yet.
 | Motion vectors | Researched: the port's temporal upscalers are off for MediEvil (`GOW3_UPSCALER=none`), hooks are Bloodborne's. See [plan-ue4-motion-vectors.md](plan-ue4-motion-vectors.md). **Open:** map a UE4 frame. |
 | FSR 3 FG | Not started. FSR-Vulkan already links a FG API with no caller. See [plan-fsr-frame-generation.md](plan-fsr-frame-generation.md). |
 | DLSS SR / FG | SR bridge exists (NGX, inputs wrong for UE4). FG: NGX Vulkan (`NGX_VK_CREATE_DLSSG`), not Streamline. See [plan-dlss.md](plan-dlss.md). |
-| Baseline issues | **First priority (the user, 2026-10-18).** Run 1 found I1 menu navigation stops part-way (likely live r.SetRes) and I2 frame pacing 50↔120 FPS: stage B (draw recording) 93-97% busy, FPS follows draws/frame. See [plan-baseline-issues.md](plan-baseline-issues.md). |
+| Baseline issues | **First priority (the user, 2026-10-18).** I1 menu navigation at 4K: **fixed and verified by the user** with `GOW3_UE4_BOOT_4K=1` (boot at 4K like a PS4 Pro on a 4K TV, `ebf85f4`; opt-in, log still to collect). I2 frame pacing 50↔120 FPS: stage B (draw recording) 84-97% busy, FPS follows draws/frame, CPU-side (resolution/quality barely matter). C1 rare crash in the NVIDIA driver under a recorded draw: dumps now written on any fault. See [plan-baseline-issues.md](plan-baseline-issues.md). |
 | Next | Tests T-I1a (native output), T-I2a (sampling profile), T-I2b (texture helper), each with the user's go. Pending idea (the user, 2026-10-18): replace fixed 01.00 addresses (r.SetRes, 4K pool patch) with pattern scans, worth offering upstream; needs a remake eboot to test against, so not started. |
 
 ## Knobs and triggers
