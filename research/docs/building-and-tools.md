@@ -25,8 +25,11 @@ Parent: [START-HERE.md](START-HERE.md). Do not re-install the toolchain or re-de
   ```
   Versions at install: clang 23.1.3, cmake 4.4.4, ninja 1.13.2.
 - Python: **use 3.14** (`py -3.14`), which has pillow + cryptography. Plain `python` on PATH is 3.8 and breaks the
-  launcher (`str | None`, `removesuffix`). `MediEvil Launcher.cmd` uses `pyw -3` = 3.14. 3.10 also exists without
-  the packages.
+  launcher (`str | None`, `removesuffix`). **`py -3` / `pyw -3` also pick 3.8.10 here** (no py.ini, no PY_PYTHON:
+  the legacy py launcher ranks the Python-install-manager 3.14 below 3.8), so the repo's `MediEvil Launcher.cmd`
+  starts the launcher on 3.8 (corrected 2026-10-18; earlier notes said 3.14). Start the launcher with
+  **`research\tools\launcher.cmd`** (pins `pyw -3.14`, sets `GOW3_UE4_BOOT_4K=1`, which the launcher passes to the
+  game). 3.10 also exists without the packages.
 
 ## Build
 
