@@ -616,3 +616,11 @@ Reading the code for these (no launch):
   target again, it is re-created as depth and copied back: a second ping-pong, like the volumes (V3), for the cube
   shadow maps. The copies handle layers and aspects correctly as written, so V1 is not simply a lost layer: needs a
   RenderDoc capture of the projection draw (what it samples, blend state).
+
+`pan-1.etl` (ring buffer, ~95 s ending at the save 18:51:41.6; no thread-start events, so tids by role: 38532 render
+thread, 2408 game thread, 41168 stage A, 45768 stage B, 3392 recorder; outputs `pan-1-slices.txt`): around the
+2,775 ms frame (trace s 212.7-215.5) **no thread stops**: work cores flat, the render thread off CPU 170-250 ms/s in
+its usual short waits, the game thread ~50% idle as always, stages A / B cycling normally. Kind B is not a stall of
+the game or the GPU pipeline threads: the time is lost around presentation (flip / video out), or the frame is not
+counted. Lower priority; next look: the presenter / flip path (`vk_presenter.cpp`, `videoout/driver.cpp`) and
+PresentMon for the same moment.
