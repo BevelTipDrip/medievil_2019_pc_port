@@ -130,11 +130,19 @@ static void write_crash_dump(EXCEPTION_POINTERS *info) {
     WriteDump write_dump=dbghelp ? (WriteDump)(void *)GetProcAddress(dbghelp,"MiniDumpWriteDump") : NULL;
     if (!write_dump) { fputs("Crash dump: dbghelp.dll unavailable\n",stderr); return; }
     /* Private read-write memory is the host's heaps and stacks (recorded commands, GPU state);
-     * guest memory is a mapped section view and stays out unless "full". */
-    MINIDUMP_TYPE type=(MINIDUMP_TYPE)(MiniDumpWithPrivateReadWriteMemory|MiniDumpWithDataSegs|
-                                       MiniDumpWithHandleData|MiniDumpWithThreadInfo|MiniDumpWithFullMemoryInfo|
-                                       MiniDumpWithUnloadedModules|MiniDumpWithIndirectlyReferencedMemory);
-    if (mode && !strcmp(mode,"full")) type=(MINIDUMP_TYPE)(type|MiniDumpWithFullMemory);
+     * guest memory is a mapped section view and stays out unless "full". In game the memory-walking
+     * types failed with E_INVALIDARG (the address space holds placeholder reservations and mapped
+     * views): each failure falls back to a smaller type, down to stacks and threads only. */
+    const MINIDUMP_TYPE base=(MINIDUMP_TYPE)(MiniDumpWithDataSegs|MiniDumpWithHandleData|MiniDumpWithThreadInfo|
+                                             MiniDumpWithUnloadedModules);
+    MINIDUMP_TYPE types[]={
+        (MINIDUMP_TYPE)(base|MiniDumpWithPrivateReadWriteMemory|MiniDumpWithFullMemoryInfo|
+                        MiniDumpWithIndirectlyReferencedMemory),
+        (MINIDUMP_TYPE)(base|MiniDumpWithIndirectlyReferencedMemory),
+        base,
+        MiniDumpNormal,
+    };
+    if (mode && !strcmp(mode,"full")) types[0]=(MINIDUMP_TYPE)(types[0]|MiniDumpWithFullMemory);
     CreateDirectoryA(crash_dump_dir,NULL);
     SYSTEMTIME now; GetLocalTime(&now);
     char path[MAX_PATH+64];
@@ -144,11 +152,18 @@ static void write_crash_dump(EXCEPTION_POINTERS *info) {
     if (file==INVALID_HANDLE_VALUE) { fprintf(stderr,"Crash dump: cannot create %s (%lu)\n",path,GetLastError()); return; }
     MINIDUMP_EXCEPTION_INFORMATION exception={GetCurrentThreadId(),info,FALSE};
     /* Written from the faulting thread while the others run: good enough for diagnostics. */
-    const BOOL written=write_dump(GetCurrentProcess(),GetCurrentProcessId(),file,type,&exception,NULL,NULL);
-    const DWORD error=written ? 0 : GetLastError();
+    for (size_t i=0;i<sizeof(types)/sizeof(types[0]);++i) {
+        SetFilePointer(file,0,NULL,FILE_BEGIN);
+        SetEndOfFile(file);
+        if (write_dump(GetCurrentProcess(),GetCurrentProcessId(),file,types[i],&exception,NULL,NULL)) {
+            CloseHandle(file);
+            fprintf(stderr,"Crash dump: %s (type 0x%x)\n",path,(unsigned)types[i]);
+            return;
+        }
+        fprintf(stderr,"Crash dump: type 0x%x failed (0x%08lx)\n",(unsigned)types[i],GetLastError());
+    }
     CloseHandle(file);
-    if (written) fprintf(stderr,"Crash dump: %s\n",path);
-    else fprintf(stderr,"Crash dump: MiniDumpWriteDump failed (0x%08lx)\n",error);
+    DeleteFileA(path);
 }
 static int fatal_reported;
 static LONG fatal_exception(EXCEPTION_POINTERS *info) {
