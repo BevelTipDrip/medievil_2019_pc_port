@@ -589,3 +589,30 @@ again within ~30 s (count, MiB), and the top 8 created images by description (si
 tiled / linear, binding). If most stream-in uploads are re-creations, the cache to add is: keep images freed by an
 unmap, and on re-creation at the same address with the same description and unchanged guest data (hash), reuse them
 without an upload. Test T-C2: pan at the hitch spot; F9 (ring buffer) right after a kind B frame.
+
+### T-C2 result (2026-10-18 18:50-18:53, launched by Claude with the user's go; build `9a3127a`; log `data/t-c2-recreate.log` + `.times`; ring trace `pan-1.etl` saved 18:51:41.6)
+
+The user: the hitch happens when one of the broken shadows is generated; panning back and forth creates / destroys it
+over and over; a working shadow would be created once. The create lists agree:
+- **Shadow depth maps re-created repeatedly**: `512x512 D16Unorm depth target` 67 times in one 5 s window (18:52:34,
+  68 re-creations of addresses freed by guest unmaps); `256x256 D16Unorm L1/6 depth target` (point-light cube shadow)
+  31 times with `256x256 R16Unorm L1/6 storage` 24 times (18:51:24): the same memory used as depth and as a 16-bit
+  colour storage image (compute). UE4 takes shadow depth targets from transient memory while the light is in view.
+  The depth / colour R16 aliasing is also the **prime suspect for V1** (black box = the projection reading wrong data).
+- **4K render targets re-created continuously** (18:51:44-18:52:14): `3840x2160 R8G8B8A8Unorm` and
+  `R16G16B16A16Sfloat` render targets, 10 each per 5 s, ~860 MiB per 5 s freed by guest unmaps and created again,
+  each new image uploading its guest memory first.
+- **The 0.5 s panning stalls** (195-268 images, 300-400 MB in one frame): mostly first-time BC1 / BC5 textures at
+  many sizes (texture streaming), only 2-35 re-creations in those windows; all uploaded within the frame.
+- Kind B: a 2,775 ms frame at 18:51:16 with 0 images / uploads (in `pan-1.etl` if the ring held ~25 s).
+
+Reading the code for these (no launch):
+- New images start `Dirty`, so a re-created render / depth target first uploads its guest memory; the image freed by
+  the unmap was never written back (`UnmapMemory`: "TODO: Download image data back to host"), so that memory only
+  holds stale CPU-side data. Candidate fix C3: skip the first upload of an image created for a render / depth target
+  binding (toggle). Saves ~170 MB/s here; not the 0.5 s stalls.
+- `ResolveDepthOverlap`: a depth image bound as **storage** is re-created as a colour image (R16 for D16) and copied
+  (`CopyColorAndDepth` → `CopyImageWithBuffer` via a 128 MB device buffer without maintenance8); bound as a depth
+  target again, it is re-created as depth and copied back: a second ping-pong, like the volumes (V3), for the cube
+  shadow maps. The copies handle layers and aspects correctly as written, so V1 is not simply a lost layer: needs a
+  RenderDoc capture of the projection draw (what it samples, blend state).
