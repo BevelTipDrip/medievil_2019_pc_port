@@ -25,6 +25,28 @@
 
 namespace VideoCore {
 
+namespace {
+// gow3: GOW3_TEXCACHE_STATS=1 (diagnostics): what the cache does per 5 s, printed after a
+// submission's collector run. MediEvil lost FPS the longer a level was played and a restart
+// restored it: these show which part grows. Off: one load per counter.
+struct CacheStats {
+    std::atomic<u64> fast_lookups, slow_lookups, slow_candidates, overlaps, expands, registered,
+        unregistered, refreshes, refresh_bytes, alias_copies, alias_syncs;
+};
+CacheStats cache_stats;
+bool CacheStatsEnabled() {
+    static const bool enabled = [] {
+        const char* value = std::getenv("GOW3_TEXCACHE_STATS");
+        return value && value[0] == '1';
+    }();
+    return enabled;
+}
+#define CACHE_STAT(name, n)                                                                       \
+    do {                                                                                           \
+        if (CacheStatsEnabled()) cache_stats.name.fetch_add((n), std::memory_order_relaxed);      \
+    } while (0)
+} // namespace
+
 static constexpr u64 PageShift = 12;
 static constexpr u64 NumFramesBeforeRemoval = 32;
 
@@ -358,6 +380,7 @@ void TextureCache::ForEachAlias(const Image& image, Func&& func) {
 }
 
 void TextureCache::SynchronizeAlias(ImageId image_id) {
+    CACHE_STAT(alias_syncs, 1);
     Image& dst = slot_images[image_id];
     if (False(dst.flags & ImageFlagBits::Aliased)) {
         return;
@@ -418,6 +441,7 @@ bool TextureCache::CommitAliasWriter(AliasState& state) {
 }
 
 void TextureCache::CopyAlias(ImageId src_id, ImageId dst_id, const Extent3D& extent) {
+    CACHE_STAT(alias_copies, 1);
     Image& dst = slot_images[dst_id];
     runtime.CopyAliasImage(&slot_images[src_id], &dst, {extent.width, extent.height, extent.depth});
     dst.flags |= ImageFlagBits::GpuModified;
@@ -605,6 +629,7 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                                                            BindingType binding,
                                                            ImageId cache_image_id,
                                                            ImageId merged_image_id) {
+    CACHE_STAT(overlaps, 1);
     auto& cache_image = slot_images[cache_image_id];
     const bool safe_to_delete =
         scheduler.CurrentTick() - cache_image.tick_accessed_last > NumFramesBeforeRemoval;
@@ -832,6 +857,7 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 }
 
 ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
+    CACHE_STAT(expands, 1);
     const auto new_image_id = slot_images.insert(instance, runtime, slot_image_views, info);
     RegisterImage(new_image_id);
 
@@ -882,6 +908,7 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
         cached.exact_fmt == exact_fmt && cached.binding == desc.type &&
         cached.levels == info.resources.levels && cached.layers == info.resources.layers &&
         !Gow3Toggle::Disabled(Gow3Toggle::FindImageCache)) {
+        CACHE_STAT(fast_lookups, 1);
         Image& image = slot_images[cached.image_id];
         image.tick_accessed_last = scheduler.CurrentTick();
         TouchImage(image);
@@ -897,6 +924,8 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     ImageIds image_ids;
     ForEachImageInRegion(info.guest_address, info.guest_size,
                          [&](ImageId image_id, Image& image) { image_ids.push_back(image_id); });
+    CACHE_STAT(slow_lookups, 1);
+    CACHE_STAT(slow_candidates, image_ids.size());
 
     ImageId image_id{};
 
@@ -1122,6 +1151,8 @@ void TextureCache::RefreshImage(Image& image) {
     if (False(image.flags & ImageFlagBits::Dirty) || image.info.num_samples > 1) {
         return;
     }
+    CACHE_STAT(refreshes, 1);
+    CACHE_STAT(refresh_bytes, image.info.guest_size);
     ResolveReadbacks(image.info.guest_address, image.info.guest_size, true,
                      ReadbackSource::ImageRefresh);
     Gow3Stats::Timer timer{Gow3Stats::t_refresh};
@@ -1228,6 +1259,7 @@ vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sampler,
 
 void TextureCache::RegisterImage(ImageId image_id) {
     Gow3Stats::images_registered.fetch_add(1, std::memory_order_relaxed);
+    CACHE_STAT(registered, 1);
     Image& image = slot_images[image_id];
     ASSERT_MSG(False(image.flags & ImageFlagBits::Registered),
                "Trying to register an already registered image");
@@ -1263,6 +1295,7 @@ void TextureCache::RegisterImage(ImageId image_id) {
 }
 
 void TextureCache::UnregisterImage(ImageId image_id) {
+    CACHE_STAT(unregistered, 1);
     Image& image = slot_images[image_id];
     ASSERT_MSG(True(image.flags & ImageFlagBits::Registered),
                "Trying to unregister an already unregistered image");
@@ -1545,6 +1578,36 @@ void TextureCache::RunGarbageCollector() {
 
     GarbageCollectImages();
     GarbageCollectSamplers();
+    if (CacheStatsEnabled()) {
+        static auto last = std::chrono::steady_clock::now();
+        static u64 live_registered = 0;
+        const auto now = std::chrono::steady_clock::now();
+        if (now - last >= std::chrono::seconds(5)) {
+            last = now;
+            const auto take = [](std::atomic<u64>& v) { return v.exchange(0, std::memory_order_relaxed); };
+            const u64 reg = take(cache_stats.registered), unreg = take(cache_stats.unregistered);
+            live_registered += reg - unreg;
+            const u64 slow = take(cache_stats.slow_lookups), candidates = take(cache_stats.slow_candidates);
+            std::printf("Texture cache stats (5 s): %llu images registered (+%llu -%llu), %zu slots, "
+                        "%zu alias groups; lookups fast %llu slow %llu (avg %.1f candidates); "
+                        "overlaps %llu, expands %llu; uploads %llu (%.1f MiB); alias syncs %llu, "
+                        "copies %llu; GPU memory %llu MiB, collector trigger %llu / pressure %llu MiB, "
+                        "tick %llu\n",
+                        (unsigned long long)live_registered, (unsigned long long)reg,
+                        (unsigned long long)unreg, slot_images.size(), alias_states.size(),
+                        (unsigned long long)take(cache_stats.fast_lookups), (unsigned long long)slow,
+                        slow ? double(candidates) / slow : 0.0,
+                        (unsigned long long)take(cache_stats.overlaps),
+                        (unsigned long long)take(cache_stats.expands),
+                        (unsigned long long)take(cache_stats.refreshes),
+                        take(cache_stats.refresh_bytes) / 1048576.0,
+                        (unsigned long long)take(cache_stats.alias_syncs),
+                        (unsigned long long)take(cache_stats.alias_copies),
+                        (unsigned long long)(total_used_memory >> 20),
+                        (unsigned long long)(trigger_gc_memory >> 20),
+                        (unsigned long long)(pressure_gc_memory >> 20), (unsigned long long)gc_tick);
+        }
+    }
 }
 
 void TextureCache::TouchImage(const Image& image) {
