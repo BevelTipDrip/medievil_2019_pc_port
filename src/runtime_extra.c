@@ -604,11 +604,11 @@ void runtime_ue4_setres_poll(void) {
     if (__atomic_exchange_n(&ue4_request_pending,0,__ATOMIC_ACQ_REL)) {
         char text[sizeof(ue4_requested)];
         strcpy(text,ue4_requested);
-        if (reads>=600) ue4_setres(text);
+        if (reads>=120) ue4_setres(text);
         automatic_done=1; /* a choice in the menu wins over the start setting */
     }
     if (automatic_done) return;
-    if (++reads<600) return; /* the main menu, with the game viewport up */
+    if (++reads<120) return; /* about 2 s after the game first reads the pad: the viewport is up */
     automatic_done=1;
     const char *want=getenv("GOW3_UE4_SETRES");
     if (want && *want) ue4_setres(want);

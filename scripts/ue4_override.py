@@ -249,6 +249,13 @@ DEBUG_HUD_EDITS = [
     # The "Show Stat SceneRendering" toggle (a profiling overlay) switches to 1440p instead.
     (b'\x1fstat SceneRendering\0', b'\x1fr.SetRes 2560x1440 \0', 1),
     (b'Show Stat SceneRendering\0', b'Render 2560x1440 (1440p)\0', 2),
+    # The menu pauses the enemies when it opens (Construct: SetAIPaused(true)) and only its own
+    # back/Exit path (CloseDebug) resumed them: closing it with R3 again (the player's toggle) left
+    # every enemy standing still, for the rest of the session (the flag is on the game instance).
+    # Destruct runs however the menu closes: its gamma reset ("retain gamma" box) becomes
+    # SetAIPaused(false, false, self), copied from CloseDebug, plus two EX_Nothing.
+    (bytes.fromhex('072d2b000000930000004d1920dafeffff13000000000000001c00ffffff171f67616d6d61002a16'),
+     bytes.fromhex('072d2b000000930000000b1920c6feffff11000000000000001b5004000000000000282817160b0b'), 1),
 ]
 
 
@@ -325,11 +332,20 @@ def apply(game, resolution='native', quality='console', fps=60, debug_menu=False
     # Native output: the base PS4 renderer makes its buffers at the display size at start and only
     # a live r.SetRes changes them; the runtime sets it (GOW3_UE4_SETRES), and the debug menu's
     # first resolution button follows the setting.
+    # A game build whose assets differ (another version) loses only that cheat, not the rest.
     if debug_menu:
-        files[GAME_CONFIG] = debug_menu_config(game, True)
-        files[DEBUG_HUD] = debug_hud(game, resolution)
+        try:
+            files[DEBUG_HUD] = debug_hud(game, resolution)
+            files[GAME_CONFIG] = debug_menu_config(game, True)
+        except (ValueError, FileNotFoundError) as error:
+            print(f'Debug menu: not available for this game build ({error})', flush=True)
+            debug_menu = False
     if infinite_ammo:
-        files[INFINITE_AMMO] = edited_asset(game, INFINITE_AMMO, INFINITE_AMMO_EDITS)
+        try:
+            files[INFINITE_AMMO] = edited_asset(game, INFINITE_AMMO, INFINITE_AMMO_EDITS)
+        except (ValueError, FileNotFoundError) as error:
+            print(f'Unlimited ammo: not available for this game build ({error})', flush=True)
+            infinite_ammo = False
     write_pak(pak, files)
     return (f'{resolution if percentage or output else "native 1080p"}'
             f'{f" (r.ScreenPercentage={percentage})" if percentage else ""}'

@@ -1,6 +1,7 @@
 # MediEvil (PS4) for PC
 
-A PC port of **MediEvil** (PlayStation 4, 2019, CUSA11227) for Windows 10 and 11, built on the
+A PC port of **MediEvil** (PlayStation 4, 2019, CUSA11227; the European CUSA12982 works too) for
+Windows 10 and 11, built on the
 [God of War III PC port](https://github.com/FelipePrado0/gow3_pc).
 
 The CPU side is native: the game's original x86-64 executable runs directly on the PC's processor
@@ -33,10 +34,19 @@ Captured on Windows 11 (RTX 5080) with this port.
   limit), so pacing stays even. An RTX 5080 runs menus at 120 and levels at about 90 to 120 FPS.
 - **Smooth frame pacing on any monitor**: Frame rate limit "Half display refresh (smoothest)" shows
   every frame for exactly two refreshes (72 FPS on 144 Hz, 100 FPS on 200 Hz; with Engine frame
-  rate 120). 60 FPS on a 144/165 Hz screen cannot be shown evenly and looks like stutter.
+  rate 120). 60 FPS on a 144/165 Hz screen cannot be shown evenly and looks like stutter. With
+  VSync on, a limit at the display's own refresh (60 on a 60 Hz TV) is left to VSync, which paces it.
 - Audio (Wwise through AudioOut, ATRAC9 and AAC).
 - Controller (DualSense, Xbox and others, through SDL3) and keyboard, both remappable.
 - Saving and loading; save backups before every start.
+- **All the game's languages** (launcher > Game > Language): every PS4 system language can be
+  picked, Polish included, whatever region your copy is from (a language the game has no text
+  for shows English).
+- **Screenshots**: F12 in the game saves a PNG of the game's picture at its full resolution
+  (3840 × 2160 in native 4K) in `user/screenshots` (launcher > Display > Open screenshots folder).
+  Shift+F12 saves raw frames for bug reports.
+- **Update notice**: the launcher asks GitHub for a newer release when it opens and offers to
+  download and install it (Advanced > Check for updates; can be switched off).
 - **Install from PKG**: the launcher (or `run.py`) unpacks a fake PKG once, resumably.
 - **Render resolution up to 4K**: the 3D scene is drawn at up to 3840 × 2160 and scaled to the
   game's 1080p picture (a UE4 config override pak, `scripts/ue4_override.py`): sharpest on a
@@ -66,7 +76,9 @@ Captured on Windows 11 (RTX 5080) with this port.
 - **Developer cheat menu**: MediEvil's own debug menu, left in the game by its developers and
   switched on by the override pak. Press **R3** while playing: unlock all levels, level select,
   complete level, unlock all weapons, invincibility, all runes and quest items, life bottles,
-  gold, chalices, fly mode and more. Its 60 FPS lock is removed.
+  gold, chalices, fly mode and more. Its 60 FPS lock is removed. Enemies pause while the menu is
+  open (the developers' design) and carry on when it closes, however it is closed (Complete
+  Level and other level changes included).
 - **Unlimited ammo**: daggers, crossbow and longbow bolts, lightning and the other weapons never
   run out (weapons and shields also stop wearing out).
 
@@ -86,9 +98,9 @@ Captured on Windows 11 (RTX 5080) with this port.
   runs out of the game's PS4 memory.
 - After a live resolution change the debug menu's gamepad navigation cannot reach its right-hand
   column: switch to 1080p (in-game menu > Performance) to use the cheats, then back.
-- All patches and cheats are for MediEvil 01.00 (the base game, CUSA11227); do not install the
-  01.02 update.
-- FSR 3 frame generation is planned (needs the game's motion vectors and depth).
+- All patches and cheats are for MediEvil 01.00 (the base game: CUSA11227, or CUSA12982 in
+  Europe); do not install the 01.02 update. On 01.02 the game may start, but native output, the
+  FPS unlock and the cheat edits stay off (they are made for the 01.00 executable).
 - Experimental PS4 Pro mode (`GOW3_NEO=1`) stops in the texture cache.
 
 ## Download and play

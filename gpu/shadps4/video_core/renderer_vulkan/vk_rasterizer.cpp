@@ -67,6 +67,12 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
     if (DrawPipeWanted()) {
         constant_ring = std::make_unique<ConstantRing>(instance, scheduler);
         draw_pipe = std::make_unique<DrawPipe>(&RunDrawPacket, this);
+        scheduler.SetInterleaveCheck(
+            [](void* self) {
+                const auto* rasterizer = static_cast<Rasterizer*>(self);
+                return !DrawPipe::OnStageB() && rasterizer->draw_pipe && !rasterizer->draw_pipe->Idle();
+            },
+            this);
     }
     // gow3: this thread joins the texture binding helper before it changes image state.
     runtime.SetImageAccessHook(&JoinBindHelper, this);

@@ -36,6 +36,9 @@ void SetBackgroundLoading(u32 done, u32 total);
 /// Whether anything is drawn this frame (menu open or FPS counter on).
 bool Visible();
 
+/// F12: true once after a screenshot was asked for (the presenter saves the next frame).
+bool TakeScreenshotRequest();
+
 /// Counts a presented frame for GOW3_FPS_LOG.
 void LogPresent();
 

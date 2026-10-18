@@ -5,17 +5,21 @@ env:     run.py defaults for that game (the user's own environment still wins).
 """
 from pathlib import Path
 
+# MediEvil (2019, Unreal Engine 4). NpToolkit2 is the game's own PSN toolkit; the runtime
+# answers its system calls as an offline console. GoW3's temporal upscaler hooks and image
+# readback mode do not fit this renderer: off and linear (otherwise surfaces turn black).
+MEDIEVIL = {
+    'name': 'MediEvil',
+    'modules': ('libc.prx', 'libSceFios2.prx', 'libSceNpToolkit2.prx'),
+    'env': {'GOW3_UPSCALER': 'none', 'GOW3_READBACK_LINEAR': '1', 'GOW3_VBLANK_HZ': '60'},
+    # Render resolution through a UE4 config override pak (ue4_override.py), up to 4K.
+    'ue4_render_scale': True,
+}
+# Title IDs of MediEvil releases: America, Europe (also the Digital Deluxe Edition).
+MEDIEVIL_IDS = ('CUSA11227', 'CUSA12982')
+
 PROFILES = {
-    # MediEvil (2019, Unreal Engine 4). NpToolkit2 is the game's own PSN toolkit; the runtime
-    # answers its system calls as an offline console. GoW3's temporal upscaler hooks and image
-    # readback mode do not fit this renderer: off and linear (otherwise surfaces turn black).
-    'CUSA11227': {
-        'name': 'MediEvil',
-        'modules': ('libc.prx', 'libSceFios2.prx', 'libSceNpToolkit2.prx'),
-        'env': {'GOW3_UPSCALER': 'none', 'GOW3_READBACK_LINEAR': '1', 'GOW3_VBLANK_HZ': '60'},
-        # Render resolution through a UE4 config override pak (ue4_override.py), up to 4K.
-        'ue4_render_scale': True,
-    },
+    **{title: MEDIEVIL for title in MEDIEVIL_IDS},
     'CUSA01623': {
         'name': 'God of War III',
         'modules': ('libc.prx', 'libSceFios2.prx'),

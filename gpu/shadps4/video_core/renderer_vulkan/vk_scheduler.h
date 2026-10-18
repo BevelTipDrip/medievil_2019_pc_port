@@ -757,6 +757,10 @@ public:
             func(current_cmdbuf);
             return;
         }
+        NoteProducer(__builtin_return_address(0));
+        if (interleave_check && interleave_check(interleave_context)) {
+            ReportInterleave(__builtin_return_address(0));
+        }
         ChunkGuard guard{chunk_lock};
         if (!record_chunk->Push(std::forward<Func>(func))) {
             full_chunks.push_back(std::move(record_chunk));
@@ -945,6 +949,37 @@ private:
     // null) wrote into a null chunk: EndRendering crash in a MediEvil level (issue #2). A spin
     // lock (uncontended: one atomic exchange) keeps every use of the chunk whole.
     std::atomic_flag chunk_lock{};
+    /// Logs each thread that records into this scheduler, once (diagnostics for issue #2/#12:
+    /// a thread besides the GPU and draw recording threads interleaves commands).
+    void NoteProducer(void* caller) {
+        static thread_local const Scheduler* noted[8]{};
+        for (const Scheduler* s : noted) {
+            if (s == this) {
+                return;
+            }
+        }
+        for (auto& s : noted) {
+            if (!s) {
+                s = this;
+                break;
+            }
+        }
+        ReportProducer(caller);
+    }
+    void ReportProducer(void* caller);
+
+public:
+    /// Diagnostics: `check` returns true when the calling thread records while the draw recording
+    /// thread still has queued draws (their commands then interleave: issue #2/#12).
+    void SetInterleaveCheck(bool (*check)(void*), void* context) {
+        interleave_context = context;
+        interleave_check = check;
+    }
+
+private:
+    void ReportInterleave(void* caller);
+    bool (*interleave_check)(void*){};
+    void* interleave_context{};
     struct ChunkGuard {
         std::atomic_flag& flag;
         explicit ChunkGuard(std::atomic_flag& flag_) : flag{flag_} {

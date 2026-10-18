@@ -132,9 +132,22 @@ def main():
         env.setdefault('GOW3_FPS_CAP', str(engine_fps))
     if profile.get('ue4_render_scale'):
         import ue4_override
-        # Native output: the runtime sets the game's r.SetRes live once it runs (runtime_extra.c).
-        if output := ue4_override.NATIVE_OUTPUT.get(graphics['render_resolution']):
+        # Native output: the runtime sets the game's r.SetRes live once it runs (runtime_extra.c),
+        # through an address of the analysed eboot only (patches.py GAMES).
+        from patches import eboot_matches, game_profile as patch_profile, game_title_id
+        known = patch_profile(game_title_id(game))
+        known_build = bool(known and known[3]) and eboot_matches(game, known)
+        output = ue4_override.NATIVE_OUTPUT.get(graphics['render_resolution'])
+        if output and known_build:
             env.setdefault('GOW3_UE4_SETRES', output)
+            # The game's UI window takes the display size at start: reported at the output size,
+            # so menus and the debug menu can be navigated across the whole 4K screen (issue #11).
+            width, height = output.split('x')
+            env.setdefault('GOW3_INTERNAL_WIDTH', width)
+            env.setdefault('GOW3_INTERNAL_HEIGHT', height)
+        elif output:
+            print('Native output: this game build is not the analysed 01.00 eboot; output stays 1080p',
+                  flush=True)
     for key, value in profile['env'].items():
         env.setdefault(key, value)
     profile_ue4 = bool(profile.get('ue4_render_scale'))
