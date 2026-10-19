@@ -642,3 +642,12 @@ thrashes: panning back and forth re-streams the same mips (T-C2: ~22 large re-cr
 `GOW3_UE4_CVARS`, one per launch): **S1** amortize streaming (`r.Streaming.AmortizeCPUToGPUCopy=1;
 r.Streaming.MaxNumTexturesToStreamPerFrame=4`), **S2** a larger pool (`r.Streaming.PoolSize=1600` with a larger
 `r.GarlicHeapSizeMB` and `GOW3_DMEM_MB`; check the memory budget first).
+
+**S1 result (2026-10-19 01:27-01:31, launched by Claude with the user's go; log `data/t-s1-amortize.log`):** the user:
+"somewhat improved, but I can pretty consistently create a stutter in the same spot". Stall frames unchanged in kind:
+panning bursts of 661-1,009 ms with 197-282 new images and 318-395 MB of uploads in one frame, and a 3,283 ms frame with
+no GPU work (kind B). Amortizing does not split these: they are whole groups of textures evicted when panning away
+(T-C2: up to 362 images / 709 MiB freed by unmaps per 5 s) and reloaded at new addresses. Memory budget for S2: the
+game expands one memory pool with all direct memory (5,301,534,720 bytes = 5,056 MiB, `GOW3_DMEM_MB` unset; the port
+accepts up to 16 GiB); `r.GarlicHeapSizeMB=2600` and the streaming pool live inside it. S2: `GOW3_DMEM_MB=7104`,
+`r.GarlicHeapSizeMB=4600`, `r.Streaming.PoolSize=1600`.
