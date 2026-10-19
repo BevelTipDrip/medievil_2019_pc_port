@@ -111,6 +111,9 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
 
     if (!recording_threaded) {
         current_cmdbuf.beginRendering(rendering_info);
+        if (render_pass_hook) {
+            render_pass_hook->OnBeginRendering();
+        }
         return;
     }
     // The attachment infos live on this stack frame: the recorded closure keeps copies.
@@ -125,6 +128,9 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
         }
         cmdbuf.beginRendering(info);
     });
+    if (render_pass_hook) {
+        render_pass_hook->OnBeginRendering();
+    }
 }
 
 void Scheduler::EndRendering(std::source_location caller) {
@@ -134,6 +140,9 @@ void Scheduler::EndRendering(std::source_location caller) {
     Gow3Stats::render_pass_ends.fetch_add(1, std::memory_order_relaxed);
     if (WaitDiagnostics::Enabled()) {
         WaitDiagnostics::RenderPassEnds().Add(caller.file_name(), caller.line(), 0, 0);
+    }
+    if (render_pass_hook) {
+        render_pass_hook->OnEndRendering();
     }
     is_rendering = false;
     Record([](vk::CommandBuffer cmdbuf) { cmdbuf.endRendering(); });

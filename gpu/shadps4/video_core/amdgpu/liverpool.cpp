@@ -1130,6 +1130,12 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 } else if (event->event_index.Value() == EventIndex::ZpassDone) {
                     if (event->event_type.Value() == EventType::PixelPipeStatDump) {
                         Gow3Stats::occlusion_dumps.fetch_add(1, std::memory_order_relaxed);
+                        // gow3 GOW3_OCCLUSION=1: counted by Vulkan occlusion queries in order
+                        // with the draws, written once the GPU has them (vk_occlusion.h).
+                        if (rasterizer && rasterizer->OcclusionEvent(event->Address<VAddr>(),
+                                                                     u32(num_counter_pairs))) {
+                            break;
+                        }
                         static constexpr u64 OcclusionCounterValidMask = 0x8000000000000000ULL;
                         static constexpr u64 OcclusionCounterStep = 0x2FFFFFFULL;
                         u64* results = event->Address<u64*>();

@@ -19,6 +19,7 @@
 #include "video_core/renderer_vulkan/vk_draw_prep.h"
 #include "video_core/renderer_vulkan/vk_temporal_upscaler.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
+#include "video_core/renderer_vulkan/vk_occlusion.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
 
@@ -89,6 +90,11 @@ public:
     void CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds);
     u32 ReadDataFromGds(u32 gsd_offset);
     bool InvalidateMemory(VAddr addr, u64 size, bool assume_locks = false);
+    /// gow3: a ZPASS_DONE event (an occlusion query's counters): true when real occlusion
+    /// queries take it (vk_occlusion.h, GOW3_OCCLUSION=1), in order with the draws; false: the
+    /// caller writes the synthetic counters as before.
+    bool OcclusionEvent(VAddr address, u32 pairs);
+
     /// gow3: a guest libc write into memory a shader wrote (BufferCache::PreciseCpuWrite); false:
     /// the caller writes it normally (and faults).
     bool PreciseCpuWrite(VAddr addr, const void* src, int value, u64 size);
@@ -543,6 +549,7 @@ private:
     /// Submissions (prepared draws) kept alive until stage B reaches the position.
     std::deque<std::pair<u64, std::shared_ptr<const void>>> pipe_keepalive;
     std::unique_ptr<DrawPipe> draw_pipe;
+    std::unique_ptr<OcclusionQueries> occlusion; ///< GOW3_OCCLUSION=1 (vk_occlusion.h)
 };
 
 } // namespace Vulkan

@@ -481,6 +481,8 @@ bool Instance::CreateDevice() {
                 .multiDrawIndirect = features.multiDrawIndirect,
                 .depthClamp = features.depthClamp,
                 .depthBiasClamp = features.depthBiasClamp,
+                // gow3: exact sample counts for the game's occlusion queries (vk_occlusion.h).
+                .occlusionQueryPrecise = features.occlusionQueryPrecise,
                 .fillModeNonSolid = features.fillModeNonSolid,
                 .depthBounds = features.depthBounds,
                 .wideLines = features.wideLines,

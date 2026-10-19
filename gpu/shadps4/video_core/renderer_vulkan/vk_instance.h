@@ -137,6 +137,15 @@ public:
         return vk12_features.shaderInt8;
     }
 
+    /// gow3: exact occlusion query counts (vk_occlusion.h).
+    bool IsOcclusionQueryPrecise() const {
+        return features.occlusionQueryPrecise;
+    }
+    /// gow3: query slots reset on the host (vk_occlusion.h).
+    bool IsHostQueryResetSupported() const {
+        return vk12_features.hostQueryReset;
+    }
+
     /// Returns true if VK_KHR_maintenance8 is supported
     bool IsMaintenance8Supported() const {
         return maintenance_8;

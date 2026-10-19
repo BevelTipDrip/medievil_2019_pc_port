@@ -893,6 +893,22 @@ public:
         return work_semaphore.IsFree(tick);
     }
 
+    /// gow3: told when a render pass begins and before it ends (vk_occlusion.h: queries live in
+    /// render passes). Called on the recording thread.
+    struct RenderPassHook {
+        virtual void OnBeginRendering() = 0;
+        virtual void OnEndRendering() = 0;
+
+    protected:
+        ~RenderPassHook() = default;
+    };
+    void SetRenderPassHook(RenderPassHook* hook) {
+        render_pass_hook = hook;
+    }
+    [[nodiscard]] bool IsRendering() const noexcept {
+        return is_rendering;
+    }
+
     /// Returns the scheduler timeline semaphore.
     [[nodiscard]] Semaphore* GetWorkSemaphore() noexcept {
         return &work_semaphore;
@@ -951,6 +967,7 @@ private:
     std::jthread priority_pending_ops_thread;
     RenderState render_state;
     bool is_rendering = false;
+    RenderPassHook* render_pass_hook = nullptr;
     // gow3: threaded recording
     std::unique_ptr<RecordChunk> record_chunk;
     // gow3: record_chunk and full_chunks are used by one producer at a time, but a second thread

@@ -3192,6 +3192,30 @@ bool Rasterizer::InvalidateMemory(VAddr addr, u64 size, bool assume_locks) {
     return true;
 }
 
+namespace {
+struct ZpassEvent {
+    VAddr address;
+    u32 pairs;
+};
+} // namespace
+
+bool Rasterizer::OcclusionEvent(VAddr address, u32 pairs) {
+    if (!OcclusionQueries::Enabled() || !instance.IsHostQueryResetSupported() || pairs == 0) {
+        return false;
+    }
+    if (!occlusion) {
+        occlusion = std::make_unique<OcclusionQueries>(instance, scheduler);
+    }
+    const ZpassEvent event{address, pairs};
+    RunInOrder(
+        [](Rasterizer& self, const u8* data) {
+            const auto& e = *reinterpret_cast<const ZpassEvent*>(data);
+            self.occlusion->Event(e.address, e.pairs);
+        },
+        &event, sizeof(event));
+    return true;
+}
+
 bool Rasterizer::PreciseCpuWrite(VAddr addr, const void* src, int value, u64 size) {
     if (Gow3Toggle::Disabled(Gow3Toggle::PreciseCpuWrites) || !IsMapped(addr, size)) {
         return false;
