@@ -73,6 +73,8 @@ Environment variables and settings already in the port that this work uses (full
 |---|---|
 | [plan-roadmap.md](plan-roadmap.md) | Working plan: rule, order, Progress table |
 | [plan-baseline-issues.md](plan-baseline-issues.md) | Run 1 findings: menu navigation, frame pacing; tests |
+| [patches-and-pr-proposal.md](patches-and-pr-proposal.md) | Confirmed fixes on `lab` with evidence; proposed upstream PRs (2026-10-19) |
+| [plan-upstream-merge.md](plan-upstream-merge.md) | Upstream 1.3.3-1.3.5 vs `lab`: overlaps, conflict resolutions, merge test, next work items |
 | [plan-gpu-threading.md](plan-gpu-threading.md) | Port Bloodborne 0.3+ performance work (threading, waits, memory), ranked |
 | [plan-ue4-motion-vectors.md](plan-ue4-motion-vectors.md) | Real UE4 motion vectors, depth, jitter, camera |
 | [plan-fsr-frame-generation.md](plan-fsr-frame-generation.md) | FSR 3 frame generation |
