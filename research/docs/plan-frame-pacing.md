@@ -783,3 +783,14 @@ gain: reverted** (`47735b3`). In a steady view the region cache already hits; `v
 the cache does not serve. Stage B at ~425k draws/s is ~2.1 us per draw of which ~45% is waiting (end-of-pipe host copy
 wait, flip, GPU fence) and ~55% draw work spread over `DrawRecord`, `BindResources`, `RunDrawPacket` itself: no single
 hotspot left; the remaining lever is structural (splitting stage B's work across threads, plan-gpu-threading.md).
+
+### Bloodborne item #1: targeted host copy waits (2026-10-19, the user: "port over anything from them that applies")
+
+Bloodborne 0.3x notes the guest range every deferred host copy reads (64 KiB granules, 4096-slot table) and lets a
+command-processor WRITE_DATA wait only when a pending copy reads its range; fences still wait for all. Ported as
+`a2a81fe` (toggle bit 62 = 4611686018427387904 restores the full wait; frame stats print "N/frame skipped").
+**T-B1 (2026-10-19 08:49-08:55, launched by Claude with the user's go; build `a2a81fe`; log
+`data/t-b1-targeted-waits.log`):** heavy view (~2,830 draws/frame) 130-132 FPS, worst frame ~12 ms; host copies still
+9% of stage A with 115-123 waits per frame, **1 per frame skipped**. WRITE_DATA is not where MediEvil's host copy
+waits come from. Kept (harmless, correct); `338e0a0` adds a per-caller report of the waits (`GOW3_PERF_DIAG=1`,
+"Host copy waits:" lines) to find the callers that do wait before porting the next item.
