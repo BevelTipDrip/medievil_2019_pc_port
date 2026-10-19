@@ -716,6 +716,37 @@ void Runtime::ClearImage(VideoCore::Image* dst, const VideoCore::SubresourceRang
     dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
 }
 
+void Runtime::CopyBufferToStencil(VideoCore::Image* dst, const VideoCore::Buffer* src, u64 offset,
+                                  u32 width, u32 height) {
+    scheduler.EndRendering();
+    const u64 size = u64(width) * height;
+    bool needs_flush =
+        Transit(dst, vk::ImageLayout::eTransferDstOptimal, vk::PipelineStageFlagBits2::eCopy,
+                vk::AccessFlagBits2::eTransferWrite);
+    needs_flush |= IsBufferAccessed(src, offset, size);
+    if (needs_flush) {
+        FlushBarriers();
+    }
+    const vk::BufferImageCopy copy = {
+        .bufferOffset = offset,
+        .bufferRowLength = 0,
+        .bufferImageHeight = 0,
+        .imageSubresource{
+            .aspectMask = vk::ImageAspectFlagBits::eStencil,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
+        .imageOffset = {0, 0, 0},
+        .imageExtent = {width, height, 1},
+    };
+    scheduler.Record([buffer = src->Handle(), image = dst->GetImage(), copy](vk::CommandBuffer cmdbuf) {
+        cmdbuf.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, copy);
+    });
+    AccessBuffer(src, offset, size, vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferRead);
+    dst->flags |= VideoCore::ImageFlagBits::GpuModified;
+}
+
 void Runtime::SetBackingSamples(VideoCore::Image* image, u32 num_samples, bool copy_backing) {
     BeforeImageAccess();
     auto& backing = image->backing;

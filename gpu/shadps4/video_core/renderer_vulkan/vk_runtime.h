@@ -88,6 +88,9 @@ public:
                       const VideoCore::SubresourceRange& dst_range);
     void ClearImage(VideoCore::Image* dst, const VideoCore::SubresourceRange& range,
                     const vk::ClearValue& clear_value);
+    /// gow3: the stencil aspect of layer 0 from `width` x `height` bytes at `offset` of `src`.
+    void CopyBufferToStencil(VideoCore::Image* dst, const VideoCore::Buffer* src, u64 offset,
+                             u32 width, u32 height);
 
     void SetBackingSamples(VideoCore::Image* image, u32 num_samples, bool copy_backing = true);
 

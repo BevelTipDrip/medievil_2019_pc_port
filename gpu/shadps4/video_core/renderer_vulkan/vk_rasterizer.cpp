@@ -1530,6 +1530,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         IsComputeImageClear(pipeline)) {
         return false;
     }
+    NoteStencilPlaneWrites(pipeline);
 
     set_write_index = 0;
     set_writes.clear();
@@ -1876,6 +1877,36 @@ void Rasterizer::ResetBindings(bool is_compute) {
     bound_images.clear();
     bound_buffers.clear();
     needs_barrier = false;
+}
+
+// gow3: GCN keeps the stencil of a depth buffer in a separate plane at its own address; the
+// texture cache's depth image covers the depth plane only, so shader writes to the stencil plane
+// never reached it. MediEvil (UE4) clears the stencil by filling that plane with a compute shader
+// before the base pass and before the lights; the stencil kept the base pass's 0x80 and the shadow
+// projections, which test "stencil != 0" inside a shadow volume, darkened their whole box (V1).
+// A dispatch writing (nearly) a whole known plane marks it; the next bind copies it into the image.
+void Rasterizer::NoteStencilPlaneWrites(const Pipeline* pipeline) {
+    if (!pipeline->IsCompute() || Gow3Toggle::Disabled(Gow3Toggle::StencilPlaneWrites)) {
+        return;
+    }
+    std::scoped_lock lock{stencil_plane_mutex};
+    if (stencil_planes.empty()) {
+        return;
+    }
+    const auto& info = pipeline->GetStage(Shader::SwStage::Compute);
+    for (const auto& desc : info.buffers) {
+        if (desc.IsSpecial() || !desc.is_written) {
+            continue;
+        }
+        const auto sharp = desc.GetSharp(info);
+        const VAddr begin = sharp.base_address;
+        const VAddr end = begin + sharp.GetSize();
+        for (const auto& [plane, size] : stencil_planes) {
+            if (begin <= plane && end >= plane + size - size / 16) {
+                stencil_plane_writes.insert(plane);
+            }
+        }
+    }
 }
 
 bool Rasterizer::IsComputeMetaClear(const Pipeline* pipeline) {
@@ -2849,6 +2880,30 @@ RenderState Rasterizer::BeginRenderingFull(const GraphicsPipeline* pipeline) {
         ASSERT(desc.view_info.range.extent.levels == 1 && !image.binding.needs_rebind);
 
         const bool has_stencil = image.info.props.has_stencil;
+        if (has_stencil && regs.depth_buffer.StencilValid() && !reduced &&
+            !Gow3Toggle::Disabled(Gow3Toggle::StencilPlaneWrites)) {
+            const VAddr plane = regs.depth_buffer.StencilAddress();
+            const u64 plane_size = u64(regs.depth_buffer.depth_slice.tile_max + 1) * 64 *
+                                   regs.depth_buffer.NumSamples();
+            bool rewritten;
+            {
+                std::scoped_lock lock{stencil_plane_mutex};
+                stencil_planes[plane] = plane_size;
+                rewritten = stencil_plane_writes.erase(plane) != 0;
+            }
+            if (rewritten && !is_stencil_clear && image.info.num_samples == 1) {
+                // A uniform fill (a clear) needs no detiling; other contents would.
+                const auto [buffer, offset] = buffer_cache.ObtainBufferForImage(plane, u32(plane_size));
+                runtime.CopyBufferToStencil(&image, buffer, offset, image.info.size.width,
+                                            image.info.size.height);
+                static std::atomic<u32> logged{0};
+                if (logged.fetch_add(1, std::memory_order_relaxed) < 4) {
+                    std::printf("Stencil plane %#llx (%llu bytes) rewritten by a shader: copied into "
+                                "the depth image's stencil\n",
+                                (unsigned long long)plane, (unsigned long long)plane_size);
+                }
+            }
+        }
         // Stencil writes can be enabled while depth writes are off.
         const bool stencil_write =
             has_stencil && regs.depth_control.stencil_enable && !desc.view_info.is_storage;

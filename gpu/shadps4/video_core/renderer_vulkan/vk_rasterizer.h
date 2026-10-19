@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include <mutex>
+#include <unordered_map>
+#include <unordered_set>
 #include "common/recursive_lock.h"
 #include "common/shared_first_mutex.h"
 #include "video_core/buffer_cache/buffer_cache.h"
@@ -353,6 +356,12 @@ private:
         bool is_written;
     };
     boost::container::static_vector<BoundBuffer, Shader::NUM_BUFFERS> bound_buffers;
+    /// gow3: the separate stencil planes of bound depth buffers (address -> bytes), and those a
+    /// compute dispatch has rewritten since; the next bind copies them into the image (V1).
+    std::unordered_map<VAddr, u64> stencil_planes;
+    std::unordered_set<VAddr> stencil_plane_writes;
+    std::mutex stencil_plane_mutex;
+    void NoteStencilPlaneWrites(const Pipeline* pipeline);
 
     u32 set_write_index{};
     Pipeline::DescriptorWrites set_writes;
