@@ -78,6 +78,23 @@ static void protect(void *p, size_t size, unsigned flags) {
     if (mprotect(p, size, mode)) fail("mprotect failed");
 #endif
 }
+/* The 01.02 disc links libSceNpToolkit2 (PSN party/network) C++ symbols that the
+ * 01.00 target never calls and this port does not implement. Make only those
+ * imports no-ops returning 0, so an offline game runs; every other unresolved
+ * import still stops the process. */
+static unsigned char *optional_seen;
+static ABI void optional_stub(uint32_t id, uintptr_t argument) {
+    (void)argument;
+    if (id >= import_count) fail("bad import trap index");
+    if (!optional_seen[id]) {
+        optional_seen[id] = 1;
+        printf("NpToolkit2: unimplemented import %s (index %u) returns 0\n", names[id], id);
+        fflush(stdout);
+    }
+}
+static int optional_import(const char *name) {
+    return strstr(name, "#libSceNpToolkit2") != NULL;
+}
 static ABI __attribute__((noreturn)) void unresolved(uint32_t id, uintptr_t argument) {
     if (id >= import_count) fail("bad import trap index");
     printf("STOP: first unsupported PS4 import: %s (index %u)\n", names[id], id);
@@ -784,11 +801,13 @@ int main(int argc, char **argv) {
     unsigned char *traps = allocate(round_page((import_count + 1) * 32));
     unsigned char *data_traps = allocate((import_count + 1) * page_size);
     protect(data_traps, (import_count + 1) * page_size, 0);
+    optional_seen = calloc(import_count ? import_count : 1, 1);
+    if (!optional_seen) fail("allocation failed");
     for (uint64_t i = 0; i < import_count; ++i) {
         unsigned char *t = traps + i * 32;
         /* SysV: mov edi, index; movabs rax, handler; jmp rax. No fake return values. */
         uint32_t index = (uint32_t)i;
-        uintptr_t handler = (uintptr_t)unresolved;
+        uintptr_t handler = (uintptr_t)(optional_import(names[i]) ? optional_stub : unresolved);
         t[0] = 0x48; t[1] = 0x89; t[2] = 0xfe; /* mov rsi,rdi: preserve arg0 */
         t[3] = 0xbf; memcpy(t + 4, &index, 4);
         t[8] = 0x48; t[9] = 0xb8; memcpy(t + 10, &handler, 8);
