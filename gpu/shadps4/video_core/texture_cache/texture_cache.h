@@ -192,6 +192,11 @@ public:
         SynchronizeAlias(image_id);
     }
 
+    /// gow3: before a render / depth target binding: an image whose contents are undefined
+    /// (Undefined: made at an address a guest unmap freed) is not uploaded first, the GPU renders
+    /// into it. Any other first use uploads it as before (RefreshImage drops the flag).
+    void DiscardUndefinedContents(ImageId image_id);
+
     /// gow3: a GPU write to the image (render target, storage): images sharing its memory
     /// copy from it before their next read. From cuesta4/shadPS4 (eltutz), which fixed God of
     /// War III's exposure: it is measured into a small image and read through an alias.
@@ -528,6 +533,8 @@ private:
     /// description and the dirty flag that caused it -> {count, bytes} (own lock: refreshes can
     /// run outside `mutex`).
     std::unordered_map<std::string, std::pair<u64, u64>> refresh_sites;
+    /// gow3: addresses of images freed by guest unmaps, not yet reused (under mutex).
+    std::unordered_set<VAddr> unmapped_addresses;
     std::mutex refresh_sites_mutex;
     std::unordered_map<u64, u64> unmapped_recently;
     u64 stats_reports = 0;
