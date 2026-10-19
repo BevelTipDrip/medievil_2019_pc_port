@@ -925,3 +925,23 @@ the whole GPU. Next build (`537d86e`): "Write-fault downloads: guest+0x… writi
 code (Ghidra) and the memory. Then the fix depends on what it is: if the shader output there is never read again
 (e.g. a ring the CPU refills), drop it like an unmap; if it is, wait only for the submission that wrote it instead
 of `Finish()` (the GPU work recorded since then does not need to complete).
+
+### T-D2: who writes into shader-written memory (2026-10-19 ~17:55-18:00, launched by Claude with the user's go; build `537d86e`; log `data/t-d2-fault-sites.log`)
+
+"Write-fault downloads": nearly all at two host addresses, `0x7ff9b46de2bb` and `0x7ff9b46de4b3` (0x1f8 apart, in a
+Windows system DLL: the CRT's `memcpy` / `memset`, which the runtime's `guest_memcpy` / `guest_memset` call), writing
+six 64 KiB pages in turn (0x200d590000, 0x2012bf0000, 0x2015ba0000, 0x2033f80000, 0x2034850000, 0x2035e00000), ~1/s
+each per site; a few from guest code (guest+0x20da4d0). So the game's libc copies write into memory a shader wrote
+earlier (a pool reused, or a buffer the GPU and the CPU fill in turns).
+
+**Fix D2** (`toggle bit 63` = 9223372036854775808 restores the fault path): the runtime keeps a bitmap of the pages a
+shader wrote (set where `ObtainBuffer` marks a written binding GPU-modified, cleared where a download or an unmap
+drops it). `guest_memcpy` / `memset` / `memmove` check the destination's bits (one load); a hit hands the bytes to
+`BufferCache::PreciseCpuWrite`: they go into guest memory through the backing view (past the protection: no fault)
+and are queued; the recording thread copies exactly those bytes into the arena before the next draw or dispatch
+(`ProcessCpuWrites`, next to each `PopPendingOperations`). The page stays GPU-modified, so the shader's other data
+in it is kept, and no download or GPU wait happens. Ordering: a download applies the queue first and holds the queue
+lock until it has written guest memory, and a write is queued before it goes into guest memory, so neither can
+overwrite the other's newer bytes. The idea follows the Bloodborne port's `NotePreciseUpload`, which learns of the
+write afterwards (it runs without page protection); here it has to come before the write. Frame stats: "precise
+CPU writes N (MB)". Test T-D2b: heavy view, live A/B of bit 63; watch for broken effects (wrong data in the GPU copy).
