@@ -908,3 +908,20 @@ GPU-modified state and marks the range CPU-modified instead. The next build also
 second ("Buffer downloads/s (GPU waits): read fault … write fault … invalidation … unmap …; unmaps discarded"). Test
 T-D1: heavy view, live A/B of bit 56; if the downloads are not unmaps, the counts say which cause to fix next
 (a read fault means the guest really reads GPU output: then wait only for the GPU work that wrote it, not `Finish`).
+
+### T-D1b: the downloads are guest write faults (2026-10-19 17:49-17:53, launched by Claude with the user's go; build `057afc6`; log `data/t-d1b-unmap-discard.log`)
+
+(First launch `t-d1-unmap-discard` exited silently at boot: S1, plan-baseline-issues.md.) "Buffer downloads/s":
+**all write faults**, 25.8-27.4 a second, ~4 KiB each (0.1 MB/s), **~73 ms of GPU waits per second** (7% of the
+time); read faults, invalidations and unmaps 0. So D1 (unmaps) never ran ("unmaps discarded 0.0"); the bit 56 A/B
+(off 17:52:03-17:52:21) showed nothing, as the user saw ("a lot of little tiny spikes all of the time"). D1 stays
+(correct, free). Heavy view slow frames as in T-SF1: median 9.9 ms, 2,780 draws, 49-51 **submissions per frame**,
+~130 occlusion queries, ~495 passes ended, GPU tick wait 2.8 ms (89% of slow frames > 1 ms).
+
+Mechanism: a shader writes a buffer (`ObtainBuffer(is_written)`, the only place that marks memory GPU-modified),
+then guest code writes into the same page. The write fault downloads the GPU's data in that page's window (so the
+bytes the guest does not overwrite keep the GPU's values when the page is uploaded again) and `Finish()` waits for
+the whole GPU. Next build (`537d86e`): "Write-fault downloads: guest+0x… writing 0x… (64 KiB page): N/s" names the guest
+code (Ghidra) and the memory. Then the fix depends on what it is: if the shader output there is never read again
+(e.g. a ring the CPU refills), drop it like an unmap; if it is, wait only for the submission that wrote it instead
+of `Finish()` (the GPU work recorded since then does not need to complete).
