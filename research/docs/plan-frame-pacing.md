@@ -995,3 +995,14 @@ because the GPU-modified state D2 keeps covers bytes the CPU has already rewritt
 `gpu_modified_ranges` (and clear the bitmap bits of pages left with none). A later direct write there finds nothing to
 download, and `DownloadMemory` returns before `Finish()` (it does when it has no range). Then look at what
 guest+0x68e109 writes (Ghidra) together with the occlusion work.
+
+**T-D2c, after the A/B:** the user: "It seems to have 'settled' after being on for a bit, but then some frametime spikes
+showed back up". D2 was on throughout (`mask=0` from 18:54:43); from ~18:56 the direct-write downloads came back at
+5-10/s and p99 rose to 10.2-11.5 ms. Ghidra (`DisasmAround.java 68e109`): guest+0x68e109 / 0x68e149 are the 32-byte and
+16-byte `vmovups` store loops of an **inlined copy** in the game's own code (a size switch at 0x68e0bf: > 64 bytes
+elsewhere, >= 32 and >= 16 here, then 4-byte steps), not a libc call: D2 cannot see it. **D2b built** (`buffer_cache.cpp`
+`ProcessCpuWritesLocked`; `GOW3_PRECISE_WRITE_RELEASE=0` keeps the first D2 behaviour; every toggle bit is in use).
+Limit: D2b removes the downloads D2 itself caused (bytes D2 already rewrote still marked GPU-only); a direct write
+into bytes a shader wrote since is a real first write and still downloads, as with D2 off (2-4/s here). Removing those
+needs the writer's range before it writes (no libc call to hook) or a download that waits only for the work that
+wrote the page; next to look at with the occlusion work, since the writer sits beside the RHI query code.

@@ -522,6 +522,28 @@ void BufferCache::ProcessCpuWritesLocked() {
         staging.Flush();
         const vk::BufferCopy copy{staging.offset, arena->Offset(addr), size};
         runtime.CopyBuffer(staging.buffer, arena, std::span{&copy, 1});
+        // D2b: the arena and guest memory now agree on these bytes, so they are no longer the
+        // GPU's alone. Kept GPU-modified, later direct guest writes there (not libc) faulted
+        // and went to a download (T-D2c: 5-10/s). Pages left with no GPU-only bytes are
+        // ordinary pages again: CPU writes there mark them CPU-modified without the GPU thread.
+        // GOW3_PRECISE_WRITE_RELEASE=0: keep them GPU-modified (D2 as first built). No toggle
+        // bit left; bit 63 (D2 off) turns this off too.
+        static const bool release = [] {
+            const char* env = std::getenv("GOW3_PRECISE_WRITE_RELEASE");
+            return !env || env[0] != '0';
+        }();
+        if (release) {
+            gpu_modified_ranges.Subtract(addr, size);
+            const VAddr first_page = addr & ~VAddr{4095};
+            for (VAddr page = first_page; page < addr + size; page += 4096) {
+                bool gpu_only = false;
+                gpu_modified_ranges.ForEachInRange(page, 4096, [&](VAddr, VAddr) { gpu_only = true; });
+                if (!gpu_only) {
+                    memory_tracker->UnmarkRegionAsGpuModified(page, 4096);
+                    runtime_memory_mark_gpu_written(page, 4096, 0);
+                }
+            }
+        }
     }
 }
 
