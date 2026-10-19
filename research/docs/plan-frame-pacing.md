@@ -776,3 +776,10 @@ commits / s emptied it constantly. **Fix L1** (`runtime_memory.c`, toggle bit 62
 per 16 MiB bucket (64K hashed counters) bumped in `vma_insert` / `vma_erase` / `split_at`; a cached region stays valid
 while its buckets are unchanged; still no cached answers while a writer holds the lock. Test T-L1: heavy view FPS,
 live A/B; watch for crashes (a stale "mapped" answer would fault a GPU thread).
+**T-L1 (2026-10-19 04:08-04:14, launched by Claude with the user's go; build `0705e49`; log `data/t-l1-buckets.log`):**
+live A/B at the same heavy spot (~2,900 draws/frame): L1 on 123-125 FPS, median 7.9-8.2 ms, p99 10.2-10.9 ms; off
+120-126 FPS, 7.8-8.1 ms, 10.0-10.4 ms; stage B busy ~91% both. The user: roughly the same, 1% lows the same. **No
+gain: reverted** (`47735b3`). In a steady view the region cache already hits; `vma_index`'s share comes from lookups
+the cache does not serve. Stage B at ~425k draws/s is ~2.1 us per draw of which ~45% is waiting (end-of-pipe host copy
+wait, flip, GPU fence) and ~55% draw work spread over `DrawRecord`, `BindResources`, `RunDrawPacket` itself: no single
+hotspot left; the remaining lever is structural (splitting stage B's work across threads, plan-gpu-threading.md).
