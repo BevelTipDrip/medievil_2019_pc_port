@@ -732,3 +732,14 @@ no readback ready to publish skips the host copy wait (it protects nothing then)
 `SignalAfterHostCopies` (recording thread, after the copies, kicks recording). Stats: "end of pipe with readback work
 ... without (skipped)". Test T-P2: heavy view FPS / lows; torches, UI and particles must look unchanged; live A/B.
 Next candidates: the runtime memory lock in stage A's region lookups; stage B's draw work.
+
+**T-P2 (2026-10-19 03:19-03:32, launched by Claude with the user's go; build `060743e`; log `data/t-p2-eopskip.log`):**
+96% of ends of pipe skip (menu: 82,813 skipped vs 3,753 waited per 5 s, ~17k/s). Live A/B at the same heavy spot
+(~3,010 draws): off 118-122 FPS, on 120-124 (~+2%); worst frame per window off <= 19 ms, on 28.7 / 31.0 / 41.8 ms at
+view transitions. The user: general performance and lows better outside the heavy area, **stutter amplitude much
+higher**; "the big stutters happen when a torch goes from not being in view to being in view". **P2 made opt-in**
+(`GOW3_IDLE_EOP_SKIP=1`). The 41.8 ms frame (torch coming into view): 3 images registered, **100.8 MB image uploads,
+33 ms in image refresh**: whole render targets uploaded again (~3 x 32 MB 4K RGBA8 or ~1.5 x 64 MB RGBA16F). Suspect:
+fire distortion (heat haze) sampling a scene colour copy that goes through guest memory (linear readback / write-back
+marking it dirty), the user's framebuffer-through-system-memory pattern. Diagnostic: refresh report (top re-uploaded
+images by bytes, usage, dirty reason). Test T-R1: torches in and out of view.
