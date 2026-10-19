@@ -347,6 +347,11 @@ giving up after an error). Log [data/t-r23.log](data/t-r23.log). The immediate r
 normally. Not seen in the ~12 launches before R2 / R3: **watch every launch**; if it repeats, start with R2 and R3
 reverted one at a time.
 
+**Again 2026-10-19 17:47 (run `t-d1-unmap-discard`, build `057afc6`):** a silent exit 5 s into boot, later than the
+first: after `SystemEventGatherThreadPS4` (where a good run opens the shader archives next). No fault report, no
+dump, no `The game exited` line. The build's changes (buffer downloads, slow-frame stats) do not run that early.
+Log [data/t-d1-unmap-discard.log](data/t-d1-unmap-discard.log). Two in ~40 launches: intermittent, at boot.
+
 ## V2. Fire / torches broken, more box shadows (the user, 2026-10-18, run `perfdiag-heavy`)
 
 "I loaded into the starting area … It looks like fire/torches were broken, and I saw more of those broken 'shadows'
