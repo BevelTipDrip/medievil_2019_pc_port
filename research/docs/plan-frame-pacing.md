@@ -799,3 +799,24 @@ does not show it: per-second p99 and worst frame by FPS band match or beat T-L1 
 5.4 ms vs 8.3 / 5.8), but it has no measure of spike length and the runs took different paths. Only one WRITE_DATA
 a frame skips its wait, so a mechanism would be that one wait used to finish the frame's copies before the next
 fence. `90d7604` adds the longest run of slow frames to the pacing line; next: live A/B of bit 62 at a spike spot.
+
+### Upload audit: what is copied from system RAM to the GPU (2026-10-19, logs only, no launch)
+
+The user asked which large items are copied to VRAM that a PC build would keep there. From the `GOW3_TEXCACHE_STATS`
+refresh sites of T-R1, T-C3b and T-L1:
+- **The intro movie, every run.** Six 1920x1088 R8 + two 960x544 R8G8 images (the NV12 planes of a 1080p H.264
+  frame), "CPU dirty", re-uploaded 30 times a second: ~85% of all texture re-upload bytes (11.7 GiB of Y planes per
+  run), ~90 MiB/s. It lasts exactly 40 stats windows (200 s) in all three runs: `gameintro.mp4` is 1920x1080, 30 fps,
+  197.2 s. So the intro plays to its end in the background, well into gameplay (the heavy view included), each frame
+  decoded on the CPU (FFmpeg, then NV12 conversion), copied into guest memory and uploaded; the game also renders it
+  (a refresh needs a bind). Twice per run, as it starts, `AvPlayerSource::Stop` logs "already stopped". Lead: the
+  game's skip is not reaching the player (Stop refused, or never called). `6fd8e15` traces every player call
+  ("AvPlayer ..." lines) for the next run. (The 1984x1088 / 992x544 pair: `credits.mp4` / the 1980-wide logo.)
+- **After the movie ends, texture uploads are ~0** in steady gameplay (heavy view included): the textures stay on
+  the GPU. The 3840x2160 RGBA16F / RGBA8 refreshes (a few per run) are the targets C3 already covers.
+- **Buffers:** not measured per second until now (only in Stall lines). The ~115 host copy waits per frame are buffer
+  uploads (UE4 constant and dynamic vertex buffers the CPU writes every frame); those are new data each frame, so they
+  are not "kept in VRAM" candidates, but the double copy (guest memory -> staging -> device-local) is the PS4 shared
+  memory model emulated. `55146e6` adds "Uploads: images / buffers MB/s" to the frame stats to size it. The PC
+  answer would be letting the GPU read those pages directly (VK_EXT_external_memory_host import, or writing them into a
+  host-visible stream buffer as Bloodborne does for uniforms); a later item.
