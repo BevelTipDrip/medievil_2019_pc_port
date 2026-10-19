@@ -743,3 +743,16 @@ higher**; "the big stutters happen when a torch goes from not being in view to b
 fire distortion (heat haze) sampling a scene colour copy that goes through guest memory (linear readback / write-back
 marking it dirty), the user's framebuffer-through-system-memory pattern. Diagnostic: refresh report (top re-uploaded
 images by bytes, usage, dirty reason). Test T-R1: torches in and out of view.
+
+**T-R1 (2026-10-19 03:34-03:40, launched by Claude with the user's go; build `e385484`; log `data/t-r1-refresh.log`):**
+the user: with no torch on screen, bringing even one into view spikes the frame time; with one already on screen,
+more torches add nothing. Torch-test windows (03:37:11-03:37:46, worst frames 19-20 ms, under the 40 ms stall report):
+per torch coming into view, **0x20a0000000 3840x2160 RGBA16F (64 MiB) and 0x2086000000 3840x2160 RGBA8 (32 MiB)
+uploaded again, "CPU dirty"**, 2-5 times per 5 s, refreshed at the colour target binding (`vk_rasterizer.cpp`
+UpdateImage before FindRenderTarget, so no usage flag yet). Also visible: the torch flames are a video (1920x1088 R8
+and 960x544 R8G8 planes, six of each, refreshed ~5/s each: AvPlayer frames), which is why the first torch matters.
+Cause: UE4's render target pool decommits a pass's targets while unused; `UnmapMemory` frees the images; the next
+binding makes new images, which start dirty and upload their undefined guest memory. **Fix C3** (`1024224`, toggle bit 61
+`UndefinedTargets` = 2305843009213693952): images made where an unmap freed images are `Undefined`; a render / depth
+target binding skips their upload; any other first use uploads as before. Test T-C3: torches in and out of view, live
+A/B; check that effects (fire, distortion) look the same.
