@@ -469,6 +469,8 @@ void VideoOutDriver::Flip(const Request& req) {
         const u64 frame_sigf = last_sigf, sigf_now = sigf;
         last_sigf = sigf;
         std::copy(std::begin(t_now), std::end(t_now), std::begin(last_t));
+        const u64 frame_draws = draws - last_draws, frame_dispatches = dispatches - last_dispatches,
+                  frame_subs = subs - last_subs, frame_gpu_ns = gpu_ns - last_gpu_ns;
         last_draws = draws;
         last_dispatches = dispatches;
         last_subs = subs;
@@ -500,13 +502,13 @@ void VideoOutDriver::Flip(const Request& req) {
                             "waits: readback %.2f, ticks %.2f, recorder %.2f, host copies %.2f ms; "
                             "uploads %.2f MB buffers, %.2f MB images; %llu protection faults\n",
                             slow ? "Slow frame" : "Frame sample", frame_ms,
-                            static_cast<unsigned long long>(draws - last_draws),
-                            static_cast<unsigned long long>(dispatches - last_dispatches),
-                            static_cast<unsigned long long>(subs - last_subs),
+                            static_cast<unsigned long long>(frame_draws),
+                            static_cast<unsigned long long>(frame_dispatches),
+                            static_cast<unsigned long long>(frame_subs),
                             static_cast<unsigned long long>((occ - last_occ) / 2),
                             static_cast<unsigned long long>(ends - last_ends),
                             100.0 * double(busy - last_busy) / double(tsc - last_tsc),
-                            (gpu_ns - last_gpu_ns) / 1e6, (wait_now[0] - frame_wait[0]) / 1e6,
+                            frame_gpu_ns / 1e6, (wait_now[0] - frame_wait[0]) / 1e6,
                             (wait_now[1] - frame_wait[1]) / 1e6, (wait_now[2] - frame_wait[2]) / 1e6,
                             (wait_now[3] - frame_wait[3]) / 1e6, (buffer_bytes - last_buffer_bytes) / 1e6,
                             (image_bytes - last_image_bytes) / 1e6,
@@ -580,6 +582,17 @@ void VideoOutDriver::Flip(const Request& req) {
                 std::printf("Uploads: images %.1f MB/s, buffers %.1f MB/s\n",
                             (image_bytes - window_image_bytes) / 1e6 / window,
                             (buffer_bytes - window_buffer_bytes) / 1e6 / window);
+                // Synchronous buffer downloads (each a full GPU wait), by cause.
+                static constexpr const char* reasons[] = {"read fault", "write fault",
+                                                          "invalidation", "unmap"};
+                std::printf("Buffer downloads/s (GPU waits):");
+                for (unsigned r = 0; r < Gow3Stats::DownloadReasons; ++r) {
+                    std::printf(" %s %.1f (%.2f MB, %.1f ms)", reasons[r],
+                                Gow3Stats::download_count[r].exchange(0) / window,
+                                Gow3Stats::download_bytes[r].exchange(0) / 1e6 / window,
+                                Gow3Stats::download_ns[r].exchange(0) / 1e6 / window);
+                }
+                std::printf("; unmaps discarded %.1f\n", Gow3Stats::unmap_discards.exchange(0) / window);
                 window_image_bytes = image_bytes;
                 window_buffer_bytes = buffer_bytes;
             }

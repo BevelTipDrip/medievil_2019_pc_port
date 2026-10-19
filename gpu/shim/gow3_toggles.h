@@ -68,6 +68,7 @@ enum : std::uint64_t {
     // On by default (bit set: off): history of a thin feature this jitter phase missed is kept
     // when nothing moves. Static-camera flicker of railings/window bars p99.9 -45% (2026-10-03).
     TaaKeepNearerHistory = 1ull << 55,
+    UnmapDiscard = 1ull << 56, ///< guest unmaps drop GPU-written buffer data, no download
     SceneMipBias = 1ull << 57, ///< negative LOD bias of G-buffer samplers at reduced scene sizes
     VolumeSliceViews = 1ull << 58, ///< volumes rendered slice by slice through 2D array views
     StencilPlaneWrites = 1ull << 59, ///< shader writes to a stencil plane copied into the image
@@ -95,6 +96,19 @@ inline std::atomic<std::uint64_t> draws{0}, dispatches{0}, submissions{0};
 /// Occlusion query counter dumps (ZPASS_DONE; a query is two), render passes ended, and the
 /// draw recording thread's busy TSC cycles (stage B), for the per-frame diagnostics.
 inline std::atomic<std::uint64_t> occlusion_dumps{0}, render_pass_ends{0}, stage_b_busy_cycles{0};
+/// Synchronous GPU -> CPU buffer downloads (BufferCache::DownloadMemory, a full GPU wait each),
+/// by what asked for them: 0 guest read fault, 1 guest write fault, 2 invalidation (runtime hook,
+/// player frames), 3 guest unmap; and unmaps that dropped the data instead (UnmapDiscard).
+enum DownloadReason : unsigned { ReadFault, WriteFault, Invalidation, Unmap, DownloadReasons };
+inline thread_local unsigned download_reason = Invalidation;
+inline std::atomic<std::uint64_t> download_count[DownloadReasons], download_bytes[DownloadReasons],
+    download_ns[DownloadReasons], unmap_discards{0};
+/// Sets the reason for the downloads the current thread asks for, restores it after.
+struct DownloadReasonScope {
+    unsigned saved = download_reason;
+    explicit DownloadReasonScope(unsigned reason) { download_reason = reason; }
+    ~DownloadReasonScope() { download_reason = saved; }
+};
 /// Frames the GPU command thread has started (display pass), for per-frame diagnostics.
 inline std::atomic<std::uint64_t> gpu_frames{0};
 /// Wall time spent in operations suspected of stalls (ns, all threads).

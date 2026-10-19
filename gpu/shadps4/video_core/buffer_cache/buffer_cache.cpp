@@ -157,7 +157,19 @@ void BufferCache::ExtendWriteFault(VAddr device_addr) {
 }
 
 void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool assume_locks) {
-    const auto flush_request = [this, device_addr, size, is_write] {
+    const unsigned reason = Gow3Stats::download_reason;
+    const auto flush_request = [this, device_addr, size, is_write, reason] {
+        // gow3: a guest unmap ends the memory's contents: the GPU's data there is not read back
+        // (a download is a full GPU wait, ~4 ms; UE4 decommits pool memory constantly). The
+        // next use of the range uploads whatever the guest put there.
+        if (reason == Gow3Stats::Unmap && !Gow3Toggle::Disabled(Gow3Toggle::UnmapDiscard)) {
+            gpu_modified_ranges.Subtract(device_addr, size);
+            memory_tracker->UnmarkRegionAsGpuModified(device_addr, size);
+            memory_tracker->MarkRegionAsCpuModified(device_addr, size);
+            Gow3Stats::unmap_discards.fetch_add(1, std::memory_order_relaxed);
+            return;
+        }
+        Gow3Stats::DownloadReasonScope scope{reason};
         const u32 first_block = device_addr >> block_shift;
         const u32 last_block = (device_addr + size - 1) >> block_shift;
         const auto* arena = GetArena(first_block, last_block);
@@ -210,8 +222,19 @@ void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 siz
     for (auto& copy : copies) {
         copy.dstOffset += download.offset;
     }
+    const auto start = std::chrono::steady_clock::now();
     runtime.CopyBuffer(arena, download.buffer, copies);
     scheduler.Finish();
+    {
+        const unsigned reason = Gow3Stats::download_reason;
+        Gow3Stats::download_count[reason].fetch_add(1, std::memory_order_relaxed);
+        Gow3Stats::download_bytes[reason].fetch_add(total_size_bytes, std::memory_order_relaxed);
+        Gow3Stats::download_ns[reason].fetch_add(
+            u64(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() -
+                                                                     start)
+                    .count()),
+            std::memory_order_relaxed);
+    }
 
     download.buffer->Invalidate(download.offset, download.size);
     for (const auto& copy : copies) {
