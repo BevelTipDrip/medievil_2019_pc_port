@@ -358,8 +358,13 @@ private:
     boost::container::static_vector<BoundBuffer, Shader::NUM_BUFFERS> bound_buffers;
     /// gow3: the separate stencil planes of bound depth buffers (address -> bytes), and those a
     /// compute dispatch has rewritten since; the next bind copies them into the image (V1).
+    struct StencilPlaneWrite {
+        VAddr begin;
+        u64 size;
+        u64 shader;
+    };
     std::unordered_map<VAddr, u64> stencil_planes;
-    std::unordered_set<VAddr> stencil_plane_writes;
+    std::unordered_map<VAddr, StencilPlaneWrite> stencil_plane_writes;
     std::mutex stencil_plane_mutex;
     void NoteStencilPlaneWrites(const Pipeline* pipeline);
 

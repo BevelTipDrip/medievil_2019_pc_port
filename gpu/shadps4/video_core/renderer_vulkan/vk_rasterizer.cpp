@@ -1884,7 +1884,8 @@ void Rasterizer::ResetBindings(bool is_compute) {
 // never reached it. MediEvil (UE4) clears the stencil by filling that plane with a compute shader
 // before the base pass and before the lights; the stencil kept the base pass's 0x80 and the shadow
 // projections, which test "stencil != 0" inside a shadow volume, darkened their whole box (V1).
-// A dispatch writing (nearly) a whole known plane marks it; the next bind copies it into the image.
+// A dispatch writing a whole known plane (starting at it, about its size; not a larger buffer that
+// merely spans it) marks it; the next bind copies it into the image.
 void Rasterizer::NoteStencilPlaneWrites(const Pipeline* pipeline) {
     if (!pipeline->IsCompute() || Gow3Toggle::Disabled(Gow3Toggle::StencilPlaneWrites)) {
         return;
@@ -1901,9 +1902,21 @@ void Rasterizer::NoteStencilPlaneWrites(const Pipeline* pipeline) {
         const auto sharp = desc.GetSharp(info);
         const VAddr begin = sharp.base_address;
         const VAddr end = begin + sharp.GetSize();
+        const u64 written = end - begin;
         for (const auto& [plane, size] : stencil_planes) {
-            if (begin <= plane && end >= plane + size - size / 16) {
-                stencil_plane_writes.insert(plane);
+            if (written < size - size / 16 || written > size + size / 16) {
+                continue;
+            }
+            if (begin == plane) {
+                stencil_plane_writes[plane] = {begin, written, info.pgm_hash};
+            } else {
+                // Diagnostics: a plane-sized write elsewhere (another plane, or a misread address).
+                static std::atomic<u32> logged{0};
+                if (logged.fetch_add(1, std::memory_order_relaxed) < 12) {
+                    std::printf("Stencil plane-sized write by shader %#llx at %#llx +%#llx (known plane %#llx)\n",
+                                (unsigned long long)info.pgm_hash, (unsigned long long)begin,
+                                (unsigned long long)written, (unsigned long long)plane);
+                }
             }
         }
     }
@@ -2885,11 +2898,14 @@ RenderState Rasterizer::BeginRenderingFull(const GraphicsPipeline* pipeline) {
             const VAddr plane = regs.depth_buffer.StencilAddress();
             const u64 plane_size = u64(regs.depth_buffer.depth_slice.tile_max + 1) * 64 *
                                    regs.depth_buffer.NumSamples();
-            bool rewritten;
+            std::optional<StencilPlaneWrite> rewritten;
             {
                 std::scoped_lock lock{stencil_plane_mutex};
                 stencil_planes[plane] = plane_size;
-                rewritten = stencil_plane_writes.erase(plane) != 0;
+                if (const auto it = stencil_plane_writes.find(plane); it != stencil_plane_writes.end()) {
+                    rewritten = it->second;
+                    stencil_plane_writes.erase(it);
+                }
             }
             if (rewritten && !is_stencil_clear && image.info.num_samples == 1) {
                 // A uniform fill (a clear) needs no detiling; other contents would.
@@ -2897,10 +2913,15 @@ RenderState Rasterizer::BeginRenderingFull(const GraphicsPipeline* pipeline) {
                 runtime.CopyBufferToStencil(&image, buffer, offset, image.info.size.width,
                                             image.info.size.height);
                 static std::atomic<u32> logged{0};
-                if (logged.fetch_add(1, std::memory_order_relaxed) < 4) {
-                    std::printf("Stencil plane %#llx (%llu bytes) rewritten by a shader: copied into "
-                                "the depth image's stencil\n",
-                                (unsigned long long)plane, (unsigned long long)plane_size);
+                if (logged.fetch_add(1, std::memory_order_relaxed) < 24) {
+                    std::printf("Stencil plane copy: depth %#llx (image %#llx %ux%u), stencil plane %#llx "
+                                "(%llu bytes, format %u), written by shader %#llx at %#llx +%#llx\n",
+                                (unsigned long long)regs.depth_buffer.DepthAddress(),
+                                (unsigned long long)image.info.guest_address, image.info.size.width,
+                                image.info.size.height, (unsigned long long)plane,
+                                (unsigned long long)plane_size, u32(regs.depth_buffer.stencil_info.format),
+                                (unsigned long long)rewritten->shader, (unsigned long long)rewritten->begin,
+                                (unsigned long long)rewritten->size);
                 }
             }
         }
