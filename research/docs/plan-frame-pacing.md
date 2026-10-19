@@ -766,3 +766,13 @@ p99 4.8-10 ms (T-R1: worst 19-20 ms); heavy view ~120-134 FPS, worst ~11 ms.
 The user: torches, glow and haze look as before. **Live A/B (03:57:46 off, 03:58:30 on), torch swings:** off: the
 64 + 32 MiB pair re-uploaded 3 times per window, worst frames 19.2 ms; on: no re-uploads, worst frames 7-12 ms. C3
 kept on by default.
+
+### Step 1: heavy view, stage B (2026-10-19, the user: "1 then 2")
+
+P2a stage B inclusive: `RunDrawPacket` 37.8% (`DrawRecord` 11.3%, `BindResources` 7.3%, `ResolveVertexBuffers` 5.6%
+of which nearly all `vma_index`, `BindTextures` 2.6%); `vma_index` ~5% in stage A too, plus SRW lock waits. The region
+cache (8 entries per thread) was valid for one table-wide generation, bumped at every exclusive lock: UE4's ~6,000 pool
+commits / s emptied it constantly. **Fix L1** (`runtime_memory.c`, toggle bit 62 = 4611686018427387904): generations
+per 16 MiB bucket (64K hashed counters) bumped in `vma_insert` / `vma_erase` / `split_at`; a cached region stays valid
+while its buckets are unchanged; still no cached answers while a writer holds the lock. Test T-L1: heavy view FPS,
+live A/B; watch for crashes (a stale "mapped" answer would fault a GPU thread).
