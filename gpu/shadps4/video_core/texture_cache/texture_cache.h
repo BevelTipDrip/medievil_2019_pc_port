@@ -524,6 +524,11 @@ private:
     /// images freed by a guest unmap in the last ~30 s (address / size / format / extent key ->
     /// report number), to count how many come back as new images (under mutex).
     std::unordered_map<std::string, u64> create_sites;
+    /// gow3: GOW3_TEXCACHE_STATS: images uploaded again (RefreshImage) since the last report, by
+    /// description and the dirty flag that caused it -> {count, bytes} (own lock: refreshes can
+    /// run outside `mutex`).
+    std::unordered_map<std::string, std::pair<u64, u64>> refresh_sites;
+    std::mutex refresh_sites_mutex;
     std::unordered_map<u64, u64> unmapped_recently;
     u64 stats_reports = 0;
     std::mutex samplers_mutex;

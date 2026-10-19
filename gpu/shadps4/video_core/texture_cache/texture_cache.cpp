@@ -209,8 +209,14 @@ void TextureCache::ProcessDownloadImages() {
         // to download and no copy ready to publish; the host copy wait below then protects
         // nothing, yet it was ~20% of the draw recording thread in heavy views (P2a). Those skip
         // it; every end of pipe with readback work still waits (skipping those broke the torches,
-        // R1 / V2). Toggle bit 60 restores the wait everywhere.
-        if (!Gow3Toggle::Disabled(Gow3Toggle::IdleEopSkip)) {
+        // R1 / V2). Opt-in (GOW3_IDLE_EOP_SKIP=1): +2% in heavy views, but the copies the wait
+        // spread over the frame then land at once and the spikes when a torch comes into view
+        // got deeper (T-P2: worst frames 29-42 ms vs <= 19 ms). Toggle bit 60 turns it off live.
+        static const bool idle_eop_skip = [] {
+            const char* env = std::getenv("GOW3_IDLE_EOP_SKIP");
+            return env && env[0] == '1';
+        }();
+        if (idle_eop_skip && !Gow3Toggle::Disabled(Gow3Toggle::IdleEopSkip)) {
             bool idle;
             {
                 std::scoped_lock readback_lock{readback_mutex};
@@ -1246,6 +1252,26 @@ void TextureCache::RefreshImage(Image& image) {
     }
     CACHE_STAT(refreshes, 1);
     CACHE_STAT(refresh_bytes, image.info.guest_size);
+    if (CacheStatsEnabled()) {
+        // Which images are uploaded again and why (MediEvil: ~100 MB in one frame when a torch
+        // comes into view, for 3 new images).
+        const ImageInfo& info = image.info;
+        const char* why = True(image.flags & ImageFlagBits::CpuDirty)        ? "CPU dirty"
+                          : True(image.flags & ImageFlagBits::GpuDirty)      ? "GPU dirty (buffer)"
+                          : True(image.flags & ImageFlagBits::MaybeCpuDirty) ? "maybe CPU dirty"
+                                                                             : "?";
+        char key[200];
+        std::snprintf(key, sizeof(key), "%#llx %ux%ux%u %s L%u/%u%s%s%s, %s%s",
+                      (unsigned long long)info.guest_address, info.size.width, info.size.height,
+                      info.size.depth, vk::to_string(info.pixel_format).c_str(), info.resources.levels,
+                      info.resources.layers, image.usage.render_target ? " RT" : "",
+                      image.usage.depth_target ? " depth" : "", image.usage.texture ? " tex" : "", why,
+                      True(image.flags & ImageFlagBits::GpuModified) ? ", GPU modified" : "");
+        std::scoped_lock lock{refresh_sites_mutex};
+        auto& site = refresh_sites[key];
+        ++site.first;
+        site.second += info.guest_size;
+    }
     ResolveReadbacks(image.info.guest_address, image.info.guest_size, true,
                      ReadbackSource::ImageRefresh);
     Gow3Stats::Timer timer{Gow3Stats::t_refresh};
@@ -1723,6 +1749,17 @@ void TextureCache::RunGarbageCollector() {
                 std::printf("  create %6llu x  %s\n", (unsigned long long)top[i].first, top[i].second.c_str());
             }
             create_sites.clear();
+            {
+                std::scoped_lock refresh_lock{refresh_sites_mutex};
+                std::vector<std::tuple<u64, u64, std::string>> refreshed;
+                for (const auto& [key, site] : refresh_sites) refreshed.emplace_back(site.second, site.first, key);
+                std::sort(refreshed.begin(), refreshed.end(), std::greater<>{});
+                for (size_t i = 0; i < refreshed.size() && i < 8; ++i) {
+                    std::printf("  refresh %5llu x %8.1f MiB  %s\n", (unsigned long long)std::get<1>(refreshed[i]),
+                                std::get<0>(refreshed[i]) / 1048576.0, std::get<2>(refreshed[i]).c_str());
+                }
+                refresh_sites.clear();
+            }
             ++stats_reports;
             std::erase_if(unmapped_recently, [&](const auto& entry) { return stats_reports - entry.second > 6; });
         }
