@@ -681,6 +681,10 @@ void Runtime::ResolveImage(VideoCore::Image* src, VideoCore::Image* dst,
 
 void Runtime::ClearImage(VideoCore::Image* dst, const VideoCore::SubresourceRange& range,
                          const vk::ClearValue& clear_value) {
+    if (dst->info.props.is_volume && dst->info.type == AmdGpu::ImageType::Color3D) {
+        ClearVolumeSlices(dst, range, clear_value);
+        return;
+    }
     scheduler.EndRendering();
 
     const bool needs_flush =
@@ -702,6 +706,50 @@ void Runtime::ClearImage(VideoCore::Image* dst, const VideoCore::SubresourceRang
         cmdbuf.clearColorImage(image, vk::ImageLayout::eTransferDstOptimal, color, vk_range);
     });
 
+    dst->flags |= VideoCore::ImageFlagBits::GpuModified;
+    dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
+}
+
+// gow3: render target clears of a 3D image address its depth slices (2D array views), which a
+// clear command cannot: the slices are cleared by an empty render pass on such a view.
+void Runtime::ClearVolumeSlices(VideoCore::Image* dst, const VideoCore::SubresourceRange& range,
+                                const vk::ClearValue& clear_value) {
+    scheduler.EndRendering();
+    const u32 level = range.base.level;
+    const u32 depth = std::max(1u, dst->info.size.depth >> level);
+    const u32 first = std::min(range.base.layer, depth - 1);
+    const u32 count = std::max(1u, std::min(range.extent.layers, depth - first));
+    VideoCore::ImageViewInfo view_info{};
+    view_info.type = AmdGpu::ImageType::Color2DArray;
+    view_info.format = dst->info.pixel_format;
+    view_info.range.base.level = level;
+    view_info.range.extent.levels = 1;
+    view_info.range.base.layer = first;
+    view_info.range.extent.layers = count;
+    const vk::ImageView view = *dst->FindView(view_info, false).image_view;
+    if (Transit(dst, vk::ImageLayout::eColorAttachmentOptimal,
+                vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                vk::AccessFlagBits2::eColorAttachmentWrite, range)) {
+        FlushBarriers();
+    }
+    const vk::Extent2D extent{std::max(1u, dst->info.size.width >> level),
+                              std::max(1u, dst->info.size.height >> level)};
+    scheduler.Record([view, extent, count, color = clear_value.color](vk::CommandBuffer cmdbuf) {
+        const vk::RenderingAttachmentInfo attachment{
+            .imageView = view,
+            .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
+            .loadOp = vk::AttachmentLoadOp::eClear,
+            .storeOp = vk::AttachmentStoreOp::eStore,
+            .clearValue = vk::ClearValue{color},
+        };
+        cmdbuf.beginRendering(vk::RenderingInfo{
+            .renderArea = {{0, 0}, extent},
+            .layerCount = count,
+            .colorAttachmentCount = 1,
+            .pColorAttachments = &attachment,
+        });
+        cmdbuf.endRendering();
+    });
     dst->flags |= VideoCore::ImageFlagBits::GpuModified;
     dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
 }

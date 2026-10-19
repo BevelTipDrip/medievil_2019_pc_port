@@ -134,6 +134,7 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
 }
 
 void Scheduler::EndRendering() {
+    SyncWithDrawRecorder(__builtin_return_address(0));
     if (!is_rendering) {
         return;
     }
@@ -215,14 +216,39 @@ void Scheduler::ReportInterleave(void* caller) {
         return;
     }
 report:
+    char name[128] = "?";
 #ifdef _WIN32
+    using GetDescription = HRESULT(WINAPI*)(HANDLE, PWSTR*);
+    static const auto get_description = reinterpret_cast<GetDescription>(
+        reinterpret_cast<void*>(GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetThreadDescription")));
+    PWSTR wide = nullptr;
+    if (get_description && SUCCEEDED(get_description(GetCurrentThread(), &wide)) && wide) {
+        std::snprintf(name, sizeof(name), "%ls", wide);
+        LocalFree(wide);
+    }
     const auto base = reinterpret_cast<uintptr_t>(GetModuleHandleA(nullptr));
 #else
     const uintptr_t base = 0;
 #endif
-    std::printf("Scheduler: recorded while the draw recorder had queued draws (caller "
+    std::printf("Scheduler: recorded while the draw recorder had queued draws (thread '%s', caller "
                 "medievil-runtime.exe+%#llx)\n",
-                static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(caller) - base));
+                name, static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(caller) - base));
+#ifdef _WIN32
+    // The path that got here: offsets in medievil-runtime.exe, other modules as addresses.
+    void* frames[12]{};
+    const USHORT count = RtlCaptureStackBackTrace(1, 12, frames, nullptr);
+    for (USHORT i = 0; i < count; ++i) {
+        const auto address = reinterpret_cast<uintptr_t>(frames[i]);
+        HMODULE module{};
+        const bool own = GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                                                GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                                            reinterpret_cast<LPCSTR>(frames[i]), &module) &&
+                         reinterpret_cast<uintptr_t>(module) == base;
+        std::printf(own ? "  #%u medievil-runtime.exe+%#llx\n" : "  #%u %#llx\n", i,
+                    static_cast<unsigned long long>(own ? address - base : address));
+    }
+#endif
+    std::fflush(stdout);
 }
 
 std::unique_ptr<RecordChunk> Scheduler::AcquireChunk() {

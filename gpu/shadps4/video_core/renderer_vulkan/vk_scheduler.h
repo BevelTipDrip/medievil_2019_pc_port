@@ -731,6 +731,7 @@ public:
     /// records directly (Record() included, so callers may mix both) until the next
     /// KickRecording() or submission.
     [[gnu::noinline]] vk::CommandBuffer CommandBuffer() {
+        SyncWithDrawRecorder(__builtin_return_address(0));
         if (recording_threaded && !direct_mode) {
             SyncRecording();
             direct_mode = true;
@@ -758,9 +759,7 @@ public:
             return;
         }
         NoteProducer(__builtin_return_address(0));
-        if (interleave_check && interleave_check(interleave_context)) {
-            ReportInterleave(__builtin_return_address(0));
-        }
+        SyncWithDrawRecorder(__builtin_return_address(0));
         ChunkGuard guard{chunk_lock};
         if (!record_chunk->Push(std::forward<Func>(func))) {
             full_chunks.push_back(std::move(record_chunk));
@@ -969,17 +968,26 @@ private:
     void ReportProducer(void* caller);
 
 public:
-    /// Diagnostics: `check` returns true when the calling thread records while the draw recording
-    /// thread still has queued draws (their commands then interleave: issue #2/#12).
-    void SetInterleaveCheck(bool (*check)(void*), void* context) {
-        interleave_context = context;
-        interleave_check = check;
+    /// gow3: `sync` runs before a thread records or touches the render pass: on the GPU command
+    /// thread it waits until the draw recording thread has recorded its queued draws, which
+    /// keeps commands in order (issue #2/#12). Returns true when it could not (then logged).
+    void SetDrawPipeSync(bool (*sync)(void*), void* context) {
+        draw_pipe_sync_context = context;
+        draw_pipe_sync = sync;
+    }
+
+    /// Waits for the draw recording thread as above; callers that take a lock the draw
+    /// recording thread also takes call this first.
+    void SyncWithDrawRecorder(void* caller = __builtin_return_address(0)) {
+        if (draw_pipe_sync && draw_pipe_sync(draw_pipe_sync_context)) {
+            ReportInterleave(caller);
+        }
     }
 
 private:
     void ReportInterleave(void* caller);
-    bool (*interleave_check)(void*){};
-    void* interleave_context{};
+    bool (*draw_pipe_sync)(void*){};
+    void* draw_pipe_sync_context{};
     struct ChunkGuard {
         std::atomic_flag& flag;
         explicit ChunkGuard(std::atomic_flag& flag_) : flag{flag_} {

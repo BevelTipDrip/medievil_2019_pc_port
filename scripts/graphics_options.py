@@ -18,6 +18,9 @@ DEFAULTS = {'render_resolution': 'native', 'engine_fps': '60', 'deferred_readbac
 RESOLUTION_PREFIX = 'Resolution Patch'
 FPS_PREFIX = 'Frame Rate Patch'
 TEXTURE_FIX = 'Bug Fix - Texture Corruption Fix'
+# 1.3.4: 60 FPS is the default again and above it is experimental (stutter and the level 3
+# crash reports came from 120). Settings from before are set back to 60 once; this key marks it.
+FPS_RESET_KEY = 'fps_default_60'
 
 
 def read_ini(path):
@@ -68,6 +71,14 @@ def prepare(config, state_path):
     """(options, reverted): the startup options of this launch, restoring the last confirmed
     ones when the previous launch after a restart never confirmed its own."""
     ini = read_ini(config)
+    if FPS_RESET_KEY not in ini:
+        updates = {FPS_RESET_KEY: '1'}
+        if ini.get('engine_fps', '60') != '60':
+            updates['engine_fps'] = '60'
+            print('Engine frame rate: back to 60 FPS once (above 60 is experimental; the launcher '
+                  'or the in-game menu can choose it again)', flush=True)
+        write_keys(config, updates)
+        ini.update(updates)
     state = {}
     try:
         state = json.loads(Path(state_path).read_text(encoding='utf-8'))

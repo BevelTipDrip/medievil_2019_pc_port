@@ -39,7 +39,7 @@ APP_NAME = 'MediEvil'
 MAX_LOG_LINES = 6000
 NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
 # This build. The launcher checks the GitHub releases at start and offers newer versions.
-VERSION = '1.3.3'
+VERSION = '1.3.4'
 RELEASES_API = 'https://api.github.com/repos/bc160201983/medievil_2019_pc_port/releases/latest'
 RELEASES_PAGE = 'https://github.com/bc160201983/medievil_2019_pc_port/releases'
 UPDATE_DIR = Path(tempfile.gettempdir()) / 'medievil-update'
@@ -134,7 +134,7 @@ INI_DEFAULTS = {'upscaler': 'off', 'preset': '1', 'sharpen': '1', 'sharpness': '
                 'object_motion': '1', 'show_fps': '1', 'output_res': '1920x1080',
                 'live_resolution': 'auto', 'display_mode': 'windowed', 'vsync': '1', 'fps_limit': '0',
                 'async_shaders': '1', 'deferred_readback': '1', 'stale_readback': '0',
-                'render_resolution': 'native', 'engine_fps': '60', 'fsr1': '0', 'rcas': '1',
+                'render_resolution': 'native', 'engine_fps': '60', 'fps_default_60': '1', 'fsr1': '0', 'rcas': '1',
                 'rcas_strength': '75', 'frames_queued': '1', 'ue4_quality': 'console', 'cheat_very_hard': '0', 'cheat_double_jumps': '0', 'cheat_menu': '0', 'cheat_infinite_ammo': '0', 'ue4_upscale': 'off'}
 DISPLAY_MODES = [('windowed', ('Windowed',)), ('borderless', ('Borderless',)), ('fullscreen', ('Fullscreen',))]
 FPS_LIMITS = [('30', ('30',)), ('60', ('60',)), ('120', ('120',)), ('240', ('240',)), ('0', ('Unlimited',)),
@@ -209,8 +209,9 @@ LANGUAGES = [('1', ('English', 'Английский')), ('18', ('English (UK)',
              ('24', ('Hungarian',)), ('25', ('Greek',)), ('26', ('Romanian',))]
 DRAW_PIPE = [('', ('Auto (8+ threads)', 'Авто (8+ потоков)')), ('1', ('On', 'Включён')),
              ('0', ('Off (more stable)', 'Выключен (стабильнее)'))]
-READBACKS = [('', ('Relaxed (default)', 'Relaxed (по умолчанию)')), ('0', ('Off', 'Выключены')),
-             ('2', ('Precise',))]
+# "Precise" (GOW3_READBACKS=2) left MediEvil on a black screen (issue #15): not offered, and a
+# saved choice of it starts with the default.
+READBACKS = [('', ('Relaxed (default)', 'Relaxed (по умолчанию)')), ('0', ('Off', 'Выключены'))]
 FRAMES_QUEUED = [('1', ('1 (lowest latency)',)), ('2', ('2',)), ('0', ('Unlimited',))]
 UI_LANGUAGES = lang.LANGUAGE_NAMES
 
@@ -259,10 +260,15 @@ def load_ini():
         lines = ini_path().read_text(encoding='utf-8').splitlines()
     except OSError:
         pass
+    seen = set()
     for line in lines:
         if '=' in line and not line.lstrip().startswith('#'):
             key, value = line.split('=', 1)
             values[key.strip()] = value.strip()
+            seen.add(key.strip())
+    if lines and 'fps_default_60' not in seen:
+        # 1.3.4: settings from before go back to 60 FPS once (above 60 is experimental).
+        values['engine_fps'] = '60'
     return values, lines
 
 
@@ -325,7 +331,7 @@ def game_environment(s):
     if s['hdr']:
         env['GOW3_HDR'] = '1'
     for key, name in (('draw_pipe', 'GOW3_DRAW_PIPE'), ('readbacks', 'GOW3_READBACKS')):
-        if s[key]:
+        if s[key] and not (key == 'readbacks' and s[key] == '2'):
             env[name] = s[key]
     env['GOW3_BACKGROUND_WARMUP'] = '1' if s.get('background_warmup', True) else '0'
     env['GOW3_PARALLEL_WARMUP'] = '1' if s.get('parallel_warmup', True) else '0'
@@ -421,7 +427,8 @@ UPSCALE_CHOICES = [('off', ('Off',)), ('quality', ('Quality (67%)',)), ('balance
                    ('performance', ('Performance (50%)',))]
 QUALITY_CHOICES = [('ultra', ('Ultra',)), ('high', ('High',)), ('console', ('Console (PS4)',)),
                    ('medium', ('Medium',)), ('low', ('Low (integrated graphics)',))]
-ENGINE_FPS_CHOICES = [('60', ('60 (original)',)), ('120', ('120',)), ('240', ('240',))]
+ENGINE_FPS_CHOICES = [('60', ('60 (original, recommended)',)), ('120', ('120 (experimental)',)),
+                      ('240', ('240 (experimental)',))]
 
 
 class Launcher:
@@ -429,6 +436,8 @@ class Launcher:
         self.tk, self.ttk, self.filedialog, self.messagebox = tk, ttk, filedialog, messagebox
         self.root = root
         self.app = {**APP_DEFAULTS, **load_json(CONFIG_FILE, {})}
+        if self.app.get('readbacks') == '2':  # "Precise" is no longer offered (issue #15)
+            self.app['readbacks'] = ''
         self.ini, self.ini_lines = load_ini()
         self.vars = {}
         self.process = self.job = None
@@ -1004,8 +1013,9 @@ class Launcher:
         f = self.scrolled_page('performance', _('Performance'), _('Frame rate and speed options.'))
         self.section(f, _('Frame rate', 'Частота кадров'), top=4)
         self.row(f, _('Engine frame rate'), self.choice(f, 'engine_fps', 'ini', ENGINE_FPS_CHOICES),
-                 _('The highest frame rate MediEvil runs at. The PS4 game stops at 60; 120 and 240 lift '
-                   'that limit (also set Frame rate limit to Unlimited or higher). Applied at start.'),
+                 _('The highest frame rate MediEvil runs at. 60 is the PS4 original and the recommended '
+                   'setting. 120 and 240 are experimental: they lift that limit, but can stutter and '
+                   'need a fast CPU (also set Frame rate limit to Unlimited or higher). Applied at start.'),
                  restart=True)
         self.row(f, _('Frame rate limit'), self.choice(f, 'fps_limit', 'ini', FPS_LIMITS),
                  _('Caps the frame rate below the engine frame rate; a lower limit saves power. "Half display '

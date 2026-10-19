@@ -184,6 +184,7 @@ public:
                 return;
             }
         }
+        scheduler.SyncWithDrawRecorder(); // before the lock: the draw recorder takes it too
         std::scoped_lock lock{mutex};
         Image& image = slot_images[image_id];
         TrackImage(image_id);
@@ -237,8 +238,18 @@ public:
     }
 
     /// Get the associated depth stencil image if it is still valid.
+    /// gow3 (from the Uncharted port): images that may stand for a stencil plane.
+    static bool IsStencilProxyCandidate(const Image& image) {
+        return image.info.pixel_format == vk::Format::eUndefined || image.info.num_bits == 8;
+    }
+
     ImageId GetAssociatedDepth(Image& image) {
         if (!image.depth_id) {
+            return {};
+        }
+        if (!IsStencilProxyCandidate(image)) {
+            // A color texture reusing the stencil's memory reads its own data.
+            image.DisassociateDepth();
             return {};
         }
         if (slot_images.is_allocated(image.depth_id)) {
@@ -404,8 +415,11 @@ private:
     /// Touch the image in the LRU cache.
     void TouchImage(const Image& image);
 
-    void FreeImage(ImageId image_id) {
+    void FreeImage(ImageId image_id, u32 line = __builtin_LINE()) {
         const auto& image = slot_images[image_id];
+        if (image_stats) {
+            NoteImageChurn(false, line, image.info);
+        }
         ResolveReadbacks(image.info.guest_address, image.info.guest_size, true,
                          ReadbackSource::ImageFree);
         UntrackImage(image_id);
@@ -415,6 +429,10 @@ private:
 
     void GarbageCollectImages();
     void GarbageCollectSamplers();
+
+    /// GOW3_IMAGE_STATS=1: images registered and freed every 5 s (where, which sizes).
+    void NoteImageChurn(bool registered, u32 line, const ImageInfo& info);
+    const bool image_stats = std::getenv("GOW3_IMAGE_STATS") != nullptr;
 
 private:
     const Vulkan::Instance& instance;
@@ -473,7 +491,38 @@ private:
     ReadbackSourceStats readback_sources;
     void RetireReadbacks();
     PageTable page_table;
-    std::mutex mutex;
+    /// gow3: std::mutex that knows its owner, so the scheduler does not wait for the draw
+    /// recording thread while this thread holds the lock that thread may need.
+    struct OwnedMutex {
+        void lock() {
+            mutex.lock();
+            owner.store(std::this_thread::get_id(), std::memory_order_relaxed);
+        }
+        bool try_lock() {
+            if (!mutex.try_lock()) {
+                return false;
+            }
+            owner.store(std::this_thread::get_id(), std::memory_order_relaxed);
+            return true;
+        }
+        void unlock() {
+            owner.store({}, std::memory_order_relaxed);
+            mutex.unlock();
+        }
+        [[nodiscard]] bool HeldByCurrentThread() const noexcept {
+            return owner.load(std::memory_order_relaxed) == std::this_thread::get_id();
+        }
+        std::mutex mutex;
+        std::atomic<std::thread::id> owner{};
+    };
+    OwnedMutex mutex;
+
+public:
+    [[nodiscard]] bool LockHeldByCurrentThread() const noexcept {
+        return mutex.HeldByCurrentThread();
+    }
+
+private:
     /// gow3: images with the same guest address (guarded by `mutex`). `backing` holds the
     /// complete contents; `writer` is a newer write not yet copied into it.
     struct AliasState {

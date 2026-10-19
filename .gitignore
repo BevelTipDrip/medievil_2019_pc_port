@@ -24,3 +24,6 @@ mods.json
 patches.json
 !launcher/gow3.png
 !launcher/medievil.png
+
+# Local test/RE output of tools/dev (screenshots, logs, extracted game assets)
+tools/dev/runs/

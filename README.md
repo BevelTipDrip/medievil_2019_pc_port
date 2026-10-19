@@ -27,8 +27,9 @@ Captured on Windows 11 (RTX 5080) with this port.
 - Boot, intro movies, menus and gameplay (tested on an RTX 5080, a 1080p 200 Hz monitor and a 4K TV).
 - **Intel and AMD CPUs**: the game's few AMD-only SSE4a instructions (`INSERTQ`) are replaced with
   SSE2 code on CPUs without them (all Intel CPUs), and any other one is emulated.
-- **Above 60 FPS**: Engine frame rate 120 or 240 (launcher > Performance, or the in-game menu) lifts
-  the PS4 game's 60 FPS cap. The cap is Unreal Engine 4's console frame-rate ceiling
+- **60 FPS by default; above 60 is experimental**: Engine frame rate 120 or 240 (launcher >
+  Performance, or the in-game menu) lifts the PS4 game's 60 FPS cap, but can stutter and needs a
+  fast CPU; settings from before 1.3.4 go back to 60 once. The cap is Unreal Engine 4's console frame-rate ceiling
   (`SmoothedFrameRateRange`, applied with VSync on), raised by the config override pak; game speed
   stays normal. Frames are shown as soon as they are ready (a 480 Hz virtual vblank with a frame
   limit), so pacing stays even. An RTX 5080 runs menus at 120 and levels at about 90 to 120 FPS.
@@ -36,7 +37,8 @@ Captured on Windows 11 (RTX 5080) with this port.
   every frame for exactly two refreshes (72 FPS on 144 Hz, 100 FPS on 200 Hz; with Engine frame
   rate 120). 60 FPS on a 144/165 Hz screen cannot be shown evenly and looks like stutter. With
   VSync on, a limit at the display's own refresh (60 on a 60 Hz TV) is left to VSync, which paces it.
-- Audio (Wwise through AudioOut, ATRAC9 and AAC).
+- Audio (Wwise through AudioOut, ATRAC9 and AAC). On stereo speakers and headphones the port mixes
+  the game's 7.1 output down itself (SDL's downmix played it about 13 dB too quietly).
 - Controller (DualSense, Xbox and others, through SDL3) and keyboard, both remappable.
 - Saving and loading; save backups before every start.
 - **All the game's languages** (launcher > Game > Language): every PS4 system language can be
@@ -84,6 +86,14 @@ Captured on Windows 11 (RTX 5080) with this port.
 
 ### Performance work in this port
 
+- **No more texture churn**: the game draws its lighting volumes and colour grading LUT (3D
+  textures) as 2D slices; each switch rebuilt and copied the texture, about 14 times per frame.
+  The 3D texture now serves the slices through a 2D array view (~4,700 texture rebuilds per 5 s
+  down to ~90).
+- **8 GB graphics cards (laptops)**: the texture garbage collector's limits now follow the
+  driver's memory budget (from the Uncharted port). The old rule evicted textures still in use
+  on 8 GB cards and loaded them again (746 evictions in a test route; now none).
+
 - Texture cache images share VMA memory blocks instead of one driver allocation each (Unreal
   Engine 4 reuses render target memory every frame): 22% of the draw recording thread was spent
   creating and freeing GPU memory.
@@ -96,8 +106,10 @@ Captured on Windows 11 (RTX 5080) with this port.
 - "Game resolution now" (in-game menu) works with Native and the native output modes; with the
   1440p / 1800p / 4K render resolutions (supersampling) it stays at 1080p, as a larger output on top
   runs out of the game's PS4 memory.
-- After a live resolution change the debug menu's gamepad navigation cannot reach its right-hand
-  column: switch to 1080p (in-game menu > Performance) to use the cheats, then back.
+- With a native output above 1080p (1440p / 1800p / 4K native output) the gamepad cannot reach
+  menu items outside the top-left 1920×1080 area (pause menu "Quit to Map", the debug menu's right
+  column): the game's UI window stays at 1080p while the picture switches. "4K (sharpest)" renders
+  the 3D scene at 4K with working menus; or switch to 1080p (in-game menu > Performance) and back.
 - All patches and cheats are for MediEvil 01.00 (the base game: CUSA11227, or CUSA12982 in
   Europe); do not install the 01.02 update. On 01.02 the game may start, but native output and
   the built-in executable patches (such as the 4K framebuffer pool) stay off, and cheat edits that

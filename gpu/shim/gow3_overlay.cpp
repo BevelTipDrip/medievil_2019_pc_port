@@ -485,7 +485,7 @@ void PerformanceTab() {
                   IsGow3() ? "The resolution the game draws at. Higher is sharper and slower."
                            : "The resolution the 3D scene is drawn at, shown at 1080p: 4K is the sharpest.");
         // The highest frame rate the game runs at (Unreal Engine 4: run.py's override pak).
-        static const char* const engine_labels[] = {"60 (original)", "120", "240"};
+        static const char* const engine_labels[] = {"60 (original)", "120 (experimental)", "240 (experimental)"};
         ChoiceRow("Engine frame rate", s.engine_fps, engine_labels, G::EngineFps.data(),
                   int(G::EngineFps.size()), "The highest frame rate the game itself runs at.");
         CheckRow("Game reads GPU data without waiting", s.stale_readback,

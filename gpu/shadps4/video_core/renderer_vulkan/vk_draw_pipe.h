@@ -97,6 +97,7 @@ public:
         ReasonSubmissionEnd,
         ReasonDraw,
         ReasonRasterizer,
+        ReasonForeignRecord, ///< a cache or the scheduler recorded on stage A (issue #2/#12)
         NumReasons,
     };
     std::array<u64, NumReasons> drains_by_reason{};
