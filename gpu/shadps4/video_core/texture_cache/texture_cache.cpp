@@ -32,7 +32,7 @@ namespace {
 struct CacheStats {
     std::atomic<u64> fast_lookups, slow_lookups, slow_candidates, overlaps, expands, registered,
         unregistered, refreshes, refresh_bytes, alias_copies, alias_syncs, volume_views, unmap_frees,
-        unmap_free_bytes, recreated, recreated_bytes;
+        unmap_free_bytes, recreated, recreated_bytes, eop_waits, eop_skips;
 };
 CacheStats cache_stats;
 bool CacheStatsEnabled() {
@@ -205,6 +205,25 @@ void TextureCache::CancelReadbacks(VAddr address, u64 size) {
 // before) left the GPU mostly idle in God of War III's gameplay, at about 2 FPS.
 void TextureCache::ProcessDownloadImages() {
     if (deferred_readbacks) {
+        // gow3: most ends of pipe (MediEvil: ~3 a frame, ~5 tiny readbacks a frame) have no image
+        // to download and no copy ready to publish; the host copy wait below then protects
+        // nothing, yet it was ~20% of the draw recording thread in heavy views (P2a). Those skip
+        // it; every end of pipe with readback work still waits (skipping those broke the torches,
+        // R1 / V2). Toggle bit 60 restores the wait everywhere.
+        if (!Gow3Toggle::Disabled(Gow3Toggle::IdleEopSkip)) {
+            bool idle;
+            {
+                std::scoped_lock readback_lock{readback_mutex};
+                std::unique_lock lock{download_images_mutex};
+                idle = download_images.empty() &&
+                       !pending_readbacks.FrontReady([this](u64 tick) { return scheduler.IsFree(tick); });
+            }
+            if (idle) {
+                CACHE_STAT(eop_skips, 1);
+                return;
+            }
+        }
+        CACHE_STAT(eop_waits, 1);
         // Upload workers must finish reading RAM before these pages become inaccessible.
         scheduler.WaitHostCopies();
         std::scoped_lock readback_lock{readback_mutex};
@@ -1694,6 +1713,9 @@ void TextureCache::RunGarbageCollector() {
             std::printf("  freed by guest unmaps %llu (%.1f MiB); created again within ~30 s %llu (%.1f MiB)\n",
                         (unsigned long long)frees, free_bytes / 1048576.0, (unsigned long long)recreated,
                         recreated_bytes / 1048576.0);
+            std::printf("  end of pipe with readback work (host copy wait) %llu, without (skipped) %llu\n",
+                        (unsigned long long)take(cache_stats.eop_waits),
+                        (unsigned long long)take(cache_stats.eop_skips));
             top.clear();
             for (const auto& [key, count] : create_sites) top.emplace_back(count, key);
             std::sort(top.begin(), top.end(), std::greater<>{});

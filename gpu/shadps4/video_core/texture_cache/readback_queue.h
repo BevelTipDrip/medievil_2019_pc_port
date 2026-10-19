@@ -67,6 +67,11 @@ public:
             entries.pop_front();
         }
     }
+    /// Whether Retire would complete anything now (copies retire in order).
+    template <typename Ready>
+    bool FrontReady(Ready&& ready) const {
+        return !entries.empty() && ready(entries.front().tick);
+    }
     std::uint64_t Bytes() const { return bytes; }
 
 private:
