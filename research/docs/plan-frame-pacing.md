@@ -969,3 +969,29 @@ code: the runs up to T-L1 passed `GOW3_UE4_BOOT_4K=1` by `-Env` (as `launcher.cm
 did not, so the logs show `Patches: ... ['Native 4K framebuffer pool (512 MB)']` without '4K display metrics at boot'
 and I1 came back. `run-game.ps1` now sets it by default. Comparisons within T-B1 … T-D2b (T-D1b vs T-D2b for D2) are
 like for like; comparisons of those runs against T-L1 and earlier mix the two boot modes.
+
+### T-D2c: D2 live A/B with the toggle file and the 4K boot (2026-10-19 18:46-18:5x, launched by Claude with the user's go; build `8779190`; log `data/t-d2c-precise-ab.log`)
+
+First run with `run-game.ps1` setting the toggle file (`mask=0` at start, `mask=9223372036854775808` at the switch:
+the toggle took) and the 4K boot (`'4K display metrics at boot'` in the patch line). D2 off 18:53:07, on 18:54:43,
+heavy view (~2,950 draws/frame).
+
+| heavy view | D2 on (18:52:43-18:53:08) | D2 off (18:53:18-18:53:33) | D2 on (18:54:48-18:55:03) |
+|---|---|---|---|
+| FPS | 121-127 | 124-127 | 126-129 |
+| stddev | 0.38-1.10 ms | 0.47-0.68 ms | 0.38-0.95 ms |
+| write-fault downloads | 0-10/s (D2 on: direct guest writes) | 26.5/s at the switch, then 2-4/s | 0-3/s |
+
+The user: off "was significantly worse when you first switched, but got a bit better after a few seconds"; on again
+"much flatter … that's for sure, and there's no stutters while panning. **D2 definitely stays in.**"
+
+Read: with D2 on, pages stay GPU-modified (D2 never clears that state), so switching off makes them all fault at once
+(the burst the user saw). With the 4K boot the libc writes into shader-written pages are rarer than in T-D1b (no 4K
+boot, ~27/s): 2-4/s remain with D2 off once the burst is over. With D2 on, **guest code writing directly** (not libc)
+into the same pages, `guest+0x68e109` / `guest+0x68e149` / `guest+0x20da4d0` / `guest+0xba9a49` into page
+0x2049ae0000 (beside the RHI query code at 0x689c10-0x689ed0), faults and downloads 5-10/s, more than with D2 off,
+because the GPU-modified state D2 keeps covers bytes the CPU has already rewritten. **Refinement D2b:** once
+`ProcessCpuWrites` has copied the CPU's bytes into the arena, both copies agree on them: subtract them from
+`gpu_modified_ranges` (and clear the bitmap bits of pages left with none). A later direct write there finds nothing to
+download, and `DownloadMemory` returns before `Finish()` (it does when it has no range). Then look at what
+guest+0x68e109 writes (Ghidra) together with the occlusion work.
