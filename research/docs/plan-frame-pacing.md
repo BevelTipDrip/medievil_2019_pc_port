@@ -881,3 +881,30 @@ draw), unneeded draws cost CPU, not GPU: the user's far views. Next run (`GOW3_S
 (removes the query boxes and the occlusion wait, culls nothing less than now), and the larger item: **real occlusion
 results** (Vulkan occlusion queries between the ZPASS_DONE dumps, results written to the guest when the GPU has
 them), which would let UE4 skip the hidden draws as on PS4.
+
+### T-SF1: what the slow frames do (2026-10-19 ~17:35-17:44, launched by Claude with the user's go; build `7d3d288`; log `data/t-sf1-slow-frames.log`)
+
+`GOW3_SLOW_FRAMES=1.2` (+ `GOW3_PERF_DIAG=1`). The user: the heavy view and the far-draw-distance view are the same
+area. 3,115 slow frames (> 1.2x the window median) against 878 samples (every 100th frame; mostly lighter views):
+
+| median | slow frames | samples |
+|---|---|---|
+| frame | 10.1 ms | 4.8 ms |
+| occlusion queries / frame | 140 | 7 |
+| render passes ended / frame | 507 | 149 |
+| stage B busy | 72% | 80% |
+| waiting on GPU ticks | **2.5 ms** (90% of slow frames > 1 ms) | 0 (6% > 1 ms) |
+
+(Draws and stage A time read 0: a bug in the line, fixed in the next build.) The GPU tick waits are almost all one
+site: **`buffer_cache.cpp:214`, `BufferCache::DownloadMemory` → `scheduler.Finish()`**: a GPU-written buffer range the
+guest touches is copied back synchronously, waiting for the whole GPU. 3,950 downloads in the run, ~40 a second in
+the heavy view, up to 5.8 ms each, **10.0 s of waiting** in total. That is the regular microstutter in the user's
+frame time graph: every frame that takes a download stalls stage B for a GPU round trip.
+
+Triggers (`ReadMemory`): a guest read fault on GPU-written memory, a guest write fault, the runtime's invalidation
+hook, or a guest unmap (`Rasterizer::UnmapMemory` → `InvalidateMemory`). An unmap ends the contents, so reading the
+GPU data back is wasted. **Fix D1** (`toggle bit 56` = 72057594037927936 restores the download): an unmap drops the
+GPU-modified state and marks the range CPU-modified instead. The next build also counts downloads per cause and per
+second ("Buffer downloads/s (GPU waits): read fault … write fault … invalidation … unmap …; unmaps discarded"). Test
+T-D1: heavy view, live A/B of bit 56; if the downloads are not unmaps, the counts say which cause to fix next
+(a read fault means the guest really reads GPU output: then wait only for the GPU work that wrote it, not `Finish`).
