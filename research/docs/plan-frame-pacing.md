@@ -1035,3 +1035,28 @@ shadPS4 video core and performance work"), which this port shares with the Blood
 Bloodborne port or upstream explains it; the evident reasons: "visible" can never hide what should be drawn and never
 leaves a game waiting. The remaining win is **O2, real occlusion results**: the heavy view still draws every primitive
 in the frustum, hidden or not; useful beyond MediEvil (shadPS4, Bloodborne), so worth offering upstream.
+
+### O2: real occlusion query results (2026-10-19, `GOW3_OCCLUSION=1`, built, not run yet)
+
+`vk_occlusion.{h,cpp}`. Each `ZPASS_DONE` (`PixelPipeStatDump`) goes to the recording thread in order with the draws
+(`Rasterizer::OcclusionEvent` → `RunInOrder`) and ends a chain of Vulkan occlusion query **segments**: one is active
+while a render pass is open (a `Scheduler::RenderPassHook` begins one after `beginRendering` and ends it before
+`endRendering`; command buffers end outside passes), an event remembers how many segments ended before it. A
+**completion thread** (`gow3:Occlusion`) waits on the timeline semaphore for the submission holding them, reads the
+segments with `vkGetQueryPoolResults`, adds them up in order and writes each event's running total into the game's
+memory through the backing view: the first depth block's counter gets the total, the others 0, all with the valid bit.
+A begin event (16-byte aligned) clears its begin and end counters first, so an earlier use never reads as valid early.
+Slots (16,384) are reset on the host after reading (`hostQueryReset`), so no reset is ever recorded; a segment that
+finds no free slot is counted as 2^32 samples (that query reads visible, never wrongly hidden). Exact counts
+(`occlusionQueryPrecise`, now enabled). Design after the Bloodborne port's `vk_occlusion.h` (0.5): there the GPU
+writes the totals into guest memory itself (guest memory is GPU memory there); here the GPU works on a copy, so the
+host writes them after the submission completes.
+
+Risks: (1) **wrong culling** if our depth at query time differs from the PS4's (objects popping or missing); (2) the
+game's render thread **waits** for results (`bWait`, `r.NumBufferedOcclusionQueries=1`: last frame's queries) until
+the GPU has finished that frame's queries: if the pipeline is deep, the render thread waits longer than on PS4 (the R4a
+lesson). Stats line every 5 s: "Occlusion queries: N events/s, N queries/s of which X% hidden; results written X ms
+after the event (max); N segments missed".
+
+Test T-O2: `-Env @{GOW3_OCCLUSION='1'; GOW3_UE4_CVARS='r.AllowOcclusionQueries=1'}`, heavy view and the far views:
+draws per frame against T-O1 / T-D2d, FPS, slow frames, the hidden share and the latency; the user watches for popping.
