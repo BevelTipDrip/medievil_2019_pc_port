@@ -1060,3 +1060,14 @@ after the event (max); N segments missed".
 
 Test T-O2: `-Env @{GOW3_OCCLUSION='1'; GOW3_UE4_CVARS='r.AllowOcclusionQueries=1'}`, heavy view and the far views:
 draws per frame against T-O1 / T-D2d, FPS, slow frames, the hidden share and the latency; the user watches for popping.
+
+**T-O2, first launch (2026-10-19 19:43-19:46, launched by Claude with the user's go; build `11eba14`; log
+`data/t-o2-occlusion.log`): hang after the intro skip, before O2 ran.** The user: "it stalled after the menu movie
+skip". The log stops at 19:44:37 in the menus (5 draws a frame, 0 occlusion events: `Rasterizer::OcclusionEvent` was
+never reached, no `gow3:Occlusion` thread). Thread stacks taken with `cdb -pv` (noninvasive) at 19:46, saved as
+[data/t-o2-hang-stacks.txt](data/t-o2-hang-stacks.txt): the port's GPU threads idle (stage A and `gow3:VkRecorder` on
+their work condition variables, `gow3:DrawRec` on its atomic wait); the game's main thread, `RHIThread` and
+`SubmitGPUComman` in `pthread_cond_wait`, `RenderThread 1` in `pthread_mutex_lock`: a lock-up among the game's
+threads. Differences from the last good runs: `r.AllowOcclusionQueries=1` (the default of every run before T-O1) and
+`occlusionQueryPrecise` enabled on the device. One occurrence: relaunch; if it repeats, separate the two (queries on
+without O2, then O2 without precise counts).

@@ -1,0 +1,1983 @@
+
+Microsoft (R) Windows Debugger Version 10.0.22621.755 AMD64
+Copyright (c) Microsoft Corporation. All rights reserved.
+
+*** wait with pending attach
+
+************* Path validation summary **************
+Response                         Time (ms)     Location
+Deferred                                       srv*
+Symbol search path is: srv*
+Executable search path is: 
+WARNING: Process 53668 is not attached as a debuggee
+         The process can be examined but debug events will not be received
+................................................................
+................................................................
+................................................................
+................................
+Loading unloaded module list
+.............
+(d1a4.83a8): Wake debugger - code 80000007 (first chance)
+ntdll!NtWaitForMultipleObjects+0x14:
+00007ff9`b73228a4 c3              ret
+0:000> cdb: Reading initial command '~*k 30; qd'
+
+.  0  Id: d1a4.83a8 Suspend: 1 Teb: 00000000`00c10000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`01dfd018 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000000`01dfd020 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+*** WARNING: Unable to verify checksum for C:\msys64\clang64\bin\libwinpthread-1.dll
+00000000`01dfd310 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000000`01dfd350 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000000`01dfd3c0 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000000`01dfd440 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+*** WARNING: Unable to verify checksum for C:\Users\Ty\MediEvil\medievil_2019_pc_port\out\medievil-runtime.exe
+00000000`01dfd4a0 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000000`01dfd560 00000008`0070b37a     medievil_runtime+0x16b8b
+00000000`01dfd5c0 7d69ae0d`04a6d697     0x00000008`0070b37a
+00000000`01dfd5c8 00000000`05db509b     0x7d69ae0d`04a6d697
+00000000`01dfd5d0 00000010`1e8fb6a8     0x5db509b
+00000000`01dfd5d8 00000000`056006d0     0x00000010`1e8fb6a8
+00000000`01dfd5e0 00000008`0584cdf0     0x56006d0
+00000000`01dfd5e8 00000008`056006d0     0x00000008`0584cdf0
+00000000`01dfd5f0 00000000`6ad6abaf     0x00000008`056006d0
+00000000`01dfd5f8 00000000`21bc7980     0x6ad6abaf
+00000000`01dfd600 00000000`6ad6abaf     0x21bc7980
+00000000`01dfd608 00000000`00089fc9     0x6ad6abaf
+00000000`01dfd610 ad750b22`185ab400     0x89fc9
+00000000`01dfd618 00000000`01dfd670     0xad750b22`185ab400
+00000000`01dfd620 00000000`00000000     0x1dfd670
+
+   1  Id: d1a4.d3c8 Suspend: 1 Teb: 00000000`00c18000 Unfrozen "pool-0"
+Child-SP          RetAddr               Call Site
+00000000`07caf828 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000000`07caf830 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+*** WARNING: Unable to verify checksum for C:\msys64\clang64\bin\libglib-2.0-0.dll
+00000000`07caf8d0 00007ff8`b5ef7135     KERNELBASE!SleepConditionVariableSRW+0x38
+00000000`07caf910 00007ff8`b5f656de     libglib_2_0_0!g_async_queue_pop+0xd5
+00000000`07caf970 00007ff8`b5f63ed9     libglib_2_0_0!g_thread_pool_get_max_idle_time+0x8e
+00000000`07caf9e0 00007ff8`b5f63657     libglib_2_0_0!g_thread_unref+0xd9
+00000000`07cafa20 00007ff9`b461cd30     libglib_2_0_0!g_test_get_path+0xbb7
+00000000`07cafa50 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000000`07cafa80 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`07cafab0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+   2  Id: d1a4.ba9c Suspend: 1 Teb: 00000000`00c1a000 Unfrozen "gow3:kernel_service"
+Child-SP          RetAddr               Call Site
+00000000`0acbfb18 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000000`0acbfb20 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+*** WARNING: Unable to verify checksum for C:\msys64\clang64\bin\libc++.dll
+00000000`0acbfbc0 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000000`0acbfc00 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000000`0acbfc30 00007ff7`690e49c6     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000000`0acbfc60 00007ff7`690ebe93     medievil_runtime+0x249c6
+00000000`0acbfd50 00007ff9`b461cd30     medievil_runtime+0x2be93
+00000000`0acbfda0 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000000`0acbfdd0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`0acbfe00 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+   3  Id: d1a4.8bfc Suspend: 1 Teb: 00000000`00c1c000 Unfrozen "gow3:window"
+Child-SP          RetAddr               Call Site
+00000000`0cebfd08 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+*** WARNING: Unable to verify checksum for C:\msys64\clang64\bin\SDL3.dll
+00000000`0cebfd10 00007ff8`be3c48ac     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000000`0cebfdb0 00007ff7`690e5c7e     SDL3!SDL_DYNAPI_entry+0x179b8c
+00000000`0cebfe20 00007ff9`b461cd30     medievil_runtime+0x25c7e
+00000000`0cebfed0 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000000`0cebff00 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`0cebff30 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+   4  Id: d1a4.a664 Suspend: 1 Teb: 00000000`00c1e000 Unfrozen "DeviceHotplugThread"
+Child-SP          RetAddr               Call Site
+00000000`0ecdf718 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000000`0ecdf720 00007ff8`be3a4565     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000000`0ecdf7c0 00007ff8`be303172     SDL3!SDL_DYNAPI_entry+0x159845
+00000000`0ecdf800 00007ff8`be3c1141     SDL3!SDL_DYNAPI_entry+0xb8452
+00000000`0ecdf850 00007ff9`b461cd30     SDL3!SDL_DYNAPI_entry+0x176421
+00000000`0ecdf880 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000000`0ecdf8b0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`0ecdf8e0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+   5  Id: d1a4.923c Suspend: 1 Teb: 00000000`00c20000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`0fcdfb68 00007ff9`b71e4d0e     ntdll!NtWaitForWorkViaWorkerFactory+0x14
+00000000`0fcdfb70 00007ff9`b6f8dda7     ntdll!TppWorkerThread+0x37e
+00000000`0fcdfed0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`0fcdff00 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+   6  Id: d1a4.acf4 Suspend: 1 Teb: 00000000`00c22000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`114df0d8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000000`114df0e0 00007ff9`b04b3438     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000000`114df3d0 00007ff9`b04b3113     CoreMessaging!Microsoft::CoreUI::Dispatch::WaitController::Callback_WaitAny+0xc8
+00000000`114df4c0 00007ff9`b04b2d6e     CoreMessaging!Microsoft::CoreUI::Dispatch::Win32EventLoopBridge::Callback_DoWait+0x123
+00000000`114df590 00007ff9`b04c0d2c     CoreMessaging!Microsoft::CoreUI::Dispatch::Win32EventLoopBridge::Callback_Wait+0x5e
+00000000`114df650 00007ff9`b04c02b7     CoreMessaging!Microsoft::CoreUI::Dispatch::WaitCollection::Callback_DoGeneralWait+0x1ec
+00000000`114df720 00007ff9`b04b8604     CoreMessaging!Microsoft::CoreUI::Dispatch::WaitController::Callback_OnDispatch+0xf7
+00000000`114df810 00007ff9`b04b819d     CoreMessaging!Microsoft::CoreUI::Dispatch::Dispatcher::Callback_DispatchLoop+0x334
+00000000`114df910 00007ff9`b04b9008     CoreMessaging!Microsoft::CoreUI::Dispatch::EventLoop::Callback_RunCoreLoop+0x11d
+00000000`114df980 00007ff9`b051b406     CoreMessaging!Microsoft::CoreUI::Dispatch::Win32EventLoopBridge::Callback_Run+0xd8
+00000000`114dfa60 00007ff9`b051455f     CoreMessaging!Microsoft::CoreUI::Dispatch::EventLoop::Callback_Run+0x156
+00000000`114dfaf0 00007ff9`b04f07db     CoreMessaging!Microsoft::CoreUI::Messaging::MessageSession::Microsoft_CoreUI_IExportMessageSession_Run$+0x33
+00000000`114dfb20 00007ff9`83f9a7bd     CoreMessaging!Microsoft::CoreUI::IExportMessageSession::ExportAdapter$::Run+0x5b
+00000000`114dfb60 00007ff9`83f91119     inputhost!MessagingThread::ThreadProc+0xb5
+00000000`114dfbb0 00007ff9`b6f8dda7     inputhost!<lambda_376318154f061e76a4fa5387c7eed0ca>::<lambda_invoker_cdecl>+0x9
+00000000`114dfbe0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`114dfc10 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+   7  Id: d1a4.ba3c Suspend: 1 Teb: 00000000`00c24000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`124df4b8 00007ff9`b71e4d0e     ntdll!NtWaitForWorkViaWorkerFactory+0x14
+00000000`124df4c0 00007ff9`b6f8dda7     ntdll!TppWorkerThread+0x37e
+00000000`124df820 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`124df850 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+   8  Id: d1a4.d010 Suspend: 1 Teb: 00000000`00c26000 Unfrozen "SDL_joystick"
+Child-SP          RetAddr               Call Site
+00000000`134dfd28 00007ff9`b617aea2     win32u!NtUserGetMessage+0x14
+00000000`134dfd30 00007ff8`be3fb66e     USER32!GetMessageW+0x22
+00000000`134dfd90 00007ff8`be303172     SDL3!SDL_DYNAPI_entry+0x1b094e
+00000000`134dfe50 00007ff8`be3c1141     SDL3!SDL_DYNAPI_entry+0xb8452
+00000000`134dfea0 00007ff9`b461cd30     SDL3!SDL_DYNAPI_entry+0x176421
+00000000`134dfed0 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000000`134dff00 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`134dff30 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+   9  Id: d1a4.ae28 Suspend: 1 Teb: 00000000`00c2c000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`5711f4a8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000000`5711f4b0 00007ff9`b59a9abe     KERNELBASE!WaitForMultipleObjectsEx+0x123
+(Inline Function) --------`--------     combase!WaitCoalesced+0x79
+00000000`5711f7a0 00007ff9`b59a231f     combase!CROIDTable::WorkerThreadLoop+0xae
+00000000`5711fa10 00007ff9`b59a222f     combase!CRpcThread::WorkerLoop+0x5b
+00000000`5711fa80 00007ff9`b6f8dda7     combase!CRpcThreadCache::RpcWorkerThreadEntry+0x4f
+00000000`5711fab0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`5711fae0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  10  Id: d1a4.c924 Suspend: 1 Teb: 00000000`00c2e000 Unfrozen "shadPS4:GpuCommandProcessor"
+Child-SP          RetAddr               Call Site
+00000000`5893faa8 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000000`5893fab0 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000000`5893fb50 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000000`5893fb90 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000000`5893fbc0 00007ff7`6928db3b     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000000`5893fbf0 00007ff7`69298587     medievil_runtime+0x1cdb3b
+00000000`5893fcf0 00007ff9`b461cd30     medievil_runtime+0x1d8587
+00000000`5893fd40 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000000`5893fd70 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`5893fda0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  11  Id: d1a4.4edc Suspend: 1 Teb: 00000000`00c30000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`5993fc28 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000000`5993fc30 00007ff8`c0788c95     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000000`5993fcd0 00007ff8`c078911c     graphics_hook64+0x8c95
+00000000`5993fe20 00007ff9`b6f8dda7     graphics_hook64+0x911c
+00000000`5993fe60 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`5993fe90 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  12  Id: d1a4.2700 Suspend: 1 Teb: 00000000`00c32000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`5a93fb28 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000000`5a93fb30 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000000`5a93fe20 00007ff8`74c11597     KERNELBASE!WaitForMultipleObjects+0x11
+00000000`5a93fe60 00007ff8`74c10b18     nvoglv64!DrvPresentBuffers+0xee77
+00000000`5a93fe90 00007ff9`b6f8dda7     nvoglv64!DrvPresentBuffers+0xe3f8
+00000000`5a93fec0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`5a93fef0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  13  Id: d1a4.6e3c Suspend: 1 Teb: 00000000`00c34000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`5d93f468 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000000`5d93f470 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000000`5d93f760 00007ff8`74c11597     KERNELBASE!WaitForMultipleObjects+0x11
+00000000`5d93f7a0 00007ff8`74c10b18     nvoglv64!DrvPresentBuffers+0xee77
+00000000`5d93f7d0 00007ff9`b6f8dda7     nvoglv64!DrvPresentBuffers+0xe3f8
+00000000`5d93f800 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`5d93f830 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  14  Id: d1a4.a2ec Suspend: 1 Teb: 00000000`00c36000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`5e93f928 00007ff9`b617aea2     win32u!NtUserGetMessage+0x14
+00000000`5e93f930 00007ff8`c07887b7     USER32!GetMessageW+0x22
+00000000`5e93f990 00007ff9`b6f8dda7     graphics_hook64+0x87b7
+00000000`5e93fa80 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`5e93fab0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  15  Id: d1a4.9658 Suspend: 1 Teb: 00000000`00c38000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`6193fad8 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000000`6193fae0 00007ff8`74bdcd8a     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000000`6193fb80 00007ff8`750d86c2     nvoglv64!DrvValidateVersion+0xc0da
+00000000`6193fbb0 00007ff8`74bdecc8     nvoglv64!vkGetInstanceProcAddr+0x101592
+00000000`6193fc70 00007ff9`b6f8dda7     nvoglv64!DrvValidateVersion+0xe018
+00000000`6193fca0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`6193fcd0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  16  Id: d1a4.ce40 Suspend: 1 Teb: 00000000`00c3a000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`6293f8e8 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000000`6293f8f0 00007ff8`74bdcd8a     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000000`6293f990 00007ff8`750e8952     nvoglv64!DrvValidateVersion+0xc0da
+00000000`6293f9c0 00007ff8`74bdecc8     nvoglv64!vkGetInstanceProcAddr+0x111822
+00000000`6293fa40 00007ff9`b6f8dda7     nvoglv64!DrvValidateVersion+0xe018
+00000000`6293fa70 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`6293faa0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  17  Id: d1a4.8af0 Suspend: 1 Teb: 00000000`00c3c000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`6393f878 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000000`6393f880 00007ff8`74bdcd8a     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000000`6393f920 00007ff8`75103250     nvoglv64!DrvValidateVersion+0xc0da
+00000000`6393f950 00007ff8`74bdecc8     nvoglv64!vkGetInstanceProcAddr+0x12c120
+00000000`6393f9e0 00007ff9`b6f8dda7     nvoglv64!DrvValidateVersion+0xe018
+00000000`6393fa10 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`6393fa40 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  18  Id: d1a4.95ac Suspend: 1 Teb: 00000000`00c3e000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`6493f6b8 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000000`6493f6c0 00007ff8`74bdcd8a     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000000`6493f760 00007ff8`750d5ebd     nvoglv64!DrvValidateVersion+0xc0da
+00000000`6493f790 00007ff8`74bdecc8     nvoglv64!vkGetInstanceProcAddr+0xfed8d
+00000000`6493f7e0 00007ff9`b6f8dda7     nvoglv64!DrvValidateVersion+0xe018
+00000000`6493f810 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`6493f840 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  19  Id: d1a4.9da8 Suspend: 1 Teb: 00000000`00c40000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`6593f688 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000000`6593f690 00007ff8`74bdcd8a     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000000`6593f730 00007ff8`752186d6     nvoglv64!DrvValidateVersion+0xc0da
+00000000`6593f760 00007ff8`7520ee78     nvoglv64!vk_icdNegotiateLoaderICDInterfaceVersion+0xd2ca6
+00000000`6593f870 00007ff8`74bdecc8     nvoglv64!vk_icdNegotiateLoaderICDInterfaceVersion+0xc9448
+00000000`6593f8a0 00007ff9`b6f8dda7     nvoglv64!DrvValidateVersion+0xe018
+00000000`6593f8d0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`6593f900 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  20  Id: d1a4.bac4 Suspend: 1 Teb: 00000000`00c42000 Unfrozen "gow3:VkRecorder"
+Child-SP          RetAddr               Call Site
+00000000`6693f568 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000000`6693f570 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000000`6693f610 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000000`6693f650 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000000`6693f680 00007ff7`6921378b     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000000`6693f6b0 00007ff7`6921a847     medievil_runtime+0x15378b
+00000000`6693f7b0 00007ff9`b461cd30     medievil_runtime+0x15a847
+00000000`6693f800 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000000`6693f830 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`6693f860 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  21  Id: d1a4.51fc Suspend: 1 Teb: 00000000`00c44000 Unfrozen "shadPS4:GpuSchedPriorityPendingOpsRunner"
+Child-SP          RetAddr               Call Site
+00000000`6793f9f8 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000000`6793fa00 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000000`6793faa0 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000000`6793fae0 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000000`6793fb10 00007ff7`69213e1a     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000000`6793fb40 00007ff7`6921a847     medievil_runtime+0x153e1a
+00000000`6793fc40 00007ff9`b461cd30     medievil_runtime+0x15a847
+00000000`6793fc90 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000000`6793fcc0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`6793fcf0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  22  Id: d1a4.9ed4 Suspend: 1 Teb: 00000000`00c46000 Unfrozen "shadPS4:GpuSchedPriorityPendingOpsRunner"
+Child-SP          RetAddr               Call Site
+00000000`6893fb58 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000000`6893fb60 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000000`6893fc00 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000000`6893fc40 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000000`6893fc70 00007ff7`69213e1a     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000000`6893fca0 00007ff7`6921a847     medievil_runtime+0x153e1a
+00000000`6893fda0 00007ff9`b461cd30     medievil_runtime+0x15a847
+00000000`6893fdf0 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000000`6893fe20 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`6893fe50 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  23  Id: d1a4.c2bc Suspend: 1 Teb: 00000000`00c48000 Unfrozen "shadPS4:GpuSchedPriorityPendingOpsRunner"
+Child-SP          RetAddr               Call Site
+00000000`6993fb08 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000000`6993fb10 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000000`6993fbb0 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000000`6993fbf0 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000000`6993fc20 00007ff7`69213e1a     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000000`6993fc50 00007ff7`6921a847     medievil_runtime+0x153e1a
+00000000`6993fd50 00007ff9`b461cd30     medievil_runtime+0x15a847
+00000000`6993fda0 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000000`6993fdd0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`6993fe00 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  24  Id: d1a4.7f20 Suspend: 1 Teb: 00000000`00c4c000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`6d47f9a8 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000000`6d47f9b0 00007ff9`99e1a271     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000000`6d47fa50 00007ff9`9a38d2fa     nvwgf2umx!NVDEV_Thunk+0x234e1
+00000000`6d47fa90 00007ff9`b6f8dda7     nvwgf2umx!NVDEV_Thunk+0x59656a
+00000000`6d47fac0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`6d47faf0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  25  Id: d1a4.88c4 Suspend: 1 Teb: 00000000`00c4e000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`6e47f908 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000000`6e47f910 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000000`6e47fc00 00007ff9`9960c206     KERNELBASE!WaitForMultipleObjects+0x11
+00000000`6e47fc40 00007ff9`9a38d2fa     nvwgf2umx!NVAPI_DirectMethods+0x25406
+00000000`6e47fcd0 00007ff9`b6f8dda7     nvwgf2umx!NVDEV_Thunk+0x59656a
+00000000`6e47fd00 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`6e47fd30 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  26  Id: d1a4.a674 Suspend: 1 Teb: 00000000`00c52000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`6f47fa58 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000000`6f47fa60 00007ff9`99e654af     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000000`6f47fb00 00007ff9`9a38d2fa     nvwgf2umx!NVDEV_Thunk+0x6e71f
+00000000`6f47fc60 00007ff9`b6f8dda7     nvwgf2umx!NVDEV_Thunk+0x59656a
+00000000`6f47fc90 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`6f47fcc0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  27  Id: d1a4.c070 Suspend: 1 Teb: 00000000`00c54000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`7247fbf8 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000000`7247fc00 00007ff9`99bd93f6     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000000`7247fca0 00007ff9`99bd93a9     nvwgf2umx!OpenAdapter10+0xfe446
+00000000`7247fce0 00007ff9`9a38d2fa     nvwgf2umx!OpenAdapter10+0xfe3f9
+00000000`7247fd10 00007ff9`b6f8dda7     nvwgf2umx!NVDEV_Thunk+0x59656a
+00000000`7247fd40 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`7247fd70 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  28  Id: d1a4.cbc4 Suspend: 1 Teb: 00000000`00c56000 Unfrozen "D3D Background Thread 0"
+Child-SP          RetAddr               Call Site
+00000000`7347fae8 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000000`7347faf0 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000000`7347fb90 00007ff9`b4563d2d     KERNELBASE!SleepConditionVariableSRW+0x38
+00000000`7347fbd0 00007ff9`b455f4a9     msvcp_win!Concurrency::details::stl_condition_variable_win7::wait+0x19
+00000000`7347fc00 00007ff8`f1d5e02a     msvcp_win!Cnd_wait+0x19
+00000000`7347fc30 00007ff8`f1dfee54     D3D12Core!BackgroundTaskScheduler::Scheduler::TaskThread+0xfa
+00000000`7347fd40 00007ff9`b461cd30     D3D12Core!std::thread::_Invoke<std::tuple<<lambda_d058723838c64a4098625abb67620994> >,0>+0x14
+00000000`7347fd70 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000000`7347fda0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`7347fdd0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  29  Id: d1a4.84c Suspend: 1 Teb: 00000000`00c58000 Unfrozen "D3D Background Thread 1"
+Child-SP          RetAddr               Call Site
+00000000`7447f5d8 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000000`7447f5e0 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000000`7447f680 00007ff9`b4563d2d     KERNELBASE!SleepConditionVariableSRW+0x38
+00000000`7447f6c0 00007ff9`b455f4a9     msvcp_win!Concurrency::details::stl_condition_variable_win7::wait+0x19
+00000000`7447f6f0 00007ff8`f1d5e02a     msvcp_win!Cnd_wait+0x19
+00000000`7447f720 00007ff8`f1dfee54     D3D12Core!BackgroundTaskScheduler::Scheduler::TaskThread+0xfa
+00000000`7447f830 00007ff9`b461cd30     D3D12Core!std::thread::_Invoke<std::tuple<<lambda_d058723838c64a4098625abb67620994> >,0>+0x14
+00000000`7447f860 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000000`7447f890 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`7447f8c0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  30  Id: d1a4.9f54 Suspend: 1 Teb: 00000000`00c5a000 Unfrozen "D3D Background Thread 2"
+Child-SP          RetAddr               Call Site
+00000000`7547fba8 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000000`7547fbb0 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000000`7547fc50 00007ff9`b4563d2d     KERNELBASE!SleepConditionVariableSRW+0x38
+00000000`7547fc90 00007ff9`b455f4a9     msvcp_win!Concurrency::details::stl_condition_variable_win7::wait+0x19
+00000000`7547fcc0 00007ff8`f1d5e02a     msvcp_win!Cnd_wait+0x19
+00000000`7547fcf0 00007ff8`f1dfee54     D3D12Core!BackgroundTaskScheduler::Scheduler::TaskThread+0xfa
+00000000`7547fe00 00007ff9`b461cd30     D3D12Core!std::thread::_Invoke<std::tuple<<lambda_d058723838c64a4098625abb67620994> >,0>+0x14
+00000000`7547fe30 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000000`7547fe60 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`7547fe90 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  31  Id: d1a4.ced4 Suspend: 1 Teb: 00000000`00c5c000 Unfrozen "D3D Background Thread 3"
+Child-SP          RetAddr               Call Site
+00000000`7647f558 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000000`7647f560 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000000`7647f600 00007ff9`b4563d2d     KERNELBASE!SleepConditionVariableSRW+0x38
+00000000`7647f640 00007ff9`b455f4a9     msvcp_win!Concurrency::details::stl_condition_variable_win7::wait+0x19
+00000000`7647f670 00007ff8`f1d5e02a     msvcp_win!Cnd_wait+0x19
+00000000`7647f6a0 00007ff8`f1dfee54     D3D12Core!BackgroundTaskScheduler::Scheduler::TaskThread+0xfa
+00000000`7647f7b0 00007ff9`b461cd30     D3D12Core!std::thread::_Invoke<std::tuple<<lambda_d058723838c64a4098625abb67620994> >,0>+0x14
+00000000`7647f7e0 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000000`7647f810 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`7647f840 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  32  Id: d1a4.5ef8 Suspend: 1 Teb: 00000000`00c5e000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`7747f7d8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000000`7747f7e0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000000`7747fad0 00007ff9`9960c206     KERNELBASE!WaitForMultipleObjects+0x11
+00000000`7747fb10 00007ff9`9a38d2fa     nvwgf2umx!NVAPI_DirectMethods+0x25406
+00000000`7747fba0 00007ff9`b6f8dda7     nvwgf2umx!NVDEV_Thunk+0x59656a
+00000000`7747fbd0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`7747fc00 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  33  Id: d1a4.6e88 Suspend: 1 Teb: 00000000`00c60000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`7a47fbb8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000000`7a47fbc0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000000`7a47feb0 00007ff8`74fa6f34     KERNELBASE!WaitForMultipleObjects+0x11
+00000000`7a47fef0 00007ff8`74bdecc8     nvoglv64!vk_gr2608GetInstanceProcAddr+0x43c34
+00000000`7a47ff30 00007ff9`b6f8dda7     nvoglv64!DrvValidateVersion+0xe018
+00000000`7a47ff60 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`7a47ff90 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  34  Id: d1a4.c028 Suspend: 1 Teb: 00000000`00c62000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000000`7b47f3d8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000000`7b47f3e0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000000`7b47f6d0 00007ff8`74fa6990     KERNELBASE!WaitForMultipleObjects+0x11
+00000000`7b47f710 00007ff8`74bdecc8     nvoglv64!vk_gr2608GetInstanceProcAddr+0x43690
+00000000`7b47f800 00007ff9`b6f8dda7     nvoglv64!DrvValidateVersion+0xe018
+00000000`7b47f830 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000000`7b47f860 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  35  Id: d1a4.9ac4 Suspend: 1 Teb: 00000000`00c64000 Unfrozen "gow3:ShaderCapture0"
+Child-SP          RetAddr               Call Site
+00000001`3d9df748 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`3d9df750 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`3d9df7f0 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`3d9df830 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`3d9df860 00007ff7`691cb141     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`3d9df890 00007ff7`691caf82     medievil_runtime+0x10b141
+00000001`3d9df980 00007ff9`b461cd30     medievil_runtime+0x10af82
+00000001`3d9df9d0 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`3d9dfa00 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`3d9dfa30 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  36  Id: d1a4.b634 Suspend: 1 Teb: 00000000`00c66000 Unfrozen "gow3:ShaderCapture1"
+Child-SP          RetAddr               Call Site
+00000001`3e9dfa98 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`3e9dfaa0 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`3e9dfb40 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`3e9dfb80 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`3e9dfbb0 00007ff7`691cb141     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`3e9dfbe0 00007ff7`691caf82     medievil_runtime+0x10b141
+00000001`3e9dfcd0 00007ff9`b461cd30     medievil_runtime+0x10af82
+00000001`3e9dfd20 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`3e9dfd50 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`3e9dfd80 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  37  Id: d1a4.c650 Suspend: 1 Teb: 00000000`00c68000 Unfrozen "gow3:ShaderCompile0"
+Child-SP          RetAddr               Call Site
+00000001`3f9df5f8 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`3f9df600 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`3f9df6a0 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`3f9df6e0 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`3f9df710 00007ff7`691cb141     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`3f9df740 00007ff7`691caf82     medievil_runtime+0x10b141
+00000001`3f9df830 00007ff9`b461cd30     medievil_runtime+0x10af82
+00000001`3f9df880 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`3f9df8b0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`3f9df8e0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  38  Id: d1a4.cd48 Suspend: 1 Teb: 00000000`00c6a000 Unfrozen "gow3:ShaderCompile1"
+Child-SP          RetAddr               Call Site
+00000001`409dfc08 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`409dfc10 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`409dfcb0 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`409dfcf0 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`409dfd20 00007ff7`691cb141     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`409dfd50 00007ff7`691caf82     medievil_runtime+0x10b141
+00000001`409dfe40 00007ff9`b461cd30     medievil_runtime+0x10af82
+00000001`409dfe90 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`409dfec0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`409dfef0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  39  Id: d1a4.4c6c Suspend: 1 Teb: 00000000`00c6c000 Unfrozen "gow3:ShaderCompile2"
+Child-SP          RetAddr               Call Site
+00000001`419df948 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`419df950 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`419df9f0 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`419dfa30 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`419dfa60 00007ff7`691cb141     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`419dfa90 00007ff7`691caf82     medievil_runtime+0x10b141
+00000001`419dfb80 00007ff9`b461cd30     medievil_runtime+0x10af82
+00000001`419dfbd0 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`419dfc00 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`419dfc30 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  40  Id: d1a4.d2dc Suspend: 1 Teb: 00000000`00c6e000 Unfrozen "gow3:ShaderCompile3"
+Child-SP          RetAddr               Call Site
+00000001`429dfab8 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`429dfac0 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`429dfb60 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`429dfba0 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`429dfbd0 00007ff7`691cb141     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`429dfc00 00007ff7`691caf82     medievil_runtime+0x10b141
+00000001`429dfcf0 00007ff9`b461cd30     medievil_runtime+0x10af82
+00000001`429dfd40 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`429dfd70 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`429dfda0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  41  Id: d1a4.8860 Suspend: 1 Teb: 00000000`00c70000 Unfrozen "gow3:ShaderCompile4"
+Child-SP          RetAddr               Call Site
+00000001`439df658 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`439df660 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`439df700 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`439df740 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`439df770 00007ff7`691cb141     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`439df7a0 00007ff7`691caf82     medievil_runtime+0x10b141
+00000001`439df890 00007ff9`b461cd30     medievil_runtime+0x10af82
+00000001`439df8e0 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`439df910 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`439df940 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  42  Id: d1a4.d0fc Suspend: 1 Teb: 00000000`00c72000 Unfrozen "gow3:ShaderCompile5"
+Child-SP          RetAddr               Call Site
+00000001`449df7e8 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`449df7f0 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`449df890 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`449df8d0 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`449df900 00007ff7`691cb141     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`449df930 00007ff7`691caf82     medievil_runtime+0x10b141
+00000001`449dfa20 00007ff9`b461cd30     medievil_runtime+0x10af82
+00000001`449dfa70 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`449dfaa0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`449dfad0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  43  Id: d1a4.b650 Suspend: 1 Teb: 00000000`00c74000 Unfrozen "gow3:DrawScan"
+Child-SP          RetAddr               Call Site
+00000001`459df6f8 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`459df700 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`459df7a0 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`459df7e0 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`459df810 00007ff7`691d9d18     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`459df840 00007ff7`691dd7f0     medievil_runtime+0x119d18
+00000001`459dfa20 00007ff9`b461cd30     medievil_runtime+0x11d7f0
+00000001`459dfa80 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`459dfab0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`459dfae0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  44  Id: d1a4.cdb0 Suspend: 1 Teb: 00000000`00c76000 Unfrozen "gow3:DrawPrep0"
+Child-SP          RetAddr               Call Site
+00000001`469def98 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`469defa0 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`469df040 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`469df080 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`469df0b0 00007ff7`691da737     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`469df0e0 00007ff7`691dd684     medievil_runtime+0x11a737
+00000001`469dfcc0 00007ff9`b461cd30     medievil_runtime+0x11d684
+00000001`469dfd20 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`469dfd50 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`469dfd80 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  45  Id: d1a4.d0b8 Suspend: 1 Teb: 00000000`00c78000 Unfrozen "gow3:DrawPrep1"
+Child-SP          RetAddr               Call Site
+00000001`479dea58 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`479dea60 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`479deb00 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`479deb40 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`479deb70 00007ff7`691da737     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`479deba0 00007ff7`691dd684     medievil_runtime+0x11a737
+00000001`479df780 00007ff9`b461cd30     medievil_runtime+0x11d684
+00000001`479df7e0 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`479df810 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`479df840 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  46  Id: d1a4.d3ac Suspend: 1 Teb: 00000000`00c7a000 Unfrozen "gow3:DrawPrep2"
+Child-SP          RetAddr               Call Site
+00000001`489dec58 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`489dec60 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`489ded00 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`489ded40 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`489ded70 00007ff7`691da737     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`489deda0 00007ff7`691dd684     medievil_runtime+0x11a737
+00000001`489df980 00007ff9`b461cd30     medievil_runtime+0x11d684
+00000001`489df9e0 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`489dfa10 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`489dfa40 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  47  Id: d1a4.c66c Suspend: 1 Teb: 00000000`00c7c000 Unfrozen "gow3:DrawPrep3"
+Child-SP          RetAddr               Call Site
+00000001`499def98 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`499defa0 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`499df040 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`499df080 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`499df0b0 00007ff7`691da737     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`499df0e0 00007ff7`691dd684     medievil_runtime+0x11a737
+00000001`499dfcc0 00007ff9`b461cd30     medievil_runtime+0x11d684
+00000001`499dfd20 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`499dfd50 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`499dfd80 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  48  Id: d1a4.8530 Suspend: 1 Teb: 00000000`00c7e000 Unfrozen "gow3:DrawPrep4"
+Child-SP          RetAddr               Call Site
+00000001`4a9deb28 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`4a9deb30 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`4a9debd0 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`4a9dec10 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`4a9dec40 00007ff7`691da737     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`4a9dec70 00007ff7`691dd684     medievil_runtime+0x11a737
+00000001`4a9df850 00007ff9`b461cd30     medievil_runtime+0x11d684
+00000001`4a9df8b0 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`4a9df8e0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`4a9df910 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  49  Id: d1a4.b144 Suspend: 1 Teb: 00000000`00c80000 Unfrozen "gow3:DrawPrep5"
+Child-SP          RetAddr               Call Site
+00000001`4b9df008 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`4b9df010 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`4b9df0b0 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`4b9df0f0 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`4b9df120 00007ff7`691da737     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`4b9df150 00007ff7`691dd684     medievil_runtime+0x11a737
+00000001`4b9dfd30 00007ff9`b461cd30     medievil_runtime+0x11d684
+00000001`4b9dfd90 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`4b9dfdc0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`4b9dfdf0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  50  Id: d1a4.69ec Suspend: 1 Teb: 00000000`00c82000 Unfrozen "gow3:DrawPrep6"
+Child-SP          RetAddr               Call Site
+00000001`4c9deb28 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`4c9deb30 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`4c9debd0 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`4c9dec10 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`4c9dec40 00007ff7`691da737     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`4c9dec70 00007ff7`691dd684     medievil_runtime+0x11a737
+00000001`4c9df850 00007ff9`b461cd30     medievil_runtime+0x11d684
+00000001`4c9df8b0 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`4c9df8e0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`4c9df910 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  51  Id: d1a4.518c Suspend: 1 Teb: 00000000`00c84000 Unfrozen "gow3:DrawPrep7"
+Child-SP          RetAddr               Call Site
+00000001`4d9deab8 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`4d9deac0 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`4d9deb60 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`4d9deba0 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`4d9debd0 00007ff7`691da737     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`4d9dec00 00007ff7`691dd684     medievil_runtime+0x11a737
+00000001`4d9df7e0 00007ff9`b461cd30     medievil_runtime+0x11d684
+00000001`4d9df840 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`4d9df870 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`4d9df8a0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  52  Id: d1a4.b3d4 Suspend: 1 Teb: 00000000`00c86000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000001`4e9dfd38 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000001`4e9dfd40 00007ff7`690e28b2     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000001`4e9dfde0 00007ff7`690d0b9a     medievil_runtime+0x228b2
+00000001`4e9dfe40 00007ff9`7e848f99     medievil_runtime+0x10b9a
+00000001`4e9dfeb0 00007ff9`b461cd30     libwinpthread_1!pthread_create_wrapper+0x89
+00000001`4e9dff00 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`4e9dff30 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`4e9dff60 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  53  Id: d1a4.cdc4 Suspend: 1 Teb: 00000000`00c88000 Unfrozen "gow3:DrawRec"
+Child-SP          RetAddr               Call Site
+00000001`549ef868 00007ff9`b722ca73     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`549ef870 00007ff9`b4ade158     ntdll!RtlWaitOnAddress+0x213
+00000001`549ef8e0 00007ff8`f25c66d1     KERNELBASE!WaitOnAddress+0x38
+00000001`549ef920 00007ff8`f25c6c96     libc__!ZNSt3__120__atomic_wait_nativeILy8EEEvPKvS2_+0xe1
+00000001`549ef990 00007ff7`690ea21c     libc__!ZNSt3__126__atomic_wait_global_tableEPKvx+0x56
+00000001`549ef9e0 00007ff7`6912016f     medievil_runtime+0x2a21c
+00000001`549efa50 00007ff7`6911ffff     medievil_runtime+0x6016f
+00000001`549efb00 00007ff7`6911fef9     medievil_runtime+0x5ffff
+00000001`549efb50 00007ff9`b461cd30     medievil_runtime+0x5fef9
+00000001`549efba0 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`549efbd0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`549efc00 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  54  Id: d1a4.c188 Suspend: 1 Teb: 00000000`00c8a000 Unfrozen "shadPS4:PipelineCacheIO"
+Child-SP          RetAddr               Call Site
+00000001`559ef628 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`559ef630 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`559ef6d0 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`559ef710 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`559ef740 00007ff7`693e5c06     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`559ef770 00007ff7`693e7fe3     medievil_runtime+0x325c06
+00000001`559ef870 00007ff9`b461cd30     medievil_runtime+0x327fe3
+00000001`559ef8c0 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`559ef8f0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`559ef920 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  55  Id: d1a4.cb2c Suspend: 1 Teb: 00000000`00c8c000 Unfrozen "gow3:Present"
+Child-SP          RetAddr               Call Site
+00000001`569efbc8 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`569efbd0 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`569efc70 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`569efcb0 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`569efce0 00007ff7`6929b167     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`569efd10 00007ff7`6929f950     medievil_runtime+0x1db167
+00000001`569efe30 00007ff9`b461cd30     medievil_runtime+0x1df950
+00000001`569efe90 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`569efec0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`569efef0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  56  Id: d1a4.bfd4 Suspend: 1 Teb: 00000000`00c8e000 Unfrozen "shadPS4:PresentThread"
+Child-SP          RetAddr               Call Site
+00000001`579ef438 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`579ef440 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`579ef4e0 00007ff8`f261fa53     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`579ef520 00007ff8`f25c75af     libc__!ZNSt3__126__libcpp_condvar_timedwaitEPPvS1_P8timespec+0x73
+00000001`579ef570 00007ff7`69156f38     libc__!ZNSt3__118condition_variable15__do_timed_waitERNS_11unique_lockINS_5mutexEEENS_6chrono10time_pointINS5_12system_clockENS5_8durationIxNS_5ratioILx1ELx1000000000EEEEEEE+0x6f
+00000001`579ef5c0 00007ff7`6929f408     medievil_runtime+0x96f38
+00000001`579ef610 00007ff7`6929fac0     medievil_runtime+0x1df408
+00000001`579ef7f0 00007ff9`b461cd30     medievil_runtime+0x1dfac0
+00000001`579ef850 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`579ef880 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`579ef8b0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  57  Id: d1a4.9d38 Suspend: 1 Teb: 00000000`00c90000 Unfrozen "gow3:Copy0"
+Child-SP          RetAddr               Call Site
+00000001`589ef8f8 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`589ef900 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`589ef9a0 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`589ef9e0 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`589efa10 00007ff7`69132f2c     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`589efa40 00007ff9`b461cd30     medievil_runtime+0x72f2c
+00000001`589efb30 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`589efb60 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`589efb90 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  58  Id: d1a4.8be4 Suspend: 1 Teb: 00000000`00c92000 Unfrozen "gow3:Copy1"
+Child-SP          RetAddr               Call Site
+00000001`599efad8 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`599efae0 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`599efb80 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`599efbc0 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`599efbf0 00007ff7`69132f2c     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`599efc20 00007ff9`b461cd30     medievil_runtime+0x72f2c
+00000001`599efd10 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`599efd40 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`599efd70 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  59  Id: d1a4.6420 Suspend: 1 Teb: 00000000`00c94000 Unfrozen "gow3:Copy2"
+Child-SP          RetAddr               Call Site
+00000001`5a9ef8d8 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`5a9ef8e0 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`5a9ef980 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`5a9ef9c0 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`5a9ef9f0 00007ff7`69132f2c     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`5a9efa20 00007ff9`b461cd30     medievil_runtime+0x72f2c
+00000001`5a9efb10 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`5a9efb40 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`5a9efb70 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  60  Id: d1a4.d0f8 Suspend: 1 Teb: 00000000`00c96000 Unfrozen "gow3:Copy3"
+Child-SP          RetAddr               Call Site
+00000001`5b9ef538 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000001`5b9ef540 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000001`5b9ef5e0 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000001`5b9ef620 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000001`5b9ef650 00007ff7`69132f2c     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000001`5b9ef680 00007ff9`b461cd30     medievil_runtime+0x72f2c
+00000001`5b9ef770 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000001`5b9ef7a0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`5b9ef7d0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  61  Id: d1a4.79e4 Suspend: 1 Teb: 00000000`00c98000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000001`5e9cf778 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000001`5e9cf780 00007ff9`99c101f2     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000001`5e9cf820 00007ff9`9a38d2fa     nvwgf2umx!OpenAdapter10+0x135242
+00000001`5e9cf850 00007ff9`b6f8dda7     nvwgf2umx!NVDEV_Thunk+0x59656a
+00000001`5e9cf880 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`5e9cf8b0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  62  Id: d1a4.bb14 Suspend: 1 Teb: 00000000`00c9a000 Unfrozen
+Child-SP          RetAddr               Call Site
+00000001`5f9cf618 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`5f9cf620 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`5f9cf910 00007ff9`99e60b77     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`5f9cf950 00007ff9`99f5877a     nvwgf2umx!NVDEV_Thunk+0x69de7
+00000001`5f9cfa40 00007ff9`9a38d2fa     nvwgf2umx!NVDEV_Thunk+0x1619ea
+00000001`5f9cfa70 00007ff9`b6f8dda7     nvwgf2umx!NVDEV_Thunk+0x59656a
+00000001`5f9cfaa0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000001`5f9cfad0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+  63  Id: d1a4.cd78 Suspend: 1 Teb: 00000000`00c9c000 Unfrozen "SceFiosCallback"
+Child-SP          RetAddr               Call Site
+00000001`6498f818 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`6498f820 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`6498fb10 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`6498fb50 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`6498fbd0 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`6498fc30 00007ff7`690d6dad     libwinpthread_1!pthread_cond_wait+0x27a
+00000001`6498fcf0 00000008`05ddc0f4     medievil_runtime+0x16dad
+00000001`6498fd30 00000000`00000000     0x00000008`05ddc0f4
+
+  64  Id: d1a4.bd38 Suspend: 1 Teb: 00000000`00c9e000 Unfrozen "SceFiosIO"
+Child-SP          RetAddr               Call Site
+00000001`6598f168 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`6598f170 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`6598f460 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`6598f4a0 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`6598f520 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`6598f580 00007ff7`690d6dad     libwinpthread_1!pthread_cond_wait+0x27a
+00000001`6598f640 00000008`05ddc0f4     medievil_runtime+0x16dad
+00000001`6598f680 00000000`00000000     0x00000008`05ddc0f4
+
+  65  Id: d1a4.8784 Suspend: 1 Teb: 00000000`00ca0000 Unfrozen "SceFiosIO /"
+Child-SP          RetAddr               Call Site
+00000001`6698f698 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`6698f6a0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`6698f990 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`6698f9d0 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`6698fa50 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`6698fab0 00007ff7`690d6dad     libwinpthread_1!pthread_cond_wait+0x27a
+00000001`6698fb70 00000008`05ddc0f4     medievil_runtime+0x16dad
+00000001`6698fbb0 00000000`00000000     0x00000008`05ddc0f4
+
+  66  Id: d1a4.9488 Suspend: 1 Teb: 00000000`00ca2000 Unfrozen "TaskGraphThread"
+Child-SP          RetAddr               Call Site
+00000001`6798f0a8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`6798f0b0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`6798f3a0 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`6798f3e0 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`6798f460 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`6798f4c0 00007ff7`690d6a76     libwinpthread_1!pthread_cond_wait+0x27a
+00000001`6798f580 00000008`0070b46c     medievil_runtime+0x16a76
+00000001`6798f5c0 ad750b22`185ab400     0x00000008`0070b46c
+00000001`6798f5c8 00000000`01907975     0xad750b22`185ab400
+00000001`6798f5d0 00000010`00039728     0x1907975
+00000001`6798f5d8 00000001`a800000e     0x00000010`00039728
+00000001`6798f5e0 00000010`0012e8e0     0x00000001`a800000e
+00000001`6798f5e8 00000010`0012e9b0     0x00000010`0012e8e0
+00000001`6798f5f0 00000000`00000000     0x00000010`0012e9b0
+
+  67  Id: d1a4.c8a8 Suspend: 1 Teb: 00000000`00ca4000 Unfrozen "TaskGraphThread"
+Child-SP          RetAddr               Call Site
+00000001`6898f6d8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`6898f6e0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`6898f9d0 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`6898fa10 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`6898fa90 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`6898faf0 00007ff7`690d6a76     libwinpthread_1!pthread_cond_wait+0x27a
+00000001`6898fbb0 00000008`0070b46c     medievil_runtime+0x16a76
+00000001`6898fbf0 00000000`00000000     0x00000008`0070b46c
+
+  68  Id: d1a4.91d8 Suspend: 1 Teb: 00000000`00ca6000 Unfrozen "TaskGraphThread"
+Child-SP          RetAddr               Call Site
+00000001`6998f088 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`6998f090 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`6998f380 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`6998f3c0 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`6998f440 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`6998f4a0 00007ff7`690d6a76     libwinpthread_1!pthread_cond_wait+0x27a
+00000001`6998f560 00000008`0070b46c     medievil_runtime+0x16a76
+00000001`6998f5a0 00000000`00000000     0x00000008`0070b46c
+
+  69  Id: d1a4.7608 Suspend: 1 Teb: 00000000`00ca8000 Unfrozen "TaskGraphThread"
+Child-SP          RetAddr               Call Site
+00000001`6a98f4f8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`6a98f500 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`6a98f7f0 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`6a98f830 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`6a98f8b0 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`6a98f910 00007ff7`690d6a76     libwinpthread_1!pthread_cond_wait+0x27a
+00000001`6a98f9d0 00000008`0070b46c     medievil_runtime+0x16a76
+00000001`6a98fa10 00000000`00000000     0x00000008`0070b46c
+
+  70  Id: d1a4.a9a0 Suspend: 1 Teb: 00000000`00caa000 Unfrozen "TaskGraphThread"
+Child-SP          RetAddr               Call Site
+00000001`6b98f2a8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`6b98f2b0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`6b98f5a0 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`6b98f5e0 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`6b98f660 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`6b98f6c0 00007ff7`690d6a76     libwinpthread_1!pthread_cond_wait+0x27a
+00000001`6b98f780 00000008`0070b46c     medievil_runtime+0x16a76
+00000001`6b98f7c0 ad750b22`185ab400     0x00000008`0070b46c
+00000001`6b98f7c8 00000000`01938738     0xad750b22`185ab400
+00000001`6b98f7d0 00000010`00039758     0x1938738
+00000001`6b98f7d8 00000001`2800000e     0x00000010`00039758
+00000001`6b98f7e0 00000010`0012ead0     0x00000001`2800000e
+00000001`6b98f7e8 00000010`0012eba0     0x00000010`0012ead0
+00000001`6b98f7f0 00000000`00000000     0x00000010`0012eba0
+
+  71  Id: d1a4.ba20 Suspend: 1 Teb: 00000000`00cac000 Unfrozen "TaskGraphThread"
+Child-SP          RetAddr               Call Site
+00000001`6c98f1e8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`6c98f1f0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`6c98f4e0 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`6c98f520 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`6c98f5a0 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`6c98f600 00007ff7`690d6a76     libwinpthread_1!pthread_cond_wait+0x27a
+00000001`6c98f6c0 00000008`0070b46c     medievil_runtime+0x16a76
+00000001`6c98f700 00000001`6c98f730     0x00000008`0070b46c
+00000001`6c98f708 00000000`01907790     0x00000001`6c98f730
+00000001`6c98f710 00000010`00039368     0x1907790
+00000001`6c98f718 00000001`00000009     0x00000010`00039368
+00000001`6c98f720 00000010`0012ead0     0x00000001`00000009
+00000001`6c98f728 00000010`0012eba0     0x00000010`0012ead0
+00000001`6c98f730 00000000`00000000     0x00000010`0012eba0
+
+  72  Id: d1a4.6e64 Suspend: 1 Teb: 00000000`00cae000 Unfrozen "TaskGraphThread"
+Child-SP          RetAddr               Call Site
+00000001`6d98f198 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`6d98f1a0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`6d98f490 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`6d98f4d0 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`6d98f550 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`6d98f5b0 00007ff7`690d6a76     libwinpthread_1!pthread_cond_wait+0x27a
+00000001`6d98f670 00000008`0070b46c     medievil_runtime+0x16a76
+00000001`6d98f6b0 00000000`00000000     0x00000008`0070b46c
+
+  73  Id: d1a4.5d1c Suspend: 1 Teb: 00000000`00cb0000 Unfrozen "TaskGraphThread"
+Child-SP          RetAddr               Call Site
+00000001`6e98f038 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`6e98f040 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`6e98f330 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`6e98f370 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`6e98f3f0 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`6e98f450 00007ff7`690d6a76     libwinpthread_1!pthread_cond_wait+0x27a
+00000001`6e98f510 00000008`0070b46c     medievil_runtime+0x16a76
+00000001`6e98f550 00000000`00000000     0x00000008`0070b46c
+
+  74  Id: d1a4.b884 Suspend: 1 Teb: 00000000`00cb2000 Unfrozen "TaskGraphThread"
+Child-SP          RetAddr               Call Site
+00000001`6f98f018 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`6f98f020 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`6f98f310 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`6f98f350 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`6f98f3d0 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`6f98f430 00007ff7`690d6a76     libwinpthread_1!pthread_cond_wait+0x27a
+00000001`6f98f4f0 00000008`0070b46c     medievil_runtime+0x16a76
+00000001`6f98f530 ad750b22`185ab400     0x00000008`0070b46c
+00000001`6f98f538 00000000`018c3bba     0xad750b22`185ab400
+00000001`6f98f540 00000010`000392d8     0x18c3bba
+00000001`6f98f548 00000001`5000000c     0x00000010`000392d8
+00000001`6f98f550 00000010`0012ecc0     0x00000001`5000000c
+00000001`6f98f558 00000010`0012ed90     0x00000010`0012ecc0
+00000001`6f98f560 00000000`00000000     0x00000010`0012ed90
+
+  75  Id: d1a4.c140 Suspend: 1 Teb: 00000000`00cb4000 Unfrozen "TaskGraphThread"
+Child-SP          RetAddr               Call Site
+00000001`7098f028 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`7098f030 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`7098f320 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`7098f360 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`7098f3e0 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`7098f440 00007ff7`690d6a76     libwinpthread_1!pthread_cond_wait+0x27a
+00000001`7098f500 00000008`0070b46c     medievil_runtime+0x16a76
+00000001`7098f540 ad750b22`185ab400     0x00000008`0070b46c
+00000001`7098f548 00000000`018c3bbb     0xad750b22`185ab400
+00000001`7098f550 00000010`00039f08     0x18c3bbb
+00000001`7098f558 00000001`5400000d     0x00000010`00039f08
+00000001`7098f560 00000010`0012ecc0     0x00000001`5400000d
+00000001`7098f568 00000010`0012ed90     0x00000010`0012ecc0
+00000001`7098f570 00000000`00000000     0x00000010`0012ed90
+
+  76  Id: d1a4.c818 Suspend: 1 Teb: 00000000`00cb6000 Unfrozen "TaskGraphThread"
+Child-SP          RetAddr               Call Site
+00000001`7198f018 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`7198f020 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`7198f310 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`7198f350 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`7198f3d0 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`7198f430 00007ff7`690d6a76     libwinpthread_1!pthread_cond_wait+0x27a
+00000001`7198f4f0 00000008`0070b46c     medievil_runtime+0x16a76
+00000001`7198f530 ad750b22`185ab400     0x00000008`0070b46c
+00000001`7198f538 00000000`018c3ba9     0xad750b22`185ab400
+00000001`7198f540 00000010`00039ed8     0x18c3ba9
+00000001`7198f548 00000001`4c000008     0x00000010`00039ed8
+00000001`7198f550 00000010`0012ecc0     0x00000001`4c000008
+00000001`7198f558 00000010`0012ed90     0x00000010`0012ecc0
+00000001`7198f560 00000000`00000000     0x00000010`0012ed90
+
+  77  Id: d1a4.4594 Suspend: 1 Teb: 00000000`00cb8000 Unfrozen "TaskGraphThread"
+Child-SP          RetAddr               Call Site
+00000001`7298f298 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`7298f2a0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`7298f590 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`7298f5d0 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`7298f650 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`7298f6b0 00007ff7`690d6a76     libwinpthread_1!pthread_cond_wait+0x27a
+00000001`7298f770 00000008`0070b46c     medievil_runtime+0x16a76
+00000001`7298f7b0 00000000`00000000     0x00000008`0070b46c
+
+  78  Id: d1a4.b82c Suspend: 1 Teb: 00000000`00cba000 Unfrozen "PoolThread 0"
+Child-SP          RetAddr               Call Site
+00000001`7398efd8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`7398efe0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`7398f2d0 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`7398f310 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000001`7398f380 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`7398f400 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`7398f460 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000001`7398f520 00000008`0070b37a     medievil_runtime+0x16b8b
+00000001`7398f580 00000000`00000001     0x00000008`0070b37a
+00000001`7398f588 00000000`05db4ccd     0x1
+00000001`7398f590 00000010`028013b8     0x5db4ccd
+00000001`7398f598 00000000`7e843804     0x00000010`028013b8
+00000001`7398f5a0 00000000`6ad6abaf     0x7e843804
+00000001`7398f5a8 00000000`00089be4     0x6ad6abaf
+00000001`7398f5b0 00000000`6ad6abaf     0x89be4
+00000001`7398f5b8 00000000`22368b80     0x6ad6abaf
+00000001`7398f5c0 00000000`6ad6abaf     0x22368b80
+00000001`7398f5c8 00000000`00089be5     0x6ad6abaf
+00000001`7398f5d0 ad750b22`185ab400     0x89be5
+00000001`7398f5d8 00000010`02801360     0xad750b22`185ab400
+00000001`7398f5e0 00000010`0238e020     0x00000010`02801360
+00000001`7398f5e8 00000000`00000000     0x00000010`0238e020
+
+  79  Id: d1a4.6c58 Suspend: 1 Teb: 00000000`00cbc000 Unfrozen "PoolThread 1"
+Child-SP          RetAddr               Call Site
+00000001`7498f8b0 00007ff7`690e13e5     medievil_runtime+0x2dbfb
+00000001`7498f8e0 00000008`0070b385     medievil_runtime+0x213e5
+00000001`7498f920 00000000`00000001     0x00000008`0070b385
+00000001`7498f928 00000000`0012fc54     0x1
+00000001`7498f930 00000010`02801328     0x12fc54
+00000001`7498f938 00000000`7e843804     0x00000010`02801328
+00000001`7498f940 00000000`6ad6abaf     0x7e843804
+00000001`7498f948 00000000`0008a333     0x6ad6abaf
+00000001`7498f950 00000000`6ad6abaf     0x8a333
+00000001`7498f958 00000000`22551000     0x6ad6abaf
+00000001`7498f960 00000000`6ad6abaf     0x22551000
+00000001`7498f968 00000000`0008a333     0x6ad6abaf
+00000001`7498f970 ad750b22`185ab400     0x8a333
+00000001`7498f978 00000010`02801330     0xad750b22`185ab400
+00000001`7498f980 00000010`0238f5e0     0x00000010`02801330
+00000001`7498f988 00000000`00000000     0x00000010`0238f5e0
+
+  80  Id: d1a4.9e58 Suspend: 1 Teb: 00000000`00cbe000 Unfrozen "PoolThread 2"
+Child-SP          RetAddr               Call Site
+00000001`7598f078 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`7598f080 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`7598f370 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`7598f3b0 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000001`7598f420 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`7598f4a0 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`7598f500 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000001`7598f5c0 00000008`0070b37a     medievil_runtime+0x16b8b
+00000001`7598f620 00000000`6b31ecb0     0x00000008`0070b37a
+00000001`7598f628 00000000`05db4308     0x6b31ecb0
+00000001`7598f630 00000010`02801448     0x5db4308
+00000001`7598f638 00000000`02801450     0x00000010`02801448
+00000001`7598f640 00000000`6ad6abaf     0x2801450
+00000001`7598f648 00000000`000891e3     0x6ad6abaf
+00000001`7598f650 00000000`6ad6abaf     0x891e3
+00000001`7598f658 00000000`2208c4c0     0x6ad6abaf
+00000001`7598f660 00000000`6ad6abaf     0x2208c4c0
+00000001`7598f668 00000000`000891e4     0x6ad6abaf
+00000001`7598f670 ad750b22`185ab400     0x891e4
+00000001`7598f678 00000010`02801450     0xad750b22`185ab400
+00000001`7598f680 00000010`0238f580     0x00000010`02801450
+00000001`7598f688 00000000`00000000     0x00000010`0238f580
+
+  81  Id: d1a4.d34c Suspend: 1 Teb: 00000000`00cc0000 Unfrozen "PoolThread 3"
+Child-SP          RetAddr               Call Site
+00000001`7698f398 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`7698f3a0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`7698f690 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`7698f6d0 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000001`7698f740 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`7698f7c0 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`7698f820 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000001`7698f8e0 00000008`0070b37a     medievil_runtime+0x16b8b
+00000001`7698f940 00000000`6b31ecb0     0x00000008`0070b37a
+00000001`7698f948 00000000`05db4308     0x6b31ecb0
+00000001`7698f950 00000010`02801508     0x5db4308
+00000001`7698f958 00000000`028013f0     0x00000010`02801508
+00000001`7698f960 00000000`6ad6abaf     0x28013f0
+00000001`7698f968 00000000`000891e3     0x6ad6abaf
+00000001`7698f970 00000000`6ad6abaf     0x891e3
+00000001`7698f978 00000000`2208c4c0     0x6ad6abaf
+00000001`7698f980 00000000`6ad6abaf     0x2208c4c0
+00000001`7698f988 00000000`000891e3     0x6ad6abaf
+00000001`7698f990 ad750b22`185ab400     0x891e3
+00000001`7698f998 00000010`028013f0     0xad750b22`185ab400
+00000001`7698f9a0 00000010`0238f640     0x00000010`028013f0
+00000001`7698f9a8 00000000`00000000     0x00000010`0238f640
+
+  82  Id: d1a4.d330 Suspend: 1 Teb: 00000000`00cc2000 Unfrozen "PoolThread 4"
+Child-SP          RetAddr               Call Site
+00000001`7798f2c8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`7798f2d0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`7798f5c0 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`7798f600 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000001`7798f670 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`7798f6f0 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`7798f750 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000001`7798f810 00000008`0070b37a     medievil_runtime+0x16b8b
+00000001`7798f870 00000000`00000001     0x00000008`0070b37a
+00000001`7798f878 00000000`05db4307     0x1
+00000001`7798f880 00000010`028014a8     0x5db4307
+00000001`7798f888 00000000`7e843804     0x00000010`028014a8
+00000001`7798f890 00000000`6ad6abaf     0x7e843804
+00000001`7798f898 00000000`000891e2     0x6ad6abaf
+00000001`7798f8a0 00000000`6ad6abaf     0x891e2
+00000001`7798f8a8 00000000`2208c4c0     0x6ad6abaf
+00000001`7798f8b0 00000000`6ad6abaf     0x2208c4c0
+00000001`7798f8b8 00000000`000891e2     0x6ad6abaf
+00000001`7798f8c0 ad750b22`185ab400     0x891e2
+00000001`7798f8c8 00000010`028014b0     0xad750b22`185ab400
+00000001`7798f8d0 00000010`0238f6a0     0x00000010`028014b0
+00000001`7798f8d8 00000000`00000000     0x00000010`0238f6a0
+
+  83  Id: d1a4.4640 Suspend: 1 Teb: 00000000`00cc4000 Unfrozen "PoolThread 5"
+Child-SP          RetAddr               Call Site
+00000001`7898f5e8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`7898f5f0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`7898f8e0 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`7898f920 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000001`7898f990 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`7898fa10 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`7898fa70 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000001`7898fb30 00000008`0070b37a     medievil_runtime+0x16b8b
+00000001`7898fb90 00000000`6b31eab0     0x00000008`0070b37a
+00000001`7898fb98 00000000`05db4cc9     0x6b31eab0
+00000001`7898fba0 00000010`02801568     0x5db4cc9
+00000001`7898fba8 00000000`02801570     0x00000010`02801568
+00000001`7898fbb0 00000000`6ad6abaf     0x2801570
+00000001`7898fbb8 00000000`00089be0     0x6ad6abaf
+00000001`7898fbc0 00000000`6ad6abaf     0x89be0
+00000001`7898fbc8 00000000`22368b80     0x6ad6abaf
+00000001`7898fbd0 00000000`6ad6abaf     0x22368b80
+00000001`7898fbd8 00000000`00089be0     0x6ad6abaf
+00000001`7898fbe0 ad750b22`185ab400     0x89be0
+00000001`7898fbe8 00000010`02801570     0xad750b22`185ab400
+00000001`7898fbf0 00000010`0238df60     0x00000010`02801570
+00000001`7898fbf8 00000000`00000000     0x00000010`0238df60
+
+  84  Id: d1a4.9f5c Suspend: 1 Teb: 00000000`00cc6000 Unfrozen "HttpManagerThre"
+Child-SP          RetAddr               Call Site
+00000001`7998f5f8 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000001`7998f600 00007ff7`690e28b2     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000001`7998f6a0 00007ff7`690cebeb     medievil_runtime+0x228b2
+00000001`7998f700 00000008`0170448d     medievil_runtime+0xebeb
+00000001`7998f740 00000464`da23cfce     0x00000008`0170448d
+00000001`7998f748 3e112e0b`e826d695     0x00000464`da23cfce
+00000001`7998f750 3e112e0b`e826d695     0x3e112e0b`e826d695
+00000001`7998f758 00000017`6b92d7b8     0x3e112e0b`e826d695
+00000001`7998f760 00000000`00000000     0x00000017`6b92d7b8
+
+  85  Id: d1a4.51c4 Suspend: 1 Teb: 00000000`00cc8000 Unfrozen "OnlineAsyncTask"
+Child-SP          RetAddr               Call Site
+00000001`7a98f2a8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`7a98f2b0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`7a98f5a0 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`7a98f5e0 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000001`7a98f650 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`7a98f6d0 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`7a98f730 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000001`7a98f7f0 00000008`0070b37a     medievil_runtime+0x16b8b
+00000001`7a98f850 00000000`00000001     0x00000008`0070b37a
+00000001`7a98f858 00000000`05db077d     0x1
+00000001`7a98f860 00000010`02805d08     0x5db077d
+00000001`7a98f868 00000000`023bd4a8     0x00000010`02805d08
+00000001`7a98f870 00000001`7a98f8d0     0x23bd4a8
+00000001`7a98f878 00000008`0009fdb6     0x00000001`7a98f8d0
+00000001`7a98f880 00000000`6ad6abaf     0x00000008`0009fdb6
+00000001`7a98f888 00000000`21bc7980     0x6ad6abaf
+00000001`7a98f890 00000000`6ad6abaf     0x21bc7980
+00000001`7a98f898 00000000`000854eb     0x6ad6abaf
+00000001`7a98f8a0 ad750b22`185ab400     0x854eb
+00000001`7a98f8a8 00000010`023bd440     0xad750b22`185ab400
+00000001`7a98f8b0 00000010`028bd1e0     0x00000010`023bd440
+00000001`7a98f8b8 00000000`00000000     0x00000010`028bd1e0
+
+  86  Id: d1a4.6850 Suspend: 1 Teb: 00000000`00cca000 Unfrozen "Toolkit::NP::Ma"
+Child-SP          RetAddr               Call Site
+00000001`7b98f5d8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`7b98f5e0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`7b98f8d0 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`7b98f910 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`7b98f990 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`7b98f9f0 00007ff7`690d6dad     libwinpthread_1!pthread_cond_wait+0x27a
+00000001`7b98fab0 00000008`05f46a4b     medievil_runtime+0x16dad
+00000001`7b98faf0 00000008`05ff0f50     0x00000008`05f46a4b
+00000001`7b98faf8 00000008`05ff0f48     0x00000008`05ff0f50
+00000001`7b98fb00 00000001`7b98fb20     0x00000008`05ff0f48
+00000001`7b98fb08 00000008`05f87c94     0x00000001`7b98fb20
+00000001`7b98fb10 00000012`00200560     0x00000008`05f87c94
+00000001`7b98fb18 00000000`00000000     0x00000012`00200560
+
+  87  Id: d1a4.7ec Suspend: 1 Teb: 00000000`00ccc000 Unfrozen "Toolkit::NP::No"
+Child-SP          RetAddr               Call Site
+00000001`7c98f478 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000001`7c98f480 00007ff7`690e28b2     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000001`7c98f520 00007ff7`690cebeb     medievil_runtime+0x228b2
+00000001`7c98f580 00000008`05f7180a     medievil_runtime+0xebeb
+00000001`7c98f5c0 00000000`00000000     0x00000008`05f7180a
+
+  88  Id: d1a4.b294 Suspend: 1 Teb: 00000000`00cce000 Unfrozen "Toolkit::NP::Ab"
+Child-SP          RetAddr               Call Site
+00000001`7d98f558 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000001`7d98f560 00007ff7`690e28b2     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000001`7d98f600 00007ff7`690cebeb     medievil_runtime+0x228b2
+00000001`7d98f660 00000008`05f315f5     medievil_runtime+0xebeb
+00000001`7d98f6a0 00000000`01e30000     0x00000008`05f315f5
+00000001`7d98f6a8 00000001`00000000     0x1e30000
+00000001`7d98f6b0 00000000`6b365580     0x00000001`00000000
+00000001`7d98f6b8 00000000`6b365580     0x6b365580
+00000001`7d98f6c0 00000000`00000010     0x6b365580
+00000001`7d98f6c8 00007ff9`7e849eb6     0x10
+00000001`7d98f6d0 00007ff7`690e132c     libwinpthread_1!pthread_setname_np+0x1d6
+00000001`7d98f740 00000000`00000000     medievil_runtime+0x2132c
+
+  89  Id: d1a4.b6a8 Suspend: 1 Teb: 00000000`00cd0000 Unfrozen "PoolThread 6"
+Child-SP          RetAddr               Call Site
+00000001`7e98f4c8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`7e98f4d0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`7e98f7c0 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`7e98f800 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000001`7e98f870 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`7e98f8f0 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`7e98f950 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000001`7e98fa10 00000008`0070b37a     medievil_runtime+0x16b8b
+00000001`7e98fa70 00000000`00000001     0x00000008`0070b37a
+00000001`7e98fa78 00000000`05db4307     0x1
+00000001`7e98fa80 00000010`02806818     0x5db4307
+00000001`7e98fa88 00000000`7e843804     0x00000010`02806818
+00000001`7e98fa90 00000000`6ad6abaf     0x7e843804
+00000001`7e98fa98 00000000`000891e2     0x6ad6abaf
+00000001`7e98faa0 00000000`6ad6abaf     0x891e2
+00000001`7e98faa8 00000000`2208c4c0     0x6ad6abaf
+00000001`7e98fab0 00000000`6ad6abaf     0x2208c4c0
+00000001`7e98fab8 00000000`000891e2     0x6ad6abaf
+00000001`7e98fac0 ad750b22`185ab400     0x891e2
+00000001`7e98fac8 00000010`02806790     0xad750b22`185ab400
+00000001`7e98fad0 00000010`028bca00     0x00000010`02806790
+00000001`7e98fad8 00000000`00000000     0x00000010`028bca00
+
+  90  Id: d1a4.cb20 Suspend: 1 Teb: 00000000`00cd2000 Unfrozen "PoolThread 7"
+Child-SP          RetAddr               Call Site
+00000001`7f98f378 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000001`7f98f380 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000001`7f98f670 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000001`7f98f6b0 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000001`7f98f720 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000001`7f98f7a0 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000001`7f98f800 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000001`7f98f8c0 00000008`0070b37a     medievil_runtime+0x16b8b
+00000001`7f98f920 00000000`6b31f5f0     0x00000008`0070b37a
+00000001`7f98f928 00000000`05db430a     0x6b31f5f0
+00000001`7f98f930 00000010`028068a8     0x5db430a
+00000001`7f98f938 00000000`02805d10     0x00000010`028068a8
+00000001`7f98f940 00000000`6ad6abaf     0x2805d10
+00000001`7f98f948 00000000`000891e5     0x6ad6abaf
+00000001`7f98f950 00000000`6ad6abaf     0x891e5
+00000001`7f98f958 00000000`2208c4c0     0x6ad6abaf
+00000001`7f98f960 00000000`6ad6abaf     0x2208c4c0
+00000001`7f98f968 00000000`000891e5     0x6ad6abaf
+00000001`7f98f970 ad750b22`185ab400     0x891e5
+00000001`7f98f978 00000010`02805d10     0xad750b22`185ab400
+00000001`7f98f980 00000010`028bc700     0x00000010`02805d10
+00000001`7f98f988 00000000`00000000     0x00000010`028bc700
+
+  91  Id: d1a4.9c10 Suspend: 1 Teb: 00000000`00cd4000 Unfrozen "PoolThread 8"
+Child-SP          RetAddr               Call Site
+00000003`8058f4e8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`8058f4f0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`8058f7e0 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`8058f820 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000003`8058f890 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`8058f910 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`8058f970 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000003`8058fa30 00000008`0070b37a     medievil_runtime+0x16b8b
+00000003`8058fa90 00000000`6b31f5f0     0x00000008`0070b37a
+00000003`8058fa98 00000000`05db4cc9     0x6b31f5f0
+00000003`8058faa0 00000010`02806908     0x5db4cc9
+00000003`8058faa8 00000000`028068b0     0x00000010`02806908
+00000003`8058fab0 00000000`6ad6abaf     0x28068b0
+00000003`8058fab8 00000000`00089be0     0x6ad6abaf
+00000003`8058fac0 00000000`6ad6abaf     0x89be0
+00000003`8058fac8 00000000`22368b80     0x6ad6abaf
+00000003`8058fad0 00000000`6ad6abaf     0x22368b80
+00000003`8058fad8 00000000`00089be0     0x6ad6abaf
+00000003`8058fae0 ad750b22`185ab400     0x89be0
+00000003`8058fae8 00000010`028068b0     0xad750b22`185ab400
+00000003`8058faf0 00000010`028bc940     0x00000010`028068b0
+00000003`8058faf8 00000000`00000000     0x00000010`028bc940
+
+  92  Id: d1a4.c944 Suspend: 1 Teb: 00000000`00cd6000 Unfrozen "PoolThread 9"
+Child-SP          RetAddr               Call Site
+00000003`8158f288 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`8158f290 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`8158f580 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`8158f5c0 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000003`8158f630 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`8158f6b0 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`8158f710 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000003`8158f7d0 00000008`0070b37a     medievil_runtime+0x16b8b
+00000003`8158f830 00000000`6b31f5f0     0x00000008`0070b37a
+00000003`8158f838 00000000`05db4308     0x6b31f5f0
+00000003`8158f840 00000010`02806968     0x5db4308
+00000003`8158f848 00000000`02806910     0x00000010`02806968
+00000003`8158f850 00000000`6ad6abaf     0x2806910
+00000003`8158f858 00000000`000891e3     0x6ad6abaf
+00000003`8158f860 00000000`6ad6abaf     0x891e3
+00000003`8158f868 00000000`2208c4c0     0x6ad6abaf
+00000003`8158f870 00000000`6ad6abaf     0x2208c4c0
+00000003`8158f878 00000000`000891e3     0x6ad6abaf
+00000003`8158f880 ad750b22`185ab400     0x891e3
+00000003`8158f888 00000010`02806910     0xad750b22`185ab400
+00000003`8158f890 00000010`028bcb80     0x00000010`02806910
+00000003`8158f898 00000000`00000000     0x00000010`028bcb80
+
+  93  Id: d1a4.c340 Suspend: 1 Teb: 00000000`00cd8000 Unfrozen "SystemEventGath"
+Child-SP          RetAddr               Call Site
+00000003`8258d138 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`8258d140 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`8258d430 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`8258d470 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`8258d4f0 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`8258d550 00007ff7`690d6a76     libwinpthread_1!pthread_cond_wait+0x27a
+00000003`8258d610 00000008`0070b46c     medievil_runtime+0x16a76
+00000003`8258d650 00000000`00000000     0x00000008`0070b46c
+
+  94  Id: d1a4.ca58 Suspend: 1 Teb: 00000000`00cda000 Unfrozen "SubmitDoneAsync"
+Child-SP          RetAddr               Call Site
+00000003`8358faa8 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000003`8358fab0 00007ff7`690e28b2     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000003`8358fb50 00007ff7`690cebeb     medievil_runtime+0x228b2
+00000003`8358fbb0 00000008`008d7b67     medievil_runtime+0xebeb
+00000003`8358fbf0 3e4ccccd`8621f857     0x00000008`008d7b67
+00000003`8358fbf8 00000008`056006d0     0x3e4ccccd`8621f857
+00000003`8358fc00 00000003`8358fc30     0x00000008`056006d0
+00000003`8358fc08 00007ff7`690d7500     0x00000003`8358fc30
+00000003`8358fc10 00000008`006a4aa0     medievil_runtime+0x17500
+00000003`8358fc40 00000008`04ed7700     0x00000008`006a4aa0
+00000003`8358fc48 00000008`0581c80c     0x00000008`04ed7700
+00000003`8358fc50 00000010`03135a40     0x00000008`0581c80c
+00000003`8358fc58 00000000`00000000     0x00000010`03135a40
+
+  95  Id: d1a4.55c4 Suspend: 1 Teb: 00000000`00cdc000 Unfrozen "SubmitGPUComman"
+Child-SP          RetAddr               Call Site
+00000003`8458f0f8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`8458f100 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`8458f3f0 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`8458f430 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`8458f4b0 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`8458f510 00007ff7`690d6a76     libwinpthread_1!pthread_cond_wait+0x27a
+00000003`8458f5d0 00000008`0070b46c     medievil_runtime+0x16a76
+00000003`8458f610 00000000`00000001     0x00000008`0070b46c
+00000003`8458f618 00000000`0190ccd1     0x1
+00000003`8458f620 00000010`031b40e8     0x190ccd1
+00000003`8458f628 00000000`7e843804     0x00000010`031b40e8
+00000003`8458f630 00007ff7`69b85638     0x7e843804
+00000003`8458f638 00000010`031b66f8     medievil_runtime+0xac5638
+00000003`8458f640 00000003`8458f690     0x00000010`031b66f8
+00000003`8458f648 00000010`031b66f8     0x00000003`8458f690
+00000003`8458f650 00000008`00722d70     0x00000010`031b66f8
+00000003`8458f658 00000003`8458f640     0x00000008`00722d70
+00000003`8458f660 ad750b22`185ab400     0x00000003`8458f640
+00000003`8458f668 00000010`031d09c0     0xad750b22`185ab400
+00000003`8458f670 00000010`03135aa0     0x00000010`031d09c0
+00000003`8458f678 00000000`00000000     0x00000010`03135aa0
+
+  96  Id: d1a4.6030 Suspend: 1 Teb: 00000000`00cde000 Unfrozen "RHIThread"
+Child-SP          RetAddr               Call Site
+00000003`8558f0d8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`8558f0e0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`8558f3d0 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`8558f410 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`8558f490 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`8558f4f0 00007ff7`690d6a76     libwinpthread_1!pthread_cond_wait+0x27a
+00000003`8558f5b0 00000008`0070b46c     medievil_runtime+0x16a76
+00000003`8558f5f0 ad750b22`185ab400     0x00000008`0070b46c
+00000003`8558f5f8 00000000`01938723     0xad750b22`185ab400
+00000003`8558f600 00000010`00039578     0x1938723
+00000003`8558f608 00000000`00061cf0     0x00000010`00039578
+00000003`8558f610 00000010`00061c20     0x61cf0
+00000003`8558f618 000010e0`58000000     0x00000010`00061c20
+00000003`8558f620 00000010`00061c18     0x000010e0`58000000
+00000003`8558f628 00000000`00000000     0x00000010`00061c18
+
+  97  Id: d1a4.609c Suspend: 1 Teb: 00000000`00ce4000 Unfrozen "RHIFrameOffsetT"
+Child-SP          RetAddr               Call Site
+00000003`8d55f4f8 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000003`8d55f500 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000003`8d55f5a0 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000003`8d55f5e0 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000003`8d55f610 00007ff7`6914fabb     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000003`8d55f640 00007ff7`691512b3     medievil_runtime+0x8fabb
+00000003`8d55f6c0 00000008`0069c1ac     medievil_runtime+0x912b3
+00000003`8d55f7a0 00000000`00000000     0x00000008`0069c1ac
+
+  98  Id: d1a4.9ba0 Suspend: 1 Teb: 00000000`00ce6000 Unfrozen "RHIFrameFlipThr"
+Child-SP          RetAddr               Call Site
+00000003`8e55f2d8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`8e55f2e0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`8e55f5d0 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`8e55f610 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000003`8e55f680 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`8e55f700 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`8e55f760 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000003`8e55f820 00000008`0070b37a     medievil_runtime+0x16b8b
+00000003`8e55f880 00000000`00000000     0x00000008`0070b37a
+
+  99  Id: d1a4.d254 Suspend: 1 Teb: 00000000`00cea000 Unfrozen "AK::IOThread"
+Child-SP          RetAddr               Call Site
+00000003`9055f7e8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`9055f7f0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`9055fae0 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`9055fb20 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`9055fba0 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`9055fc00 00007ff7`690d6dad     libwinpthread_1!pthread_cond_wait+0x27a
+00000003`9055fcc0 00000008`0355152b     medievil_runtime+0x16dad
+00000003`9055fd00 00000000`6b338790     0x00000008`0355152b
+00000003`9055fd08 00000000`00000000     0x6b338790
+
+ 100  Id: d1a4.cd50 Suspend: 1 Teb: 00000000`00cec000 Unfrozen "AK::BankManager"
+Child-SP          RetAddr               Call Site
+00000003`9155f5a8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`9155f5b0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`9155f8a0 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`9155f8e0 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`9155f960 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`9155f9c0 00007ff7`690cb356     libwinpthread_1!pthread_cond_wait+0x27a
+00000003`9155fa80 00000008`034f3a33     medievil_runtime+0xb356
+00000003`9155fb00 00000000`00000000     0x00000008`034f3a33
+
+ 101  Id: d1a4.d39c Suspend: 1 Teb: 00000000`00cee000 Unfrozen "AK Suspended"
+Child-SP          RetAddr               Call Site
+00000003`9255f0e8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`9255f0f0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`9255f3e0 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`9255f420 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`9255f4a0 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`9255f500 00007ff7`690cb356     libwinpthread_1!pthread_cond_wait+0x27a
+00000003`9255f5c0 00000008`034a6487     medievil_runtime+0xb356
+00000003`9255f640 00000000`00000000     0x00000008`034a6487
+
+ 102  Id: d1a4.600c Suspend: 1 Teb: 00000000`00cf0000 Unfrozen "AK::EventManage"
+Child-SP          RetAddr               Call Site
+00000003`9355f4a8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`9355f4b0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`9355f7a0 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`9355f7e0 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`9355f860 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`9355f8c0 00007ff7`690cb356     libwinpthread_1!pthread_cond_wait+0x27a
+00000003`9355f980 00000008`03514def     medievil_runtime+0xb356
+00000003`9355fa00 00000000`6b339a20     0x00000008`03514def
+00000003`9355fa08 00000000`00000000     0x6b339a20
+
+ 103  Id: d1a4.991c Suspend: 1 Teb: 00000000`00cf2000 Unfrozen "FImgMediaSchedu"
+Child-SP          RetAddr               Call Site
+00000003`9455f608 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`9455f610 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`9455f900 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`9455f940 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000003`9455f9b0 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`9455fa30 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`9455fa90 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000003`9455fb50 00000008`0070b37a     medievil_runtime+0x16b8b
+00000003`9455fbb0 00000000`00000001     0x00000008`0070b37a
+00000003`9455fbb8 00000000`05db4cc9     0x1
+00000003`9455fbc0 00000010`08160c08     0x5db4cc9
+00000003`9455fbc8 00000000`7e843804     0x00000010`08160c08
+00000003`9455fbd0 00000000`6ad6abaf     0x7e843804
+00000003`9455fbd8 00000000`00089be0     0x6ad6abaf
+00000003`9455fbe0 00000000`6ad6abaf     0x89be0
+00000003`9455fbe8 00000000`22368b80     0x6ad6abaf
+00000003`9455fbf0 00000000`6ad6abaf     0x22368b80
+00000003`9455fbf8 00000000`00089be0     0x6ad6abaf
+00000003`9455fc00 ad750b22`185ab400     0x89be0
+00000003`9455fc08 00000010`07d5d980     0xad750b22`185ab400
+00000003`9455fc10 00000010`07a5ff40     0x00000010`07d5d980
+00000003`9455fc18 00000000`00000000     0x00000010`07a5ff40
+
+ 104  Id: d1a4.5fa8 Suspend: 1 Teb: 00000000`00cf4000 Unfrozen "FImgMediaSchedu"
+Child-SP          RetAddr               Call Site
+00000003`9555f628 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`9555f630 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`9555f920 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`9555f960 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000003`9555f9d0 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`9555fa50 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`9555fab0 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000003`9555fb70 00000008`0070b37a     medievil_runtime+0x16b8b
+00000003`9555fbd0 00000000`00000001     0x00000008`0070b37a
+00000003`9555fbd8 00000000`05db4309     0x1
+00000003`9555fbe0 00000010`08160bd8     0x5db4309
+00000003`9555fbe8 00000000`7e843804     0x00000010`08160bd8
+00000003`9555fbf0 00000000`6ad6abaf     0x7e843804
+00000003`9555fbf8 00000000`000891e3     0x6ad6abaf
+00000003`9555fc00 00000000`6ad6abaf     0x891e3
+00000003`9555fc08 00000000`2208c4c0     0x6ad6abaf
+00000003`9555fc10 00000000`6ad6abaf     0x2208c4c0
+00000003`9555fc18 00000000`000891e4     0x6ad6abaf
+00000003`9555fc20 ad750b22`185ab400     0x891e4
+00000003`9555fc28 00000010`07d5d900     0xad750b22`185ab400
+00000003`9555fc30 00000010`07a5ece0     0x00000010`07d5d900
+00000003`9555fc38 00000000`00000000     0x00000010`07a5ece0
+
+ 105  Id: d1a4.8df8 Suspend: 1 Teb: 00000000`00cf6000 Unfrozen "FImgMediaSchedu"
+Child-SP          RetAddr               Call Site
+00000003`9655f428 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`9655f430 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`9655f720 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`9655f760 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000003`9655f7d0 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`9655f850 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`9655f8b0 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000003`9655f970 00000008`0070b37a     medievil_runtime+0x16b8b
+00000003`9655f9d0 00000000`00000001     0x00000008`0070b37a
+00000003`9655f9d8 00000000`05db4ccd     0x1
+00000003`9655f9e0 00000010`08160ba8     0x5db4ccd
+00000003`9655f9e8 00000000`7e843804     0x00000010`08160ba8
+00000003`9655f9f0 00000000`6ad6abaf     0x7e843804
+00000003`9655f9f8 00000000`00089be3     0x6ad6abaf
+00000003`9655fa00 00000000`6ad6abaf     0x89be3
+00000003`9655fa08 00000000`22368b80     0x6ad6abaf
+00000003`9655fa10 00000000`6ad6abaf     0x22368b80
+00000003`9655fa18 00000000`00089be4     0x6ad6abaf
+00000003`9655fa20 ad750b22`185ab400     0x89be4
+00000003`9655fa28 00000010`07d5d880     0xad750b22`185ab400
+00000003`9655fa30 00000010`07a5ebc0     0x00000010`07d5d880
+00000003`9655fa38 00000000`00000000     0x00000010`07a5ebc0
+
+ 106  Id: d1a4.311c Suspend: 1 Teb: 00000000`00cf8000 Unfrozen "FImgMediaSchedu"
+Child-SP          RetAddr               Call Site
+00000003`9755f128 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`9755f130 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`9755f420 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`9755f460 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000003`9755f4d0 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`9755f550 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`9755f5b0 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000003`9755f670 00000008`0070b37a     medievil_runtime+0x16b8b
+00000003`9755f6d0 00000000`00000001     0x00000008`0070b37a
+00000003`9755f6d8 00000000`05db4cc9     0x1
+00000003`9755f6e0 00000010`08160b78     0x5db4cc9
+00000003`9755f6e8 00000000`7e843804     0x00000010`08160b78
+00000003`9755f6f0 00000000`6ad6abaf     0x7e843804
+00000003`9755f6f8 00000000`00089be0     0x6ad6abaf
+00000003`9755f700 00000000`6ad6abaf     0x89be0
+00000003`9755f708 00000000`22368b80     0x6ad6abaf
+00000003`9755f710 00000000`6ad6abaf     0x22368b80
+00000003`9755f718 00000000`00089be0     0x6ad6abaf
+00000003`9755f720 ad750b22`185ab400     0x89be0
+00000003`9755f728 00000010`07d5d800     0xad750b22`185ab400
+00000003`9755f730 00000010`07a5fee0     0x00000010`07d5d800
+00000003`9755f738 00000000`00000000     0x00000010`07a5fee0
+
+ 107  Id: d1a4.a190 Suspend: 1 Teb: 00000000`00cfa000 Unfrozen "FImgMediaSchedu"
+Child-SP          RetAddr               Call Site
+00000003`9855f538 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`9855f540 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`9855f830 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`9855f870 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000003`9855f8e0 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`9855f960 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`9855f9c0 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000003`9855fa80 00000008`0070b37a     medievil_runtime+0x16b8b
+00000003`9855fae0 00000000`00000001     0x00000008`0070b37a
+00000003`9855fae8 00000000`05db4cc9     0x1
+00000003`9855faf0 00000010`08160b48     0x5db4cc9
+00000003`9855faf8 00000000`7e843804     0x00000010`08160b48
+00000003`9855fb00 00000000`6ad6abaf     0x7e843804
+00000003`9855fb08 00000000`00089be0     0x6ad6abaf
+00000003`9855fb10 00000000`6ad6abaf     0x89be0
+00000003`9855fb18 00000000`22368b80     0x6ad6abaf
+00000003`9855fb20 00000000`6ad6abaf     0x22368b80
+00000003`9855fb28 00000000`00089be0     0x6ad6abaf
+00000003`9855fb30 ad750b22`185ab400     0x89be0
+00000003`9855fb38 00000010`07d5f1c0     0xad750b22`185ab400
+00000003`9855fb40 00000010`07a5fe80     0x00000010`07d5f1c0
+00000003`9855fb48 00000000`00000000     0x00000010`07a5fe80
+
+ 108  Id: d1a4.6c54 Suspend: 1 Teb: 00000000`00cfc000 Unfrozen "FImgMediaSchedu"
+Child-SP          RetAddr               Call Site
+00000003`9955f288 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`9955f290 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`9955f580 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`9955f5c0 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000003`9955f630 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`9955f6b0 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`9955f710 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000003`9955f7d0 00000008`0070b37a     medievil_runtime+0x16b8b
+00000003`9955f830 00000000`00000001     0x00000008`0070b37a
+00000003`9955f838 00000000`05db4cce     0x1
+00000003`9955f840 00000010`08160b18     0x5db4cce
+00000003`9955f848 00000000`7e843804     0x00000010`08160b18
+00000003`9955f850 00000000`6ad6abaf     0x7e843804
+00000003`9955f858 00000000`00089be5     0x6ad6abaf
+00000003`9955f860 00000000`6ad6abaf     0x89be5
+00000003`9955f868 00000000`22368b80     0x6ad6abaf
+00000003`9955f870 00000000`6ad6abaf     0x22368b80
+00000003`9955f878 00000000`00089be6     0x6ad6abaf
+00000003`9955f880 ad750b22`185ab400     0x89be6
+00000003`9955f888 00000010`07d5f140     0xad750b22`185ab400
+00000003`9955f890 00000010`07a5fe20     0x00000010`07d5f140
+00000003`9955f898 00000000`00000000     0x00000010`07a5fe20
+
+ 109  Id: d1a4.1460 Suspend: 1 Teb: 00000000`00cfe000 Unfrozen "FImgMediaSchedu"
+Child-SP          RetAddr               Call Site
+00000003`9a55f1a8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`9a55f1b0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`9a55f4a0 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`9a55f4e0 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000003`9a55f550 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`9a55f5d0 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`9a55f630 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000003`9a55f6f0 00000008`0070b37a     medievil_runtime+0x16b8b
+00000003`9a55f750 00000000`00000001     0x00000008`0070b37a
+00000003`9a55f758 00000000`05db430d     0x1
+00000003`9a55f760 00000010`08160ae8     0x5db430d
+00000003`9a55f768 00000000`7e843804     0x00000010`08160ae8
+00000003`9a55f770 00000000`6ad6abaf     0x7e843804
+00000003`9a55f778 00000000`000891e7     0x6ad6abaf
+00000003`9a55f780 00000000`6ad6abaf     0x891e7
+00000003`9a55f788 00000000`2208c4c0     0x6ad6abaf
+00000003`9a55f790 00000000`6ad6abaf     0x2208c4c0
+00000003`9a55f798 00000000`000891e8     0x6ad6abaf
+00000003`9a55f7a0 ad750b22`185ab400     0x891e8
+00000003`9a55f7a8 00000010`07d5f0c0     0xad750b22`185ab400
+00000003`9a55f7b0 00000010`07a5fdc0     0x00000010`07d5f0c0
+00000003`9a55f7b8 00000000`00000000     0x00000010`07a5fdc0
+
+ 110  Id: d1a4.baf8 Suspend: 1 Teb: 00000000`00d00000 Unfrozen "FImgMediaSchedu"
+Child-SP          RetAddr               Call Site
+00000003`9b55f408 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`9b55f410 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`9b55f700 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`9b55f740 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000003`9b55f7b0 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`9b55f830 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`9b55f890 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000003`9b55f950 00000008`0070b37a     medievil_runtime+0x16b8b
+00000003`9b55f9b0 00000010`031b8228     0x00000008`0070b37a
+00000003`9b55f9b8 00000000`05db4306     0x00000010`031b8228
+00000003`9b55f9c0 00000010`08160ab8     0x5db4306
+00000003`9b55f9c8 00000000`7e843804     0x00000010`08160ab8
+00000003`9b55f9d0 00000000`6ad6abaf     0x7e843804
+00000003`9b55f9d8 00000000`000891e1     0x6ad6abaf
+00000003`9b55f9e0 00000000`6ad6abaf     0x891e1
+00000003`9b55f9e8 00000000`2208c4c0     0x6ad6abaf
+00000003`9b55f9f0 00000000`6ad6abaf     0x2208c4c0
+00000003`9b55f9f8 00000000`000891e2     0x6ad6abaf
+00000003`9b55fa00 ad750b22`185ab400     0x891e2
+00000003`9b55fa08 00000010`07d5f040     0xad750b22`185ab400
+00000003`9b55fa10 00000010`07a5fd60     0x00000010`07d5f040
+00000003`9b55fa18 00000000`00000000     0x00000010`07a5fd60
+
+ 111  Id: d1a4.92a8 Suspend: 1 Teb: 00000000`00d02000 Unfrozen "FMediaTicker"
+Child-SP          RetAddr               Call Site
+00000003`9c55fa68 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000003`9c55fa70 00007ff7`690e28b2     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000003`9c55fb10 00007ff7`690cebeb     medievil_runtime+0x228b2
+00000003`9c55fb70 00000008`008d7b67     medievil_runtime+0xebeb
+00000003`9c55fbb0 3ba3d70a`1b23fc40     0x00000008`008d7b67
+00000003`9c55fbb8 00000004`00000001     0x3ba3d70a`1b23fc40
+00000003`9c55fbc0 ad750b22`185ab400     0x00000004`00000001
+00000003`9c55fbc8 00000010`06d5cc68     0xad750b22`185ab400
+00000003`9c55fbd0 ad750b22`185ab400     0x00000010`06d5cc68
+00000003`9c55fbd8 00000010`06d5cc68     0xad750b22`185ab400
+00000003`9c55fbe0 00000000`00000001     0x00000010`06d5cc68
+00000003`9c55fbe8 00000000`05049001     0x1
+00000003`9c55fbf0 00000003`9c55fc10     0x5049001
+00000003`9c55fbf8 00000008`01c60785     0x00000003`9c55fc10
+00000003`9c55fc00 00000008`05049078     0x00000008`01c60785
+00000003`9c55fc08 00000008`0581c80c     0x00000008`05049078
+00000003`9c55fc10 00000003`9c55fc40     0x00000008`0581c80c
+00000003`9c55fc18 00000008`00739ddd     0x00000003`9c55fc40
+00000003`9c55fc20 00000010`07a5fd00     0x00000008`00739ddd
+00000003`9c55fc28 00000000`00000000     0x00000010`07a5fd00
+
+ 112  Id: d1a4.6a34 Suspend: 1 Teb: 00000000`00d04000 Unfrozen "PoolThread 10"
+Child-SP          RetAddr               Call Site
+00000003`9d55f508 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`9d55f510 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`9d55f800 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`9d55f840 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000003`9d55f8b0 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`9d55f930 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`9d55f990 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000003`9d55fa50 00000008`0070b37a     medievil_runtime+0x16b8b
+00000003`9d55fab0 00000000`00000001     0x00000008`0070b37a
+00000003`9d55fab8 00000000`05db4cc9     0x1
+00000003`9d55fac0 00000010`08162a38     0x5db4cc9
+00000003`9d55fac8 00000000`7e843804     0x00000010`08162a38
+00000003`9d55fad0 00000000`6ad6abaf     0x7e843804
+00000003`9d55fad8 00000000`00089be1     0x6ad6abaf
+00000003`9d55fae0 00000000`6ad6abaf     0x89be1
+00000003`9d55fae8 00000000`22368b80     0x6ad6abaf
+00000003`9d55faf0 00000000`6ad6abaf     0x22368b80
+00000003`9d55faf8 00000000`00089be1     0x6ad6abaf
+00000003`9d55fb00 ad750b22`185ab400     0x89be1
+00000003`9d55fb08 00000010`08162a40     0xad750b22`185ab400
+00000003`9d55fb10 00000010`0238e620     0x00000010`08162a40
+00000003`9d55fb18 00000000`00000000     0x00000010`0238e620
+
+ 113  Id: d1a4.c31c Suspend: 1 Teb: 00000000`00d06000 Unfrozen "PoolThread 11"
+Child-SP          RetAddr               Call Site
+00000003`9e55f3b8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`9e55f3c0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`9e55f6b0 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`9e55f6f0 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000003`9e55f760 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`9e55f7e0 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`9e55f840 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000003`9e55f900 00000008`0070b37a     medievil_runtime+0x16b8b
+00000003`9e55f960 00000000`00000001     0x00000008`0070b37a
+00000003`9e55f968 00000000`05db4cc7     0x1
+00000003`9e55f970 00000010`081629d8     0x5db4cc7
+00000003`9e55f978 00000000`7e843804     0x00000010`081629d8
+00000003`9e55f980 00000000`6ad6abaf     0x7e843804
+00000003`9e55f988 00000000`00089bdd     0x6ad6abaf
+00000003`9e55f990 00000000`6ad6abaf     0x89bdd
+00000003`9e55f998 00000000`22368b80     0x6ad6abaf
+00000003`9e55f9a0 00000000`6ad6abaf     0x22368b80
+00000003`9e55f9a8 00000000`00089bde     0x6ad6abaf
+00000003`9e55f9b0 ad750b22`185ab400     0x89bde
+00000003`9e55f9b8 00000010`081629e0     0xad750b22`185ab400
+00000003`9e55f9c0 00000010`08e3e200     0x00000010`081629e0
+00000003`9e55f9c8 00000000`00000000     0x00000010`08e3e200
+
+ 114  Id: d1a4.9890 Suspend: 1 Teb: 00000000`00d08000 Unfrozen "PoolThread 12"
+Child-SP          RetAddr               Call Site
+00000003`9f55f588 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`9f55f590 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`9f55f880 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`9f55f8c0 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000003`9f55f930 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`9f55f9b0 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`9f55fa10 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000003`9f55fad0 00000008`0070b37a     medievil_runtime+0x16b8b
+00000003`9f55fb30 00000000`00000001     0x00000008`0070b37a
+00000003`9f55fb38 00000000`05db4cd0     0x1
+00000003`9f55fb40 00000010`08162978     0x5db4cd0
+00000003`9f55fb48 00000000`7e843804     0x00000010`08162978
+00000003`9f55fb50 00000000`6ad6abaf     0x7e843804
+00000003`9f55fb58 00000000`00089be7     0x6ad6abaf
+00000003`9f55fb60 00000000`6ad6abaf     0x89be7
+00000003`9f55fb68 00000000`22368b80     0x6ad6abaf
+00000003`9f55fb70 00000000`6ad6abaf     0x22368b80
+00000003`9f55fb78 00000000`00089be7     0x6ad6abaf
+00000003`9f55fb80 ad750b22`185ab400     0x89be7
+00000003`9f55fb88 00000010`08162980     0xad750b22`185ab400
+00000003`9f55fb90 00000010`08e3e140     0x00000010`08162980
+00000003`9f55fb98 00000000`00000000     0x00000010`08e3e140
+
+ 115  Id: d1a4.4230 Suspend: 1 Teb: 00000000`00d0a000 Unfrozen "PoolThread 13"
+Child-SP          RetAddr               Call Site
+00000003`a055f588 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`a055f590 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`a055f880 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`a055f8c0 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000003`a055f930 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`a055f9b0 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`a055fa10 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000003`a055fad0 00000008`0070b37a     medievil_runtime+0x16b8b
+00000003`a055fb30 00000000`00000001     0x00000008`0070b37a
+00000003`a055fb38 00000000`05db4cc9     0x1
+00000003`a055fb40 00000010`08162918     0x5db4cc9
+00000003`a055fb48 00000000`7e843804     0x00000010`08162918
+00000003`a055fb50 00000000`6ad6abaf     0x7e843804
+00000003`a055fb58 00000000`00089be0     0x6ad6abaf
+00000003`a055fb60 00000000`6ad6abaf     0x89be0
+00000003`a055fb68 00000000`22368b80     0x6ad6abaf
+00000003`a055fb70 00000000`6ad6abaf     0x22368b80
+00000003`a055fb78 00000000`00089be0     0x6ad6abaf
+00000003`a055fb80 ad750b22`185ab400     0x89be0
+00000003`a055fb88 00000010`08162920     0xad750b22`185ab400
+00000003`a055fb90 00000010`08e3e0e0     0x00000010`08162920
+00000003`a055fb98 00000000`00000000     0x00000010`08e3e0e0
+
+ 116  Id: d1a4.d13c Suspend: 1 Teb: 00000000`00d0c000 Unfrozen "PoolThread 14"
+Child-SP          RetAddr               Call Site
+00000003`a155f678 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`a155f680 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`a155f970 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`a155f9b0 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000003`a155fa20 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`a155faa0 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`a155fb00 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000003`a155fbc0 00000008`0070b37a     medievil_runtime+0x16b8b
+00000003`a155fc20 00000000`00000001     0x00000008`0070b37a
+00000003`a155fc28 00000000`05db4306     0x1
+00000003`a155fc30 00000010`081628b8     0x5db4306
+00000003`a155fc38 00000000`7e843804     0x00000010`081628b8
+00000003`a155fc40 00000000`6ad6abaf     0x7e843804
+00000003`a155fc48 00000000`000891e1     0x6ad6abaf
+00000003`a155fc50 00000000`6ad6abaf     0x891e1
+00000003`a155fc58 00000000`2208c4c0     0x6ad6abaf
+00000003`a155fc60 00000000`6ad6abaf     0x2208c4c0
+00000003`a155fc68 00000000`000891e1     0x6ad6abaf
+00000003`a155fc70 ad750b22`185ab400     0x891e1
+00000003`a155fc78 00000010`081628c0     0xad750b22`185ab400
+00000003`a155fc80 00000010`08e3e080     0x00000010`081628c0
+00000003`a155fc88 00000000`00000000     0x00000010`08e3e080
+
+ 117  Id: d1a4.c334 Suspend: 1 Teb: 00000000`00d0e000 Unfrozen "PoolThread 15"
+Child-SP          RetAddr               Call Site
+00000003`a255f638 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`a255f640 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`a255f930 00007ff9`7e842e73     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`a255f970 00007ff9`7e842a40     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x533
+00000003`a255f9e0 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`a255fa60 00007ff9`7e842875     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`a255fac0 00007ff7`690d6b8b     libwinpthread_1!pthread_cond_wait+0x7a5
+00000003`a255fb80 00000008`0070b37a     medievil_runtime+0x16b8b
+00000003`a255fbe0 00000000`00000001     0x00000008`0070b37a
+00000003`a255fbe8 00000000`05db4309     0x1
+00000003`a255fbf0 00000010`08162858     0x5db4309
+00000003`a255fbf8 00000000`7e843804     0x00000010`08162858
+00000003`a255fc00 00000000`6ad6abaf     0x7e843804
+00000003`a255fc08 00000000`000891e4     0x6ad6abaf
+00000003`a255fc10 00000000`6ad6abaf     0x891e4
+00000003`a255fc18 00000000`2208c4c0     0x6ad6abaf
+00000003`a255fc20 00000000`6ad6abaf     0x2208c4c0
+00000003`a255fc28 00000000`000891e5     0x6ad6abaf
+00000003`a255fc30 ad750b22`185ab400     0x891e5
+00000003`a255fc38 00000010`08162860     0xad750b22`185ab400
+00000003`a255fc40 00000010`08e3e020     0x00000010`08162860
+00000003`a255fc48 00000000`00000000     0x00000010`08e3e020
+
+ 118  Id: d1a4.c6e4 Suspend: 1 Teb: 00000000`00d10000 Unfrozen "Ngs2AudioRender"
+Child-SP          RetAddr               Call Site
+00000003`d354f358 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000003`d354f360 00007ff7`690e28b2     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000003`d354f400 00007ff7`690ca27b     medievil_runtime+0x228b2
+00000003`d354f460 00007ff7`690c9a8a     medievil_runtime+0xa27b
+00000003`d355f530 00000008`006b831a     medievil_runtime+0x9a8a
+00000003`d355f560 00000010`08eb2620     0x00000008`006b831a
+00000003`d355f568 00000000`00000001     0x00000010`08eb2620
+00000003`d355f570 00000003`d355f590     0x1
+00000003`d355f578 00000008`006b9d68     0x00000003`d355f590
+00000003`d355f580 00000008`04ed8228     0x00000008`006b9d68
+00000003`d355f588 00000008`0581c80c     0x00000008`04ed8228
+00000003`d355f590 00000003`d355f5c0     0x00000008`0581c80c
+00000003`d355f598 00000008`00739ddd     0x00000003`d355f5c0
+00000003`d355f5a0 00000010`08e3e920     0x00000008`00739ddd
+00000003`d355f5a8 00000000`00000000     0x00000010`08e3e920
+
+ 119  Id: d1a4.cfc0 Suspend: 1 Teb: 00000000`00d12000 Unfrozen "SDLWASAPIMgmt"
+Child-SP          RetAddr               Call Site
+00000003`d455f8f8 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000003`d455f900 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000003`d455f9a0 00007ff8`be3c065c     KERNELBASE!SleepConditionVariableSRW+0x38
+00000003`d455f9e0 00007ff8`be3a9c9f     SDL3!SDL_DYNAPI_entry+0x17593c
+00000003`d455fa30 00007ff8`be303172     SDL3!SDL_DYNAPI_entry+0x15ef7f
+00000003`d455fa90 00007ff8`be3c1141     SDL3!SDL_DYNAPI_entry+0xb8452
+00000003`d455fae0 00007ff9`b461cd30     SDL3!SDL_DYNAPI_entry+0x176421
+00000003`d455fb10 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000003`d455fb40 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000003`d455fb70 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+ 120  Id: d1a4.c9e0 Suspend: 1 Teb: 00000000`00d14000 Unfrozen "SDLAudioP23"
+Child-SP          RetAddr               Call Site
+00000003`d555fc98 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000003`d555fca0 00007ff8`be3a95cd     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000003`d555fd40 00007ff8`be22e822     SDL3!SDL_DYNAPI_entry+0x15e8ad
+00000003`d555fdc0 00007ff8`be303172     SDL3+0xe822
+00000003`d555fe10 00007ff8`be3c1141     SDL3!SDL_DYNAPI_entry+0xb8452
+00000003`d555fe60 00007ff9`b461cd30     SDL3!SDL_DYNAPI_entry+0x176421
+00000003`d555fe90 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000003`d555fec0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000003`d555fef0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+ 121  Id: d1a4.8130 Suspend: 1 Teb: 00000000`00d16000 Unfrozen "AudioThread"
+Child-SP          RetAddr               Call Site
+00000003`d655f4d8 00007ff9`b4a22773     ntdll!NtWaitForMultipleObjects+0x14
+00000003`d655f4e0 00007ff9`b4a22641     KERNELBASE!WaitForMultipleObjectsEx+0x123
+00000003`d655f7d0 00007ff9`7e842a40     KERNELBASE!WaitForMultipleObjects+0x11
+00000003`d655f810 00007ff9`7e841d6e     libwinpthread_1!pthread_cond_timedwait32_relative_np+0x100
+00000003`d655f890 00007ff9`7e84234a     libwinpthread_1!pthread_cond_destroy+0x2ce
+00000003`d655f8f0 00007ff7`690d6a76     libwinpthread_1!pthread_cond_wait+0x27a
+00000003`d655f9b0 00000008`0070b46c     medievil_runtime+0x16a76
+00000003`d655f9f0 00000000`00000000     0x00000008`0070b46c
+
+ 122  Id: d1a4.9a80 Suspend: 1 Teb: 00000000`00d18000 Unfrozen "AK::LibAudioOut"
+Child-SP          RetAddr               Call Site
+00000003`d954fac8 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000003`d954fad0 00007ff7`690e28b2     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000003`d954fb70 00007ff7`690ca27b     medievil_runtime+0x228b2
+00000003`d954fbd0 00007ff7`690c9ae7     medievil_runtime+0xa27b
+00000003`d955fca0 00000008`03515a43     medievil_runtime+0x9ae7
+00000003`d955fce0 00000003`20000001     0x00000008`03515a43
+00000003`d955fce8 00000010`1004b2b0     0x00000003`20000001
+00000003`d955fcf0 00000003`d955fcf0     0x00000010`1004b2b0
+00000003`d955fcf8 00000000`00000000     0x00000003`d955fcf0
+
+ 123  Id: d1a4.c4dc Suspend: 1 Teb: 00000000`00d1a000 Unfrozen "RenderThread 1"
+Child-SP          RetAddr               Call Site
+00000003`8755f6d8 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000003`8755f6e0 00007ff9`7e844076     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000003`8755f780 00007ff9`7e843586     libwinpthread_1!pthread_mutex_consistent+0x7e6
+00000003`8755f7e0 00007ff7`690d77ee     libwinpthread_1!pthread_mutex_lock+0x36
+00000003`8755f840 00007ff7`690d71c4     medievil_runtime+0x177ee
+00000003`8755f940 00000008`0071d8db     medievil_runtime+0x171c4
+00000003`8755f980 00000003`8755f9a0     0x00000008`0071d8db
+00000003`8755f988 00000003`8755fa68     0x00000003`8755f9a0
+00000003`8755f990 00000003`8755fa50     0x00000003`8755fa68
+00000003`8755f998 00000008`026f5d29     0x00000003`8755fa50
+00000003`8755f9a0 00000008`026f6090     0x00000008`026f5d29
+00000003`8755f9a8 00000000`00000000     0x00000008`026f6090
+
+ 124  Id: d1a4.c544 Suspend: 1 Teb: 00000000`00d1c000 Unfrozen "RTHeartBeat 1"
+Child-SP          RetAddr               Call Site
+00000003`8855f4a8 00007ff9`b4a1be9f     ntdll!NtWaitForSingleObject+0x14
+00000003`8855f4b0 00007ff7`690e28b2     KERNELBASE!WaitForSingleObjectEx+0xaf
+00000003`8855f550 00007ff7`690cebeb     medievil_runtime+0x228b2
+00000003`8855f5b0 00000008`008d7b67     medievil_runtime+0xebeb
+00000003`8855f5f0 3bcccccd`00000003     0x00000008`008d7b67
+00000003`8855f5f8 00000010`0fe5c7e0     0x3bcccccd`00000003
+00000003`8855f600 00000008`00722d70     0x00000010`0fe5c7e0
+00000003`8855f608 00000003`8855f5f8     0x00000008`00722d70
+00000003`8855f610 ad750b22`185ab400     0x00000003`8855f5f8
+00000003`8855f618 00000008`05b3c4b8     0xad750b22`185ab400
+00000003`8855f620 00000008`05605dc0     0x00000008`05b3c4b8
+00000003`8855f628 00000008`0581c760     0x00000008`05605dc0
+00000003`8855f630 00000003`8855f6c0     0x00000008`0581c760
+00000003`8855f638 00000008`00fb51b2     0x00000003`8855f6c0
+00000003`8855f640 00007ff7`69b85638     0x00000008`00fb51b2
+00000003`8855f648 00000010`08163218     medievil_runtime+0xac5638
+00000003`8855f650 00000000`00000000     0x00000010`08163218
+
+ 125  Id: d1a4.5778 Suspend: 1 Teb: 00000000`00d28000 Unfrozen "shadPS4:AvController"
+Child-SP          RetAddr               Call Site
+00000003`a455fbd8 00007ff9`b7290fd4     ntdll!NtDelayExecution+0x14
+00000003`a455fbe0 00007ff9`b4a8b9c1     ntdll!RtlDelayExecution+0x34
+00000003`a455fc10 00007ff7`693e199d     KERNELBASE!SleepEx+0x91
+00000003`a455fca0 00007ff7`693e2405     medievil_runtime+0x32199d
+00000003`a455fcf0 00007ff7`693e2379     medievil_runtime+0x322405
+00000003`a455fd40 00007ff9`b461cd30     medievil_runtime+0x322379
+00000003`a455fd80 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000003`a455fdb0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000003`a455fde0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+ 126  Id: d1a4.90e8 Suspend: 1 Teb: 00000000`00d2a000 Unfrozen "shadPS4:AvDemuxer"
+Child-SP          RetAddr               Call Site
+00000003`a355f698 00007ff9`b7290fd4     ntdll!NtDelayExecution+0x14
+00000003`a355f6a0 00007ff9`b4a8b9c1     ntdll!RtlDelayExecution+0x34
+00000003`a355f6d0 00007ff7`694789f0     KERNELBASE!SleepEx+0x91
+00000003`a355f760 00007ff7`6947c8e0     medievil_runtime+0x3b89f0
+00000003`a355f890 00007ff7`693e2405     medievil_runtime+0x3bc8e0
+00000003`a355f8e0 00007ff7`693e2379     medievil_runtime+0x322405
+00000003`a355f930 00007ff9`b461cd30     medievil_runtime+0x322379
+00000003`a355f970 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000003`a355f9a0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000003`a355f9d0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+ 127  Id: d1a4.84ec Suspend: 1 Teb: 00000000`00d2c000 Unfrozen "shadPS4:AvVideoDecoder"
+Child-SP          RetAddr               Call Site
+00000003`af55f248 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000003`af55f250 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000003`af55f2f0 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000003`af55f330 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000003`af55f360 00007ff7`69479cfa     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000003`af55f390 00007ff7`6947ca70     medievil_runtime+0x3b9cfa
+00000003`af55f690 00007ff7`693e2405     medievil_runtime+0x3bca70
+00000003`af55f6e0 00007ff7`693e2379     medievil_runtime+0x322405
+00000003`af55f730 00007ff9`b461cd30     medievil_runtime+0x322379
+00000003`af55f770 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000003`af55f7a0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000003`af55f7d0 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+ 128  Id: d1a4.c8d0 Suspend: 1 Teb: 00000000`00d2e000 Unfrozen "shadPS4:AvAudioDecoder"
+Child-SP          RetAddr               Call Site
+00000003`b055f398 00007ff9`b72197be     ntdll!NtWaitForAlertByThreadId+0x14
+00000003`b055f3a0 00007ff9`b4a22a58     ntdll!RtlSleepConditionVariableSRW+0x1de
+00000003`b055f440 00007ff8`f261f9d3     KERNELBASE!SleepConditionVariableSRW+0x38
+00000003`b055f480 00007ff8`f25c7512     libc__!ZNSt3__121__libcpp_condvar_waitEPPvS1_+0x13
+00000003`b055f4b0 00007ff7`6947b85a     libc__!ZNSt3__118condition_variable4waitERNS_11unique_lockINS_5mutexEEE+0x12
+00000003`b055f4e0 00007ff7`6947cc00     medievil_runtime+0x3bb85a
+00000003`b055f7d0 00007ff7`693e2405     medievil_runtime+0x3bcc00
+00000003`b055f820 00007ff7`693e2379     medievil_runtime+0x322405
+00000003`b055f870 00007ff9`b461cd30     medievil_runtime+0x322379
+00000003`b055f8b0 00007ff9`b6f8dda7     ucrtbase!thread_start<unsigned int (__cdecl*)(void *),1>+0x30
+00000003`b055f8e0 00007ff9`b723ee4c     KERNEL32!BaseThreadInitThunk+0x17
+00000003`b055f910 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+quit:
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\atlmfc.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\ObjectiveC.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\concurrency.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\cpp_rest.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\stl.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\Windows.Data.Json.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\Windows.Devices.Geolocation.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\Windows.Devices.Sensors.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\Windows.Media.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\windows.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\winrt.natvis'
