@@ -651,3 +651,15 @@ no GPU work (kind B). Amortizing does not split these: they are whole groups of 
 game expands one memory pool with all direct memory (5,301,534,720 bytes = 5,056 MiB, `GOW3_DMEM_MB` unset; the port
 accepts up to 16 GiB); `r.GarlicHeapSizeMB=2600` and the streaming pool live inside it. S2: `GOW3_DMEM_MB=7104`,
 `r.GarlicHeapSizeMB=4600`, `r.Streaming.PoolSize=1600`.
+
+**S2 result (2026-10-19 01:37-01:41, launched by Claude with the user's go; log `data/t-s2-pool.log`):** the game took
+the memory (pool expanded by 6,912,147,456 bytes). The user: small back-and-forth pans no longer re-trigger the
+stutter; a larger pan away and back does; GPU usage higher in a heavy area. Stalls: bursts of 502-623 ms (S1 661-1,009)
+with the **same groups every time** (198 / 202 images ~360 MB, 277 / 282 images ~310 MB, in S1 and S2 alike); textures
+freed by unmaps 5.0 GiB (S1 6.3). A fixed group of assets loads when the view turns toward an area and unloads when it
+turns away, with hysteresis: UE4 visibility / region streaming, not the texture pool. Each costs ~0.5 s here (200 new
+GPU images, ~360 MB uploads, the game thread's own loading work, page faults).
+
+**Kind B is the Load Game dialog.** Every multi-second frame with no GPU work (T-M1b 1,642 ms, T-C2 2,775 ms, S1 3,283 ms,
+S2 4,913 ms) ends the moment a save is chosen in the SaveDataDialog list; the game presents no frames while the port's
+system dialog is open. Not a gameplay hitch.
