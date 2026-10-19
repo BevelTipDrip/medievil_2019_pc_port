@@ -685,3 +685,12 @@ resolution (the port never calls `timeBeginPeriod`), so a sub-millisecond guest 
 Diagnostic `9380965`: `GOW3_WAIT_SITES=1` records every guest wait (sleep, yield, cond wait / timed wait, semaphore,
 event flag, mutex lock) per call site with requested and actual time, reported by time spent per 5 s. Test T-W1: pan at
 the hitch spot with it; compare the stall windows with calm ones.
+
+**T-W1 (2026-10-19 02:15-02:21, launched by Claude with the user's go; build `9380965`; log `data/t-w1-waits.log`):**
+4K memory defaults; panning stalls 517-703 ms (170-279 images, 309-396 MB). Wait sites (summed over all threads, so idle
+waiters dominate the totals): `cond_timedwait` guest+0x70b37a ~3,500-4,000/s at 6-8.6 ms each, calm and stall alike;
+`usleep` sites take their requested time (+0.3 ms: the port's sleeps are fine); in stall windows `cond_wait` at
+guest+0x5ddc0f4 averages 9.6 ms (calm 0.7 ms) and guest+0x355152b 17-143 ms. The two busiest sites were host addresses:
+the POSIX wrappers (`posix_cond_wait`, `posix_mutex_lock`, 115k-313k locks/s in stall windows) hid the guest call
+sites. Fixed in the diagnostic (`posix_*` exports measure themselves; timed waits record time to the deadline).
+Re-run needed (T-W2).
