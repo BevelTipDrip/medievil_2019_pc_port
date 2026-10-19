@@ -1029,6 +1029,45 @@ static void *toggle_watcher(void *path) {
     }
     return NULL;
 }
+/* gow3: pages a GPU shader wrote (the buffer cache's GPU-modified ranges), one bit per 4 KiB page
+ * below 2^40, set and cleared by the GPU side. The guest's libc writes into them go to the GPU side
+ * (it writes exactly those bytes into its copy too) instead of faulting: a write fault there reads
+ * the GPU's data back and waits for the whole GPU (~27 a second, ~3 ms each in MediEvil, T-D1b).
+ * A stale bit only costs that path. */
+#define GPU_WRITTEN_LIMIT (1ull<<40)
+typedef int (*PreciseWrite)(uintptr_t address, const void *src, int value, uint64_t size);
+static uint64_t *gpu_written; /* atomic words */
+static PreciseWrite hook_precise_write;
+void runtime_memory_set_precise_write_hook(PreciseWrite hook) {
+    if (!gpu_written) {
+        gpu_written=VirtualAlloc(NULL,GPU_WRITTEN_LIMIT>>15,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE);
+        if (!gpu_written) return;
+    }
+    __atomic_store_n(&hook_precise_write,hook,__ATOMIC_RELEASE);
+}
+void runtime_memory_mark_gpu_written(uintptr_t address, uint64_t size, int written) {
+    if (!gpu_written || !size || address>=GPU_WRITTEN_LIMIT) return;
+    uint64_t first=address>>12, last=(address+size-1)>>12;
+    if (last>=(GPU_WRITTEN_LIMIT>>12)) last=(GPU_WRITTEN_LIMIT>>12)-1;
+    for (uint64_t word=first>>6; word<=last>>6; ++word) {
+        const uint64_t lo=word==first>>6 ? first&63 : 0, hi=word==last>>6 ? last&63 : 63;
+        const uint64_t mask=(hi==63 ? ~0ull : (2ull<<hi)-1) & ~((1ull<<lo)-1);
+        if (written) __atomic_fetch_or(&gpu_written[word],mask,__ATOMIC_RELEASE);
+        else __atomic_fetch_and(&gpu_written[word],~mask,__ATOMIC_RELEASE);
+    }
+}
+int runtime_memory_precise_write(void *dst, const void *src, int value, uint64_t size) {
+    const uintptr_t address=(uintptr_t)dst;
+    const PreciseWrite hook=__atomic_load_n(&hook_precise_write,__ATOMIC_ACQUIRE);
+    if (!hook || !size || address>=GPU_WRITTEN_LIMIT || size>GPU_WRITTEN_LIMIT-address) return 0;
+    const uint64_t first=address>>12, last=(address+size-1)>>12;
+    for (uint64_t word=first>>6; word<=last>>6; ++word) {
+        const uint64_t lo=word==first>>6 ? first&63 : 0, hi=word==last>>6 ? last&63 : 63;
+        const uint64_t mask=(hi==63 ? ~0ull : (2ull<<hi)-1) & ~((1ull<<lo)-1);
+        if (__atomic_load_n(&gpu_written[word],__ATOMIC_ACQUIRE) & mask) return hook(address,src,value,size);
+    }
+    return 0;
+}
 void runtime_memory_set_gpu_hooks(GpuRange map, GpuRange unmap, GpuRange invalidate) {
     const char *toggles=getenv("GOW3_TOGGLE_FILE");
     static pthread_t watcher;

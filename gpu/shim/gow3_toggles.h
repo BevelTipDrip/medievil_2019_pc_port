@@ -69,6 +69,7 @@ enum : std::uint64_t {
     // when nothing moves. Static-camera flicker of railings/window bars p99.9 -45% (2026-10-03).
     TaaKeepNearerHistory = 1ull << 55,
     UnmapDiscard = 1ull << 56, ///< guest unmaps drop GPU-written buffer data, no download
+    PreciseCpuWrites = 1ull << 63, ///< guest libc writes into shader-written memory: no download
     SceneMipBias = 1ull << 57, ///< negative LOD bias of G-buffer samplers at reduced scene sizes
     VolumeSliceViews = 1ull << 58, ///< volumes rendered slice by slice through 2D array views
     StencilPlaneWrites = 1ull << 59, ///< shader writes to a stencil plane copied into the image
@@ -105,6 +106,8 @@ inline thread_local unsigned download_reason = Invalidation;
 inline thread_local const void* fault_rip = nullptr;
 inline std::atomic<std::uint64_t> download_count[DownloadReasons], download_bytes[DownloadReasons],
     download_ns[DownloadReasons], unmap_discards{0};
+/// Guest libc writes into shader-written memory taken without a download (PreciseCpuWrites).
+inline std::atomic<std::uint64_t> precise_writes{0}, precise_write_bytes{0};
 /// Sets the reason for the downloads the current thread asks for, restores it after.
 struct DownloadReasonScope {
     unsigned saved = download_reason;

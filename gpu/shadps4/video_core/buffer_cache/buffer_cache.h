@@ -89,6 +89,21 @@ public:
     /// Flushes any GPU modified buffer in the logical page range back to CPU memory.
     void ReadMemory(VAddr device_addr, u64 size, bool is_write = false, bool assume_locks = false);
 
+    /// gow3: a guest libc write (memcpy / memset / memmove; src null: fill with value) into
+    /// memory a shader wrote. Without it the write faults, the GPU's data in the page is read
+    /// back and the whole GPU waited for. Here the bytes go into guest memory past the page
+    /// protection and are queued for the GPU's copy (ProcessCpuWrites); the page stays
+    /// GPU-modified, so the GPU's other data there is kept. Any thread.
+    bool PreciseCpuWrite(VAddr addr, const void* src, int value, u64 size);
+    /// Records the queued CPU writes into the GPU's copy: the recording thread, before a draw or
+    /// dispatch is recorded, and before a download.
+    void ProcessCpuWrites() {
+        if (cpu_writes_pending.load(std::memory_order_acquire)) {
+            std::scoped_lock lock{cpu_writes_mutex};
+            ProcessCpuWritesLocked();
+        }
+    }
+
     /// gow3 GOW3_PERF_DIAG: prints and clears the write-fault download sites.
     static void ReportDownloadSites(double seconds);
 
@@ -166,6 +181,11 @@ private:
     StreamBuffer stream_buffer;
     Buffer gds_buffer;
     RangeSet gpu_modified_ranges;
+    void ProcessCpuWritesLocked();
+    /// gow3: guest libc writes into shader-written memory, waiting for the recording thread.
+    std::mutex cpu_writes_mutex;
+    std::vector<std::pair<VAddr, std::vector<u8>>> cpu_writes;
+    std::atomic<bool> cpu_writes_pending{false};
 
     std::unique_ptr<FaultManager> fault_manager;
     std::unique_ptr<Buffer> bda_pagetable_buffer;

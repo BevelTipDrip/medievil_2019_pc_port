@@ -89,6 +89,9 @@ public:
     void CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds);
     u32 ReadDataFromGds(u32 gsd_offset);
     bool InvalidateMemory(VAddr addr, u64 size, bool assume_locks = false);
+    /// gow3: a guest libc write into memory a shader wrote (BufferCache::PreciseCpuWrite); false:
+    /// the caller writes it normally (and faults).
+    bool PreciseCpuWrite(VAddr addr, const void* src, int value, u64 size);
     /// GPU thread, before a write the guest can observe (see Scheduler::WaitHostCopies).
     void WaitHostCopies(std::source_location caller = std::source_location::current()) {
         DrainDrawPipe();

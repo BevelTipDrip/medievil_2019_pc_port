@@ -21,5 +21,7 @@ void runtime_restart() { std::abort(); }
 uint64_t runtime_process_time_counter() { return runtime_process_time_us() * 1000; }
 int32_t* runtime_errno() { std::abort(); }
 int runtime_memory_write_backing(uintptr_t, const void*, uint64_t) { std::abort(); }
+void runtime_memory_set_precise_write_hook(int (*)(uintptr_t, const void*, int, uint64_t)) {}
+void runtime_memory_mark_gpu_written(uintptr_t, uint64_t, int) {}
 }
 

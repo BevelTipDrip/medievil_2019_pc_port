@@ -26,6 +26,9 @@ void runtime_mutex_report(void);
 uintptr_t runtime_memory_resolve(const char *name);
 void runtime_memory_report(void);
 int runtime_memory_is_mapped(uintptr_t address, uint64_t size);
+/* gow3: a guest libc write (memcpy / memset / memmove: src NULL means fill with value) into pages a
+ * GPU shader wrote, handed to the GPU side: 1 when it wrote the bytes, 0 to write them normally. */
+int runtime_memory_precise_write(void *dst, const void *src, int value, uint64_t size);
 const char *runtime_import_name(const char *name);
 uintptr_t runtime_rwlock_resolve(const char *name);
 void runtime_rwlock_report(void);

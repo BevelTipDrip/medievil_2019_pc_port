@@ -27,6 +27,17 @@
 #include "video_core/renderer_vulkan/vk_wait_diagnostics.h"
 
 extern "C" unsigned char* runtime_image_base(void);
+extern "C" void runtime_memory_mark_gpu_written(uintptr_t address, uint64_t size, int written);
+
+namespace {
+/// The pages fully inside [addr, addr + size) (the edge pages may still hold other GPU data).
+void ForgetGpuWritten(VAddr addr, u64 size) {
+    const VAddr first = (addr + 4095) & ~VAddr{4095}, end = (addr + size) & ~VAddr{4095};
+    if (end > first) {
+        runtime_memory_mark_gpu_written(first, end - first, 0);
+    }
+}
+} // namespace
 
 #include <vk_mem_alloc.h>
 
@@ -208,6 +219,7 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
         // next use of the range uploads whatever the guest put there.
         if (reason == Gow3Stats::Unmap && !Gow3Toggle::Disabled(Gow3Toggle::UnmapDiscard)) {
             gpu_modified_ranges.Subtract(device_addr, size);
+            ForgetGpuWritten(device_addr, size);
             memory_tracker->UnmarkRegionAsGpuModified(device_addr, size);
             memory_tracker->MarkRegionAsCpuModified(device_addr, size);
             Gow3Stats::unmap_discards.fetch_add(1, std::memory_order_relaxed);
@@ -239,6 +251,10 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
 }
 
 void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size) {
+    // gow3: queued CPU writes go into the GPU's copy first, and none lands in guest memory while
+    // the download writes its data there (the guest's bytes would be overwritten).
+    std::scoped_lock cpu_writes_lock{cpu_writes_mutex};
+    ProcessCpuWritesLocked();
     boost::container::small_vector<vk::BufferCopy, 1> copies;
     u64 total_size_bytes = 0;
     const VAddr arena_base = arena->cpu_addr;
@@ -258,6 +274,7 @@ void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 siz
         };
         gpu_modified_ranges.ForEachInRange(address, size, add_download);
         gpu_modified_ranges.Subtract(address, size);
+        ForgetGpuWritten(address, size);
     });
     if (total_size_bytes == 0) {
         return;
@@ -422,6 +439,7 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
     }
     if (is_written) {
         gpu_modified_ranges.Add(device_addr, size);
+        runtime_memory_mark_gpu_written(device_addr, size, 1);
     }
     return {arena, arena->Offset(device_addr)};
 }
@@ -458,6 +476,53 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBufferForImage(VAddr device_add
     memory->CopySparseMemory(device_addr, staging.mapped, staging.size);
     staging.Flush();
     return {staging.buffer, staging.offset};
+}
+
+bool BufferCache::PreciseCpuWrite(VAddr addr, const void* src, int value, u64 size) {
+    std::vector<u8> data(size);
+    if (src) {
+        std::memcpy(data.data(), src, size); // before any lock: src may fault (a read)
+    } else {
+        std::memset(data.data(), value, size);
+    }
+    {
+        std::scoped_lock lock{cpu_writes_mutex};
+        cpu_writes.emplace_back(addr, data);
+        cpu_writes_pending.store(true, std::memory_order_release);
+    }
+    // After queueing: a download from here on has the bytes in the GPU's copy already, and one
+    // in progress (it holds the lock) is done before this queued. Outside the lock: the
+    // runtime's lock is taken here.
+    if (!memory->TryWriteBacking(reinterpret_cast<void*>(addr), data.data(), size)) {
+        return false; // part of it has no backing: the normal write faults as before
+    }
+    Gow3Stats::precise_writes.fetch_add(1, std::memory_order_relaxed);
+    Gow3Stats::precise_write_bytes.fetch_add(size, std::memory_order_relaxed);
+    return true;
+}
+
+void BufferCache::ProcessCpuWritesLocked() {
+    cpu_writes_pending.store(false, std::memory_order_relaxed);
+    auto writes = std::move(cpu_writes);
+    cpu_writes.clear();
+    for (const auto& [addr, data] : writes) {
+        const u64 size = data.size();
+        texture_cache.InvalidateMemory(addr, size);
+        if (!IsRegionGpuModified(addr, size)) {
+            // Downloaded meanwhile: guest memory is the current copy, uploaded on the next use.
+            memory_tracker->MarkRegionAsCpuModified(addr, size);
+            continue;
+        }
+        const u64 first_block = addr >> block_shift;
+        const u64 last_block = (addr + size - 1) >> block_shift;
+        const auto* arena = GetArena(first_block, last_block);
+        EnsureResident(arena, first_block, last_block);
+        const auto staging = staging_pool.Request(size, MemoryType::HostUncached);
+        std::memcpy(staging.mapped, data.data(), size);
+        staging.Flush();
+        const vk::BufferCopy copy{staging.offset, arena->Offset(addr), size};
+        runtime.CopyBuffer(staging.buffer, arena, std::span{&copy, 1});
+    }
 }
 
 bool BufferCache::IsRegionCpuModified(VAddr addr, size_t size) {

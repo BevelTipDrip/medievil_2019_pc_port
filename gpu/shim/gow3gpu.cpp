@@ -46,6 +46,8 @@ uint64_t runtime_process_time_counter(void);
 uint64_t runtime_tsc_frequency(void);
 int32_t* runtime_errno(void);
 void runtime_memory_set_gpu_hooks(RuntimeGpuRange map, RuntimeGpuRange unmap, RuntimeGpuRange invalidate);
+void runtime_memory_set_precise_write_hook(int (*hook)(uintptr_t address, const void* src, int value,
+                                                        uint64_t size));
 }
 
 Frontend::WindowSDL* g_window = nullptr;
@@ -98,6 +100,10 @@ void MemoryManager::SetRasterizer(Vulkan::Rasterizer* rasterizer_) {
         [](uintptr_t address, uint64_t size) {
             Memory::Instance()->GetRasterizer()->InvalidateMemory(address, size);
         });
+    // gow3: the guest's libc writes into memory a shader wrote (see BufferCache::PreciseCpuWrite).
+    runtime_memory_set_precise_write_hook([](uintptr_t address, const void* src, int value, uint64_t size) {
+        return Memory::Instance()->GetRasterizer()->PreciseCpuWrite(address, src, value, size) ? 1 : 0;
+    });
 }
 void MemoryManager::InvalidateMemory(VAddr address, u64 size) {
     if (rasterizer) rasterizer->InvalidateMemory(address, size);

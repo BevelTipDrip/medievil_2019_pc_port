@@ -592,7 +592,10 @@ void VideoOutDriver::Flip(const Request& req) {
                                 Gow3Stats::download_bytes[r].exchange(0) / 1e6 / window,
                                 Gow3Stats::download_ns[r].exchange(0) / 1e6 / window);
                 }
-                std::printf("; unmaps discarded %.1f\n", Gow3Stats::unmap_discards.exchange(0) / window);
+                std::printf("; unmaps discarded %.1f; precise CPU writes %.1f (%.3f MB)\n",
+                            Gow3Stats::unmap_discards.exchange(0) / window,
+                            Gow3Stats::precise_writes.exchange(0) / window,
+                            Gow3Stats::precise_write_bytes.exchange(0) / 1e6 / window);
                 if (Vulkan::WaitDiagnostics::Enabled()) {
                     VideoCore::BufferCache::ReportDownloadSites(window);
                 }
