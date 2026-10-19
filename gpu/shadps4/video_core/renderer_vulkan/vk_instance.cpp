@@ -388,7 +388,10 @@ bool Instance::CreateDevice() {
             Render_Vulkan, "- workgroupMemoryExplicitLayout16BitAccess: {}",
             workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout16BitAccess);
     }
-    image_2d_view_of_3d = add_extension(VK_EXT_IMAGE_2D_VIEW_OF_3D_EXTENSION_NAME);
+    // GOW3_NO_2D_VIEW_OF_3D=1: as on drivers without the extension (tests; AMD, issue #18).
+    const char* no_2d_view_of_3d = std::getenv("GOW3_NO_2D_VIEW_OF_3D");
+    image_2d_view_of_3d = !(no_2d_view_of_3d && no_2d_view_of_3d[0] == '1') &&
+                          add_extension(VK_EXT_IMAGE_2D_VIEW_OF_3D_EXTENSION_NAME);
     if (image_2d_view_of_3d) {
         image_2d_view_of_3d_features =
             feature_chain.get<vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT>();

@@ -647,7 +647,10 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
             const char* env = std::getenv("GOW3_VOLUME_VIEWS");
             return !env || env[0] != '0';
         }();
-        if (volume_views && cache_image.info.type == AmdGpu::ImageType::Color3D &&
+        // Only with VK_EXT_image_2d_view_of_3d: without it a 2D view of a 3D image may only be a
+        // render target, and older drivers (AMD Polaris, issue #18) keep the old path.
+        if (volume_views && instance.Is2dViewOf3dSupported() &&
+            cache_image.info.type == AmdGpu::ImageType::Color3D &&
             cache_image.info.props.is_volume && image_info.type != AmdGpu::ImageType::Color3D &&
             image_info.guest_size == cache_image.info.guest_size &&
             image_info.pixel_format == cache_image.info.pixel_format &&
@@ -990,7 +993,7 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
             // Cannot reuse this image as we need the exact requested format.
             image_id = {};
         } else if (image_resolved.info.resources < info.resources &&
-                   !(image_resolved.info.props.is_volume &&
+                   !(instance.Is2dViewOf3dSupported() && image_resolved.info.props.is_volume &&
                      image_resolved.info.type == AmdGpu::ImageType::Color3D &&
                      info.type != AmdGpu::ImageType::Color3D &&
                      info.resources.layers <= image_resolved.info.size.depth &&

@@ -199,6 +199,18 @@ void Scheduler::ReportProducer(void* caller) {
                 static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(caller) - base));
 }
 
+void Scheduler::ReportStaleRecordData(void* caller) {
+    static std::atomic<u32> count{0};
+    const u32 n = count.fetch_add(1, std::memory_order_relaxed);
+    if (n < 8 || (n & (n - 1)) == 0) {
+        const auto base = reinterpret_cast<uintptr_t>(GetModuleHandleA(nullptr));
+        std::printf("Scheduler: a command landed in another chunk than its data (%u times; caller "
+                    "medievil-runtime.exe+%#llx)\n",
+                    n + 1, static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(caller) - base));
+        std::fflush(stdout);
+    }
+}
+
 void Scheduler::ReportInterleave(void* caller) {
     static std::mutex mutex;
     static void* reported[16]{};

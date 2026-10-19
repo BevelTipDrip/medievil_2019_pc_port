@@ -759,14 +759,37 @@ public:
             return;
         }
         NoteProducer(__builtin_return_address(0));
-        SyncWithDrawRecorder(__builtin_return_address(0));
+        // gow3: data from RecordData() must stay in the chunk of the command using it (chunks are
+        // recycled once executed). Waiting for the draw recorder here, after RecordData(), let it
+        // hand that chunk over meanwhile: the command landed in the next chunk with its data in a
+        // recycled one (garbage barriers: AMD driver crash in 1.3.4, issue #18). With data
+        // pending, the wait already happened in RecordData().
+        const RecordChunk* data_chunk = std::exchange(record_data_chunk, nullptr);
+        if (!data_chunk || !RecordDataFix()) {
+            SyncWithDrawRecorder(__builtin_return_address(0));
+        }
         ChunkGuard guard{chunk_lock};
+        if (data_chunk && data_chunk != record_chunk.get()) {
+            ReportStaleRecordData(__builtin_return_address(0));
+        }
         if (!record_chunk->Push(std::forward<Func>(func))) {
             full_chunks.push_back(std::move(record_chunk));
             record_chunk = AcquireChunk();
             const bool pushed = record_chunk->Push(std::forward<Func>(func));
             ASSERT(pushed);
+            if (data_chunk) {
+                ReportStaleRecordData(__builtin_return_address(0));
+            }
         }
+    }
+
+    /// GOW3_RECORD_DATA_FIX=0: the 1.3.4 order (wait in Record()), for tests.
+    static bool RecordDataFix() {
+        static const bool enabled = [] {
+            const char* env = std::getenv("GOW3_RECORD_DATA_FIX");
+            return !env || env[0] != '0';
+        }();
+        return enabled;
     }
 
     /// True when Record() defers commands (and RecordData() copies into chunks).
@@ -781,8 +804,12 @@ public:
         if (!IsRecordingDeferred()) {
             return;
         }
+        if (RecordDataFix()) {
+            SyncWithDrawRecorder(__builtin_return_address(0)); // before the data: see Record()
+        }
         ChunkGuard guard{chunk_lock};
         ReserveRecordDataLocked(bytes);
+        record_data_chunk = record_chunk.get();
     }
 
     void ReserveRecordDataLocked(size_t bytes) {
@@ -804,8 +831,12 @@ public:
         }
         // Room for the data and the command that follows it, so both stay in one chunk.
         const size_t bytes = data.size_bytes();
+        if (RecordDataFix()) {
+            SyncWithDrawRecorder(__builtin_return_address(0)); // before the data: see Record()
+        }
         ChunkGuard guard{chunk_lock};
         ReserveRecordDataLocked(bytes + alignof(T));
+        record_data_chunk = record_chunk.get();
         auto* dst = static_cast<T*>(record_chunk->Allocate(bytes, alignof(T)));
         if (!dst) {
             dst = static_cast<T*>(record_chunk->AllocateOversized(bytes));
@@ -986,6 +1017,9 @@ public:
 
 private:
     void ReportInterleave(void* caller);
+    void ReportStaleRecordData(void* caller);
+    /// The chunk holding this thread's last RecordData() for the command that follows.
+    static inline thread_local const RecordChunk* record_data_chunk = nullptr;
     bool (*draw_pipe_sync)(void*){};
     void* draw_pipe_sync_context{};
     struct ChunkGuard {
