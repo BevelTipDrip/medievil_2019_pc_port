@@ -961,3 +961,11 @@ and the bit 56 A/B in T-D1b changed nothing (the "about the same" verdicts compa
 targeted waits skip ~1 wait a frame, for bit 56 D1 never ran, so neither conclusion changes), and the bit 63 A/B
 attempted at 18:12:34 in T-D2b did not happen (precise writes kept counting). `run-game.ps1` now always sets the
 file and resets it to 0 at each launch. The D2 comparison above is across runs, same spot.
+
+**Correction 2: the 4K boot patch was missing from T-B1 to T-D2b.** The user (after T-D2b): "Performance and
+micro-stutter in general are VASTLY improved. The heavy area is where it's the worst, and even that's fairly
+acceptable right now. Though it appears we broke our 4k patch that fixes button inputs on menus somehow." Not the
+code: the runs up to T-L1 passed `GOW3_UE4_BOOT_4K=1` by `-Env` (as `launcher.cmd` does); from T-B1 the launches
+did not, so the logs show `Patches: ... ['Native 4K framebuffer pool (512 MB)']` without '4K display metrics at boot'
+and I1 came back. `run-game.ps1` now sets it by default. Comparisons within T-B1 … T-D2b (T-D1b vs T-D2b for D2) are
+like for like; comparisons of those runs against T-L1 and earlier mix the two boot modes.

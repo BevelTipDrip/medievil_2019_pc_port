@@ -28,6 +28,9 @@ $set = [ordered]@{ GOW3_GAME_DIR = $Game; GOW3_FRAME_STATS = '1' }
 $toggles = 'C:\Users\Ty\MediEvil\research-data\toggles.txt'
 Set-Content -Path $toggles -Value '0' -Encoding ascii
 $set.GOW3_TOGGLE_FILE = $toggles
+# I1 (menu navigation at 4K): boot at 4K like a PS4 Pro, as research\tools\launcher.cmd does. Without it the runs
+# from T-B1 to T-D2b (2026-10-19) lacked the '4K display metrics at boot' patch and the menus broke again.
+$set.GOW3_UE4_BOOT_4K = '1'
 if ($Validation) { $set.GOW3_VK_VALIDATION = '1'; $set.VK_ADD_LAYER_PATH = 'C:\msys64\clang64\bin' }
 if ($Samples) {
     $dir = "C:\Users\Ty\MediEvil\research-data\samples\$Tag"
