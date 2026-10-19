@@ -451,11 +451,15 @@ Order: visible bugs and crashes first, then frame pacing by value / risk, then m
 
 V3 (upstream has it), B1 / D1 / P2 (no gain or worse stutter), the reverted changes, the diagnostics, `research/`.
 
-One note on V3 worth giving upstream as a comment rather than a PR: our variant restricts every 2D array view of a 3D
-image to attachment use (`image_view.cpp`, `eColorAttachment | eAttachmentFeedbackLoopEXT`), which is valid without
-`VK_EXT_image_2d_view_of_3d`; the volume is sampled through its own 3D view. That is the path 1.3.5 falls back to on
-drivers without the extension (issue #18), used everywhere: it never had the AMD crash, and costs nothing measurable
-on NVIDIA (T-V3: map ~70 → ~200 FPS with it).
+One note on V3, an inference to check, **not a tested result**: our variant restricts every 2D array view of a 3D
+image to attachment use (`image_view.cpp`, `eColorAttachment | eAttachmentFeedbackLoopEXT`) and samples the volume
+through its own 3D view. Per the Vulkan spec, an attachment-only 2D array view of a 2D-array-compatible 3D image needs
+no `VK_EXT_image_2d_view_of_3d`, which is the condition 1.3.5 falls back on for issue #18 (sampled / storage usage on
+such views, undefined without the extension). So it *should* avoid that crash, but it has never run on AMD (or Intel)
+hardware, and the V3 validation-layer run is still pending. Not checked either: whether
+`eAttachmentFeedbackLoopEXT` is a valid usage for these views without the extension, and our volume-slice barriers and
+clears on other drivers. Before telling upstream anything: run the validation layer (`run-game.ps1 -Validation`) with
+V3 on, and ideally `GOW3_NO_2D_VIEW_OF_3D`-style testing on an AMD GPU (a tester with one).
 
 ## 5. Inconsistencies and gaps found in the docs
 
