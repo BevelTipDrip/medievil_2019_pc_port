@@ -50,6 +50,12 @@ public:
         static WaitDiagnostics stats;
         return stats;
     }
+    /// gow3: Scheduler::WaitHostCopies callers that waited: submit_ns = for the copies on the
+    /// recording thread, wait_ns = for the copy threads.
+    static WaitDiagnostics& HostCopies() {
+        static WaitDiagnostics stats;
+        return stats;
+    }
     static void Report() {
         if (!Enabled()) return;
         auto rows = Get().Take();
@@ -60,6 +66,17 @@ public:
             if (!row.calls) continue;
             const auto filename = row.file.substr(row.file.find_last_of("/\\") + 1);
             std::printf("Wait profile: %.*s:%u; %u calls, CPU submit %.3f ms, semaphore wait %.3f ms, max wait %.3f ms\n",
+                        int(filename.size()), filename.data(), row.line, row.calls,
+                        row.submit_ns / 1e6, row.wait_ns / 1e6, row.max_wait_ns / 1e6);
+        }
+        rows = HostCopies().Take();
+        std::sort(rows.begin(), rows.end(), [](const Entry& a, const Entry& b) {
+            return a.submit_ns + a.wait_ns > b.submit_ns + b.wait_ns;
+        });
+        for (const auto& row : rows) {
+            if (!row.calls) continue;
+            const auto filename = row.file.substr(row.file.find_last_of("/\\") + 1);
+            std::printf("Host copy waits: %.*s:%u; %u waits, recording thread %.3f ms, copy threads %.3f ms, max %.3f ms\n",
                         int(filename.size()), filename.data(), row.line, row.calls,
                         row.submit_ns / 1e6, row.wait_ns / 1e6, row.max_wait_ns / 1e6);
         }

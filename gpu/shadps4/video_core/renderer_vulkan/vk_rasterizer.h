@@ -90,15 +90,16 @@ public:
     u32 ReadDataFromGds(u32 gsd_offset);
     bool InvalidateMemory(VAddr addr, u64 size, bool assume_locks = false);
     /// GPU thread, before a write the guest can observe (see Scheduler::WaitHostCopies).
-    void WaitHostCopies() {
+    void WaitHostCopies(std::source_location caller = std::source_location::current()) {
         DrainDrawPipe();
-        scheduler.WaitHostCopies();
+        scheduler.WaitHostCopies(caller);
     }
     /// Before a write into [address, address + size): waits only when a host copy may still read
     /// it (Scheduler::WaitHostCopiesFor; toggle bit 62: always, as before).
-    void WaitHostCopiesFor(VAddr address, u64 size) {
+    void WaitHostCopiesFor(VAddr address, u64 size,
+                           std::source_location caller = std::source_location::current()) {
         DrainDrawPipe();
-        scheduler.WaitHostCopiesFor(address, size);
+        scheduler.WaitHostCopiesFor(address, size, caller);
     }
 
     /// gow3: GPU command thread: waits until the draw recording thread has recorded every

@@ -245,7 +245,7 @@ void Scheduler::NoteHostCopySource(u64 address, u64 size) {
     }
 }
 
-void Scheduler::WaitHostCopiesFor(u64 address, u64 size) {
+void Scheduler::WaitHostCopiesFor(u64 address, u64 size, std::source_location caller) {
     if (!Gow3Toggle::Disabled(Gow3Toggle::TargetedHostCopyWaits)) {
         std::scoped_lock lk{host_copy_sources_mutex};
         bool overlap = host_copy_big_seq > host_copy_sources_done;
@@ -264,10 +264,10 @@ void Scheduler::WaitHostCopiesFor(u64 address, u64 size) {
             return;
         }
     }
-    WaitHostCopies();
+    WaitHostCopies(caller);
 }
 
-void Scheduler::WaitHostCopies() {
+void Scheduler::WaitHostCopies(std::source_location caller) {
     u64 sources_seen;
     {
         std::scoped_lock lk{host_copy_sources_mutex};
@@ -282,7 +282,12 @@ void Scheduler::WaitHostCopies() {
             s.host_copy_sources_done = std::max(s.host_copy_sources_done, seen);
         }
     } forget{*this, sources_seen};
+    const bool diagnose = WaitDiagnostics::Enabled();
+    const auto now = [] { return std::chrono::steady_clock::now(); };
+    const auto start = diagnose ? now() : std::chrono::steady_clock::time_point{};
+    bool waited = false;
     if (host_copies_done.load(std::memory_order_acquire) < host_copies_issued) {
+        waited = true;
         Gow3Stats::WaitTimer timer{Gow3Stats::host_copies_wait_ns};
         Gow3Stats::host_copy_waits.fetch_add(1, std::memory_order_relaxed);
         KickRecording(true);
@@ -290,8 +295,22 @@ void Scheduler::WaitHostCopies() {
             std::this_thread::yield();
         }
     }
-    Gow3Stats::WaitTimer timer{Gow3Stats::copy_threads_wait_ns};
-    Gow3Copy::WaitAsync();
+    const auto recorded = diagnose ? now() : start;
+    {
+        Gow3Stats::WaitTimer timer{Gow3Stats::copy_threads_wait_ns};
+        Gow3Copy::WaitAsync();
+    }
+    if (diagnose) {
+        const auto end = now();
+        const auto ns = [](auto d) {
+            return u64(std::chrono::duration_cast<std::chrono::nanoseconds>(d).count());
+        };
+        // Only callers that waited (a wait of the copy threads over 2 us counts as one).
+        if (waited || end - recorded > std::chrono::microseconds(2)) {
+            WaitDiagnostics::HostCopies().Add(caller.file_name(), caller.line(),
+                                              ns(recorded - start), ns(end - recorded));
+        }
+    }
 }
 
 void Scheduler::KickRecording(bool force) {

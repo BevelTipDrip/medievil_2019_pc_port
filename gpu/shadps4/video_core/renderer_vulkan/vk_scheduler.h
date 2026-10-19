@@ -829,8 +829,8 @@ public:
     /// gow3: guest memory copies on the recording thread (small ones, RecordHostCopy) or the
     /// copy threads (Gow3Copy::Async) must be done before the guest learns the GPU is past them
     /// (it may then rewrite the memory, e.g. UI vertices: flickering) and before the
-    /// submission that reads them. Waits for all.
-    void WaitHostCopies();
+    /// submission that reads them. Waits for all. `caller`: for GOW3_PERF_DIAG.
+    void WaitHostCopies(std::source_location caller = std::source_location::current());
 
     /// gow3: guest memory [address, address + size) a host copy issued now will read (the
     /// source of a deferred upload). WaitHostCopiesFor waits only for these.
@@ -840,7 +840,8 @@ public:
     /// elsewhere do not wait: the hardware's command processor writes do not wait for earlier
     /// draws either, so the game cannot take one for a sign that the GPU is past them (fences,
     /// which it can, still wait for all). Ported from the Bloodborne port.
-    void WaitHostCopiesFor(u64 address, u64 size);
+    void WaitHostCopiesFor(u64 address, u64 size,
+                           std::source_location caller = std::source_location::current());
 
     /// Runs `copy` on the recording thread in order with the commands (the thread spins for
     /// work anyway, so small copies cost no wakeup); WaitHostCopies() covers it.
