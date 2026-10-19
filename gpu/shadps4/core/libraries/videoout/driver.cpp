@@ -529,16 +529,31 @@ void VideoOutDriver::Flip(const Request& req) {
                 const double median = sorted[sorted.size() / 2];
                 double sum = 0, sq = 0;
                 u32 spikes = 0;
+                // Spike length: consecutive frames over 1.5x the median, and their time.
+                u32 run = 0, longest_run = 0;
+                double run_ms = 0, longest_run_ms = 0;
                 for (const double ms : intervals) {
                     sum += ms;
                     sq += ms * ms;
-                    spikes += ms > 1.5 * median;
+                    if (ms > 1.5 * median) {
+                        ++spikes;
+                        ++run;
+                        run_ms += ms;
+                        if (run_ms > longest_run_ms) {
+                            longest_run = run;
+                            longest_run_ms = run_ms;
+                        }
+                    } else {
+                        run = 0;
+                        run_ms = 0;
+                    }
                 }
                 const double mean = sum / intervals.size();
                 std::printf("Frame pacing: median %.2f ms, stddev %.2f ms, p99 %.2f ms, "
-                            "%u frames over 1.5x median\n",
+                            "%u frames over 1.5x median, longest run %u frames (%.1f ms)\n",
                             median, std::sqrt(std::max(0.0, sq / intervals.size() - mean * mean)),
-                            sorted[std::min(sorted.size() - 1, sorted.size() * 99 / 100)], spikes);
+                            sorted[std::min(sorted.size() - 1, sorted.size() * 99 / 100)], spikes,
+                            longest_run, longest_run_ms);
             }
             intervals.clear();
             window_start = now;
