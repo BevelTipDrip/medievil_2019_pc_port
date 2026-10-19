@@ -330,9 +330,10 @@ void SignalFlip(Vulkan::Rasterizer& rasterizer, const u8*) {
 void RunWriteData(Vulkan::Rasterizer& rasterizer, const u8* data) {
     const auto* header = reinterpret_cast<const PM4Header*>(data);
     const auto* write_data = reinterpret_cast<const PM4CmdWriteData*>(data);
-    // Copies deferred to the recording thread, and fences deferred to it (RecorderFences),
-    // precede writes the guest sees.
-    rasterizer.WaitHostCopies();
+    // Copies deferred to the recording thread that read this range precede the write, and
+    // fences deferred to it (RecorderFences) precede writes the guest sees.
+    rasterizer.WaitHostCopiesFor(write_data->Address<VAddr>(),
+                                 (header->type3.count.Value() - 2) * sizeof(u32));
     rasterizer.WaitDeferredSignals();
     Gow3WriteLog::Note(write_data->Address<u64>(), write_data->data,
                      (header->type3.count.Value() - 2) * sizeof(u32), Gow3WriteLog::WriteData);
@@ -1569,13 +1570,15 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             break;
         }
         case PM4ItOpcode::WriteData: {
-            // gow3: copies deferred to the recording thread precede writes the guest sees, and
-            // so do graphics fences deferred to it (the pipe was drained before this packet).
+            // gow3: copies deferred to the recording thread that read this range precede the
+            // write, and graphics fences deferred to it precede writes the guest sees (the pipe
+            // was drained before this packet).
+            const auto* write_data = reinterpret_cast<const PM4CmdWriteData*>(header);
             if (rasterizer) {
-                rasterizer->WaitHostCopies();
+                rasterizer->WaitHostCopiesFor(write_data->Address<VAddr>(),
+                                              (header->type3.count.Value() - 2) * 4);
                 rasterizer->WaitDeferredSignals();
             }
-            const auto* write_data = reinterpret_cast<const PM4CmdWriteData*>(header);
             ASSERT(write_data->dst_sel.Value() == 2 || write_data->dst_sel.Value() == 5);
             const u32 data_size = (header->type3.count.Value() - 2) * 4;
             if (!write_data->wr_one_addr.Value()) {

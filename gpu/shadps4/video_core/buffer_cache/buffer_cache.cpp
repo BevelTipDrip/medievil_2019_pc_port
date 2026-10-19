@@ -136,6 +136,7 @@ void BufferCache::SmallGuestCopy(const Gow3Copy::Item& item) {
         item.run(item);
         return;
     }
+    scheduler.NoteHostCopySource(item.source, item.size);
     if (scheduler.IsRecordingDeferred() && !Gow3Toggle::Disabled(Gow3Toggle::PoolSmallCopies)) {
         scheduler.RecordHostCopy([item] { item.run(item); });
         return;
@@ -381,6 +382,7 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBufferForImage(VAddr device_add
             if (staging.size < Chunk) {
                 SmallGuestCopy(item);
             } else {
+                scheduler.NoteHostCopySource(item.source, item.size);
                 Gow3Copy::Async([item] { item.run(item); });
             }
         }
@@ -593,6 +595,7 @@ const Buffer* BufferCache::UploadCopies(const Buffer* arena, std::span<vk::Buffe
             });
         };
         for (auto& copy : copies) {
+            scheduler.NoteHostCopySource(copy.dstOffset, copy.size);
             group->push_back({copy.dstOffset, staging.mapped + copy.srcOffset, copy.size});
             group_bytes += copy.size;
             copy.srcOffset += staging.offset;

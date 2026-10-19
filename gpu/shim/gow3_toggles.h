@@ -73,6 +73,7 @@ enum : std::uint64_t {
     StencilPlaneWrites = 1ull << 59, ///< shader writes to a stencil plane copied into the image
     IdleEopSkip = 1ull << 60, ///< end of pipe with no readback work skips the host copy wait
     UndefinedTargets = 1ull << 61, ///< targets made where an unmap freed images skip the upload
+    TargetedHostCopyWaits = 1ull << 62, ///< WRITE_DATA waits only for copies reading its range
     // Bits 20-29 are used as raw debug toggles by the camera/object motion and the upscaler.
 };
 inline bool Disabled(std::uint64_t bit) {
@@ -124,6 +125,8 @@ inline std::atomic<std::uint64_t> reduced_draws{0}, scene_draws{0};
 /// for host copies before a submission or fence, and for GPU ticks.
 inline std::atomic<std::uint64_t> sync_recording_ns{0}, host_copies_wait_ns{0}, tick_wait_ns{0},
     copy_threads_wait_ns{0}, host_copy_waits{0};
+/// WRITE_DATA packets that skipped the host copy wait (no pending copy reads their range).
+inline std::atomic<std::uint64_t> host_copy_waits_skipped{0};
 struct WaitTimer {
     std::atomic<std::uint64_t>& total;
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();

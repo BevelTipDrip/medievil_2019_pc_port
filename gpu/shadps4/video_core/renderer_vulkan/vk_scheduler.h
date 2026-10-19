@@ -14,6 +14,7 @@
 #include <source_location>
 #include <utility>
 #include <vector>
+#include <array>
 #include <mutex>
 #include <thread>
 #include <queue>
@@ -831,6 +832,16 @@ public:
     /// submission that reads them. Waits for all.
     void WaitHostCopies();
 
+    /// gow3: guest memory [address, address + size) a host copy issued now will read (the
+    /// source of a deferred upload). WaitHostCopiesFor waits only for these.
+    void NoteHostCopySource(u64 address, u64 size);
+    /// Waits for the host copies when one of them may still read [address, address + size): a
+    /// write there (the command processor's WRITE_DATA) must not change what they copy. Writes
+    /// elsewhere do not wait: the hardware's command processor writes do not wait for earlier
+    /// draws either, so the game cannot take one for a sign that the GPU is past them (fences,
+    /// which it can, still wait for all). Ported from the Bloodborne port.
+    void WaitHostCopiesFor(u64 address, u64 size);
+
     /// Runs `copy` on the recording thread in order with the commands (the thread spins for
     /// work anyway, so small copies cost no wakeup); WaitHostCopies() covers it.
     template <typename Func>
@@ -969,6 +980,20 @@ private:
     bool direct_mode = false; ///< the command buffer is recorded on the caller's thread
     u64 host_copies_issued = 0;
     std::atomic<u64> host_copies_done{0};
+    /// gow3: the sources of the pending host copies (NoteHostCopySource), by 64 KiB granule in a
+    /// direct-mapped table; a slot two pending granules share matches any. A note is pending
+    /// while its seq is above host_copy_sources_done (WaitHostCopies raises it).
+    struct HostCopySlot {
+        u64 granule = 0;
+        u64 seq = 0;
+    };
+    static constexpr u32 HostCopySlots = 4096;
+    static constexpr u64 HostCopyWildcard = ~0ull;
+    std::mutex host_copy_sources_mutex;
+    std::array<HostCopySlot, HostCopySlots> host_copy_slots{};
+    u64 host_copy_source_seq = 0;
+    u64 host_copy_sources_done = 0;
+    u64 host_copy_big_seq = 0; ///< latest note too large for the table (matches everything)
     std::atomic<u64> deferred_signals_issued{0}; ///< by the thread recording (A or B)
     std::shared_ptr<std::atomic<u64>> deferred_signals_done =
         std::make_shared<std::atomic<u64>>(0);

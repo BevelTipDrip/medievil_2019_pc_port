@@ -94,6 +94,12 @@ public:
         DrainDrawPipe();
         scheduler.WaitHostCopies();
     }
+    /// Before a write into [address, address + size): waits only when a host copy may still read
+    /// it (Scheduler::WaitHostCopiesFor; toggle bit 62: always, as before).
+    void WaitHostCopiesFor(VAddr address, u64 size) {
+        DrainDrawPipe();
+        scheduler.WaitHostCopiesFor(address, size);
+    }
 
     /// gow3: GPU command thread: waits until the draw recording thread has recorded every
     /// draw handed to it (vk_draw_pipe.h); no-op on other threads.
