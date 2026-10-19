@@ -710,7 +710,8 @@ public:
     void BeginRendering(const RenderState& new_state);
 
     /// Ends current rendering scope.
-    void EndRendering();
+    /// `caller`: for GOW3_PERF_DIAG (render passes ended, by caller).
+    void EndRendering(std::source_location caller = std::source_location::current());
 
     /// Sets a function to be called on every scheduler submission.
     void SetSubmitCallback(SubmitFunc&& on_submit) {

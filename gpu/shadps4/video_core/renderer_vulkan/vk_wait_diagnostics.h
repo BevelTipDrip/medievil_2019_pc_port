@@ -56,6 +56,12 @@ public:
         static WaitDiagnostics stats;
         return stats;
     }
+    /// gow3: Scheduler::EndRendering callers that ended an open render pass (a pass ended for a
+    /// copy, e.g. a buffer upload, stores and reloads its targets).
+    static WaitDiagnostics& RenderPassEnds() {
+        static WaitDiagnostics stats;
+        return stats;
+    }
     static void Report() {
         if (!Enabled()) return;
         auto rows = Get().Take();
@@ -79,6 +85,15 @@ public:
             std::printf("Host copy waits: %.*s:%u; %u waits, recording thread %.3f ms, copy threads %.3f ms, max %.3f ms\n",
                         int(filename.size()), filename.data(), row.line, row.calls,
                         row.submit_ns / 1e6, row.wait_ns / 1e6, row.max_wait_ns / 1e6);
+        }
+        rows = RenderPassEnds().Take();
+        std::sort(rows.begin(), rows.end(),
+                  [](const Entry& a, const Entry& b) { return a.calls > b.calls; });
+        for (const auto& row : rows) {
+            if (!row.calls) continue;
+            const auto filename = row.file.substr(row.file.find_last_of("/\\") + 1);
+            std::printf("Render pass ends: %.*s:%u; %u\n", int(filename.size()), filename.data(),
+                        row.line, row.calls);
         }
     }
 private:

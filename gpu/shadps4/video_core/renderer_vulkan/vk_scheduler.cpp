@@ -127,9 +127,12 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
     });
 }
 
-void Scheduler::EndRendering() {
+void Scheduler::EndRendering(std::source_location caller) {
     if (!is_rendering) {
         return;
+    }
+    if (WaitDiagnostics::Enabled()) {
+        WaitDiagnostics::RenderPassEnds().Add(caller.file_name(), caller.line(), 0, 0);
     }
     is_rendering = false;
     Record([](vk::CommandBuffer cmdbuf) { cmdbuf.endRendering(); });
