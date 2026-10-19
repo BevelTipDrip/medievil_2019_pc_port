@@ -5,6 +5,7 @@
 #include <chrono>
 #include <array>
 #include <map>
+#include <mutex>
 #include <unordered_map>
 #include <algorithm>
 #include <bit>
@@ -23,6 +24,9 @@
 #include "video_core/renderer_vulkan/vk_runtime.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
+#include "video_core/renderer_vulkan/vk_wait_diagnostics.h"
+
+extern "C" unsigned char* runtime_image_base(void);
 
 #include <vk_mem_alloc.h>
 
@@ -156,9 +160,49 @@ void BufferCache::ExtendWriteFault(VAddr device_addr) {
     memory_tracker->ExtendWriteFault(Common::AlignDown(device_addr, window), window);
 }
 
+namespace {
+// gow3 GOW3_PERF_DIAG: write-fault downloads by guest instruction and 64 KiB page: which guest
+// code writes into memory a shader wrote (each one a full GPU wait).
+struct DownloadSite {
+    u64 count = 0, bytes = 0;
+};
+std::mutex download_sites_mutex;
+std::map<std::pair<u64, u64>, DownloadSite> download_sites;
+} // namespace
+
+void BufferCache::ReportDownloadSites(double seconds) {
+    std::vector<std::pair<u64, std::pair<u64, u64>>> top;
+    {
+        std::scoped_lock lock{download_sites_mutex};
+        for (const auto& [key, site] : download_sites) {
+            top.push_back({site.count, key});
+        }
+        download_sites.clear();
+    }
+    std::sort(top.begin(), top.end(), std::greater<>{});
+    const u64 image = reinterpret_cast<u64>(runtime_image_base());
+    for (size_t i = 0; i < top.size() && i < 8; ++i) {
+        const auto [rip, page] = top[i].second;
+        char where[40];
+        if (image && rip - image < 0x20000000) {
+            std::snprintf(where, sizeof(where), "guest+0x%llx", (unsigned long long)(rip - image));
+        } else {
+            std::snprintf(where, sizeof(where), "%#llx", (unsigned long long)rip);
+        }
+        std::printf("Write-fault downloads: %s writing %#llx (64 KiB page): %.1f/s\n", where,
+                    (unsigned long long)(page << 16), top[i].first / seconds);
+    }
+}
+
 void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool assume_locks) {
     const unsigned reason = Gow3Stats::download_reason;
-    const auto flush_request = [this, device_addr, size, is_write, reason] {
+    const u64 rip = reinterpret_cast<u64>(Gow3Stats::fault_rip);
+    const auto flush_request = [this, device_addr, size, is_write, reason, rip] {
+        if (reason == Gow3Stats::WriteFault && Vulkan::WaitDiagnostics::Enabled() &&
+            memory_tracker->IsRegionGpuModified(device_addr, size)) {
+            std::scoped_lock lock{download_sites_mutex};
+            ++download_sites[{rip, device_addr >> 16}].count;
+        }
         // gow3: a guest unmap ends the memory's contents: the GPU's data there is not read back
         // (a download is a full GPU wait, ~4 ms; UE4 decommits pool memory constantly). The
         // next use of the range uploads whatever the guest put there.

@@ -593,6 +593,9 @@ void VideoOutDriver::Flip(const Request& req) {
                                 Gow3Stats::download_ns[r].exchange(0) / 1e6 / window);
                 }
                 std::printf("; unmaps discarded %.1f\n", Gow3Stats::unmap_discards.exchange(0) / window);
+                if (Vulkan::WaitDiagnostics::Enabled()) {
+                    VideoCore::BufferCache::ReportDownloadSites(window);
+                }
                 window_image_bytes = image_bytes;
                 window_buffer_bytes = buffer_bytes;
             }

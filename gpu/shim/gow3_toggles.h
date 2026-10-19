@@ -101,6 +101,8 @@ inline std::atomic<std::uint64_t> occlusion_dumps{0}, render_pass_ends{0}, stage
 /// player frames), 3 guest unmap; and unmaps that dropped the data instead (UnmapDiscard).
 enum DownloadReason : unsigned { ReadFault, WriteFault, Invalidation, Unmap, DownloadReasons };
 inline thread_local unsigned download_reason = Invalidation;
+/// The guest instruction of the write fault being handled on this thread (download sites).
+inline thread_local const void* fault_rip = nullptr;
 inline std::atomic<std::uint64_t> download_count[DownloadReasons], download_bytes[DownloadReasons],
     download_ns[DownloadReasons], unmap_discards{0};
 /// Sets the reason for the downloads the current thread asks for, restores it after.
