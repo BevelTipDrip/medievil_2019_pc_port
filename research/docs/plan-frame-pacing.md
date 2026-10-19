@@ -715,3 +715,20 @@ stalls 500-638 ms (195-280 images); heavy view 120-125 FPS at ~2,900 draws/frame
 - **Panning stalls:** equeue waits do not grow (1-3.5 ms, as calm); the game's own waits do (guest+0x5ddc0f4 7-33 ms,
   guest+0x70b46c up to 5 ms). The stall chain is among the game's threads (asset loading), not the port's GPU pipeline;
   the port-specific share found so far is page faults (~14%) and pthread overhead (~14%) of the game thread's time.
+
+### P2a profile and fix P2 (2026-10-19)
+
+**P2a** (launched by Claude with the user's go; `run-game.ps1 -Samples`, heavy view windows 31-41: 125-134 FPS,
+~2,800 draws/frame; samples `research-data\samples\p2a-heavy-profile`, symbolized `*-symbolized.txt`):
+- **Stage A is no longer the limit:** ~19% yielding in `Liverpool::Process` (idle, waiting for submissions), ~9%
+  condition-variable waits in `ProcessGraphics`; `PostDraw` 21.8% inclusive, of which `CollectRingBindings` 10-18%
+  (constant buffer region lookups `cached_region` / `vma_index`, `CopySparseSerial` 4.4%), with **stage A blocked on
+  the runtime memory lock** in `vma_index` (SRW shared acquire waits; the game's pool commits take the write lock).
+- **Stage B (busy ~92%) is:** ~38% draw work (`RunDrawPacket`); **~20% spinning in `ProcessDownloadImages` →
+  `WaitHostCopies` at every end of pipe** (`RunEventWriteEop`); ~13% `SubmitFlip` waits; ~12% GPU fence waits.
+**Fix P2** (`texture_cache.cpp`, toggle bit 60 = 1152921504606846976): an end of pipe with no image to download and
+no readback ready to publish skips the host copy wait (it protects nothing then); with readback work it still waits
+(R1 skipped those too and broke the torches). The guest's fence keeps its order on stage B through
+`SignalAfterHostCopies` (recording thread, after the copies, kicks recording). Stats: "end of pipe with readback work
+... without (skipped)". Test T-P2: heavy view FPS / lows; torches, UI and particles must look unchanged; live A/B.
+Next candidates: the runtime memory lock in stage A's region lookups; stage B's draw work.
