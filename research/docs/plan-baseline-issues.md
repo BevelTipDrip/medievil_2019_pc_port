@@ -447,3 +447,13 @@ format 1), each copy after a fill of exactly that plane (shader 0x6846b3858ae55a
 0x201e800000 (shader 0x19d3f95ae106783d). The 24-line log limit ran out in the menu. In game: the box is gone, but
 there are no dynamic torch shadows either. Next: RenderDoc capture with V4 on at the torch (stencil at the box
 pixel before / after the volume pass, the projection's output inside and outside the shadow).
+
+**T-V4 RenderDoc (2026-10-18 20:57, build `423efc7`, V4 on; `v4-shadow_frame14784.rdc`, `_frame17750.rdc`): V4 is
+correct; V1 fixed.** The shadow mask (R8G8B8A8 4K at 0x2036000000) is cleared once (eid 5044), written by 23 shadow
+projections and read by **one** draw, eid 5703, a 3-index full-screen pass: the **directional (moon) light**, the
+user's "global light". No torch light reads a shadow mask: the torches are unshadowed point lights. With V4 the mask
+holds a clean silhouette of Dan, his sword and grass cast away from the moon (1.9% of the screen shadowed, no box).
+The old capture (`v1-shadow_frame24679.rdc`) has the same structure (clear 6085, 23 projections, one full-screen reader
+6743): **the "torch shadows" were the moon's per-object shadows (Dan, sword, and the static casters near him such as
+the fence) leaking out of their stencil volumes** over the ground near Dan, hence their wrong place and their tie to
+him. The user's "dynamic torch shadows missing with V4" is the leak gone; nothing else was drawn.
