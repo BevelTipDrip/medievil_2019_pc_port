@@ -419,3 +419,20 @@ no pixel shader). It sits right at the torch (depth down to 0.04), so its bars s
 shadowed" inside the box where the fence should give stripes. Next: RenderDoc shader debugging of eid 6479 at
 (3360,1512) in `v1-shadow_frame24679.rdc`: the shadow-map coordinate it computes, the sampled depths, the receiver
 depth and the comparison (scale / offset, tiling, bias or compare direction).
+
+**Cause found (2026-10-18, RenderDoc, no launch):** the user noted the shadows are in the wrong place (the fence's
+stripes are right, but size / shape / position follow Dan; the torch is in front of the fence). The atlas is fine
+(sword shadow in rows 4-238, fence in 246-440, own viewports / scissors); both projection passes (6479, 6507) use the
+same shadow matrix and 512² size. The projection is limited to a shadow volume by stencil: 6465 draws the volume (front
+faces increment, back faces decrement, depth test on), 6479 projects where stencil != 0 (masks 0xff, from the guest)
+and zeroes it. **At the box pixel the stencil is already 0x80 before the volume** (set by the base pass's ground mesh,
+eid 5227) and nothing clears it, so every such pixel inside the box passes. UE4 clears the stencil with a compute fill
+of the depth buffer's **separate stencil plane** (GCN): eid 5985 (shader 307, 32640 x 64 x 4 bytes) and eid 3778 write
+0x7F8000 bytes at 0x2018800000, a 3840x2160 8-bit plane. The texture cache's D32S8 image covers the depth plane
+(0x201a000000) only, so those writes never reached the image's stencil.
+
+**Fix V4** (toggle bit 59 `StencilPlaneWrites` restores the old path): each depth bind records its stencil plane
+(address, bytes); a compute dispatch writing (nearly) a whole known plane marks it; the next bind of that depth buffer
+copies the plane (GPU-current, `ObtainBufferForImage`) into the image's stencil aspect (`Runtime::CopyBufferToStencil`).
+Exact for uniform fills (clears); other contents would need detiling (logged: "Stencil plane ... rewritten by a
+shader", first 4). Test T-V4: Dan at the torch; live A/B with bit 59.
