@@ -756,3 +756,11 @@ binding makes new images, which start dirty and upload their undefined guest mem
 `UndefinedTargets` = 2305843009213693952): images made where an unmap freed images are `Undefined`; a render / depth
 target binding skips their upload; any other first use uploads as before. Test T-C3: torches in and out of view, live
 A/B; check that effects (fire, distortion) look the same.
+
+**T-C3 (2026-10-19 03:49, build `1024224`): hung at boot** (the discard took `mutex`, which some callers of
+FindRenderTarget / FindDepthTarget hold; std::mutex). Fixed in `d9949cb` (atomic flag update, no lock).
+**T-C3b (2026-10-19 03:52-03:56, launched by Claude with the user's go; build `d9949cb`; log
+`data/t-c3b-undefined.log`): the user: "Massive improvement."** Torch-test windows skip 64-288 MiB of uploads per 5 s
+(mostly 96-98 MiB per torch coming into view: the 64 + 32 MiB pair); worst frames there 7-11 ms (a few 15-18 ms),
+p99 4.8-10 ms (T-R1: worst 19-20 ms); heavy view ~120-134 FPS, worst ~11 ms. Visual check and a live A/B with bit 61
+still to do.
