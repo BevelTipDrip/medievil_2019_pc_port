@@ -762,5 +762,7 @@ FindRenderTarget / FindDepthTarget hold; std::mutex). Fixed in `d9949cb` (atomic
 **T-C3b (2026-10-19 03:52-03:56, launched by Claude with the user's go; build `d9949cb`; log
 `data/t-c3b-undefined.log`): the user: "Massive improvement."** Torch-test windows skip 64-288 MiB of uploads per 5 s
 (mostly 96-98 MiB per torch coming into view: the 64 + 32 MiB pair); worst frames there 7-11 ms (a few 15-18 ms),
-p99 4.8-10 ms (T-R1: worst 19-20 ms); heavy view ~120-134 FPS, worst ~11 ms. Visual check and a live A/B with bit 61
-still to do.
+p99 4.8-10 ms (T-R1: worst 19-20 ms); heavy view ~120-134 FPS, worst ~11 ms.
+The user: torches, glow and haze look as before. **Live A/B (03:57:46 off, 03:58:30 on), torch swings:** off: the
+64 + 32 MiB pair re-uploaded 3 times per window, worst frames 19.2 ms; on: no re-uploads, worst frames 7-12 ms. C3
+kept on by default.
