@@ -520,6 +520,16 @@ void VideoOutDriver::Flip(const Request& req) {
                         Gow3Stats::tick_wait_ns.exchange(0) / (window * 1e7),
                         frames ? double(Gow3Stats::reduced_draws.exchange(0)) / frames : 0.0,
                         frames ? double(Gow3Stats::scene_draws.exchange(0)) / frames : 0.0);
+            {
+                // Guest memory copied for the GPU: what a PC build would keep in VRAM is the
+                // part that is not new data every frame.
+                static u64 window_image_bytes = 0, window_buffer_bytes = 0;
+                std::printf("Uploads: images %.1f MB/s, buffers %.1f MB/s\n",
+                            (image_bytes - window_image_bytes) / 1e6 / window,
+                            (buffer_bytes - window_buffer_bytes) / 1e6 / window);
+                window_image_bytes = image_bytes;
+                window_buffer_bytes = buffer_bytes;
+            }
             presenter->GetRasterizer().GetPipelineCache().ReportCompilerStats();
             Vulkan::WaitDiagnostics::Report();
             // Frame pacing: spread of the guest flip intervals (judder that the mean hides).
