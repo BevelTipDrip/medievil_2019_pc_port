@@ -668,3 +668,20 @@ system dialog is open. Not a gameplay hitch.
 sets `GOW3_DMEM_MB=7104` and `GOW3_UE4_CVARS=r.GarlicHeapSizeMB=4600;r.Streaming.PoolSize=1600` unless `-Ps4Memory`
 is given; `-Env` cvars are appended. To do later in the port itself: size the pool with the render resolution
 (`scripts/ue4_override.py`, `run.py` patch requirements), not only in the test script.
+
+### The panning stall is a wait chain, not work (2026-10-19, `pan-1.etl` + Ghidra, no launch)
+
+The game thread's hot "loop" (eboot 0xa22070) is a one-line `IsLocked` (`return atomic flag @0x6b15ed8 != 0`, MFENCE
+around the load); its neighbours, reached through a function table at 0x5ababa0, are `Lock` (0xa21f50) and `Unlock`
+(0xa22030), which act only on threads other than the game thread (thread id vs 0x684be08) and count holders at
+0x6b15ee8. During the 0.7 s stall the game thread (2408) spins on it, switched in 1,632 times; the other threads add only
+0.01-0.15 cores. Workers 47264 / 16152 / 31188 / 46496 / 28868 compute almost nothing (8-23 samples each in 0.7 s, mostly
+the tracer's own stack walks, plus file-cache reads, memcpy, page faults) but are readied ~500-1,500 times each in that
+second, all `UserRequest` waits: a chain of tiny handoffs (28868 → 46496 → workers → game thread), ~0.6 ms off-CPU per
+wake, no scheduling delay. Guest sync maps to libwinpthread (`runtime_mutex.c`, `runtime_sema.c`, event flags in
+`runtime_extra.c`); its timed waits use `WaitForSingleObject` with millisecond timeouts at the default Windows timer
+resolution (the port never calls `timeBeginPeriod`), so a sub-millisecond guest timeout can take 1-15.6 ms. Port sleeps
+(`compat_sleep_ns`) use a high-resolution waitable timer and are not affected.
+Diagnostic `9380965`: `GOW3_WAIT_SITES=1` records every guest wait (sleep, yield, cond wait / timed wait, semaphore,
+event flag, mutex lock) per call site with requested and actual time, reported by time spent per 5 s. Test T-W1: pan at
+the hitch spot with it; compare the stall windows with calm ones.
