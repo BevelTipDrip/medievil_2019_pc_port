@@ -436,3 +436,14 @@ of the depth buffer's **separate stencil plane** (GCN): eid 5985 (shader 307, 32
 copies the plane (GPU-current, `ObtainBufferForImage`) into the image's stencil aspect (`Runtime::CopyBufferToStencil`).
 Exact for uniform fills (clears); other contents would need detiling (logged: "Stencil plane ... rewritten by a
 shader", first 4). Test T-V4: Dan at the torch; live A/B with bit 59.
+
+**T-V4 (2026-10-18 20:15-20:30, build `769de12`, log `data/t-v4-stencil.log`):** the box is gone with V4 and comes back
+with bit 59 set (live A/B twice). The user: the always-complete shadow of Dan is the global light's and is never
+affected; the dynamic shadows (torches) are, and with V4 they were missing as well. The copies reported the plane at
+the depth address: the first check counted any larger buffer spanning the plane.
+**T-V4b (2026-10-18 20:45-20:55, build `423efc7`, log `data/t-v4b-stencil.log`):** a rewrite must start at the plane and
+be within 1/16 of its size. Menu: depth 0x2018000000, stencil plane 0x201a000000 (directly after the 32 MB depth plane,
+format 1), each copy after a fill of exactly that plane (shader 0x6846b3858ae55a9e); plane-sized writes elsewhere:
+0x201e800000 (shader 0x19d3f95ae106783d). The 24-line log limit ran out in the menu. In game: the box is gone, but
+there are no dynamic torch shadows either. Next: RenderDoc capture with V4 on at the torch (stencil at the box
+pixel before / after the volume pass, the projection's output inside and outside the shadow).
