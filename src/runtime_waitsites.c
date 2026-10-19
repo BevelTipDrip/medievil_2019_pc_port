@@ -15,7 +15,7 @@
 #define REPORT_NS UINT64_C(5000000000)
 static const char *const kind_names[] = {"yield", "pthread_yield", "usleep(0)", "usleep", "nanosleep",
                                          "cond_wait", "cond_timedwait", "sema_wait", "eventflag_wait",
-                                         "mutex_lock"};
+                                         "mutex_lock", "equeue_wait"};
 typedef struct {
     uint64_t key;   /* return address | (kind+1) << 56; 0 = empty (atomic) */
     uint64_t calls, ns, requested; /* atomic */

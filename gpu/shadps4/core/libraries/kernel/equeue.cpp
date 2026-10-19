@@ -458,6 +458,12 @@ int PS4_SYSV_ABI sceKernelDeleteEqueue(OrbisKernelEqueue eq) {
     return ORBIS_OK;
 }
 
+// gow3: GOW3_WAIT_SITES (src/runtime_waitsites.c): how long the guest's event queue waits take, per
+// call site; UE4 waits for GPU events (end of pipe, flips) here.
+extern "C" int runtime_wait_sites_enabled(void);
+extern "C" u64 runtime_wait_now(void);
+extern "C" void runtime_wait_site(void* return_address, unsigned kind, u64 requested_ns, u64 actual_ns);
+
 int PS4_SYSV_ABI sceKernelWaitEqueue(OrbisKernelEqueue eq, OrbisKernelEvent* ev, int num, int* out,
                                      OrbisKernelUseconds* timo) {
     HLE_TRACE;
@@ -479,7 +485,12 @@ int PS4_SYSV_ABI sceKernelWaitEqueue(OrbisKernelEqueue eq, OrbisKernelEvent* ev,
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
+    const u64 requested_ns = timo ? u64(*timo) * 1000 : 0;
+    const u64 wait_start = runtime_wait_sites_enabled() ? runtime_wait_now() : 0;
     *out = equeue->WaitForEvents(ev, num, timo);
+    if (wait_start) {
+        runtime_wait_site(__builtin_return_address(0), 10, requested_ns, runtime_wait_now() - wait_start);
+    }
 
     if (*out == 0) {
         return ORBIS_KERNEL_ERROR_ETIMEDOUT;

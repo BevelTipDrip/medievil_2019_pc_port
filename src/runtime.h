@@ -109,7 +109,7 @@ unsigned char *runtime_image_base(void);
 /* GOW3_WAIT_SITES=1: guest yield / sleep / wait call sites (runtime_waitsites.c), with the time
  * requested and the time the call actually took. kind: 0 yield, 1 pthread_yield, 2 usleep(0),
  * 3 usleep, 4 nanosleep, 5 cond_wait, 6 cond_timedwait, 7 sema_wait, 8 eventflag_wait,
- * 9 mutex_lock. RUNTIME_WAIT_BEGIN / END go in the function the guest calls (its return address
+ * 9 mutex_lock, 10 equeue_wait (gpu/shadps4 equeue.cpp). RUNTIME_WAIT_BEGIN / END go in the function the guest calls (its return address
  * is the call site). */
 int runtime_wait_sites_enabled(void);
 uint64_t runtime_wait_now(void);
