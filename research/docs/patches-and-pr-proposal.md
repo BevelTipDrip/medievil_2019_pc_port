@@ -402,8 +402,10 @@ Order: visible bugs and crashes first, then frame pacing by value / risk, then m
 
 ### PR 4. Guest libc writes into shader-written memory without a GPU wait
 
-- **Highest value, highest risk** of the pacing fixes. Record a live A/B of bit 63 first (never done: correction 1),
-  with the 4K boot on.
+- **Highest value, highest risk** of the pacing fixes. Live A/B of bit 63 with the 4K boot: **done, T-D2c**
+  (2026-10-19; the user: "D2 definitely stays in"). Include **D2b** (`42a4943`): T-D2c showed D2 alone left the
+  bytes it wrote marked GPU-only, so the game's inlined copies (guest+0x68e109) downloaded 5-10/s; with D2b, T-D2d:
+  heavy view 0 downloads, stddev 0.32-0.48 ms, p99 8.6-9.5 ms, 127-130 FPS (the user: "the frametimes look great").
 - **Verify**: heavy long-distance Graveyard view. The PR should keep one counter: synchronous buffer downloads per
   second (lab: "Buffer downloads/s (GPU waits)", ~27/s → 0) and "precise CPU writes N (MB)"; plus frame-time stddev
   and p99 from the pacing line (lab: 1.1-1.5 → 0.34-0.68 ms, 10.9-13.0 → 8.8-9.8 ms). Watch for wrong effects.

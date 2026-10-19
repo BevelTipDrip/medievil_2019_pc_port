@@ -1006,3 +1006,13 @@ Limit: D2b removes the downloads D2 itself caused (bytes D2 already rewrote stil
 into bytes a shader wrote since is a real first write and still downloads, as with D2 off (2-4/s here). Removing those
 needs the writer's range before it writes (no libc call to hook) or a download that waits only for the work that
 wrote the page; next to look at with the occlusion work, since the writer sits beside the RHI query code.
+
+### T-D2d: D2b result (2026-10-19 ~19:00-19:04, launched by Claude with the user's go; build `42a4943`; log `data/t-d2d-release.log`)
+
+Heavy view (~2,785 draws/frame), the last 80 s: **write-fault downloads 0**, 127-130 FPS, median 7.6-7.8 ms, **stddev
+0.32-0.48 ms, p99 8.6-9.5 ms** (T-D2c, D2 only: 0.38-1.10 ms, p99 up to 11.5 ms with 5-10 downloads/s). Whole run:
+downloads in 12 of 46 windows, all early, mean 2.0/s. The user: "Looks good. I think some of the initial spikes are
+from the movie issue. The game has lots of little spikes when first loading in … It stops after a couple minutes. …
+I've been in the heavy area for about a minute now, and the frametimes look great." The intro starts at 11.6 s
+(AvPlayer trace) and decoded ~200 s in earlier runs: the movie fix is the next check for the early spikes.
+**D2 + D2b kept.**
