@@ -820,3 +820,42 @@ refresh sites of T-R1, T-C3b and T-L1:
   memory model emulated. `55146e6` adds "Uploads: images / buffers MB/s" to the frame stats to size it. The PC
   answer would be letting the GPU read those pages directly (VK_EXT_external_memory_host import, or writing them into a
   host-visible stream buffer as Bloodborne does for uniforms); a later item.
+
+### Buffer copies and Resizable BAR / SAM (2026-10-19, code + vulkaninfo, no launch)
+
+The user: the buffer double copy sounds inefficient; SAM / ReBAR may help; as the CPU side gets faster the bulk copies
+will be what is left. **ReBAR is on** on the test PC: memory type 4 (DEVICE_LOCAL | HOST_VISIBLE | HOST_COHERENT)
+sits on the full 23.57 GiB VRAM heap (without ReBAR NVIDIA exposes a 256 MiB heap for it).
+
+How a guest buffer reaches the GPU today (`BufferCache::ObtainBuffer`):
+- **Read-only, <= 16 KiB (`STREAM_THRESHOLD`), not GPU-written** (UE4 constants, most per-draw data): one CPU copy
+  from guest memory straight into the 128 MiB stream buffer, `MemoryType::Stream` = VMA "prefer device" + host
+  sequential write, which with ReBAR is VRAM. Already the SAM path: one copy, no GPU copy, no render pass break.
+  Copied on every bind, dirty or not (no tracking).
+- **Anything else** (larger or GPU-written: vertex / index / structured buffers): a sparse device-local arena; the
+  dirty ranges (write tracking by page protection) are copied by the CPU into a host staging buffer
+  (`HostUncached`, system RAM), then `Runtime::CopyBuffer` copies staging -> arena on the GPU. **That copy ends the
+  open render pass** (`vk_runtime.cpp:116`): at 4K the targets are stored and loaded again.
+
+What ReBAR can and cannot change:
+1. *Arena writes straight into VRAM* (map the arena's backing memory from type 4, CPU writes in place): saves the
+   GPU copy and the render pass break, not the CPU copy. Unsafe as is: the GPU may still be running earlier
+   submissions that read the old contents (the staging copy is ordered on the GPU timeline; a CPU write is not), and
+   our guest fences signal once the copies are done, not once the GPU is. It would need a wait for the GPU tick of
+   the last reader of those pages: a stall.
+2. *Larger read-only buffers through the stream buffer* (raise `STREAM_THRESHOLD`, a bigger ReBAR stream buffer):
+   one CPU copy into VRAM, no staging, no GPU copy, **no render pass break**. Cost: stream copies are made on every
+   bind, so a large static vertex buffer bound every frame would be copied every frame. Needs the per-region data
+   (`GOW3_BUFFER_STATS=1`: stream vs arena bytes, bytes actually re-uploaded) to pick a threshold, or a hybrid
+   (stream only ranges that are dirty).
+3. *Zero copy* (import guest memory with VK_EXT_external_memory_host, the GPU reads system RAM over PCIe): removes the
+   CPU copy too, the PS4's own model. Every GPU read then crosses PCIe (vertex data read per draw at 4K), and the
+   guest may rewrite memory the GPU is still reading (same fence issue as 1). A research item, not a first step.
+4. *Staging in VRAM* (type 4 for `HostUncached` uploads): the CPU copy writes over PCIe, the GPU copy is VRAM ->
+   VRAM. Small: the CPU work is the same.
+
+The CPU-side cost (the copy itself, the protection faults that track dirtiness, the waits) is the same for 1, 2 and 4;
+the gains are on the GPU timeline (copies, render pass breaks) and in stage B (fewer copy commands and barriers).
+Measure first, next launch: `GOW3_BUFFER_STATS=1` (stream / arena / re-uploaded MB per region), `GOW3_PERF_DIAG=1`
+(`fde3624`: render passes ended by caller; host copy waits by caller), the new "Uploads: images / buffers MB/s".
+If arena uploads break many passes per frame, option 2 (for read-only uploads during a pass) is the first change.
