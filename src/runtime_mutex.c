@@ -80,7 +80,9 @@ static int32_t ensure_mutex(GuestMutex **mutex) {
 static ABI int32_t mutex_lock(GuestMutex **mutex) {
     int32_t e = ensure_mutex(mutex);
     if (e) return e;
+    RUNTIME_WAIT_BEGIN();
     e = orbis_error(pthread_mutex_lock(&(*mutex)->native));
+    RUNTIME_WAIT_END(9, 0);
     if (!e) ++locks;
     return e;
 }
@@ -190,7 +192,10 @@ static ABI int32_t cond_wait(GuestCond **cond, GuestMutex **mutex) {
     if (e) return e;
     if (!mutex || (uintptr_t)*mutex < 3) return orbis_error(EINVAL);
     ++waits;
-    return orbis_error(pthread_cond_wait(&(*cond)->native, &(*mutex)->native));
+    RUNTIME_WAIT_BEGIN();
+    e = orbis_error(pthread_cond_wait(&(*cond)->native, &(*mutex)->native));
+    RUNTIME_WAIT_END(5, 0);
+    return e;
 }
 static int32_t cond_wait_until(GuestCond **cond, GuestMutex **mutex, const struct timespec *end) {
     int32_t e = ensure_cond(cond);
@@ -202,7 +207,10 @@ static int32_t cond_wait_until(GuestCond **cond, GuestMutex **mutex, const struc
 static ABI int32_t cond_timedwait(GuestCond **cond, GuestMutex **mutex, uint32_t usec) {
     struct timespec end;
     if (deadline_after(&end, usec)) return orbis_error(EINVAL);
-    return cond_wait_until(cond, mutex, &end);
+    RUNTIME_WAIT_BEGIN();
+    const int32_t e = cond_wait_until(cond, mutex, &end);
+    RUNTIME_WAIT_END(6, (uint64_t)usec * 1000);
+    return e;
 }
 static ABI int32_t cond_signal(GuestCond **cond) {
     int32_t e = ensure_cond(cond);
@@ -219,7 +227,10 @@ typedef struct { int64_t sec, nsec; } GuestTimespec;
 static ABI int32_t cond_abs_timedwait(GuestCond **cond, GuestMutex **mutex, const GuestTimespec *abs) {
     if (!abs || abs->nsec < 0 || abs->nsec >= 1000000000) return orbis_error(EINVAL);
     struct timespec end = {.tv_sec = (time_t)abs->sec, .tv_nsec = (long)abs->nsec};
-    return cond_wait_until(cond, mutex, &end);
+    RUNTIME_WAIT_BEGIN();
+    const int32_t e = cond_wait_until(cond, mutex, &end);
+    RUNTIME_WAIT_END(6, 0);
+    return e;
 }
 /* POSIX pthread APIs return positive guest errno values, unlike scePthread. */
 static int32_t posix_result(int32_t result) { return result ? (int32_t)((uint32_t)result & 0xffff) : 0; }

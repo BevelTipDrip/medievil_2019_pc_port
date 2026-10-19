@@ -106,12 +106,18 @@ uint64_t runtime_memory_flexible_available(void);
 uintptr_t runtime_extra_resolve(const char *name);
 void runtime_extra_report(void);
 unsigned char *runtime_image_base(void);
-/* GOW3_WAIT_SITES=1: guest yield / sleep call sites (runtime_waitsites.c). kind: 0 yield,
- * 1 pthread_yield, 2 usleep(0), 3 usleep, 4 nanosleep. */
+/* GOW3_WAIT_SITES=1: guest yield / sleep / wait call sites (runtime_waitsites.c), with the time
+ * requested and the time the call actually took. kind: 0 yield, 1 pthread_yield, 2 usleep(0),
+ * 3 usleep, 4 nanosleep, 5 cond_wait, 6 cond_timedwait, 7 sema_wait, 8 eventflag_wait,
+ * 9 mutex_lock. RUNTIME_WAIT_BEGIN / END go in the function the guest calls (its return address
+ * is the call site). */
 int runtime_wait_sites_enabled(void);
-void runtime_wait_site(void *return_address, unsigned kind, uint64_t ns);
-#define RUNTIME_WAIT_SITE(kind, ns) \
-    do { if (runtime_wait_sites_enabled()) runtime_wait_site(__builtin_return_address(0), (kind), (ns)); } while (0)
+uint64_t runtime_wait_now(void);
+void runtime_wait_site(void *return_address, unsigned kind, uint64_t requested_ns, uint64_t actual_ns);
+#define RUNTIME_WAIT_BEGIN() const uint64_t runtime_wait_t0 = runtime_wait_sites_enabled() ? runtime_wait_now() : 0
+#define RUNTIME_WAIT_END(kind, requested_ns) \
+    do { if (runtime_wait_t0) runtime_wait_site(__builtin_return_address(0), (kind), (requested_ns), \
+                                                 runtime_wait_now() - runtime_wait_t0); } while (0)
 void runtime_ue4_setres_poll(void);
 void runtime_ue4_request_setres(const char *text);
 void runtime_sse4a_install(unsigned char *image, size_t image_size, unsigned char *stubs, size_t stubs_size);

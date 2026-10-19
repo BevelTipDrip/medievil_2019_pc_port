@@ -116,12 +116,16 @@ static int sleep_ns(uint64_t ns) {
     return 0;
 }
 static ABI int32_t kernel_usleep(uint32_t usec) {
-    RUNTIME_WAIT_SITE(usec ? 3 : 2, (uint64_t)usec*1000);
-    sleep_ns((uint64_t)usec*1000); return 0;
+    RUNTIME_WAIT_BEGIN();
+    sleep_ns((uint64_t)usec*1000);
+    RUNTIME_WAIT_END(usec ? 3 : 2, (uint64_t)usec*1000);
+    return 0;
 }
 static ABI int32_t posix_usleep(uint32_t usec) {
-    RUNTIME_WAIT_SITE(usec ? 3 : 2, (uint64_t)usec*1000);
-    sleep_ns((uint64_t)usec*1000); return 0;
+    RUNTIME_WAIT_BEGIN();
+    sleep_ns((uint64_t)usec*1000);
+    RUNTIME_WAIT_END(usec ? 3 : 2, (uint64_t)usec*1000);
+    return 0;
 }
 static ABI uint32_t posix_sleep(uint32_t seconds) { sleep_ns((uint64_t)seconds*1000000000); return 0; }
 static int32_t nanosleep_ns(const GuestTimespec *rq,GuestTimespec *rem) {
@@ -132,12 +136,16 @@ static int32_t nanosleep_ns(const GuestTimespec *rq,GuestTimespec *rem) {
 }
 /* The call site is recorded here, in the functions the guest calls. */
 static ABI int32_t posix_nanosleep(const GuestTimespec *rq,GuestTimespec *rem) {
-    RUNTIME_WAIT_SITE(4, rq ? (uint64_t)rq->sec*1000000000+(uint64_t)rq->nsec : 0);
-    return nanosleep_ns(rq,rem);
+    RUNTIME_WAIT_BEGIN();
+    const int32_t r=nanosleep_ns(rq,rem);
+    RUNTIME_WAIT_END(4, rq ? (uint64_t)rq->sec*1000000000+(uint64_t)rq->nsec : 0);
+    return r;
 }
 static ABI int32_t kernel_nanosleep(const GuestTimespec *rq,GuestTimespec *rem) {
-    RUNTIME_WAIT_SITE(4, rq ? (uint64_t)rq->sec*1000000000+(uint64_t)rq->nsec : 0);
-    return nanosleep_ns(rq,rem) ? ERR(*runtime_errno()) : 0;
+    RUNTIME_WAIT_BEGIN();
+    const int32_t r=nanosleep_ns(rq,rem) ? ERR(*runtime_errno()) : 0;
+    RUNTIME_WAIT_END(4, rq ? (uint64_t)rq->sec*1000000000+(uint64_t)rq->nsec : 0);
+    return r;
 }
 typedef struct { int32_t minuteswest, dsttime; } GuestTimezone;
 static ABI int32_t kernel_gettimezone(GuestTimezone *tz) {
@@ -167,7 +175,7 @@ static ABI int64_t posix_time(int64_t *out) { int64_t t=(int64_t)time(NULL); if 
 /* ---- process ---- */
 static ABI int32_t get_pagesize(void) { return PAGE; }
 static ABI int32_t get_pid(void) { return 1000; }
-static ABI int32_t yield(void) { RUNTIME_WAIT_SITE(0, 0); sched_yield(); return 0; }
+static ABI int32_t yield(void) { RUNTIME_WAIT_BEGIN(); sched_yield(); RUNTIME_WAIT_END(0, 0); return 0; }
 static ABI __attribute__((noreturn)) void hard_exit(int status) {
     printf("Runtime: guest requested _exit(%d)\n",status);
     runtime_report();

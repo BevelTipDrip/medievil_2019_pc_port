@@ -118,7 +118,15 @@ static ABI int32_t ef_poll(EventFlag *handle, uint64_t bits, uint32_t mode, uint
     pthread_mutex_unlock(&f->lock);
     return r;
 }
+static int32_t ef_wait_impl(EventFlag *handle, uint64_t bits, uint32_t mode, uint64_t *result, uint32_t *timeout_us);
 static ABI int32_t ef_wait(EventFlag *handle, uint64_t bits, uint32_t mode, uint64_t *result, uint32_t *timeout_us) {
+    const uint64_t requested=timeout_us ? (uint64_t)*timeout_us*1000 : 0;
+    RUNTIME_WAIT_BEGIN();
+    const int32_t r=ef_wait_impl(handle,bits,mode,result,timeout_us);
+    RUNTIME_WAIT_END(8, requested);
+    return r;
+}
+static int32_t ef_wait_impl(EventFlag *handle, uint64_t bits, uint32_t mode, uint64_t *result, uint32_t *timeout_us) {
     EventFlag *f=flag(handle);
     if (!f) return ERR(E_SRCH);
     if (!bits || !ef_valid_mode(mode)) return ERR(E_INVAL);
@@ -196,8 +204,9 @@ static ABI int32_t prt_aperture(int index, void **address, uint64_t *size) {
 }
 static ABI int32_t kernel_nanosleep(const struct timespec *request, struct timespec *remain) {
     if (!request) return ERR(E_INVAL);
-    RUNTIME_WAIT_SITE(4, (uint64_t)request->tv_sec*1000000000u+(uint64_t)request->tv_nsec);
+    RUNTIME_WAIT_BEGIN();
     compat_sleep_ns((uint64_t)request->tv_sec*1000000000u+(uint64_t)request->tv_nsec);
+    RUNTIME_WAIT_END(4, (uint64_t)request->tv_sec*1000000000u+(uint64_t)request->tv_nsec);
     if (remain) remain->tv_sec=remain->tv_nsec=0;
     return 0;
 }
