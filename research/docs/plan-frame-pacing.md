@@ -794,3 +794,8 @@ command-processor WRITE_DATA wait only when a pending copy reads its range; fenc
 9% of stage A with 115-123 waits per frame, **1 per frame skipped**. WRITE_DATA is not where MediEvil's host copy
 waits come from. Kept (harmless, correct); `338e0a0` adds a per-caller report of the waits (`GOW3_PERF_DIAG=1`,
 "Host copy waits:" lines) to find the callers that do wait before porting the next item.
+The user (T-B1): 1% lows higher on average in lighter areas, but the frame time spikes longer, as with P2. The log
+does not show it: per-second p99 and worst frame by FPS band match or beat T-L1 / T-C3b (e.g. 180-230 FPS: p99
+5.4 ms vs 8.3 / 5.8), but it has no measure of spike length and the runs took different paths. Only one WRITE_DATA
+a frame skips its wait, so a mechanism would be that one wait used to finish the frame's copies before the next
+fence. `90d7604` adds the longest run of slow frames to the pacing line; next: live A/B of bit 62 at a spike spot.
