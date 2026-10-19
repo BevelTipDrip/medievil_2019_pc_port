@@ -945,3 +945,19 @@ lock until it has written guest memory, and a write is queued before it goes int
 overwrite the other's newer bytes. The idea follows the Bloodborne port's `NotePreciseUpload`, which learns of the
 write afterwards (it runs without page protection); here it has to come before the write. Frame stats: "precise
 CPU writes N (MB)". Test T-D2b: heavy view, live A/B of bit 63; watch for broken effects (wrong data in the GPU copy).
+
+### T-D2b: D2 result (2026-10-19 18:02-18:13, launched by Claude with the user's go; build `1bc2dda`; log `data/t-d2b-precise-writes.log`)
+
+Synchronous buffer downloads **0** for the whole run (write faults 0.0/s, was ~27/s); ~130-200 precise CPU writes a
+second (1.4-1.7 MB/s). Heavy long-distance view (2,800-3,000 draws/frame), T-D1b → T-D2b: FPS 114-121 → 119-127,
+median 7.7-8.2 → 7.9-8.3 ms, **stddev 1.1-1.5 → 0.34-0.68 ms, p99 10.9-13.0 → 8.8-9.8 ms**; light views stddev down to
+0.08 ms. The user: "The 1% lows are much more stable looking at the heavy long distance area, a significant
+improvement. The frametime graph in general looks significantly better, even outside of that area." No broken
+visuals reported. **Kept, on by default.**
+
+**Correction: the live toggles did not reach T-U1, T-D1b and T-D2b.** The runtime watches the toggle file only when
+`GOW3_TOGGLE_FILE` is set; `run-game.ps1` did not set it (earlier runs passed it by `-Env`). So the bit 62 A/B in T-U1
+and the bit 56 A/B in T-D1b changed nothing (the "about the same" verdicts compare identical builds; for bit 62 the
+targeted waits skip ~1 wait a frame, for bit 56 D1 never ran, so neither conclusion changes), and the bit 63 A/B
+attempted at 18:12:34 in T-D2b did not happen (precise writes kept counting). `run-game.ps1` now always sets the
+file and resets it to 0 at each launch. The D2 comparison above is across runs, same spot.

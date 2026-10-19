@@ -23,6 +23,11 @@ if (Test-Path $ini) { Copy-Item $ini "$ini.bak-$Tag" }
 
 # GOW3_FRAME_STATS: the per-second Perf / Frame stats / Draw pipe / Stall lines the launcher's runs log.
 $set = [ordered]@{ GOW3_GAME_DIR = $Game; GOW3_FRAME_STATS = '1' }
+# Live toggles (gpu/shim/gow3_toggles.h bits): the runtime watches this file only when it is set. Reset to 0 at
+# every launch, so a launch never starts with a toggle left from the one before.
+$toggles = 'C:\Users\Ty\MediEvil\research-data\toggles.txt'
+Set-Content -Path $toggles -Value '0' -Encoding ascii
+$set.GOW3_TOGGLE_FILE = $toggles
 if ($Validation) { $set.GOW3_VK_VALIDATION = '1'; $set.VK_ADD_LAYER_PATH = 'C:\msys64\clang64\bin' }
 if ($Samples) {
     $dir = "C:\Users\Ty\MediEvil\research-data\samples\$Tag"
