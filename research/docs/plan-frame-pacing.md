@@ -694,3 +694,14 @@ guest+0x5ddc0f4 averages 9.6 ms (calm 0.7 ms) and guest+0x355152b 17-143 ms. The
 the POSIX wrappers (`posix_cond_wait`, `posix_mutex_lock`, 115k-313k locks/s in stall windows) hid the guest call
 sites. Fixed in the diagnostic (`posix_*` exports measure themselves; timed waits record time to the deadline).
 Re-run needed (T-W2).
+
+**T-W2 (2026-10-19 02:23-02:42, launched by Claude with the user's go; build `a2cb3a3`; log `data/t-w2-waits.log`):**
+stalls 500-638 ms (195-280 images); heavy view 120-125 FPS at ~2,900 draws/frame, GPU ticks 1-3%.
+- **No timer rounding:** timed waits end before their deadlines (requested 8-14 ms, actual 7-8 ms); sleeps exact.
+- **Stall windows: waits get longer** at the same sites: `cond_wait` guest+0x70b46c (the busiest; likely UE4's
+  event wait for task threads) 0.8-3.8 ms → 9.6 / 21 ms at 5-10k waits/s; guest+0x5ddc0f4 0.7 → 31 ms. Threads wait
+  longer for a signal: what they wait for is late, not the wait itself.
+- **Heavy view:** render thread's query spin `usleep(0)` guest+0x689c89 1.24 M/s; task handoffs at 0x70b46c 16.8k/s
+  (0.84 ms); mutex guest+0xf5a7ce 179k/s; contended mutex guest+0x676c41 ~150/s at ~3 ms always.
+- Not covered yet: `sceKernelWaitEqueue`, where UE4's RHI waits for GPU events (end of pipe, flips). Added (kind 10,
+  `equeue_wait`). T-W3: same route; if equeue waits grow in stalls, the late signal comes from the port's GPU pipeline.
