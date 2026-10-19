@@ -1262,10 +1262,14 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc
 }
 
 void TextureCache::DiscardUndefinedContents(ImageId image_id) {
-    std::scoped_lock lock{mutex};
+    // Without `mutex`: some callers of FindRenderTarget / FindDepthTarget hold it (std::mutex).
+    // The flags are changed atomically, as UpdateImage's fast path reads them.
     Image& image = slot_images[image_id];
-    if (True(image.flags & ImageFlagBits::Undefined)) {
-        image.flags &= ~(ImageFlagBits::Undefined | ImageFlagBits::Dirty);
+    std::atomic_ref<u32> flags{reinterpret_cast<u32&>(image.flags)};
+    constexpr u32 Undefined = static_cast<u32>(ImageFlagBits::Undefined);
+    constexpr u32 Dirty = static_cast<u32>(ImageFlagBits::Dirty);
+    if (flags.load(std::memory_order_acquire) & Undefined &&
+        flags.fetch_and(~(Undefined | Dirty), std::memory_order_acq_rel) & Undefined) {
         CACHE_STAT(undefined_targets, 1);
         CACHE_STAT(undefined_target_bytes, image.info.guest_size);
     }
