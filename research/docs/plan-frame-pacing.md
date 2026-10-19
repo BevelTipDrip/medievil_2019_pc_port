@@ -1071,3 +1071,15 @@ their work condition variables, `gow3:DrawRec` on its atomic wait); the game's m
 threads. Differences from the last good runs: `r.AllowOcclusionQueries=1` (the default of every run before T-O1) and
 `occlusionQueryPrecise` enabled on the device. One occurrence: relaunch; if it repeats, separate the two (queries on
 without O2, then O2 without precise counts).
+
+### T-O2b: O2 runs (2026-10-19 19:47-19:52, launched by Claude with the user's go; build `11eba14`; log `data/t-o2b-occlusion.log`)
+
+Relaunch of T-O2: no hang this time (the user: "Looks like it survived this time"). O2 works: up to ~23,000 events /
+~11,600 queries a second, **39-63% of queries hidden** (the last windows 62-63%), results written 7-9 ms after the
+event on average, 0 segments missed. The busiest windows: ~1,630-1,700 draws a frame (the heavy view had ~2,800 with
+every query visible; whether these windows are the same spot is to be confirmed with the user), but **86-89 FPS**,
+p99 12.6-16.4 ms. Why: the game's render thread waits for last frame's results (`bWait`,
+`r.NumBufferedOcclusionQueries=1`), which land ~8 ms after the event (the GPU finishing that frame plus the completion
+thread): stage A idle 53%, stage B busy only 40-46% (was ~90%), GPU tick waits ~0. The R4a cost, now with a reason.
+Next: T-O2c with `r.NumBufferedOcclusionQueries=2` (results two frames old, long written by then; culling one frame
+later). If that is not enough: shorten the latency (submission boundaries, the completion thread's wake-up).
