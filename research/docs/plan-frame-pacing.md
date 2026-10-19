@@ -705,3 +705,13 @@ stalls 500-638 ms (195-280 images); heavy view 120-125 FPS at ~2,900 draws/frame
   (0.84 ms); mutex guest+0xf5a7ce 179k/s; contended mutex guest+0x676c41 ~150/s at ~3 ms always.
 - Not covered yet: `sceKernelWaitEqueue`, where UE4's RHI waits for GPU events (end of pipe, flips). Added (kind 10,
   `equeue_wait`). T-W3: same route; if equeue waits grow in stalls, the late signal comes from the port's GPU pipeline.
+
+**T-W3 (2026-10-19 02:43-02:47, launched by Claude with the user's go; build `ff78bdf`; log `data/t-w3-waits.log`):**
+- **Heavy view (the user's theory, confirmed):** `equeue_wait` guest+0x6885e7 (60 ms timeout) ~123/s = once per frame
+  at ~122 FPS, **3.8-4.1 ms each** (calm ~1.3 ms); guest+0x69c1ac ~360/s at ~0.95 ms. Port counters: GPU ticks 1-3%.
+  The game's render side waits about half of each ~8.2 ms frame for frame-completion events from the port's
+  pipeline (stage A decode, stage B, recorder), not for the GPU; the render thread's `usleep(0)` query spin (1.2 M/s)
+  is the same wait. Lever: stage A / B per-draw cost and parallelism (plan-gpu-threading.md, P1 follow-ups).
+- **Panning stalls:** equeue waits do not grow (1-3.5 ms, as calm); the game's own waits do (guest+0x5ddc0f4 7-33 ms,
+  guest+0x70b46c up to 5 ms). The stall chain is among the game's threads (asset loading), not the port's GPU pipeline;
+  the port-specific share found so far is page faults (~14%) and pthread overhead (~14%) of the game thread's time.
