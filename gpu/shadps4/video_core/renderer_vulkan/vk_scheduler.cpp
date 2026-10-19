@@ -131,6 +131,7 @@ void Scheduler::EndRendering(std::source_location caller) {
     if (!is_rendering) {
         return;
     }
+    Gow3Stats::render_pass_ends.fetch_add(1, std::memory_order_relaxed);
     if (WaitDiagnostics::Enabled()) {
         WaitDiagnostics::RenderPassEnds().Add(caller.file_name(), caller.line(), 0, 0);
     }

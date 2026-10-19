@@ -26,6 +26,7 @@
 #include "common/thread.h"
 #include "common/types.h"
 #include "gow3_sampler.h"
+#include "gow3_toggles.h"
 
 namespace Vulkan {
 
@@ -202,7 +203,9 @@ private:
             }
             const u64 start = __rdtsc();
             handler(context, reinterpret_cast<const u8*>(header + 1), header->payload);
-            busy_cycles.fetch_add(__rdtsc() - start, std::memory_order_relaxed);
+            const u64 busy = __rdtsc() - start;
+            busy_cycles.fetch_add(busy, std::memory_order_relaxed);
+            Gow3Stats::stage_b_busy_cycles.fetch_add(busy, std::memory_order_relaxed);
             at += header->size;
             consumed.store(at, std::memory_order_release);
         }

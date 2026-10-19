@@ -16,6 +16,7 @@
 #endif
 #include "common/assert.h"
 #include "gow3_toggles.h"
+#include <x86intrin.h>
 #include "gow3_settings.h"
 #include "gow3_overlay.h"
 #include "video_core/renderer_vulkan/vk_frame_capture.h"
@@ -348,6 +349,9 @@ void VideoOutDriver::Flip(const Request& req) {
         // Waits and work inside the long frame (window counters are reset every 5 s, so the
         // previous values are reset with them).
         static u64 last_wait[7];
+        // The window counters are reset every 5 s: the frame after a reset has no valid deltas.
+        static bool window_reset = false;
+        static double pacing_median = 0; ///< set by the pacing report, read by the slow frames
         const u64 wait_now[7] = {Gow3Stats::t_readback_wait.load(), Gow3Stats::tick_wait_ns.load(),
                                  Gow3Stats::sync_recording_ns.load(), Gow3Stats::host_copies_wait_ns.load(),
                                  u64(Vulkan::g_gow3_compile_ns.load()), u64(Vulkan::g_gow3_compiles.load()),
@@ -360,6 +364,8 @@ void VideoOutDriver::Flip(const Request& req) {
                         static_cast<unsigned long long>(wait_now[5] - last_wait[5]),
                         (wait_now[4] - last_wait[4]) / 1e6, (wait_now[6] - last_wait[6]) / 1e6);
         }
+        u64 frame_wait[7];
+        std::copy(std::begin(last_wait), std::end(last_wait), std::begin(frame_wait));
         std::copy(std::begin(wait_now), std::end(wait_now), std::begin(last_wait));
         if (stall) {
             std::printf("       fault handlers: %llu read faults %.1f ms, write faults %.1f ms\n",
@@ -460,6 +466,7 @@ void VideoOutDriver::Flip(const Request& req) {
         last_copy_flt = copy_flt;
         last_copy_bytes = copy_bytes;
         last_proc_flt = proc_flt;
+        const u64 frame_sigf = last_sigf, sigf_now = sigf;
         last_sigf = sigf;
         std::copy(std::begin(t_now), std::end(t_now), std::begin(last_t));
         last_draws = draws;
@@ -470,6 +477,52 @@ void VideoOutDriver::Flip(const Request& req) {
         last_invol = invol;
         last_vol = vol;
         last_gpu_ns = gpu_ns;
+        {
+            // gow3 GOW3_SLOW_FRAMES=<ratio>: one line per frame slower than ratio x the previous
+            // window's median, and a sample of ordinary frames (every 100th) to compare with:
+            // what differs in the frames that make the 1% lows (microstutter).
+            static const double slow_ratio = [] {
+                const char* env = std::getenv("GOW3_SLOW_FRAMES");
+                return env ? std::atof(env) : 0.0;
+            }();
+            static double median_ms = 0;
+            static u64 last_occ, last_ends, last_busy, last_tsc, sample;
+            static u32 slow_shown;
+            const u64 occ = Gow3Stats::occlusion_dumps.load(), ends = Gow3Stats::render_pass_ends.load(),
+                      busy = Gow3Stats::stage_b_busy_cycles.load(), tsc = __rdtsc();
+            const bool slow = slow_ratio > 0 && median_ms > 0 && frame_ms > slow_ratio * median_ms &&
+                              slow_shown < 60;
+            const bool sampled = slow_ratio > 0 && median_ms > 0 && ++sample % 100 == 0;
+            if ((slow || sampled) && last_tsc && !window_reset) {
+                slow_shown += slow;
+                std::printf("%s %.2f ms: %llu draws, %llu dispatches, %llu submits, %llu occlusion "
+                            "queries, %llu passes ended; stage B busy %.0f%%, stage A CPU %.2f ms; "
+                            "waits: readback %.2f, ticks %.2f, recorder %.2f, host copies %.2f ms; "
+                            "uploads %.2f MB buffers, %.2f MB images; %llu protection faults\n",
+                            slow ? "Slow frame" : "Frame sample", frame_ms,
+                            static_cast<unsigned long long>(draws - last_draws),
+                            static_cast<unsigned long long>(dispatches - last_dispatches),
+                            static_cast<unsigned long long>(subs - last_subs),
+                            static_cast<unsigned long long>((occ - last_occ) / 2),
+                            static_cast<unsigned long long>(ends - last_ends),
+                            100.0 * double(busy - last_busy) / double(tsc - last_tsc),
+                            (gpu_ns - last_gpu_ns) / 1e6, (wait_now[0] - frame_wait[0]) / 1e6,
+                            (wait_now[1] - frame_wait[1]) / 1e6, (wait_now[2] - frame_wait[2]) / 1e6,
+                            (wait_now[3] - frame_wait[3]) / 1e6, (buffer_bytes - last_buffer_bytes) / 1e6,
+                            (image_bytes - last_image_bytes) / 1e6,
+                            static_cast<unsigned long long>(sigf_now - frame_sigf));
+            }
+            window_reset = false;
+            last_occ = occ;
+            last_ends = ends;
+            last_busy = busy;
+            last_tsc = tsc;
+            if (pacing_median > 0) {
+                median_ms = pacing_median;
+                pacing_median = 0;
+                slow_shown = 0;
+            }
+        }
         last_images = images;
         last_image_bytes = image_bytes;
         last_buffer_bytes = buffer_bytes;
@@ -537,6 +590,7 @@ void VideoOutDriver::Flip(const Request& req) {
                 std::vector<double> sorted = intervals;
                 std::sort(sorted.begin(), sorted.end());
                 const double median = sorted[sorted.size() / 2];
+                pacing_median = median;
                 double sum = 0, sq = 0;
                 u32 spikes = 0;
                 // Spike length: consecutive frames over 1.5x the median, and their time.
@@ -566,6 +620,7 @@ void VideoOutDriver::Flip(const Request& req) {
                             longest_run, longest_run_ms);
             }
             intervals.clear();
+            window_reset = true;
             window_start = now;
             frames = 0;
             worst_ms = 0;
