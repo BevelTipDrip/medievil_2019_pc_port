@@ -624,3 +624,21 @@ its usual short waits, the game thread ~50% idle as always, stages A / B cycling
 the game or the GPU pipeline threads: the time is lost around presentation (flip / video out), or the frame is not
 counted. Lower priority; next look: the presenter / flip path (`vk_presenter.cpp`, `videoout/driver.cpp`) and
 PresentMon for the same moment.
+
+### Panning stall anatomy (2026-10-19, `pan-1.etl`, no launch)
+
+The ring trace holds ~60 s of data (its first ~35 s overwritten). The only sustained anomaly is the **game thread fully
+busy for 0.7 s** (slices 59.1-59.8; 0.87 cores vs 0.14 normally), which matches the 654 ms stall at 18:51:04 if the ring
+ends ~1 s after the F9 save print. Its samples: 48% game code (hottest block eboot 0xa22000, then 0x963200, 0x737400),
+12% memcpy / memset, **14% page faults / memory manager** (normal 3%) and **14% thread synchronisation** (libwinpthread /
+ntdll): mostly UE4's own streaming work on the game thread, ~28% port overhead (first touches of fresh pool pages,
+the pthread layer); the GPU thread adds 60-110 ms for the 200-270 new images. (Ghidra: the project is imported without
+auto-analysis, so DecompileAt created functions at the mid-function sample addresses; needs function starts first.)
+
+UE4 config (`PS4Engine.ini` via the override pak; device profiles in pakchunk0): `r.GarlicHeapSizeMB=2600`,
+`r.Streaming.MaxTempMemoryAllowed=35`; profiles set **`r.Streaming.PoolSize` 400 / 600 / 800**, and some
+`r.Streaming.AmortizeCPUToGPUCopy=1` / `r.Streaming.MaxNumTexturesToStreamPerFrame=1`. A PS4 1080p pool at 4K output
+thrashes: panning back and forth re-streams the same mips (T-C2: ~22 large re-creations per 5 s). Tests (cvars via
+`GOW3_UE4_CVARS`, one per launch): **S1** amortize streaming (`r.Streaming.AmortizeCPUToGPUCopy=1;
+r.Streaming.MaxNumTexturesToStreamPerFrame=4`), **S2** a larger pool (`r.Streaming.PoolSize=1600` with a larger
+`r.GarlicHeapSizeMB` and `GOW3_DMEM_MB`; check the memory budget first).
