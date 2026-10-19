@@ -45,6 +45,10 @@ if ($TextureHelper) { $set.GOW3_TEXTURE_HELPER = '1' }
 # (S2: 2 GiB more guest memory, a 4600 MB GPU heap and a 1600 MB pool stop small pans re-streaming). -Env
 # GOW3_UE4_CVARS are appended after these, so they add to them and win on the same name.
 $cvars = if ($Ps4Memory) { '' } else { $set.GOW3_DMEM_MB = '7104'; 'r.GarlicHeapSizeMB=4600;r.Streaming.PoolSize=1600' }
+# T-O1 (2026-10-19): the port answers every occlusion query "visible" (shadPS4's synthetic counters), so the queries
+# cull nothing and their bounding-box draws cost ~150 draws a frame in the heavy view (+~5% FPS without them). Off by
+# default for test runs; a test of real query results passes -Env @{GOW3_UE4_CVARS='r.AllowOcclusionQueries=1'}.
+$cvars = (@($cvars, 'r.AllowOcclusionQueries=0') | Where-Object { $_ }) -join ';'
 foreach ($k in $Env.Keys) { $set[$k] = [string]$Env[$k] }
 if ($Env.ContainsKey('GOW3_UE4_CVARS')) { $cvars = (@($cvars, [string]$Env.GOW3_UE4_CVARS) | Where-Object { $_ }) -join ';' }
 if ($cvars) { $set.GOW3_UE4_CVARS = $cvars }

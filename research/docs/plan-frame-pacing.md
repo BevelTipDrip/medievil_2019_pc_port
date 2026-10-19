@@ -1016,3 +1016,22 @@ from the movie issue. The game has lots of little spikes when first loading in â
 I've been in the heavy area for about a minute now, and the frametimes look great." The intro starts at 11.6 s
 (AvPlayer trace) and decoded ~200 s in earlier runs: the movie fix is the next check for the early spikes.
 **D2 + D2b kept.**
+
+### T-O1: occlusion queries off (2026-10-19 ~19:20-19:26, launched by Claude with the user's go; build `42a4943`; log `data/t-o1-no-occlusion.log`)
+
+`GOW3_UE4_CVARS='r.AllowOcclusionQueries=0'` (the log's cvar line has it; slow-frame lines: **0 occlusion queries**,
+was ~130-160 a frame in the heavy view). Heavy view: ~2,635 draws/frame at 132-135 FPS, stddev 0.31-0.46 ms, p99
+8.4-9.2 ms (a second spot: ~2,800 draws, 126-128 FPS); T-D2d (queries on): ~2,785 draws, 127-130 FPS, stddev
+0.32-0.48, p99 8.6-9.5. ~150 fewer draws a frame (one bounding box per query) at the same draw rate (~350k draws/s
+both): **~+5% from not drawing the query boxes**; no sign that the occlusion wait itself cost more. The user: "I don't
+see any issues, nothing stands out to me, GPU usage seems about the same, maybe slightly higher.. but so are my 1%
+lows and average FPS." Made the default of `run-game.ps1` (an O2 test passes `r.AllowOcclusionQueries=1`).
+
+**Origin of the synthetic answer** (asked by the user): not MediEvil- or God of War-specific. shadPS4's own
+`liverpool.cpp` (current main) has the identical block (`ZpassDone` / `PixelPipeStatDump` â†’ every render backend's
+counter written with the valid bit and an ever-growing `pixel_counter`, no comment) and no real Vulkan query path. It
+came into this repo with the root commit `6849d33` (deadinside, 2026-09-25, "Native Bloodborne loader with HLE runtime,
+shadPS4 video core and performance work"), which this port shares with the Bloodborne port. No note in shadPS4, the
+Bloodborne port or upstream explains it; the evident reasons: "visible" can never hide what should be drawn and never
+leaves a game waiting. The remaining win is **O2, real occlusion results**: the heavy view still draws every primitive
+in the frustum, hidden or not; useful beyond MediEvil (shadPS4, Bloodborne), so worth offering upstream.
