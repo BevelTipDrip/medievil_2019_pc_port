@@ -859,3 +859,25 @@ the gains are on the GPU timeline (copies, render pass breaks) and in stage B (f
 Measure first, next launch: `GOW3_BUFFER_STATS=1` (stream / arena / re-uploaded MB per region), `GOW3_PERF_DIAG=1`
 (`fde3624`: render passes ended by caller; host copy waits by caller), the new "Uploads: images / buffers MB/s".
 If arena uploads break many passes per frame, option 2 (for read-only uploads during a pass) is the first change.
+
+### T-U1: uploads, intro trace, bit 62 A/B (2026-10-19 17:1x-17:26, launched by Claude with the user's go; build `fde3624`; log `data/t-u1-uploads.log`)
+
+- **Intro:** the game starts `gameintro.mp4` at 19.1 s (after the logo, stopped and closed normally) and **never
+  stops or closes it**, not on the skip, not at its end, not at exit; its frames uploaded for 41 windows (205 s).
+- **Heavy view** (~2,830 draws/frame, 127 FPS, median 7.8 ms, p99 10.5 ms, no frame over 11.7 ms): buffer uploads
+  380 MB/s (~3 MB/frame), images 0. Render passes ended per frame: ~264 by barriers (`Runtime::FlushBarriers`),
+  ~216 by target changes (`BeginRendering`), ~4 by buffer upload copies: uploads are not what breaks passes. Host
+  copy waits: ~113/frame at the end-of-pipe readback check (`texture_cache.cpp:235`), ~17% of stage B.
+- **Bit 62 A/B** (targeted waits off 17:22:56-17:25:28, same spot): median 7.74-7.85 vs 7.75-7.81 ms, p99
+  10.1-10.7 vs 10.4-10.6 ms. The user: about the same. No effect either way.
+- The user: very far draw distances bring the worst 1% lows with low GPU use; microstutter (a frame time graph with
+  regular spikes) feels worse than a lower steady rate ("a steady 110 feels better than a stuttery 130").
+
+**Occlusion culling is effectively off.** The port answers every occlusion query "visible" at decode
+(`liverpool.cpp:1129`, see "What the render thread waits for"): UE4 then draws every primitive in the frustum,
+hidden or not, and also draws a bounding box per query that does nothing here. With stage B the limit (~2.1 us per
+draw), unneeded draws cost CPU, not GPU: the user's far views. Next run (`GOW3_SLOW_FRAMES=1.2`, build after
+`fde3624`) counts the queries per frame and what the slow frames differ in. Then: A/B `r.AllowOcclusionQueries=0`
+(removes the query boxes and the occlusion wait, culls nothing less than now), and the larger item: **real occlusion
+results** (Vulkan occlusion queries between the ZPASS_DONE dumps, results written to the guest when the GPU has
+them), which would let UE4 skip the hidden draws as on PS4.
