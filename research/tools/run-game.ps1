@@ -8,9 +8,11 @@
 #   -Validation   Khronos validation layer (GOW3_VK_VALIDATION=1): names bad handles; much slower
 #   -Samples      GPU-thread sampling profiler (GOW3_SAMPLE_FILE) into research-data\samples\<tag>
 #   -TextureHelper  parallel texture binding (GOW3_TEXTURE_HELPER=1)
+#   -Ps4Memory    the PS4 memory sizes instead of the 4K defaults below (A/B runs)
 #   -Env @{NAME='value'}  any other environment variable for this launch
 #   -Tag name     name for the saved log / samples (default: run-<time>)
-param([switch]$Validation, [switch]$Samples, [switch]$TextureHelper, [hashtable]$Env = @{}, [string]$Tag = '')
+param([switch]$Validation, [switch]$Samples, [switch]$TextureHelper, [switch]$Ps4Memory, [hashtable]$Env = @{},
+      [string]$Tag = '')
 $Port = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 $Game = 'C:\Users\Ty\MediEvil\Game Files\CUSA11227'
 if (-not $Tag) { $Tag = 'run-' + (Get-Date -Format 'yyyy-MM-dd-HHmm') }
@@ -31,7 +33,13 @@ if ($Samples) {
     if (Test-Path (Join-Path $Port 'out\medievil-runtime.pdb')) { Copy-Item (Join-Path $Port 'out\medievil-runtime.pdb') $dir }
 }
 if ($TextureHelper) { $set.GOW3_TEXTURE_HELPER = '1' }
+# 4K defaults for test runs (2026-10-19, the user): the PS4's 400-800 MB texture streaming pool thrashes at 4K
+# (S2: 2 GiB more guest memory, a 4600 MB GPU heap and a 1600 MB pool stop small pans re-streaming). -Env
+# GOW3_UE4_CVARS are appended after these, so they add to them and win on the same name.
+$cvars = if ($Ps4Memory) { '' } else { $set.GOW3_DMEM_MB = '7104'; 'r.GarlicHeapSizeMB=4600;r.Streaming.PoolSize=1600' }
 foreach ($k in $Env.Keys) { $set[$k] = [string]$Env[$k] }
+if ($Env.ContainsKey('GOW3_UE4_CVARS')) { $cvars = (@($cvars, [string]$Env.GOW3_UE4_CVARS) | Where-Object { $_ }) -join ';' }
+if ($cvars) { $set.GOW3_UE4_CVARS = $cvars }
 
 Write-Host "Launch '$Tag' (build $(git -C $Port rev-parse --short HEAD)); settings from medievil.ini:"
 Get-Content $ini | Where-Object { $_ -match '^(render_resolution|ue4_quality|engine_fps|vsync|async_shaders)=' } |

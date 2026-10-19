@@ -663,3 +663,8 @@ GPU images, ~360 MB uploads, the game thread's own loading work, page faults).
 **Kind B is the Load Game dialog.** Every multi-second frame with no GPU work (T-M1b 1,642 ms, T-C2 2,775 ms, S1 3,283 ms,
 S2 4,913 ms) ends the moment a save is chosen in the SaveDataDialog list; the game presents no frames while the port's
 system dialog is open. Not a gameplay hitch.
+
+**Test-run default from 2026-10-19 (the user: keep the larger pool, it probably needs to be at 4K):** `run-game.ps1`
+sets `GOW3_DMEM_MB=7104` and `GOW3_UE4_CVARS=r.GarlicHeapSizeMB=4600;r.Streaming.PoolSize=1600` unless `-Ps4Memory`
+is given; `-Env` cvars are appended. To do later in the port itself: size the pool with the render resolution
+(`scripts/ue4_override.py`, `run.py` patch requirements), not only in the test script.
