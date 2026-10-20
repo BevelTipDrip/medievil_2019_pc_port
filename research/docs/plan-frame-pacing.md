@@ -1144,3 +1144,29 @@ Vulkan recorder and waits for host copies: stage B 95-98% busy (recorder waits 0
 been. Persistent oscillations on the frametime graph with a high amplitude." **Rate-limited** (`cdb43af`): a pass end
 submits only when the oldest unsubmitted event is >= 1 ms old (`GOW3_OCCLUSION_SUBMIT_US`, default 1000, 0: off).
 Expected: a few submissions a frame, results within ~3 ms. Test T-O3b, same settings.
+
+### T-O3b: rate-limited O3 (2026-10-19 20:26-20:32, launched by Claude with the user's go; build `df29fe7`; log `data/t-o3b-rate-limited.log`)
+
+~183 early submissions a second (~1 a frame); results **3.4 ms after the event** (max ~5 ms; event → submitted 1.3,
+→ GPU done 2.1) in the heavy view, 5.5-5.8 ms (max 7.7, once 13) in a GPU-heavier stretch; 0 segments missed;
+57-71% hidden. Heavy view: **181-185 FPS, p99 8.0-8.5 ms**, stddev 1.0-1.4 ms; write-fault downloads ~4/s. The user:
+"Much better, but there's still a lot of lower amplitude less frequent spikes, sometimes the game will actually stall
+for a solid second or two. … If I don't move the camera, 1% lows can sit between 110 and 140, with an average of
+190. Panning the camera causes a lot of small stalls, and looking in certain directions can get a steady
+oscillation."
+
+- **The oscillation** (from 20:30:40): slow frames exactly every ~43 ms (~8 frames), each with ~1,840-1,930 draws and
+  220-257 queries against ~1,560-1,600 draws and ~125-190 queries in the others, stage B ~95% busy: a periodic batch
+  of ~250 extra draws, CPU-bound. Not in T-O1 or T-D2d (stddev 0.31-0.48): UE4's handling of hidden primitives now
+  that it gets real answers (likely its grouped re-tests of occluded primitives: a group read visible draws all of
+  them until each is tested again; UE4 knowledge, not verified in this binary). The binary's occlusion cvars are
+  UE 4.21's (r.NumBufferedOcclusionQueries, r.HZBOcclusion, r.FramesToExpandNewlyOcclusionTestedBBoxes,
+  r.ExpandNewlyOcclusionTestedBBoxesAmount, r.GFramesNotOcclusionTestedToExpandBBoxes, r.NeverOcclusionTestDistance,
+  r.DownsampledOcclusionQueries, …).
+- **Stalls:** 493 / 535 ms at 20:27:09 / :18: area loading (199 / 271 images registered, 376 / 260 MB of image
+  uploads, compiles: the region-load item). **999.9 ms at 20:28:20**: stage B 0% busy, nothing uploaded, no waits of
+  ours: the game produced no frame for a second. Not a missing occlusion result: every result in that stretch was
+  written within 13 ms, and a missing one would block all later results (a permanent freeze, not one second).
+  Unknown: `GOW3_WAIT_SITES=1` next run.
+
+Next (T-O3c): `r.NumBufferedOcclusionQueries=2` (results now land within ~5 ms; two frames ~10.6 ms) + `GOW3_WAIT_SITES=1`.
