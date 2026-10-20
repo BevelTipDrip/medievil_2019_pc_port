@@ -1124,3 +1124,12 @@ downloads from the game's direct writers (guest+0x20da4d0, 0x68e109, 0x68e149, 0
 Next: **O3** submit the recorded queries sooner (the 2.6-3.0 ms before submission); **D3** a write-fault download waits
 only for the submission that last wrote the range, not `Finish()` (the shader wrote those pages earlier in the frame,
 usually in a batch the GPU has finished: often no wait at all).
+
+### O3: submit the queries when their render pass ends (2026-10-19, built `b6dfc40`, not run yet)
+
+A render pass that held occlusion events sets "submit wanted" when it ends (`OcclusionQueries::OnEndRendering`); the
+recording thread makes the submission before its next draw or dispatch (`Rasterizer::BeforeRecord`, which also runs
+the D2 queue). UE4 issues its queries in one batch, so ~1 extra submission a frame; stage B already submits when a
+download's `Finish` runs there, and the submit callback (barriers, sparse arena binds) is not stage-specific.
+`GOW3_OCCLUSION_SUBMIT=0` turns it off; the stats line counts "early submissions/s". Test T-O3: as T-O2d
+(`r.NumBufferedOcclusionQueries=3`), expect "event → submitted" well under 2.6 ms, fewer starved slow frames.
