@@ -301,6 +301,7 @@ void TextureCache::ProcessDownloadImages() {
                         scheduler.CurrentTick(), copy->staging);
                     has_pending_readbacks.store(true, std::memory_order_release);
                     ++readbacks_queued;
+                    readback_submit_wanted = !stale_readbacks;
                     readbacks_peak_bytes = std::max(readbacks_peak_bytes, pending_readbacks.Bytes());
                 }
             }

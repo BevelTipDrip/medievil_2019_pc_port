@@ -455,6 +455,14 @@ private:
     /// gow3: GOW3_STALE_READBACK=1 (needs deferred readbacks). A pending copy only blocks CPU
     /// writes: CPU reads see the version the GPU published last (one frame late) instead of
     /// waiting for the GPU. Writes still wait, so no byte is lost.
+    /// gow3 R1: true once after a readback copy was queued with precise readbacks: the caller
+    /// submits once the readback locks are released (Rasterizer::ProcessDownloadImages), so the
+    /// GPU makes the copy soon after the work it reads instead of at the frame's end.
+    bool TakeReadbackSubmitWanted() {
+        return readback_submit_wanted && !(readback_submit_wanted = false);
+    }
+    bool readback_submit_wanted = false;
+
     const bool stale_readbacks = deferred_readbacks && [] {
         const char* value = std::getenv("GOW3_STALE_READBACK");
         return value && value[0] == '1';

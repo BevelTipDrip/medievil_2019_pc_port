@@ -3326,6 +3326,17 @@ bool Rasterizer::ReadMemory(VAddr addr, u64 size, bool assume_locks) {
 void Rasterizer::ProcessDownloadImages() {
     DrainDrawPipe();
     texture_cache.ProcessDownloadImages();
+    // gow3 R1: with precise readbacks the game reads a readback (UE4's HZB occlusion results)
+    // about a frame after asking for it; recorded here but submitted at the frame's end, the
+    // copy ran only after the rest of the frame and the game waited ~2.6 ms for it (T-HZ2b).
+    // Submitted now, the GPU makes it right after the work it reads. GOW3_READBACK_SUBMIT=0: off.
+    static const bool submit = [] {
+        const char* env = std::getenv("GOW3_READBACK_SUBMIT");
+        return !env || env[0] != '0';
+    }();
+    if (texture_cache.TakeReadbackSubmitWanted() && submit) {
+        scheduler.Flush();
+    }
 }
 
 bool Rasterizer::IsMapped(VAddr addr, u64 size) {
