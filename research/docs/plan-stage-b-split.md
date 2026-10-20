@@ -198,3 +198,19 @@ copy threads 15.8% (11.6%). The end-of-pipe wait shrinks but the copies' queuein
 threads become the limit: no gain. The user: "Seems about the same, maybe slightly worse panning through the heavy
 area." **Bit 19 stays off.** The fence / end-of-pipe waits are ordering cost (every copy before a guest-visible write
 must be done), not where the copies run.
+
+## T-S3: Record calls and ordered tasks (2026-10-19/20 23:57-00:02, launched by Claude with the user's go; build `ba9c433`; log `data/t-s3-record-tasks.log`)
+
+Heavy view (~2,780 draws, 127-129 FPS, 2.18-2.23 us per packet): **7.5 `Record` calls per packet, 0.094 us in all**
+(~12.5 ns each): merging a draw's records into one would save <= ~0.09 us (~4%); the descriptor time (0.22 us) is the
+copy of the descriptor data, which any design does on stage B. Ordered tasks 0.52-0.53 us per packet, by function:
+**`RunEventWriteEop` 0.44-0.45 us (~52,000 a second, ~410 a frame)**, `RunEventWriteEos` 0.05 (~7,800/s),
+`SignalFlip` 0.03 (~127/s), `RunWriteData` 0.005. So the end-of-pipe fence's readback check
+(`ProcessDownloadImages` → `WaitHostCopies`, ~8.5 us each, nearly always with no readback work) is ~20% of stage B;
+the fence itself is already deferred (`SignalAfterHostCopies`). In T-W2 (W2 on) the wait moved to `RunEventWriteEos`,
+which waits for all copies synchronously.
+
+**Revised order:** (c) as one record per draw would gain little (the Record overhead is small); first **E1**: the
+end-of-shader fence deferred like the end-of-pipe one (signalled by the recorder after the copies before it; the
+`GdsStore` case keeps its synchronous path), with W2 on, so stage B no longer waits for host copies at fences. Then
+re-measure; (c) as a true second thread for the draw's data copies only if stage B stays the limit.
