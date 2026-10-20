@@ -188,3 +188,13 @@ recorder: small host copies (`SmallGuestCopy` → `RecordHostCopy`) run on `gow3
 next fence. Within the draw, no single part dominates; what a second recording stage (option c) could take is ~0.45 us
 of 1.5 (descriptors, dynamic, emit, kick, the draw record). **First lever: decouple small host copies from the
 recorder**: toggle bit 19 (`PoolSmallCopies`) sends them in batches to the copy threads instead (live A/B, T-S2).
+
+## T-S2: small host copies to the copy threads (bit 19) (2026-10-19 23:43-23:49, launched by Claude with the user's go; build `c4bf2dc`; log `data/t-s2-small-copies.log`)
+
+Bit 19 (`PoolSmallCopies` disabled: small copies batched to the copy threads, not run by the recorder) on 23:45:32-23:48:47.
+Heavy-view windows (>= 2,400 draws) only after the switch; against T-S1 (same settings, bit 19 off): FPS 126 (T-S1
+~130), tasks 0.56 us/packet (0.64-1.17), end of pipe 0.37 (0.48-0.62), **draw 1.61 (1.48-1.55)**, stage A blocked on
+copy threads 15.8% (11.6%). The end-of-pipe wait shrinks but the copies' queueing lands in the draw and the copy
+threads become the limit: no gain. The user: "Seems about the same, maybe slightly worse panning through the heavy
+area." **Bit 19 stays off.** The fence / end-of-pipe waits are ordering cost (every copy before a guest-visible write
+must be done), not where the copies run.
