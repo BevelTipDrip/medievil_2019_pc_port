@@ -300,11 +300,19 @@ void FrameCapture::Buffer(u64 stage_hash, u32 slot, VAddr address, const void* d
     std::string out = std::format("  buffer stage {:016x} slot {} at {:#x} size {}:", stage_hash,
                                   slot, address, size);
     const auto* words = static_cast<const float*>(data);
-    for (u64 i = 0; i < bytes / 4; ++i) {
-        if (i % 8 == 0) {
-            out += std::format("\n    [{:3}]", i);
+    // Flatbuf (address 0) is the stage's flattened user data: resource descriptors and bitfields,
+    // not floats, so print it as the dwords it is. Other buffers are constant data: floats.
+    const bool hex = address == 0;
+    // IsValidGpuMapping only bounds the address range, so a null pointer still reaches here:
+    // record the entry without reading it instead of faulting.
+    if (data && bytes) {
+        for (u64 i = 0; i < bytes / 4; ++i) {
+            if (i % 8 == 0) {
+                out += std::format("\n    [{:3}]", i);
+            }
+            out += hex ? std::format(" {:08x}", static_cast<const u32*>(data)[i])
+                       : std::format(" {:12.6g}", words[i]);
         }
-        out += std::format(" {:12.6g}", words[i]);
     }
     pending_buffers.push_back(std::move(out));
 }
