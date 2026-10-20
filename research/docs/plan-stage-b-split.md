@@ -279,3 +279,12 @@ with precise readbacks). `medievil.ini` restored (`stale_readback=1`).
 
 Both culling routes meet the same limit: a pipeline deeper than the PS4's (queries add stage B work while panning, HZB
 waits for its results).
+
+## Defaults verified in a normal launch (2026-10-20 00:47-01:09, the launcher started by Claude with the user's go, without lab variables; build `c8615ea`)
+
+`user/last_run.log`: `Patches: ... ['Native 4K framebuffer pool (512 MB)', '4K display metrics at boot']`, direct memory
+512 MiB + 6,592 MiB = 7,104 MiB; the override pak holds `r.AllowOcclusionQueries=0`, `r.GarlicHeapSizeMB=4600`,
+`r.Streaming.PoolSize=1600`. The user: "Everything ran well. I played through a whole level that's fairly heavy on
+resources, and everything was pretty smooth, GPU usage was in the 70-90% range through most of it. It's clear that the
+vulkan translation is the remaining bottleneck. Anything gained there will likely increase 1% lows, but from where we
+started, it's in a much better state."
