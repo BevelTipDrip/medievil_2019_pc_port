@@ -341,12 +341,7 @@ void RunWriteData(Vulkan::Rasterizer& rasterizer, const u8* data) {
                 (header->type3.count.Value() - 2) * sizeof(u32));
 }
 
-void RunEventWriteEos(Vulkan::Rasterizer& rasterizer, const u8* data) {
-    const auto& event_eos = *reinterpret_cast<const PM4CmdEventWriteEos*>(data);
-    // Copies deferred to the recording thread precede writes the guest sees.
-    rasterizer.WaitHostCopies();
-    rasterizer.WaitDeferredSignals();
-    rasterizer.ProcessDownloadImages();
+void SignalEos(const PM4CmdEventWriteEos& event_eos) {
     event_eos.SignalFence([](void* address, u64 value, u32 num_bytes) {
         auto* memory = Core::Memory::Instance();
         Gow3WriteLog::Note(reinterpret_cast<u64>(address), &value, num_bytes, Gow3WriteLog::Fence);
@@ -354,6 +349,31 @@ void RunEventWriteEos(Vulkan::Rasterizer& rasterizer, const u8* data) {
             memcpy(address, &value, num_bytes);
         }
     });
+}
+
+void RunEventWriteEos(Vulkan::Rasterizer& rasterizer, const u8* data) {
+    const auto& event_eos = *reinterpret_cast<const PM4CmdEventWriteEos*>(data);
+    // gow3 E1: like the end-of-pipe fence, the draw recording thread does not wait for the host
+    // copies: the Vulkan recording thread writes the label after the copies queued before it.
+    // T-W2 / T-S3: with the end-of-pipe readback check targeted (W2), this synchronous wait took
+    // the copies' waiting over. GOW3_EOS_DEFERRED=0: the synchronous wait as before. A GDS
+    // store reads the GPU's data, so it keeps the synchronous path.
+    static const bool deferred = [] {
+        const char* env = std::getenv("GOW3_EOS_DEFERRED");
+        return !env || env[0] != '0';
+    }();
+    if (deferred && event_eos.command != PM4CmdEventWriteEos::Command::GdsStore &&
+        Vulkan::DrawPipe::OnStageB() && !Gow3Toggle::Disabled(Gow3Toggle::RecorderFences)) {
+        rasterizer.ProcessDownloadImages();
+        const auto eos = event_eos;
+        rasterizer.SignalAfterHostCopies([eos] { SignalEos(eos); });
+        return;
+    }
+    // Copies deferred to the recording thread precede writes the guest sees.
+    rasterizer.WaitHostCopies();
+    rasterizer.WaitDeferredSignals();
+    rasterizer.ProcessDownloadImages();
+    SignalEos(event_eos);
     if (event_eos.command == PM4CmdEventWriteEos::Command::GdsStore) {
         ASSERT(event_eos.size == 1);
         rasterizer.Finish();
