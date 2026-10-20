@@ -113,3 +113,23 @@ Port of the Bloodborne port's `GpuWriteTicks` / `FastReadback` (0.3): the newest
 queue (a compute family without graphics; arenas shared by both families), not behind the frames queued on the
 graphics queue. `GOW3_READBACK_QUEUE=0` off; frame stats: "on the readback queue N". Test T-D3: queries off, the spot
 of T-W2b.
+
+## T-D3b: downloads on the readback queue (2026-10-19 22:14-22:21, launched by Claude with the user's go; build `1afe70a`; log `data/t-d3b-readback-queue.log`)
+
+(First launch `t-d3-readback-queue` restarted: the user's monitor was off.) Queries off. D3 takes every write-fault
+download ("on the readback queue" = the write-fault count, 9-20 a second in the light view), but each still costs
+~2.8 ms: the wait is for the write's own submission (`buffer_cache.cpp:487`, `Scheduler::Wait(write_tick)`, max
+3.3 ms), because the shader wrote those pages in the frame still being recorded. The worst light-view frames
+(7.5-9.8 ms at a 4.6 ms median) each hold a GPU-tick wait of 1.7-5.5 ms and nothing else. The user: "Still some
+fairly large dips I don't recall being there previously. They show up, even when I'm not panning."
+
+Not new code: in light-view windows (900-1,050 draws), T-O1 (build `42a4943`, before the culling work) 4 windows,
+0.9 downloads/s, stddev 0.27 ms; **T-D2d (same build) 3 windows, 10.3/s, stddev 0.70 ms**; T-W2b 18 windows, 8.6/s,
+0.60 ms; T-D3b 63 windows, 15.0/s, 0.56 ms. The only change active with queries off since `42a4943` is D3 (and its
+shared arenas); O2 / O3 do nothing without occlusion events, W2 is opt-in. The dips depend on the spot and moment
+(T-O1 caught quiet windows). **D3 kept** (each wait now only for the write's submission).
+
+Remaining fix: the Bloodborne port's **GPU write twins** (`BB_GPU_WRITE_TWINS`): a guest write into a page holding a
+few GPU-written bytes does not wait at all; the guest's copy of those bytes is kept as a twin, the page becomes
+CPU-modified, uploads keep the GPU's bytes where the guest's still match their twin (pages with at most 1 KiB of
+GPU-written bytes there). Optional check first: `GOW3_READBACK_QUEUE=0` A/B at this spot (D3's shared arenas).
