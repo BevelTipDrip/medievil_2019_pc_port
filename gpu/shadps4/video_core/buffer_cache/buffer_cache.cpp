@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <magic_enum/magic_enum.hpp>
 #include "gow3_copy.h"
+#include "gow3_sections.h"
 #include "gow3_toggles.h"
 #include "common/alignment.h"
 #include "core/memory.h"
@@ -764,6 +765,7 @@ void PrintBufferStats() {
 
 std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 size,
                                                         bool is_written, bool is_texel_buffer) {
+    GOW3_SECTION(ObtainBuffer);
     texture_cache.ResolveReadbacks(device_addr, size, true, ReadbackSource::BufferObtain);
     const bool stats = BufferStatsEnabled();
     if (stats) {

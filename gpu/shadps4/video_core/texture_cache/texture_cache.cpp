@@ -4,6 +4,7 @@
 #include <xxhash.h>
 #include "video_core/amdgpu/liverpool.h"
 
+#include "gow3_sections.h"
 #include "gow3_toggles.h"
 #include "common/assert.h"
 #include "common/debug.h"
@@ -205,6 +206,7 @@ void TextureCache::CancelReadbacks(VAddr address, u64 size) {
 // gow3: every copy is recorded first and the GPU is waited for once. A wait per image (as
 // before) left the GPU mostly idle in God of War III's gameplay, at about 2 FPS.
 void TextureCache::ProcessDownloadImages() {
+    GOW3_SECTION(EndOfPipe);
     if (deferred_readbacks) {
         // gow3: most ends of pipe (MediEvil: ~3 a frame, ~5 tiny readbacks a frame) have no image
         // to download and no copy ready to publish; the host copy wait below then protects

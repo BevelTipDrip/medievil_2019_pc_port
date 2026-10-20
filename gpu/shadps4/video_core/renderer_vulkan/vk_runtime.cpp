@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <boost/container/small_vector.hpp>
+#include "gow3_sections.h"
 #include "gow3_toggles.h"
 #include "video_core/buffer_cache/buffer.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
@@ -896,6 +897,7 @@ void Runtime::AccessBuffer(const VideoCore::Buffer* handle, u64 offset, u64 size
 }
 
 void Runtime::FlushBarriers() {
+    GOW3_SECTION(FlushBarriers);
     BeforeImageAccess();
     vk::DependencyInfo dep_info{};
 

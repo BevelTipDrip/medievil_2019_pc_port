@@ -19,6 +19,7 @@
 #include "video_core/renderer_vulkan/vk_draw_prep.h"
 #include "video_core/renderer_vulkan/vk_temporal_upscaler.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
+#include "gow3_sections.h"
 #include "video_core/renderer_vulkan/vk_occlusion.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
@@ -98,6 +99,7 @@ public:
     /// gow3: the recording thread, before it records a draw or dispatch: queued CPU writes go
     /// into the GPU's copy (D2), and a submission occlusion queries want is made (O3).
     void BeforeRecord() {
+        GOW3_SECTION(BeforeRecord);
         buffer_cache.ProcessCpuWrites();
         if (occlusion && occlusion->TakeSubmitWanted()) {
             scheduler.Flush();

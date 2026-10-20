@@ -3,6 +3,7 @@
 
 #include <xxhash.h>
 #include "video_core/renderer_vulkan/ui_composition.h"
+#include "gow3_sections.h"
 #include "gow3_toggles.h"
 #include "video_core/renderer_vulkan/vk_frame_capture.h"
 #include "common/debug.h"
@@ -219,6 +220,7 @@ VideoCore::ImageId Rasterizer::FindTargetMemoized(VideoCore::TextureCache::Image
 }
 
 void Rasterizer::PrepareRenderState(const GraphicsPipeline* pipeline) {
+    GOW3_SECTION(PrepareRenderState);
     // Prefetch render targets to handle overlaps with bound textures (e.g. mipgen)
     const auto& key = pipeline->GetGraphicsKey();
     const auto& regs = Regs();
@@ -686,9 +688,11 @@ bool Rasterizer::RunInOrder(OrderedTask task, const void* data, u32 size, u64 to
 }
 
 void Rasterizer::RunDrawPacket(void* context, const u8* data, u32 size) {
+    GOW3_SECTION(Packet);
     auto& self = *static_cast<Rasterizer*>(context);
     if (*reinterpret_cast<const PacketKind*>(data) == PacketKind::Task) {
         const auto& task = *reinterpret_cast<const TaskPacket*>(data);
+        GOW3_SECTION(Task);
         task.task(self, data + sizeof(TaskPacket));
         return;
     }
@@ -841,6 +845,22 @@ void Rasterizer::PrintPipeStats() {
                 (draw_pipe->drains - last_drains) / seconds,
                 100.0 * (draw_pipe->drain_cycles - last_drain_cycles) / cycles,
                 100.0 * (busy - last_busy) / cycles);
+    if (Gow3Sections::Enabled()) {
+        // gow3 GOW3_SECTIONS: stage B's time per packet by part (inclusive), in microseconds.
+        static std::array<u64, Gow3Sections::Count> last_sections{};
+        const double packets = double(draw_pipe->packets - last_packets);
+        const double tsc_hz = cycles / seconds;
+        std::printf("  stage B us per packet:");
+        for (u32 s = 0; s < Gow3Sections::Count; ++s) {
+            const u64 now_cycles = Gow3Sections::cycles[s].load(std::memory_order_relaxed);
+            if (packets > 0) {
+                std::printf(" %s %.3f", Gow3Sections::Names[s],
+                            1e6 * double(now_cycles - last_sections[s]) / tsc_hz / packets);
+            }
+            last_sections[s] = now_cycles;
+        }
+        std::printf("\n");
+    }
     std::printf("  drains by reason/s:");
     for (u32 r = 0; r < DrawPipe::NumReasons; ++r) {
         if (const u64 n = draw_pipe->drains_by_reason[r]) {
@@ -938,6 +958,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset, const PreparedDraw* pre
 
 void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw* used_prepared,
                             bool is_indexed, u32 index_offset) {
+    GOW3_SECTION(DrawRecord);
     if (DrawPipe::OnStageB()) {
         FrameCapture::Poll();
         scheduler.PopPendingOperations();
@@ -1087,7 +1108,10 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
             });
         }
     }
-    pipeline->BindResources(set_writes, push_data);
+    {
+        GOW3_SECTION(PipelineBind);
+        pipeline->BindResources(set_writes, push_data);
+    }
     // gow3: jitter geometry drawn with the scene depth, not full-screen passes (a shifted
     // full-screen quad leaves an edge column unwritten).
     draw_jitter = {};
@@ -1228,7 +1252,10 @@ void Rasterizer::DrawIndirectRecord(const GraphicsPipeline* pipeline, bool is_in
     push_data.xoffset *= target_scale[0];
     push_data.yscale *= target_scale[1];
     push_data.yoffset *= target_scale[1];
-    pipeline->BindResources(set_writes, push_data);
+    {
+        GOW3_SECTION(PipelineBind);
+        pipeline->BindResources(set_writes, push_data);
+    }
     draw_jitter = {};
     if (upscaler->Enabled() && db_desc.first && db_desc.first == camera_motion->Depth()) {
         draw_jitter = upscaler->Jitter();
@@ -1291,6 +1318,7 @@ void Rasterizer::DispatchDirect() {
 }
 
 void Rasterizer::DispatchRecord(const ComputePipeline* pipeline) {
+    GOW3_SECTION(DispatchRecord);
     FrameCapture::Poll();
     gbuffer_draw = false;
 
@@ -1326,7 +1354,10 @@ void Rasterizer::DispatchRecord(const ComputePipeline* pipeline) {
 
     scheduler.EndRendering();
     mark();
-    pipeline->BindResources(set_writes, push_data);
+    {
+        GOW3_SECTION(PipelineBind);
+        pipeline->BindResources(set_writes, push_data);
+    }
 
     const vk::Pipeline handle = pipeline->Handle();
     const u32 dim_x = cs_program.dim_x, dim_y = cs_program.dim_y, dim_z = cs_program.dim_z;
@@ -1380,7 +1411,10 @@ void Rasterizer::DispatchIndirectRecord(const ComputePipeline* pipeline, VAddr a
     }
 
     scheduler.EndRendering();
-    pipeline->BindResources(set_writes, push_data);
+    {
+        GOW3_SECTION(PipelineBind);
+        pipeline->BindResources(set_writes, push_data);
+    }
 
     const vk::Pipeline handle = pipeline->Handle();
     const vk::Buffer args = buffer->Handle();
@@ -1533,6 +1567,7 @@ void Rasterizer::JoinBindHelper(void* context) {
 }
 
 bool Rasterizer::BindResources(const Pipeline* pipeline) {
+    GOW3_SECTION(BindResources);
     if (IsComputeImageCopy(pipeline) || IsComputeMetaClear(pipeline) ||
         IsComputeImageClear(pipeline)) {
         return false;
@@ -1671,6 +1706,7 @@ void Rasterizer::BindVertexBuffers(const GraphicsPipeline* pipeline, const Prepa
 }
 
 void Rasterizer::EmitVertexBuffers() {
+    GOW3_SECTION(EmitVertexBuffers);
     // gow3: only the used entries go into the recording chunk (the static vectors hold 32 of
     // each: ~3 KiB copied per draw).
     auto& v = vertex_binds;
@@ -1708,6 +1744,7 @@ void Rasterizer::EmitVertexBuffers() {
 
 void Rasterizer::ResolveVertexBuffers(const GraphicsPipeline* pipeline,
                                       const PreparedDraw* prepared) {
+    GOW3_SECTION(ResolveVertexBuffers);
     const auto& regs = Regs();
     auto& v = vertex_binds;
     v.num_buffers = 0;
@@ -1852,6 +1889,7 @@ void Rasterizer::EmitIndexBuffer() {
 }
 
 void Rasterizer::ResolveIndexBuffer(u32 index_offset) {
+    GOW3_SECTION(ResolveIndexBuffer);
     const auto& regs = Regs();
 
     // Figure out index type and size.
@@ -1870,6 +1908,7 @@ void Rasterizer::ResolveIndexBuffer(u32 index_offset) {
 }
 
 void Rasterizer::ResetBindings(bool is_compute) {
+    GOW3_SECTION(Kick);
     for (auto& image_id : bound_images) {
         texture_cache.GetImage(image_id).binding = {};
     }
@@ -2080,6 +2119,7 @@ bool Rasterizer::IsComputeImageClear(const Pipeline* pipeline) {
 void Rasterizer::BindBuffers(const Shader::Info& stage, const PreparedStage* prepared,
                              Shader::Backend::Bindings& binding,
                              Shader::PushData& push_data, u32& write_index) {
+    GOW3_SECTION(BindBuffers);
     const u64 alignment = instance.StorageMinAlignment();
     for (u32 buffer_index = 0; buffer_index < stage.buffers.size(); ++buffer_index) {
         const auto& desc = stage.buffers[buffer_index];
@@ -2255,6 +2295,7 @@ Rasterizer::ImageDescCacheEntry& Rasterizer::CachedImageDescEntry(const AmdGpu::
 void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* prepared,
                               Shader::Backend::Bindings& binding, u32& write_index,
                               bool& barrier, bool on_helper) {
+    GOW3_SECTION(BindTextures);
     const u32 first_image_idx = image_infos.size();
     TextureSet* set_slot = nullptr;
     if (!on_helper && BindTexturesFromSet(stage, prepared, first_image_idx, barrier, set_slot)) {
@@ -2669,6 +2710,7 @@ bool Rasterizer::BindTexturesFromSet(const Shader::Info& stage, const PreparedSt
 }
 
 RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
+    GOW3_SECTION(BeginRendering);
     // gow3: RenderStateMemo (see BeginMemo).
     const bool memo_on = !Gow3Toggle::Disabled(Gow3Toggle::RenderStateMemo) && !FrameCapture::Active();
     if (Gow3Stats::enabled && ((begin_memo_hits + begin_memo_misses) & 0x3FFFF) == 0x3FFFF) {
@@ -3291,6 +3333,7 @@ void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
 }
 
 void Rasterizer::UpdateDynamicState(const GraphicsPipeline* pipeline, const bool is_indexed) const {
+    GOW3_SECTION(UpdateDynamicState);
     UpdateViewportScissorState();
     UpdateDepthStencilState();
     UpdatePrimitiveState(is_indexed);

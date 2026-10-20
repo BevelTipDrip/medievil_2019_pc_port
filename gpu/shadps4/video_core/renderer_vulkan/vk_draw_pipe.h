@@ -26,6 +26,7 @@
 #include "common/thread.h"
 #include "common/types.h"
 #include "gow3_sampler.h"
+#include "gow3_sections.h"
 #include "gow3_toggles.h"
 
 namespace Vulkan {
@@ -163,6 +164,7 @@ private:
         on_stage_b = true;
         stage_b_tid.store(static_cast<u32>(gettid()), std::memory_order_release);
         Gow3Sampler::SampleCurrentThread("DrawRec");
+        Gow3Sections::recording_thread = true;
         u64 at = 0;
         while (true) {
             // Packets follow each other within microseconds while a frame is decoded: spin,
