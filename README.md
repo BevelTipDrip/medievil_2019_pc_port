@@ -110,10 +110,12 @@ Captured on Windows 11 (RTX 5080) with this port.
   menu items outside the top-left 1920×1080 area (pause menu "Quit to Map", the debug menu's right
   column): the game's UI window stays at 1080p while the picture switches. "4K (sharpest)" renders
   the 3D scene at 4K with working menus; or switch to 1080p (in-game menu > Performance) and back.
-- All patches and cheats are for MediEvil 01.00 (the base game: CUSA11227, or CUSA12982 in
-  Europe); do not install the 01.02 update. On 01.02 the game may start, but native output and
-  the built-in executable patches (such as the 4K framebuffer pool) stay off, and cheat edits that
-  do not match the 01.02 files are skipped (the log says which).
+- Both MediEvil versions are supported: 01.00 (the base game) and 01.02 (the update), for
+  CUSA11227 and CUSA12982. The built-in patches have addresses for each version and are chosen by
+  the game's APP_VER and the eboot.bin hash (such as the 4K framebuffer pool); cheat edits that do
+  not match the installed version are skipped (the log says which). The 01.02 eboot does not export
+  a few `libSceNpToolkit2` C++ functions the game links; those imports are logged no-ops returning
+  0, since the port does not implement that module.
 - Experimental PS4 Pro mode (`GOW3_NEO=1`) stops in the texture cache.
 
 ## Download and play
@@ -162,7 +164,7 @@ More in [packaging/windows/README-Windows.txt](packaging/windows/README-Windows.
 | Runtime | `src/runtime_*.c` | PS4 system functions; `runtime_extra.c` holds the ones added for MediEvil |
 | GPU | `gpu/shadps4/` | shadPS4 video core (Vulkan) with the speed work of the port it is based on |
 | Override pak | `scripts/ue4_override.py` | Resolution, quality, frame rate cap, debug menu and unlimited ammo (config and Blueprint edits) |
-| Game patches | `patches/MediEvil.xml` | Code patches for 01.00 (native 4K framebuffer pool) |
+| Game patches | `patches/MediEvil.xml` | Code patches for 01.00 and 01.02 (native 4K framebuffer pool) |
 | Launcher | `launcher/medievil_launcher.py` | Settings, PKG install, mods, controls and the play button |
 
 To port another PS4 game the same way: the loader stops at the first system function the runtime
