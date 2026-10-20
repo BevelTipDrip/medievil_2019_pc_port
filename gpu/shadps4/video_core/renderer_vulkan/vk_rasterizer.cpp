@@ -794,7 +794,7 @@ void Rasterizer::RunDrawPacket(void* context, const u8* data, u32 size) {
         // A draw FilterDraw handles (fast clear elimination, resolve, depth copy, skip).
         FrameCapture::Poll();
         self.scheduler.PopPendingOperations();
-        self.buffer_cache.ProcessCpuWrites();
+        self.BeforeRecord();
         self.FilterDraw();
     } else if (cs) {
         stage_cs = cs;
@@ -914,7 +914,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset, const PreparedDraw* pre
         DrainDrawPipe(DrawPipe::ReasonDraw);
         FrameCapture::Poll();
         scheduler.PopPendingOperations();
-        buffer_cache.ProcessCpuWrites();
+        BeforeRecord();
         if (!FilterDraw()) {
             return;
         }
@@ -941,7 +941,7 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
     if (DrawPipe::OnStageB()) {
         FrameCapture::Poll();
         scheduler.PopPendingOperations();
-        buffer_cache.ProcessCpuWrites();
+        BeforeRecord();
     }
     const auto& regs = Regs();
     // gow3: the pass copying a finished frame to a display buffer; the previous draw's
@@ -1155,7 +1155,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     if (!pipelined) {
         DrainDrawPipe();
         scheduler.PopPendingOperations();
-        buffer_cache.ProcessCpuWrites();
+        BeforeRecord();
         if (!FilterDraw()) {
             return;
         }
@@ -1182,7 +1182,7 @@ void Rasterizer::DrawIndirectRecord(const GraphicsPipeline* pipeline, bool is_in
     if (DrawPipe::OnStageB()) {
         FrameCapture::Poll();
         scheduler.PopPendingOperations();
-        buffer_cache.ProcessCpuWrites();
+        BeforeRecord();
     }
     const VAddr count_address = indirect.count;
     const u32 stride = indirect.stride;
@@ -1295,7 +1295,7 @@ void Rasterizer::DispatchRecord(const ComputePipeline* pipeline) {
     gbuffer_draw = false;
 
     scheduler.PopPendingOperations();
-    buffer_cache.ProcessCpuWrites();
+    BeforeRecord();
 
     const auto& cs_program = CsRegs();
 
@@ -1365,7 +1365,7 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
 void Rasterizer::DispatchIndirectRecord(const ComputePipeline* pipeline, VAddr address,
                                         u32 size) {
     scheduler.PopPendingOperations();
-    buffer_cache.ProcessCpuWrites();
+    BeforeRecord();
     const u32 offset = 0;
 
     if (!BindResources(pipeline)) {

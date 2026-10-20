@@ -96,6 +96,7 @@ void OcclusionQueries::Event(VAddr address, u32 pairs) {
             }
         }
         pending.push_back({address, pairs, ended, std::chrono::steady_clock::now(), tick});
+        ++events_in_pass;
         if (scheduler.IsRendering()) {
             BeginSegment();
         }
@@ -120,9 +121,17 @@ void OcclusionQueries::OnBeginRendering() {
 }
 
 void OcclusionQueries::OnEndRendering() {
+    static const bool submit_early = [] {
+        const char* env = std::getenv("GOW3_OCCLUSION_SUBMIT");
+        return !env || env[0] != '0';
+    }();
     std::scoped_lock lock{mutex};
     if (active) {
         EndSegment();
+    }
+    if (events_in_pass != 0) {
+        submit_wanted = submit_early;
+        events_in_pass = 0;
     }
 }
 
@@ -255,14 +264,15 @@ void OcclusionQueries::Report() {
     const u64 p = parts.exchange(0);
     std::printf("Occlusion queries: %.0f events/s, %.0f queries/s of which %.1f%% hidden; results "
                 "written %.2f ms after the event on average (max %.2f ms; event -> submitted %.2f, "
-                "-> GPU done %.2f, -> written %.2f); %llu segments missed\n",
+                "-> GPU done %.2f, -> written %.2f); %llu segments missed; %.0f early submissions/s\n",
                 events.exchange(0) / seconds, (hidden + visible) / seconds,
                 hidden + visible ? 100.0 * hidden / (hidden + visible) : 0.0,
                 n ? latency_us.exchange(0) / 1000.0 / n : 0.0, latency_max_us.exchange(0) / 1000.0,
                 p ? to_submit_us.exchange(0) / 1000.0 / p : 0.0,
                 p ? to_done_us.exchange(0) / 1000.0 / p : 0.0,
                 p ? to_written_us.exchange(0) / 1000.0 / p : 0.0,
-                static_cast<unsigned long long>(missed.exchange(0)));
+                static_cast<unsigned long long>(missed.exchange(0)),
+                Gow3Stats::occlusion_submits.exchange(0) / seconds);
     std::fflush(stdout);
 }
 

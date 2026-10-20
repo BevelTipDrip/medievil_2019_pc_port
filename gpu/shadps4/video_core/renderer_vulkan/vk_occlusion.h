@@ -48,6 +48,14 @@ public:
     /// recording thread, in order with the draws.
     void Event(VAddr address, u32 pairs);
 
+    /// O3: true once after a render pass that held events ended: the recording thread submits
+    /// before its next command, so the queries reach the GPU at once instead of waiting for the
+    /// game's next submission (T-O2d: 2.6-3.0 ms from event to submission). GOW3_OCCLUSION_SUBMIT=0:
+    /// off.
+    bool TakeSubmitWanted() {
+        return submit_wanted && !(submit_wanted = false);
+    }
+
     /// Scheduler: a render pass begins / is about to end (the recording thread).
     void OnBeginRendering() override;
     void OnEndRendering() override;
@@ -84,6 +92,8 @@ private:
     // Recording thread state (and `mutex` for what the completion thread reads).
     bool started = false;
     bool active = false;
+    u32 events_in_pass = 0;
+    bool submit_wanted = false;
 
     std::mutex mutex;
     std::condition_variable cv;

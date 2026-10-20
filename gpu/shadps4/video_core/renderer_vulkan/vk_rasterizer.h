@@ -95,6 +95,16 @@ public:
     /// caller writes the synthetic counters as before.
     bool OcclusionEvent(VAddr address, u32 pairs);
 
+    /// gow3: the recording thread, before it records a draw or dispatch: queued CPU writes go
+    /// into the GPU's copy (D2), and a submission occlusion queries want is made (O3).
+    void BeforeRecord() {
+        buffer_cache.ProcessCpuWrites();
+        if (occlusion && occlusion->TakeSubmitWanted()) {
+            scheduler.Flush();
+            Gow3Stats::occlusion_submits.fetch_add(1, std::memory_order_relaxed);
+        }
+    }
+
     /// gow3: a guest libc write into memory a shader wrote (BufferCache::PreciseCpuWrite); false:
     /// the caller writes it normally (and faults).
     bool PreciseCpuWrite(VAddr addr, const void* src, int value, u64 size);

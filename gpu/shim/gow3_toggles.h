@@ -97,6 +97,8 @@ inline std::atomic<std::uint64_t> draws{0}, dispatches{0}, submissions{0};
 /// Occlusion query counter dumps (ZPASS_DONE; a query is two), render passes ended, and the
 /// draw recording thread's busy TSC cycles (stage B), for the per-frame diagnostics.
 inline std::atomic<std::uint64_t> occlusion_dumps{0}, render_pass_ends{0}, stage_b_busy_cycles{0};
+/// Submissions made early for occlusion queries (O3).
+inline std::atomic<std::uint64_t> occlusion_submits{0};
 /// Synchronous GPU -> CPU buffer downloads (BufferCache::DownloadMemory, a full GPU wait each),
 /// by what asked for them: 0 guest read fault, 1 guest write fault, 2 invalidation (runtime hook,
 /// player frames), 3 guest unmap; and unmaps that dropped the data instead (UnmapDiscard).
