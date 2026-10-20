@@ -67,6 +67,14 @@ public:
             entries.pop_front();
         }
     }
+    /// Calls `visit(address, size)` for every queued copy.
+    template <typename Visit>
+    void ForEach(Visit&& visit) const {
+        for (const auto& entry : entries) {
+            visit(entry.address, entry.size);
+        }
+    }
+
     /// Whether Retire would complete anything now (copies retire in order).
     template <typename Ready>
     bool FrontReady(Ready&& ready) const {

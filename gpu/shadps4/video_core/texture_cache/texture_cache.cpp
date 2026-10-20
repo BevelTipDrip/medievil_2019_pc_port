@@ -232,7 +232,34 @@ void TextureCache::ProcessDownloadImages() {
         }
         CACHE_STAT(eop_waits, 1);
         // Upload workers must finish reading RAM before these pages become inaccessible.
-        scheduler.WaitHostCopies();
+        // gow3 W2 (GOW3_EOP_TARGETED=1; toggle bit 60 turns it off live): only the copies that
+        // read the memory this end of pipe writes or protects: the queued readbacks (retired
+        // into guest memory) and the images about to be downloaded (watched from now on).
+        // Usually none: the full wait was ~21% of the draw recording thread (T-P3). The ranges
+        // are collected under the locks and waited for without them: a copy thread faulting on
+        // a watched page resolves readbacks under readback_mutex.
+        static const bool targeted = [] {
+            const char* env = std::getenv("GOW3_EOP_TARGETED");
+            return env && env[0] == '1';
+        }();
+        if (targeted && !Gow3Toggle::Disabled(Gow3Toggle::IdleEopSkip)) {
+            boost::container::small_vector<std::pair<VAddr, u64>, 16> ranges;
+            {
+                std::scoped_lock readback_lock{readback_mutex};
+                std::unique_lock lock{download_images_mutex};
+                pending_readbacks.ForEach(
+                    [&](u64 address, u64 size) { ranges.emplace_back(address, size); });
+                for (const ImageId image_id : download_images) {
+                    const auto& info = slot_images[image_id].info;
+                    ranges.emplace_back(info.guest_address, info.guest_size);
+                }
+            }
+            for (const auto& [address, size] : ranges) {
+                scheduler.WaitHostCopiesFor(address, size);
+            }
+        } else {
+            scheduler.WaitHostCopies();
+        }
         std::scoped_lock readback_lock{readback_mutex};
         RetireReadbacks();
         std::unique_lock lock{download_images_mutex};

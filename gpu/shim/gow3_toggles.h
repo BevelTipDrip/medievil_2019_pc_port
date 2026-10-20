@@ -73,7 +73,7 @@ enum : std::uint64_t {
     SceneMipBias = 1ull << 57, ///< negative LOD bias of G-buffer samplers at reduced scene sizes
     VolumeSliceViews = 1ull << 58, ///< volumes rendered slice by slice through 2D array views
     StencilPlaneWrites = 1ull << 59, ///< shader writes to a stencil plane copied into the image
-    IdleEopSkip = 1ull << 60, ///< end of pipe with no readback work skips the host copy wait
+    IdleEopSkip = 1ull << 60, ///< end-of-pipe host copy wait: idle skip (P2) / targeted (W2) off
     UndefinedTargets = 1ull << 61, ///< targets made where an unmap freed images skip the upload
     TargetedHostCopyWaits = 1ull << 62, ///< WRITE_DATA waits only for copies reading its range
     // Bits 20-29 are used as raw debug toggles by the camera/object motion and the upscaler.
