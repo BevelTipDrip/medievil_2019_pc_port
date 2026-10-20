@@ -28,9 +28,8 @@ $set = [ordered]@{ GOW3_GAME_DIR = $Game; GOW3_FRAME_STATS = '1' }
 $toggles = 'C:\Users\Ty\MediEvil\research-data\toggles.txt'
 Set-Content -Path $toggles -Value '0' -Encoding ascii
 $set.GOW3_TOGGLE_FILE = $toggles
-# I1 (menu navigation at 4K): boot at 4K like a PS4 Pro, as research\tools\launcher.cmd does. Without it the runs
-# from T-B1 to T-D2b (2026-10-19) lacked the '4K display metrics at boot' patch and the menus broke again.
-$set.GOW3_UE4_BOOT_4K = '1'
+# The 4K boot (I1), the 4K memory sizes (S2) and occlusion queries off (T-O1) are run.py / ue4_override defaults
+# since 2026-10-20 (before, this script set them; the runs T-B1 to T-D2b lacked the 4K boot).
 if ($Validation) { $set.GOW3_VK_VALIDATION = '1'; $set.VK_ADD_LAYER_PATH = 'C:\msys64\clang64\bin' }
 if ($Samples) {
     $dir = "C:\Users\Ty\MediEvil\research-data\samples\$Tag"
@@ -41,14 +40,10 @@ if ($Samples) {
     if (Test-Path (Join-Path $Port 'out\medievil-runtime.pdb')) { Copy-Item (Join-Path $Port 'out\medievil-runtime.pdb') $dir }
 }
 if ($TextureHelper) { $set.GOW3_TEXTURE_HELPER = '1' }
-# 4K defaults for test runs (2026-10-19, the user): the PS4's 400-800 MB texture streaming pool thrashes at 4K
-# (S2: 2 GiB more guest memory, a 4600 MB GPU heap and a 1600 MB pool stop small pans re-streaming). -Env
-# GOW3_UE4_CVARS are appended after these, so they add to them and win on the same name.
-$cvars = if ($Ps4Memory) { '' } else { $set.GOW3_DMEM_MB = '7104'; 'r.GarlicHeapSizeMB=4600;r.Streaming.PoolSize=1600' }
-# T-O1 (2026-10-19): the port answers every occlusion query "visible" (shadPS4's synthetic counters), so the queries
-# cull nothing and their bounding-box draws cost ~150 draws a frame in the heavy view (+~5% FPS without them). Off by
-# default for test runs; a test of real query results passes -Env @{GOW3_UE4_CVARS='r.AllowOcclusionQueries=1'}.
-$cvars = (@($cvars, 'r.AllowOcclusionQueries=0') | Where-Object { $_ }) -join ';'
+# -Ps4Memory: the PS4's memory sizes instead of the 4K defaults (GOW3_PS4_MEMORY=1, A/B runs). -Env GOW3_UE4_CVARS
+# win over the defaults on the same name (e.g. 'r.AllowOcclusionQueries=1' for a culling test).
+if ($Ps4Memory) { $set.GOW3_PS4_MEMORY = '1' }
+$cvars = ''
 foreach ($k in $Env.Keys) { $set[$k] = [string]$Env[$k] }
 if ($Env.ContainsKey('GOW3_UE4_CVARS')) { $cvars = (@($cvars, [string]$Env.GOW3_UE4_CVARS) | Where-Object { $_ }) -join ';' }
 if ($cvars) { $set.GOW3_UE4_CVARS = $cvars }

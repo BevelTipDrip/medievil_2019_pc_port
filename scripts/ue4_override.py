@@ -314,6 +314,14 @@ def apply(game, resolution='native', quality='console', fps=60, debug_menu=False
     output = NATIVE_OUTPUT.get(resolution)
     if output:
         values['r.setres'] = output
+    if output == '3840x2160' and os.environ.get('GOW3_PS4_MEMORY') != '1':
+        # The GPU heap and texture streaming pool for 4K (with GOW3_DMEM_MB in run.py).
+        values.update({'r.GarlicHeapSizeMB': '4600', 'r.Streaming.PoolSize': '1600'})
+    # The port answers the game's occlusion queries "visible" (shadPS4's synthetic counters), so
+    # they cull nothing and their bounding-box draws cost ~150 draws a frame in busy views
+    # (+~5% FPS without them, research: T-O1). Real results (GOW3_OCCLUSION=1) and UE4's HZB
+    # both cost more than they save in this port so far (T-O3c, T-HZ3).
+    values['r.AllowOcclusionQueries'] = '0'
     scale = TEMPORAL_UPSCALE.get(upscale) if not percentage else None
     if scale:
         values.update({'r.ScreenPercentage': scale, 'r.TemporalAA.Upsampling': '1'})

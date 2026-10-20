@@ -134,7 +134,14 @@ def main():
         import ue4_override
         # Native output: the runtime sets the game's r.SetRes live once it runs (runtime_extra.c).
         if output := ue4_override.NATIVE_OUTPUT.get(graphics['render_resolution']):
-            if output == '3840x2160' and env.get('GOW3_UE4_BOOT_4K') == '1':
+            if output == '3840x2160' and env.get('GOW3_PS4_MEMORY') != '1':
+                # The PS4's 400-800 MB texture streaming pool thrashes at 4K: 2 GiB more guest
+                # memory (with the GPU heap and pool sizes in ue4_override.apply) stop small pans
+                # re-streaming (research: T-S2, 2026-10-19). GOW3_PS4_MEMORY=1: the PS4's sizes.
+                env.setdefault('GOW3_DMEM_MB', '7104')
+            # 4K native starts at 4K, as a PS4 Pro on a 4K TV (menu navigation, research: I1);
+            # GOW3_UE4_BOOT_4K=0: the live r.SetRes as before.
+            if output == '3840x2160' and env.get('GOW3_UE4_BOOT_4K', '1') == '1':
                 # Or the game starts at 4K itself, as on a PS4 Pro with a 4K TV: a 3840x2160 VideoOut
                 # and its 4K display-metrics branch (patches/MediEvil.xml). A live change leaves the
                 # menus' navigation at the 1080p area.
