@@ -1170,3 +1170,28 @@ oscillation."
   Unknown: `GOW3_WAIT_SITES=1` next run.
 
 Next (T-O3c): `r.NumBufferedOcclusionQueries=2` (results now land within ~5 ms; two frames ~10.6 ms) + `GOW3_WAIT_SITES=1`.
+
+### T-O3c: two-frame-old queries again, guest wait sites (2026-10-19 20:41-20:53, launched by Claude with the user's go; build `b6f9536`; log `data/t-o3c-buffered2.log`)
+
+`r.NumBufferedOcclusionQueries=2`, `GOW3_WAIT_SITES=1`. **Heavy view, camera still: 205-221 FPS, median 4.5-4.7 ms, p99
+5.4-6.0 ms, stddev 0.25-0.46 ms** (~1,400-1,520 draws a frame, 63-73% of queries hidden, results 3.3-4.4 ms after the
+event): the best so far, and the 8-frame oscillation of T-O3b gone at this spot. No long stall. The user: "No long
+stall, 0.1% lows looks a lot better, though there does appear to be a sort of 'judder' going on. It might be worth
+enabling some sort of frame buffering, but it's clear something is still stalling out, there's a large delta on 1%
+lows, and 0.1% lows are less than 50% of the average... But we're getting better." Then: "if I pan the camera at all
+the lows tank."
+
+- **Isolated long frames** (the 0.1% lows): e.g. 58.4 ms at 20:48:45, in the same window as an occlusion result that
+  took **59.2 ms** (average 4.4): the game waited for an outlier. Which part of the latency blows up is not known yet
+  (the stats give averages and one max).
+- **Panning** (20:52:10-15: 183 FPS, p99 9.8 ms, 50 slow frames; still: 216-221 FPS, p99 5.6-6.0): every slow frame has
+  **stage B 85-97% busy** with no waits of its own, 1,340-1,610 draws, 128-214 queries, host copies 0.5-1.0 ms a frame
+  (still: ~0.4): the view changing brings draws and queries, and stage B, recording every draw at ~2 us, is the limit
+  again. Not occlusion latency (3.3-4.3 ms throughout). The structural fix is the user's third item: stage B across
+  threads.
+- **Guest waits**: `usleep(0)` at **guest+0x689c89**, ~1.3 M calls/s, ~1.4 s per 5 s: the query-wait spin of "What the
+  render thread waits for" (2026-10-18), or the same code waiting on GPU timestamp queries (state 2): to tell apart.
+
+Next: (1) per-part maxima of the result latency (find the 59 ms outliers); (2) Ghidra: who spins at 0x689c89
+(occlusion or timestamps); (3) the user's frame-buffering idea (`frames_queued=2`) for the judder, its own launch;
+(4) the stage B multi-threading study.
