@@ -214,3 +214,26 @@ which waits for all copies synchronously.
 end-of-shader fence deferred like the end-of-pipe one (signalled by the recorder after the copies before it; the
 `GdsStore` case keeps its synchronous path), with W2 on, so stage B no longer waits for host copies at fences. Then
 re-measure; (c) as a true second thread for the draw's data copies only if stage B stays the limit.
+
+## T-E1: end-of-shader fences deferred + W2 (2026-10-20 00:05-00:13, launched by Claude with the user's go; build `cb1da6c`; log `data/t-e1-eos-deferred.log`)
+
+Queries off, `GOW3_SECTIONS=1`, E1 on, W2 on (`GOW3_EOP_TARGETED=1`); W2 off 00:09:18-00:12:14 (bit 60). Heavy view:
+
+| | W2 on (+E1) | W2 off (+E1) |
+|---|---|---|
+| packet | 2.03-2.06 us | ~2.15-2.2 us |
+| ordered tasks | **0.23** (end of pipe 0.04, EOS 0.007, once-a-frame `RunWriteData` 0.15) | 0.49-0.51 |
+| draw | 1.70-1.72 | 1.55-1.61 |
+| FPS (draws) | 126-139 (2,570-2,840) | 129.5-136 (2,460-2,704) |
+| p99 / worst | 8.2-9.7 / 8.7-11.3 ms | 8.4-9.6 / 8.9-11.4 ms |
+| stage A blocked on copy threads | 0% | 6-12% |
+
+The fence waits are mostly gone from stage B (the remainder moved to `RunWriteData`'s `WaitDeferredSignals`, ~1 ms
+once a frame), ~5% more packets a second (~372k vs ~351k), stage B still 92-94% busy, stage A waiting on it 25-38%:
+**stage B's own draw work (1.6-1.7 us per packet, no dominant part) is the heavy view's limit.** The user: "roughly the
+same … There may have been a couple frame spikes … when it was on" then "I don't think the spikes were real, I can't
+repeat them. 1% lows in light areas seem really good, I'm seeing 220 FPS with 200 1% lows, very good." **E1 kept (on
+by default); W2 to become the default.**
+
+Where stage B stands: what remains is draw recording; option (c) as a true second thread would move the data copies
+and closure building (~0.3-0.45 of ~1.7 us), a large refactor for ~15-20% in heavy views.
