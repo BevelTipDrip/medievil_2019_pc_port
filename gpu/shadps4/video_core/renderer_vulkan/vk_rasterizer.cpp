@@ -693,7 +693,11 @@ void Rasterizer::RunDrawPacket(void* context, const u8* data, u32 size) {
     if (*reinterpret_cast<const PacketKind*>(data) == PacketKind::Task) {
         const auto& task = *reinterpret_cast<const TaskPacket*>(data);
         GOW3_SECTION(Task);
+        const u64 task_start = Gow3Sections::Enabled() ? __rdtsc() : 0;
         task.task(self, data + sizeof(TaskPacket));
+        if (task_start) {
+            Gow3Sections::NoteTask(reinterpret_cast<const void*>(task.task), __rdtsc() - task_start);
+        }
         return;
     }
     const auto& packet = *reinterpret_cast<const DrawPacket*>(data);
@@ -858,6 +862,35 @@ void Rasterizer::PrintPipeStats() {
                             1e6 * double(now_cycles - last_sections[s]) / tsc_hz / packets);
             }
             last_sections[s] = now_cycles;
+        }
+        static u64 last_record_calls = 0;
+        const u64 record_calls = Gow3Sections::record_calls.load(std::memory_order_relaxed);
+        if (packets > 0) {
+            std::printf(" (%.1f Record calls per packet)", double(record_calls - last_record_calls) / packets);
+        }
+        last_record_calls = record_calls;
+        std::printf("\n  stage B tasks (us per packet, per second): ");
+        static std::array<std::pair<u64, u64>, Gow3Sections::task_kinds.size()> last_tasks{};
+#ifdef _WIN32
+        const auto exe = reinterpret_cast<uintptr_t>(GetModuleHandleA(nullptr));
+#else
+        const uintptr_t exe = 0;
+#endif
+        for (size_t k = 0; k < Gow3Sections::task_kinds.size(); ++k) {
+            const auto& kind = Gow3Sections::task_kinds[k];
+            const void* fn = kind.fn.load(std::memory_order_relaxed);
+            if (!fn) {
+                break;
+            }
+            const u64 c = kind.cycles.load(std::memory_order_relaxed),
+                      n = kind.count.load(std::memory_order_relaxed);
+            if (packets > 0 && n != last_tasks[k].second) {
+                std::printf(" exe+%#llx %.3f (%.0f/s)",
+                            static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(fn) - exe),
+                            1e6 * double(c - last_tasks[k].first) / tsc_hz / packets,
+                            double(n - last_tasks[k].second) / seconds);
+            }
+            last_tasks[k] = {c, n};
         }
         std::printf("\n");
     }

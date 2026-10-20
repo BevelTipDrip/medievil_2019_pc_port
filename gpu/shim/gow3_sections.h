@@ -31,15 +31,38 @@ enum Id : std::uint32_t {
     UpdateDynamicState,
     Kick,            ///< ResetBindings and the hand-over to the Vulkan recorder
     DispatchRecord,
+    RecordCall,      ///< Scheduler::Record (closure into the chunk)
     Count,
 };
 inline constexpr const char* Names[Count] = {
     "packet",   "tasks",  "end of pipe", "draw",         "before record", "render state",
     "bind",     "buffers", "textures",   "ObtainBuffer", "begin render",  "vertex",
     "index",    "emit vertex", "barriers", "descriptors", "dynamic",      "kick",
-    "dispatch",
+    "dispatch", "Record calls",
 };
 inline std::array<std::atomic<std::uint64_t>, Count> cycles{};
+/// Scheduler::Record calls on the draw recording thread.
+inline std::atomic<std::uint64_t> record_calls{0};
+/// Ordered tasks by function: address, cycles, count (stage B only; read racily for the report).
+struct TaskKind {
+    std::atomic<const void*> fn{nullptr};
+    std::atomic<std::uint64_t> cycles{0}, count{0};
+};
+inline std::array<TaskKind, 24> task_kinds{};
+inline void NoteTask(const void* fn, std::uint64_t task_cycles) {
+    for (auto& kind : task_kinds) {
+        const void* current = kind.fn.load(std::memory_order_relaxed);
+        if (!current) {
+            kind.fn.store(fn, std::memory_order_relaxed);
+            current = fn;
+        }
+        if (current == fn) {
+            kind.cycles.fetch_add(task_cycles, std::memory_order_relaxed);
+            kind.count.fetch_add(1, std::memory_order_relaxed);
+            return;
+        }
+    }
+}
 
 inline bool Enabled() {
     static const bool on = [] {

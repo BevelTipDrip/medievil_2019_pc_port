@@ -19,6 +19,7 @@
 #include <thread>
 #include <queue>
 
+#include "gow3_sections.h"
 #include "gow3_toggles.h"
 #include "common/assert.h"
 #include "common/interval_set.h"
@@ -749,6 +750,10 @@ public:
     /// everything it uses (capture by value): it may run later on the recording thread.
     template <typename Func>
     void Record(Func&& func) {
+        GOW3_SECTION(RecordCall);
+        if (Gow3Sections::Enabled() && Gow3Sections::recording_thread) {
+            Gow3Sections::record_calls.fetch_add(1, std::memory_order_relaxed);
+        }
         if (!recording_threaded || direct_mode) {
             func(current_cmdbuf);
             return;
