@@ -1133,3 +1133,14 @@ the D2 queue). UE4 issues its queries in one batch, so ~1 extra submission a fra
 download's `Finish` runs there, and the submit callback (barriers, sparse arena binds) is not stage-specific.
 `GOW3_OCCLUSION_SUBMIT=0` turns it off; the stats line counts "early submissions/s". Test T-O3: as T-O2d
 (`r.NumBufferedOcclusionQueries=3`), expect "event → submitted" well under 2.6 ms, fewer starved slow frames.
+
+### T-O3: a submission per query pass is too many (2026-10-19 20:21-20:25, launched by Claude with the user's go; build `2b4e699`; log `data/t-o3-early-submit.log`)
+
+Results **2.08 ms after the event** on average (max ~4 ms; event → submitted 0.04 ms, → GPU done 2.04), 67-68% hidden,
+but **~16,000 early submissions a second (~128 a frame)**: MediEvil draws each query box in its own render pass
+(~10,000 `BeginRendering` pass changes a second), so every pass with an event asked for one. Each submission syncs the
+Vulkan recorder and waits for host copies: stage B 95-98% busy (recorder waits 0.8-1.7 ms in slow frames), heavy view
+**126-129 FPS, p99 13.7-14.1 ms, stddev ~2.1 ms**. The user: "the AVG and the 1% lows are about as bad as they've ever
+been. Persistent oscillations on the frametime graph with a high amplitude." **Rate-limited** (`cdb43af`): a pass end
+submits only when the oldest unsubmitted event is >= 1 ms old (`GOW3_OCCLUSION_SUBMIT_US`, default 1000, 0: off).
+Expected: a few submissions a frame, results within ~3 ms. Test T-O3b, same settings.
