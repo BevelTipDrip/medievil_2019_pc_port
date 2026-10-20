@@ -159,3 +159,32 @@ view panning): stage B's lock waits in `ResolveVertexBuffers` → `runtime_memor
 12.2%, `BindResources` 7.9%. Heavy view (~2,700 draws): 130-133 FPS, p99 8.5-9.2 ms, stddev 0.33-0.55 ms, no frames
 over 1.5x median in those windows (T-O1: 126-135 FPS, p99 8.4-9.2). **L2 kept** (half the lock waits, no change in
 FPS visible).
+
+## T-S1: stage B's time per packet (2026-10-19 23:33-23:41, launched by Claude with the user's go; build `c4bf2dc`; `GOW3_SECTIONS=1`; log `data/t-s1-sections.log`)
+
+Queries off, heavy view, 330-407k packets a second, stage B 92-94% busy, **2.3-2.8 us per packet**:
+
+| part (inclusive) | us / packet |
+|---|---|
+| ordered tasks | 0.64-1.17 (~35%) |
+| of which end of pipe (`ProcessDownloadImages`, its host copy wait) | 0.48-0.62 (~22%) |
+| draw (`DrawRecord`) | 1.48-1.55 (~60%) |
+| bind (`BindResources`): textures 0.31, buffers 0.13 | 0.51-0.53 |
+| vertex (`ResolveVertexBuffers`, with `ObtainBuffer`) | 0.24-0.25 |
+| ObtainBuffer (all callers) | 0.19-0.20 |
+| descriptors (`Pipeline::BindResources`) | 0.20-0.21 |
+| begin render | 0.12 |
+| dynamic state | 0.075 |
+| render state | 0.065 |
+| index | 0.065 |
+| emit vertex | 0.05 |
+| kick (`ResetBindings` + hand-over) | 0.03 |
+| barriers | 0.004 |
+| before record (D2 queue) | 0.008 |
+
+Reading: a third of stage B is ordered tasks, two thirds of that the end-of-pipe wait, which is a sync with the Vulkan
+recorder: small host copies (`SmallGuestCopy` → `RecordHostCopy`) run on `gow3:VkRecorder` in command order, so
+`WaitHostCopies` waits for the recorder to replay everything so far (~113 times a frame); W2 only moved that wait to the
+next fence. Within the draw, no single part dominates; what a second recording stage (option c) could take is ~0.45 us
+of 1.5 (descriptors, dynamic, emit, kick, the draw record). **First lever: decouple small host copies from the
+recorder**: toggle bit 19 (`PoolSmallCopies`) sends them in batches to the copy threads instead (live A/B, T-S2).
