@@ -234,7 +234,7 @@ void TextureCache::ProcessDownloadImages() {
         }
         CACHE_STAT(eop_waits, 1);
         // Upload workers must finish reading RAM before these pages become inaccessible.
-        // gow3 W2 (GOW3_EOP_TARGETED=1; toggle bit 60 turns it off live): only the copies that
+        // gow3 W2 (on by default since T-E1; GOW3_EOP_TARGETED=0 or toggle bit 60 live: off): only the copies that
         // read the memory this end of pipe writes or protects: the queued readbacks (retired
         // into guest memory) and the images about to be downloaded (watched from now on).
         // Usually none: the full wait was ~21% of the draw recording thread (T-P3). The ranges
@@ -242,7 +242,7 @@ void TextureCache::ProcessDownloadImages() {
         // a watched page resolves readbacks under readback_mutex.
         static const bool targeted = [] {
             const char* env = std::getenv("GOW3_EOP_TARGETED");
-            return env && env[0] == '1';
+            return !env || env[0] != '0';
         }();
         if (targeted && !Gow3Toggle::Disabled(Gow3Toggle::IdleEopSkip)) {
             boost::container::small_vector<std::pair<VAddr, u64>, 16> ranges;
