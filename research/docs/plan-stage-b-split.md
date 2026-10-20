@@ -147,3 +147,15 @@ is not a lever here.
 Next: the split (port `BB_SECTIONS` for per-section numbers, then option a), plus two items from T-P3: the runtime
 memory-map lock contention in `ResolveVertexBuffers` → `runtime_memory_clamp` (~5% of stage B, waiting, not lookup
 cost), and fewer render pass breaks (barrier batching, part of a).
+
+## L2 / T-L2: region caches that answer during writes (2026-10-19 23:23-23:30, launched by Claude with the user's go; build `03c363b`; `-Samples`; log `data/t-l2-region-buckets.log`)
+
+L1 (per-16 MiB-bucket generations, `0705e49`, reverted `bc60b8b`) re-applied, plus: `host_map` / `host_unmap` /
+`host_keep_view` bump a range's buckets before its host mapping changes, so cached answers for other ranges stay
+valid while a writer holds the lock (L1 refused all cached answers then, and writers hold the lock across the OS
+calls). `GOW3_REGION_BUCKETS=0` off (bit 62 went to B1). Profile (`gow3:DrawRec`, 186,171 samples, queries off, heavy
+view panning): stage B's lock waits in `ResolveVertexBuffers` → `runtime_memory_clamp` **~2.4%** (T-P3: 4.7%);
+`ProcessDownloadImages` host copy wait 22.9% (W2 off by default), flip wait (`PrepareFrame`) 13.1%, `DrawRecord`
+12.2%, `BindResources` 7.9%. Heavy view (~2,700 draws): 130-133 FPS, p99 8.5-9.2 ms, stddev 0.33-0.55 ms, no frames
+over 1.5x median in those windows (T-O1: 126-135 FPS, p99 8.4-9.2). **L2 kept** (half the lock waits, no change in
+FPS visible).
