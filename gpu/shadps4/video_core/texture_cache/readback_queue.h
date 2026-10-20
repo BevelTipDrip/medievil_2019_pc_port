@@ -16,13 +16,16 @@ public:
         Payload payload;
         bool valid = true;
         bool watched = true; ///< still protects its pages (see ReleaseOutside)
+        std::uint64_t seq = 0; ///< gow3: copy number of a tracked range (TextureCache::SnapshotReadback), 0 if none
     };
     bool CanFit(std::uint64_t size) const {
         return entries.size() < 64 && size <= MaxBytes && bytes <= MaxBytes - size;
     }
-    void Push(std::uint64_t address, std::uint64_t size, std::uint64_t tick, Payload payload) {
+    void Push(std::uint64_t address, std::uint64_t size, std::uint64_t tick, Payload payload,
+              std::uint64_t seq = 0) {
         assert(CanFit(size));
         entries.push_back({address, size, tick, std::move(payload)});
+        entries.back().seq = seq;
         bytes += size;
     }
     std::uint64_t RequiredTick(std::uint64_t address, std::uint64_t size) const {

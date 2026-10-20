@@ -133,6 +133,17 @@ public:
                           ReadbackSource source = ReadbackSource::Unknown);
     void CancelReadbacks(VAddr address, u64 size);
 
+    /// gow3 (MediEvil HZB remap, gpu/shim/medievil_hzb.cpp): numbers the readback copies of
+    /// [address, address + size) from the first call on. Publishes the copies the GPU has
+    /// finished (no wait) and copies the first `copy_size` bytes of guest memory into `dst`.
+    /// `published` is the number of the copy those bytes come from (0: none numbered yet),
+    /// `pushed` the newest queued. ok is false without deferred readbacks or a free slot.
+    struct ReadbackSnapshot {
+        u64 pushed = 0, published = 0;
+        bool ok = false;
+    };
+    ReadbackSnapshot SnapshotReadback(VAddr address, u64 size, void* dst, u64 copy_size);
+
     /// Retrieves the image handle of the image with the provided attributes.
     [[nodiscard]] ImageId FindImage(ImageDesc& desc, bool exact_fmt = false);
 
@@ -480,6 +491,13 @@ private:
     u64 readbacks_released = 0;
     ReadbackQueue<Vulkan::StagingBufferRef> pending_readbacks;
     std::mutex readback_mutex;
+    struct TrackedReadback {
+        VAddr address = 0;
+        u64 size = 0, pushed = 0, published = 0;
+    };
+    std::array<TrackedReadback, 4> tracked_readbacks{}; ///< guarded by readback_mutex
+    u64 NoteTrackedPush(VAddr address, u64 size);
+    void NoteTrackedPublish(VAddr address, u64 size, u64 seq);
     std::atomic<bool> has_pending_readbacks{false};
     u64 readbacks_queued = 0, readbacks_completed = 0, readbacks_waited = 0;
     u64 readbacks_canceled = 0, readbacks_peak_bytes = 0;

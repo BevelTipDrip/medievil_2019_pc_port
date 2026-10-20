@@ -140,6 +140,7 @@ void TextureCache::RetireReadbacks() {
                 Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(entry.address),
                     entry.payload.mapped, entry.size);
                 if (entry.watched) WatchReadback<false>(entry.address, entry.size);
+                if (entry.seq) NoteTrackedPublish(entry.address, entry.size, entry.seq);
                 ++readbacks_completed;
             }
             runtime.GetStagingPool().FreeDeferred(entry.payload);
@@ -192,6 +193,42 @@ bool TextureCache::ResolveReadbacks(VAddr address, u64 size, bool assume_locks,
     if (assume_locks) resolve();
     else liverpool->SendCommand<true>(resolve);
     return true;
+}
+
+u64 TextureCache::NoteTrackedPush(VAddr address, u64 size) {
+    for (auto& t : tracked_readbacks) {
+        if (t.size && address < t.address + t.size && t.address < address + size) return ++t.pushed;
+    }
+    return 0;
+}
+
+void TextureCache::NoteTrackedPublish(VAddr address, u64 size, u64 seq) {
+    for (auto& t : tracked_readbacks) {
+        if (t.size && address < t.address + t.size && t.address < address + size) {
+            t.published = std::max(t.published, seq);
+            return;
+        }
+    }
+}
+
+TextureCache::ReadbackSnapshot TextureCache::SnapshotReadback(VAddr address, u64 size, void* dst,
+                                                              u64 copy_size) {
+    if (!deferred_readbacks || !size) return {};
+    std::scoped_lock lock{readback_mutex};
+    auto it = std::ranges::find_if(tracked_readbacks, [&](const TrackedReadback& t) {
+        return t.address == address && t.size == size;
+    });
+    if (it == tracked_readbacks.end()) {
+        // Copies queued before this call carry no number: their bytes count as copy 0.
+        it = std::ranges::find(tracked_readbacks, u64{0}, &TrackedReadback::size);
+        if (it == tracked_readbacks.end()) return {};
+        *it = {address, size, 0, 0};
+    }
+    RetireReadbacks();
+    if (copy_size && !Core::Memory::Instance()->ReadBacking(address, dst, std::min(copy_size, size))) {
+        return {};
+    }
+    return {it->pushed, it->published, true};
 }
 
 void TextureCache::CancelReadbacks(VAddr address, u64 size) {
@@ -281,6 +318,9 @@ void TextureCache::ProcessDownloadImages() {
                     copy->staging.Invalidate();
                     Core::Memory::Instance()->TryWriteBacking(
                         std::bit_cast<u8*>(copy->guest_address), copy->staging.mapped, copy->size);
+                    if (const u64 seq = NoteTrackedPush(copy->guest_address, copy->size)) {
+                        NoteTrackedPublish(copy->guest_address, copy->size, seq);
+                    }
                     runtime.GetStagingPool().FreeDeferred(copy->staging);
                 } else {
                     WatchReadback<true>(copy->guest_address, copy->size);
@@ -298,7 +338,8 @@ void TextureCache::ProcessDownloadImages() {
                         }
                     }
                     pending_readbacks.Push(copy->guest_address, copy->size,
-                        scheduler.CurrentTick(), copy->staging);
+                        scheduler.CurrentTick(), copy->staging,
+                        NoteTrackedPush(copy->guest_address, copy->size));
                     has_pending_readbacks.store(true, std::memory_order_release);
                     ++readbacks_queued;
                     readback_submit_wanted = !stale_readbacks;

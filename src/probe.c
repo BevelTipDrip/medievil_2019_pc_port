@@ -7,6 +7,7 @@
 #include <inttypes.h>
 #include "runtime.h"
 #include "orb_hook.h"
+#include "hzb_hook.h"
 #include "cheat_hook.h"
 #include "actor_hook.h"
 #include "damage_hook.h"
@@ -404,6 +405,7 @@ static int mapped(Segment *segments, uint64_t count, uint64_t address, uint64_t 
     return 0;
 }
 extern ABI float gow3_orbs_gain(void *player, float requested);
+extern ABI void medievil_hzb_after_map(void *tester);
 extern void gow3_orbs_status(int supported);
 extern uintptr_t gow3_cheat_flag(unsigned id);
 extern uintptr_t gow3_actor_slots_address(void);
@@ -529,6 +531,30 @@ static void install_orb_multiplier(const char *app0, Segment *segments, uint64_t
     gow3_orbs_status(1);
     printf("Red orbs: live multiplier ready (3 validated gain paths, 0.1x to 100x)\n");
 }
+/* MediEvil HZB occlusion remap (src/hzb_hook.h, gpu/shim/medievil_hzb.cpp): opt-in,
+ * GOW3_HZB_REMAP=1, with r.HZBOcclusion=1 and occlusion queries on. */
+static void install_hzb_remap(Segment *segments, uint64_t count, uint64_t size) {
+    const char *env = getenv("GOW3_HZB_REMAP");
+    if (!env || env[0] != '1') return;
+    if (!medievil_hzb_signatures_match(image, size) ||
+        !mapped(segments, count, MEDIEVIL_HZB_CALL, 5)) {
+        printf("HZB remap: unavailable (not the analysed MediEvil 01.00 eboot)\n");
+        return;
+    }
+    unsigned char *stub = allocate(page_size);
+    const int64_t delta = (int64_t)(uintptr_t)stub - (int64_t)(uintptr_t)(image + MEDIEVIL_HZB_CALL + 5);
+    if (delta < INT32_MIN || delta > INT32_MAX) {
+        printf("HZB remap: unavailable (stub outside relative-call range)\n");
+        return;
+    }
+    medievil_hzb_build_stub(stub, (uintptr_t)(image + MEDIEVIL_HZB_MAP_RESULTS),
+                            (uintptr_t)medievil_hzb_after_map);
+    protect(stub, page_size, 5);
+    const int32_t relative = (int32_t)delta;
+    memcpy(image + MEDIEVIL_HZB_CALL + 1, &relative, 4);
+    printf("HZB remap: MapResults hook ready (results served by occlusion history key)\n");
+}
+
 /* Writes a jump from image+at to `stub`; the rest of the replaced bytes become nops (the stub
  * replays them). 0 when the stub is out of relative-jump range. */
 static int install_jump(uint64_t at, unsigned length, unsigned char *stub) {
@@ -893,6 +919,7 @@ int main(int argc, char **argv) {
     if (game_hooks) install_cheats(app0, segments, ns, size);
     if (game_hooks) install_actor_watch(app0, segments, ns, size);
     if (game_hooks) install_stat_multipliers(app0, segments, ns, size);
+    if (gpu_enabled) install_hzb_remap(segments, ns, size);
 #ifdef _WIN32
     printf("Guest TCB loads redirected to the TEB TLS slot: %" PRIu64 "\n", patch_tcb_loads(segments, ns));
 #endif
