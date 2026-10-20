@@ -328,14 +328,21 @@ static int host_protect_impl(uintptr_t address, uint64_t size, int prot) {
         host_stats_record(op,address,size,start,views,unmapped);                                \
         return result;                                                                          \
     } while (0)
+static void region_changed(uintptr_t start, uintptr_t end);
+/* gow3 L2: the GPU threads' region caches answer while a writer holds the lock (L1's buckets);
+ * a range's buckets are bumped before its host mapping changes, so no cached answer covers
+ * memory a writer is unmapping. */
 static int host_map(uintptr_t address, uint64_t size, int prot, int reserved, uint64_t phys) {
+    region_changed(address,address+size);
     HOST_TIMED(HOST_MAP,address,size,host_map_impl(address,size,prot,reserved,phys));
 }
 static int host_unmap(uintptr_t address, uint64_t size) {
+    region_changed(address,address+size);
     HOST_TIMED(HOST_UNMAP,address,size,(carve_host(address,address+size),0));
 }
 static int host_keep_view(uintptr_t address, uint64_t size) {
     DWORD old;
+    region_changed(address,address+size); /* the view stays but becomes no access */
     if (host_stats_enabled()) HOST_STAT_ADD(views_kept,1);
     return VirtualProtect((void *)address,size,PAGE_NOACCESS,&old) ? 0 : -1;
 }
@@ -372,7 +379,8 @@ static int host_map(uintptr_t address, uint64_t size, int prot, int reserved, ui
         : mmap((void *)address,size,PROT_NONE,MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE|MAP_FIXED,-1,0);
     return mapped==MAP_FAILED ? -1 : 0;
 }
-static int host_unmap(uintptr_t address, uint64_t size) { return munmap((void *)address,size); }
+static void region_changed(uintptr_t start, uintptr_t end);
+static int host_unmap(uintptr_t address, uint64_t size) { region_changed(address,address+size); return munmap((void *)address,size); }
 static int host_view_phys(uintptr_t address, uint64_t *phys, uint64_t *bytes) { (void)address; (void)phys; (void)bytes; return 0; }
 static int host_keep_view(uintptr_t address, uint64_t size) { (void)address; (void)size; return -1; }
 static int host_protect(uintptr_t address, uint64_t size, int prot) { return mprotect((void *)address,size,prot); }
@@ -421,7 +429,34 @@ static size_t vma_index(uintptr_t a) { /* first VMA with end > a */
     while (lo<hi) { size_t mid=(lo+hi)/2; if (vmas[mid].end<=a) lo=mid+1; else hi=mid; }
     return lo;
 }
+/* gow3: generations of 16 MiB buckets of the guest address space (hashed into 64K counters),
+ * bumped wherever a mapping in the bucket changes. The GPU threads' region caches check the
+ * buckets their region spans instead of one table-wide generation: UE4 commits / decommits pool
+ * pages ~6,000 times a second in MediEvil, and each change emptied every cache, so the per-draw
+ * lookups (vertex and constant buffers) kept taking the lock and searching ~13,000 regions
+ * (vma_index ~5% of both GPU threads, plus waits for the writers; P2a). */
+#define REGION_BUCKET_SHIFT 24
+#define REGION_BUCKETS 65536u
+static uint64_t region_buckets[REGION_BUCKETS]; /* atomic */
+static void region_changed(uintptr_t start, uintptr_t end) {
+    if (end<=start) return;
+    const uintptr_t first=start>>REGION_BUCKET_SHIFT, last=(end-1)>>REGION_BUCKET_SHIFT;
+    if (last-first>=REGION_BUCKETS) {
+        for (unsigned b=0;b<REGION_BUCKETS;++b) __atomic_add_fetch(&region_buckets[b],1,__ATOMIC_RELEASE);
+        return;
+    }
+    for (uintptr_t b=first;b<=last;++b) __atomic_add_fetch(&region_buckets[b%REGION_BUCKETS],1,__ATOMIC_RELEASE);
+}
+/* Sum of the generations of the buckets [start,end) spans; 0 when it spans more than 64. */
+static uint64_t region_stamp(uintptr_t start, uintptr_t end) {
+    const uintptr_t first=start>>REGION_BUCKET_SHIFT, last=(end-1)>>REGION_BUCKET_SHIFT;
+    if (last-first>=64) return 0;
+    uint64_t sum=1;
+    for (uintptr_t b=first;b<=last;++b) sum+=__atomic_load_n(&region_buckets[b%REGION_BUCKETS],__ATOMIC_ACQUIRE);
+    return sum;
+}
 static int vma_insert(size_t at, Vma v) {
+    region_changed(v.start,v.end);
     if (vma_count==vma_capacity) {
         size_t capacity=vma_capacity ? vma_capacity*2 : 256;
         Vma *next=realloc(vmas,capacity*sizeof(*vmas));
@@ -432,6 +467,7 @@ static int vma_insert(size_t at, Vma v) {
     vmas[at]=v; ++vma_count; return 0;
 }
 static void vma_erase(size_t at, size_t n) {
+    for (size_t k=0;k<n;++k) region_changed(vmas[at+k].start,vmas[at+k].end);
     memmove(vmas+at,vmas+at+n,(vma_count-at-n)*sizeof(*vmas)); vma_count-=n;
 }
 static int split_at(uintptr_t a) {
@@ -440,6 +476,7 @@ static int split_at(uintptr_t a) {
     Vma right=vmas[i];
     right.start=a;
     if (right.kind==KIND_DIRECT) right.phys+=a-vmas[i].start;
+    region_changed(vmas[i].start,vmas[i].end);
     vmas[i].end=a;
     return vma_insert(i+1,right);
 }
@@ -1109,23 +1146,36 @@ int runtime_memory_read_backing(uintptr_t address, void *data, uint64_t size) {
 }
 /* Per-thread cache of recently found regions for the GPU's per-draw queries:
  * entries hold for as long as the table generation they were read at. */
-typedef struct { uint64_t generation; uintptr_t start, end; int kind; } CachedRegion;
+typedef struct { uint64_t generation, stamp; uintptr_t start, end; int kind; } CachedRegion;
 static __thread CachedRegion region_cache[8];
 static __thread unsigned region_cache_next;
+/* GOW3_REGION_BUCKETS=0: the table-wide generation, as before L1. */
+static int region_buckets_on(void) {
+    static int on=-1;
+    if (on<0) { const char *env=getenv("GOW3_REGION_BUCKETS"); on=!(env && env[0]=='0'); }
+    return on;
+}
 static const CachedRegion *cached_region(uintptr_t address) {
+    const int buckets=region_buckets_on();
     uint64_t generation=__atomic_load_n(&table_generation,__ATOMIC_ACQUIRE);
-    if (generation & 1) return NULL;
+    /* Odd: a writer holds the lock. With buckets the cache still answers (L2: a writer bumps a
+     * range's buckets before its host mapping changes); without them it changes host mappings
+     * before the table, so no cached answers. */
+    if (!buckets && (generation & 1)) return NULL;
     for (unsigned i=0;i<8;++i) {
         const CachedRegion *c=&region_cache[i];
-        if (c->generation==generation && c->end && c->start<=address && address<c->end) return c;
+        if (!c->end || c->start>address || address>=c->end) continue;
+        if (buckets ? c->stamp && c->stamp==region_stamp(c->start,c->end) : c->generation==generation) return c;
     }
     return NULL;
 }
 /* Called under the read lock after a lookup of address. */
 static void cache_region(size_t i) {
     uint64_t generation=__atomic_load_n(&table_generation,__ATOMIC_ACQUIRE);
-    if (i==vma_count || (generation & 1)) return;
-    region_cache[region_cache_next++ % 8]=(CachedRegion){generation,vmas[i].start,vmas[i].end,vmas[i].kind};
+    if (i==vma_count) return;
+    if (generation & 1) return;
+    region_cache[region_cache_next++ % 8]=(CachedRegion){generation,
+        region_stamp(vmas[i].start,vmas[i].end),vmas[i].start,vmas[i].end,vmas[i].kind};
 }
 /* Mapped length from address, up to size, across adjacent mappings. */
 uint64_t runtime_memory_clamp(uintptr_t address, uint64_t size) {
