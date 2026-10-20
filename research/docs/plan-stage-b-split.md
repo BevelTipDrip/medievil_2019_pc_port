@@ -264,3 +264,18 @@ tick waits ~30%. The game reads the results about a frame after asking; the copy
 submitted only at the frame's end and ran after the rest of the frame. **R1** (`088d8c2`): the recording thread submits
 right after a readback copy is queued (precise readbacks only), outside the readback locks. Test T-HZ3: HZB +
 precise + R1.
+
+## T-HZ3: HZB + precise readbacks + R1 (2026-10-20 00:37-00:41, launched by Claude with the user's go; build `9dea0af`; log `data/t-hz3-readback-submit.log`)
+
+Culling correct. The results wait shrinks but stays: 623-627 waits per 5 s (~1 a frame), 1.04 s per 5 s (~1.7 ms a frame,
+max 2.25 ms; T-HZ2b ~2.6 ms), GPU tick waits ~21%. Heavy view, camera still: ~2,290 draws, **~125 FPS, p99 8.5 ms,
+stddev ~0.2 ms**; panning p99 9-10.5 ms with a few slow frames a window. The user: "the heavy area is about 125 with 118
+1% lows when the cam is static, but moving the camera has a heavy penalty." Why R1 cannot remove it: the game reads
+frame N's HZB results at the start of N+1, while our GPU runs about a frame behind the CPU (still on frame N), so the
+copy has not run yet however early it is submitted; UE4's HZB tester keeps one results texture and assumes, as on PS4,
+that the GPU is done with a frame before the next begins. Avoiding the wait would mean double-buffering the results
+inside UE4's code (a patch to the game). **HZB rejected for now; queries off stays the default.** R1 kept (only acts
+with precise readbacks). `medievil.ini` restored (`stale_readback=1`).
+
+Both culling routes meet the same limit: a pipeline deeper than the PS4's (queries add stage B work while panning, HZB
+waits for its results).
