@@ -237,3 +237,19 @@ by default); W2 to become the default.**
 
 Where stage B stands: what remains is draw recording; option (c) as a true second thread would move the data copies
 and closure building (~0.3-0.45 of ~1.7 us), a large refactor for ~15-20% in heavy views.
+
+## T-HZ1: UE4's HZB occlusion (2026-10-20 00:22-00:27, launched by Claude with the user's go; build `852ec13`; log `data/t-hz1-hzb.log`)
+
+`r.AllowOcclusionQueries=1;r.HZBOcclusion=1` ("Use HZB occlusion system (default, less GPU and CPU cost, more
+conservative results)", in the binary): the bounding boxes are tested on the GPU against a depth pyramid in one pass
+and the CPU reads back one 256x256 results texture, instead of a box draw and two ZPASS events per query. Heavy view:
+**~2,200 draws a frame, 169-171 FPS, p99 6.9-7.1 ms, stddev 0.35-0.43 ms** (queries off: ~2,700 draws, ~130 FPS,
+p99 ~9 ms), packet 1.95-2.0 us. But the user: "It definitely improves performance, but I think it's likely not getting
+all the data it needs. Dan himself gets culled, sometimes the ground or enemies get culled."
+
+Cause (inferred from the log): the results texture is the readback image **0x20010c0000, 256x256 R8G8B8A8Unorm**,
+~1 copy a frame, "0 CPU accesses while pending": with `stale_readback=1` the game reads whatever the last finished
+copy left in memory. UE4 assigns each tested primitive a pixel of that texture per frame; results from another frame
+are laid out for other primitives: effectively random culling. Next: T-HZ2 with stale readbacks off
+(`GOW3_STALE_READBACK=0`): if the culling is then right, make only that image precise (a targeted change) and keep
+stale readbacks for the rest (luminance 2x2-8x8).
