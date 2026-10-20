@@ -94,6 +94,14 @@ public:
         return graphics_queue;
     }
 
+    /// gow3 D3: the readback queue (a compute family without graphics); null when none.
+    vk::Queue GetReadbackQueue() const {
+        return readback_queue;
+    }
+    u32 GetReadbackQueueFamilyIndex() const {
+        return readback_family_index;
+    }
+
     vk::Queue GetPresentQueue() const {
         return present_queue;
     }
@@ -550,6 +558,8 @@ private:
     VmaAllocator allocator{};
     vk::Queue present_queue;
     vk::Queue graphics_queue;
+    vk::Queue readback_queue;
+    u32 readback_family_index{~0u};
     std::vector<vk::PhysicalDevice> physical_devices;
     std::vector<std::string> available_extensions;
     std::unordered_map<vk::Format, vk::FormatProperties3> format_properties;

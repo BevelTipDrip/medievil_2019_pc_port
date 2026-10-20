@@ -26,10 +26,198 @@
 #include "video_core/texture_cache/texture_cache.h"
 #include "video_core/renderer_vulkan/vk_wait_diagnostics.h"
 
+#include <vk_mem_alloc.h>
+
 extern "C" unsigned char* runtime_image_base(void);
 extern "C" void runtime_memory_mark_gpu_written(uintptr_t address, uint64_t size, int written);
 
 namespace {
+// gow3 D3 (ported from the Bloodborne port's GpuWriteTicks / FastReadback, 0.3; GPL-2.0-or-later):
+// the submission tick of the newest GPU write per 64 KiB page (1 MiB pages for writes over
+// 16 MiB), lock-free sparse page tables (guest addresses below 2^40).
+struct GpuWriteTicks {
+    static constexpr u64 FineShift = 16, CoarseShift = 20;
+    static constexpr u64 FineLimit = 16_MB;
+    static constexpr u64 AddressBits = 40, LeafBits = 12, LeafMask = (1ull << LeafBits) - 1;
+    struct Table {
+        explicit Table(u64 shift_)
+            : shift{shift_}, leaves((1ull << (AddressBits - shift_)) >> LeafBits) {}
+        u64 shift;
+        std::vector<std::atomic<std::atomic<u64>*>> leaves;
+        std::atomic<u64>* Leaf(u64 page) const {
+            return leaves[page >> LeafBits].load(std::memory_order_acquire);
+        }
+    };
+    Table fine{FineShift};
+    Table coarse{CoarseShift};
+    std::mutex mutex; ///< leaf creation
+    void Note(u64 address, u64 size, u64 tick) {
+        if (size == 0 || (address + size - 1) >> AddressBits) {
+            return;
+        }
+        auto& table = size <= FineLimit ? fine : coarse;
+        for (u64 page = address >> table.shift; page <= (address + size - 1) >> table.shift;
+             ++page) {
+            std::atomic<u64>* leaf = table.Leaf(page);
+            if (!leaf) {
+                std::scoped_lock lk{mutex};
+                leaf = table.Leaf(page);
+                if (!leaf) {
+                    leaf = new std::atomic<u64>[1ull << LeafBits]{};
+                    table.leaves[page >> LeafBits].store(leaf, std::memory_order_release);
+                }
+            }
+            leaf[page & LeafMask].store(tick, std::memory_order_release);
+        }
+    }
+    /// The newest write tick in the range, 0 when none is known.
+    u64 Newest(u64 address, u64 size) const {
+        if (size == 0 || (address + size - 1) >> AddressBits) {
+            return 0;
+        }
+        u64 newest = 0;
+        for (const Table* table : {&fine, &coarse}) {
+            const u64 last = (address + size - 1) >> table->shift;
+            for (u64 page = address >> table->shift; page <= last; ++page) {
+                if (const std::atomic<u64>* leaf = table->Leaf(page)) {
+                    newest = std::max(newest, leaf[page & LeafMask].load(std::memory_order_acquire));
+                } else {
+                    page |= LeafMask;
+                }
+            }
+        }
+        return newest;
+    }
+};
+GpuWriteTicks& WriteTicks() {
+    static GpuWriteTicks write_ticks;
+    return write_ticks;
+}
+
+/// Copies finished GPU data out of an arena on the readback queue, waiting only for the
+/// submission of the newest write (the timeline semaphore at its tick), not for the frames queued
+/// behind it on the graphics queue.
+class FastReadback {
+public:
+    explicit FastReadback(const Vulkan::Instance& instance)
+        : device{instance.GetDevice()}, queue{instance.GetReadbackQueue()},
+          allocator{instance.GetAllocator()} {
+        if (!queue) {
+            return;
+        }
+        pool = Vulkan::Check(device.createCommandPoolUnique({
+            .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+            .queueFamilyIndex = instance.GetReadbackQueueFamilyIndex(),
+        }));
+        cmdbuf = Vulkan::Check(device.allocateCommandBuffers({
+            .commandPool = *pool,
+            .level = vk::CommandBufferLevel::ePrimary,
+            .commandBufferCount = 1,
+        }))[0];
+        fence = Vulkan::Check(device.createFenceUnique({}));
+    }
+    ~FastReadback() {
+        if (buffer) {
+            vmaDestroyBuffer(allocator, buffer, allocation);
+        }
+    }
+    [[nodiscard]] bool Available() const noexcept {
+        static const bool off = [] {
+            const char* env = std::getenv("GOW3_READBACK_QUEUE");
+            return env && env[0] == '0';
+        }();
+        return bool(queue) && !off;
+    }
+    /// Copies `copies` (destination offsets from 0) of `arena` once `semaphore` reaches `tick`;
+    /// the host copy, or null on failure (the caller takes the regular path).
+    const u8* Copy(const VideoCore::Buffer* arena, std::span<const vk::BufferCopy> copies, u64 total,
+                   vk::Semaphore semaphore, u64 tick) {
+        if (!Ensure(total)) {
+            return nullptr;
+        }
+        Vulkan::Check(cmdbuf.reset());
+        Vulkan::Check(cmdbuf.begin({.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit}));
+        cmdbuf.copyBuffer(arena->Handle(), vk::Buffer{buffer}, copies);
+        const vk::MemoryBarrier2 to_host{
+            .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+            .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+            .dstStageMask = vk::PipelineStageFlagBits2::eHost,
+            .dstAccessMask = vk::AccessFlagBits2::eHostRead,
+        };
+        cmdbuf.pipelineBarrier2({.memoryBarrierCount = 1, .pMemoryBarriers = &to_host});
+        Vulkan::Check(cmdbuf.end());
+        const vk::SemaphoreSubmitInfo wait{
+            .semaphore = semaphore,
+            .value = tick,
+            .stageMask = vk::PipelineStageFlagBits2::eTransfer,
+        };
+        const vk::CommandBufferSubmitInfo command{.commandBuffer = cmdbuf};
+        const vk::SubmitInfo2 submit{
+            .waitSemaphoreInfoCount = 1,
+            .pWaitSemaphoreInfos = &wait,
+            .commandBufferInfoCount = 1,
+            .pCommandBufferInfos = &command,
+        };
+        if (queue.submit2(submit, *fence) != vk::Result::eSuccess) {
+            return nullptr;
+        }
+        const auto result = device.waitForFences(*fence, vk::True, UINT64_MAX);
+        Vulkan::Check(device.resetFences(*fence));
+        if (result != vk::Result::eSuccess) {
+            return nullptr;
+        }
+        vmaInvalidateAllocation(allocator, allocation, 0, VK_WHOLE_SIZE);
+        return mapped;
+    }
+
+private:
+    bool Ensure(u64 size) {
+        if (size <= capacity) {
+            return true;
+        }
+        if (buffer) {
+            vmaDestroyBuffer(allocator, buffer, allocation);
+            buffer = VK_NULL_HANDLE;
+            capacity = 0;
+        }
+        const u64 new_capacity = std::max<u64>(std::bit_ceil(size), 1_MB);
+        const VkBufferCreateInfo buffer_ci{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size = new_capacity,
+            .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        };
+        const VmaAllocationCreateInfo alloc_ci{
+            .flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
+            .usage = VMA_MEMORY_USAGE_AUTO_PREFER_HOST,
+        };
+        VmaAllocationInfo info{};
+        if (vmaCreateBuffer(allocator, &buffer_ci, &alloc_ci, &buffer, &allocation, &info) !=
+            VK_SUCCESS) {
+            buffer = VK_NULL_HANDLE;
+            return false;
+        }
+        mapped = static_cast<u8*>(info.pMappedData);
+        capacity = new_capacity;
+        return true;
+    }
+
+    vk::Device device;
+    vk::Queue queue;
+    VmaAllocator allocator;
+    vk::UniqueCommandPool pool;
+    vk::CommandBuffer cmdbuf;
+    vk::UniqueFence fence;
+    VkBuffer buffer = VK_NULL_HANDLE;
+    VmaAllocation allocation = nullptr;
+    u8* mapped = nullptr;
+    u64 capacity = 0;
+};
+FastReadback& SharedReadback(const Vulkan::Instance& instance) {
+    static FastReadback readback{instance};
+    return readback;
+}
+
 /// The pages fully inside [addr, addr + size) (the edge pages may still hold other GPU data).
 void ForgetGpuWritten(VAddr addr, u64 size) {
     const VAddr first = (addr + 4095) & ~VAddr{4095}, end = (addr + size) & ~VAddr{4095};
@@ -86,12 +274,17 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
         LOG_INFO(Render_Vulkan, "Buffer arenas of {} MiB (driver buffer limit {} MiB)",
                  arena_page_size >> 20, instance.GetMaxBufferSize() >> 20);
     }
+    const std::array<u32, 2> families = {instance.GetGraphicsQueueFamilyIndex(),
+                                         instance.GetReadbackQueueFamilyIndex()};
+    const bool shared = bool(instance.GetReadbackQueue()); // as Buffer creates the arenas
     const vk::BufferCreateInfo probe_ci = {
         .flags =
             vk::BufferCreateFlagBits::eSparseBinding | vk::BufferCreateFlagBits::eSparseResidency,
         .size = arena_page_size,
         .usage = ARENA_USAGE,
-        .sharingMode = vk::SharingMode::eExclusive,
+        .sharingMode = shared ? vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive,
+        .queueFamilyIndexCount = shared ? 2u : 0u,
+        .pQueueFamilyIndices = shared ? families.data() : nullptr,
     };
     const vk::DeviceBufferMemoryRequirements req_info = {
         .pCreateInfo = &probe_ci,
@@ -279,11 +472,43 @@ void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 siz
     if (total_size_bytes == 0) {
         return;
     }
+    const auto start = std::chrono::steady_clock::now();
+    // gow3 D3: the readback queue copies the data once the GPU has done the newest write into it
+    // (waiting for that submission only while it is still queued); the graphics queue would
+    // first run everything queued (`Finish`: a full GPU wait, up to ~8 ms, whenever the game
+    // writes into memory a shader wrote: T-D2c / T-O2d / T-W2b).
+    u64 write_tick = 0;
+    for (const auto& copy : copies) {
+        write_tick = std::max(write_tick, WriteTicks().Newest(arena_base + copy.srcOffset, copy.size));
+    }
+    auto& readback = SharedReadback(instance);
+    if (write_tick != 0 && readback.Available()) {
+        if (!scheduler.IsFree(write_tick)) {
+            scheduler.Wait(write_tick); // submitted first when it is the current one
+        }
+        if (const u8* data = readback.Copy(arena, copies, total_size_bytes,
+                                           scheduler.GetWorkSemaphore()->Handle(), write_tick)) {
+            for (const auto& copy : copies) {
+                memory->TryWriteBacking(std::bit_cast<u8*>(arena_base + copy.srcOffset),
+                                        data + copy.dstOffset, copy.size);
+            }
+            memory_tracker->UnmarkRegionAsGpuModified(device_addr, size);
+            Gow3Stats::fast_downloads.fetch_add(1, std::memory_order_relaxed);
+            const unsigned reason = Gow3Stats::download_reason;
+            Gow3Stats::download_count[reason].fetch_add(1, std::memory_order_relaxed);
+            Gow3Stats::download_bytes[reason].fetch_add(total_size_bytes, std::memory_order_relaxed);
+            Gow3Stats::download_ns[reason].fetch_add(
+                u64(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                        std::chrono::steady_clock::now() - start)
+                        .count()),
+                std::memory_order_relaxed);
+            return;
+        }
+    }
     const auto download = staging_pool.Request(total_size_bytes, VideoCore::MemoryType::HostCached);
     for (auto& copy : copies) {
         copy.dstOffset += download.offset;
     }
-    const auto start = std::chrono::steady_clock::now();
     runtime.CopyBuffer(arena, download.buffer, copies);
     scheduler.Finish();
     {
@@ -440,6 +665,7 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
     if (is_written) {
         gpu_modified_ranges.Add(device_addr, size);
         runtime_memory_mark_gpu_written(device_addr, size, 1);
+        WriteTicks().Note(device_addr, size, scheduler.CurrentTick());
     }
     return {arena, arena->Offset(device_addr)};
 }
@@ -522,6 +748,7 @@ void BufferCache::ProcessCpuWritesLocked() {
         staging.Flush();
         const vk::BufferCopy copy{staging.offset, arena->Offset(addr), size};
         runtime.CopyBuffer(staging.buffer, arena, std::span{&copy, 1});
+        WriteTicks().Note(addr, size, scheduler.CurrentTick()); // a download must see it (D3)
         // D2b: the arena and guest memory now agree on these bytes, so they are no longer the
         // GPU's alone. Kept GPU-modified, later direct guest writes there (not libc) faulted
         // and went to a download (T-D2c: 5-10/s). Pages left with no GPU-only bytes are

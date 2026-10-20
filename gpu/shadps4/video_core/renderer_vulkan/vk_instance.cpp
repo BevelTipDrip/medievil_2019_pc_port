@@ -445,6 +445,28 @@ bool Instance::CreateDevice() {
         .queueCount = static_cast<u32>(queue_priorities.size()),
         .pQueuePriorities = queue_priorities.data(),
     };
+    // gow3 D3 (after the Bloodborne port, 0.3): a queue of a compute family without graphics, to
+    // read back GPU data the GPU finished writing without waiting behind the queued frames
+    // (BufferCache::DownloadMemory). GOW3_READBACK_QUEUE=0 turns it off.
+    std::array<vk::DeviceQueueCreateInfo, 2> queue_infos{queue_info};
+    u32 queue_info_count = 1;
+    if (const char* env = std::getenv("GOW3_READBACK_QUEUE"); !env || env[0] != '0') {
+        const auto families = physical_device.getQueueFamilyProperties();
+        for (std::size_t i = 0; i < families.size(); i++) {
+            const auto flags = families[i].queueFlags;
+            if (!(flags & vk::QueueFlagBits::eGraphics) && (flags & vk::QueueFlagBits::eCompute) &&
+                families[i].queueCount > 0) {
+                readback_family_index = static_cast<u32>(i);
+                queue_infos[1] = vk::DeviceQueueCreateInfo{
+                    .queueFamilyIndex = readback_family_index,
+                    .queueCount = 1,
+                    .pQueuePriorities = queue_priorities.data(),
+                };
+                queue_info_count = 2;
+                break;
+            }
+        }
+    }
 
     const auto vk11_features = feature_chain.get<vk::PhysicalDeviceVulkan11Features>();
     vk12_features = feature_chain.get<vk::PhysicalDeviceVulkan12Features>();
@@ -463,8 +485,8 @@ bool Instance::CreateDevice() {
     }
     vk::StructureChain device_chain = {
         vk::DeviceCreateInfo{
-            .queueCreateInfoCount = 1u,
-            .pQueueCreateInfos = &queue_info,
+            .queueCreateInfoCount = queue_info_count,
+            .pQueueCreateInfos = queue_infos.data(),
             .enabledExtensionCount = static_cast<u32>(enabled_extensions.size()),
             .ppEnabledExtensionNames = enabled_extensions.data(),
         },
@@ -696,6 +718,10 @@ bool Instance::CreateDevice() {
 
     graphics_queue = device->getQueue(queue_family_index, 0);
     present_queue = device->getQueue(queue_family_index, 0);
+    if (readback_family_index != ~0u) {
+        readback_queue = device->getQueue(readback_family_index, 0);
+        LOG_INFO(Render_Vulkan, "Readback queue: family {}", readback_family_index);
+    }
 
     if (calibrated_timestamps) {
         const auto [time_domains_result, time_domains] =
