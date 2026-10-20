@@ -81,3 +81,17 @@ God of War leftovers: orb multipliers, `cheat_rage`); restored from the pre-laun
 `medievil.ini.game-saved-t-w1`.
 
 Next: T-W2 (`GOW3_EOP_TARGETED=1`, live A/B with toggle bit 60).
+
+## T-W2: targeted end-of-pipe wait, queries on (2026-10-19 21:17-21:21, launched by Claude with the user's go; build `3b30fe9`; log `data/t-w2-eop-targeted.log`)
+
+`GOW3_EOP_TARGETED=1` with O2 / O3 (T-O3c settings). The end-of-pipe wait (`texture_cache.cpp:235`, ~72,000 waits and
+~830 ms per 5 s in T-O3c) is **gone**; part of it moved to the end-of-shader event's full wait (`liverpool.cpp:347`:
+16,700 waits, ~200 ms per 5 s, was ~0), net ~600 ms per 5 s less waiting. But stage B stays ~91% busy and the frame
+rate did not move (still ~185 FPS, p99 ~7 ms; panning lows "still drop into the 80s/low 90s"). Likely: the old wait was
+not idle time, the waiting thread ran pending copy jobs itself (`Gow3Copy::WaitAll` helps); that work now runs
+elsewhere and stage B gains nothing. The user: "No real improvement to the 1% lows while panning … So less stable (and
+lower during pans) than before the culling work."
+
+**Decision (the user):** test runs go back to occlusion queries off (T-O1); O2 / O3 / W2 stay in the code, opt-in.
+Next: check whether the fixes made for queries on (W2; D2b is always on) help with queries off (T-W2b, live A/B of
+bit 60), then the stage B split (`BB_SECTIONS` first, then option a).
