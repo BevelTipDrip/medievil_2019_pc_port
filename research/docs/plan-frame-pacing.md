@@ -1101,3 +1101,26 @@ memory itself (as in the Bloodborne port, whose guest memory is GPU memory): imp
 (`VK_EXT_external_memory_host`), unknown for our section-backed views. Measure first: the stats line now splits the
 latency into event → submitted → GPU done (as seen) → written (build `1daae1a`). Next run: that, plus
 `r.NumBufferedOcclusionQueries=3` (results three frames, ~16 ms, to arrive).
+
+### T-O2d: three-frame-old queries, latency split (2026-10-19 20:04-20:09, launched by Claude with the user's go; build `1daae1a`; log `data/t-o2d-buffered3.log`)
+
+`r.NumBufferedOcclusionQueries=3`. Heavy view: **~1,570 draws a frame, 188-203 FPS, median 4.7-5.0 ms, p99 7.7-8.75 ms**
+(best yet; T-O1 8.4-9.2, T-O2c 8.5-9.8), stddev 0.65-0.96 ms, 20-60 frames over 1.5x median per 5 s, runs of two
+~16.5 ms frames, occasional runs of 6 (49-53 ms). 67-68% of queries hidden. The user: "Avg FPS went even higher in
+the heavy area (close to 200), 1% lows range anywhere from 75 to 135, lots of large spikes. So they're going lower
+than they used to at times, and they're unsteady, but we are able to get bursts of very high 1% lows."
+
+**Latency split** (average per event): event → submitted **2.6-3.0 ms**, submitted → GPU done **4.8 ms**, done → written
+**0.00 ms**. So the user's direct-write idea would save nothing: the time is before the result exists. Max 13-16 ms
+against three frames of ~4.8 ms (~14.4 ms): results still arrive late at times, and the higher the frame rate the less
+time a fixed number of buffered frames covers.
+
+Slow frames (3,835) vs samples: stage B 63% vs 89% busy; 23% of slow frames wait on GPU ticks > 1 ms. Waits:
+`vk_presenter.cpp:553` ~19% of the time (the presenter waiting for the GPU, one frame queued: the GPU is now a limit at
+~200 FPS in 4K); `buffer_cache.cpp:288` (`DownloadMemory` → `Finish`) 13-18/s, ~6%, up to 7.7 ms: write-fault
+downloads from the game's direct writers (guest+0x20da4d0, 0x68e109, 0x68e149, 0xba9a49) into one page
+(0x204c980000), the class D2b does not cover (genuine first writes after a shader write).
+
+Next: **O3** submit the recorded queries sooner (the 2.6-3.0 ms before submission); **D3** a write-fault download waits
+only for the submission that last wrote the range, not `Finish()` (the shader wrote those pages earlier in the frame,
+usually in a batch the GPU has finished: often no wait at all).
