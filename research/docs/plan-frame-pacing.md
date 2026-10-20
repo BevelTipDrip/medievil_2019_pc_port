@@ -1083,3 +1083,21 @@ p99 12.6-16.4 ms. Why: the game's render thread waits for last frame's results (
 thread): stage A idle 53%, stage B busy only 40-46% (was ~90%), GPU tick waits ~0. The R4a cost, now with a reason.
 Next: T-O2c with `r.NumBufferedOcclusionQueries=2` (results two frames old, long written by then; culling one frame
 later). If that is not enough: shorten the latency (submission boundaries, the completion thread's wake-up).
+
+### T-O2c: two-frame-old queries (2026-10-19 19:55-19:59, launched by Claude with the user's go; build `11eba14`; log `data/t-o2c-buffered2.log`)
+
+`r.NumBufferedOcclusionQueries=2`. Heavy view: **1,450-1,660 draws a frame (was ~2,635-2,800), 168-192 FPS (T-O1:
+126-135), median 5.2-5.8 ms (7.4-7.9)**, but p99 8.5-9.8 ms (8.4-9.2) and stddev 0.94-1.28 ms (0.31-0.46): the
+average up ~40%, the lows about where they were, so relatively much worse. 63-68% of queries hidden, ~27,500 queries a
+second, results 7.9-8.5 ms after the event on average (max 11.5-13.9 ms), 0 segments missed. Slow frames: stage B
+73% busy with no waits of its own (samples 77%): starved, the render thread still waits when a result is later than
+two frames (~11 ms at 5.5 ms a frame). The user: "framerates are much much higher, but the 1% lows are slightly worse
+in the heavy area, probably 15-20%"; no pop-in noticed (T-O2b and T-O2c); menus and intro fine.
+
+The user asked whether the results could go straight to memory the CPU reads (the shared / ReBAR memory) instead of
+being copied. The copy itself is microseconds (eight u64 per event, one `vkGetQueryPoolResults`); a CPU-visible
+buffer would still need copying into the game's memory. What would remove our step is the GPU writing into the game's
+memory itself (as in the Bloodborne port, whose guest memory is GPU memory): importing the result pages
+(`VK_EXT_external_memory_host`), unknown for our section-backed views. Measure first: the stats line now splits the
+latency into event → submitted → GPU done (as seen) → written (build `1daae1a`). Next run: that, plus
+`r.NumBufferedOcclusionQueries=3` (results three frames, ~16 ms, to arrive).
