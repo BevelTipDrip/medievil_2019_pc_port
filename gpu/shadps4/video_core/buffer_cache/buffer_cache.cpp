@@ -218,6 +218,99 @@ FastReadback& SharedReadback(const Vulkan::Instance& instance) {
     return readback;
 }
 
+// gow3 GPU write twins (ported from the Bloodborne port's BB_GPU_WRITE_TWINS, 0.4; GPL-2.0-or-
+// later). A guest write into a page holding bytes the GPU is still writing (counters, small
+// compute outputs rewritten every frame) does not wait for the GPU: the guest's copy of those
+// bytes is kept as a "twin" and the page becomes CPU-modified at once. Uploads leave the GPU's
+// bytes in the arena while the guest bytes still match their twin (the guest did not write them);
+// downloads do not overwrite guest bytes that no longer match it (the guest wrote them since).
+// Only pages with at most GOW3_GPU_WRITE_TWINS_MAX (1024) GPU-written bytes: larger outputs keep
+// waiting. Guest bytes are read through the backing view: the page may be protected, and a fault
+// with twins_mutex held could wait for a readback that needs it. GOW3_GPU_WRITE_TWINS=0: off.
+// T-D3b: these writes (9-20 a second in the light view) each waited 2-5 ms for the frame being
+// recorded.
+bool TwinsEnabled() {
+    static const bool enabled = [] {
+        const char* env = std::getenv("GOW3_GPU_WRITE_TWINS");
+        return (!env || env[0] != '0') &&
+               EmulatorSettings.GetReadbacksMode() != GpuReadbacksMode::Precise;
+    }();
+    return enabled;
+}
+u64 TwinsMaxBytes() {
+    static const u64 max_bytes = [] {
+        const char* env = std::getenv("GOW3_GPU_WRITE_TWINS_MAX");
+        return env ? std::strtoull(env, nullptr, 10) : 1024ull;
+    }();
+    return max_bytes;
+}
+std::mutex twins_mutex;
+std::map<VAddr, std::vector<u8>> twins; ///< start -> guest bytes when the twin was made
+
+enum class TwinRun { None, Unchanged, Changed };
+
+/// Calls func(start, end, TwinRun) over [begin, end) in order (twins_mutex held).
+template <typename Func>
+void ForEachTwinRun(VAddr begin, VAddr end, Func&& func) {
+    VAddr cursor = begin;
+    auto it = twins.upper_bound(begin);
+    if (it != twins.begin()) {
+        --it;
+    }
+    for (; it != twins.end() && it->first < end; ++it) {
+        const VAddr start = it->first, stop = it->first + it->second.size();
+        if (stop <= begin) {
+            continue;
+        }
+        const VAddr from = std::max(start, begin), to = std::min(stop, end);
+        if (cursor < from) {
+            func(cursor, from, TwinRun::None);
+        }
+        thread_local std::vector<u8> guest_bytes;
+        guest_bytes.resize(to - from);
+        Core::Memory::Instance()->ReadBacking(from, guest_bytes.data(), to - from);
+        const u8* guest = guest_bytes.data();
+        const u8* twin = it->second.data() + (from - start);
+        VAddr run = from;
+        bool same = guest[0] == twin[0];
+        for (VAddr at = from + 1; at <= to; ++at) {
+            const bool now_same = at < to && guest[at - from] == twin[at - from];
+            if (at == to || now_same != same) {
+                func(run, at, same ? TwinRun::Unchanged : TwinRun::Changed);
+                run = at;
+                same = now_same;
+            }
+        }
+        cursor = to;
+    }
+    if (cursor < end) {
+        func(cursor, end, TwinRun::None);
+    }
+}
+
+/// Drops the twins' parts in [begin, end), keeping the parts outside it (twins_mutex held).
+void EraseTwins(VAddr begin, VAddr end) {
+    auto it = twins.upper_bound(begin);
+    if (it != twins.begin()) {
+        --it;
+    }
+    while (it != twins.end() && it->first < end) {
+        const VAddr start = it->first, stop = it->first + it->second.size();
+        if (stop <= begin) {
+            ++it;
+            continue;
+        }
+        std::vector<u8> bytes = std::move(it->second);
+        it = twins.erase(it);
+        if (start < begin) {
+            twins[start] = std::vector<u8>(bytes.begin(), bytes.begin() + (begin - start));
+        }
+        if (stop > end) {
+            twins[end] = std::vector<u8>(bytes.begin() + (end - start), bytes.end());
+        }
+    }
+}
+
 /// The pages fully inside [addr, addr + size) (the edge pages may still hold other GPU data).
 void ForgetGpuWritten(VAddr addr, u64 size) {
     const VAddr first = (addr + 4095) & ~VAddr{4095}, end = (addr + size) & ~VAddr{4095};
@@ -410,6 +503,10 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
         // gow3: a guest unmap ends the memory's contents: the GPU's data there is not read back
         // (a download is a full GPU wait, ~4 ms; UE4 decommits pool memory constantly). The
         // next use of the range uploads whatever the guest put there.
+        if (reason == Gow3Stats::Unmap && TwinsEnabled()) {
+            std::scoped_lock lk{twins_mutex};
+            EraseTwins(device_addr, device_addr + size);
+        }
         if (reason == Gow3Stats::Unmap && !Gow3Toggle::Disabled(Gow3Toggle::UnmapDiscard)) {
             gpu_modified_ranges.Subtract(device_addr, size);
             ForgetGpuWritten(device_addr, size);
@@ -419,6 +516,41 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
             return;
         }
         Gow3Stats::DownloadReasonScope scope{reason};
+        // Twins: bytes the GPU is still writing on the faulting page are twinned instead of
+        // waited for (see TwinsEnabled).
+        if (is_write && TwinsEnabled()) {
+            const VAddr page_begin = Common::AlignDown(device_addr, TRACKER_BYTES_PER_PAGE);
+            const VAddr page_end = Common::AlignUp(device_addr + size, TRACKER_BYTES_PER_PAGE);
+            u64 tick = 0, gpu_bytes = 0;
+            gpu_modified_ranges.ForEachInRange(page_begin, page_end - page_begin,
+                                               [&](VAddr start, VAddr end) {
+                                                   gpu_bytes += end - start;
+                                                   tick = std::max(tick, WriteTicks().Newest(
+                                                                             start, end - start));
+                                               });
+            if (gpu_bytes != 0 && gpu_bytes <= TwinsMaxBytes() && tick != 0 &&
+                !scheduler.IsFree(tick)) {
+                {
+                    std::scoped_lock lk{twins_mutex};
+                    gpu_modified_ranges.ForEachInRange(
+                        page_begin, page_end - page_begin, [&](VAddr start, VAddr end) {
+                            // Parts with a twin keep their older snapshot: the guest bytes may
+                            // have been written since it was taken.
+                            ForEachTwinRun(start, end, [&](VAddr from, VAddr to, TwinRun run) {
+                                if (run == TwinRun::None) {
+                                    std::vector<u8> bytes(to - from);
+                                    Core::Memory::Instance()->ReadBacking(from, bytes.data(),
+                                                                          to - from);
+                                    twins[from] = std::move(bytes);
+                                }
+                            });
+                        });
+                }
+                memory_tracker->MarkRegionAsCpuModified(device_addr, size);
+                Gow3Stats::twin_faults.fetch_add(1, std::memory_order_relaxed);
+                return;
+            }
+        }
         const u32 first_block = device_addr >> block_shift;
         const u32 last_block = (device_addr + size - 1) >> block_shift;
         const auto* arena = GetArena(first_block, last_block);
@@ -440,6 +572,30 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
         flush_request();
     } else {
         liverpool->SendCommand<true>(std::move(flush_request));
+    }
+}
+
+void BufferCache::WriteBackDownload(VAddr arena_base, std::span<const vk::BufferCopy> copies,
+                                    const u8* data, u64 data_offset) {
+    std::unique_lock twins_lock{twins_mutex, std::defer_lock};
+    if (TwinsEnabled()) {
+        twins_lock.lock();
+    }
+    for (const auto& copy : copies) {
+        const VAddr guest = arena_base + copy.srcOffset;
+        const u8* src = data + (copy.dstOffset - data_offset);
+        if (!TwinsEnabled() || twins.empty()) {
+            memory->TryWriteBacking(std::bit_cast<u8*>(guest), src, copy.size);
+            continue;
+        }
+        // Guest bytes written since their twin was made stay; the page is CPU-modified, so its
+        // next upload carries them to the arena.
+        ForEachTwinRun(guest, guest + copy.size, [&](VAddr from, VAddr to, TwinRun run) {
+            if (run != TwinRun::Changed) {
+                memory->TryWriteBacking(std::bit_cast<u8*>(from), src + (from - guest), to - from);
+            }
+        });
+        EraseTwins(guest, guest + copy.size);
     }
 }
 
@@ -488,10 +644,7 @@ void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 siz
         }
         if (const u8* data = readback.Copy(arena, copies, total_size_bytes,
                                            scheduler.GetWorkSemaphore()->Handle(), write_tick)) {
-            for (const auto& copy : copies) {
-                memory->TryWriteBacking(std::bit_cast<u8*>(arena_base + copy.srcOffset),
-                                        data + copy.dstOffset, copy.size);
-            }
+            WriteBackDownload(arena_base, copies, data, 0);
             memory_tracker->UnmarkRegionAsGpuModified(device_addr, size);
             Gow3Stats::fast_downloads.fetch_add(1, std::memory_order_relaxed);
             const unsigned reason = Gow3Stats::download_reason;
@@ -523,11 +676,7 @@ void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 siz
     }
 
     download.buffer->Invalidate(download.offset, download.size);
-    for (const auto& copy : copies) {
-        auto* dst_addr = std::bit_cast<u8*>(arena_base + copy.srcOffset);
-        memory->TryWriteBacking(dst_addr, download.mapped + (copy.dstOffset - download.offset),
-                                copy.size);
-    }
+    WriteBackDownload(arena_base, copies, download.mapped, download.offset);
     memory_tracker->UnmarkRegionAsGpuModified(device_addr, size);
 }
 
@@ -734,6 +883,10 @@ void BufferCache::ProcessCpuWritesLocked() {
     for (const auto& [addr, data] : writes) {
         const u64 size = data.size();
         texture_cache.InvalidateMemory(addr, size);
+        if (TwinsEnabled()) {
+            std::scoped_lock lk{twins_mutex};
+            EraseTwins(addr, addr + size); // the guest wrote them: uploaded below or on next use
+        }
         if (!IsRegionGpuModified(addr, size)) {
             // Downloaded meanwhile: guest memory is the current copy, uploaded on the next use.
             memory_tracker->MarkRegionAsCpuModified(addr, size);
@@ -917,7 +1070,38 @@ bool BufferCache::SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 
             copies.emplace_back(total_size_bytes, addr, size);
             total_size_bytes += size;
         },
-        [&] { src_buffer = UploadCopies(arena, copies, total_size_bytes); });
+        [&] {
+            // Twins: bytes whose guest copy still matches its twin keep the GPU's data in the
+            // arena; twin bytes the guest wrote since are uploaded and no longer GPU-modified.
+            if (TwinsEnabled() && !copies.empty()) {
+                std::scoped_lock lk{twins_mutex};
+                if (!twins.empty()) {
+                    boost::container::small_vector<vk::BufferCopy, 4> kept;
+                    boost::container::small_vector<std::pair<VAddr, VAddr>, 4> changed;
+                    u64 offset = 0;
+                    for (const auto& copy : copies) {
+                        ForEachTwinRun(copy.dstOffset, copy.dstOffset + copy.size,
+                                       [&](VAddr from, VAddr to, TwinRun run) {
+                                           if (run == TwinRun::Unchanged) {
+                                               return;
+                                           }
+                                           if (run == TwinRun::Changed) {
+                                               gpu_modified_ranges.Subtract(from, to - from);
+                                               changed.emplace_back(from, to);
+                                           }
+                                           kept.push_back({offset, from, to - from});
+                                           offset += to - from;
+                                       });
+                    }
+                    for (const auto& [from, to] : changed) {
+                        EraseTwins(from, to);
+                    }
+                    copies.assign(kept.begin(), kept.end());
+                    total_size_bytes = offset;
+                }
+            }
+            src_buffer = UploadCopies(arena, copies, total_size_bytes);
+        });
 
     if (src_buffer) {
         runtime.CopyBuffer(src_buffer, arena, copies);

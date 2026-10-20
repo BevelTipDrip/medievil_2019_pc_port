@@ -182,6 +182,9 @@ private:
     Buffer gds_buffer;
     RangeSet gpu_modified_ranges;
     void ProcessCpuWritesLocked();
+    /// gow3: a download's data into guest memory, keeping guest bytes written since their twin.
+    void WriteBackDownload(VAddr arena_base, std::span<const vk::BufferCopy> copies, const u8* data,
+                           u64 data_offset);
     /// gow3: guest libc writes into shader-written memory, waiting for the recording thread.
     std::mutex cpu_writes_mutex;
     std::vector<std::pair<VAddr, std::vector<u8>>> cpu_writes;
