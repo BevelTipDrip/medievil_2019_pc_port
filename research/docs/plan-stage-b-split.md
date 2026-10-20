@@ -68,3 +68,16 @@ per draw does not pay here (the texture bind helper measured neutral: task 6,200
    dropped the wait, this keeps it where a copy could read the readback's memory).
 3. Re-profile (T-P4). If stage B is still the panning limit: port `BB_SECTIONS`, then **(a)**, then **(c)**; **(b)**
    stays research.
+
+## T-W1: frames queued 2 (2026-10-19 21:12-21:16, launched by Claude with the user's go; build `3b30fe9`; log `data/t-w1-frames-queued.log`)
+
+Live A/B through the in-game menu (Performance → Frames queued), switched to 2 at ~21:14:44 (menu open
+21:14:23-38). With 1 the presenter's frame-limit wait (`vk_presenter.cpp:553`) was **0.02-0.03 ms per 5 s** while
+panning: the GPU kept up, so there was nothing to remove. With 2 it rose to 120-510 ms per 5 s right after the switch,
+then 16-36 ms; panning 184-195 FPS, p99 9.7-10.4 ms (with 1: 190-201 FPS, p99 8.7-11.3 ms). The user: "No real
+difference, it seemed to hurt if anything." **W1 rejected; 1 stays.** T-P3's 15.7% flip wait came from a GPU-heavy
+stretch, not from panning. Note: the in-game menu's save rewrote `medievil.ini` with ~40 extra default keys (some
+God of War leftovers: orb multipliers, `cheat_rage`); restored from the pre-launch backup, the game's copy kept as
+`medievil.ini.game-saved-t-w1`.
+
+Next: T-W2 (`GOW3_EOP_TARGETED=1`, live A/B with toggle bit 60).
