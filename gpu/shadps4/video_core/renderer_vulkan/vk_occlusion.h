@@ -48,12 +48,19 @@ public:
     /// recording thread, in order with the draws.
     void Event(VAddr address, u32 pairs);
 
-    /// O3: true once after a render pass that held events ended: the recording thread submits
-    /// before its next command, so the queries reach the GPU at once instead of waiting for the
-    /// game's next submission (T-O2d: 2.6-3.0 ms from event to submission). GOW3_OCCLUSION_SUBMIT=0:
-    /// off.
+    /// O3: true once when a render pass ends and the oldest event not submitted yet waited at
+    /// least GOW3_OCCLUSION_SUBMIT_US (default 1000 us; 0: off): the recording thread submits
+    /// before its next command, so queries reach the GPU without waiting for the game's next
+    /// submission (T-O2d: 2.6-3.0 ms). Not at every pass with an event: MediEvil draws each query
+    /// box in its own render pass, and a submission per pass (~128 a frame) cost more than it
+    /// saved (T-O3).
     bool TakeSubmitWanted() {
-        return submit_wanted && !(submit_wanted = false);
+        if (!submit_wanted) {
+            return false;
+        }
+        submit_wanted = false;
+        unsubmitted = false;
+        return true;
     }
 
     /// Scheduler: a render pass begins / is about to end (the recording thread).
@@ -92,7 +99,8 @@ private:
     // Recording thread state (and `mutex` for what the completion thread reads).
     bool started = false;
     bool active = false;
-    u32 events_in_pass = 0;
+    bool unsubmitted = false; ///< an event since the last early submission
+    std::chrono::steady_clock::time_point unsubmitted_since;
     bool submit_wanted = false;
 
     std::mutex mutex;

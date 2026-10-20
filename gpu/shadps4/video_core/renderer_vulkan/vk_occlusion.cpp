@@ -96,7 +96,10 @@ void OcclusionQueries::Event(VAddr address, u32 pairs) {
             }
         }
         pending.push_back({address, pairs, ended, std::chrono::steady_clock::now(), tick});
-        ++events_in_pass;
+        if (!unsubmitted) {
+            unsubmitted = true;
+            unsubmitted_since = std::chrono::steady_clock::now();
+        }
         if (scheduler.IsRendering()) {
             BeginSegment();
         }
@@ -121,17 +124,17 @@ void OcclusionQueries::OnBeginRendering() {
 }
 
 void OcclusionQueries::OnEndRendering() {
-    static const bool submit_early = [] {
-        const char* env = std::getenv("GOW3_OCCLUSION_SUBMIT");
-        return !env || env[0] != '0';
+    static const auto submit_after = [] {
+        const char* env = std::getenv("GOW3_OCCLUSION_SUBMIT_US");
+        return std::chrono::microseconds(env ? std::strtoll(env, nullptr, 10) : 1000);
     }();
     std::scoped_lock lock{mutex};
     if (active) {
         EndSegment();
     }
-    if (events_in_pass != 0) {
-        submit_wanted = submit_early;
-        events_in_pass = 0;
+    if (unsubmitted && submit_after.count() > 0 &&
+        std::chrono::steady_clock::now() - unsubmitted_since >= submit_after) {
+        submit_wanted = true;
     }
 }
 
