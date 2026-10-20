@@ -10466,3 +10466,1016 @@ Render state memo: 221846 hits, 40297 misses; texture sets: 201852 hits, 9726 mi
   scene proxies sampled directly: 0 bindings
 Frame sample 5.02 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 80%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.00, recorder 0.02, host copies 0.33 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
 Texture helper: 0 binds in parallel, 0 partly, 1222656 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 212.9 FPS, worst frame 5.5 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1065 recorder syncs; 144162 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1146 draws/frame, idle 0.5%; blocked: recorder 0.1%, host copies 8.4% (79/frame, 1/frame skipped), copy threads 13.9%, GPU ticks 12.7%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 0.0 MB/s, buffers 599.6 MB/s
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 213.1 (1.202 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 8, reused 0
+Wait profile: vk_presenter.cpp:553; 1065 calls, CPU submit 0.050 ms, semaphore wait 633.620 ms, max wait 1.194 ms
+Wait profile: buffer.cpp:284; 2300 calls, CPU submit 0.111 ms, semaphore wait 0.057 ms, max wait 0.000 ms
+Host copy waits: texture_cache.cpp:261; 82368 waits, recording thread 332.434 ms, copy threads 692.559 ms, max 0.817 ms
+Host copy waits: liverpool.cpp:347; 884 waits, recording thread 15.960 ms, copy threads 0.151 ms, max 0.013 ms
+Host copy waits: liverpool.cpp:1622; 1060 waits, recording thread 9.582 ms, copy threads 0.120 ms, max 0.000 ms
+Host copy waits: vk_scheduler.cpp:537; 1 waits, recording thread 0.000 ms, copy threads 0.078 ms, max 0.078 ms
+Render pass ends: vk_runtime.cpp:915; 101230
+Render pass ends: vk_scheduler.cpp:64; 70469
+Render pass ends: vk_runtime.cpp:116; 4960
+Render pass ends: vk_runtime.cpp:291; 4260
+Render pass ends: vk_rasterizer.cpp:1327; 4217
+Render pass ends: vk_runtime.cpp:166; 1065
+Render pass ends: vk_presenter.cpp:443; 1065
+Render pass ends: vk_runtime.cpp:721; 1050
+Frame pacing: median 4.69 ms, stddev 0.08 ms, p99 5.03 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Frame sample 4.69 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 89%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.32, recorder 0.00, host copies 0.56 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.73 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 96%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.99, recorder 0.01, host copies 0.36 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221735 hits, 40408 misses; texture sets: 201444 hits, 9507 misses
+  texture set misses: other key 9507, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Draw preparation: 1109355 prepared pipelines used, 95893 not (8 workers, 0 scanner rebases)
+Draw pipe: 310809 draws/s pipelined, 1484 drains/s that waited, stage A waited 42.0%, stage B busy 91.7%
+  drains by reason/s: WaitRegMem=641 (4.8%) compute=630 (11.9%) submission end=213 (25.2%)
+  stage A waits over 0.5%: ProcessCompute:1386 11.9% Process:192 25.2% ProcessGraphics:1250 4.7%
+Frame sample 4.69 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 94%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.74, recorder 0.01, host copies 0.40 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.82 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.87, recorder 0.00, host copies 0.33 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221749 hits, 40394 misses; texture sets: 203678 hits, 9481 misses
+  texture set misses: other key 9476, generation 5, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.67 ms: 1155 draws, 49 dispatches, 26 submits, 0 occlusion queries, 181 passes ended; stage B busy 93%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.86, recorder 0.00, host copies 0.41 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Readback profile: queued 4257, completed 4260, demand/budget waits 0, canceled 0, pending 0.00 MiB, peak 0.00 MiB
+Readback byte rule: 0 CPU writes went on without waiting
+Readback image 0x201faaaa00: 8x8, 16 bits, R16Sfloat, 1064 copies, 0 CPU accesses while pending
+Readback image 0x201faaab00: 4x4, 16 bits, R16Sfloat, 1064 copies, 0 CPU accesses while pending
+Readback image 0x201faaac00: 2x2, 16 bits, R16Sfloat, 1064 copies, 0 CPU accesses while pending
+Readback image 0x2000890000: 1x1, 64 bits, R32G32Sfloat, 533 copies, 0 CPU accesses while pending
+Frame sample 4.71 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 91%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.84, recorder 0.00, host copies 0.36 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221658 hits, 40485 misses; texture sets: 205042 hits, 9507 misses
+  texture set misses: other key 9507, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.72 ms: 1151 draws, 49 dispatches, 26 submits, 0 occlusion queries, 179 passes ended; stage B busy 82%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.63, recorder 0.00, host copies 0.32 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.61 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 90%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.65, recorder 0.00, host copies 0.68 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.67 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.22, recorder 0.00, host copies 0.41 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Slow frame 5.65 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 92%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.00, recorder 0.00, host copies 0.84 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Slow frame 5.88 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 94%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.00, recorder 0.00, host copies 1.17 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221760 hits, 40383 misses; texture sets: 202848 hits, 9476 misses
+  texture set misses: other key 9471, generation 5, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.71 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 87%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.63, recorder 0.01, host copies 0.40 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Texture helper: 0 binds in parallel, 0 partly, 1222656 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 212.7 FPS, worst frame 5.9 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1064 recorder syncs; 142539 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1147 draws/frame, idle 0.6%; blocked: recorder 0.1%, host copies 8.8% (80/frame, 1/frame skipped), copy threads 13.9%, GPU ticks 12.1%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 0.0 MB/s, buffers 596.3 MB/s
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 212.7 (1.198 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 8, reused 0
+Wait profile: vk_presenter.cpp:553; 1064 calls, CPU submit 0.051 ms, semaphore wait 606.218 ms, max wait 1.167 ms
+Wait profile: buffer.cpp:284; 2306 calls, CPU submit 0.112 ms, semaphore wait 0.058 ms, max wait 0.000 ms
+Host copy waits: texture_cache.cpp:261; 83016 waits, recording thread 348.467 ms, copy threads 691.964 ms, max 0.764 ms
+Host copy waits: liverpool.cpp:347; 907 waits, recording thread 17.008 ms, copy threads 0.097 ms, max 0.006 ms
+Host copy waits: liverpool.cpp:1622; 1061 waits, recording thread 9.904 ms, copy threads 0.122 ms, max 0.000 ms
+Render pass ends: vk_runtime.cpp:915; 101963
+Render pass ends: vk_scheduler.cpp:64; 70492
+Render pass ends: vk_runtime.cpp:116; 4946
+Render pass ends: vk_runtime.cpp:291; 4256
+Render pass ends: vk_rasterizer.cpp:1327; 4196
+Render pass ends: vk_runtime.cpp:166; 1064
+Render pass ends: vk_presenter.cpp:443; 1064
+Render pass ends: vk_runtime.cpp:721; 1036
+Frame pacing: median 4.69 ms, stddev 0.11 ms, p99 5.21 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Frame sample 4.62 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 86%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.58, recorder 0.02, host copies 0.30 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221682 hits, 40461 misses; texture sets: 203600 hits, 9513 misses
+  texture set misses: other key 9512, generation 1, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.70 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 94%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.79, recorder 0.00, host copies 0.33 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.82 ms: 1148 draws, 49 dispatches, 26 submits, 0 occlusion queries, 180 passes ended; stage B busy 91%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.99, recorder 0.00, host copies 0.39 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Draw preparation: 1109887 prepared pipelines used, 95361 not (8 workers, 0 scanner rebases)
+Draw pipe: 311724 draws/s pipelined, 1481 drains/s that waited, stage A waited 42.1%, stage B busy 91.5%
+  drains by reason/s: WaitRegMem=644 (5.2%) compute=624 (11.9%) submission end=213 (25.0%)
+  stage A waits over 0.5%: ProcessGraphics:1250 4.7% Process:192 25.0% ProcessCompute:1386 11.9%
+Render state memo: 221808 hits, 40335 misses; texture sets: 203167 hits, 9476 misses
+  texture set misses: other key 9476, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.77 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.90, recorder 0.00, host copies 0.40 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.55 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 86%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.56, recorder 0.02, host copies 0.42 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.62 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 89%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.37, recorder 0.02, host copies 0.44 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221788 hits, 40355 misses; texture sets: 203585 hits, 9507 misses
+  texture set misses: other key 9507, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Readback profile: queued 4255, completed 4252, demand/budget waits 0, canceled 0, pending 0.00 MiB, peak 0.00 MiB
+Readback byte rule: 0 CPU writes went on without waiting
+Readback image 0x201faaaa00: 8x8, 16 bits, R16Sfloat, 1064 copies, 0 CPU accesses while pending
+Readback image 0x201faaab00: 4x4, 16 bits, R16Sfloat, 1064 copies, 0 CPU accesses while pending
+Readback image 0x201faaac00: 2x2, 16 bits, R16Sfloat, 1064 copies, 0 CPU accesses while pending
+Readback image 0x200c9f0000: 1x1, 64 bits, R32G32Sfloat, 532 copies, 0 CPU accesses while pending
+Frame sample 4.66 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.98, recorder 0.02, host copies 0.47 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.66 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 90%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.82, recorder 0.00, host copies 0.43 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221802 hits, 40341 misses; texture sets: 207055 hits, 9477 misses
+  texture set misses: other key 9477, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.64 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 96%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.55, recorder 0.00, host copies 0.30 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.77 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 90%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.72, recorder 0.00, host copies 0.35 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221754 hits, 40389 misses; texture sets: 207551 hits, 9506 misses
+  texture set misses: other key 9506, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.70 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 94%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.54, recorder 0.00, host copies 0.52 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Texture helper: 0 binds in parallel, 0 partly, 1223680 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 212.9 FPS, worst frame 5.0 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1065 recorder syncs; 141205 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1146 draws/frame, idle 0.5%; blocked: recorder 0.1%, host copies 8.2% (80/frame, 1/frame skipped), copy threads 13.4%, GPU ticks 14.3%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 0.0 MB/s, buffers 590.6 MB/s
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 212.9 (1.199 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 8, reused 0
+Wait profile: vk_presenter.cpp:553; 1065 calls, CPU submit 0.059 ms, semaphore wait 715.929 ms, max wait 1.187 ms
+Wait profile: buffer.cpp:284; 2296 calls, CPU submit 0.125 ms, semaphore wait 0.064 ms, max wait 0.000 ms
+Host copy waits: texture_cache.cpp:261; 82952 waits, recording thread 324.202 ms, copy threads 667.441 ms, max 0.599 ms
+Host copy waits: liverpool.cpp:347; 905 waits, recording thread 16.085 ms, copy threads 0.118 ms, max 0.017 ms
+Host copy waits: liverpool.cpp:1622; 1062 waits, recording thread 9.811 ms, copy threads 0.206 ms, max 0.086 ms
+Host copy waits: vk_scheduler.cpp:537; 1 waits, recording thread 0.000 ms, copy threads 0.009 ms, max 0.009 ms
+Render pass ends: vk_runtime.cpp:915; 101876
+Render pass ends: vk_scheduler.cpp:64; 70421
+Render pass ends: vk_runtime.cpp:116; 4919
+Render pass ends: vk_runtime.cpp:291; 4260
+Render pass ends: vk_rasterizer.cpp:1327; 4212
+Render pass ends: vk_presenter.cpp:443; 1065
+Render pass ends: vk_runtime.cpp:166; 1064
+Render pass ends: vk_runtime.cpp:721; 1055
+Frame pacing: median 4.70 ms, stddev 0.06 ms, p99 4.85 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Frame sample 4.73 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 88%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.33, recorder 0.00, host copies 0.57 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.70 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 96%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.83, recorder 0.00, host copies 0.31 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221676 hits, 40467 misses; texture sets: 208302 hits, 9512 misses
+  texture set misses: other key 9512, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Draw preparation: 1120948 prepared pipelines used, 85324 not (8 workers, 0 scanner rebases)
+Draw pipe: 312177 draws/s pipelined, 1485 drains/s that waited, stage A waited 42.8%, stage B busy 91.4%
+  drains by reason/s: WaitRegMem=640 (4.7%) compute=632 (11.6%) submission end=213 (26.5%)
+  stage A waits over 0.5%: ProcessGraphics:1250 4.6% Process:192 26.5% ProcessCompute:1386 11.6%
+Frame sample 4.71 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 94%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.59, recorder 0.00, host copies 0.43 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.77 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 91%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.60, recorder 0.02, host copies 0.31 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221848 hits, 40295 misses; texture sets: 205117 hits, 9471 misses
+  texture set misses: other key 9471, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.73 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 86%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.78, recorder 0.02, host copies 0.31 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Readback profile: queued 4264, completed 4264, demand/budget waits 0, canceled 0, pending 0.00 MiB, peak 0.00 MiB
+Readback byte rule: 0 CPU writes went on without waiting
+Readback image 0x201faaaa00: 8x8, 16 bits, R16Sfloat, 1066 copies, 0 CPU accesses while pending
+Readback image 0x201faaab00: 4x4, 16 bits, R16Sfloat, 1066 copies, 0 CPU accesses while pending
+Readback image 0x201faaac00: 2x2, 16 bits, R16Sfloat, 1066 copies, 0 CPU accesses while pending
+Readback image 0x2000890000: 1x1, 64 bits, R32G32Sfloat, 533 copies, 0 CPU accesses while pending
+Frame sample 4.77 ms: 1148 draws, 49 dispatches, 26 submits, 0 occlusion queries, 179 passes ended; stage B busy 82%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.62, recorder 0.00, host copies 0.31 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221668 hits, 40475 misses; texture sets: 207587 hits, 9512 misses
+  texture set misses: other key 9512, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.75 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 88%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.79, recorder 0.00, host copies 0.50 ms; uploads 2.11 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.62 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 87%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.50, recorder 0.00, host copies 0.62 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.75 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 95%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.97, recorder 0.01, host copies 0.34 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221788 hits, 40355 misses; texture sets: 203851 hits, 9476 misses
+  texture set misses: other key 9476, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.72 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 91%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.54, recorder 0.00, host copies 0.29 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.70 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 88%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.54, recorder 0.00, host copies 0.64 ms; uploads 2.11 MB buffers, 0.00 MB images; 0 protection faults
+Texture helper: 0 binds in parallel, 0 partly, 1223680 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 213.0 FPS, worst frame 5.2 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1065 recorder syncs; 141208 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1146 draws/frame, idle 0.6%; blocked: recorder 0.1%, host copies 8.1% (80/frame, 1/frame skipped), copy threads 13.3%, GPU ticks 13.5%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 0.0 MB/s, buffers 590.6 MB/s
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 213.0 (1.199 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 8, reused 0
+Wait profile: vk_presenter.cpp:553; 1065 calls, CPU submit 0.052 ms, semaphore wait 672.396 ms, max wait 1.233 ms
+Wait profile: buffer.cpp:284; 2305 calls, CPU submit 0.130 ms, semaphore wait 0.061 ms, max wait 0.001 ms
+Host copy waits: texture_cache.cpp:261; 82977 waits, recording thread 318.510 ms, copy threads 662.422 ms, max 0.725 ms
+Host copy waits: liverpool.cpp:347; 891 waits, recording thread 15.873 ms, copy threads 0.471 ms, max 0.230 ms
+Host copy waits: liverpool.cpp:1622; 1058 waits, recording thread 9.170 ms, copy threads 0.119 ms, max 0.000 ms
+Render pass ends: vk_runtime.cpp:915; 101903
+Render pass ends: vk_scheduler.cpp:64; 70480
+Render pass ends: vk_runtime.cpp:116; 4924
+Render pass ends: vk_runtime.cpp:291; 4260
+Render pass ends: vk_rasterizer.cpp:1327; 4211
+Render pass ends: vk_runtime.cpp:166; 1065
+Render pass ends: vk_presenter.cpp:443; 1065
+Render pass ends: vk_runtime.cpp:721; 1029
+Frame pacing: median 4.70 ms, stddev 0.07 ms, p99 4.88 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Render state memo: 221795 hits, 40348 misses; texture sets: 204743 hits, 9507 misses
+  texture set misses: other key 9507, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.61 ms: 1153 draws, 49 dispatches, 26 submits, 0 occlusion queries, 184 passes ended; stage B busy 93%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.74, recorder 0.02, host copies 0.33 ms; uploads 2.11 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.68 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.67, recorder 0.00, host copies 0.31 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Draw preparation: 1116273 prepared pipelines used, 87951 not (8 workers, 0 scanner rebases)
+Draw pipe: 311593 draws/s pipelined, 1484 drains/s that waited, stage A waited 43.1%, stage B busy 91.5%
+  drains by reason/s: WaitRegMem=647 (5.3%) compute=625 (12.4%) submission end=213 (25.5%)
+  stage A waits over 0.5%: ProcessGraphics:1268 0.7% ProcessGraphics:1250 4.6% Process:192 25.5% ProcessCompute:1386 12.4%
+Render state memo: 221835 hits, 40308 misses; texture sets: 204343 hits, 9476 misses
+  texture set misses: other key 9476, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.79 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 93%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.40, recorder 0.02, host copies 0.37 ms; uploads 2.11 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.72 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 1.21, recorder 0.00, host copies 0.39 ms; uploads 2.11 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.67 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 89%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.73, recorder 0.00, host copies 0.32 ms; uploads 2.11 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221762 hits, 40381 misses; texture sets: 206096 hits, 9507 misses
+  texture set misses: other key 9507, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Readback profile: queued 4249, completed 4252, demand/budget waits 0, canceled 0, pending 0.00 MiB, peak 0.00 MiB
+Readback byte rule: 0 CPU writes went on without waiting
+Readback image 0x201faaaa00: 8x8, 16 bits, R16Sfloat, 1062 copies, 0 CPU accesses while pending
+Readback image 0x201faaab00: 4x4, 16 bits, R16Sfloat, 1062 copies, 0 CPU accesses while pending
+Readback image 0x201faaac00: 2x2, 16 bits, R16Sfloat, 1062 copies, 0 CPU accesses while pending
+Readback image 0x2000890000: 1x1, 64 bits, R32G32Sfloat, 532 copies, 0 CPU accesses while pending
+Frame sample 4.65 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 96%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.57, recorder 0.00, host copies 0.37 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.64 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.71, recorder 0.00, host copies 0.37 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221714 hits, 40429 misses; texture sets: 204436 hits, 9512 misses
+  texture set misses: other key 9512, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.77 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 92%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.66, recorder 0.00, host copies 0.47 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.63 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.86, recorder 0.00, host copies 0.31 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221822 hits, 40321 misses; texture sets: 204912 hits, 9475 misses
+  texture set misses: other key 9475, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.75 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 88%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.43, recorder 0.00, host copies 0.33 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Texture helper: 0 binds in parallel, 0 partly, 1224704 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 213.1 FPS, worst frame 5.1 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1066 recorder syncs; 143130 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1146 draws/frame, idle 0.6%; blocked: recorder 0.1%, host copies 8.6% (80/frame, 1/frame skipped), copy threads 13.6%, GPU ticks 13.9%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 0.0 MB/s, buffers 598.5 MB/s
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 213.1 (1.200 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 8, reused 0
+Wait profile: vk_presenter.cpp:553; 1066 calls, CPU submit 0.051 ms, semaphore wait 694.290 ms, max wait 1.248 ms
+Wait profile: buffer.cpp:284; 2299 calls, CPU submit 0.125 ms, semaphore wait 0.065 ms, max wait 0.000 ms
+Host copy waits: texture_cache.cpp:261; 83064 waits, recording thread 341.406 ms, copy threads 676.867 ms, max 0.586 ms
+Host copy waits: liverpool.cpp:347; 885 waits, recording thread 16.148 ms, copy threads 0.126 ms, max 0.014 ms
+Host copy waits: liverpool.cpp:1622; 1061 waits, recording thread 10.222 ms, copy threads 0.127 ms, max 0.006 ms
+Render pass ends: vk_runtime.cpp:915; 101967
+Render pass ends: vk_scheduler.cpp:64; 70501
+Render pass ends: vk_runtime.cpp:116; 4957
+Render pass ends: vk_runtime.cpp:291; 4264
+Render pass ends: vk_rasterizer.cpp:1327; 4186
+Render pass ends: vk_runtime.cpp:166; 1066
+Render pass ends: vk_presenter.cpp:443; 1066
+Render pass ends: vk_runtime.cpp:721; 1051
+Frame pacing: median 4.69 ms, stddev 0.06 ms, p99 4.82 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Frame sample 4.69 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 89%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.68, recorder 0.00, host copies 0.31 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221649 hits, 40494 misses; texture sets: 205171 hits, 9508 misses
+  texture set misses: other key 9508, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.73 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 91%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.78, recorder 0.00, host copies 0.32 ms; uploads 2.11 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.63 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 96%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.59, recorder 0.00, host copies 0.34 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Draw preparation: 1118716 prepared pipelines used, 89604 not (8 workers, 0 scanner rebases)
+Draw pipe: 312570 draws/s pipelined, 1489 drains/s that waited, stage A waited 42.9%, stage B busy 91.5%
+  drains by reason/s: WaitRegMem=641 (4.6%) compute=634 (12.0%) submission end=213 (26.3%)
+  stage A waits over 0.5%: ProcessGraphics:1250 4.6% Process:192 26.3% ProcessCompute:1386 12.0%
+Frame sample 4.66 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 94%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.89, recorder 0.00, host copies 0.38 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221795 hits, 40348 misses; texture sets: 204366 hits, 9476 misses
+  texture set misses: other key 9476, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.68 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 81%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.12, recorder 0.00, host copies 0.29 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.68 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 96%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.58, recorder 0.03, host copies 0.43 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Readback profile: queued 4268, completed 4268, demand/budget waits 0, canceled 0, pending 0.00 MiB, peak 0.00 MiB
+Readback byte rule: 0 CPU writes went on without waiting
+Readback image 0x201faaaa00: 8x8, 16 bits, R16Sfloat, 1067 copies, 0 CPU accesses while pending
+Readback image 0x201faaab00: 4x4, 16 bits, R16Sfloat, 1067 copies, 0 CPU accesses while pending
+Readback image 0x201faaac00: 2x2, 16 bits, R16Sfloat, 1067 copies, 0 CPU accesses while pending
+Readback image 0x200c9f0000: 1x1, 64 bits, R32G32Sfloat, 534 copies, 0 CPU accesses while pending
+Render state memo: 221753 hits, 40390 misses; texture sets: 206133 hits, 9507 misses
+  texture set misses: other key 9507, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.70 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 83%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.88, recorder 0.00, host copies 0.34 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.76 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 92%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.44, recorder 0.02, host copies 0.30 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221790 hits, 40353 misses; texture sets: 207510 hits, 9484 misses
+  texture set misses: other key 9484, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.70 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 91%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.96, recorder 0.00, host copies 0.29 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.80 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 90%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.74, recorder 0.00, host copies 0.38 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.72 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 92%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.58, recorder 0.00, host copies 0.30 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221777 hits, 40366 misses; texture sets: 205060 hits, 9499 misses
+  texture set misses: other key 9499, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Texture helper: 0 binds in parallel, 0 partly, 1222656 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 212.8 FPS, worst frame 4.9 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1064 recorder syncs; 143027 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1146 draws/frame, idle 0.5%; blocked: recorder 0.1%, host copies 8.0% (80/frame, 1/frame skipped), copy threads 13.5%, GPU ticks 14.6%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 0.0 MB/s, buffers 597.1 MB/s
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 212.8 (1.198 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 8, reused 0
+Wait profile: vk_presenter.cpp:553; 1064 calls, CPU submit 0.052 ms, semaphore wait 731.675 ms, max wait 1.190 ms
+Wait profile: buffer.cpp:284; 2297 calls, CPU submit 0.124 ms, semaphore wait 0.066 ms, max wait 0.000 ms
+Host copy waits: texture_cache.cpp:261; 82921 waits, recording thread 317.055 ms, copy threads 671.514 ms, max 0.593 ms
+Host copy waits: liverpool.cpp:347; 905 waits, recording thread 16.086 ms, copy threads 0.179 ms, max 0.056 ms
+Host copy waits: liverpool.cpp:1622; 1062 waits, recording thread 9.346 ms, copy threads 0.124 ms, max 0.005 ms
+Host copy waits: vk_scheduler.cpp:537; 1 waits, recording thread 0.000 ms, copy threads 0.006 ms, max 0.006 ms
+Render pass ends: vk_runtime.cpp:915; 101791
+Render pass ends: vk_scheduler.cpp:64; 70367
+Render pass ends: vk_runtime.cpp:116; 4943
+Render pass ends: vk_runtime.cpp:291; 4256
+Render pass ends: vk_rasterizer.cpp:1327; 4227
+Render pass ends: vk_runtime.cpp:166; 1064
+Render pass ends: vk_presenter.cpp:443; 1064
+Render pass ends: vk_runtime.cpp:721; 1049
+Frame pacing: median 4.70 ms, stddev 0.05 ms, p99 4.82 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Frame sample 4.70 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.73, recorder 0.00, host copies 0.59 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.71 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 91%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.81, recorder 0.00, host copies 0.31 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221719 hits, 40424 misses; texture sets: 205656 hits, 9512 misses
+  texture set misses: other key 9512, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Draw preparation: 1114803 prepared pipelines used, 88397 not (8 workers, 0 scanner rebases)
+Draw pipe: 311237 draws/s pipelined, 1482 drains/s that waited, stage A waited 42.9%, stage B busy 91.2%
+  drains by reason/s: WaitRegMem=641 (4.8%) compute=628 (11.6%) submission end=212 (26.5%)
+  stage A waits over 0.5%: ProcessGraphics:1250 4.6% Process:192 26.5% ProcessCompute:1386 11.6%
+Frame sample 4.70 ms: 1149 draws, 49 dispatches, 26 submits, 0 occlusion queries, 181 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.70, recorder 0.00, host copies 0.41 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.68 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 96%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.12, recorder 0.00, host copies 0.32 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221826 hits, 40317 misses; texture sets: 205996 hits, 9472 misses
+  texture set misses: other key 9471, generation 1, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.67 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.62, recorder 0.00, host copies 0.44 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Readback profile: queued 4252, completed 4252, demand/budget waits 0, canceled 0, pending 0.00 MiB, peak 0.00 MiB
+Readback byte rule: 0 CPU writes went on without waiting
+Readback image 0x201faaaa00: 8x8, 16 bits, R16Sfloat, 1063 copies, 0 CPU accesses while pending
+Readback image 0x201faaab00: 4x4, 16 bits, R16Sfloat, 1063 copies, 0 CPU accesses while pending
+Readback image 0x201faaac00: 2x2, 16 bits, R16Sfloat, 1063 copies, 0 CPU accesses while pending
+Readback image 0x2000890000: 1x1, 64 bits, R32G32Sfloat, 532 copies, 0 CPU accesses while pending
+Frame sample 4.68 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 95%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.69, recorder 0.00, host copies 0.63 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.78 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 87%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.78, recorder 0.01, host copies 0.34 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221697 hits, 40446 misses; texture sets: 207541 hits, 9512 misses
+  texture set misses: other key 9512, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.69 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 90%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.95, recorder 0.00, host copies 0.32 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.72 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 91%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.94, recorder 0.03, host copies 0.34 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221768 hits, 40375 misses; texture sets: 204582 hits, 9475 misses
+  texture set misses: other key 9475, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.60 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 94%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.66, recorder 0.00, host copies 0.32 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.72 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 94%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.71, recorder 0.00, host copies 0.56 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Texture helper: 0 binds in parallel, 0 partly, 1223680 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 212.9 FPS, worst frame 5.0 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1065 recorder syncs; 143535 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1146 draws/frame, idle 0.5%; blocked: recorder 0.1%, host copies 8.4% (80/frame, 1/frame skipped), copy threads 13.5%, GPU ticks 13.8%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 0.0 MB/s, buffers 596.9 MB/s
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 212.9 (1.199 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 8, reused 0
+Wait profile: vk_presenter.cpp:553; 1065 calls, CPU submit 0.050 ms, semaphore wait 691.405 ms, max wait 1.255 ms
+Wait profile: buffer.cpp:284; 2300 calls, CPU submit 0.121 ms, semaphore wait 0.059 ms, max wait 0.000 ms
+Host copy waits: texture_cache.cpp:261; 83046 waits, recording thread 334.262 ms, copy threads 670.745 ms, max 0.675 ms
+Host copy waits: liverpool.cpp:347; 874 waits, recording thread 15.648 ms, copy threads 0.118 ms, max 0.010 ms
+Host copy waits: liverpool.cpp:1622; 1059 waits, recording thread 10.322 ms, copy threads 0.118 ms, max 0.000 ms
+Host copy waits: vk_scheduler.cpp:537; 2 waits, recording thread 0.000 ms, copy threads 0.029 ms, max 0.024 ms
+Render pass ends: vk_runtime.cpp:915; 101892
+Render pass ends: vk_scheduler.cpp:64; 70485
+Render pass ends: vk_runtime.cpp:116; 4945
+Render pass ends: vk_runtime.cpp:291; 4260
+Render pass ends: vk_rasterizer.cpp:1327; 4202
+Render pass ends: vk_runtime.cpp:166; 1065
+Render pass ends: vk_presenter.cpp:443; 1065
+Render pass ends: vk_runtime.cpp:721; 1056
+Frame pacing: median 4.70 ms, stddev 0.06 ms, p99 4.83 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Render state memo: 221727 hits, 40416 misses; texture sets: 204897 hits, 9508 misses
+  texture set misses: other key 9508, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.75 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 91%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.71, recorder 0.00, host copies 0.32 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.68 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 96%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.73, recorder 0.00, host copies 0.30 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Draw preparation: 1117187 prepared pipelines used, 89085 not (8 workers, 0 scanner rebases)
+Draw pipe: 312237 draws/s pipelined, 1484 drains/s that waited, stage A waited 42.4%, stage B busy 91.2%
+  drains by reason/s: WaitRegMem=640 (4.6%) compute=631 (11.5%) submission end=213 (26.2%)
+  stage A waits over 0.5%: ProcessGraphics:1250 4.5% Process:192 26.2% ProcessCompute:1386 11.5%
+Frame sample 4.36 ms: 1144 draws, 48 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 92%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.26, recorder 0.00, host copies 0.44 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221866 hits, 40277 misses; texture sets: 204860 hits, 9723 misses
+  texture set misses: other key 9477, generation 246, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.74 ms: 1145 draws, 48 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 94%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.67, recorder 0.00, host copies 0.35 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.72 ms: 1145 draws, 48 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 95%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.83, recorder 0.00, host copies 0.30 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221940 hits, 40203 misses; texture sets: 202584 hits, 9515 misses
+  texture set misses: other key 9511, generation 4, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Readback profile: queued 4264, completed 4260, demand/budget waits 0, canceled 0, pending 0.00 MiB, peak 0.00 MiB
+Readback byte rule: 0 CPU writes went on without waiting
+Readback image 0x201faaaa00: 8x8, 16 bits, R16Sfloat, 1066 copies, 0 CPU accesses while pending
+Readback image 0x201faaab00: 4x4, 16 bits, R16Sfloat, 1066 copies, 0 CPU accesses while pending
+Readback image 0x201faaac00: 2x2, 16 bits, R16Sfloat, 1066 copies, 0 CPU accesses while pending
+Readback image 0x200c9f0000: 1x1, 64 bits, R32G32Sfloat, 533 copies, 0 CPU accesses while pending
+Frame sample 4.71 ms: 1145 draws, 48 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 88%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.69, recorder 0.02, host copies 0.47 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.70 ms: 1145 draws, 48 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 91%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.65, recorder 0.02, host copies 0.37 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 222011 hits, 40132 misses; texture sets: 206053 hits, 9507 misses
+  texture set misses: other key 9507, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.74 ms: 1145 draws, 48 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 91%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.81, recorder 0.00, host copies 0.29 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.73 ms: 1145 draws, 48 dispatches, 26 submits, 0 occlusion queries, 175 passes ended; stage B busy 92%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.48, recorder 0.02, host copies 0.34 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.65 ms: 1149 draws, 49 dispatches, 26 submits, 0 occlusion queries, 179 passes ended; stage B busy 81%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.84, recorder 0.00, host copies 0.40 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221805 hits, 40338 misses; texture sets: 205346 hits, 9762 misses
+  texture set misses: other key 9512, generation 250, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Texture helper: 0 binds in parallel, 0 partly, 1223680 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 213.0 FPS, worst frame 5.1 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1065 recorder syncs; 142367 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1145 draws/frame, idle 0.5%; blocked: recorder 0.1%, host copies 7.9% (79/frame, 1/frame skipped), copy threads 13.5%, GPU ticks 13.8%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 0.0 MB/s, buffers 594.4 MB/s
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 213.2 (1.203 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 8, reused 0
+Wait profile: vk_presenter.cpp:553; 1065 calls, CPU submit 0.052 ms, semaphore wait 691.045 ms, max wait 1.196 ms
+Wait profile: buffer.cpp:284; 2305 calls, CPU submit 0.135 ms, semaphore wait 0.062 ms, max wait 0.000 ms
+Host copy waits: texture_cache.cpp:261; 82317 waits, recording thread 309.434 ms, copy threads 672.280 ms, max 0.601 ms
+Host copy waits: liverpool.cpp:347; 894 waits, recording thread 15.752 ms, copy threads 0.175 ms, max 0.036 ms
+Host copy waits: liverpool.cpp:1622; 1060 waits, recording thread 9.118 ms, copy threads 0.119 ms, max 0.000 ms
+Host copy waits: vk_scheduler.cpp:537; 1 waits, recording thread 0.000 ms, copy threads 0.019 ms, max 0.019 ms
+Render pass ends: vk_runtime.cpp:915; 101217
+Render pass ends: vk_scheduler.cpp:64; 70441
+Render pass ends: vk_runtime.cpp:116; 4947
+Render pass ends: vk_runtime.cpp:291; 4260
+Render pass ends: vk_rasterizer.cpp:1327; 4225
+Render pass ends: vk_runtime.cpp:166; 1065
+Render pass ends: vk_presenter.cpp:443; 1065
+Render pass ends: vk_runtime.cpp:721; 1040
+Frame pacing: median 4.70 ms, stddev 0.06 ms, p99 4.83 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Frame sample 4.73 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 89%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.45, recorder 0.00, host copies 0.57 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.73 ms: 1154 draws, 49 dispatches, 26 submits, 0 occlusion queries, 185 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.00, recorder 0.00, host copies 0.26 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221743 hits, 40400 misses; texture sets: 205728 hits, 9478 misses
+  texture set misses: other key 9476, generation 2, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.75 ms: 1149 draws, 49 dispatches, 26 submits, 0 occlusion queries, 179 passes ended; stage B busy 89%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.90, recorder 0.00, host copies 0.40 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Draw preparation: 1112811 prepared pipelines used, 92437 not (8 workers, 0 scanner rebases)
+Draw pipe: 310936 draws/s pipelined, 1485 drains/s that waited, stage A waited 43.3%, stage B busy 91.5%
+  drains by reason/s: WaitRegMem=645 (4.9%) compute=628 (12.5%) submission end=213 (25.9%)
+  stage A waits over 0.5%: ProcessGraphics:1250 4.5% Process:192 25.9% ProcessCompute:1386 12.5%
+Frame sample 4.71 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 91%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.74, recorder 0.01, host copies 0.31 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221743 hits, 40400 misses; texture sets: 203155 hits, 9508 misses
+  texture set misses: other key 9507, generation 1, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.59 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 93%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.73, recorder 0.00, host copies 0.30 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.76 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 83%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.27, recorder 0.00, host copies 0.27 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Readback profile: queued 4259, completed 4260, demand/budget waits 0, canceled 0, pending 0.00 MiB, peak 0.00 MiB
+Readback byte rule: 0 CPU writes went on without waiting
+Readback image 0x201faaaa00: 8x8, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x201faaab00: 4x4, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x201faaac00: 2x2, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x200c9f0000: 1x1, 64 bits, R32G32Sfloat, 532 copies, 0 CPU accesses while pending
+Frame sample 4.73 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.57, recorder 0.00, host copies 0.67 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221771 hits, 40372 misses; texture sets: 204217 hits, 9477 misses
+  texture set misses: other key 9476, generation 1, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.72 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 94%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.82, recorder 0.00, host copies 0.41 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.70 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 94%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.92, recorder 0.00, host copies 0.35 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221750 hits, 40393 misses; texture sets: 205163 hits, 9514 misses
+  texture set misses: other key 9507, generation 7, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.65 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 86%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.52, recorder 0.00, host copies 0.30 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.70 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 93%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.52, recorder 0.00, host copies 0.26 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Texture helper: 0 binds in parallel, 0 partly, 1223680 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 212.9 FPS, worst frame 5.2 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1065 recorder syncs; 142285 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1146 draws/frame, idle 0.6%; blocked: recorder 0.1%, host copies 8.5% (80/frame, 1/frame skipped), copy threads 13.5%, GPU ticks 13.8%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 0.0 MB/s, buffers 595.2 MB/s
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 212.9 (1.199 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 8, reused 0
+Wait profile: vk_presenter.cpp:553; 1065 calls, CPU submit 0.049 ms, semaphore wait 689.028 ms, max wait 1.335 ms
+Wait profile: buffer.cpp:284; 2295 calls, CPU submit 0.131 ms, semaphore wait 0.056 ms, max wait 0.000 ms
+Host copy waits: texture_cache.cpp:261; 83028 waits, recording thread 338.357 ms, copy threads 673.352 ms, max 0.686 ms
+Host copy waits: liverpool.cpp:347; 884 waits, recording thread 15.882 ms, copy threads 0.090 ms, max 0.005 ms
+Host copy waits: liverpool.cpp:1622; 1055 waits, recording thread 10.484 ms, copy threads 0.118 ms, max 0.000 ms
+Render pass ends: vk_runtime.cpp:915; 101945
+Render pass ends: vk_scheduler.cpp:64; 70476
+Render pass ends: vk_runtime.cpp:116; 4946
+Render pass ends: vk_runtime.cpp:291; 4260
+Render pass ends: vk_rasterizer.cpp:1327; 4189
+Render pass ends: vk_runtime.cpp:166; 1065
+Render pass ends: vk_presenter.cpp:443; 1065
+Render pass ends: vk_runtime.cpp:721; 1046
+Frame pacing: median 4.70 ms, stddev 0.06 ms, p99 4.83 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Render state memo: 221789 hits, 40354 misses; texture sets: 206199 hits, 9477 misses
+  texture set misses: other key 9477, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.67 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 94%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.66, recorder 0.00, host copies 0.34 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.66 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.61, recorder 0.02, host copies 0.39 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Draw preparation: 1116796 prepared pipelines used, 88452 not (8 workers, 0 scanner rebases)
+Draw pipe: 311800 draws/s pipelined, 1482 drains/s that waited, stage A waited 43.4%, stage B busy 91.4%
+  drains by reason/s: WaitRegMem=641 (4.8%) compute=629 (12.5%) submission end=213 (26.0%)
+  stage A waits over 0.5%: ProcessGraphics:1250 4.6% Process:192 26.0% ProcessCompute:1386 12.5%
+Render state memo: 221764 hits, 40379 misses; texture sets: 207085 hits, 9506 misses
+  texture set misses: other key 9506, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.70 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 96%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.79, recorder 0.00, host copies 0.37 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.64 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 89%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.66, recorder 0.00, host copies 0.39 ms; uploads 2.11 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.65 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 90%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.56, recorder 0.00, host copies 0.37 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221691 hits, 40452 misses; texture sets: 204064 hits, 9512 misses
+  texture set misses: other key 9512, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Readback profile: queued 4253, completed 4256, demand/budget waits 0, canceled 0, pending 0.00 MiB, peak 0.00 MiB
+Readback byte rule: 0 CPU writes went on without waiting
+Readback image 0x201faaaa00: 8x8, 16 bits, R16Sfloat, 1063 copies, 0 CPU accesses while pending
+Readback image 0x201faaab00: 4x4, 16 bits, R16Sfloat, 1063 copies, 0 CPU accesses while pending
+Readback image 0x201faaac00: 2x2, 16 bits, R16Sfloat, 1063 copies, 0 CPU accesses while pending
+Readback image 0x200c9f0000: 1x1, 64 bits, R32G32Sfloat, 532 copies, 0 CPU accesses while pending
+Frame sample 4.76 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 90%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.73, recorder 0.00, host copies 0.30 ms; uploads 2.11 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.69 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 97%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.79, recorder 0.00, host copies 0.33 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221783 hits, 40360 misses; texture sets: 204521 hits, 9476 misses
+  texture set misses: other key 9476, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.70 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 90%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.59, recorder 0.02, host copies 0.40 ms; uploads 2.11 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.61 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 96%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.81, recorder 0.00, host copies 0.37 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221724 hits, 40419 misses; texture sets: 205881 hits, 9507 misses
+  texture set misses: other key 9507, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.63 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 92%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.50, recorder 0.00, host copies 0.33 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.75 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 86%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.76, recorder 0.00, host copies 0.50 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Texture helper: 0 binds in parallel, 0 partly, 1223680 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 212.9 FPS, worst frame 5.1 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1065 recorder syncs; 142879 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1146 draws/frame, idle 0.5%; blocked: recorder 0.1%, host copies 8.2% (80/frame, 1/frame skipped), copy threads 13.5%, GPU ticks 14.4%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 0.0 MB/s, buffers 596.9 MB/s
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 212.9 (1.199 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 8, reused 0
+Wait profile: vk_presenter.cpp:553; 1065 calls, CPU submit 0.048 ms, semaphore wait 718.216 ms, max wait 1.285 ms
+Wait profile: buffer.cpp:284; 2298 calls, CPU submit 0.134 ms, semaphore wait 0.064 ms, max wait 0.004 ms
+Host copy waits: texture_cache.cpp:261; 82984 waits, recording thread 324.169 ms, copy threads 672.776 ms, max 0.679 ms
+Host copy waits: liverpool.cpp:347; 929 waits, recording thread 16.561 ms, copy threads 0.110 ms, max 0.008 ms
+Host copy waits: liverpool.cpp:1622; 1057 waits, recording thread 9.088 ms, copy threads 0.119 ms, max 0.000 ms
+Host copy waits: vk_scheduler.cpp:537; 1 waits, recording thread 0.000 ms, copy threads 0.004 ms, max 0.004 ms
+Render pass ends: vk_runtime.cpp:915; 101934
+Render pass ends: vk_scheduler.cpp:64; 70440
+Render pass ends: vk_runtime.cpp:116; 4953
+Render pass ends: vk_runtime.cpp:291; 4260
+Render pass ends: vk_rasterizer.cpp:1327; 4211
+Render pass ends: vk_runtime.cpp:166; 1065
+Render pass ends: vk_presenter.cpp:443; 1065
+Render pass ends: vk_runtime.cpp:721; 1047
+Frame pacing: median 4.70 ms, stddev 0.06 ms, p99 4.82 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Frame sample 4.70 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 90%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.65, recorder 0.00, host copies 0.28 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221748 hits, 40395 misses; texture sets: 206505 hits, 9476 misses
+  texture set misses: other key 9476, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.63 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 90%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.64, recorder 0.00, host copies 0.30 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Draw preparation: 1118292 prepared pipelines used, 89004 not (8 workers, 0 scanner rebases)
+Draw pipe: 312421 draws/s pipelined, 1487 drains/s that waited, stage A waited 43.3%, stage B busy 91.2%
+  drains by reason/s: WaitRegMem=643 (4.9%) compute=631 (12.1%) submission end=213 (26.3%)
+  stage A waits over 0.5%: ProcessGraphics:1250 4.6% Process:192 26.3% ProcessCompute:1386 12.1%
+Frame sample 4.68 ms: 1149 draws, 49 dispatches, 26 submits, 0 occlusion queries, 181 passes ended; stage B busy 93%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.87, recorder 0.00, host copies 0.45 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221729 hits, 40414 misses; texture sets: 207835 hits, 9753 misses
+  texture set misses: other key 9507, generation 246, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.71 ms: 1145 draws, 48 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 96%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.97, recorder 0.00, host copies 0.67 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.74 ms: 1145 draws, 48 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 94%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.58, recorder 0.00, host copies 0.32 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Readback profile: queued 4268, completed 4264, demand/budget waits 0, canceled 0, pending 0.00 MiB, peak 0.00 MiB
+Readback byte rule: 0 CPU writes went on without waiting
+Readback image 0x201faaaa00: 8x8, 16 bits, R16Sfloat, 1067 copies, 0 CPU accesses while pending
+Readback image 0x201faaab00: 4x4, 16 bits, R16Sfloat, 1067 copies, 0 CPU accesses while pending
+Readback image 0x201faaac00: 2x2, 16 bits, R16Sfloat, 1067 copies, 0 CPU accesses while pending
+Readback image 0x200c9f0000: 1x1, 64 bits, R32G32Sfloat, 534 copies, 0 CPU accesses while pending
+Render state memo: 221907 hits, 40236 misses; texture sets: 204651 hits, 9514 misses
+  texture set misses: other key 9512, generation 2, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.68 ms: 1145 draws, 48 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 89%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.47, recorder 0.00, host copies 0.40 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.67 ms: 1144 draws, 48 dispatches, 26 submits, 0 occlusion queries, 175 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.77, recorder 0.02, host copies 0.38 ms; uploads 2.11 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.70 ms: 1145 draws, 48 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 91%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.40, recorder 0.00, host copies 0.67 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 222038 hits, 40105 misses; texture sets: 206204 hits, 9477 misses
+  texture set misses: other key 9476, generation 1, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.71 ms: 1145 draws, 48 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 82%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.20, recorder 0.00, host copies 0.31 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.70 ms: 1144 draws, 48 dispatches, 26 submits, 0 occlusion queries, 175 passes ended; stage B busy 89%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.82, recorder 0.00, host copies 0.36 ms; uploads 2.11 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221913 hits, 40230 misses; texture sets: 206190 hits, 9755 misses
+  texture set misses: other key 9511, generation 244, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Texture helper: 0 binds in parallel, 0 partly, 1225728 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 213.2 FPS, worst frame 5.1 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1067 recorder syncs; 143199 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1145 draws/frame, idle 0.6%; blocked: recorder 0.1%, host copies 8.6% (79/frame, 1/frame skipped), copy threads 13.5%, GPU ticks 13.0%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 0.0 MB/s, buffers 595.1 MB/s
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 213.4 (1.204 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 8, reused 0
+Wait profile: vk_presenter.cpp:553; 1067 calls, CPU submit 0.052 ms, semaphore wait 647.194 ms, max wait 1.186 ms
+Wait profile: buffer.cpp:284; 2297 calls, CPU submit 0.128 ms, semaphore wait 0.062 ms, max wait 0.000 ms
+Host copy waits: texture_cache.cpp:261; 82494 waits, recording thread 343.716 ms, copy threads 670.761 ms, max 0.674 ms
+Host copy waits: liverpool.cpp:347; 904 waits, recording thread 16.988 ms, copy threads 0.113 ms, max 0.008 ms
+Host copy waits: liverpool.cpp:1622; 1063 waits, recording thread 8.907 ms, copy threads 0.141 ms, max 0.021 ms
+Render pass ends: vk_runtime.cpp:915; 101480
+Render pass ends: vk_scheduler.cpp:64; 70587
+Render pass ends: vk_runtime.cpp:116; 4938
+Render pass ends: vk_runtime.cpp:291; 4268
+Render pass ends: vk_rasterizer.cpp:1327; 4225
+Render pass ends: vk_presenter.cpp:443; 1067
+Render pass ends: vk_runtime.cpp:166; 1066
+Render pass ends: vk_runtime.cpp:721; 1056
+Frame pacing: median 4.69 ms, stddev 0.06 ms, p99 4.85 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Frame sample 4.74 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 86%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.84, recorder 0.00, host copies 0.33 ms; uploads 2.11 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.68 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 92%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.74, recorder 0.00, host copies 0.60 ms; uploads 2.11 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221712 hits, 40431 misses; texture sets: 204366 hits, 9510 misses
+  texture set misses: other key 9508, generation 2, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.76 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 88%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.67, recorder 0.00, host copies 0.29 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Draw preparation: 1117830 prepared pipelines used, 87418 not (8 workers, 0 scanner rebases)
+Draw pipe: 310853 draws/s pipelined, 1484 drains/s that waited, stage A waited 41.6%, stage B busy 91.2%
+  drains by reason/s: WaitRegMem=641 (4.9%) compute=630 (11.7%) submission end=213 (25.0%)
+  stage A waits over 0.5%: ProcessGraphics:1250 4.8% Process:192 25.0% ProcessCompute:1386 11.7%
+Frame sample 4.63 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 97%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.63, recorder 0.00, host copies 0.74 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.64 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 94%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.39, recorder 0.00, host copies 0.65 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221793 hits, 40350 misses; texture sets: 204217 hits, 9478 misses
+  texture set misses: other key 9476, generation 2, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.68 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.49, recorder 0.02, host copies 0.43 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Readback profile: queued 4260, completed 4264, demand/budget waits 0, canceled 0, pending 0.00 MiB, peak 0.00 MiB
+Readback byte rule: 0 CPU writes went on without waiting
+Readback image 0x201faaaa00: 8x8, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x201faaab00: 4x4, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x201faaac00: 2x2, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x2000890000: 1x1, 64 bits, R32G32Sfloat, 533 copies, 0 CPU accesses while pending
+Frame sample 4.64 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.39, recorder 0.00, host copies 0.65 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221744 hits, 40399 misses; texture sets: 205780 hits, 9509 misses
+  texture set misses: other key 9507, generation 2, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.68 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 92%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.76, recorder 0.00, host copies 0.37 ms; uploads 2.11 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.64 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 85%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.66, recorder 0.00, host copies 0.34 ms; uploads 2.11 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221801 hits, 40342 misses; texture sets: 205596 hits, 9479 misses
+  texture set misses: other key 9477, generation 2, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.77 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 93%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.65, recorder 0.00, host copies 0.30 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.54 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 91%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.67, recorder 0.00, host copies 0.31 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Texture helper: 0 binds in parallel, 0 partly, 1224704 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 213.2 FPS, worst frame 5.4 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1066 recorder syncs; 143206 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1146 draws/frame, idle 0.6%; blocked: recorder 0.1%, host copies 8.4% (80/frame, 1/frame skipped), copy threads 13.4%, GPU ticks 12.8%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 0.0 MB/s, buffers 595.3 MB/s
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 213.2 (1.201 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 8, reused 0
+Wait profile: vk_presenter.cpp:553; 1066 calls, CPU submit 0.052 ms, semaphore wait 639.858 ms, max wait 1.187 ms
+Wait profile: buffer.cpp:284; 2292 calls, CPU submit 0.133 ms, semaphore wait 0.061 ms, max wait 0.000 ms
+Host copy waits: texture_cache.cpp:261; 83098 waits, recording thread 333.482 ms, copy threads 666.208 ms, max 1.035 ms
+Host copy waits: liverpool.cpp:347; 870 waits, recording thread 15.766 ms, copy threads 0.093 ms, max 0.007 ms
+Host copy waits: liverpool.cpp:1622; 1059 waits, recording thread 9.601 ms, copy threads 0.120 ms, max 0.000 ms
+Host copy waits: vk_scheduler.cpp:537; 1 waits, recording thread 0.000 ms, copy threads 0.014 ms, max 0.014 ms
+Render pass ends: vk_runtime.cpp:915; 101986
+Render pass ends: vk_scheduler.cpp:64; 70524
+Render pass ends: vk_runtime.cpp:116; 4942
+Render pass ends: vk_runtime.cpp:291; 4264
+Render pass ends: vk_rasterizer.cpp:1327; 4204
+Render pass ends: vk_runtime.cpp:166; 1066
+Render pass ends: vk_presenter.cpp:443; 1066
+Render pass ends: vk_runtime.cpp:721; 1045
+Frame pacing: median 4.69 ms, stddev 0.07 ms, p99 4.83 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Frame sample 4.64 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 88%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.45, recorder 0.01, host copies 0.29 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221751 hits, 40392 misses; texture sets: 205831 hits, 9507 misses
+  texture set misses: other key 9506, generation 1, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.70 ms: 1154 draws, 49 dispatches, 26 submits, 0 occlusion queries, 185 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.48, recorder 0.02, host copies 0.33 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Draw preparation: 1118709 prepared pipelines used, 88587 not (8 workers, 0 scanner rebases)
+Draw pipe: 312379 draws/s pipelined, 1486 drains/s that waited, stage A waited 42.6%, stage B busy 91.2%
+  drains by reason/s: WaitRegMem=644 (5.1%) compute=629 (12.5%) submission end=213 (25.0%)
+  stage A waits over 0.5%: ProcessGraphics:1250 4.7% Process:192 25.0% ProcessCompute:1386 12.5%
+Frame sample 4.67 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 110%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.69, recorder 0.01, host copies 0.34 ms; uploads 2.11 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221730 hits, 40413 misses; texture sets: 204357 hits, 9513 misses
+  texture set misses: other key 9505, generation 8, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.71 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 89%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.75, recorder 0.00, host copies 0.30 ms; uploads 2.11 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.61 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.78, recorder 0.00, host copies 0.33 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221821 hits, 40322 misses; texture sets: 206261 hits, 9478 misses
+  texture set misses: other key 9478, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Readback profile: queued 4260, completed 4260, demand/budget waits 0, canceled 0, pending 0.00 MiB, peak 0.00 MiB
+Readback byte rule: 0 CPU writes went on without waiting
+Readback image 0x201faaaa00: 8x8, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x201faaab00: 4x4, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x201faaac00: 2x2, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x200c9f0000: 1x1, 64 bits, R32G32Sfloat, 533 copies, 0 CPU accesses while pending
+Frame sample 4.68 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 86%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.63, recorder 0.00, host copies 0.39 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.73 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 84%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.44, recorder 0.00, host copies 0.31 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.66 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 94%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.81, recorder 0.02, host copies 0.34 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221703 hits, 40440 misses; texture sets: 206190 hits, 9512 misses
+  texture set misses: other key 9512, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.67 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 96%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.59, recorder 0.00, host copies 0.77 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.66 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 85%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.72, recorder 0.00, host copies 0.33 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221806 hits, 40337 misses; texture sets: 205594 hits, 9476 misses
+  texture set misses: other key 9476, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Texture helper: 0 binds in parallel, 0 partly, 1221632 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame sample 4.67 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 88%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.74, recorder 0.02, host copies 0.28 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Frame stats: 212.6 FPS, worst frame 5.1 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1063 recorder syncs; 142466 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1146 draws/frame, idle 0.5%; blocked: recorder 0.1%, host copies 8.1% (80/frame, 1/frame skipped), copy threads 13.6%, GPU ticks 13.4%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 0.0 MB/s, buffers 595.7 MB/s
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 212.6 (1.197 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 8, reused 0
+Wait profile: vk_presenter.cpp:553; 1063 calls, CPU submit 0.048 ms, semaphore wait 671.163 ms, max wait 1.255 ms
+Wait profile: buffer.cpp:284; 2289 calls, CPU submit 0.120 ms, semaphore wait 0.064 ms, max wait 0.000 ms
+Host copy waits: texture_cache.cpp:261; 82828 waits, recording thread 319.286 ms, copy threads 675.792 ms, max 0.715 ms
+Host copy waits: liverpool.cpp:347; 882 waits, recording thread 15.817 ms, copy threads 0.171 ms, max 0.027 ms
+Host copy waits: liverpool.cpp:1622; 1056 waits, recording thread 9.188 ms, copy threads 0.126 ms, max 0.006 ms
+Render pass ends: vk_runtime.cpp:915; 101678
+Render pass ends: vk_scheduler.cpp:64; 70296
+Render pass ends: vk_runtime.cpp:116; 4944
+Render pass ends: vk_runtime.cpp:291; 4252
+Render pass ends: vk_rasterizer.cpp:1327; 4215
+Render pass ends: vk_runtime.cpp:166; 1063
+Render pass ends: vk_presenter.cpp:443; 1063
+Render pass ends: vk_runtime.cpp:721; 1042
+Frame pacing: median 4.70 ms, stddev 0.06 ms, p99 4.84 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Frame sample 4.70 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 90%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.53, recorder 0.00, host copies 0.32 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221765 hits, 40378 misses; texture sets: 203894 hits, 9507 misses
+  texture set misses: other key 9507, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.61 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.67, recorder 0.00, host copies 0.38 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Draw preparation: 1113726 prepared pipelines used, 90498 not (8 workers, 0 scanner rebases)
+Draw pipe: 311516 draws/s pipelined, 1483 drains/s that waited, stage A waited 43.0%, stage B busy 91.4%
+  drains by reason/s: WaitRegMem=642 (4.8%) compute=628 (12.5%) submission end=213 (25.7%)
+  stage A waits over 0.5%: ProcessCompute:1386 12.5% Process:192 25.7% ProcessGraphics:1250 4.6%
+Frame sample 4.72 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 89%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.54, recorder 0.00, host copies 0.26 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221761 hits, 40382 misses; texture sets: 203853 hits, 9494 misses
+  texture set misses: other key 9494, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.70 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 87%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.76, recorder 0.00, host copies 0.44 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.71 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 94%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.58, recorder 0.00, host copies 0.56 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Readback profile: queued 4259, completed 4256, demand/budget waits 0, canceled 0, pending 0.00 MiB, peak 0.00 MiB
+Readback byte rule: 0 CPU writes went on without waiting
+Readback image 0x201faaaa00: 8x8, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x201faaab00: 4x4, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x201faaac00: 2x2, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x2000890000: 1x1, 64 bits, R32G32Sfloat, 532 copies, 0 CPU accesses while pending
+Frame sample 4.68 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 94%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.92, recorder 0.01, host copies 0.31 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221780 hits, 40363 misses; texture sets: 203312 hits, 9489 misses
+  texture set misses: other key 9489, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.73 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 89%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.48, recorder 0.00, host copies 0.32 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.68 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 97%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.76, recorder 0.02, host copies 0.34 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221700 hits, 40443 misses; texture sets: 206069 hits, 9507 misses
+  texture set misses: other key 9507, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.74 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 87%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.62, recorder 0.00, host copies 0.33 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.59 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.71, recorder 0.02, host copies 0.31 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Texture helper: 0 binds in parallel, 0 partly, 1224704 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 213.1 FPS, worst frame 5.1 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1066 recorder syncs; 143362 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1146 draws/frame, idle 0.5%; blocked: recorder 0.1%, host copies 8.7% (80/frame, 1/frame skipped), copy threads 13.6%, GPU ticks 14.0%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 0.0 MB/s, buffers 597.8 MB/s
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 213.1 (1.200 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 8, reused 0
+Wait profile: vk_presenter.cpp:553; 1066 calls, CPU submit 0.050 ms, semaphore wait 696.984 ms, max wait 1.220 ms
+Wait profile: buffer.cpp:284; 2293 calls, CPU submit 0.120 ms, semaphore wait 0.062 ms, max wait 0.000 ms
+Host copy waits: texture_cache.cpp:261; 83094 waits, recording thread 347.232 ms, copy threads 677.610 ms, max 0.689 ms
+Host copy waits: liverpool.cpp:347; 887 waits, recording thread 16.061 ms, copy threads 0.132 ms, max 0.016 ms
+Host copy waits: liverpool.cpp:1622; 1061 waits, recording thread 10.799 ms, copy threads 0.121 ms, max 0.000 ms
+Render pass ends: vk_runtime.cpp:915; 102008
+Render pass ends: vk_scheduler.cpp:64; 70541
+Render pass ends: vk_runtime.cpp:116; 4949
+Render pass ends: vk_runtime.cpp:291; 4267
+Render pass ends: vk_rasterizer.cpp:1327; 4208
+Render pass ends: vk_runtime.cpp:166; 1066
+Render pass ends: vk_presenter.cpp:443; 1066
+Render pass ends: vk_runtime.cpp:721; 1049
+Frame pacing: median 4.69 ms, stddev 0.06 ms, p99 4.84 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Render state memo: 221819 hits, 40324 misses; texture sets: 206335 hits, 9476 misses
+  texture set misses: other key 9476, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.65 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 86%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.57, recorder 0.00, host copies 0.45 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.80 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 96%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.74, recorder 0.00, host copies 0.33 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Draw preparation: 1118576 prepared pipelines used, 87696 not (8 workers, 0 scanner rebases)
+Frame sample 4.71 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 88%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.54, recorder 0.00, host copies 0.35 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Draw pipe: 312011 draws/s pipelined, 1485 drains/s that waited, stage A waited 43.1%, stage B busy 91.3%
+  drains by reason/s: WaitRegMem=642 (4.9%) compute=630 (12.2%) submission end=213 (26.0%)
+  stage A waits over 0.5%: ProcessGraphics:1250 4.6% Process:192 26.0% ProcessCompute:1386 12.2%
+Render state memo: 221683 hits, 40460 misses; texture sets: 208201 hits, 9512 misses
+  texture set misses: other key 9512, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.73 ms: 1148 draws, 49 dispatches, 26 submits, 0 occlusion queries, 180 passes ended; stage B busy 86%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.65, recorder 0.01, host copies 0.35 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.65 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 86%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.56, recorder 0.00, host copies 0.30 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221803 hits, 40340 misses; texture sets: 205252 hits, 9476 misses
+  texture set misses: other key 9476, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.68 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 92%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.66, recorder 0.00, host copies 0.33 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Readback profile: queued 4253, completed 4256, demand/budget waits 0, canceled 0, pending 0.00 MiB, peak 0.00 MiB
+Readback byte rule: 0 CPU writes went on without waiting
+Readback image 0x201faaaa00: 8x8, 16 bits, R16Sfloat, 1063 copies, 0 CPU accesses while pending
+Readback image 0x201faaab00: 4x4, 16 bits, R16Sfloat, 1063 copies, 0 CPU accesses while pending
+Readback image 0x201faaac00: 2x2, 16 bits, R16Sfloat, 1063 copies, 0 CPU accesses while pending
+Readback image 0x2000890000: 1x1, 64 bits, R32G32Sfloat, 532 copies, 0 CPU accesses while pending
+Frame sample 4.68 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.58, recorder 0.00, host copies 0.34 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221790 hits, 40353 misses; texture sets: 204520 hits, 9507 misses
+  texture set misses: other key 9507, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.75 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 86%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.76, recorder 0.00, host copies 0.75 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.78 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 86%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.81, recorder 0.00, host copies 0.38 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.77 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.66, recorder 0.00, host copies 0.30 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221748 hits, 40395 misses; texture sets: 205673 hits, 9496 misses
+  texture set misses: other key 9496, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.74 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 91%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.71, recorder 0.00, host copies 0.31 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Texture helper: 0 binds in parallel, 0 partly, 1220608 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 212.5 FPS, worst frame 5.1 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1063 recorder syncs; 143050 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1146 draws/frame, idle 0.5%; blocked: recorder 0.1%, host copies 8.0% (80/frame, 1/frame skipped), copy threads 13.6%, GPU ticks 14.3%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 0.0 MB/s, buffers 597.0 MB/s
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 212.5 (1.197 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 8, reused 0
+Wait profile: vk_presenter.cpp:553; 1063 calls, CPU submit 0.052 ms, semaphore wait 712.724 ms, max wait 1.231 ms
+Wait profile: buffer.cpp:284; 2286 calls, CPU submit 0.123 ms, semaphore wait 0.063 ms, max wait 0.000 ms
+Host copy waits: texture_cache.cpp:261; 82829 waits, recording thread 312.928 ms, copy threads 674.879 ms, max 0.708 ms
+Host copy waits: liverpool.cpp:347; 899 waits, recording thread 15.972 ms, copy threads 0.253 ms, max 0.117 ms
+Host copy waits: liverpool.cpp:1622; 1059 waits, recording thread 8.755 ms, copy threads 0.136 ms, max 0.016 ms
+Render pass ends: vk_runtime.cpp:915; 101655
+Render pass ends: vk_scheduler.cpp:64; 70268
+Render pass ends: vk_runtime.cpp:116; 4951
+Render pass ends: vk_runtime.cpp:291; 4249
+Render pass ends: vk_rasterizer.cpp:1327; 4204
+Render pass ends: vk_runtime.cpp:166; 1063
+Render pass ends: vk_presenter.cpp:443; 1063
+Render pass ends: vk_runtime.cpp:721; 1050
+Frame pacing: median 4.71 ms, stddev 0.06 ms, p99 4.84 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Frame sample 4.75 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 97%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.71, recorder 0.00, host copies 0.64 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221794 hits, 40349 misses; texture sets: 208238 hits, 9487 misses
+  texture set misses: other key 9487, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.75 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 88%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.55, recorder 0.00, host copies 0.43 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Draw preparation: 1118140 prepared pipelines used, 86084 not (8 workers, 0 scanner rebases)
+Draw pipe: 311496 draws/s pipelined, 1483 drains/s that waited, stage A waited 42.9%, stage B busy 91.2%
+  drains by reason/s: WaitRegMem=641 (4.8%) compute=629 (11.6%) submission end=213 (26.6%)
+  stage A waits over 0.5%: ProcessCompute:1386 11.6% Process:192 26.6% ProcessGraphics:1250 4.6%
+Frame sample 4.63 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 89%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.40, recorder 0.00, host copies 0.35 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221630 hits, 40513 misses; texture sets: 205533 hits, 9512 misses
+  texture set misses: other key 9512, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.69 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 88%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.76, recorder 0.00, host copies 0.29 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.64 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 94%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.86, recorder 0.01, host copies 0.31 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Readback profile: queued 4260, completed 4256, demand/budget waits 0, canceled 0, pending 0.00 MiB, peak 0.00 MiB
+Readback byte rule: 0 CPU writes went on without waiting
+Readback image 0x201faaaa00: 8x8, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x201faaab00: 4x4, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x201faaac00: 2x2, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x2000890000: 1x1, 64 bits, R32G32Sfloat, 533 copies, 0 CPU accesses while pending
+Frame sample 4.76 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 86%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.59, recorder 0.00, host copies 0.32 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221826 hits, 40317 misses; texture sets: 206790 hits, 9471 misses
+  texture set misses: other key 9471, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.69 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 95%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.69, recorder 0.00, host copies 0.27 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.67 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 89%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.67, recorder 0.02, host copies 0.33 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221697 hits, 40446 misses; texture sets: 205746 hits, 9512 misses
+  texture set misses: other key 9512, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.62 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 90%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.00, recorder 0.00, host copies 0.26 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.67 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 88%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.53, recorder 0.01, host copies 0.32 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221795 hits, 40348 misses; texture sets: 205958 hits, 9476 misses
+  texture set misses: other key 9476, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Texture helper: 0 binds in parallel, 0 partly, 1225728 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame sample 4.79 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 93%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.25, recorder 0.00, host copies 0.29 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame stats: 213.2 FPS, worst frame 5.1 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1067 recorder syncs; 143571 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1146 draws/frame, idle 0.5%; blocked: recorder 0.1%, host copies 8.4% (80/frame, 1/frame skipped), copy threads 13.5%, GPU ticks 13.6%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 0.0 MB/s, buffers 596.8 MB/s
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 213.2 (1.201 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 8, reused 0
+Wait profile: vk_presenter.cpp:553; 1067 calls, CPU submit 0.072 ms, semaphore wait 679.821 ms, max wait 1.188 ms
+Wait profile: buffer.cpp:284; 2296 calls, CPU submit 0.130 ms, semaphore wait 0.058 ms, max wait 0.000 ms
+Host copy waits: texture_cache.cpp:261; 83165 waits, recording thread 337.465 ms, copy threads 673.091 ms, max 0.678 ms
+Host copy waits: liverpool.cpp:347; 924 waits, recording thread 16.357 ms, copy threads 0.133 ms, max 0.014 ms
+Host copy waits: liverpool.cpp:1622; 1062 waits, recording thread 9.626 ms, copy threads 0.125 ms, max 0.006 ms
+Render pass ends: vk_runtime.cpp:915; 102174
+Render pass ends: vk_scheduler.cpp:64; 70614
+Render pass ends: vk_runtime.cpp:116; 4947
+Render pass ends: vk_runtime.cpp:291; 4271
+Render pass ends: vk_rasterizer.cpp:1327; 4222
+Render pass ends: vk_runtime.cpp:166; 1067
+Render pass ends: vk_presenter.cpp:443; 1067
+Render pass ends: vk_runtime.cpp:721; 1051
+Frame pacing: median 4.69 ms, stddev 0.06 ms, p99 4.83 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Frame sample 4.79 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 89%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.36, recorder 0.01, host copies 0.33 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.78 ms: 1154 draws, 49 dispatches, 26 submits, 0 occlusion queries, 186 passes ended; stage B busy 94%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.75, recorder 0.00, host copies 0.76 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221771 hits, 40372 misses; texture sets: 204641 hits, 9507 misses
+  texture set misses: other key 9507, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Draw preparation: 1120623 prepared pipelines used, 86673 not (8 workers, 0 scanner rebases)
+Draw pipe: 312190 draws/s pipelined, 1486 drains/s that waited, stage A waited 42.5%, stage B busy 90.8%
+  drains by reason/s: WaitRegMem=643 (4.8%) compute=630 (12.3%) submission end=213 (25.3%)
+  stage A waits over 0.5%: ProcessGraphics:1250 4.6% Process:192 25.3% ProcessCompute:1386 12.3%
+Frame sample 4.68 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 93%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.46, recorder 0.00, host copies 0.32 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.58 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.51, recorder 0.00, host copies 0.34 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221743 hits, 40400 misses; texture sets: 204955 hits, 9505 misses
+  texture set misses: other key 9505, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.71 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 90%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.81, recorder 0.01, host copies 0.42 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Readback profile: queued 4259, completed 4260, demand/budget waits 0, canceled 0, pending 0.00 MiB, peak 0.00 MiB
+Readback byte rule: 0 CPU writes went on without waiting
+Readback image 0x201faaaa00: 8x8, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x201faaab00: 4x4, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x201faaac00: 2x2, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x200c9f0000: 1x1, 64 bits, R32G32Sfloat, 532 copies, 0 CPU accesses while pending
+Frame sample 4.67 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 89%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.62, recorder 0.00, host copies 0.37 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221776 hits, 40367 misses; texture sets: 206011 hits, 9478 misses
+  texture set misses: other key 9478, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.68 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.73, recorder 0.00, host copies 0.29 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.73 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 93%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.95, recorder 0.00, host copies 0.33 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.61 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 95%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.96, recorder 0.00, host copies 0.45 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221672 hits, 40471 misses; texture sets: 204870 hits, 9513 misses
+  texture set misses: other key 9512, generation 1, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.68 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 89%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.57, recorder 0.00, host copies 0.39 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Texture helper: 0 binds in parallel, 0 partly, 1222656 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 212.7 FPS, worst frame 5.1 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1064 recorder syncs; 143096 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1146 draws/frame, idle 0.6%; blocked: recorder 0.1%, host copies 7.8% (80/frame, 1/frame skipped), copy threads 13.7%, GPU ticks 13.3%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 0.0 MB/s, buffers 595.1 MB/s
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 212.7 (1.198 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 8, reused 0
+Wait profile: vk_presenter.cpp:553; 1064 calls, CPU submit 0.051 ms, semaphore wait 662.483 ms, max wait 1.187 ms
+Wait profile: buffer.cpp:284; 2291 calls, CPU submit 0.122 ms, semaphore wait 0.066 ms, max wait 0.000 ms
+Host copy waits: texture_cache.cpp:261; 82919 waits, recording thread 305.899 ms, copy threads 679.760 ms, max 0.696 ms
+Host copy waits: liverpool.cpp:347; 905 waits, recording thread 16.036 ms, copy threads 0.114 ms, max 0.007 ms
+Host copy waits: liverpool.cpp:1622; 1062 waits, recording thread 8.759 ms, copy threads 0.122 ms, max 0.000 ms
+Render pass ends: vk_runtime.cpp:915; 101816
+Render pass ends: vk_scheduler.cpp:64; 70359
+Render pass ends: vk_runtime.cpp:116; 4940
+Render pass ends: vk_runtime.cpp:291; 4253
+Render pass ends: vk_rasterizer.cpp:1327; 4204
+Render pass ends: vk_runtime.cpp:166; 1064
+Render pass ends: vk_presenter.cpp:443; 1064
+Render pass ends: vk_runtime.cpp:721; 1047
+Frame pacing: median 4.70 ms, stddev 0.06 ms, p99 4.84 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Frame sample 4.74 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 96%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.66, recorder 0.00, host copies 0.37 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221824 hits, 40319 misses; texture sets: 207884 hits, 9475 misses
+  texture set misses: other key 9475, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.75 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 96%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.99, recorder 0.02, host copies 0.34 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Draw preparation: 1120421 prepared pipelines used, 84827 not (8 workers, 0 scanner rebases)
+Frame sample 4.64 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 91%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.07, recorder 0.00, host copies 0.47 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Draw pipe: 311817 draws/s pipelined, 1484 drains/s that waited, stage A waited 42.7%, stage B busy 91.1%
+  drains by reason/s: WaitRegMem=641 (4.8%) compute=630 (12.4%) submission end=213 (25.5%)
+  stage A waits over 0.5%: ProcessGraphics:1250 4.6% Process:192 25.5% ProcessCompute:1386 12.4%
+Render state memo: 221707 hits, 40436 misses; texture sets: 204326 hits, 9508 misses
+  texture set misses: other key 9508, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.70 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 93%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.50, recorder 0.00, host copies 0.92 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.62 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 86%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.50, recorder 0.00, host copies 0.31 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221835 hits, 40308 misses; texture sets: 206892 hits, 9720 misses
+  texture set misses: other key 9476, generation 244, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.67 ms: 1144 draws, 48 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 96%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.98, recorder 0.02, host copies 0.34 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Readback profile: queued 4257, completed 4260, demand/budget waits 0, canceled 0, pending 0.00 MiB, peak 0.00 MiB
+Readback byte rule: 0 CPU writes went on without waiting
+Readback image 0x201faaaa00: 8x8, 16 bits, R16Sfloat, 1064 copies, 0 CPU accesses while pending
+Readback image 0x201faaab00: 4x4, 16 bits, R16Sfloat, 1064 copies, 0 CPU accesses while pending
+Readback image 0x201faaac00: 2x2, 16 bits, R16Sfloat, 1064 copies, 0 CPU accesses while pending
+Readback image 0x200c9f0000: 1x1, 64 bits, R32G32Sfloat, 533 copies, 0 CPU accesses while pending
+Frame sample 4.60 ms: 1145 draws, 48 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 91%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.33, recorder 0.00, host copies 0.31 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.68 ms: 1144 draws, 48 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 89%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.39, recorder 0.01, host copies 0.32 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221928 hits, 40215 misses; texture sets: 204705 hits, 9516 misses
+  texture set misses: other key 9511, generation 5, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.74 ms: 1144 draws, 48 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 90%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.82, recorder 0.00, host copies 0.35 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.72 ms: 1144 draws, 48 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 93%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.77, recorder 0.00, host copies 0.31 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221967 hits, 40176 misses; texture sets: 206396 hits, 9509 misses
+  texture set misses: other key 9508, generation 1, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.69 ms: 1145 draws, 48 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 92%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.75, recorder 0.01, host copies 0.31 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Texture helper: 0 binds in parallel, 0 partly, 1224704 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 213.3 FPS, worst frame 5.4 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1067 recorder syncs; 142806 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1145 draws/frame, idle 0.5%; blocked: recorder 0.1%, host copies 8.8% (79/frame, 1/frame skipped), copy threads 13.6%, GPU ticks 13.2%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 0.0 MB/s, buffers 593.7 MB/s
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 213.3 (1.201 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 8, reused 0
+Wait profile: vk_presenter.cpp:553; 1067 calls, CPU submit 0.051 ms, semaphore wait 659.192 ms, max wait 1.266 ms
+Wait profile: buffer.cpp:284; 2307 calls, CPU submit 0.130 ms, semaphore wait 0.071 ms, max wait 0.007 ms
+Host copy waits: texture_cache.cpp:261; 82538 waits, recording thread 353.165 ms, copy threads 677.638 ms, max 0.778 ms
+Host copy waits: liverpool.cpp:347; 914 waits, recording thread 16.462 ms, copy threads 0.134 ms, max 0.018 ms
+Host copy waits: liverpool.cpp:1622; 1060 waits, recording thread 11.020 ms, copy threads 0.119 ms, max 0.000 ms
+Render pass ends: vk_runtime.cpp:915; 101554
+Render pass ends: vk_scheduler.cpp:64; 70544
+Render pass ends: vk_runtime.cpp:116; 4952
+Render pass ends: vk_runtime.cpp:291; 4268
+Render pass ends: vk_rasterizer.cpp:1327; 4207
+Render pass ends: vk_presenter.cpp:443; 1067
+Render pass ends: vk_runtime.cpp:166; 1065
+Render pass ends: vk_runtime.cpp:721; 1050
+Frame pacing: median 4.69 ms, stddev 0.06 ms, p99 4.82 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Frame sample 4.73 ms: 1144 draws, 48 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 89%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.69, recorder 0.00, host copies 0.30 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221865 hits, 40278 misses; texture sets: 205338 hits, 9761 misses
+  texture set misses: other key 9512, generation 249, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.71 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 88%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.57, recorder 0.02, host copies 0.34 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Draw preparation: 1117308 prepared pipelines used, 88964 not (8 workers, 0 scanner rebases)
+Draw pipe: 311178 draws/s pipelined, 1487 drains/s that waited, stage A waited 42.4%, stage B busy 91.0%
+  drains by reason/s: WaitRegMem=643 (4.9%) compute=631 (12.0%) submission end=213 (25.5%)
+  stage A waits over 0.5%: ProcessCompute:1386 12.0% Process:192 25.5% ProcessGraphics:1250 4.6%
+Frame sample 4.79 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 94%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.00, recorder 0.00, host copies 0.53 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.79 ms: 1152 draws, 49 dispatches, 26 submits, 0 occlusion queries, 183 passes ended; stage B busy 88%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.75, recorder 0.00, host copies 0.44 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221747 hits, 40396 misses; texture sets: 204645 hits, 9479 misses
+  texture set misses: other key 9475, generation 4, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.69 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 91%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.68, recorder 0.00, host copies 0.36 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Readback profile: queued 4264, completed 4264, demand/budget waits 0, canceled 0, pending 0.00 MiB, peak 0.00 MiB
+Readback byte rule: 0 CPU writes went on without waiting
+Readback image 0x201faaaa00: 8x8, 16 bits, R16Sfloat, 1066 copies, 0 CPU accesses while pending
+Readback image 0x201faaab00: 4x4, 16 bits, R16Sfloat, 1066 copies, 0 CPU accesses while pending
+Readback image 0x201faaac00: 2x2, 16 bits, R16Sfloat, 1066 copies, 0 CPU accesses while pending
+Readback image 0x2000890000: 1x1, 64 bits, R32G32Sfloat, 533 copies, 0 CPU accesses while pending
+Frame sample 4.66 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.38, recorder 0.00, host copies 0.33 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221730 hits, 40413 misses; texture sets: 206359 hits, 9509 misses
+  texture set misses: other key 9508, generation 1, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.68 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 87%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.61, recorder 0.00, host copies 0.31 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.76 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 83%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.56, recorder 0.00, host copies 0.31 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221789 hits, 40354 misses; texture sets: 204625 hits, 9476 misses
+  texture set misses: other key 9476, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.58 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 84%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.57, recorder 0.00, host copies 0.28 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.63 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 97%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.86, recorder 0.02, host copies 0.39 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Texture helper: 0 binds in parallel, 0 partly, 1224704 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame sample 4.64 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 95%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.83, recorder 0.02, host copies 0.56 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame stats: 213.2 FPS, worst frame 5.1 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1066 recorder syncs; 143494 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1146 draws/frame, idle 0.5%; blocked: recorder 0.1%, host copies 8.3% (80/frame, 1/frame skipped), copy threads 13.6%, GPU ticks 13.8%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 0.0 MB/s, buffers 596.5 MB/s
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 213.4 (1.204 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 8, reused 0
+Wait profile: vk_presenter.cpp:553; 1066 calls, CPU submit 0.050 ms, semaphore wait 690.707 ms, max wait 1.195 ms
+Wait profile: buffer.cpp:284; 2286 calls, CPU submit 0.122 ms, semaphore wait 0.061 ms, max wait 0.000 ms
+Host copy waits: texture_cache.cpp:261; 82998 waits, recording thread 329.407 ms, copy threads 677.459 ms, max 0.601 ms
+Host copy waits: liverpool.cpp:347; 909 waits, recording thread 16.459 ms, copy threads 0.133 ms, max 0.023 ms
+Host copy waits: liverpool.cpp:1622; 1064 waits, recording thread 9.409 ms, copy threads 0.119 ms, max 0.000 ms
+Render pass ends: vk_runtime.cpp:915; 101960
+Render pass ends: vk_scheduler.cpp:64; 70530
+Render pass ends: vk_runtime.cpp:116; 4957
+Render pass ends: vk_runtime.cpp:291; 4264
+Render pass ends: vk_rasterizer.cpp:1327; 4203
+Render pass ends: vk_runtime.cpp:166; 1066
+Render pass ends: vk_presenter.cpp:443; 1066
+Render pass ends: vk_runtime.cpp:721; 1049
+Frame pacing: median 4.69 ms, stddev 0.06 ms, p99 4.81 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Render state memo: 221749 hits, 40394 misses; texture sets: 205730 hits, 9509 misses
+  texture set misses: other key 9507, generation 2, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.81 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 83%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.60, recorder 0.00, host copies 0.30 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.64 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 178 passes ended; stage B busy 83%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.63, recorder 0.00, host copies 0.30 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
+Draw preparation: 1118033 prepared pipelines used, 88239 not (8 workers, 0 scanner rebases)
+Draw pipe: 312084 draws/s pipelined, 1485 drains/s that waited, stage A waited 42.9%, stage B busy 91.1%
+  drains by reason/s: WaitRegMem=642 (4.7%) compute=631 (11.9%) submission end=213 (26.3%)
+  stage A waits over 0.5%: ProcessGraphics:1250 4.5% Process:192 26.3% ProcessCompute:1386 11.9%
+Render state memo: 221751 hits, 40392 misses; texture sets: 205904 hits, 9492 misses
+  texture set misses: other key 9487, generation 5, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Frame sample 4.68 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 176 passes ended; stage B busy 94%, stage A CPU 0.00 ms; waits: readback 0.00, ticks 0.60, recorder 0.00, host copies 0.38 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Frame sample 4.72 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 93%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.65, recorder 0.00, host copies 0.35 ms; uploads 3.17 MB buffers, 0.00 MB images; 0 protection faults
+Render state memo: 221763 hits, 40380 misses; texture sets: 206609 hits, 9496 misses
+  texture set misses: other key 9496, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+GPU [Render] <Warning> page_manager.cpp:121 UpdatePageWatchers: Tracking memory region 0x206da00000 - 0x206db01000 which is not fully GPU mapped.
+Frame sample 4.74 ms: 1146 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 96%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.72, recorder 0.00, host copies 0.33 ms; uploads 3.16 MB buffers, 0.00 MB images; 0 protection faults
+Readback profile: queued 4260, completed 4256, demand/budget waits 0, canceled 0, pending 0.00 MiB, peak 0.00 MiB
+Readback byte rule: 0 CPU writes went on without waiting
+Readback image 0x201faaaa00: 8x8, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x201faaab00: 4x4, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x201faaac00: 2x2, 16 bits, R16Sfloat, 1065 copies, 0 CPU accesses while pending
+Readback image 0x2000890000: 1x1, 64 bits, R32G32Sfloat, 533 copies, 0 CPU accesses while pending
+Frame sample 4.80 ms: 1145 draws, 49 dispatches, 26 submits, 0 occlusion queries, 177 passes ended; stage B busy 89%, stage A CPU 15.62 ms; waits: readback 0.00, ticks 0.64, recorder 0.00, host copies 0.34 ms; uploads 2.12 MB buffers, 0.00 MB images; 0 protection faults
