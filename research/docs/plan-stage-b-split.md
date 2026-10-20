@@ -95,3 +95,21 @@ lower during pans) than before the culling work."
 **Decision (the user):** test runs go back to occlusion queries off (T-O1); O2 / O3 / W2 stay in the code, opt-in.
 Next: check whether the fixes made for queries on (W2; D2b is always on) help with queries off (T-W2b, live A/B of
 bit 60), then the stage B split (`BB_SECTIONS` first, then option a).
+
+## T-W2b: queries off, W2 A/B (2026-10-19 21:33-21:38, launched by Claude with the user's go; build `f748f80`; log `data/t-w2b-queries-off.log`)
+
+Queries off (the test default again), W2 on, off at 21:35:21 (`mask=1152921504606846976`), back on 21:37:13. No visible
+difference either way. The user: "there's still some intermittent frametime dips that weren't here previously, we had
+a frametime graph that was almost completely flat." At this spot (~980 draws a frame, ~210 FPS): **write-fault
+downloads 11-18 a second** (`buffer_cache.cpp:288` Finish, up to ~4 ms each), 30-90 frames over 1.5x median per 5 s.
+Across runs: T-O1 (flat; heavy view) 0.1/s mean, 0 of 101 windows above 5/s; T-D2d 1.5/s, 7 of 62; T-W2b 3.1/s, 33 of
+140: the same direct writers (guest+0x20da4d0, 0xba9a49, 0x68e109), much busier at this spot. **W2 kept, opt-in (no
+gain, no harm).**
+
+## D3: downloads on a readback queue (built `5a5d73f`)
+
+Port of the Bloodborne port's `GpuWriteTicks` / `FastReadback` (0.3): the newest GPU write's submission tick per
+64 KiB page (shader writes and D2's arena uploads); a download waits for that submission only and copies on a second
+queue (a compute family without graphics; arenas shared by both families), not behind the frames queued on the
+graphics queue. `GOW3_READBACK_QUEUE=0` off; frame stats: "on the readback queue N". Test T-D3: queries off, the spot
+of T-W2b.
