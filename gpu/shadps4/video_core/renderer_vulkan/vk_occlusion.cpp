@@ -88,7 +88,14 @@ void OcclusionQueries::Event(VAddr address, u32 pairs) {
         if (active) {
             EndSegment();
         }
-        pending.push_back({address, pairs, ended, std::chrono::steady_clock::now()});
+        u64 tick = 0;
+        for (auto it = segments.rbegin(); it != segments.rend(); ++it) {
+            if (it->slot != NoSlot && u64(segments.rend() - it) - 1 + segments_base < ended) {
+                tick = it->tick; // the last ended, counted segment
+                break;
+            }
+        }
+        pending.push_back({address, pairs, ended, std::chrono::steady_clock::now(), tick});
         if (scheduler.IsRendering()) {
             BeginSegment();
         }
@@ -119,7 +126,8 @@ void OcclusionQueries::OnEndRendering() {
     }
 }
 
-void OcclusionQueries::WriteCounters(const Pending& event, u64 count) {
+void OcclusionQueries::WriteCounters(const Pending& event, u64 count,
+                                     std::chrono::steady_clock::time_point done) {
     auto* memory = Core::Memory::Instance();
     for (u32 i = 0; i < event.pairs; ++i) {
         const u64 value = (i == 0 ? count : 0) | ValidBit;
@@ -140,7 +148,19 @@ void OcclusionQueries::WriteCounters(const Pending& event, u64 count) {
             }
         }
     }
-    const u64 us = Microseconds(std::chrono::steady_clock::now() - event.at);
+    const auto now = std::chrono::steady_clock::now();
+    if (event.tick != 0) {
+        if (const s64 submitted = scheduler.SubmitTime(event.tick); submitted != 0) {
+            const auto submit_at =
+                std::chrono::steady_clock::time_point{std::chrono::nanoseconds{submitted}};
+            to_submit_us.fetch_add(Microseconds(submit_at - event.at), std::memory_order_relaxed);
+            to_done_us.fetch_add(done > submit_at ? Microseconds(done - submit_at) : 0,
+                                 std::memory_order_relaxed);
+            to_written_us.fetch_add(Microseconds(now - done), std::memory_order_relaxed);
+            parts.fetch_add(1, std::memory_order_relaxed);
+        }
+    }
+    const u64 us = Microseconds(now - event.at);
     latency_us.fetch_add(us, std::memory_order_relaxed);
     if (us > latency_max_us.load(std::memory_order_relaxed)) {
         latency_max_us.store(us, std::memory_order_relaxed);
@@ -173,17 +193,20 @@ void OcclusionQueries::CompletionLoop(std::stop_token stop) {
                 need = std::max(need, segment.tick);
             }
         }
-        // The submission holding them done (it may not be submitted yet: wait in steps).
-        if (need != 0) {
-            bool done = false;
-            while (!done && !stop.stop_requested()) {
+        // The submission holding them done (it may not be submitted yet: wait in steps). `done`:
+        // when this thread saw it (earlier when it was done before the wait began).
+        auto done_at = std::chrono::steady_clock::now();
+        if (need != 0 && !scheduler.GetWorkSemaphore()->IsFree(need)) {
+            bool finished = false;
+            while (!finished && !stop.stop_requested()) {
                 const vk::SemaphoreWaitInfo wait{
                     .semaphoreCount = 1, .pSemaphores = &timeline, .pValues = &need};
-                done = device.waitSemaphores(wait, 50'000'000) == vk::Result::eSuccess;
+                finished = device.waitSemaphores(wait, 50'000'000) == vk::Result::eSuccess;
             }
-            if (!done) {
+            if (!finished) {
                 return;
             }
+            done_at = std::chrono::steady_clock::now();
         }
         for (const auto& segment : batch) {
             if (segment.slot == NoSlot) {
@@ -213,7 +236,7 @@ void OcclusionQueries::CompletionLoop(std::stop_token stop) {
             }
         }
         for (const auto& event : ready) {
-            WriteCounters(event, total);
+            WriteCounters(event, total, done_at);
         }
         Report();
     }
@@ -229,11 +252,16 @@ void OcclusionQueries::Report() {
     last_report = now;
     const u64 n = written.exchange(0);
     const u64 hidden = queries_hidden.exchange(0), visible = queries_visible.exchange(0);
+    const u64 p = parts.exchange(0);
     std::printf("Occlusion queries: %.0f events/s, %.0f queries/s of which %.1f%% hidden; results "
-                "written %.2f ms after the event on average (max %.2f ms); %llu segments missed\n",
+                "written %.2f ms after the event on average (max %.2f ms; event -> submitted %.2f, "
+                "-> GPU done %.2f, -> written %.2f); %llu segments missed\n",
                 events.exchange(0) / seconds, (hidden + visible) / seconds,
                 hidden + visible ? 100.0 * hidden / (hidden + visible) : 0.0,
                 n ? latency_us.exchange(0) / 1000.0 / n : 0.0, latency_max_us.exchange(0) / 1000.0,
+                p ? to_submit_us.exchange(0) / 1000.0 / p : 0.0,
+                p ? to_done_us.exchange(0) / 1000.0 / p : 0.0,
+                p ? to_written_us.exchange(0) / 1000.0 / p : 0.0,
                 static_cast<unsigned long long>(missed.exchange(0)));
     std::fflush(stdout);
 }

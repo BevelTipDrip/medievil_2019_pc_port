@@ -909,6 +909,15 @@ public:
         return is_rendering;
     }
 
+    /// gow3: when the submission signalling `tick` was handed to the queue (steady clock, ns);
+    /// 0 when not submitted yet or too old (a ring of the last 4096 ticks). For latency stats.
+    [[nodiscard]] s64 SubmitTime(u64 tick) const noexcept {
+        const auto& entry = submit_times[tick % submit_times.size()];
+        return entry.tick.load(std::memory_order_acquire) == tick
+                   ? entry.ns.load(std::memory_order_relaxed)
+                   : 0;
+    }
+
     /// Returns the scheduler timeline semaphore.
     [[nodiscard]] Semaphore* GetWorkSemaphore() noexcept {
         return &work_semaphore;
@@ -968,6 +977,11 @@ private:
     RenderState render_state;
     bool is_rendering = false;
     RenderPassHook* render_pass_hook = nullptr;
+    struct SubmitTimeEntry {
+        std::atomic<u64> tick{0};
+        std::atomic<s64> ns{0};
+    };
+    std::array<SubmitTimeEntry, 4096> submit_times{};
     // gow3: threaded recording
     std::unique_ptr<RecordChunk> record_chunk;
     // gow3: record_chunk and full_chunks are used by one producer at a time, but a second thread

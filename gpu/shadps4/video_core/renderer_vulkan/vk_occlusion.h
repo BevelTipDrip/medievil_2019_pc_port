@@ -67,12 +67,13 @@ private:
         u32 pairs;
         u64 upto; ///< segments ended before the event (absolute)
         std::chrono::steady_clock::time_point at;
+        u64 tick = 0; ///< submission of the last counted segment before it (0: none)
     };
 
     void BeginSegment();
     void EndSegment();
     void CompletionLoop(std::stop_token stop);
-    void WriteCounters(const Pending& event, u64 total);
+    void WriteCounters(const Pending& event, u64 total, std::chrono::steady_clock::time_point done);
     void Report();
 
     const Instance& instance;
@@ -99,6 +100,8 @@ private:
     // Statistics (GOW3_FRAME_STATS, every 5 s).
     std::atomic<u64> events{0}, missed{0}, queries_hidden{0}, queries_visible{0}, written{0};
     std::atomic<u64> latency_us{0}, latency_max_us{0};
+    /// The latency in parts: event -> its submission, submission -> seen done, done -> written.
+    std::atomic<u64> to_submit_us{0}, to_done_us{0}, to_written_us{0}, parts{0};
     std::chrono::steady_clock::time_point last_report = std::chrono::steady_clock::now();
 
     std::jthread completion;

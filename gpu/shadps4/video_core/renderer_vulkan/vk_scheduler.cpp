@@ -565,6 +565,14 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
 
     ImGui::Core::TextureManager::Submit();
     auto submit_result = instance.GetGraphicsQueue().submit(submit_info, info.fence);
+    {
+        auto& entry = submit_times[signal_value % submit_times.size()];
+        entry.ns.store(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                           std::chrono::steady_clock::now().time_since_epoch())
+                           .count(),
+                       std::memory_order_relaxed);
+        entry.tick.store(signal_value, std::memory_order_release);
+    }
     ASSERT_MSG(submit_result != vk::Result::eErrorDeviceLost, "Device lost during submit");
 
     work_semaphore.Refresh();
