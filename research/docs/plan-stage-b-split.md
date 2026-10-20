@@ -133,3 +133,17 @@ Remaining fix: the Bloodborne port's **GPU write twins** (`BB_GPU_WRITE_TWINS`):
 few GPU-written bytes does not wait at all; the guest's copy of those bytes is kept as a twin, the page becomes
 CPU-modified, uploads keep the GPU's bytes where the guest's still match their twin (pages with at most 1 KiB of
 GPU-written bytes there). Optional check first: `GOW3_READBACK_QUEUE=0` A/B at this spot (D3's shared arenas).
+
+## T-T1: GPU write twins (2026-10-19 23:10-23:16, launched by Claude with the user's go; build `2a40666`; log `data/t-t1-twins.log`)
+
+Queries off, twins on (default). **Light view (~1,150 draws): 213 FPS, stddev 0.06-0.14 ms, p99 4.8-5.2 ms**
+(T-D3b ~210 FPS, ~0.56 ms, ~7 ms), write-fault downloads **0** and even 0 twinned in these windows: with twins the
+pages stop bouncing between GPU- and CPU-owned, so the game's writes no longer fault. The user: "Much better … It's not
+perfect, there's a few spikes here or there, especially panning past heavier areas." Those slow frames (2,544,
+median 6.75 ms): stage B 92% busy, no waits, ~342 render passes ended (186 in samples): the draw recording ceiling.
+**Twins kept, on by default.** Object motion is off in these runs (log: "Object motion: off"), so its per-draw cost
+is not a lever here.
+
+Next: the split (port `BB_SECTIONS` for per-section numbers, then option a), plus two items from T-P3: the runtime
+memory-map lock contention in `ResolveVertexBuffers` → `runtime_memory_clamp` (~5% of stage B, waiting, not lookup
+cost), and fewer render pass breaks (barrier batching, part of a).
