@@ -253,3 +253,14 @@ copy left in memory. UE4 assigns each tested primitive a pixel of that texture p
 are laid out for other primitives: effectively random culling. Next: T-HZ2 with stale readbacks off
 (`GOW3_STALE_READBACK=0`): if the culling is then right, make only that image precise (a targeted change) and keep
 stale readbacks for the rest (luminance 2x2-8x8).
+
+## T-HZ2b: HZB with precise readbacks (2026-10-20 00:28-00:33, launched by Claude with the user's go; build `a968802`; log `data/t-hz2b-hzb-precise.log`)
+
+(`t-hz2-hzb-precise` did not test it: `run.py` overwrites `GOW3_STALE_READBACK` with the ini's `stale_readback`;
+`medievil.ini` set to `stale_readback=0` for this run, backup `medievil.ini.bak-before-t-hz2b`.) The user: "that fixes
+the culling glitches. Nothing is failing to draw now." But ~1 demand wait a frame (563-566 per 5 s,
+`texture_cache.cpp:183`, 1.47 s per 5 s, max 3.1 ms): heavy view ~2,250 draws, **110-116 FPS**, p99 9.7-10.8 ms, GPU
+tick waits ~30%. The game reads the results about a frame after asking; the copy, recorded at an end of pipe, was
+submitted only at the frame's end and ran after the rest of the frame. **R1** (`088d8c2`): the recording thread submits
+right after a readback copy is queued (precise readbacks only), outside the readback locks. Test T-HZ3: HZB +
+precise + R1.
