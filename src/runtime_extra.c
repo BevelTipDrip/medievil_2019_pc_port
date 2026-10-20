@@ -557,8 +557,9 @@ static const RuntimeExport exports[]={
  * Cinematic button). After about 10 s of play this sets the game's own r.SetRes console variable
  * as UE4's FSystemResolution::RequestResolutionChange does (0x2765ef1): flags = GetFlags()
  * & 0xff000000 (vtable +0x20), Set(value, flags) (vtable +0x68). Called from scePadReadState on
- * the game's input thread. CUSA11227 01.00 only: TAutoConsoleVariable at 0x5c28320, its
- * IConsoleVariable* at +8. */
+ * the game's input thread. TAutoConsoleVariable at 0x5c28360 (the loaded image is 0x4000 before
+ * the raw eboot offsets: the object is 0x40 past the old guess 0x5c28320), its IConsoleVariable*
+ * at +8; vtable GetFlags +0x20, Set(const TCHAR*) +0x68. The 01.00 and 01.02 eboots share it. */
 /* Sets r.SetRes on the calling (game) thread; 0 when the game's variable is not where expected. */
 static int ue4_setres(const char *text) {
     uint16_t value[24];
@@ -568,7 +569,7 @@ static int ue4_setres(const char *text) {
     unsigned char *image=runtime_image_base();
     if (!image) return 0;
     const uintptr_t lo=(uintptr_t)image, hi=lo+0x6000000;
-    uintptr_t cvar=*(const uintptr_t *)(image+0x5c28328);
+    uintptr_t cvar=*(const uintptr_t *)(image+0x5c28368);
     if (!cvar) { printf("Native output: r.SetRes not found\n"); return 0; }
     uintptr_t vtable=*(const uintptr_t *)cvar;
     if (vtable<lo || vtable>=hi) { printf("Native output: unexpected r.SetRes object\n"); return 0; }
@@ -576,8 +577,11 @@ static int ue4_setres(const char *text) {
     typedef void (ABI *Set)(uintptr_t, const uint16_t *, uint32_t);
     uintptr_t get_flags=*(const uintptr_t *)(vtable+0x20), set=*(const uintptr_t *)(vtable+0x68);
     if (get_flags<lo || get_flags>=hi || set<lo || set>=hi) { printf("Native output: unexpected r.SetRes methods\n"); return 0; }
-    uint32_t flags=((GetFlags)get_flags)(cvar)&0xff000000u;
-    ((Set)set)(cvar,value,flags);
+    uint32_t flags=((GetFlags)get_flags)(cvar);
+    /* ECVF_SetByCode, as FSystemResolution::RequestResolutionChange sets it; the variable's own
+     * flag bits (printed for diagnosis) are not a set-by source. */
+    printf("Native output: r.SetRes flags %#x\n",flags);
+    ((Set)set)(cvar,value,0x08000000u);
     printf("Native output: r.SetRes %s (live resolution change)\n",text);
     return 1;
 }
@@ -596,8 +600,9 @@ void runtime_ue4_request_setres(const char *text) {
  * Cinematic button). After about 10 s of play this sets the game's own r.SetRes console variable
  * as UE4's FSystemResolution::RequestResolutionChange does (0x2765ef1): flags = GetFlags()
  * & 0xff000000 (vtable +0x20), Set(value, flags) (vtable +0x68). Called from scePadReadState on
- * the game's input thread. CUSA11227 01.00 only: TAutoConsoleVariable at 0x5c28320, its
- * IConsoleVariable* at +8. */
+ * the game's input thread. TAutoConsoleVariable at 0x5c28360 (the loaded image is 0x4000 before
+ * the raw eboot offsets: the object is 0x40 past the old guess 0x5c28320), its IConsoleVariable*
+ * at +8; vtable GetFlags +0x20, Set(const TCHAR*) +0x68. The 01.00 and 01.02 eboots share it. */
 void runtime_ue4_setres_poll(void) {
     static int automatic_done;
     static unsigned reads;
@@ -608,10 +613,13 @@ void runtime_ue4_setres_poll(void) {
         automatic_done=1; /* a choice in the menu wins over the start setting */
     }
     if (automatic_done) return;
-    if (++reads<120) return; /* about 2 s after the game first reads the pad: the viewport is up */
-    automatic_done=1;
+    ++reads;
+    /* The viewport is not up at the first pad reads: repeat the start value until the game is
+     * past loading (2 s, 5 s, 10 s and 20 s). A menu choice stops the repeats. */
     const char *want=getenv("GOW3_UE4_SETRES");
-    if (want && *want) ue4_setres(want);
+    if (!want || !*want) { automatic_done=1; return; }
+    if (reads==120 || reads==300 || reads==600 || reads==1200) ue4_setres(want);
+    if (reads>=1200) automatic_done=1;
 }
 
 uintptr_t runtime_extra_resolve(const char *name) { return RUNTIME_LOOKUP(exports,name); }
