@@ -16,7 +16,7 @@ pool views, stencil-plane copy, undefined-target or volume-view code).
 |---|---|---|---|
 | R2 + R3 | rwlock handles through a hash set; the memory pool's free-page search starts at a per-chunk hint | heavy view +17% median FPS, p99 -13% (T-R23) | `cf9e201`, `2097554` |
 | P1 | dirty register blocks scanned by word | ~+8%, "1% lows are improved" (T-P1) | `5cd037e` |
-| V3 | volumes (lighting volumes, colour LUT) served through 2D array views instead of rebuilt | map ~70 -> ~200 FPS (T-V3); upstream 1.3.4 shipped the same idea a day later, with sampled views (its 1.3.5 AMD fallback) | `1f18217` |
+| V3 | volumes (lighting volumes, colour LUT) served through 2D array views instead of rebuilt | map ~70 -> ~200 FPS (T-V3); upstream 1.3.4 reached the same idea independently (its commit 2026-10-19 07:24 UTC, public; ours 2026-10-18 19:33 UTC, first pushed 2026-10-19 22:20 UTC; no shared code: sampled views, its own switch, ClearVolumeSlices, the 1.3.5 AMD fallback) | `1f18217` |
 | M1 + M1b | memory pool views kept across a decommit (Windows) | the 2-5 s kernel trim episodes gone (T-M1, T-M1b) | `40a416a`, `3c5704e` |
 | V4 | shader writes to a depth buffer's stencil plane copied into the image | the box shadows gone (T-V4, RenderDoc) | `769de12`, `423efc7` |
 | C3 | targets made where a guest unmap freed images skip the first upload | torch-into-view spikes 19 -> 7-12 ms, "Massive improvement" (T-C3b) | `1024224`, `d9949cb` |
