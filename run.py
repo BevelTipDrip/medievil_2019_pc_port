@@ -132,24 +132,36 @@ def main():
         env.setdefault('GOW3_FPS_CAP', str(engine_fps))
     if profile.get('ue4_render_scale'):
         import ue4_override
-        # Native output: the runtime sets the game's r.SetRes live once it runs (runtime_extra.c).
-        if output := ue4_override.NATIVE_OUTPUT.get(graphics['render_resolution']):
+        # Native output: the runtime sets the game's r.SetRes live once it runs (runtime_extra.c),
+        # through an address of the analysed eboot only (patches.py GAMES).
+        from patches import eboot_matches, game_profile as patch_profile, game_title_id
+        known = patch_profile(game_title_id(game))
+        known_build = bool(known and known[3]) and eboot_matches(game, known)
+        output = ue4_override.NATIVE_OUTPUT.get(graphics['render_resolution'])
+        if output and known_build:
             if output == '3840x2160' and env.get('GOW3_PS4_MEMORY') != '1':
                 # The PS4's 400-800 MB texture streaming pool thrashes at 4K: 2 GiB more guest
                 # memory (with the GPU heap and pool sizes in ue4_override.apply) stop small pans
                 # re-streaming (research: T-S2, 2026-10-19). GOW3_PS4_MEMORY=1: the PS4's sizes.
                 env.setdefault('GOW3_DMEM_MB', '7104')
-            # 4K native starts at 4K, as a PS4 Pro on a 4K TV (menu navigation, research: I1);
-            # GOW3_UE4_BOOT_4K=0: the live r.SetRes as before.
+            # 4K native starts at 4K, as a PS4 Pro on a 4K TV (menu navigation, research: I1): a
+            # 3840x2160 VideoOut and its 4K display-metrics branch (patches/MediEvil.xml).
+            # GOW3_UE4_BOOT_4K=0: the live r.SetRes with the display size reported at the output
+            # size (issue #11).
             if output == '3840x2160' and env.get('GOW3_UE4_BOOT_4K', '1') == '1':
-                # Or the game starts at 4K itself, as on a PS4 Pro with a 4K TV: a 3840x2160 VideoOut
-                # and its 4K display-metrics branch (patches/MediEvil.xml). A live change leaves the
-                # menus' navigation at the 1080p area.
                 env.setdefault('GOW3_INTERNAL_WIDTH', '3840')
                 env.setdefault('GOW3_INTERNAL_HEIGHT', '2160')
                 env['GOW3_PATCHES'] = ';'.join(n for n in (env.get('GOW3_PATCHES', ''), '4K display metrics at boot') if n)
             else:
                 env.setdefault('GOW3_UE4_SETRES', output)
+                # The game's UI window takes the display size at start: reported at the output size,
+                # so menus and the debug menu can be navigated across the whole 4K screen (issue #11).
+                width, height = output.split('x')
+                env.setdefault('GOW3_INTERNAL_WIDTH', width)
+                env.setdefault('GOW3_INTERNAL_HEIGHT', height)
+        elif output:
+            print('Native output: this game build is not the analysed 01.00 eboot; output stays 1080p',
+                  flush=True)
     for key, value in profile['env'].items():
         env.setdefault(key, value)
     profile_ue4 = bool(profile.get('ue4_render_scale'))

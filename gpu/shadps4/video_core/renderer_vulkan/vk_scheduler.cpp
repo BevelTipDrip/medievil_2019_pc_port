@@ -2,12 +2,15 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <thread>
+#include <mutex>
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <unordered_map>
 #ifndef _WIN32
 #include <dlfcn.h>
+#else
+#include <windows.h>
 #endif
 #include <functional>
 
@@ -22,6 +25,10 @@
 #include "imgui/renderer/texture_manager.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
+#ifdef _WIN32
+#include <windows.h>
+#endif
+#include <cstdio>
 #include "gow3_threads.h"
 
 namespace Vulkan {
@@ -134,6 +141,7 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
 }
 
 void Scheduler::EndRendering(std::source_location caller) {
+    SyncWithDrawRecorder(__builtin_return_address(0));
     if (!is_rendering) {
         return;
     }
@@ -183,6 +191,90 @@ void Scheduler::TraceDirectRecording(void* caller) {
                                                reinterpret_cast<uintptr_t>(info.dli_fbase)));
     }
     callers.clear();
+}
+
+void Scheduler::ReportProducer(void* caller) {
+    char name[128] = "?";
+#ifdef _WIN32
+    using GetDescription = HRESULT(WINAPI*)(HANDLE, PWSTR*);
+    static const auto get_description = reinterpret_cast<GetDescription>(
+        reinterpret_cast<void*>(GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetThreadDescription")));
+    PWSTR wide = nullptr;
+    if (get_description && SUCCEEDED(get_description(GetCurrentThread(), &wide)) && wide) {
+        std::snprintf(name, sizeof(name), "%ls", wide);
+        LocalFree(wide);
+    }
+    const auto base = reinterpret_cast<uintptr_t>(GetModuleHandleA(nullptr));
+#else
+    const uintptr_t base = 0;
+#endif
+    std::printf("Scheduler %p: commands recorded from thread '%s' (caller medievil-runtime.exe+%#llx)\n",
+                static_cast<void*>(this), name,
+                static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(caller) - base));
+}
+
+void Scheduler::ReportStaleRecordData(void* caller) {
+    static std::atomic<u32> count{0};
+    const u32 n = count.fetch_add(1, std::memory_order_relaxed);
+    if (n < 8 || (n & (n - 1)) == 0) {
+        const auto base = reinterpret_cast<uintptr_t>(GetModuleHandleA(nullptr));
+        std::printf("Scheduler: a command landed in another chunk than its data (%u times; caller "
+                    "medievil-runtime.exe+%#llx)\n",
+                    n + 1, static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(caller) - base));
+        std::fflush(stdout);
+    }
+}
+
+void Scheduler::ReportInterleave(void* caller) {
+    static std::mutex mutex;
+    static void* reported[16]{};
+    {
+        std::scoped_lock lk{mutex};
+        for (void*& slot : reported) {
+            if (slot == caller) {
+                return;
+            }
+            if (!slot) {
+                slot = caller;
+                goto report;
+            }
+        }
+        return;
+    }
+report:
+    char name[128] = "?";
+#ifdef _WIN32
+    using GetDescription = HRESULT(WINAPI*)(HANDLE, PWSTR*);
+    static const auto get_description = reinterpret_cast<GetDescription>(
+        reinterpret_cast<void*>(GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetThreadDescription")));
+    PWSTR wide = nullptr;
+    if (get_description && SUCCEEDED(get_description(GetCurrentThread(), &wide)) && wide) {
+        std::snprintf(name, sizeof(name), "%ls", wide);
+        LocalFree(wide);
+    }
+    const auto base = reinterpret_cast<uintptr_t>(GetModuleHandleA(nullptr));
+#else
+    const uintptr_t base = 0;
+#endif
+    std::printf("Scheduler: recorded while the draw recorder had queued draws (thread '%s', caller "
+                "medievil-runtime.exe+%#llx)\n",
+                name, static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(caller) - base));
+#ifdef _WIN32
+    // The path that got here: offsets in medievil-runtime.exe, other modules as addresses.
+    void* frames[12]{};
+    const USHORT count = RtlCaptureStackBackTrace(1, 12, frames, nullptr);
+    for (USHORT i = 0; i < count; ++i) {
+        const auto address = reinterpret_cast<uintptr_t>(frames[i]);
+        HMODULE module{};
+        const bool own = GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                                                GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                                            reinterpret_cast<LPCSTR>(frames[i]), &module) &&
+                         reinterpret_cast<uintptr_t>(module) == base;
+        std::printf(own ? "  #%u medievil-runtime.exe+%#llx\n" : "  #%u %#llx\n", i,
+                    static_cast<unsigned long long>(own ? address - base : address));
+    }
+#endif
+    std::fflush(stdout);
 }
 
 std::unique_ptr<RecordChunk> Scheduler::AcquireChunk() {

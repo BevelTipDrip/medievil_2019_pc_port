@@ -1,7 +1,8 @@
 MediEvil (PS4) for PC (medievil_pc)
 ===================================
 
-No game files are included. You need your own copy of MediEvil (PS4, 2019): CUSA11227, either as
+No game files are included. You need your own copy of MediEvil (PS4, 2019): CUSA11227 (or the
+European CUSA12982), either as
 an unpacked folder (eboot.bin, sce_module, sce_sys) or as a fake package (.pkg).
 
 You need
@@ -23,6 +24,8 @@ Start
 While playing
 - Insert on the keyboard, or R3 + L2 on the controller, opens the port's menu (image,
   performance, overlay).
+- F12 saves a screenshot (PNG, full resolution) in user\screenshots; the launcher's Display page
+  opens that folder.
 - Controller (DualSense, Xbox and others) and keyboard work; remap them on the Controls page.
 
 Render resolution

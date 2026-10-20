@@ -31,6 +31,7 @@
 
 typedef struct {
     int used, type, channels, is_float, frames, sample_bytes, std_layout;
+    int out_channels;               /* channels given to SDL: 2 when the port downmixes 7.1 */
     int32_t volume[8];
     SDL_AudioStream *stream;
     uint64_t next_deadline_ns; /* next return of sceAudioOutOutput */
@@ -114,8 +115,20 @@ static ABI int32_t audio_open(int32_t user, int32_t type, int32_t index, uint32_
     p->used=1; p->type=type; p->channels=channels[format]; p->is_float=format>=3 && format!=6;
     p->sample_bytes=p->is_float ? 4 : 2; p->frames=(int)length; p->std_layout=format>=6;
     for (int c=0;c<8;++c) p->volume[c]=VOLUME_0DB;
+    p->out_channels=p->channels;
     if (sdl_audio()) {
-        SDL_AudioSpec spec={p->is_float ? SDL_AUDIO_F32 : SDL_AUDIO_S16, p->channels, 48000};
+        /* Issue #14: SDL's 7.1 to stereo downmix scales every channel down (headroom for all
+           eight), so the game was quiet on stereo speakers and headphones and its surround
+           reverb mixed oddly. On a stereo or mono device the port downmixes itself: fronts at
+           full level, centre and surrounds at -3 dB, a soft limiter instead of attenuation.
+           GOW3_AUDIO_SDL_DOWNMIX=1: SDL's downmix as before. */
+        SDL_AudioSpec device;
+        const char *sdl_mix=getenv("GOW3_AUDIO_SDL_DOWNMIX");
+        if (p->channels==8 && !(sdl_mix && sdl_mix[0]=='1') &&
+            SDL_GetAudioDeviceFormat(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,&device,NULL) &&
+            device.channels>0 && device.channels<=2)
+            p->out_channels=2;
+        SDL_AudioSpec spec={p->is_float ? SDL_AUDIO_F32 : SDL_AUDIO_S16, p->out_channels, 48000};
         p->stream=SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,&spec,NULL,NULL);
         if (p->stream) SDL_ResumeAudioStreamDevice(p->stream);
         else fprintf(stderr,"Runtime: SDL audio stream failed (%s); port %d uses the timer sink\n",SDL_GetError(),id);
@@ -129,7 +142,8 @@ static ABI int32_t audio_open(int32_t user, int32_t type, int32_t index, uint32_
     }
     ++ports_opened;
     pthread_mutex_unlock(&table_lock);
-    printf("Runtime: audio port %d opened (type %d, %d ch, %s, %u frames)\n",id,type,p->channels,p->is_float ? "float" : "s16",length);
+    printf("Runtime: audio port %d opened (type %d, %d ch, %s, %u frames%s)\n",id,type,p->channels,p->is_float ? "float" : "s16",length,
+           p->out_channels!=p->channels ? ", downmixed to stereo" : "");
     return (type<<16) | id | 0x20000000;
 }
 static ABI int32_t audio_close(int32_t handle) {
@@ -146,6 +160,32 @@ static ABI int32_t audio_close(int32_t handle) {
     }
     pthread_mutex_unlock(&table_lock);
     return p ? 0 : error;
+}
+/* 7.1 in SDL order (FL FR FC LFE BL BR SL SR) to stereo, in place; returns the bytes.
+   L = FL + 0.707 FC + 0.707 (SL + BL), likewise for the right; LFE is left out (stereo speakers
+   and headphones reproduce the low end from the mains). Peaks above 0.8 are softly compressed. */
+static float soft_limit(float v) {
+    const float a=v<0 ? -v : v;
+    if (a<=0.8f) return v;
+    const float x=(a-0.8f)/0.2f, y=0.8f+0.2f*(x/(1.0f+x)); /* approaches 1.0 */
+    return v<0 ? -y : y;
+}
+static int downmix_stereo(const Port *p, unsigned char *buffer) {
+    const float k=0.70710678f;
+    for (int f=0;f<p->frames;++f) {
+        float c[8];
+        for (int i=0;i<8;++i) {
+            if (p->is_float) memcpy(&c[i],buffer+((size_t)f*8+(size_t)i)*4,4);
+            else { int16_t v; memcpy(&v,buffer+((size_t)f*8+(size_t)i)*2,2); c[i]=(float)v/32768.0f; }
+        }
+        const float l=soft_limit(c[0]+k*c[2]+k*(c[6]+c[4])), r=soft_limit(c[1]+k*c[2]+k*(c[7]+c[5]));
+        if (p->is_float) { memcpy(buffer+(size_t)f*8,&l,4); memcpy(buffer+(size_t)f*8+4,&r,4); }
+        else {
+            const int16_t sl=(int16_t)(l*32767.0f), sr=(int16_t)(r*32767.0f);
+            memcpy(buffer+(size_t)f*4,&sl,2); memcpy(buffer+(size_t)f*4+2,&sr,2);
+        }
+    }
+    return p->frames*2*p->sample_bytes;
 }
 /* `pace`: wait for this port's next period. sceAudioOutOutputs waits once for all its ports. */
 static int32_t output_port(int32_t handle, const void *data, int pace) {
@@ -195,19 +235,24 @@ static int32_t output_port(int32_t handle, const void *data, int pace) {
         if (p->stream) {
             /* The device drains the queue in quanta (21 ms on PipeWire), so the level
                is a sawtooth: its minimum over ~32 buffers is what gets controlled. */
-            int low=2*(int)bytes, queued=SDL_GetAudioStreamQueued(p->stream);
-            if (queued<(int)bytes) {
+            /* In the stream's own channels (2 when the port downmixes). */
+            const int sdl_bytes=p->frames*p->out_channels*p->sample_bytes;
+            int low=2*sdl_bytes, queued=SDL_GetAudioStreamQueued(p->stream);
+            if (queued<sdl_bytes) {
                 static const unsigned char silence[2048*8*4];
-                SDL_PutAudioStreamData(p->stream,silence,low-queued<(int)bytes ? low-queued : (int)bytes);
+                SDL_PutAudioStreamData(p->stream,silence,low-queued<sdl_bytes ? low-queued : sdl_bytes);
                 queued=low;
             }
             if (!p->window_count || queued<p->window_min) p->window_min=queued;
             if (++p->window_count==32) {
-                p->adjust_ns=p->window_min>low+2*(int)bytes ? (int64_t)(period/32) : p->window_min<low ? -(int64_t)(period/32) : 0;
+                p->adjust_ns=p->window_min>low+2*sdl_bytes ? (int64_t)(period/32) : p->window_min<low ? -(int64_t)(period/32) : 0;
                 p->window_count=0;
             }
             p->next_deadline_ns+=(uint64_t)p->adjust_ns;
-            SDL_PutAudioStreamData(p->stream,converted,(int)bytes);
+            if (p->out_channels==2 && p->channels==8)
+                SDL_PutAudioStreamData(p->stream,converted,downmix_stereo(p,converted));
+            else
+                SDL_PutAudioStreamData(p->stream,converted,(int)bytes);
         }
         ++buffers_out;
     }

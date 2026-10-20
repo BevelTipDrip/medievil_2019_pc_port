@@ -784,6 +784,12 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
             const u32 base = EmulatorSettings.GetFrameLimit();
             limit = !env_limit && user && (!base || user < base) ? user : base;
         }
+        // With VSync the display paces the presents too: a limit at its refresh rate is another
+        // clock beside the display's own (often 59.94 Hz) and repeats or drops a frame now and
+        // then (issue #3, 4K TV at 60 Hz); the display alone keeps it even.
+        if (Gow3Settings::Get().vsync.load() && limit + 1 >= Gow3DisplayRefreshHz()) {
+            return 0u;
+        }
         return limit >= vblank_hz ? 0u : limit;
     };
     // Slots count as reached within half a vblank: timer jitter must not cost a whole vblank.

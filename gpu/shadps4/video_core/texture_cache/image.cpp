@@ -301,6 +301,12 @@ ImageView& Image::FindView(const ImageViewInfo& view_info, bool ensure_guest_sam
 void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
                         vk::PipelineStageFlags2 dst_stage,
                         std::optional<SubresourceRange> subres_range) {
+    if (info.props.is_volume && subres_range) {
+        // gow3: a 3D image has one array layer; its 2D array views (render targets) address depth
+        // slices, and a barrier covers the whole image (Vulkan: layer 0, count 1).
+        subres_range->base.layer = 0;
+        subres_range->extent.layers = info.resources.layers;
+    }
     auto& last_state = backing->state;
     auto& subresource_states = backing->subresource_states;
     // gow3: a 3D image has one array layer; the layers of a 2D array view of it are depth
