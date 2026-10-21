@@ -1,0 +1,1310 @@
+Game profile: MediEvil (libc.prx, libSceFios2.prx, libSceNpToolkit2.prx)
+Render resolution: 4K_native (r.setres=3840x2160), console quality, up to 240 FPS; extra cvars r.ScreenPercentage=50
+MediEvil | entry=0x2e9acb0 | image=96,917,024 bytes
+928 imported symbols; 552,801 relocations; 58 required modules
+Unavailable non-loadable metadata headers: [10]; not a byte-exact ELF reconstruction
+Output: C:\Users\Ty\MediEvil\medievil_2019_pc_port\out
+libc _init_env verified RET: True
+Linked native libc: base=0x5c70000, 162 fallback exports, TLS=1152 bytes; eboot TLS=16 bytes, fs->gs patched=5
+Linked modules: libc.prx@0x5c70000, libSceFios2.prx@0x5da0000, libSceNpToolkit2.prx@0x5f30000; 348 native bindings, 850 imports left to the host runtime, fs->gs patched=5
+AppContent profile: SKU=full (probe setting), user params=[0, 0, 0, 0], mounted add-ons=0
+Patches: CUSA11227; 13 writes from ['Native 4K framebuffer pool (512 MB)', '4K display metrics at boot']
+Saves backed up to C:\Users\Ty\MediEvil\medievil_2019_pc_port\user\savedata_backups\20261021-193745
+Settings: C:\Users\Ty\MediEvil\medievil_2019_pc_port\medievil.ini
+Window: Borderless
+Sampler: GpuCmd -> C:\Users\Ty\MediEvil\research-data\samples\t-p2-panning-samples\samples-GpuCmd.txt
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:294 operator(): Extension VK_AMD_shader_explicit_vertex_parameter unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:294 operator(): Extension VK_EXT_shader_stencil_export unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:294 operator(): Extension VK_AMD_shader_image_load_store_lod unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:294 operator(): Extension VK_AMD_gcn_shader unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:294 operator(): Extension VK_AMD_shader_trinary_minmax unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:294 operator(): Extension VK_AMD_mixed_attachment_samples unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:294 operator(): Extension VK_EXT_shader_atomic_float2 unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=1, number_format=9 is not fully supported (vk_format=R8Srgb, missing features={ ColorAttachment })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=3, number_format=9 is not fully supported (vk_format=R8G8Srgb, missing features={ SampledImage | ColorAttachment | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=9, number_format=1 is not fully supported (vk_format=A2B10G10R10SnormPack32, missing features={ SampledImage | StorageImage | ColorAttachment | TransferSrc | TransferDst | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=9, number_format=5 is not fully supported (vk_format=A2B10G10R10SintPack32, missing features={ SampledImage | StorageImage | ColorAttachment | TransferSrc | TransferDst | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=13, number_format=4 is not fully supported (vk_format=R32G32B32Uint, missing features={ SampledImage | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=13, number_format=5 is not fully supported (vk_format=R32G32B32Sint, missing features={ SampledImage | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=13, number_format=7 is not fully supported (vk_format=R32G32B32Sfloat, missing features={ SampledImage | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=16, number_format=0 is not fully supported (vk_format=R5G6B5UnormPack16, missing features={ StorageImage | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=17, number_format=0 is not fully supported (vk_format=A1R5G5B5UnormPack16, missing features={ StorageImage | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=18, number_format=0 is not fully supported (vk_format=R5G5B5A1UnormPack16, missing features={ StorageImage | ColorAttachment | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=19, number_format=0 is not fully supported (vk_format=B4G4R4A4UnormPack16, missing features={ StorageImage | ColorAttachment | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:883 CollectImageFormatInfo: Depth format z_format=1, stencil_format=1 is not fully supported (vk_format=D16UnormS8Uint, missing features={ DepthStencilAttachment })
+Sampler: VkRecorder -> C:\Users\Ty\MediEvil\research-data\samples\t-p2-panning-samples\samples-VkRecorder.txt
+Swapchain: VSync on (Fifo)
+GPU: deferred image readback enabled (64 copies, 64 MiB pending limit); CPU reads use the previous frame's copy
+GPU: draw preparation workers: 8 (+1 scanner, 16 hardware threads)
+Object motion: off (enable in menu or GOW3_OBJECT_MOTION=1)
+Runtime: disabled optimizations mask=0
+Sampler: DrawRec -> C:\Users\Ty\MediEvil\research-data\samples\t-p2-panning-samples\samples-DrawRec.txt
+Overlay: menu ready (Insert or R3+L2)
+Pipeline startup: on demand, no bulk warm-up
+GPU: window and Vulkan presenter ready; SDK 0x06008001, 327 HLE symbols
+GPU: vblank follows the display refresh rate, 240 Hz
+VideoOut: vblank 480 Hz, frame limit 240 FPS
+Patches: 13 writes, 46 bytes applied, 0 pointers rebased
+HZB remap: MapResults and Submit hooks ready (results served by occlusion history key, no GPU wait)
+Guest TCB loads redirected to the TEB TLS slot: 5
+Mapped 100602208 bytes, 12 segments; applied 555371 relocations
+Starting linked module 0 at image offset 0x5c70000; native bindings=348
+Runtime: application heap API registered
+Runtime: direct allocation offset=0x0, size=536870912 bytes, type=3
+Runtime: mapped direct memory 0000004000000000, size=536870912, prot=0x32
+Runtime: direct allocation offset=0x20000000, size=6912147456 bytes, type=0
+Runtime: memory pool expanded by 6912147456 bytes at 0x20000000
+Runtime: reserved virtual range 0000001000000000, size=8589934592
+Runtime: reserved virtual range 0000002000000000, size=8589934592
+Runtime: reserved virtual range 0000003000000000, size=1073741824
+Module 0 initializer returned 0
+Starting linked module 1 at image offset 0x5da0000; native bindings=348
+Module 1 initializer returned 0
+Starting linked module 2 at image offset 0x5f30000; native bindings=348
+Module 2 initializer returned 0
+Entering original x86-64 code at guest offset 0x2e9acb0
+Runtime: _init_env returned (verified libc implementation: RET)
+AdditionalArgs before fixup = ../../../OVERBITE/OVERBITE.uproject 
+AdditionalArgs after fixup = ../../../OVERBITE/OVERBITE.uproject -pak
+File root is /app0/!
+Runtime: open(/app0/symbols/shipping-symbols.bin) -> not found
+Runtime: open(/app0/build/ps4/symbols/shipping-symbols.bin) -> not found
+Runtime: open(/app0/overbite/symbols/shipping-symbols.bin) -> not found
+Failed to locate symbol files on /app0 or /app0/overbite/symbols s!
+Runtime: open(shipping-symbols.bin) -> not found
+Failed to load symbols from shipping-symbols.bin!
+Runtime: open(shipping-symbolmetadata.txt) -> not found
+Used memory before allocating anything was 524.56MB
+FIOS2: built with SDK version 0x06008001
+Runtime: guest thread 'SceFiosCallback' created (stack=65536, prio=260)
+Runtime: guest thread 'SceFiosIO' created (stack=81920, prio=260)
+Runtime: internal system module 0xd7 loaded (host implementation)
+Runtime: guest thread 'SceFiosIO /' created (stack=81920, prio=260)
+Runtime: AppContent host provider loaded; references=1
+Runtime: AppContent initialized; offline base-game profile, no mounted add-ons
+Runtime: temporary data mounted at /temp0 -> C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/temp0
+Runtime: open(/app0/deepfiles) -> not found
+Runtime: system module 0x83 loaded (host implementation)
+Runtime: PlayGo initialized; 2 chunks, all installed locally
+Runtime: open(/app0/overbite/saved/paks) -> not found
+Runtime: open(/app0/engine/content/paks) -> not found
+Runtime: open(/app0/overbite/saved/paks) -> not found
+Runtime: open(/app0/engine/content/paks) -> not found
+Runtime: guest thread 'TaskGraphThreadNP 0' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadNP 1' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadNP 2' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadNP 3' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 4' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 5' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 6' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 7' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 8' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 9' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 10' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 11' created (stack=393216, prio=700)
+Runtime: guest thread 'PoolThread 0' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 1' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 2' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 3' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 4' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 5' created (stack=262144, prio=700)
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/res_index.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/plurals.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/lang/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/lang/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/lang/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/region/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/region/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/region/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/zoneinfo64.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/numberingsystems.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/curr/supplementaldata.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/curr/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/curr/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/curr/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/likelysubtags.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/supplementaldata.res) -> not found
+Runtime: UserService initialized (user 1 logged in)
+Runtime: open(/app0/engine/saved/config/ps4/editorsettings.ini) -> not found
+Runtime: guest thread 'HttpManagerThread' created (stack=262144, prio=700)
+Runtime: system module 0x9c loaded (host implementation)
+Runtime: system module 0x85 loaded (host implementation)
+Runtime: UserService initialized (user 1 logged in)
+Runtime: system module 0xa6 loaded (host implementation)
+Runtime: system module 0xd3 loaded (host implementation)
+Runtime: system module 0x81 loaded (host implementation)
+Runtime: UserService initialized (user 1 logged in)
+Runtime: guest thread 'OnlineAsyncTaskThreadPS4 Defau' created (stack=262144, prio=700)
+Runtime: system module 0x102 loaded (host implementation)
+Runtime: system module 0x19 loaded (host implementation)
+Runtime: mapped flexible memory 0000001200000000, size=16777216, prot=0x2
+Runtime: mapped flexible memory 0000001201000000, size=6291456, prot=0x2
+Runtime: guest thread 'Toolkit::NP::Main' created (stack=262144, prio=700)
+Runtime: guest thread 'Toolkit::NP::Notifications' created (stack=65536, prio=700)
+Runtime: guest thread 'Toolkit::NP::AbortThread' created (stack=65536, prio=700)
+Runtime: system module 0xe4 loaded (host implementation)
+Runtime: system module 0xa8 loaded (host implementation)
+Runtime: system module 0xe7 loaded (host implementation)
+Runtime: system module 0xb2 loaded (host implementation)
+Runtime: system module 0xab loaded (host implementation)
+Runtime: system module 0xa2 loaded (host implementation)
+Runtime: system module 0xac loaded (host implementation)
+Runtime: system module 0xb8 loaded (host implementation)
+Runtime: system module 0xad loaded (host implementation)
+Runtime: system module 0x2c loaded (host implementation)
+Runtime: system module 0x1b loaded (host implementation)
+Runtime: guest thread 'PoolThread 6' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 7' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 8' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 9' created (stack=262144, prio=700)
+Runtime: open(/app0/overbite/intermediate/shaders/tmp) -> not found
+Runtime: open(/app0/overbite/intermediate/shaders/workingdirectory) -> not found
+Runtime: UserService initialized (user 1 logged in)
+Runtime: system module 0x96 loaded (host implementation)
+Runtime: guest thread 'SystemEventGatherThreadPS4' created (stack=262144, prio=700)
+Runtime: open(/app0/overbite/saved/preferences/editorkeybindings.txt) -> not found
+Runtime: guest thread 'SubmitDoneAsyncTaskThreadPS4' created (stack=262144, prio=700)
+Runtime: guest thread 'SubmitGPUCommandsAsyncTaskThre' created (stack=262144, prio=700)
+Runtime: open(/app0/overbite/content/shaderarchive-global-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/shaderarchive-paper2d-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/shaderarchive-paper2d_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/content/shaderarchive-paper2d-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/content/shaderarchive-paper2d_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/shaderarchive-cryptokeys-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/shaderarchive-cryptokeys_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/content/shaderarchive-cryptokeys-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/content/shaderarchive-cryptokeys_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/shaderarchive-mesheditor-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/shaderarchive-mesheditor_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/content/shaderarchive-mesheditor-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/content/shaderarchive-mesheditor_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/shaderarchive-datasmithcontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/shaderarchive-datasmithcontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/content/shaderarchive-datasmithcontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/content/shaderarchive-datasmithcontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/shaderarchive-variantmanagercontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/shaderarchive-variantmanagercontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/content/shaderarchive-variantmanagercontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/content/shaderarchive-variantmanagercontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/shaderarchive-mediacompositing-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/shaderarchive-mediacompositing_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/content/shaderarchive-mediacompositing-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/content/shaderarchive-mediacompositing_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/shaderarchive-wwise-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/shaderarchive-wwise_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/content/shaderarchive-wwise-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/content/shaderarchive-wwise_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: guest thread 'RHIThread' created (stack=524288, prio=700)
+Runtime: guest thread 'RenderThread 0' created (stack=262144, prio=700)
+Runtime: guest thread 'RTHeartBeat 0' created (stack=262144, prio=700)
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/brkitr/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/brkitr/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Texture cache: shared image memory on (NVIDIA GeForce RTX 4090)
+Runtime: guest thread 'RHIFrameOffsetThread' created (stack=262144, prio=700)
+Runtime: guest thread 'RHIFrameFlipThread' created (stack=262144, prio=700)
+Runtime: pad opened for user 1 (SDL gamepad or keyboard)
+Runtime: SystemService: splash screen hidden
+Runtime: SystemService: splash screen hidden
+Runtime: open(/app0/overbite/content/shaderarchive-overbite-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/overbite/content/shaderarchive-overbite_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/download0/installedcontent/overbite/content/shaderarchive-overbite-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/download0/installedcontent/overbite/content/shaderarchive-overbite_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: system module 0xa5 loaded (host implementation)
+Runtime: system module 0xcf loaded (host implementation)
+Runtime: system module 0x88 loaded (host implementation)
+Runtime: system module 0xa5 loaded (host implementation)
+Runtime: guest thread 'SlateLoadingThread1' created (stack=262144, prio=700)
+Runtime: SystemService: splash screen hidden
+Runtime: guest thread 'AK::IOThread' created (stack=131072, prio=256)
+Runtime: guest thread 'AK::BankManager' created (stack=131072, prio=700)
+Runtime: guest thread 'AK Suspended' created (stack=131072, prio=256)
+Runtime: Ajm context initialized (ATRAC9 via LibAtrac9, MP3 via FFmpeg)
+Runtime: guest thread 'AK::EventManager' created (stack=131072, prio=256)
+GPU [Render.Vulkan] <Warning> emit_spirv.cpp:459 operator(): Float32 denorm flushing is not supported by the GPU
+Runtime: guest thread 'FImgMediaSchedulerThread 0' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 1' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 2' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 3' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 4' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 5' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 6' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 7' created (stack=262144, prio=700)
+Runtime: guest thread 'FMediaTicker' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 10' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 11' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 12' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 13' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 14' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 15' created (stack=262144, prio=700)
+Stall: 227.7 ms frame; waits: readback 0.0 ms, GPU ticks 0.0 ms, recorder 0.0 ms, host copies 0.2 ms; 8 compiles 3.8 ms; GC 0.0 ms
+       fault handlers: 0 read faults 0.0 ms, write faults 0.0 ms
+       GPU thread on CPU 15.6 ms; 9 images registered, 33.7 MB image uploads, 0.0 MB buffer uploads
+       5 draws, 9 dispatches, 3 submissions; GPU thread user 0.0 ms, kernel 0.0 ms, 0 preempted, 0 waits
+       ms in: resident 0.2, protect 0.1, image create 0.6, image refresh 3.8, staging 0.0, waiting for host copies 0.0
+       GPU thread page faults 0 (process 0), protection faults 0; protect calls 10 (8232 pages), of which write-revoking 10 (8232 pages)
+Runtime: system module 0xb loaded (host implementation)
+Runtime: Ajm context initialized (ATRAC9 via LibAtrac9, MP3 via FFmpeg)
+Runtime: guest thread 'Ngs2AudioRenderingThread' created (stack=262144, prio=700)
+Runtime: NGS2 system created (silent renderer)
+Runtime: audio backend wasapi
+Runtime: audio port 0 opened (type 0, 8 ch, float, 256 frames)
+Runtime: guest thread 'AudioThread' created (stack=262144, prio=700)
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/lang/root.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/region/root.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: audio port 1 opened (type 0, 8 ch, float, 512 frames)
+Runtime: guest thread 'AK::LibAudioOut' created (stack=131072, prio=256)
+Runtime: system module 0xa0 loaded (host implementation)
+Runtime: save data '@MediEvil0005' mounted at /savedata0 (existing, read-only)
+Runtime: guest thread 'RenderThread 1' created (stack=262144, prio=700)
+Runtime: guest thread 'RTHeartBeat 1' created (stack=262144, prio=700)
+Stall: 243.4 ms frame; waits: readback 0.0 ms, GPU ticks 0.0 ms, recorder 0.0 ms, host copies 0.3 ms; 6 compiles 7.0 ms; GC 0.0 ms
+       fault handlers: 0 read faults 0.0 ms, write faults 0.0 ms
+       GPU thread on CPU 31.2 ms; 18 images registered, 165.7 MB image uploads, 15.6 MB buffer uploads
+       114 draws, 22 dispatches, 13 submissions; GPU thread user 0.0 ms, kernel 0.0 ms, 0 preempted, 0 waits
+       ms in: resident 2.1, protect 1.1, image create 0.2, image refresh 11.7, staging 0.0, waiting for host copies 0.0
+       GPU thread page faults 0 (process 0), protection faults 0; protect calls 42 (45249 pages), of which write-revoking 40 (44271 pages)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x200ec00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x200ec00000 +0x240000
+HZB remap (5 s): 418 maps (0 invalid, 0 remapped, 2 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/0/0/0/0/0/0; keys 0 (0 read visible); 0.0 us avg, 0.0 us max
+Frame stats: 167.5 FPS, worst frame 243.4 ms (vblank 480 Hz); 14 shader/pipeline compiles, 10.7 ms; async: capture 25.9 ms, workers 100.4 ms, sync wait 0.0 ms, snapshots 0.3 ms, GPU capture wait 27.0 ms, 190 pending draws; 838 recorder syncs; 81573 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 50 draws/frame, idle 52.2%; blocked: recorder 0.3%, host copies 8.6% (0/frame, 511/frame skipped), copy threads 0.2%, GPU ticks 0.4%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 74.6 MB/s, buffers 343.4 MB/s
+Small read-only buffers/s: 11402 bound from the arena, 5 uploaded once, 772 stream copies, 3 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 0.0 (0.000 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.6 ms, compile 3.1 ms; pools retained 4, reused 46
+Frame pacing: median 4.20 ms, stddev 11.93 ms, p99 18.75 ms, 88 frames over 1.5x median, longest run 38 frames (866.6 ms)
+WriteData targets (5 s): 0x6dcfe9b8 4 B (first word 0x1) x446, waited 228.28 ms; 0x6dcfe9c0 4 B (first word 0x1) x445, waited 225.09 ms;
+Texture helper: 0 binds in parallel, 0 partly, 45056 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+AvPlayer 0.000 s: 0000000386C9BFA0 Init -> 0 (no source, 0 frames delivered)
+AvPlayer 0.001 s: 0000000386C9BFA0 AddSource -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 0 frames delivered)
+AvPlayer 0.029 s: 0000000386C9BFA0 SetLooping off -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 0 frames delivered)
+AvPlayer 0.029 s: 0000000386C9BFA0 Start -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 0 frames delivered)
+Draw pipe: 44060 draws/s pipelined, 1479 drains/s that waited, stage A waited 26.1%, stage B busy 30.7%
+  drains by reason/s: WaitRegMem=805 (1.8%) compute=414 (0.5%) submission end=260 (23.7%) rasterizer=1 (0.1%)
+  stage A waits over 0.5%: ProcessCompute:1483 0.5% ProcessGraphics:1347 1.4% Process:192 23.7%
+Draw preparation: 54241 prepared pipelines used, 3103 not (8 workers, 0 scanner rebases)
+HZB remap (5 s): 1200 maps (0 invalid, 0 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/0/0/0/0/0/0; keys 0 (0 read visible); 0.0 us avg, 0.0 us max
+[aac @ 00000003fea106c0] Could not update timestamps for discarded samples.
+Frame stats: 239.8 FPS, worst frame 8.7 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.2 ms, workers 1.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.3 ms, 3 pending draws; 1200 recorder syncs; 117883 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 52 draws/frame, idle 0.8%; blocked: recorder 0.5%, host copies 11.9% (0/frame, 644/frame skipped), copy threads 0.1%, GPU ticks 27.4%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 83.1 MB/s, buffers 491.0 MB/s
+Small read-only buffers/s: 18209 bound from the arena, 1 uploaded once, 570 stream copies, 1 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.2; precise CPU writes 0.0 (0.000 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 4, reused 2
+Frame pacing: median 4.13 ms, stddev 1.03 ms, p99 6.90 ms, 45 frames over 1.5x median, longest run 1 frames (8.7 ms)
+WriteData targets (5 s): 0x6dcfe9c0 4 B (first word 0x1) x600, waited 295.73 ms; 0x6dcfe9b8 4 B (first word 0x1) x599, waited 287.44 ms;
+Texture helper: 0 binds in parallel, 0 partly, 63488 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+HLE thread: join failed (thread::join failed: No such device or address); waiting for it to finish
+Draw pipe: 42570 draws/s pipelined, 1419 drains/s that waited, stage A waited 61.1%, stage B busy 65.7%
+  drains by reason/s: WaitRegMem=766 (1.0%) compute=413 (0.7%) submission end=240 (59.4%)
+  stage A waits over 0.5%: Process:192 59.4% ProcessCompute:1483 0.7% ProcessGraphics:1347 0.7%
+Draw preparation: 49420 prepared pipelines used, 2804 not (8 workers, 0 scanner rebases)
+HZB remap (5 s): 1197 maps (0 invalid, 0 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/0/0/0/0/0/0; keys 0 (0 read visible); 0.0 us avg, 0.0 us max
+Frame stats: 239.8 FPS, worst frame 7.3 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.1 ms, workers 0.8 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.2 ms, 6 pending draws; 1199 recorder syncs; 117587 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 54 draws/frame, idle 0.9%; blocked: recorder 0.5%, host copies 11.7% (0/frame, 662/frame skipped), copy threads 0.0%, GPU ticks 63.9%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 18.7 MB/s, buffers 491.1 MB/s
+Small read-only buffers/s: 18223 bound from the arena, 1 uploaded once, 965 stream copies, 1 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 0.0 (0.000 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 4, reused 1
+Frame pacing: median 2.71 ms, stddev 2.65 ms, p99 7.19 ms, 599 frames over 1.5x median, longest run 1 frames (7.3 ms)
+WriteData targets (5 s): 0x6dcfe9b8 4 B (first word 0x1) x600, waited 279.58 ms; 0x6dcfe9c0 4 B (first word 0x1) x599, waited 295.41 ms;
+Texture helper: 0 binds in parallel, 0 partly, 65536 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Draw preparation: 54285 prepared pipelines used, 4083 not (8 workers, 0 scanner rebases)
+Draw pipe: 43585 draws/s pipelined, 1401 drains/s that waited, stage A waited 80.0%, stage B busy 84.5%
+  drains by reason/s: WaitRegMem=763 (0.8%) compute=399 (0.4%) submission end=240 (78.8%)
+  stage A waits over 0.5%: Process:192 78.8% ProcessGraphics:1347 0.6%
+HZB remap (5 s): 1200 maps (0 invalid, 0 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/0/0/0/0/0/0; keys 0 (0 read visible); 0.0 us avg, 0.0 us max
+GPU [Lib.AvPlayer] <Warning> avplayer_source.cpp:308 Stop: Could not stop playback: already stopped.
+AvPlayer 13.746 s: 0000000386C9BFA0 Stop -> -2140536830 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 149 frames delivered)
+AvPlayer 13.746 s: 0000000386C9BFA0 Close -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 149 frames delivered)
+GPU [Lib.AvPlayer] <Warning> avplayer_source.cpp:308 Stop: Could not stop playback: already stopped.
+Runtime: guest thread 'TAsync 0' created (stack=262144, prio=700)
+AvPlayer 13.749 s: 000000006D8F57D0 Init -> 0 (no source, 0 frames delivered)
+AvPlayer 13.842 s: 000000006D8F57D0 AddSource -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 0 frames delivered)
+AvPlayer 13.861 s: 000000006D8F57D0 SetLooping off -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 0 frames delivered)
+AvPlayer 13.861 s: 000000006D8F57D0 Start -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 0 frames delivered)
+Frame stats: 239.6 FPS, worst frame 10.8 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1199 recorder syncs; 117464 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 56 draws/frame, idle 0.8%; blocked: recorder 0.5%, host copies 11.5% (0/frame, 655/frame skipped), copy threads 0.0%, GPU ticks 64.7%; reduced-size draws 0/frame of 0 in the scene
+Uploads: images 9.0 MB/s, buffers 490.8 MB/s
+Small read-only buffers/s: 18217 bound from the arena, 0 uploaded once, 1347 stream copies, 0 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.2; precise CPU writes 0.0 (0.000 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 4, reused 0
+Frame pacing: median 3.29 ms, stddev 2.67 ms, p99 7.17 ms, 598 frames over 1.5x median, longest run 1 frames (10.8 ms)
+WriteData targets (5 s): 0x6dcfe9c0 4 B (first word 0x1) x600, waited 297.85 ms; 0x6dcfe9b8 4 B (first word 0x1) x599, waited 273.53 ms;
+Texture helper: 0 binds in parallel, 0 partly, 66560 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Draw preparation: 51964 prepared pipelines used, 3332 not (8 workers, 0 scanner rebases)
+Draw pipe: 43159 draws/s pipelined, 1413 drains/s that waited, stage A waited 80.1%, stage B busy 84.6%
+  drains by reason/s: WaitRegMem=772 (0.9%) commands=0 (0.0%) compute=400 (0.6%) submission end=241 (78.7%)
+  stage A waits over 0.5%: Process:192 78.7% ProcessCompute:1483 0.6% ProcessGraphics:1347 0.6%
+Runtime: guest thread 'SlateLoadingThread2' created (stack=262144, prio=700)
+GPU [Render.Vulkan] <Warning> emit_spirv.cpp:516 operator(): Float64 denorm preserving is not supported by the GPU
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 1 and destination layers 2 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 2 and destination layers 3 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 3 and destination layers 4 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 4 and destination layers 5 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 5 and destination layers 6 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 6 and destination layers 8 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 4 and destination layers 5 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 5 and destination layers 6 to minimum.
+Stall: 613.0 ms frame; waits: readback 13.8 ms, GPU ticks 13.2 ms, recorder 0.1 ms, host copies 1.6 ms; 14 compiles 19.0 ms; GC 0.0 ms
+       fault handlers: 0 read faults 0.0 ms, write faults 0.1 ms
+       GPU thread on CPU 31.2 ms; 234 images registered, 244.0 MB image uploads, 3.1 MB buffer uploads
+       1807 draws, 330 dispatches, 145 submissions; GPU thread user 0.0 ms, kernel 0.0 ms, 0 preempted, 0 waits
+       ms in: resident 8.5, protect 4.3, image create 1.6, image refresh 4.2, staging 0.0, waiting for host copies 0.0
+       GPU thread page faults 0 (process 0), protection faults 0; protect calls 388 (74825 pages), of which write-revoking 328 (64914 pages)
+HZB remap (5 s): 958 maps (0 invalid, 39 remapped, 1 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 1/2/21/15/0/0/0; keys 8265 (672 read visible); 20.9 us avg, 95.2 us max
+Render state memo: 47033 hits, 215110 misses; texture sets: 209658 hits, 26553 misses
+  texture set misses: other key 25487, generation 853, image check 213, other 0
+  scene proxies sampled directly: 0 bindings
+Frame stats: 195.1 FPS, worst frame 613.0 ms (vblank 480 Hz); 14 shader/pipeline compiles, 19.0 ms; async: capture 194.2 ms, workers 336.7 ms, sync wait 0.0 ms, snapshots 1.9 ms, GPU capture wait 200.7 ms, 1634 pending draws; 976 recorder syncs; 108239 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 275 draws/frame, idle 14.4%; blocked: recorder 0.4%, host copies 10.7% (0/frame, 848/frame skipped), copy threads 0.1%, GPU ticks 31.2%; reduced-size draws 0/frame of 49 in the scene
+Uploads: images 215.3 MB/s, buffers 451.1 MB/s
+Small read-only buffers/s: 47996 bound from the arena, 41 uploaded once, 20656 stream copies, 21 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.4 (0.00 MB, 1.6 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 1.6; precise CPU writes 4.4 (0.006 MB); on the readback queue 0.4; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 3.7 ms, compile 163.5 ms; pools retained 6, reused 275
+Frame pacing: median 4.19 ms, stddev 19.72 ms, p99 17.24 ms, 307 frames over 1.5x median, longest run 24 frames (1028.5 ms)
+WriteData targets (5 s): 0x6dcfe9b8 4 B (first word 0x1) x488, waited 248.78 ms; 0x6dcfe9c0 4 B (first word 0x1) x487, waited 258.73 ms; 0x30000000a0 8 B (first word 0) x430, waited 19.25 ms;
+Texture helper: 0 binds in parallel, 0 partly, 325632 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Render state memo: 208389 hits, 53754 misses; texture sets: 197169 hits, 9943 misses
+  texture set misses: other key 9769, generation 147, image check 27, other 0
+  scene proxies sampled directly: 0 bindings
+Draw preparation: 523375 prepared pipelines used, 29585 not (8 workers, 0 scanner rebases)
+Draw pipe: 162278 draws/s pipelined, 1393 drains/s that waited, stage A waited 27.1%, stage B busy 60.7%
+  drains by reason/s: WaitRegMem=762 (2.6%) commands=1 (0.2%) compute=433 (3.7%) submission end=196 (20.6%) rasterizer=0 (0.0%)
+  stage A waits over 0.5%: Process:192 20.6% ProcessGraphics:1347 2.5% ProcessCompute:1483 3.7%
+Render state memo: 214423 hits, 47720 misses; texture sets: 212150 hits, 8662 misses
+  texture set misses: other key 8319, generation 314, image check 29, other 0
+  scene proxies sampled directly: 0 bindings
+HZB remap (5 s): 1201 maps (0 invalid, 1201 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/0/571/630/0/0/0; keys 214537 (266 read visible); 14.3 us avg, 205.7 us max
+Frame stats: 239.7 FPS, worst frame 8.5 ms (vblank 480 Hz); 2 shader/pipeline compiles, 1.0 ms; async: capture 17.4 ms, workers 25.6 ms, sync wait 0.0 ms, snapshots 0.3 ms, GPU capture wait 18.0 ms, 62 pending draws; 1199 recorder syncs; 149829 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 489 draws/frame, idle 0.7%; blocked: recorder 0.5%, host copies 12.4% (1/frame, 1195/frame skipped), copy threads 0.0%, GPU ticks 16.0%; reduced-size draws 0/frame of 99 in the scene
+Uploads: images 98.0 MB/s, buffers 622.3 MB/s
+Small read-only buffers/s: 104895 bound from the arena, 21 uploaded once, 44908 stream copies, 13 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 0.4 (0.001 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.4 ms, compile 0.9 ms; pools retained 6, reused 27
+Frame pacing: median 3.70 ms, stddev 1.38 ms, p99 7.68 ms, 225 frames over 1.5x median, longest run 3 frames (21.9 ms)
+Render state memo: 200987 hits, 61156 misses; texture sets: 232483 hits, 8049 misses
+  texture set misses: other key 7411, generation 567, image check 71, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9c0 4 B (first word 0x1) x599, waited 286.68 ms; 0x30000000a0 8 B (first word 0) x1198, waited 35.13 ms; 0x6dcfe9b8 4 B (first word 0x1) x599, waited 284.71 ms;
+Texture helper: 0 binds in parallel, 0 partly, 573440 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Draw preparation: 438786 prepared pipelines used, 14846 not (8 workers, 0 scanner rebases)
+Draw pipe: 145180 draws/s pipelined, 1726 drains/s that waited, stage A waited 48.7%, stage B busy 75.2%
+  drains by reason/s: WaitRegMem=959 (7.6%) compute=527 (2.8%) submission end=240 (38.4%)
+  stage A waits over 0.5%: Process:192 38.4% ProcessGraphics:1347 7.5% ProcessCompute:1483 2.8%
+Render state memo: 205037 hits, 57106 misses; texture sets: 238308 hits, 8074 misses
+  texture set misses: other key 7340, generation 673, image check 61, other 0
+  scene proxies sampled directly: 0 bindings
+HZB remap (5 s): 1199 maps (0 invalid, 1199 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/0/293/906/0/0/0; keys 77509 (339 read visible); 12.2 us avg, 382.0 us max
+Frame stats: 239.7 FPS, worst frame 8.1 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 4.9 ms, workers 6.0 ms, sync wait 0.0 ms, snapshots 0.1 ms, GPU capture wait 5.0 ms, 8 pending draws; 1200 recorder syncs; 148771 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 421 draws/frame, idle 0.6%; blocked: recorder 0.5%, host copies 11.9% (0/frame, 1289/frame skipped), copy threads 0.0%, GPU ticks 31.5%; reduced-size draws 0/frame of 85 in the scene
+Uploads: images 96.9 MB/s, buffers 618.0 MB/s
+Small read-only buffers/s: 96958 bound from the arena, 3 uploaded once, 27143 stream copies, 2 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 0.0 (0.000 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.1 ms, compile 0.1 ms; pools retained 6, reused 4
+Frame pacing: median 3.20 ms, stddev 1.85 ms, p99 7.68 ms, 397 frames over 1.5x median, longest run 1 frames (8.1 ms)
+WriteData targets (5 s): 0x6dcfe9c0 4 B (first word 0x1) x600, waited 282.13 ms; 0x30000000a0 8 B (first word 0) x1199, waited 25.31 ms; 0x6dcfe9b8 4 B (first word 0x1) x600, waited 281.00 ms;
+Texture helper: 0 binds in parallel, 0 partly, 521216 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Render state memo: 212354 hits, 49789 misses; texture sets: 234155 hits, 5314 misses
+  texture set misses: other key 5200, generation 69, image check 45, other 0
+  scene proxies sampled directly: 0 bindings
+Draw preparation: 543144 prepared pipelines used, 18008 not (8 workers, 0 scanner rebases)
+Draw pipe: 169684 draws/s pipelined, 1721 drains/s that waited, stage A waited 49.9%, stage B busy 81.1%
+  drains by reason/s: WaitRegMem=959 (2.5%) compute=522 (3.2%) submission end=240 (44.2%)
+  stage A waits over 0.5%: Process:192 44.2% ProcessCompute:1483 3.2% ProcessGraphics:1347 2.5%
+Render state memo: 200196 hits, 61947 misses; texture sets: 216197 hits, 10975 misses
+  texture set misses: other key 10794, generation 136, image check 45, other 0
+  scene proxies sampled directly: 0 bindings
+HZB remap (5 s): 1199 maps (0 invalid, 1199 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/0/384/815/0/0/0; keys 137322 (301 read visible); 10.7 us avg, 349.9 us max
+Render state memo: 194917 hits, 67226 misses; texture sets: 217183 hits, 11375 misses
+  texture set misses: other key 11262, generation 67, image check 46, other 0
+  scene proxies sampled directly: 0 bindings
+Frame stats: 239.9 FPS, worst frame 8.6 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 1.6 ms, workers 3.3 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 1.7 ms, 6 pending draws; 1200 recorder syncs; 169185 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 511 draws/frame, idle 0.6%; blocked: recorder 0.5%, host copies 12.1% (0/frame, 1535/frame skipped), copy threads 0.0%, GPU ticks 26.3%; reduced-size draws 0/frame of 123 in the scene
+Uploads: images 97.7 MB/s, buffers 703.3 MB/s
+Small read-only buffers/s: 108585 bound from the arena, 38 uploaded once, 39688 stream copies, 38 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 0.0 (0.000 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.1 ms; pools retained 6, reused 2
+Frame pacing: median 3.38 ms, stddev 1.54 ms, p99 7.27 ms, 380 frames over 1.5x median, longest run 1 frames (8.6 ms)
+WriteData targets (5 s): 0x30000000a0 8 B (first word 0) x1199, waited 32.74 ms; 0x6dcfe9c0 4 B (first word 0x1) x599, waited 284.20 ms; 0x6dcfe9b8 4 B (first word 0x1) x599, waited 282.47 ms;
+Texture helper: 0 binds in parallel, 0 partly, 609280 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Draw preparation: 489780 prepared pipelines used, 16076 not (8 workers, 0 scanner rebases)
+Draw pipe: 164583 draws/s pipelined, 1698 drains/s that waited, stage A waited 50.1%, stage B busy 79.3%
+  drains by reason/s: WaitRegMem=959 (2.3%) compute=499 (2.4%) submission end=240 (45.4%)
+  stage A waits over 0.5%: Process:192 45.4% ProcessCompute:1483 2.4% ProcessGraphics:1347 2.3%
+Render state memo: 178464 hits, 83679 misses; texture sets: 218795 hits, 12043 misses
+  texture set misses: other key 11883, generation 91, image check 69, other 0
+  scene proxies sampled directly: 0 bindings
+HZB remap (5 s): 1199 maps (0 invalid, 1199 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/0/374/825/0/0/0; keys 60307 (166 read visible); 10.2 us avg, 311.0 us max
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:358 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0005.sce_sys/icon0.png
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:358 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0004.sce_sys/icon0.png
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:358 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0003.sce_sys/icon0.png
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:358 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0002.sce_sys/icon0.png
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:358 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0001.sce_sys/icon0.png
+Runtime: SaveDataDialog list (Load game): 6 entries shown
+Runtime: SaveDataDialog list: chose @MediEvil0005
+Runtime: save data '@MediEvil0005' mounted at /savedata0 (existing)
+Texture helper: 0 binds in parallel, 0 partly, 374784 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+WriteData targets (5 s): 0x6dcfe9c0 4 B (first word 0x1) x502, waited 240.94 ms; 0x30000000a0 8 B (first word 0) x1004, waited 23.83 ms; 0x6dcfe9b8 4 B (first word 0x1) x502, waited 241.96 ms;
+Stall: 1130.5 ms frame; waits: readback 0.0 ms, GPU ticks 0.0 ms, recorder 0.0 ms, host copies 0.8 ms; 0 compiles 0.0 ms; GC 0.0 ms
+       fault handlers: 0 read faults 0.0 ms, write faults 0.1 ms
+       GPU thread on CPU 15.6 ms; 0 images registered, 3.1 MB image uploads, 2.3 MB buffer uploads
+       492 draws, 34 dispatches, 43 submissions; GPU thread user 0.0 ms, kernel 0.0 ms, 0 preempted, 0 waits
+       ms in: resident 0.0, protect 0.3, image create 0.0, image refresh 0.0, staging 0.0, waiting for host copies 0.0
+       GPU thread page faults 0 (process 0), protection faults 0; protect calls 16 (1373 pages), of which write-revoking 6 (550 pages)
+Frame stats: 190.7 FPS, worst frame 1130.5 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1054 recorder syncs; 116977 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 381 draws/frame, idle 20.8%; blocked: recorder 0.4%, host copies 9.8% (1/frame, 1747/frame skipped), copy threads 0.0%, GPU ticks 28.4%; reduced-size draws 0/frame of 121 in the scene
+Uploads: images 78.2 MB/s, buffers 487.2 MB/s
+Small read-only buffers/s: 65636 bound from the arena, 19 uploaded once, 23491 stream copies, 18 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 0.0 (0.000 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 0
+Frame pacing: median 2.95 ms, stddev 34.73 ms, p99 7.82 ms, 364 frames over 1.5x median, longest run 2 frames (1136.4 ms)
+Render state memo: 174829 hits, 87314 misses; texture sets: 208310 hits, 14126 misses
+  texture set misses: other key 14040, generation 0, image check 86, other 0
+  scene proxies sampled directly: 0 bindings
+Draw preparation: 363981 prepared pipelines used, 13875 not (8 workers, 0 scanner rebases)
+Draw pipe: 127586 draws/s pipelined, 1295 drains/s that waited, stage A waited 41.4%, stage B busy 62.2%
+  drains by reason/s: WaitRegMem=742 (2.1%) compute=367 (1.6%) submission end=186 (37.7%)
+  stage A waits over 0.5%: Process:192 37.7% ProcessCompute:1483 1.6% ProcessGraphics:1347 2.1%
+HZB remap (5 s): 929 maps (0 invalid, 929 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 1/1/135/792/0/0/0; keys 44832 (3 read visible); 11.5 us avg, 230.7 us max
+Render state memo: 174847 hits, 87296 misses; texture sets: 209029 hits, 14137 misses
+  texture set misses: other key 14077, generation 1, image check 59, other 0
+  scene proxies sampled directly: 0 bindings
+Runtime: guest thread 'SlateLoadingThread3' created (stack=262144, prio=700)
+Stall: 45.3 ms frame; waits: readback 0.0 ms, GPU ticks 0.0 ms, recorder 0.0 ms, host copies 0.6 ms; 0 compiles 0.0 ms; GC 0.0 ms
+       fault handlers: 0 read faults 0.0 ms, write faults 0.0 ms
+       GPU thread on CPU 0.0 ms; 0 images registered, 0.0 MB image uploads, 2.0 MB buffer uploads
+       4 draws, 0 dispatches, 4 submissions; GPU thread user 0.0 ms, kernel 0.0 ms, 0 preempted, 0 waits
+       ms in: resident 0.2, protect 0.2, image create 0.0, image refresh 0.0, staging 0.0, waiting for host copies 0.0
+       GPU thread page faults 0 (process 0), protection faults 0; protect calls 384 (100873 pages), of which write-revoking 2 (490 pages)
+WriteData targets (5 s): 0x6dcfe9c0 4 B (first word 0x1) x561, waited 270.07 ms; 0x30000000a0 8 B (first word 0) x1109, waited 25.54 ms; 0x6dcfe9b8 4 B (first word 0x1) x561, waited 269.65 ms;
+Texture helper: 0 binds in parallel, 0 partly, 466944 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Stall: 435.8 ms frame; waits: readback 15.0 ms, GPU ticks 14.4 ms, recorder 0.0 ms, host copies 1.6 ms; 18 compiles 27.0 ms; GC 0.0 ms
+       fault handlers: 0 read faults 0.0 ms, write faults 1.5 ms
+       GPU thread on CPU 46.9 ms; 182 images registered, 164.5 MB image uploads, 28.9 MB buffer uploads
+       1803 draws, 500 dispatches, 145 submissions; GPU thread user 0.0 ms, kernel 0.0 ms, 0 preempted, 0 waits
+       ms in: resident 6.7, protect 3.3, image create 7.6, image refresh 2.5, staging 0.0, waiting for host copies 0.0
+       GPU thread page faults 0 (process 0), protection faults 0; protect calls 392 (70554 pages), of which write-revoking 328 (57718 pages)
+Frame stats: 212.1 FPS, worst frame 435.8 ms (vblank 480 Hz); 18 shader/pipeline compiles, 27.0 ms; async: capture 76.4 ms, workers 55.8 ms, sync wait 0.0 ms, snapshots 0.3 ms, GPU capture wait 78.4 ms, 542 pending draws; 1122 recorder syncs; 129966 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 413 draws/frame, idle 10.2%; blocked: recorder 0.4%, host copies 10.9% (1/frame, 1870/frame skipped), copy threads 0.0%, GPU ticks 29.9%; reduced-size draws 0/frame of 134 in the scene
+Uploads: images 134.0 MB/s, buffers 542.9 MB/s
+Small read-only buffers/s: 76946 bound from the arena, 11 uploaded once, 29525 stream copies, 6 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.4 (0.00 MB, 0.1 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 3.4; precise CPU writes 2.3 (0.009 MB); on the readback queue 0.4; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 1.2 ms, compile 1.6 ms; pools retained 6, reused 95
+Frame pacing: median 3.03 ms, stddev 13.15 ms, p99 12.23 ms, 383 frames over 1.5x median, longest run 15 frames (673.5 ms)
+Pipeline binary cache: 256 hits, 0 compiled, 0 rejected, 0 saved, 0 cache errors (restore 0.668 ms, compile 0.000 ms each)
+Draw preparation: 446225 prepared pipelines used, 15599 not (8 workers, 0 scanner rebases)
+Draw pipe: 157570 draws/s pipelined, 1392 drains/s that waited, stage A waited 39.7%, stage B busy 66.7%
+  drains by reason/s: WaitRegMem=768 (3.6%) commands=6 (0.1%) compute=407 (2.1%) submission end=210 (33.8%) rasterizer=1 (0.1%)
+  stage A waits over 0.5%: Process:192 33.8% ProcessGraphics:1347 3.5% ProcessCompute:1483 2.1%
+Render state memo: 162411 hits, 99732 misses; texture sets: 203361 hits, 24975 misses
+  texture set misses: other key 24064, generation 848, image check 63, other 0
+  scene proxies sampled directly: 0 bindings
+HZB remap (5 s): 1033 maps (0 invalid, 1033 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 2/12/303/716/0/0/0; keys 159961 (44 read visible); 11.5 us avg, 1480.0 us max
+Render state memo: 157701 hits, 104442 misses; texture sets: 203580 hits, 27439 misses
+  texture set misses: other key 27058, generation 328, image check 53, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x30000000a0 8 B (first word 0) x1168, waited 34.56 ms; 0x6dcfe9c0 4 B (first word 0x1) x584, waited 317.64 ms; 0x6dcfe9b8 4 B (first word 0x1) x583, waited 320.30 ms;
+Texture helper: 0 binds in parallel, 0 partly, 696320 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 238.1 FPS, worst frame 17.2 ms (vblank 480 Hz); 14 shader/pipeline compiles, 20.9 ms; async: capture 15.5 ms, workers 120.6 ms, sync wait 0.0 ms, snapshots 0.4 ms, GPU capture wait 16.1 ms, 225 pending draws; 1191 recorder syncs; 131876 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 578 draws/frame, idle 0.6%; blocked: recorder 0.5%, host copies 14.1% (1/frame, 2435/frame skipped), copy threads 0.1%, GPU ticks 15.5%; reduced-size draws 0/frame of 223 in the scene
+Uploads: images 146.3 MB/s, buffers 548.9 MB/s
+Small read-only buffers/s: 101356 bound from the arena, 18 uploaded once, 109038 stream copies, 11 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 8.2 (0.02 MB, 5.6 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.8; precise CPU writes 8.6 (0.021 MB); on the readback queue 8.2; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.4 ms, compile 155.3 ms; pools retained 6, reused 28
+Frame pacing: median 3.71 ms, stddev 1.28 ms, p99 7.07 ms, 222 frames over 1.5x median, longest run 3 frames (41.3 ms)
+Render state memo: 162750 hits, 99393 misses; texture sets: 205257 hits, 26777 misses
+  texture set misses: other key 26497, generation 225, image check 55, other 0
+  scene proxies sampled directly: 0 bindings
+Runtime: save data '@MediEvil0005' mounted at /savedata0 (existing)
+Runtime: guest thread 'SlateLoadingThread4' created (stack=262144, prio=700)
+Stall: 50.0 ms frame; waits: readback 0.0 ms, GPU ticks 0.0 ms, recorder 0.0 ms, host copies 0.4 ms; 0 compiles 0.0 ms; GC 0.0 ms
+       fault handlers: 0 read faults 0.0 ms, write faults 0.0 ms
+       GPU thread on CPU 15.6 ms; 0 images registered, 0.0 MB image uploads, 2.0 MB buffer uploads
+       6 draws, 0 dispatches, 2 submissions; GPU thread user 0.0 ms, kernel 0.0 ms, 0 preempted, 0 waits
+       ms in: resident 0.2, protect 0.0, image create 0.0, image refresh 0.0, staging 0.0, waiting for host copies 0.0
+       GPU thread page faults 0 (process 0), protection faults 0; protect calls 3 (979 pages), of which write-revoking 2 (490 pages)
+Draw pipe: 204183 draws/s pipelined, 1228 drains/s that waited, stage A waited 38.3%, stage B busy 69.7%
+  drains by reason/s: WaitRegMem=633 (4.1%) commands=1 (0.0%) compute=380 (2.6%) submission end=214 (31.6%) rasterizer=1 (0.1%)
+  stage A waits over 0.5%: Process:192 31.6% ProcessGraphics:1347 4.1% ProcessCompute:1483 2.6%
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Runtime: system module 0xad loaded (host implementation)
+Draw preparation: 694479 prepared pipelines used, 2865 not (8 workers, 0 scanner rebases)
+Stall: 511.0 ms frame; waits: readback 18.7 ms, GPU ticks 18.3 ms, recorder 0.0 ms, host copies 2.4 ms; 6 compiles 10.6 ms; GC 0.0 ms
+       fault handlers: 0 read faults 0.0 ms, write faults 8.4 ms
+       GPU thread on CPU 46.9 ms; 318 images registered, 265.4 MB image uploads, 29.2 MB buffer uploads
+       2779 draws, 270 dispatches, 71 submissions; GPU thread user 0.0 ms, kernel 0.0 ms, 0 preempted, 0 waits
+       ms in: resident 23.1, protect 7.5, image create 4.2, image refresh 8.3, staging 0.0, waiting for host copies 0.0
+       GPU thread page faults 0 (process 0), protection faults 0; protect calls 779 (83335 pages), of which write-revoking 751 (77924 pages)
+Stall: 43.4 ms frame; waits: readback 0.0 ms, GPU ticks 0.0 ms, recorder 0.0 ms, host copies 0.7 ms; 0 compiles 0.0 ms; GC 0.0 ms
+       fault handlers: 0 read faults 0.0 ms, write faults 0.6 ms
+       GPU thread on CPU 0.0 ms; 21 images registered, 51.5 MB image uploads, 4.8 MB buffer uploads
+       1438 draws, 60 dispatches, 32 submissions; GPU thread user 0.0 ms, kernel 0.0 ms, 0 preempted, 0 waits
+       ms in: resident 1.5, protect 1.8, image create 0.9, image refresh 4.3, staging 0.0, waiting for host copies 0.0
+       GPU thread page faults 0 (process 0), protection faults 0; protect calls 96 (17611 pages), of which write-revoking 76 (13385 pages)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2053800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2053800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2053800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2053800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2053800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2053800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2053800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2053800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2053800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2053800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2053800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2053800000)
+HZB remap (5 s): 839 maps (0 invalid, 838 remapped, 1 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 1/3/126/708/0/0/0; keys 177102 (1616 read visible); 26.9 us avg, 12619.5 us max
+Render state memo: 183003 hits, 79140 misses; texture sets: 186726 hits, 24494 misses
+  texture set misses: other key 22483, generation 1813, image check 198, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 222986 hits, 39157 misses; texture sets: 193413 hits, 12561 misses
+  texture set misses: other key 12555, generation 4, image check 2, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 222859 hits, 39284 misses; texture sets: 198557 hits, 12664 misses
+  texture set misses: other key 12658, generation 1, image check 5, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9b8 4 B (first word 0x1) x414, waited 220.10 ms; 0x30000000a0 8 B (first word 0) x780, waited 33.98 ms; 0x6dcfe9c0 4 B (first word 0x1) x414, waited 224.14 ms;
+Texture helper: 0 binds in parallel, 0 partly, 881664 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 165.4 FPS, worst frame 511.0 ms (vblank 480 Hz); 6 shader/pipeline compiles, 10.6 ms; async: capture 150.0 ms, workers 269.7 ms, sync wait 0.0 ms, snapshots 1.3 ms, GPU capture wait 154.6 ms, 1017 pending draws; 827 recorder syncs; 108632 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1065 draws/frame, idle 23.4%; blocked: recorder 0.3%, host copies 9.7% (1/frame, 1594/frame skipped), copy threads 0.0%, GPU ticks 4.4%; reduced-size draws 0/frame of 212 in the scene
+Uploads: images 175.6 MB/s, buffers 454.2 MB/s
+Small read-only buffers/s: 135505 bound from the arena, 69 uploaded once, 139705 stream copies, 32 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.6 (0.00 MB, 0.1 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 4.4; precise CPU writes 5.6 (0.027 MB); on the readback queue 0.6; twinned (no wait) 0.6
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 2.7 ms, compile 134.6 ms; pools retained 6, reused 193
+Frame pacing: median 4.58 ms, stddev 17.98 ms, p99 18.52 ms, 66 frames over 1.5x median, longest run 33 frames (1068.1 ms)
+Render state memo: 222909 hits, 39234 misses; texture sets: 201201 hits, 12680 misses
+  texture set misses: other key 12669, generation 4, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 223009 hits, 39134 misses; texture sets: 203445 hits, 12725 misses
+  texture set misses: other key 12720, generation 0, image check 5, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 319822 draws/s pipelined, 1315 drains/s that waited, stage A waited 24.1%, stage B busy 79.1%
+  drains by reason/s: WaitRegMem=579 (4.6%) commands=1 (0.0%) compute=544 (6.7%) submission end=192 (12.8%)
+  stage A waits over 0.5%: ProcessCompute:1483 6.7% ProcessGraphics:1347 4.5% Process:192 12.8%
+Render state memo: 223054 hits, 39089 misses; texture sets: 201418 hits, 12747 misses
+  texture set misses: other key 12744, generation 0, image check 3, other 0
+  scene proxies sampled directly: 0 bindings
+Draw preparation: 1304394 prepared pipelines used, 109750 not (8 workers, 0 scanner rebases)
+HZB remap (5 s): 1127 maps (0 invalid, 1127 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/1/633/493/0/0/0; keys 504870 (2 read visible); 35.6 us avg, 387.6 us max
+Render state memo: 223319 hits, 38824 misses; texture sets: 203048 hits, 12684 misses
+  texture set misses: other key 12675, generation 0, image check 9, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 223282 hits, 38861 misses; texture sets: 201847 hits, 12684 misses
+  texture set misses: other key 12678, generation 0, image check 6, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 222940 hits, 39203 misses; texture sets: 202463 hits, 12710 misses
+  texture set misses: other key 12704, generation 0, image check 6, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9b8 4 B (first word 0x1) x592, waited 288.41 ms; 0x30000000a0 8 B (first word 0) x1183, waited 37.53 ms; 0x6dcfe9c0 4 B (first word 0x1) x591, waited 286.45 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1629184 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 236.8 FPS, worst frame 6.2 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1184 recorder syncs; 161217 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1358 draws/frame, idle 0.9%; blocked: recorder 0.4%, host copies 12.4% (1/frame, 1064/frame skipped), copy threads 0.0%, GPU ticks 0.0%; reduced-size draws 0/frame of 200 in the scene
+Uploads: images 94.6 MB/s, buffers 667.8 MB/s
+Small read-only buffers/s: 260204 bound from the arena, 6 uploaded once, 250917 stream copies, 6 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 0.0 (0.000 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 0
+Frame pacing: median 4.19 ms, stddev 0.30 ms, p99 5.17 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Render state memo: 222829 hits, 39314 misses; texture sets: 200540 hits, 12651 misses
+  texture set misses: other key 12643, generation 0, image check 8, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 222964 hits, 39179 misses; texture sets: 202256 hits, 12619 misses
+  texture set misses: other key 12610, generation 0, image check 9, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 397797 draws/s pipelined, 1632 drains/s that waited, stage A waited 26.4%, stage B busy 88.7%
+  drains by reason/s: WaitRegMem=712 (4.1%) compute=683 (7.8%) submission end=238 (14.6%)
+  stage A waits over 0.5%: Process:192 14.6% ProcessCompute:1483 7.8% ProcessGraphics:1347 4.1%
+Render state memo: 222864 hits, 39279 misses; texture sets: 201216 hits, 12683 misses
+  texture set misses: other key 12675, generation 0, image check 8, other 0
+  scene proxies sampled directly: 0 bindings
+Draw preparation: 1502629 prepared pipelines used, 103003 not (8 workers, 0 scanner rebases)
+HZB remap (5 s): 1191 maps (0 invalid, 1191 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/0/542/649/0/0/0; keys 533568 (0 read visible); 30.7 us avg, 294.4 us max
+Render state memo: 223100 hits, 39043 misses; texture sets: 201526 hits, 12615 misses
+  texture set misses: other key 12610, generation 0, image check 5, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 222936 hits, 39207 misses; texture sets: 202166 hits, 12614 misses
+  texture set misses: other key 12610, generation 0, image check 4, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 223100 hits, 39043 misses; texture sets: 199916 hits, 12454 misses
+  texture set misses: other key 12322, generation 125, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9c0 4 B (first word 0x1) x592, waited 289.26 ms; 0x30000000a0 8 B (first word 0) x1184, waited 42.49 ms; 0x6dcfe9b8 4 B (first word 0x1) x592, waited 289.26 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1619968 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 236.7 FPS, worst frame 8.0 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 10.7 ms, workers 23.7 ms, sync wait 0.0 ms, snapshots 0.1 ms, GPU capture wait 11.0 ms, 24 pending draws; 1184 recorder syncs; 162236 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1348 draws/frame, idle 0.9%; blocked: recorder 0.4%, host copies 12.6% (1/frame, 1081/frame skipped), copy threads 0.0%, GPU ticks 0.0%; reduced-size draws 0/frame of 200 in the scene
+Uploads: images 100.1 MB/s, buffers 672.2 MB/s
+Small read-only buffers/s: 257830 bound from the arena, 9 uploaded once, 247692 stream copies, 6 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.2; precise CPU writes 0.0 (0.000 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.2 ms, compile 0.3 ms; pools retained 6, reused 14
+Frame pacing: median 4.19 ms, stddev 0.34 ms, p99 5.38 ms, 3 frames over 1.5x median, longest run 2 frames (13.0 ms)
+Render state memo: 220050 hits, 42093 misses; texture sets: 199943 hits, 13044 misses
+  texture set misses: other key 12620, generation 419, image check 5, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 219570 hits, 42573 misses; texture sets: 203195 hits, 11864 misses
+  texture set misses: other key 11694, generation 162, image check 8, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 370343 draws/s pipelined, 1628 drains/s that waited, stage A waited 26.7%, stage B busy 84.8%
+  drains by reason/s: WaitRegMem=713 (4.5%) commands=0 (0.0%) compute=677 (7.4%) submission end=238 (14.8%)
+  stage A waits over 0.5%: Process:192 14.8% ProcessGraphics:1347 4.5% ProcessCompute:1483 7.4%
+Draw preparation: 1332442 prepared pipelines used, 107302 not (8 workers, 0 scanner rebases)
+Render state memo: 219217 hits, 42926 misses; texture sets: 200050 hits, 12060 misses
+  texture set misses: other key 11544, generation 510, image check 6, other 0
+  scene proxies sampled directly: 0 bindings
+HZB remap (5 s): 1193 maps (0 invalid, 1193 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/0/361/832/0/0/0; keys 406259 (1273 read visible); 23.0 us avg, 332.1 us max
+Render state memo: 215616 hits, 46527 misses; texture sets: 200757 hits, 13876 misses
+  texture set misses: other key 13386, generation 480, image check 10, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 209199 hits, 52944 misses; texture sets: 203607 hits, 18451 misses
+  texture set misses: other key 18428, generation 13, image check 10, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9c0 4 B (first word 0x1) x601, waited 288.69 ms; 0x30000000a0 8 B (first word 0) x1201, waited 42.79 ms; 0x6dcfe9b8 4 B (first word 0x1) x600, waited 287.65 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1326080 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 239.9 FPS, worst frame 7.5 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 19.2 ms, workers 44.1 ms, sync wait 0.0 ms, snapshots 0.2 ms, GPU capture wait 19.9 ms, 77 pending draws; 1200 recorder syncs; 162506 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1089 draws/frame, idle 0.9%; blocked: recorder 0.4%, host copies 12.4% (1/frame, 1517/frame skipped), copy threads 0.1%, GPU ticks 0.2%; reduced-size draws 0/frame of 189 in the scene
+Uploads: images 106.9 MB/s, buffers 673.6 MB/s
+Small read-only buffers/s: 191461 bound from the arena, 26 uploaded once, 223797 stream copies, 20 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.6 (0.00 MB, 0.2 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 30.6 (0.005 MB); on the readback queue 0.6; twinned (no wait) 14.6
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.4 ms, compile 0.6 ms; pools retained 6, reused 26
+Frame pacing: median 4.11 ms, stddev 0.80 ms, p99 6.08 ms, 7 frames over 1.5x median, longest run 1 frames (7.5 ms)
+Render state memo: 211783 hits, 50360 misses; texture sets: 189439 hits, 12080 misses
+  texture set misses: other key 12033, generation 43, image check 4, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 316021 draws/s pipelined, 1647 drains/s that waited, stage A waited 25.1%, stage B busy 74.7%
+  drains by reason/s: WaitRegMem=715 (4.1%) commands=23 (0.2%) compute=668 (6.0%) submission end=240 (14.9%)
+  stage A waits over 0.5%: ProcessGraphics:1347 4.1% ProcessCompute:1483 6.0% Process:192 14.9%
+Render state memo: 212614 hits, 49529 misses; texture sets: 191937 hits, 9250 misses
+  texture set misses: other key 9232, generation 1, image check 17, other 0
+  scene proxies sampled directly: 0 bindings
+Draw preparation: 1046554 prepared pipelines used, 106470 not (8 workers, 0 scanner rebases)
+HZB remap (5 s): 1198 maps (0 invalid, 1198 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/0/526/672/0/0/0; keys 198457 (496 read visible); 14.3 us avg, 222.4 us max
+Render state memo: 211565 hits, 50578 misses; texture sets: 188484 hits, 16290 misses
+  texture set misses: other key 12610, generation 3666, image check 14, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 214457 hits, 47686 misses; texture sets: 189244 hits, 21266 misses
+  texture set misses: other key 19133, generation 2125, image check 8, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9b8 4 B (first word 0x1) x520, waited 253.53 ms; 0x30000000a0 8 B (first word 0) x1040, waited 45.87 ms; 0x6dcfe9c0 4 B (first word 0x1) x520, waited 253.34 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1141760 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 206.3 FPS, worst frame 14.3 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 63.3 ms, workers 109.5 ms, sync wait 0.0 ms, snapshots 0.8 ms, GPU capture wait 64.7 ms, 174 pending draws; 1032 recorder syncs; 157022 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1102 draws/frame, idle 0.9%; blocked: recorder 0.4%, host copies 11.1% (1/frame, 1459/frame skipped), copy threads 0.0%, GPU ticks 5.1%; reduced-size draws 0/frame of 205 in the scene
+Uploads: images 107.3 MB/s, buffers 653.0 MB/s
+Small read-only buffers/s: 184447 bound from the arena, 90 uploaded once, 179021 stream copies, 74 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 5.4 (0.04 MB, 1.1 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 109.1 (0.304 MB); on the readback queue 5.4; twinned (no wait) 22.2
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 1.2 ms, compile 1.9 ms; pools retained 6, reused 78
+Frame pacing: median 4.56 ms, stddev 1.69 ms, p99 9.58 ms, 134 frames over 1.5x median, longest run 63 frames (547.6 ms)
+Render state memo: 213102 hits, 49041 misses; texture sets: 188564 hits, 20400 misses
+  texture set misses: other key 19706, generation 690, image check 4, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 214076 hits, 48067 misses; texture sets: 192259 hits, 19921 misses
+  texture set misses: other key 19661, generation 257, image check 3, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 343668 draws/s pipelined, 1202 drains/s that waited, stage A waited 28.2%, stage B busy 87.2%
+  drains by reason/s: WaitRegMem=526 (5.7%) commands=11 (0.2%) compute=490 (6.1%) submission end=175 (16.2%) rasterizer=0 (0.0%)
+  stage A waits over 0.5%: Process:192 16.2% ProcessCompute:1483 6.1% ProcessGraphics:1347 5.7%
+Render state memo: 215632 hits, 46511 misses; texture sets: 195493 hits, 18655 misses
+  texture set misses: other key 18478, generation 171, image check 6, other 0
+  scene proxies sampled directly: 0 bindings
+Draw preparation: 1327767 prepared pipelines used, 88425 not (8 workers, 0 scanner rebases)
+Render state memo: 214961 hits, 47182 misses; texture sets: 196316 hits, 18749 misses
+  texture set misses: other key 18443, generation 304, image check 2, other 0
+  scene proxies sampled directly: 0 bindings
+HZB remap (5 s): 830 maps (0 invalid, 830 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/0/718/112/0/0/0; keys 461451 (4244 read visible); 41.4 us avg, 300.1 us max
+Render state memo: 214288 hits, 47855 misses; texture sets: 192186 hits, 19361 misses
+  texture set misses: other key 19020, generation 337, image check 4, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 216413 hits, 45730 misses; texture sets: 196673 hits, 17155 misses
+  texture set misses: other key 16923, generation 225, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9b8 4 B (first word 0x1) x423, waited 205.33 ms; 0x30000000a0 8 B (first word 0) x845, waited 30.49 ms; 0x6dcfe9c0 4 B (first word 0x1) x422, waited 203.53 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1662976 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 169.0 FPS, worst frame 8.0 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 1.0 ms, workers 2.7 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 1.1 ms, 3 pending draws; 845 recorder syncs; 170431 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1945 draws/frame, idle 0.6%; blocked: recorder 0.3%, host copies 8.9% (1/frame, 1454/frame skipped), copy threads 0.0%, GPU ticks 0.0%; reduced-size draws 0/frame of 349 in the scene
+Uploads: images 94.2 MB/s, buffers 703.6 MB/s
+Small read-only buffers/s: 278273 bound from the arena, 56 uploaded once, 216089 stream copies, 57 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 190.6 (1.813 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 2
+Frame pacing: median 6.19 ms, stddev 0.88 ms, p99 7.43 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Render state memo: 214055 hits, 48088 misses; texture sets: 191905 hits, 19860 misses
+  texture set misses: other key 19450, generation 405, image check 5, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 216268 hits, 45875 misses; texture sets: 196225 hits, 17269 misses
+  texture set misses: other key 17065, generation 197, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 214589 hits, 47554 misses; texture sets: 194922 hits, 19023 misses
+  texture set misses: other key 18672, generation 343, image check 8, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 397718 draws/s pipelined, 1199 drains/s that waited, stage A waited 22.5%, stage B busy 89.2%
+  drains by reason/s: WaitRegMem=525 (5.3%) compute=499 (6.3%) submission end=175 (10.9%)
+  stage A waits over 0.5%: Process:192 10.9% ProcessGraphics:1347 5.3% ProcessCompute:1483 6.3%
+Draw preparation: 1534031 prepared pipelines used, 86961 not (8 workers, 0 scanner rebases)
+Render state memo: 213851 hits, 48292 misses; texture sets: 192054 hits, 20032 misses
+  texture set misses: other key 19617, generation 412, image check 3, other 0
+  scene proxies sampled directly: 0 bindings
+HZB remap (5 s): 859 maps (0 invalid, 859 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/0/732/127/0/0/0; keys 515044 (5994 read visible); 39.8 us avg, 189.3 us max
+Render state memo: 216024 hits, 46119 misses; texture sets: 194516 hits, 17867 misses
+  texture set misses: other key 17505, generation 355, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 216080 hits, 46063 misses; texture sets: 196325 hits, 17741 misses
+  texture set misses: other key 17485, generation 253, image check 3, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9c0 4 B (first word 0x1) x437, waited 212.33 ms; 0x30000000a0 8 B (first word 0) x874, waited 35.41 ms; 0x6dcfe9b8 4 B (first word 0x1) x437, waited 210.85 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1653760 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 175.0 FPS, worst frame 8.2 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 875 recorder syncs; 155038 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1870 draws/frame, idle 0.6%; blocked: recorder 0.3%, host copies 9.3% (1/frame, 1415/frame skipped), copy threads 0.0%, GPU ticks 0.0%; reduced-size draws 0/frame of 332 in the scene
+Uploads: images 94.6 MB/s, buffers 639.7 MB/s
+Small read-only buffers/s: 279058 bound from the arena, 25 uploaded once, 217183 stream copies, 23 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 199.6 (1.883 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 0
+Frame pacing: median 5.99 ms, stddev 0.97 ms, p99 7.37 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Render state memo: 214810 hits, 47333 misses; texture sets: 193835 hits, 19081 misses
+  texture set misses: other key 18733, generation 342, image check 6, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 213639 hits, 48504 misses; texture sets: 196614 hits, 18979 misses
+  texture set misses: other key 18663, generation 314, image check 2, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 213217 hits, 48926 misses; texture sets: 196759 hits, 18691 misses
+  texture set misses: other key 18393, generation 291, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 395373 draws/s pipelined, 1243 drains/s that waited, stage A waited 23.2%, stage B busy 88.9%
+  drains by reason/s: WaitRegMem=542 (5.5%) compute=519 (6.4%) submission end=181 (11.3%)
+  stage A waits over 0.5%: Process:192 11.3% ProcessGraphics:1347 5.5% ProcessCompute:1483 6.4%
+Draw preparation: 1508607 prepared pipelines used, 86785 not (8 workers, 0 scanner rebases)
+Render state memo: 213499 hits, 48644 misses; texture sets: 197389 hits, 17799 misses
+  texture set misses: other key 17554, generation 237, image check 8, other 0
+  scene proxies sampled directly: 0 bindings
+HZB remap (5 s): 945 maps (0 invalid, 945 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/0/618/327/0/0/0; keys 462070 (7939 read visible); 38.6 us avg, 370.1 us max
+Render state memo: 213059 hits, 49084 misses; texture sets: 196123 hits, 18364 misses
+  texture set misses: other key 18040, generation 319, image check 5, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 213419 hits, 48724 misses; texture sets: 194613 hits, 18493 misses
+  texture set misses: other key 18119, generation 368, image check 6, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9c0 4 B (first word 0x1) x504, waited 243.02 ms; 0x30000000a0 8 B (first word 0) x1007, waited 29.61 ms; 0x6dcfe9b8 4 B (first word 0x1) x504, waited 241.88 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1456128 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 202.8 FPS, worst frame 7.9 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1014 recorder syncs; 146839 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1408 draws/frame, idle 0.8%; blocked: recorder 0.4%, host copies 10.4% (1/frame, 1544/frame skipped), copy threads 0.0%, GPU ticks 0.0%; reduced-size draws 0/frame of 261 in the scene
+Uploads: images 94.0 MB/s, buffers 606.9 MB/s
+Small read-only buffers/s: 234525 bound from the arena, 11 uploaded once, 205955 stream copies, 11 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 204.4 (1.915 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 0
+Frame pacing: median 5.03 ms, stddev 1.15 ms, p99 7.13 ms, 2 frames over 1.5x median, longest run 1 frames (7.9 ms)
+Render state memo: 210475 hits, 51668 misses; texture sets: 193562 hits, 11591 misses
+  texture set misses: other key 11578, generation 1, image check 12, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 213626 hits, 48517 misses; texture sets: 197849 hits, 18572 misses
+  texture set misses: other key 18239, generation 327, image check 6, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 338286 draws/s pipelined, 1432 drains/s that waited, stage A waited 23.2%, stage B busy 76.9%
+  drains by reason/s: WaitRegMem=630 (4.4%) compute=592 (5.9%) submission end=210 (12.9%)
+  stage A waits over 0.5%: Process:192 12.9% ProcessCompute:1483 5.9% ProcessGraphics:1347 4.4%
+Draw preparation: 1213875 prepared pipelines used, 82509 not (8 workers, 0 scanner rebases)
+Render state memo: 213497 hits, 48646 misses; texture sets: 198688 hits, 17513 misses
+  texture set misses: other key 17217, generation 287, image check 9, other 0
+  scene proxies sampled directly: 0 bindings
+HZB remap (5 s): 1052 maps (0 invalid, 1052 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/11/538/503/0/0/0; keys 328072 (6735 read visible); 25.7 us avg, 197.5 us max
+Render state memo: 212391 hits, 49752 misses; texture sets: 196143 hits, 17111 misses
+  texture set misses: other key 16872, generation 230, image check 9, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 214523 hits, 47620 misses; texture sets: 201283 hits, 15981 misses
+  texture set misses: other key 15785, generation 187, image check 9, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x30000000a0 8 B (first word 0) x1073, waited 29.33 ms; 0x6dcfe9c0 4 B (first word 0x1) x536, waited 259.29 ms; 0x6dcfe9b8 4 B (first word 0x1) x536, waited 261.23 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1304576 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 214.3 FPS, worst frame 7.7 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1072 recorder syncs; 150284 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1206 draws/frame, idle 1.2%; blocked: recorder 0.4%, host copies 11.1% (1/frame, 1501/frame skipped), copy threads 0.0%, GPU ticks 0.0%; reduced-size draws 0/frame of 223 in the scene
+Uploads: images 94.0 MB/s, buffers 622.7 MB/s
+Small read-only buffers/s: 216622 bound from the arena, 7 uploaded once, 191967 stream copies, 9 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 183.4 (1.557 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 0
+Frame pacing: median 4.58 ms, stddev 1.16 ms, p99 7.17 ms, 22 frames over 1.5x median, longest run 2 frames (14.7 ms)
+Render state memo: 215176 hits, 46967 misses; texture sets: 198515 hits, 16368 misses
+  texture set misses: other key 16166, generation 197, image check 5, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 215215 hits, 46928 misses; texture sets: 199301 hits, 15763 misses
+  texture set misses: other key 15650, generation 107, image check 6, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 342421 draws/s pipelined, 1427 drains/s that waited, stage A waited 23.3%, stage B busy 79.2%
+  drains by reason/s: WaitRegMem=625 (4.4%) compute=592 (5.9%) submission end=209 (12.9%)
+  stage A waits over 0.5%: Process:192 12.9% ProcessCompute:1483 5.9% ProcessGraphics:1347 4.4%
+Draw preparation: 1220203 prepared pipelines used, 89493 not (8 workers, 0 scanner rebases)
+Render state memo: 214622 hits, 47521 misses; texture sets: 201341 hits, 15442 misses
+  texture set misses: other key 15356, generation 81, image check 5, other 0
+  scene proxies sampled directly: 0 bindings
+HZB remap (5 s): 1056 maps (0 invalid, 1056 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/34/629/393/0/0/0; keys 327503 (6171 read visible); 25.9 us avg, 247.6 us max
+Render state memo: 214368 hits, 47775 misses; texture sets: 201388 hits, 15274 misses
+  texture set misses: other key 15146, generation 116, image check 12, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 215587 hits, 46556 misses; texture sets: 200066 hits, 17574 misses
+  texture set misses: other key 17345, generation 225, image check 4, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9c0 4 B (first word 0x1) x526, waited 256.38 ms; 0x30000000a0 8 B (first word 0) x1051, waited 27.10 ms; 0x6dcfe9b8 4 B (first word 0x1) x525, waited 254.66 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1361920 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 210.2 FPS, worst frame 7.8 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1051 recorder syncs; 151564 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1285 draws/frame, idle 0.9%; blocked: recorder 0.4%, host copies 10.9% (1/frame, 1397/frame skipped), copy threads 0.0%, GPU ticks 0.0%; reduced-size draws 0/frame of 228 in the scene
+Uploads: images 94.0 MB/s, buffers 626.9 MB/s
+Small read-only buffers/s: 225786 bound from the arena, 2 uploaded once, 195249 stream copies, 3 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 217.0 (1.729 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 0
+Frame pacing: median 4.67 ms, stddev 1.13 ms, p99 7.00 ms, 10 frames over 1.5x median, longest run 2 frames (15.0 ms)
+Render state memo: 215304 hits, 46839 misses; texture sets: 197983 hits, 16563 misses
+  texture set misses: other key 16376, generation 184, image check 3, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 215091 hits, 47052 misses; texture sets: 200346 hits, 16510 misses
+  texture set misses: other key 16387, generation 118, image check 5, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 336379 draws/s pipelined, 1406 drains/s that waited, stage A waited 23.4%, stage B busy 79.5%
+  drains by reason/s: WaitRegMem=618 (4.2%) compute=582 (6.1%) submission end=206 (13.1%)
+  stage A waits over 0.5%: Process:192 13.1% ProcessGraphics:1347 4.2% ProcessCompute:1483 6.1%
+Draw preparation: 1231012 prepared pipelines used, 87900 not (8 workers, 0 scanner rebases)
+Render state memo: 215070 hits, 47073 misses; texture sets: 200698 hits, 16204 misses
+  texture set misses: other key 15978, generation 215, image check 11, other 0
+  scene proxies sampled directly: 0 bindings
+HZB remap (5 s): 1003 maps (0 invalid, 1003 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/40/682/281/0/0/0; keys 348410 (5843 read visible); 30.9 us avg, 338.8 us max
+Render state memo: 215345 hits, 46798 misses; texture sets: 201101 hits, 16543 misses
+  texture set misses: other key 16376, generation 161, image check 6, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 215655 hits, 46488 misses; texture sets: 201600 hits, 16734 misses
+  texture set misses: other key 16624, generation 105, image check 5, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9b8 4 B (first word 0x1) x487, waited 248.61 ms; 0x30000000a0 8 B (first word 0) x972, waited 34.15 ms; 0x6dcfe9c0 4 B (first word 0x1) x486, waited 249.01 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1422336 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 193.9 FPS, worst frame 9.1 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 970 recorder syncs; 140542 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1452 draws/frame, idle 0.9%; blocked: recorder 0.4%, host copies 10.7% (1/frame, 1329/frame skipped), copy threads 0.0%, GPU ticks 0.0%; reduced-size draws 0/frame of 256 in the scene
+Uploads: images 94.0 MB/s, buffers 582.1 MB/s
+Small read-only buffers/s: 238824 bound from the arena, 2 uploaded once, 195893 stream copies, 2 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 219.3 (1.751 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 0
+Frame pacing: median 5.12 ms, stddev 1.27 ms, p99 7.90 ms, 13 frames over 1.5x median, longest run 2 frames (17.3 ms)
+Render state memo: 215146 hits, 46997 misses; texture sets: 198821 hits, 16527 misses
+  texture set misses: other key 16392, generation 129, image check 6, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 216145 hits, 45998 misses; texture sets: 201035 hits, 17553 misses
+  texture set misses: other key 17370, generation 174, image check 9, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 350260 draws/s pipelined, 1388 drains/s that waited, stage A waited 23.8%, stage B busy 82.0%
+  drains by reason/s: WaitRegMem=607 (4.5%) compute=579 (6.4%) submission end=203 (12.8%)
+  stage A waits over 0.5%: Process:192 12.8% ProcessGraphics:1347 4.5% ProcessCompute:1483 6.4%
+Render state memo: 215360 hits, 46783 misses; texture sets: 198594 hits, 17083 misses
+  texture set misses: other key 16905, generation 169, image check 9, other 0
+  scene proxies sampled directly: 0 bindings
+Draw preparation: 1342181 prepared pipelines used, 90395 not (8 workers, 0 scanner rebases)
+HZB remap (5 s): 1037 maps (0 invalid, 1037 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/91/609/337/0/0/0; keys 368963 (6729 read visible); 29.9 us avg, 347.0 us max
+Render state memo: 215077 hits, 47066 misses; texture sets: 200115 hits, 16384 misses
+  texture set misses: other key 16158, generation 217, image check 9, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 215581 hits, 46562 misses; texture sets: 201804 hits, 16971 misses
+  texture set misses: other key 16758, generation 206, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x30000000a0 8 B (first word 0) x1040, waited 28.16 ms; 0x6dcfe9c0 4 B (first word 0x1) x520, waited 251.87 ms; 0x6dcfe9b8 4 B (first word 0x1) x519, waited 251.49 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1435648 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Render state memo: 215252 hits, 46891 misses; texture sets: 201155 hits, 16639 misses
+  texture set misses: other key 16472, generation 155, image check 12, other 0
+  scene proxies sampled directly: 0 bindings
+Frame stats: 207.0 FPS, worst frame 7.5 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1036 recorder syncs; 150285 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1374 draws/frame, idle 1.7%; blocked: recorder 0.4%, host copies 10.7% (1/frame, 1368/frame skipped), copy threads 0.0%, GPU ticks 0.0%; reduced-size draws 0/frame of 243 in the scene
+Uploads: images 93.9 MB/s, buffers 621.9 MB/s
+Small read-only buffers/s: 239265 bound from the arena, 1 uploaded once, 200999 stream copies, 1 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 231.6 (1.852 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 0
+Frame pacing: median 4.74 ms, stddev 1.09 ms, p99 6.95 ms, 6 frames over 1.5x median, longest run 2 frames (14.7 ms)
+Render state memo: 215481 hits, 46662 misses; texture sets: 201862 hits, 16687 misses
+  texture set misses: other key 16516, generation 162, image check 9, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 356237 draws/s pipelined, 1408 drains/s that waited, stage A waited 23.3%, stage B busy 81.4%
+  drains by reason/s: WaitRegMem=618 (4.3%) compute=584 (6.2%) submission end=206 (12.8%)
+  stage A waits over 0.5%: Process:192 12.8% ProcessCompute:1483 6.2% ProcessGraphics:1347 4.3%
+Render state memo: 215029 hits, 47114 misses; texture sets: 200774 hits, 16138 misses
+  texture set misses: other key 15997, generation 138, image check 3, other 0
+  scene proxies sampled directly: 0 bindings
+Draw preparation: 1319313 prepared pipelines used, 90735 not (8 workers, 0 scanner rebases)
+Render state memo: 216232 hits, 45911 misses; texture sets: 198959 hits, 17657 misses
+  texture set misses: other key 17439, generation 210, image check 8, other 0
+  scene proxies sampled directly: 0 bindings
+HZB remap (5 s): 1012 maps (0 invalid, 1012 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/42/610/360/0/0/0; keys 393909 (6975 read visible); 31.5 us avg, 310.8 us max
+Render state memo: 216002 hits, 46141 misses; texture sets: 202857 hits, 17579 misses
+  texture set misses: other key 17381, generation 195, image check 3, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 216065 hits, 46078 misses; texture sets: 199387 hits, 18099 misses
+  texture set misses: other key 17891, generation 200, image check 8, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9b8 4 B (first word 0x1) x491, waited 239.55 ms; 0x30000000a0 8 B (first word 0) x981, waited 31.81 ms; 0x6dcfe9c0 4 B (first word 0x1) x491, waited 238.28 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1526784 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 196.2 FPS, worst frame 7.6 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 982 recorder syncs; 143393 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1540 draws/frame, idle 0.8%; blocked: recorder 0.4%, host copies 10.3% (1/frame, 1375/frame skipped), copy threads 0.0%, GPU ticks 0.0%; reduced-size draws 0/frame of 270 in the scene
+Uploads: images 93.9 MB/s, buffers 593.1 MB/s
+Small read-only buffers/s: 257737 bound from the arena, 0 uploaded once, 206961 stream copies, 0 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 221.7 (1.778 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 0
+Frame pacing: median 5.13 ms, stddev 1.12 ms, p99 7.14 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Render state memo: 215496 hits, 46647 misses; texture sets: 195117 hits, 18605 misses
+  texture set misses: other key 18300, generation 303, image check 2, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 214869 hits, 47274 misses; texture sets: 193871 hits, 18655 misses
+  texture set misses: other key 18387, generation 265, image check 3, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 219554 hits, 42589 misses; texture sets: 199386 hits, 14135 misses
+  texture set misses: other key 13806, generation 323, image check 6, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 390872 draws/s pipelined, 1317 drains/s that waited, stage A waited 22.8%, stage B busy 88.0%
+  drains by reason/s: WaitRegMem=576 (4.6%) compute=548 (6.2%) submission end=192 (11.9%) rasterizer=0 (0.0%)
+  stage A waits over 0.5%: Process:192 11.9% ProcessCompute:1483 6.2% ProcessGraphics:1347 4.6%
+Draw preparation: 1492636 prepared pipelines used, 90468 not (8 workers, 0 scanner rebases)
+Render state memo: 215626 hits, 46517 misses; texture sets: 194618 hits, 18156 misses
+  texture set misses: other key 18030, generation 119, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+HZB remap (5 s): 951 maps (0 invalid, 951 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/0/667/284/0/0/0; keys 489752 (7763 read visible); 40.6 us avg, 330.8 us max
+Render state memo: 217122 hits, 45021 misses; texture sets: 195185 hits, 16734 misses
+  texture set misses: other key 16612, generation 117, image check 5, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 216426 hits, 45717 misses; texture sets: 196137 hits, 17671 misses
+  texture set misses: other key 17525, generation 142, image check 4, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x30000000a0 8 B (first word 0) x940, waited 28.94 ms; 0x6dcfe9b8 4 B (first word 0x1) x470, waited 228.16 ms; 0x6dcfe9c0 4 B (first word 0x1) x469, waited 225.35 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1646592 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 188.5 FPS, worst frame 7.4 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 943 recorder syncs; 138978 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1725 draws/frame, idle 1.7%; blocked: recorder 0.3%, host copies 9.8% (1/frame, 1347/frame skipped), copy threads 0.0%, GPU ticks 0.0%; reduced-size draws 0/frame of 299 in the scene
+Uploads: images 94.0 MB/s, buffers 574.8 MB/s
+Small read-only buffers/s: 283843 bound from the arena, 0 uploaded once, 211662 stream copies, 0 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 205.5 (1.914 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 0
+Frame pacing: median 5.60 ms, stddev 0.96 ms, p99 6.99 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Render state memo: 215175 hits, 46968 misses; texture sets: 194962 hits, 18618 misses
+  texture set misses: other key 18433, generation 182, image check 3, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 221495 hits, 40648 misses; texture sets: 197966 hits, 12003 misses
+  texture set misses: other key 11680, generation 315, image check 8, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 215371 hits, 46772 misses; texture sets: 196165 hits, 18353 misses
+  texture set misses: other key 17996, generation 347, image check 10, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 394231 draws/s pipelined, 1328 drains/s that waited, stage A waited 23.3%, stage B busy 88.0%
+  drains by reason/s: WaitRegMem=580 (5.1%) compute=554 (6.2%) submission end=194 (11.9%)
+  stage A waits over 0.5%: Process:192 11.9% ProcessCompute:1483 6.2% ProcessGraphics:1347 5.1%
+Draw preparation: 1499222 prepared pipelines used, 89002 not (8 workers, 0 scanner rebases)
+Render state memo: 215178 hits, 46965 misses; texture sets: 195411 hits, 18543 misses
+  texture set misses: other key 18339, generation 197, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+HZB remap (5 s): 978 maps (0 invalid, 978 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/38/606/334/0/0/0; keys 481132 (6329 read visible); 38.6 us avg, 373.6 us max
+Render state memo: 218199 hits, 43944 misses; texture sets: 197190 hits, 15504 misses
+  texture set misses: other key 15283, generation 219, image check 2, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 216530 hits, 45613 misses; texture sets: 198109 hits, 16686 misses
+  texture set misses: other key 16443, generation 238, image check 5, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9c0 4 B (first word 0x1) x501, waited 241.06 ms; 0x30000000a0 8 B (first word 0) x1001, waited 34.43 ms; 0x6dcfe9b8 4 B (first word 0x1) x500, waited 239.69 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1603584 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 201.1 FPS, worst frame 7.4 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1006 recorder syncs; 147069 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1573 draws/frame, idle 0.8%; blocked: recorder 0.4%, host copies 10.5% (1/frame, 1303/frame skipped), copy threads 0.0%, GPU ticks 0.0%; reduced-size draws 0/frame of 268 in the scene
+Uploads: images 94.1 MB/s, buffers 608.7 MB/s
+Small read-only buffers/s: 272208 bound from the arena, 11 uploaded once, 213501 stream copies, 11 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 161.9 (1.485 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 0
+Frame pacing: median 4.94 ms, stddev 1.02 ms, p99 6.84 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Render state memo: 216432 hits, 45711 misses; texture sets: 196668 hits, 17138 misses
+  texture set misses: other key 16946, generation 185, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 217599 hits, 44544 misses; texture sets: 198412 hits, 16188 misses
+  texture set misses: other key 16019, generation 164, image check 5, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 215204 hits, 46939 misses; texture sets: 193256 hits, 18529 misses
+  texture set misses: other key 18179, generation 345, image check 5, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 397674 draws/s pipelined, 1314 drains/s that waited, stage A waited 23.1%, stage B busy 88.9%
+  drains by reason/s: WaitRegMem=578 (5.1%) compute=543 (6.1%) submission end=193 (11.9%)
+  stage A waits over 0.5%: Process:192 11.9% ProcessGraphics:1347 5.1% ProcessCompute:1483 6.1%
+Draw preparation: 1501047 prepared pipelines used, 91273 not (8 workers, 0 scanner rebases)
+Render state memo: 217617 hits, 44526 misses; texture sets: 198570 hits, 15877 misses
+  texture set misses: other key 15752, generation 118, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+HZB remap (5 s): 983 maps (0 invalid, 983 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/0/637/346/0/0/0; keys 490035 (7729 read visible); 38.2 us avg, 274.6 us max
+Render state memo: 215627 hits, 46516 misses; texture sets: 193931 hits, 17981 misses
+  texture set misses: other key 17700, generation 276, image check 5, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 215493 hits, 46650 misses; texture sets: 195079 hits, 18235 misses
+  texture set misses: other key 17960, generation 272, image check 3, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9b8 4 B (first word 0x1) x496, waited 238.34 ms; 0x30000000a0 8 B (first word 0) x992, waited 31.27 ms; 0x6dcfe9c0 4 B (first word 0x1) x496, waited 237.42 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1633280 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 196.5 FPS, worst frame 7.5 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 983 recorder syncs; 143835 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1647 draws/frame, idle 0.8%; blocked: recorder 0.4%, host copies 10.2% (1/frame, 1333/frame skipped), copy threads 0.0%, GPU ticks 0.0%; reduced-size draws 0/frame of 283 in the scene
+Uploads: images 94.0 MB/s, buffers 594.9 MB/s
+Small read-only buffers/s: 279610 bound from the arena, 2 uploaded once, 215108 stream copies, 1 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 217.7 (1.863 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 0
+Frame pacing: median 5.19 ms, stddev 1.03 ms, p99 6.98 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Render state memo: 218222 hits, 43921 misses; texture sets: 196931 hits, 15301 misses
+  texture set misses: other key 15136, generation 160, image check 5, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 216420 hits, 45723 misses; texture sets: 195838 hits, 17553 misses
+  texture set misses: other key 17319, generation 227, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 217311 hits, 44832 misses; texture sets: 196578 hits, 16390 misses
+  texture set misses: other key 16176, generation 207, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 396756 draws/s pipelined, 1332 drains/s that waited, stage A waited 23.3%, stage B busy 88.7%
+  drains by reason/s: WaitRegMem=583 (5.0%) compute=554 (6.2%) submission end=195 (12.0%)
+  stage A waits over 0.5%: Process:192 12.0% ProcessGraphics:1347 5.0% ProcessCompute:1483 6.2%
+Draw preparation: 1524243 prepared pipelines used, 89581 not (8 workers, 0 scanner rebases)
+Render state memo: 216178 hits, 45965 misses; texture sets: 195096 hits, 17675 misses
+  texture set misses: other key 17409, generation 260, image check 6, other 0
+  scene proxies sampled directly: 0 bindings
+HZB remap (5 s): 975 maps (0 invalid, 975 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/0/626/349/0/0/0; keys 491795 (7051 read visible); 39.8 us avg, 351.5 us max
+Render state memo: 216162 hits, 45981 misses; texture sets: 192941 hits, 17678 misses
+  texture set misses: other key 17468, generation 207, image check 3, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 215301 hits, 46842 misses; texture sets: 194132 hits, 18366 misses
+  texture set misses: other key 18086, generation 273, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 214849 hits, 47294 misses; texture sets: 193055 hits, 19007 misses
+  texture set misses: other key 18691, generation 310, image check 6, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9b8 4 B (first word 0x1) x464, waited 225.37 ms; 0x30000000a0 8 B (first word 0) x927, waited 32.68 ms; 0x6dcfe9c0 4 B (first word 0x1) x463, waited 225.25 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1676288 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 187.4 FPS, worst frame 7.5 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 937 recorder syncs; 137833 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1764 draws/frame, idle 0.7%; blocked: recorder 0.3%, host copies 9.9% (1/frame, 1382/frame skipped), copy threads 0.0%, GPU ticks 0.0%; reduced-size draws 0/frame of 307 in the scene
+Uploads: images 94.0 MB/s, buffers 570.0 MB/s
+Small read-only buffers/s: 287563 bound from the arena, 1 uploaded once, 215880 stream copies, 1 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 206.9 (1.841 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 0
+Frame pacing: median 5.60 ms, stddev 1.00 ms, p99 7.09 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Render state memo: 220485 hits, 41658 misses; texture sets: 197590 hits, 12798 misses
+  texture set misses: other key 12758, generation 37, image check 3, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 215759 hits, 46384 misses; texture sets: 194713 hits, 17955 misses
+  texture set misses: other key 17670, generation 280, image check 5, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 401055 draws/s pipelined, 1298 drains/s that waited, stage A waited 22.6%, stage B busy 89.0%
+  drains by reason/s: WaitRegMem=571 (4.8%) compute=537 (6.0%) submission end=191 (11.8%)
+  stage A waits over 0.5%: Process:192 11.8% ProcessGraphics:1347 4.8% ProcessCompute:1483 6.0%
+Draw preparation: 1519267 prepared pipelines used, 95581 not (8 workers, 0 scanner rebases)
+Render state memo: 215521 hits, 46622 misses; texture sets: 192007 hits, 18170 misses
+  texture set misses: other key 17989, generation 176, image check 5, other 0
+  scene proxies sampled directly: 0 bindings
+HZB remap (5 s): 937 maps (0 invalid, 937 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/0/709/228/0/0/0; keys 499388 (7167 read visible); 44.1 us avg, 302.0 us max
+Render state memo: 216112 hits, 46031 misses; texture sets: 194609 hits, 18001 misses
+  texture set misses: other key 17704, generation 290, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 214400 hits, 47743 misses; texture sets: 194030 hits, 16732 misses
+  texture set misses: other key 16475, generation 251, image check 6, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9c0 4 B (first word 0x1) x491, waited 238.57 ms; 0x30000000a0 8 B (first word 0) x981, waited 31.86 ms; 0x6dcfe9b8 4 B (first word 0x1) x491, waited 238.65 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1543168 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Render state memo: 214238 hits, 47905 misses; texture sets: 195207 hits, 16611 misses
+  texture set misses: other key 16306, generation 304, image check 1, other 0
+  scene proxies sampled directly: 0 bindings
+Frame stats: 195.7 FPS, worst frame 7.7 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 979 recorder syncs; 142364 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1556 draws/frame, idle 0.9%; blocked: recorder 0.4%, host copies 10.2% (1/frame, 1368/frame skipped), copy threads 0.0%, GPU ticks 0.0%; reduced-size draws 0/frame of 272 in the scene
+Uploads: images 94.6 MB/s, buffers 588.8 MB/s
+Small read-only buffers/s: 265150 bound from the arena, 2 uploaded once, 202952 stream copies, 2 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 183.9 (1.583 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 0
+Frame pacing: median 5.16 ms, stddev 1.11 ms, p99 7.31 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Render state memo: 213584 hits, 48559 misses; texture sets: 193156 hits, 16301 misses
+  texture set misses: other key 15994, generation 301, image check 6, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 213999 hits, 48144 misses; texture sets: 197427 hits, 18717 misses
+  texture set misses: other key 18356, generation 352, image check 9, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 365965 draws/s pipelined, 1353 drains/s that waited, stage A waited 23.5%, stage B busy 83.9%
+  drains by reason/s: WaitRegMem=595 (5.2%) compute=560 (6.0%) submission end=198 (12.3%)
+  stage A waits over 0.5%: Process:192 12.3% ProcessCompute:1483 6.0% ProcessGraphics:1347 5.2%
+Draw preparation: 1372769 prepared pipelines used, 89503 not (8 workers, 0 scanner rebases)
+Render state memo: 215360 hits, 46783 misses; texture sets: 195704 hits, 19301 misses
+  texture set misses: other key 18912, generation 381, image check 8, other 0
+  scene proxies sampled directly: 0 bindings
+HZB remap (5 s): 969 maps (0 invalid, 969 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/32/674/263/0/0/0; keys 419065 (6414 read visible); 36.2 us avg, 180.4 us max
+Render state memo: 211909 hits, 50234 misses; texture sets: 194718 hits, 22959 misses
+  texture set misses: other key 22490, generation 459, image check 10, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 215346 hits, 46797 misses; texture sets: 198220 hits, 19652 misses
+  texture set misses: other key 19286, generation 359, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x30000000a0 8 B (first word 0) x925, waited 32.43 ms; 0x6dcfe9c0 4 B (first word 0x1) x462, waited 222.05 ms; 0x6dcfe9b8 4 B (first word 0x1) x462, waited 222.17 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1555456 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 183.2 FPS, worst frame 8.5 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 3.4 ms, workers 2.7 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 3.5 ms, 6 pending draws; 916 recorder syncs; 133392 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1685 draws/frame, idle 1.0%; blocked: recorder 0.3%, host copies 9.6% (1/frame, 1498/frame skipped), copy threads 0.0%, GPU ticks 0.0%; reduced-size draws 0/frame of 307 in the scene
+Uploads: images 94.2 MB/s, buffers 552.5 MB/s
+Small read-only buffers/s: 270536 bound from the arena, 15 uploaded once, 202491 stream copies, 14 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 210.3 (1.707 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.1 ms, compile 0.1 ms; pools retained 6, reused 4
+Frame pacing: median 5.85 ms, stddev 1.23 ms, p99 7.60 ms, 0 frames over 1.5x median, longest run 0 frames (0.0 ms)
+Render state memo: 214007 hits, 48136 misses; texture sets: 197056 hits, 17846 misses
+  texture set misses: other key 17467, generation 372, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 209164 hits, 52979 misses; texture sets: 200637 hits, 23263 misses
+  texture set misses: other key 23045, generation 211, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 373686 draws/s pipelined, 1228 drains/s that waited, stage A waited 24.3%, stage B busy 87.2%
+  drains by reason/s: WaitRegMem=539 (6.5%) compute=510 (6.6%) submission end=180 (11.2%)
+  stage A waits over 0.5%: Process:192 11.2% ProcessCompute:1483 6.6% ProcessGraphics:1347 6.5%
+Render state memo: 212980 hits, 49163 misses; texture sets: 199444 hits, 19253 misses
+  texture set misses: other key 19039, generation 210, image check 4, other 0
+  scene proxies sampled directly: 0 bindings
+Draw preparation: 1380983 prepared pipelines used, 90505 not (8 workers, 0 scanner rebases)
+HZB remap (5 s): 920 maps (0 invalid, 920 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/6/761/153/0/0/0; keys 426786 (5471 read visible); 35.8 us avg, 206.6 us max
+Render state memo: 214895 hits, 47248 misses; texture sets: 197662 hits, 17897 misses
+  texture set misses: other key 17507, generation 385, image check 5, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 215293 hits, 46850 misses; texture sets: 198439 hits, 17963 misses
+  texture set misses: other key 17526, generation 430, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9c0 4 B (first word 0x1) x483, waited 233.56 ms; 0x30000000a0 8 B (first word 0) x964, waited 124.13 ms; 0x6dcfe9b8 4 B (first word 0x1) x482, waited 234.48 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1384448 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Render state memo: 215385 hits, 46758 misses; texture sets: 198404 hits, 17321 misses
+  texture set misses: other key 17007, generation 306, image check 8, other 0
+  scene proxies sampled directly: 0 bindings
+Frame stats: 192.8 FPS, worst frame 8.6 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 965 recorder syncs; 246625 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1417 draws/frame, idle 0.7%; blocked: recorder 0.3%, host copies 11.9% (1/frame, 1363/frame skipped), copy threads 0.4%, GPU ticks 0.0%; reduced-size draws 0/frame of 260 in the scene
+Uploads: images 94.1 MB/s, buffers 1016.7 MB/s
+Small read-only buffers/s: 237075 bound from the arena, 25 uploaded once, 203538 stream copies, 21 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 212.8 (1.478 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 0
+Frame pacing: median 4.89 ms, stddev 1.44 ms, p99 7.92 ms, 67 frames over 1.5x median, longest run 8 frames (62.4 ms)
+Render state memo: 214847 hits, 47296 misses; texture sets: 198812 hits, 16658 misses
+  texture set misses: other key 16378, generation 273, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 338218 draws/s pipelined, 1340 drains/s that waited, stage A waited 25.8%, stage B busy 81.9%
+  drains by reason/s: WaitRegMem=589 (6.7%) compute=554 (7.0%) submission end=197 (12.1%)
+  stage A waits over 0.5%: Process:192 12.1% ProcessGraphics:1347 6.7% ProcessCompute:1483 7.0%
+Render state memo: 214533 hits, 47610 misses; texture sets: 198278 hits, 16895 misses
+  texture set misses: other key 16622, generation 265, image check 8, other 0
+  scene proxies sampled directly: 0 bindings
+Draw preparation: 1260757 prepared pipelines used, 91947 not (8 workers, 0 scanner rebases)
+HZB remap (5 s): 1012 maps (0 invalid, 1012 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/25/815/172/0/0/0; keys 338862 (5880 read visible); 22.8 us avg, 249.6 us max
+Render state memo: 213053 hits, 49090 misses; texture sets: 196121 hits, 15825 misses
+  texture set misses: other key 15610, generation 200, image check 15, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 215334 hits, 46809 misses; texture sets: 197619 hits, 18057 misses
+  texture set misses: other key 17704, generation 349, image check 4, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 215026 hits, 47117 misses; texture sets: 198677 hits, 18144 misses
+  texture set misses: other key 17795, generation 346, image check 3, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x30000000a0 8 B (first word 0) x996, waited 36.65 ms; 0x6dcfe9b8 4 B (first word 0x1) x498, waited 238.05 ms; 0x6dcfe9c0 4 B (first word 0x1) x497, waited 238.23 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1390592 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 201.2 FPS, worst frame 8.1 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1006 recorder syncs; 207258 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1365 draws/frame, idle 0.9%; blocked: recorder 0.4%, host copies 10.4% (1/frame, 1474/frame skipped), copy threads 0.0%, GPU ticks 0.0%; reduced-size draws 0/frame of 245 in the scene
+Uploads: images 94.6 MB/s, buffers 854.7 MB/s
+Small read-only buffers/s: 239760 bound from the arena, 3 uploaded once, 191455 stream copies, 4 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 222.6 (1.374 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 0
+Frame pacing: median 4.66 ms, stddev 1.35 ms, p99 7.61 ms, 87 frames over 1.5x median, longest run 5 frames (36.8 ms)
+Render state memo: 213569 hits, 48574 misses; texture sets: 201253 hits, 15691 misses
+  texture set misses: other key 15620, generation 61, image check 10, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 336615 draws/s pipelined, 1446 drains/s that waited, stage A waited 23.9%, stage B busy 78.4%
+  drains by reason/s: WaitRegMem=632 (4.6%) compute=604 (6.5%) submission end=211 (12.8%)
+  stage A waits over 0.5%: Process:192 12.8% ProcessCompute:1483 6.5% ProcessGraphics:1347 4.6%
+Render state memo: 213742 hits, 48401 misses; texture sets: 197979 hits, 15648 misses
+  texture set misses: other key 15524, generation 113, image check 11, other 0
+  scene proxies sampled directly: 0 bindings
+Draw preparation: 1222692 prepared pipelines used, 93148 not (8 workers, 0 scanner rebases)
+HZB remap (5 s): 1063 maps (0 invalid, 1063 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/3/512/548/0/0/0; keys 362829 (9407 read visible); 24.8 us avg, 334.2 us max
+Render state memo: 214562 hits, 47581 misses; texture sets: 201944 hits, 17303 misses
+  texture set misses: other key 17226, generation 68, image check 9, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 215504 hits, 46639 misses; texture sets: 202142 hits, 17405 misses
+  texture set misses: other key 17395, generation 0, image check 10, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 215699 hits, 46444 misses; texture sets: 199442 hits, 18285 misses
+  texture set misses: other key 18148, generation 133, image check 4, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9c0 4 B (first word 0x1) x550, waited 263.30 ms; 0x30000000a0 8 B (first word 0) x1100, waited 33.06 ms; 0x6dcfe9b8 4 B (first word 0x1) x550, waited 261.98 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1437696 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 218.6 FPS, worst frame 7.3 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1094 recorder syncs; 158133 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1303 draws/frame, idle 0.9%; blocked: recorder 0.4%, host copies 11.2% (1/frame, 1414/frame skipped), copy threads 0.0%, GPU ticks 0.0%; reduced-size draws 0/frame of 233 in the scene
+Uploads: images 93.9 MB/s, buffers 654.7 MB/s
+Small read-only buffers/s: 247957 bound from the arena, 1 uploaded once, 201252 stream copies, 1 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 228.6 (1.296 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 0
+Frame pacing: median 4.55 ms, stddev 0.96 ms, p99 6.98 ms, 23 frames over 1.5x median, longest run 5 frames (35.2 ms)
+Render state memo: 216189 hits, 45954 misses; texture sets: 198740 hits, 18054 misses
+  texture set misses: other key 17794, generation 257, image check 3, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 214823 hits, 47320 misses; texture sets: 201717 hits, 16999 misses
+  texture set misses: other key 16814, generation 179, image check 6, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 378370 draws/s pipelined, 1490 drains/s that waited, stage A waited 24.0%, stage B busy 85.8%
+  drains by reason/s: WaitRegMem=652 (4.4%) compute=620 (6.3%) submission end=218 (13.3%)
+  stage A waits over 0.5%: Process:192 13.3% ProcessCompute:1483 6.3% ProcessGraphics:1347 4.4%
+Render state memo: 214395 hits, 47748 misses; texture sets: 204102 hits, 16720 misses
+  texture set misses: other key 16709, generation 0, image check 11, other 0
+  scene proxies sampled directly: 0 bindings
+Draw preparation: 1403215 prepared pipelines used, 92849 not (8 workers, 0 scanner rebases)
+HZB remap (5 s): 1098 maps (0 invalid, 1098 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/1/460/637/0/0/0; keys 413133 (12301 read visible); 28.8 us avg, 276.0 us max
+Render state memo: 214242 hits, 47901 misses; texture sets: 203044 hits, 16236 misses
+  texture set misses: other key 16226, generation 0, image check 10, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 213962 hits, 48181 misses; texture sets: 201684 hits, 16055 misses
+  texture set misses: other key 16026, generation 19, image check 10, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9c0 4 B (first word 0x1) x578, waited 276.99 ms; 0x30000000a0 8 B (first word 0) x1155, waited 35.15 ms; 0x6dcfe9b8 4 B (first word 0x1) x577, waited 275.78 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1396736 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 231.9 FPS, worst frame 7.1 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1160 recorder syncs; 164312 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1186 draws/frame, idle 1.0%; blocked: recorder 0.4%, host copies 11.9% (1/frame, 1428/frame skipped), copy threads 0.0%, GPU ticks 0.0%; reduced-size draws 0/frame of 213 in the scene
+Uploads: images 94.0 MB/s, buffers 679.5 MB/s
+Small read-only buffers/s: 236187 bound from the arena, 0 uploaded once, 201396 stream copies, 0 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 239.7 (1.489 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 0
+Frame pacing: median 4.26 ms, stddev 0.86 ms, p99 6.67 ms, 21 frames over 1.5x median, longest run 4 frames (26.7 ms)
+Render state memo: 213905 hits, 48238 misses; texture sets: 197948 hits, 16590 misses
+  texture set misses: other key 16404, generation 180, image check 6, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 215890 hits, 46253 misses; texture sets: 202036 hits, 17530 misses
+  texture set misses: other key 17454, generation 65, image check 11, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 357018 draws/s pipelined, 1573 drains/s that waited, stage A waited 24.2%, stage B busy 82.1%
+  drains by reason/s: WaitRegMem=688 (4.1%) compute=656 (6.2%) submission end=230 (13.9%)
+  stage A waits over 0.5%: Process:192 13.9% ProcessGraphics:1347 4.1% ProcessCompute:1483 6.2%
+Render state memo: 214428 hits, 47715 misses; texture sets: 201084 hits, 17189 misses
+  texture set misses: other key 17182, generation 0, image check 7, other 0
+  scene proxies sampled directly: 0 bindings
+Draw preparation: 1271649 prepared pipelines used, 98463 not (8 workers, 0 scanner rebases)
+HZB remap (5 s): 1151 maps (0 invalid, 1151 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/13/373/765/0/0/0; keys 331399 (11139 read visible); 22.7 us avg, 238.8 us max
+Render state memo: 211993 hits, 50150 misses; texture sets: 200010 hits, 14372 misses
+  texture set misses: other key 14363, generation 0, image check 9, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 211009 hits, 51134 misses; texture sets: 196553 hits, 12857 misses
+  texture set misses: other key 12841, generation 0, image check 16, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9b8 4 B (first word 0x1) x582, waited 279.86 ms; 0x30000000a0 8 B (first word 0) x1163, waited 33.43 ms; 0x6dcfe9c0 4 B (first word 0x1) x581, waited 275.66 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1243136 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 232.5 FPS, worst frame 9.1 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1163 recorder syncs; 159841 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 1056 draws/frame, idle 0.9%; blocked: recorder 0.4%, host copies 11.9% (1/frame, 1489/frame skipped), copy threads 0.0%, GPU ticks 0.0%; reduced-size draws 0/frame of 194 in the scene
+Uploads: images 94.0 MB/s, buffers 663.0 MB/s
+Small read-only buffers/s: 207408 bound from the arena, 0 uploaded once, 186821 stream copies, 0 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 235.1 (1.482 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 0
+Frame pacing: median 4.22 ms, stddev 0.83 ms, p99 6.76 ms, 18 frames over 1.5x median, longest run 16 frames (114.6 ms)
+Render state memo: 210841 hits, 51302 misses; texture sets: 198060 hits, 12646 misses
+  texture set misses: other key 12629, generation 0, image check 17, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 273729 draws/s pipelined, 1634 drains/s that waited, stage A waited 33.2%, stage B busy 73.8%
+  drains by reason/s: WaitRegMem=719 (3.2%) compute=675 (6.1%) submission end=240 (23.8%)
+  stage A waits over 0.5%: Process:192 23.8% ProcessCompute:1483 6.1% ProcessGraphics:1347 3.2%
+Render state memo: 210332 hits, 51811 misses; texture sets: 196183 hits, 12077 misses
+  texture set misses: other key 12061, generation 0, image check 16, other 0
+  scene proxies sampled directly: 0 bindings
+Draw preparation: 888227 prepared pipelines used, 86621 not (8 workers, 0 scanner rebases)
+HZB remap (5 s): 1199 maps (0 invalid, 1199 remapped, 0 syncs, 0 drift, 0 unavailable); age 0/1/2/3/4/>4/none 0/0/213/986/0/0/0; keys 147964 (2478 read visible); 14.9 us avg, 91.2 us max
+Render state memo: 212493 hits, 49650 misses; texture sets: 199737 hits, 14072 misses
+  texture set misses: other key 14060, generation 0, image check 12, other 0
+  scene proxies sampled directly: 0 bindings
+Render state memo: 213579 hits, 48564 misses; texture sets: 197206 hits, 16087 misses
+  texture set misses: other key 15936, generation 145, image check 6, other 0
+  scene proxies sampled directly: 0 bindings
+WriteData targets (5 s): 0x6dcfe9c0 4 B (first word 0x1) x589, waited 278.75 ms; 0x30000000a0 8 B (first word 0) x1176, waited 32.52 ms; 0x6dcfe9b8 4 B (first word 0x1) x588, waited 278.77 ms;
+Texture helper: 0 binds in parallel, 0 partly, 1081344 serial; per fork 0 cycles helper task, 0 cycles GPU thread wait
+Frame stats: 235.3 FPS, worst frame 7.4 ms (vblank 480 Hz); 0 shader/pipeline compiles, 0.0 ms; async: capture 0.0 ms, workers 0.0 ms, sync wait 0.0 ms, snapshots 0.0 ms, GPU capture wait 0.0 ms, 0 pending draws; 1177 recorder syncs; 157951 write faults/s, 0 hot pages; GPU thread 0.00 us/draw, 909 draws/frame, idle 1.0%; blocked: recorder 0.4%, host copies 12.0% (1/frame, 1577/frame skipped), copy threads 0.0%, GPU ticks 14.3%; reduced-size draws 0/frame of 172 in the scene
+Uploads: images 94.0 MB/s, buffers 655.9 MB/s
+Small read-only buffers/s: 176099 bound from the arena, 1 uploaded once, 171688 stream copies, 0 found dynamic
+Buffer downloads/s (GPU waits): read fault 0.0 (0.00 MB, 0.0 ms) write fault 0.0 (0.00 MB, 0.0 ms) invalidation 0.0 (0.00 MB, 0.0 ms) unmap 0.0 (0.00 MB, 0.0 ms); unmaps discarded 0.0; precise CPU writes 237.9 (1.447 MB); on the readback queue 0.0; twinned (no wait) 0.0
+Compiler stats: capture queue 0, compile queue 0; queue waits: capture 0.0 ms, compile 0.0 ms; pools retained 6, reused 0
+Frame pacing: median 3.76 ms, stddev 1.33 ms, p99 7.18 ms, 235 frames over 1.5x median, longest run 16 frames (100.0 ms)

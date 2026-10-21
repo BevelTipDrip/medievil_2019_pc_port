@@ -93,6 +93,22 @@ static void read_unlock(void) { if (!exclusive_depth) pthread_rwlock_unlock(&loc
 #endif
 static Block blocks[LIMIT];
 static Vma *vmas; static size_t vma_count, vma_capacity;
+/* gow3 (T-P2): lock-free reads of the region table for runtime_memory_clamp. A writer holds the
+ * table lock across the host mapping calls (tens to hundreds of microseconds); the draw-command
+ * thread's per-draw lookups waited behind them while UE4 streamed pool pages in (5% of that
+ * thread while panning). vma_seq is odd only while table entries change (insert, erase, split),
+ * not across the host calls; the table never moves: VMA_FIXED_CAPACITY entries up front, and
+ * past them lock-free reads stop. GOW3_OPTIMISTIC_CLAMP=0: always locked. */
+#define VMA_FIXED_CAPACITY 131072u
+static uint64_t vma_seq; /* atomic */
+static unsigned vma_seq_depth; /* writer only, under the table lock */
+static int vma_optimistic=1; /* atomic */
+static void vma_begin(void) {
+    if (!vma_seq_depth++) { __atomic_add_fetch(&vma_seq,1,__ATOMIC_SEQ_CST); __atomic_thread_fence(__ATOMIC_RELEASE); }
+}
+static void vma_end(void) {
+    if (!--vma_seq_depth) { __atomic_thread_fence(__ATOMIC_RELEASE); __atomic_add_fetch(&vma_seq,1,__ATOMIC_SEQ_CST); }
+}
 #ifndef _WIN32
 static int pool_fd=-1;
 #endif
@@ -458,17 +474,29 @@ static uint64_t region_stamp(uintptr_t start, uintptr_t end) {
 static int vma_insert(size_t at, Vma v) {
     region_changed(v.start,v.end);
     if (vma_count==vma_capacity) {
-        size_t capacity=vma_capacity ? vma_capacity*2 : 256;
-        Vma *next=realloc(vmas,capacity*sizeof(*vmas));
+        /* The first table holds VMA_FIXED_CAPACITY entries; a larger one ends lock-free reads,
+         * and the old table stays allocated (a reader may still be in it). */
+        size_t capacity=vma_capacity ? vma_capacity*2 : VMA_FIXED_CAPACITY;
+        Vma *next=malloc(capacity*sizeof(*vmas));
         if (!next) return -1;
-        vmas=next; vma_capacity=capacity;
+        if (vma_capacity) __atomic_store_n(&vma_optimistic,0,__ATOMIC_SEQ_CST);
+        if (vma_count) memcpy(next,vmas,vma_count*sizeof(*vmas));
+        vma_begin();
+        __atomic_store_n(&vmas,next,__ATOMIC_RELEASE); vma_capacity=capacity;
+        vma_end();
     }
+    vma_begin();
     memmove(vmas+at+1,vmas+at,(vma_count-at)*sizeof(*vmas));
-    vmas[at]=v; ++vma_count; return 0;
+    vmas[at]=v; __atomic_store_n(&vma_count,vma_count+1,__ATOMIC_RELEASE);
+    vma_end();
+    return 0;
 }
 static void vma_erase(size_t at, size_t n) {
     for (size_t k=0;k<n;++k) region_changed(vmas[at+k].start,vmas[at+k].end);
-    memmove(vmas+at,vmas+at+n,(vma_count-at-n)*sizeof(*vmas)); vma_count-=n;
+    vma_begin();
+    memmove(vmas+at,vmas+at+n,(vma_count-at-n)*sizeof(*vmas));
+    __atomic_store_n(&vma_count,vma_count-n,__ATOMIC_RELEASE);
+    vma_end();
 }
 static int split_at(uintptr_t a) {
     size_t i=vma_index(a);
@@ -477,8 +505,11 @@ static int split_at(uintptr_t a) {
     right.start=a;
     if (right.kind==KIND_DIRECT) right.phys+=a-vmas[i].start;
     region_changed(vmas[i].start,vmas[i].end);
+    vma_begin();
     vmas[i].end=a;
-    return vma_insert(i+1,right);
+    const int r=vma_insert(i+1,right);
+    vma_end();
+    return r;
 }
 /* Range [start,end) split on its edges; returns the first index inside it. */
 static size_t carve(uintptr_t start, uintptr_t end, int *error) {
@@ -1177,10 +1208,37 @@ static void cache_region(size_t i) {
     region_cache[region_cache_next++ % 8]=(CachedRegion){generation,
         region_stamp(vmas[i].start,vmas[i].end),vmas[i].start,vmas[i].end,vmas[i].kind};
 }
+/* Lock-free runtime_memory_clamp (see vma_seq): 1 with the length in *out when no table entry
+ * changed during the search. */
+static int clamp_optimistic(uintptr_t address, uint64_t size, uint64_t *out) {
+    static int enabled=-1;
+    if (enabled<0) { const char *e=getenv("GOW3_OPTIMISTIC_CLAMP"); enabled=!(e && e[0]=='0'); }
+    if (!enabled || exclusive_depth) return 0;
+    for (int attempt=0; attempt<4; ++attempt) {
+        if (!__atomic_load_n(&vma_optimistic,__ATOMIC_ACQUIRE)) return 0;
+        const uint64_t s1=__atomic_load_n(&vma_seq,__ATOMIC_ACQUIRE);
+        if (s1 & 1) { __builtin_ia32_pause(); continue; }
+        const Vma *v=__atomic_load_n(&vmas,__ATOMIC_ACQUIRE);
+        size_t n=__atomic_load_n(&vma_count,__ATOMIC_ACQUIRE);
+        if (!v) return 0;
+        if (n>VMA_FIXED_CAPACITY) n=VMA_FIXED_CAPACITY;
+        size_t lo=0, hi=n;
+        while (lo<hi) { size_t mid=(lo+hi)/2; if (v[mid].end<=address) lo=mid+1; else hi=mid; }
+        uint64_t length=0;
+        for (size_t i=lo; i<n && length<size; ++i) {
+            if (v[i].start>address+length || v[i].kind==KIND_RESERVED) break;
+            length=v[i].end-address;
+        }
+        __atomic_thread_fence(__ATOMIC_ACQUIRE);
+        if (__atomic_load_n(&vma_seq,__ATOMIC_RELAXED)==s1) { *out=length<size ? length : size; return 1; }
+    }
+    return 0;
+}
 /* Mapped length from address, up to size, across adjacent mappings. */
 uint64_t runtime_memory_clamp(uintptr_t address, uint64_t size) {
     const CachedRegion *c=(runtime_disabled_optimizations & 1) ? NULL : cached_region(address);
     if (c && c->kind!=KIND_RESERVED && size<=c->end-address) return size;
+    { uint64_t length; if (clamp_optimistic(address,size,&length)) return length; }
     read_lock();
     { size_t i=vma_index(address); if (i<vma_count && vmas[i].start<=address) cache_region(i); }
     uint64_t length=0;

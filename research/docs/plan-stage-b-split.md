@@ -452,3 +452,19 @@ never waited on the GPU (0% every window), stage B 90% busy, yet the panning win
 are stage B work, not GPU saturation.** **Default since 2026-10-21: `r.DBuffer=0`, `r.EarlyZPass=1`** (the user: "we found
 a way to increase the 1% lows significantly in heavy areas"). Next: why panning costs stage B so much (slow-frame
 sections while panning).
+
+### T-P1 / T-P2: why panning costs (2026-10-21 03:35-19:40, launched by Claude with the user's go; build `166557c`; logs `data/t-p1-panning.log`, `data/t-p2-panning-samples.log`, samples `research-data\samples\t-p2-panning-samples`)
+
+T-P1 (4K, slow frames + sections + per-frame misses): stage B never waited on the GPU in the worst frames. Two kinds:
+**A, new content in view** (most 10-24 ms frames): stage B only 45-76% busy, stage A not waiting for the game and only
+~2-3 ms on stage B, ~180-240 FindImage page-table lookups (0 normally), ~150-220 unprepared draws (36 normally),
+texture-set misses ~200-370 (156); **B, bursts every 15-30 s**: 2-4 frames of 10-14 ms, stage B 95-98% busy, 3-4 ms of
+host-copy waits in the end-of-pipe task, no new images. T-P2 (`-Samples`, 50% resolution, panning): stage A 13% in
+`CollectRingBindings` -> `runtime_memory_clamp`, **5% of stage A blocked in `RtlAcquireSRWLockShared`** there: the region
+table lock, held exclusively by `pool_commit` / `pool_decommit` across the host mapping calls while UE4 streams pool
+pages (the region caches miss because those commits change their 16 MiB buckets).
+
+**Lock-free clamp** (`GOW3_OPTIMISTIC_CLAMP`, default on): `vma_seq` odd only while table entries change (insert,
+erase, split), not across host calls; the table is allocated at 131,072 entries up front and never moves (past that,
+lock-free reads stop); `runtime_memory_clamp` searches without the lock and keeps the result when `vma_seq` was even
+and unchanged, else retries, then takes the lock as before.
