@@ -341,3 +341,11 @@ voided every memoized set (the panning link: new textures in view, all sets miss
 (un)registrations per 4 MiB region (`RegionStamp`, `BumpRegions`); a memoized set stores the sum of its entries'
 stamps (each the bound image's range and the T#'s range) and is valid while that sum is unchanged. A set is not
 memoized when any image was (un)registered during its bind (stricter than before).
+
+### T-S1b: region stamps (2026-10-20 23:22-23:27, launched by Claude with the user's go; build `641134c`; log `data/t-s1b-region-stamps.log`)
+
+Texture-set hit rate 83.6% -> **92.3%**, generation misses ~15,300 -> ~48 a window; but textures 0.396 -> 0.392 us
+per packet: the slow path 0.200 -> 0.163, the memoized path 0.109 -> 0.137 (every hit summed its entries' region
+stamps, render targets spanning several regions). Next build: a hit checks the stamps only when the registry
+generation changed since the set was last confirmed (and then takes the new generation), and the memo is two-way
+(either of two slots, the less recently used replaced) for the "other key" half of the misses.

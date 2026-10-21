@@ -303,6 +303,7 @@ private:
         const Shader::Info* stage = nullptr;
         u64 generation = ~0ull;
         u64 stamp = 0; ///< region stamps of its entries (TextureCache::RegionStamp)
+        u64 last_use = 0; ///< two-way replacement
         u64 scene_generation = 0; ///< SceneTargets::Generation of the proxy views
         u32 count = 0;
         static constexpr u32 MaxImages = 16; ///< larger sets are not memoized
@@ -311,6 +312,7 @@ private:
     };
     std::array<TextureSet, 32768> texture_sets{};
     u64 texture_set_hits = 0, texture_set_misses = 0;
+    u64 texture_set_tick = 0;
     std::array<u64, 4> texture_set_why{}; ///< misses: other key, generation, image check, new
     /// Returns true when the stage's images were bound from the memo.
     bool BindTexturesFromSet(const Shader::Info& stage, const PreparedStage* prepared,

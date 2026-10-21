@@ -2706,20 +2706,32 @@ bool Rasterizer::BindTexturesFromSet(const Shader::Info& stage, const PreparedSt
     u64 key = XXH3_64bits_withSeed(prepared->image_hashes, count * sizeof(u64),
                                    reinterpret_cast<u64>(&stage));
     key |= 1; // 0 marks an empty slot
-    auto& set = texture_sets[key % texture_sets.size()];
-    slot = &set;
     const u64 generation = texture_cache.RegistryGeneration();
     const bool regions = TextureSetRegions();
-    const bool match = set.key == key && set.stage == &stage && set.count == count &&
-                       (regions ? set.generation != ~0ull && set.stamp == TextureSetStamp(set)
-                                : set.generation == generation) &&
+    // Two ways (T-S1b: half the misses were another set in the slot): a set lives in either of
+    // two slots; the less recently used one is replaced.
+    const u64 index = key % texture_sets.size();
+    TextureSet* way0 = &texture_sets[index];
+    TextureSet* way1 = &texture_sets[index ^ 1];
+    TextureSet* found = way0->key == key ? way0 : way1->key == key ? way1 : nullptr;
+    auto& set = found ? *found : *(way0->last_use <= way1->last_use ? way0 : way1);
+    slot = &set;
+    set.last_use = ++texture_set_tick;
+    // Region stamps: unchanged registry generation since the set was last confirmed needs no
+    // stamp; otherwise the stamps decide and a still-valid set takes the new generation.
+    bool current = found && set.generation != ~0ull;
+    if (current && regions && set.generation != generation) {
+        current = set.stamp == TextureSetStamp(set);
+        if (current) set.generation = generation;
+    } else if (current && !regions) {
+        current = set.generation == generation;
+    }
+    const bool match = found && set.stage == &stage && set.count == count && current &&
                        set.scene_generation == scene_targets->Generation() &&
                        std::equal(set.hashes.begin(), set.hashes.begin() + count,
                                   prepared->image_hashes);
     if (!match) {
-        ++texture_set_why[set.key != key ? 0
-                          : (regions ? set.generation == ~0ull || set.stamp != TextureSetStamp(set)
-                                     : set.generation != generation) ? 1 : 3];
+        ++texture_set_why[!found ? 0 : !current ? 1 : 3];
         ++texture_set_misses;
         set.key = key;
         set.stage = &stage;
