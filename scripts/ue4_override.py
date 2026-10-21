@@ -298,7 +298,7 @@ def edited_asset(game, name, edits):
 
 
 def apply(game, resolution='native', quality='console', fps=60, debug_menu=False, infinite_ammo=False,
-          upscale='off'):
+          upscale='off', hzb=False):
     """Writes or removes the override pak. Returns a short description of the active state."""
     pak = paks_dir(game) / PAK_NAME
     values = dict(QUALITY.get(quality, {}))
@@ -319,9 +319,15 @@ def apply(game, resolution='native', quality='console', fps=60, debug_menu=False
         values.update({'r.GarlicHeapSizeMB': '4600', 'r.Streaming.PoolSize': '1600'})
     # The port answers the game's occlusion queries "visible" (shadPS4's synthetic counters), so
     # they cull nothing and their bounding-box draws cost ~150 draws a frame in busy views
-    # (+~5% FPS without them, research: T-O1). Real results (GOW3_OCCLUSION=1) and UE4's HZB
-    # both cost more than they save in this port so far (T-O3c, T-HZ3).
-    values['r.AllowOcclusionQueries'] = '0'
+    # (+~5% FPS without them, research: T-O1). hzb (the runtime's HZB remap, GOW3_HZB_REMAP=1,
+    # analysed eboot only): UE4's HZB occlusion culls, served from finished copies without a GPU
+    # wait (T-HZ4); the few queries it still issues are read 3 frames late, so the game never
+    # waits for them (T-HZ4e).
+    if hzb:
+        values.update({'r.AllowOcclusionQueries': '1', 'r.HZBOcclusion': '1',
+                       'r.NumBufferedOcclusionQueries': '3'})
+    else:
+        values['r.AllowOcclusionQueries'] = '0'
     scale = TEMPORAL_UPSCALE.get(upscale) if not percentage else None
     if scale:
         values.update({'r.ScreenPercentage': scale, 'r.TemporalAA.Upsampling': '1'})

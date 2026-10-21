@@ -150,6 +150,15 @@ def main():
                 env['GOW3_PATCHES'] = ';'.join(n for n in (env.get('GOW3_PATCHES', ''), '4K display metrics at boot') if n)
             else:
                 env.setdefault('GOW3_UE4_SETRES', output)
+        # HZB occlusion through the runtime's remap (research: T-HZ4, study-hzb-double-buffer.md):
+        # its hooks fit the analysed eboot only. Small read-only buffers the CPU did not write are
+        # bound from VRAM instead of copied every draw (S2, T-S2b). GOW3_HZB_REMAP=0 /
+        # GOW3_STREAM_CLEAN=0: off.
+        from patches import eboot_matches as hzb_eboot_matches, game_profile as hzb_profile, game_title_id as hzb_title
+        known = hzb_profile(hzb_title(game))
+        if known and known[3] and hzb_eboot_matches(game, known):
+            env.setdefault('GOW3_HZB_REMAP', '1')
+        env.setdefault('GOW3_STREAM_CLEAN', '1')
     for key, value in profile['env'].items():
         env.setdefault(key, value)
     profile_ue4 = bool(profile.get('ue4_render_scale'))
@@ -161,7 +170,8 @@ def main():
                                                            ini.get('ue4_quality', 'console'), engine_fps,
                                                            ini.get('cheat_menu') == '1',
                                                            ini.get('cheat_infinite_ammo') == '1',
-                                                           ini.get('ue4_upscale', 'off')), flush=True)
+                                                           ini.get('ue4_upscale', 'off'),
+                                                           env.get('GOW3_HZB_REMAP') == '1'), flush=True)
         except (OSError, ValueError) as error:
             print(f'Render resolution: unchanged ({error})', flush=True)
     original_game = game.resolve()
