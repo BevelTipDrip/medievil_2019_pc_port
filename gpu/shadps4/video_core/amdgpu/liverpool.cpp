@@ -327,14 +327,50 @@ void SignalFlip(Vulkan::Rasterizer& rasterizer, const u8*) {
     Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxFlip);
 }
 
+/// gow3 GOW3_FRAME_STATS (T-S1c: RunWriteData ~260 us twice a frame on stage B, waiting for the
+/// deferred fences): what the WRITE_DATA packets write, and how long each target waited.
+static void NoteWriteData(VAddr address, u32 bytes, const u32* data, u64 wait_ns) {
+    struct Target {
+        VAddr address = 0;
+        u32 bytes = 0, first = 0, count = 0;
+        u64 wait_ns = 0;
+    };
+    static std::array<Target, 16> targets{};
+    static auto window = std::chrono::steady_clock::now();
+    auto* slot = std::ranges::find(targets, address, &Target::address);
+    if (slot == targets.end()) slot = std::ranges::find(targets, VAddr{0}, &Target::address);
+    if (slot != targets.end()) {
+        *slot = {address, bytes, bytes ? data[0] : 0, slot->count + 1, slot->wait_ns + wait_ns};
+    }
+    const auto now = std::chrono::steady_clock::now();
+    if (now - window < std::chrono::seconds(5)) return;
+    std::printf("WriteData targets (5 s):");
+    for (const auto& t : targets) {
+        if (!t.address) break;
+        std::printf(" %#llx %u B (first word %#x) x%u, waited %.2f ms;",
+                    static_cast<unsigned long long>(t.address), t.bytes, t.first, t.count, t.wait_ns / 1e6);
+    }
+    std::printf("\n");
+    targets = {};
+    window = now;
+}
+
 void RunWriteData(Vulkan::Rasterizer& rasterizer, const u8* data) {
     const auto* header = reinterpret_cast<const PM4Header*>(data);
     const auto* write_data = reinterpret_cast<const PM4CmdWriteData*>(data);
     // Copies deferred to the recording thread that read this range precede the write, and
     // fences deferred to it (RecorderFences) precede writes the guest sees.
+    const auto wait_start = Gow3Stats::enabled ? std::chrono::steady_clock::now()
+                                               : std::chrono::steady_clock::time_point{};
     rasterizer.WaitHostCopiesFor(write_data->Address<VAddr>(),
                                  (header->type3.count.Value() - 2) * sizeof(u32));
     rasterizer.WaitDeferredSignals();
+    if (Gow3Stats::enabled) {
+        NoteWriteData(write_data->Address<VAddr>(), (header->type3.count.Value() - 2) * sizeof(u32),
+                      write_data->data,
+                      std::chrono::duration_cast<std::chrono::nanoseconds>(
+                          std::chrono::steady_clock::now() - wait_start).count());
+    }
     Gow3WriteLog::Note(write_data->Address<u64>(), write_data->data,
                      (header->type3.count.Value() - 2) * sizeof(u32), Gow3WriteLog::WriteData);
     std::memcpy(write_data->Address<u64*>(), write_data->data,
