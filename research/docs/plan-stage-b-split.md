@@ -380,3 +380,10 @@ which it needs (both record into the same command stream). **W3b removed (opt-in
 W3 made opt-in (`GOW3_WRITEDATA_DEFERRED=1`): alone it moves the wait to the flip (T-W3b worse).** Defaults as at
 `d67ac70`. The frame-end recorder catch-up is the real cost; removing it needs the present recorded in stream order
 by stage B (a redesign).
+
+### T-W3d: W3 A/B without diagnostics (2026-10-21 00:12-00:28, launched by Claude with the user's go; build `807d4c8`; `-NoStats`)
+
+The user, heavy area: W3 on (`GOW3_WRITEDATA_DEFERRED=1`): ~175 average, 1% ~120, 0.1% ~100. W3 off: ~175, 1% ~148,
+0.1% ~124 standing, but panning drops the lows significantly, GPU into the 70s at times; both below T-S2b (~185 / 150 /
+125 panning). The pak holds the same cvars as T-S2b. **W3 stays off.** The only other change since T-S2b: the texture
+memo (region stamps `641134c`, two-way `2492874`); switch `GOW3_TEXSET_TWO_WAY=0` added. Next: both off (T-S2b's code).

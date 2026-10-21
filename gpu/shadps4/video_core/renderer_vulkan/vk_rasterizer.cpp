@@ -2592,7 +2592,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
         set_slot->scene_generation = scene_targets->Generation();
         set_slot->count = static_cast<u32>(stage.images.size());
         std::copy_n(resolved.begin(), set_slot->count, set_slot->entries.begin());
-        set_slot->stamp = TextureSetStamp(*set_slot);
+        if (TextureSetRegions()) set_slot->stamp = TextureSetStamp(*set_slot);
     } else if (set_slot) {
         set_slot->key = 0;
     }
@@ -2710,9 +2710,13 @@ bool Rasterizer::BindTexturesFromSet(const Shader::Info& stage, const PreparedSt
     const bool regions = TextureSetRegions();
     // Two ways (T-S1b: half the misses were another set in the slot): a set lives in either of
     // two slots; the less recently used one is replaced.
+    static const bool two_way = [] {
+        const char* env = std::getenv("GOW3_TEXSET_TWO_WAY");
+        return !env || env[0] != '0';
+    }();
     const u64 index = key % texture_sets.size();
     TextureSet* way0 = &texture_sets[index];
-    TextureSet* way1 = &texture_sets[index ^ 1];
+    TextureSet* way1 = two_way ? &texture_sets[index ^ 1] : way0;
     TextureSet* found = way0->key == key ? way0 : way1->key == key ? way1 : nullptr;
     auto& set = found ? *found : *(way0->last_use <= way1->last_use ? way0 : way1);
     slot = &set;
