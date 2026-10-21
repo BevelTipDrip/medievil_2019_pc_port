@@ -387,3 +387,9 @@ The user, heavy area: W3 on (`GOW3_WRITEDATA_DEFERRED=1`): ~175 average, 1% ~120
 0.1% ~124 standing, but panning drops the lows significantly, GPU into the 70s at times; both below T-S2b (~185 / 150 /
 125 panning). The pak holds the same cvars as T-S2b. **W3 stays off.** The only other change since T-S2b: the texture
 memo (region stamps `641134c`, two-way `2492874`); switch `GOW3_TEXSET_TWO_WAY=0` added. Next: both off (T-S2b's code).
+
+T-texset-both-off (2026-10-21 00:33, build `61440d7`, `-NoStats`, `GOW3_TEXSET_REGIONS=0 GOW3_TEXSET_TWO_WAY=0`, i.e.
+T-S2b's code): the user: 1% and 0.1% lows worse than with the memo work; "too much run to run variance at this level,
+but it looks like the memo work is worth it". **Region stamps and the two-way memo stay on.** Lesson: at ~175-185 FPS
+single feel runs differ by about as much as these changes; small stage B changes need logged A/B runs on the same
+route (or several runs) to be judged.
