@@ -493,7 +493,7 @@ void VideoOutDriver::Flip(const Request& req) {
             const u64 occ = Gow3Stats::occlusion_dumps.load(), ends = Gow3Stats::render_pass_ends.load(),
                       busy = Gow3Stats::stage_b_busy_cycles.load(), tsc = __rdtsc();
             const bool slow = slow_ratio > 0 && median_ms > 0 && frame_ms > slow_ratio * median_ms &&
-                              slow_shown < 60;
+                              slow_shown < 600;
             const bool sampled = slow_ratio > 0 && median_ms > 0 && ++sample % 100 == 0;
             if ((slow || sampled) && last_tsc && !window_reset) {
                 slow_shown += slow;
