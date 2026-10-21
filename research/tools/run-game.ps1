@@ -11,7 +11,8 @@
 #   -Ps4Memory    the PS4 memory sizes instead of the 4K defaults below (A/B runs)
 #   -Env @{NAME='value'}  any other environment variable for this launch
 #   -Tag name     name for the saved log / samples (default: run-<time>)
-param([switch]$Validation, [switch]$Samples, [switch]$TextureHelper, [switch]$Ps4Memory, [hashtable]$Env = @{},
+param([switch]$Validation, [switch]$Samples, [switch]$TextureHelper, [switch]$Ps4Memory, [switch]$NoStats,
+      [hashtable]$Env = @{},
       [string]$Tag = '')
 $Port = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 $Game = 'C:\Users\Ty\MediEvil\Game Files\CUSA11227'
@@ -22,7 +23,9 @@ $ini = Join-Path $Port 'medievil.ini'
 if (Test-Path $ini) { Copy-Item $ini "$ini.bak-$Tag" }
 
 # GOW3_FRAME_STATS: the per-second Perf / Frame stats / Draw pipe / Stall lines the launcher's runs log.
-$set = [ordered]@{ GOW3_GAME_DIR = $Game; GOW3_FRAME_STATS = '1' }
+# -NoStats: none of them (as a launcher run): stage B prints some of these reports itself (T-S2).
+$set = [ordered]@{ GOW3_GAME_DIR = $Game }
+if (-not $NoStats) { $set.GOW3_FRAME_STATS = '1' }
 # Live toggles (gpu/shim/gow3_toggles.h bits): the runtime watches this file only when it is set. Reset to 0 at
 # every launch, so a launch never starts with a toggle left from the one before.
 $toggles = 'C:\Users\Ty\MediEvil\research-data\toggles.txt'
