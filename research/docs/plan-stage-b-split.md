@@ -422,3 +422,21 @@ slot spin up to 1 ms on the realtime present thread, taking a core from stage A/
 off.** Upstream 1.3.5 (`d4c9cf4`, on `merge-1.3.5`): with VSync on, a limit at the refresh is left to VSync (their
 issue #3), which covers the limit-at-refresh case. If cap pacing under G-Sync matters later: a high-resolution
 waitable timer to the exact slot, no spin. T-L1c (VSync alone at 240) skipped; it comes with the merge.
+
+### T-Z2-T-Z4b: DBuffer decals and the forced prepass (2026-10-21 02:00-03:14, launched by Claude with the user's go)
+
+Heavy-view captures (`study-heavy-frame-map.md`): the depth prepass is a **full** prepass (628 / 739 draws, ~28%,
+the G-buffer drawn twice) whatever `r.EarlyZPass` says: DBuffer decals force it (UE4 4.21). The decals in that view:
+4 draws (eid 9800-9868) touching ~3,500 pixels of Dan's boots by 1-4/255 (invisible;
+`research-data\renderdoc\heavy-analysis\decalshot\`). T-Z1's "~120 fewer draws" is not what the captures show.
+
+| Run | Settings | Result |
+|---|---|---|
+| T-Z2 | `r.DBuffer=0` (prepass gone) | ~1,650 draws (-600). The user, standing: the best yet (1% ~165, 0.1% ~145). Panning: large spikes (1% 107, 0.1% 82 over a minute); log: worst frames 21-45 ms in panning windows, stage B waiting on the GPU 1.5-8% (was ~0). |
+| T-Z3 | `r.DBuffer=0 r.EarlyZPass=1` (partial prepass) | Worst frames ~9-12 ms, more frequent; GPU waits up to 17%. The user: a 12 ms frame at ~180 average is a large spike; worse than most runs of the night. Hypothesis (the user): the GPU at 95-100% starves stage B as scenes get heavier. |
+| T-Z4 | + `t.MaxFPS=120`, `GOW3_FPS_LIMIT=0` | First launch: boot crash, "STOP: unmapped host pthread error -1" (`runtime_mutex.c` orbis_error), then a null fault in `PageManager::OnGpuMap` during the exit (`data/t-z4-crash-pthread.log`, dump in `user/crashdumps/`): new, rare. Relaunch booted: **`t.MaxFPS` is ignored** (ran to 240; `data/t-z4-maxfps-ignored.log`). |
+| T-Z4b | engine_fps=120 (UE4 SmoothedFrameRateRange; ini backed up and restored), `GOW3_FPS_LIMIT=0` | **Stuck on the intro loading screen** (3 draws a frame at 59 FPS for ~2 min; `data/t-z4b-stuck-loading.log`), like the first T-HZ4c attempt: an intermittent intro-load stall, cause unknown. |
+
+Open: whether the T-Z2/T-Z3 panning spikes are GPU saturation (an engine-side cap test still to do); defaults unchanged
+(`r.DBuffer` on, `r.EarlyZPass=0`). Port limiter note: the in-game frame limit and `GOW3_FPS_LIMIT` are the same
+present-thread limiter; an external limiter (RTSS) sits at the end of a deep pipeline (see the reply of 03:00).
