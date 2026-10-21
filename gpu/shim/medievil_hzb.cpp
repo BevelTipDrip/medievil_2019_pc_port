@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 #include "core/memory.h"
+#include "gow3_toggles.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 
 using VideoCore::TextureCache;
@@ -134,7 +135,7 @@ bool CollectKeys(const std::uint8_t* view_state, std::uint32_t frame, std::vecto
 }
 
 void Report(std::chrono::steady_clock::time_point now) {
-    if (now - report_time < std::chrono::seconds(5)) return;
+    if (!Gow3Stats::enabled || now - report_time < std::chrono::seconds(5)) return;
     const auto& s = stats;
     const auto u = [](std::uint64_t v) { return static_cast<unsigned long long>(v); };
     std::printf("HZB remap (5 s): %llu maps (%llu invalid, %llu remapped, %llu syncs, %llu drift, "
