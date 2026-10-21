@@ -412,3 +412,13 @@ earlier runs (5.08, 5.16, 5.58, 5.85 ms...), the immediate-flip path presents fr
 FPS at ~2,300 draws, stddev 0.29-0.4 ms, like earlier runs; the user: no timing issues (fights fine), "quite possible
 that setting has no effect". Not adopted. The 480 Hz tick only bounds how late a frame can be when it does wait.
 Next: the frame limiter A/B at the cap (`GOW3_PRECISE_LIMIT`, `5231983`).
+
+### T-L1b: precise frame limiter at 233 (2026-10-21 01:40, launched by Claude with the user's go; build `a297c6b`; log `data/t-l1b-precise-233.log`)
+
+`GOW3_FPS_LIMIT=233 GOW3_PRECISE_LIMIT=1` (G-Sync on). The user: no visible difference in the light area (it did not
+reach the cap there); in the heavy area more, larger spikes while panning. Log: heavy windows 152-173 FPS, 5 of 10 with
+1-2 frames over 1.5x the median, worst 9.4-10.2 ms (T-L0: mostly none, worst 7.4-8.9). Likely: frames faster than the
+slot spin up to 1 ms on the realtime present thread, taking a core from stage A/B. **Precise limiter stays opt-in,
+off.** Upstream 1.3.5 (`d4c9cf4`, on `merge-1.3.5`): with VSync on, a limit at the refresh is left to VSync (their
+issue #3), which covers the limit-at-refresh case. If cap pacing under G-Sync matters later: a high-resolution
+waitable timer to the exact slot, no spin. T-L1c (VSync alone at 240) skipped; it comes with the merge.
