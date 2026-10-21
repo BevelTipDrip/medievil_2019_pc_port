@@ -369,3 +369,14 @@ now wait 0 ms and `RunWriteData` 0.187 -> 0.013 us per packet, but `SignalFlip` 
 backlog, ~1 ms a frame) and ordered tasks 0.30 -> 0.68: the wait moved to the flip. The user: no issues loading
 levels or in menus. **W3b** (`GOW3_FLIP_DEFERRED`, default on): the flip interrupt is raised by the recording thread
 after the deferred fences instead of stage B waiting for them.
+
+T-W3c (2026-10-21 00:05-00:07, build `6006996`, two launches): **both froze at boot** after the save-data mount
+(where a good boot connects the gamepad and creates `RenderThread 1`). Stacks (`data/t-w3c-freeze-stacks.txt`,
+symbolized): the deferred flip interrupt ran on `gow3:VkRecorder`, the guest's flip handler presented inside it
+(`sceVideoOutSubmitEopFlip` -> `SubmitFlip` -> `Presenter::PrepareFrame` -> `Scheduler::CommandBuffer` ->
+`SyncRecording`) and waited for the recording thread it was running on; `GpuCommand` waited in
+`WaitDeferredSignals`. So most of the flip's stage B time is the present synchronising with the recording thread,
+which it needs (both record into the same command stream). **W3b removed (opt-in only as a reference, do not use);
+W3 made opt-in (`GOW3_WRITEDATA_DEFERRED=1`): alone it moves the wait to the flip (T-W3b worse).** Defaults as at
+`d67ac70`. The frame-end recorder catch-up is the real cost; removing it needs the present recorded in stream order
+by stage B (a redesign).

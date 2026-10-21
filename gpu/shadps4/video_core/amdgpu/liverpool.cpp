@@ -326,10 +326,13 @@ void SignalFlip(Vulkan::Rasterizer& rasterizer, const u8*) {
     // gow3 W3b (T-W3b): with the WRITE_DATA flags deferred (W3), the flip waited for the whole
     // backlog of fences the Vulkan recording thread writes (~1 ms a frame). That thread raises
     // the flip interrupt after them instead: when the wait would have ended, without holding
-    // the draw recording thread. GOW3_FLIP_DEFERRED=0: the wait as before.
+    // the draw recording thread. DEADLOCKS (T-W3c, boot): the guest's flip handler runs in the
+    // interrupt and presents (SubmitFlip -> Presenter::PrepareFrame -> Scheduler::CommandBuffer
+    // -> SyncRecording), waiting for the recording thread it runs on. Kept only as a reference,
+    // GOW3_FLIP_DEFERRED=1 (do not use); the present needs the recording caught up anyway.
     static const bool deferred = [] {
         const char* env = std::getenv("GOW3_FLIP_DEFERRED");
-        return !env || env[0] != '0';
+        return env && env[0] == '1';
     }();
     if (deferred && Vulkan::DrawPipe::OnStageB() &&
         !Gow3Toggle::Disabled(Gow3Toggle::RecorderFences)) {
@@ -376,10 +379,11 @@ void RunWriteData(Vulkan::Rasterizer& rasterizer, const u8* data) {
     // 0x6d2a4c88/90); each waited ~0.45 ms on stage B for the fences deferred to the Vulkan
     // recording thread. Like those fences (E1), a small write outside direct memory (where GPU
     // resources and command-processor labels live, >= 0x10'0000'0000) is made by that thread
-    // after them, in order. GOW3_WRITEDATA_DEFERRED=0: the wait as before.
+    // after them, in order. Opt-in (GOW3_WRITEDATA_DEFERRED=1): alone it only moves the wait to
+    // the flip (T-W3b: ordered tasks 0.30 -> 0.68 us per packet).
     static const bool deferred = [] {
         const char* env = std::getenv("GOW3_WRITEDATA_DEFERRED");
-        return !env || env[0] != '0';
+        return env && env[0] == '1';
     }();
     const u32 write_bytes = (header->type3.count.Value() - 2) * sizeof(u32);
     if (deferred && Vulkan::DrawPipe::OnStageB() && write_bytes && write_bytes <= 64 &&
