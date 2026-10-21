@@ -162,6 +162,10 @@ private:
 
     void Run(std::stop_token stop) {
         Common::SetCurrentThreadName("gow3:DrawRec");
+        if (const char* env = std::getenv("GOW3_STAGE_B_CORE"); env && env[0] == '1' &&
+            !Gow3Threads::DedicateCore("Stage B")) {
+            std::printf("Stage B: no core dedicated (CPU sets unavailable)\n");
+        }
         on_stage_b = true;
         stage_b_tid.store(static_cast<u32>(gettid()), std::memory_order_release);
         Gow3Sampler::SampleCurrentThread("DrawRec");
