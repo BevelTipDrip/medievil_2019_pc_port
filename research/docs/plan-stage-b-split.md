@@ -403,3 +403,12 @@ p99 7.4-7.6 ms. `r.EarlyZPass=0`: ~2,180 draws at 176-178 FPS, p99 6.8-6.9 ms (a
 Default since 2026-10-21 (`ue4_override.py`).** (A first T-Z1 started with the monitor off: a 60 Hz FIFO swapchain plus
 a 60 FPS limit, median 16.67 ms, stddev 0.7, p99 18.2 ms, the user's lows 55/52: the frame limiter beating against
 VSync, `data/t-z1-60hz-capped.log`; also seen at the 240 cap. A baseline launch exited with S1 at a save load.)
+
+### T-L0: `rhi.SyncInterval=0` (2026-10-21 01:28-01:33, launched by Claude with the user's go; build `5231983`; log `data/t-l0-syncinterval0.log`)
+
+Hypothesis: UE4 flips at every vblank (SyncInterval 1), so frame times would be quantized to the 480 Hz vblank's 2.08
+ms steps (4.17 / 6.25 ms), the heavy view's oscillation. **Disproved:** window medians are continuous in this and
+earlier runs (5.08, 5.16, 5.58, 5.85 ms...), the immediate-flip path presents frames when ready. T-L0 heavy windows ~160
+FPS at ~2,300 draws, stddev 0.29-0.4 ms, like earlier runs; the user: no timing issues (fights fine), "quite possible
+that setting has no effect". Not adopted. The 480 Hz tick only bounds how late a frame can be when it does wait.
+Next: the frame limiter A/B at the cap (`GOW3_PRECISE_LIMIT`, `5231983`).
