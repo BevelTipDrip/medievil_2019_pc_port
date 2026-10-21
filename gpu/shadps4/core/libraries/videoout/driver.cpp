@@ -818,7 +818,20 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         return limit >= vblank_hz ? 0u : limit;
     };
     // Slots count as reached within half a vblank: timer jitter must not cost a whole vblank.
-    const auto slot_slack = std::chrono::nanoseconds(500000000 / std::max(vblank_hz, 1u));
+    // gow3 GOW3_PRECISE_LIMIT=1: frames are released at their slot, not up to half a vblank
+    // early (with G-Sync the display shows each frame when it is presented: the early releases
+    // were up to ~1 ms of jitter at 240 FPS), with a short spin after a coarse sleep.
+    static const bool precise_limit = [] {
+        const char* env = std::getenv("GOW3_PRECISE_LIMIT");
+        return env && env[0] == '1';
+    }();
+    const auto slot_slack = precise_limit ? std::chrono::nanoseconds(0)
+                                          : std::chrono::nanoseconds(500000000 / std::max(vblank_hz, 1u));
+    const auto wait_slot = [](std::chrono::steady_clock::time_point slot) {
+        const auto coarse = slot - std::chrono::microseconds(1000);
+        if (std::chrono::steady_clock::now() < coarse) std::this_thread::sleep_until(coarse);
+        while (std::chrono::steady_clock::now() < slot) _mm_pause();
+    };
     u32 frame_limit = current_limit();
     auto frame_period = frame_limit ? std::chrono::nanoseconds(1000000000 / frame_limit)
                                     : std::chrono::nanoseconds(0);
@@ -926,7 +939,11 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
                 if (next_flip - slot_slack >= tick_deadline) {
                     break;
                 }
-                std::this_thread::sleep_until(next_flip - slot_slack);
+                if (precise_limit) {
+                    wait_slot(next_flip);
+                } else {
+                    std::this_thread::sleep_until(next_flip - slot_slack);
+                }
             }
             const auto now = std::chrono::steady_clock::now();
             const auto request = receive_request();
