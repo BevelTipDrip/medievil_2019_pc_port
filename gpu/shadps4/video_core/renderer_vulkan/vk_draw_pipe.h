@@ -123,6 +123,7 @@ public:
         const u64 waited = __rdtsc() - start;
         drain_cycles += waited;
         cycles_by_reason[slot] += waited;
+        Gow3Stats::stage_a_drain_cycles.fetch_add(waited, std::memory_order_relaxed);
     }
 
     /// Stage A: position after the last committed packet; Reached(position) once B ran it.

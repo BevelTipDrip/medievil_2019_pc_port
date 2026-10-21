@@ -147,6 +147,9 @@ struct Timer {
 };
 /// Wall time the GPU command thread waited for guest submissions (ns).
 inline std::atomic<std::uint64_t> gpu_idle_ns{0};
+/// Cumulative (never reset): stage A waiting for the game to submit work (ns), and draining
+/// the draw pipe for stage B (TSC cycles). For the slow-frame report.
+inline std::atomic<std::uint64_t> gpu_idle_total_ns{0}, stage_a_drain_cycles{0};
 /// Draws recorded into the reduced scene targets, and draws after the scene started.
 inline std::atomic<std::uint64_t> reduced_draws{0}, scene_draws{0};
 /// Wall time spent blocked in the scheduler (ns): waiting for the recording thread to drain,

@@ -488,17 +488,20 @@ void VideoOutDriver::Flip(const Request& req) {
                 return env ? std::atof(env) : 0.0;
             }();
             static double median_ms = 0;
-            static u64 last_occ, last_ends, last_busy, last_tsc, sample;
+            static u64 last_occ, last_ends, last_busy, last_tsc, sample, last_idle_ns, last_drain;
             static u32 slow_shown;
             const u64 occ = Gow3Stats::occlusion_dumps.load(), ends = Gow3Stats::render_pass_ends.load(),
-                      busy = Gow3Stats::stage_b_busy_cycles.load(), tsc = __rdtsc();
+                      busy = Gow3Stats::stage_b_busy_cycles.load(), tsc = __rdtsc(),
+                      idle_ns = Gow3Stats::gpu_idle_total_ns.load(),
+                      drain = Gow3Stats::stage_a_drain_cycles.load();
             const bool slow = slow_ratio > 0 && median_ms > 0 && frame_ms > slow_ratio * median_ms &&
                               slow_shown < 600;
             const bool sampled = slow_ratio > 0 && median_ms > 0 && ++sample % 100 == 0;
             if ((slow || sampled) && last_tsc && !window_reset) {
                 slow_shown += slow;
                 std::printf("%s %.2f ms: %llu draws, %llu dispatches, %llu submits, %llu occlusion "
-                            "queries, %llu passes ended; stage B busy %.0f%%, stage A CPU %.2f ms; "
+                            "queries, %llu passes ended; stage B busy %.0f%%, stage A CPU %.2f ms, "
+                            "idle for submits %.2f ms, draining %.2f ms; "
                             "waits: readback %.2f, ticks %.2f, recorder %.2f, host copies %.2f ms; "
                             "uploads %.2f MB buffers, %.2f MB images; %llu protection faults\n",
                             slow ? "Slow frame" : "Frame sample", frame_ms,
@@ -508,7 +511,8 @@ void VideoOutDriver::Flip(const Request& req) {
                             static_cast<unsigned long long>((occ - last_occ) / 2),
                             static_cast<unsigned long long>(ends - last_ends),
                             100.0 * double(busy - last_busy) / double(tsc - last_tsc),
-                            frame_gpu_ns / 1e6, (wait_now[0] - frame_wait[0]) / 1e6,
+                            frame_gpu_ns / 1e6, (idle_ns - last_idle_ns) / 1e6,
+                            frame_ms * double(drain - last_drain) / double(tsc - last_tsc), (wait_now[0] - frame_wait[0]) / 1e6,
                             (wait_now[1] - frame_wait[1]) / 1e6, (wait_now[2] - frame_wait[2]) / 1e6,
                             (wait_now[3] - frame_wait[3]) / 1e6, (buffer_bytes - last_buffer_bytes) / 1e6,
                             (image_bytes - last_image_bytes) / 1e6,
@@ -519,6 +523,8 @@ void VideoOutDriver::Flip(const Request& req) {
             last_ends = ends;
             last_busy = busy;
             last_tsc = tsc;
+            last_idle_ns = idle_ns;
+            last_drain = drain;
             if (pacing_median > 0) {
                 median_ms = pacing_median;
                 pacing_median = 0;

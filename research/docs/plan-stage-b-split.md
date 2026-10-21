@@ -288,3 +288,23 @@ waits for its results).
 resources, and everything was pretty smooth, GPU usage was in the 70-90% range through most of it. It's clear that the
 vulkan translation is the remaining bottleneck. Anything gained there will likely increase 1% lows, but from where we
 started, it's in a much better state."
+
+## T-HZ4: HZB remap (2026-10-20 20:00-21:48, launched by Claude with the user's go; builds `aceb5a4`, `53ade79`, `dfdc5fe`; logs `data/t-hz4*.log`)
+
+Design: [study-hzb-double-buffer.md](study-hzb-double-buffer.md). `GOW3_HZB_REMAP=1` with
+`r.AllowOcclusionQueries=1;r.HZBOcclusion=1` (`stale_readback=1`). The game's HZB results are served from the newest
+*finished* readback copy, remapped by occlusion history key (PrimitiveId, CustomIndex) from the frame that produced
+it to the indices the game reads now (`gpu/shim/medievil_hzb.cpp`, `src/hzb_hook.h`); the texture cache numbers the
+copies of the results texture (`SnapshotReadback`).
+
+| Run | Change | Result |
+|---|---|---|
+| T-HZ4 (`aceb5a4`) | v1: hook after the game's MapResults | Culling correct, no pop-in. Heavy view ~2,000-2,300 draws, **160-178 FPS, p99 6.7-7.3 ms** (queries off ~130, T-HZ3 ~125). Age always 2 copies, 0-170 keys a window unmatched, ~25 us a frame. The user: average 175-180, 1% lows ~145, GPU ~90%, "a handful of bigger spikes" into the 70s. |
+| T-HZ4b (`53ade79`, `GOW3_SLOW_FRAMES=1.4`) | slow-frame lines (cap 600) | Two kinds of slow frame (vs the same window's samples): **draw-bound** (stage B >= 80% busy, x1.30 time, x1.12 draws) and **starved** (normal draws, stage B ~63% busy, no port wait: x1.77). Starved frames also exist with queries off (T-L2: x1.56, stage B 48%). |
+| T-HZ4c (`GOW3_WAIT_SITES=1`) | wait sites | The game's `RHIMapStagingSurface` spun on Sleep(0) ~430,000/s (queries off: ~290/s) until stage B wrote the results copy's label. (First attempt stalled after an early intro skip, kept as `t-hz4c-wait-sites-stall.log`.) |
+| T-HZ4d (`dfdc5fe`) | v2: MapResults replaced (the game's map only to synchronise), copies numbered by Submit calls | 0 syncs, 0 drift, age 3. The map spin gone; a second Sleep(0) spin appeared in `RHIGetRenderQueryResult` (0x689c10, ~130,000/s; T-W2 with queries off: ~1.2 M/s): the ~15-18 occlusion queries a frame still issued with HZB. The user: no pop-in, lows generally higher; spikes at the level start (loading, streaming). The 70 "compiles" per run are cached pipelines rebuilt at loads (220-650 ms load stalls), not new shaders. |
+| T-HZ4e | + `r.NumBufferedOcclusionQueries=3` | The query spin gone (Sleep(0) ~400/s, the queries-off level). Gameplay windows median 187 FPS, p99 7.0 ms; starved frames ~11 a minute (T-HZ4c 5.8, T-HZ4d 10.7; routes differ, T-HZ4e has 2 heavy windows): **the render-thread spins were not the starved frames' cause.** The last ~5 minutes are the user's frame-limit / buffering tests (both worse), excluded. |
+
+Next: the slow-frame line now splits stage A's time into waiting for the game's submits and draining for stage B
+(`gpu_idle_total_ns`, `stage_a_drain_cycles`), to tell a late game from a late stage A in starved frames; then a
+`-Samples` run if the game is late.
