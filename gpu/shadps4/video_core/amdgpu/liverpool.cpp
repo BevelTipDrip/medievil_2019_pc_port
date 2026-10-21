@@ -358,6 +358,29 @@ static void NoteWriteData(VAddr address, u32 bytes, const u32* data, u64 wait_ns
 void RunWriteData(Vulkan::Rasterizer& rasterizer, const u8* data) {
     const auto* header = reinterpret_cast<const PM4Header*>(data);
     const auto* write_data = reinterpret_cast<const PM4CmdWriteData*>(data);
+    // gow3 W3 (T-W3): MediEvil writes two "done" flags a frame (value 1, 4 bytes, user memory at
+    // 0x6d2a4c88/90); each waited ~0.45 ms on stage B for the fences deferred to the Vulkan
+    // recording thread. Like those fences (E1), a small write outside direct memory (where GPU
+    // resources and command-processor labels live, >= 0x10'0000'0000) is made by that thread
+    // after them, in order. GOW3_WRITEDATA_DEFERRED=0: the wait as before.
+    static const bool deferred = [] {
+        const char* env = std::getenv("GOW3_WRITEDATA_DEFERRED");
+        return !env || env[0] != '0';
+    }();
+    const u32 write_bytes = (header->type3.count.Value() - 2) * sizeof(u32);
+    if (deferred && Vulkan::DrawPipe::OnStageB() && write_bytes && write_bytes <= 64 &&
+        write_data->Address<VAddr>() + write_bytes <= 0x10'0000'0000ull &&
+        !Gow3Toggle::Disabled(Gow3Toggle::RecorderFences)) {
+        std::array<u8, 64> payload{};
+        std::memcpy(payload.data(), write_data->data, write_bytes);
+        const VAddr address = write_data->Address<VAddr>();
+        if (Gow3Stats::enabled) NoteWriteData(address, write_bytes, write_data->data, 0);
+        rasterizer.SignalAfterHostCopies([address, write_bytes, payload] {
+            Gow3WriteLog::Note(address, payload.data(), write_bytes, Gow3WriteLog::WriteData);
+            std::memcpy(reinterpret_cast<void*>(address), payload.data(), write_bytes);
+        });
+        return;
+    }
     // Copies deferred to the recording thread that read this range precede the write, and
     // fences deferred to it (RecorderFences) precede writes the guest sees.
     const auto wait_start = Gow3Stats::enabled ? std::chrono::steady_clock::now()

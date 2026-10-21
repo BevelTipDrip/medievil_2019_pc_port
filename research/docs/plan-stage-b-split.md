@@ -349,3 +349,17 @@ per packet: the slow path 0.200 -> 0.163, the memoized path 0.109 -> 0.137 (ever
 stamps, render targets spanning several regions). Next build: a hit checks the stamps only when the registry
 generation changed since the set was last confirmed (and then takes the new generation), and the memo is two-way
 (either of two slots, the less recently used replaced) for the "other key" half of the misses.
+
+### T-S1c / T-W3: texture memo two-way; the WRITE_DATA wait (2026-10-20 23:31-23:45, launched by Claude with the user's go; builds `2492874`, `d67ac70`; logs `data/t-s1c-two-way.log`, `data/t-w3-writedata-targets.log`)
+
+T-S1c: textures 0.396 (T-S1a) -> 0.369 us per packet, slow path 0.152, hit rate 92.4%; "other key" misses unchanged
+(~14,500 a window): new sets (~5.5% of draws), not slot conflicts. The user: no texture problems (T-S1b, T-S1c).
+Ordered tasks by function (`exe+` symbolized with llvm-symbolizer): **`RunWriteData` ~260 us a call, ~2 a frame**,
+`SignalFlip` ~105 us once a frame, `RunEventWriteEop` 0.4 us x ~50,000/s: both wait in `WaitDeferredSignals` (E1's
+fences written by the Vulkan recording thread must land first).
+
+T-W3 (`GOW3_FRAME_STATS` WriteData targets): `0x6d2a4c88` and `0x6d2a4c90` (4 B, value 1, user memory, once a frame
+each) waited ~0.45 ms each; `0x30000000a0` (8 B, value 0, direct memory, twice a frame) ~0.03 ms. **W3**
+(`GOW3_WRITEDATA_DEFERRED`, default on): on stage B, a WRITE_DATA of up to 64 bytes below 0x10'0000'0000 (outside
+direct memory, where GPU resources and labels live) is written by the recording thread after the deferred fences,
+in order, instead of waiting for them. Stage A's WAIT_REG_MEM already tolerates values that land late (E1).
