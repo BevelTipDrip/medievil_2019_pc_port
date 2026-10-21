@@ -1210,10 +1210,13 @@ static void cache_region(size_t i) {
 }
 /* Lock-free runtime_memory_clamp (see vma_seq): 1 with the length in *out when no table entry
  * changed during the search. */
-static int clamp_optimistic(uintptr_t address, uint64_t size, uint64_t *out) {
+static int optimistic_enabled(void) {
     static int enabled=-1;
     if (enabled<0) { const char *e=getenv("GOW3_OPTIMISTIC_CLAMP"); enabled=!(e && e[0]=='0'); }
-    if (!enabled || exclusive_depth) return 0;
+    return enabled && !exclusive_depth;
+}
+static int clamp_optimistic(uintptr_t address, uint64_t size, uint64_t *out) {
+    if (!optimistic_enabled()) return 0;
     for (int attempt=0; attempt<4; ++attempt) {
         if (!__atomic_load_n(&vma_optimistic,__ATOMIC_ACQUIRE)) return 0;
         const uint64_t s1=__atomic_load_n(&vma_seq,__ATOMIC_ACQUIRE);
@@ -1250,9 +1253,36 @@ uint64_t runtime_memory_clamp(uintptr_t address, uint64_t size) {
     return length<size ? length : size;
 }
 /* Region around address: [start,end) mapped or a gap; 0 past the last mapping. */
+/* Lock-free runtime_memory_region (see vma_seq; T-P3: CopySparseMemory's lookups took the wait
+ * over from the clamp): 1 when no table entry changed during the search, *found as below. */
+static int region_optimistic(uintptr_t address, uintptr_t *start, uintptr_t *end, int *mapped, int *found) {
+    if (!optimistic_enabled()) return 0;
+    for (int attempt=0; attempt<4; ++attempt) {
+        if (!__atomic_load_n(&vma_optimistic,__ATOMIC_ACQUIRE)) return 0;
+        const uint64_t s1=__atomic_load_n(&vma_seq,__ATOMIC_ACQUIRE);
+        if (s1 & 1) { __builtin_ia32_pause(); continue; }
+        const Vma *v=__atomic_load_n(&vmas,__ATOMIC_ACQUIRE);
+        size_t n=__atomic_load_n(&vma_count,__ATOMIC_ACQUIRE);
+        if (!v) return 0;
+        if (n>VMA_FIXED_CAPACITY) n=VMA_FIXED_CAPACITY;
+        size_t lo=0, hi=n;
+        while (lo<hi) { size_t mid=(lo+hi)/2; if (v[mid].end<=address) lo=mid+1; else hi=mid; }
+        uintptr_t s=0, e=0; int m=0; const int f=lo<n;
+        if (f && v[lo].start<=address) { s=v[lo].start; e=v[lo].end; m=v[lo].kind!=KIND_RESERVED; }
+        else if (f) { s=lo ? v[lo-1].end : 0; e=v[lo].start; m=0; }
+        __atomic_thread_fence(__ATOMIC_ACQUIRE);
+        if (__atomic_load_n(&vma_seq,__ATOMIC_RELAXED)==s1) {
+            if (f) { *start=s; *end=e; *mapped=m; }
+            *found=f;
+            return 1;
+        }
+    }
+    return 0;
+}
 int runtime_memory_region(uintptr_t address, uintptr_t *start, uintptr_t *end, int *mapped) {
     const CachedRegion *c=(runtime_disabled_optimizations & 1) ? NULL : cached_region(address);
     if (c) { *start=c->start; *end=c->end; *mapped=c->kind!=KIND_RESERVED; return 1; }
+    { int found; if (region_optimistic(address,start,end,mapped,&found)) return found; }
     read_lock();
     size_t i=vma_index(address);
     int found=i<vma_count;

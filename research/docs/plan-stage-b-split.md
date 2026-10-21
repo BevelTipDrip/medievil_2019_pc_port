@@ -468,3 +468,8 @@ pages (the region caches miss because those commits change their 16 MiB buckets)
 erase, split), not across host calls; the table is allocated at 131,072 entries up front and never moves (past that,
 lock-free reads stop); `runtime_memory_clamp` searches without the lock and keeps the result when `vma_seq` was even
 and unchanged, else retries, then takes the lock as before.
+
+T-P3 (2026-10-21 19:45, build `e15a859`, `-Samples`, 50%, panning; samples `research-data\samples\t-p3-lockfree-clamp`):
+the clamp no longer waits (0.46% self, no lock wait), but the same lock moved to `runtime_memory_region`, called by
+`CopySparseMemory` in `CollectRingBindings`: 4.7% of stage A blocked in `RtlAcquireSRWLockShared`, 2% releasing it.
+`runtime_memory_region` now also reads lock-free the same way (same switch).
