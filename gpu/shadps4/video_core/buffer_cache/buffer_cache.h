@@ -179,6 +179,10 @@ private:
     std::unique_ptr<MemoryTracker> memory_tracker;
 
     StreamBuffer stream_buffer;
+    /// gow3 S2 (GOW3_STREAM_CLEAN=1): small read-only ranges uploaded into the arena once
+    /// (value 1), or found CPU-written again after that (2: dynamic, always streamed).
+    std::mutex stream_class_mutex;
+    std::unordered_map<VAddr, u8> stream_class;
     Buffer gds_buffer;
     RangeSet gpu_modified_ranges;
     void ProcessCpuWritesLocked();

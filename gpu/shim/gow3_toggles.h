@@ -91,6 +91,11 @@ inline std::atomic<std::int64_t> hot_pages{0};
 inline std::atomic<std::uint64_t> images_registered{0};
 inline std::atomic<std::uint64_t> image_upload_bytes{0};
 inline std::atomic<std::uint64_t> buffer_upload_bytes{0};
+/// Small read-only buffers (BufferCache::ObtainBuffer, GOW3_STREAM_CLEAN): bound from the arena
+/// (clean), uploaded once outside a render pass (promoted), copied into the stream buffer, and
+/// promoted ranges found CPU-written again (dynamic: streamed from then on).
+inline std::atomic<std::uint64_t> small_arena_binds{0}, small_promotions{0}, small_stream_copies{0},
+    small_dynamic{0};
 inline std::atomic<int> gpu_thread_clock{-1}; ///< clockid_t of the GPU command thread
 inline std::atomic<unsigned long> gpu_thread_id{0}; ///< Windows thread id of the GPU command thread
 inline std::atomic<std::uint64_t> draws{0}, dispatches{0}, submissions{0};

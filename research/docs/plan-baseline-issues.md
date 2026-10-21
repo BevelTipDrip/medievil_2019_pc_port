@@ -352,6 +352,11 @@ first: after `SystemEventGatherThreadPS4` (where a good run opens the shader arc
 dump, no `The game exited` line. The build's changes (buffer downloads, slow-frame stats) do not run that early.
 Log [data/t-d1-unmap-discard.log](data/t-d1-unmap-discard.log). Two in ~40 launches: intermittent, at boot.
 
+**Third, 2026-10-20 22:17 (run `t-hz4h-stage-b-core`, build `e46dede`, `GOW3_STAGE_B_CORE=1`):** exit 5 about 5 s
+in, after the PSN toolkit threads, `PoolThread 6-9` and the `overbite/intermediate/shaders` opens. Stage B had just
+been given its own core (CPU sets) at GPU start; whether that changed the boot timing is unknown. Log
+[data/t-hz4h-stage-b-core-s1.log](data/t-hz4h-stage-b-core-s1.log). Three in ~60 launches.
+
 ## V2. Fire / torches broken, more box shadows (the user, 2026-10-18, run `perfdiag-heavy`)
 
 "I loaded into the starting area … It looks like fire/torches were broken, and I saw more of those broken 'shadows'

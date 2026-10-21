@@ -308,3 +308,23 @@ copies of the results texture (`SnapshotReadback`).
 Next: the slow-frame line now splits stage A's time into waiting for the game's submits and draining for stage B
 (`gpu_idle_total_ns`, `stage_a_drain_cycles`), to tell a late game from a late stage A in starved frames; then a
 `-Samples` run if the game is late.
+
+### T-HZ4f / T-HZ4g / T-HZ4h: where the remaining spikes come from (2026-10-20 21:57-22:25, launched by Claude with the user's go)
+
+| Run | Build / change | Result |
+|---|---|---|
+| T-HZ4f | `615d583`: stage A idle-for-submits and draining per slow frame | The user, heavy view: ~200 average, 1% lows 130s, 0.1% 110s panning ("juddery"); static 190 / ~150 / ~130, "a persistent oscillation". Stage A waits for the game's submits ~0.03 ms a frame: **the game is never late**. 966 slow frames with stage B busy (+35% stage B time for +8% draws) vs 50 starved (stage A itself slower, often with image uploads). |
+| T-HZ4g | `8061698`: stage B time by section per slow frame (`GOW3_SECTIONS=1`) | Slow frames vs samples, per draw: packet +22-27%, textures +39-43%, vertex +31-42%, render state +31-35%, bind +31-37%, ObtainBuffer +19-22%, descriptors +8-13%, tasks +1%: nearly every part, for ~5% more draws. |
+| T-HZ4h | `e46dede`: `GOW3_STAGE_B_CORE=1` (stage B on its own physical core, the sibling kept free, priority above normal) | First launch: S1 silent exit at boot (third; plan-baseline-issues.md). Relaunch: per-draw cost of normal frames -4%, but slow frames still +22% (textures +34%): **not core sharing or preemption**. Pacing worse: gameplay p99 7.95 vs 7.28 ms, frames over 1.5x median 70 vs 15 a minute; the user: "a lot of large stutters", 1% and 0.1% lows worse. **Rejected, off.** |
+
+Conclusion: the slow frames really cost more per draw (texture binding the most): work that varies with what comes
+into view. Next: the stage B work of [study-stage-b-native.md](study-stage-b-native.md), S2 then S1.
+
+### S2: small read-only buffers bound from the arena (opt-in `GOW3_STREAM_CLEAN=1`)
+
+`BufferCache::ObtainBuffer`: a small read-only range the CPU has not written since its last upload is bound from the
+arena (no copy, no upload, no render pass break); a CPU-written one is uploaded into the arena once when no render
+pass is open; written again after that, it is marked dynamic and keeps the stream copy. Counters on the "Uploads"
+line ("Small read-only buffers/s"). Expected (study): ~0.05-0.1 us per packet on stage B, ~2 GB/s less memcpy for
+the recorder, repeated vertex/index binds (feeds S1). Risk: promoted ranges that the CPU rewrites add write faults
+once each (watch "write faults/s").

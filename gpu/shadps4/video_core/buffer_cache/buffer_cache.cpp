@@ -772,8 +772,40 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
         PrintBufferStats();
         NoteHotUse(device_addr, size);
     }
+    // gow3 S2 (study-stage-b-native.md; GOW3_STREAM_CLEAN=1): the stream copy below re-copies a
+    // small read-only buffer on every use (~1.6 copies, ~5 KB per draw, ~2 GB/s), whether or not
+    // the CPU wrote it. A range the CPU has not written since its last upload is already in the
+    // arena: bound there, with no copy and no upload (no render pass break). A CPU-written range
+    // is uploaded into the arena outside a render pass (nothing to break) once; written again
+    // after that, it is dynamic and keeps the stream copy.
+    static const bool stream_clean = [] {
+        const char* env = std::getenv("GOW3_STREAM_CLEAN");
+        return env && env[0] == '1';
+    }();
+    bool small_in_arena = false;
+    if (stream_clean && !is_written && size <= STREAM_THRESHOLD &&
+        !IsRegionGpuModified(device_addr, size)) {
+        if (!IsRegionCpuModified(device_addr, size)) {
+            small_in_arena = true;
+            Gow3Stats::small_arena_binds.fetch_add(1, std::memory_order_relaxed);
+        } else {
+            std::scoped_lock lk{stream_class_mutex};
+            if (stream_class.size() > 262144) stream_class.clear(); // ring buffers: new addresses
+            auto [it, inserted] = stream_class.try_emplace(device_addr, u8{0});
+            if (it->second == 1) {
+                it->second = 2; // written again after its upload
+                Gow3Stats::small_dynamic.fetch_add(1, std::memory_order_relaxed);
+            } else if (it->second == 0 && !scheduler.IsRendering()) {
+                it->second = 1;
+                small_in_arena = true;
+                Gow3Stats::small_promotions.fetch_add(1, std::memory_order_relaxed);
+            }
+        }
+    }
     // For read-only buffers use device local stream buffer to reduce renderpass breaks.
-    if (!is_written && size <= STREAM_THRESHOLD && !IsRegionGpuModified(device_addr, size)) {
+    if (!small_in_arena && !is_written && size <= STREAM_THRESHOLD &&
+        !IsRegionGpuModified(device_addr, size)) {
+        if (stream_clean) Gow3Stats::small_stream_copies.fetch_add(1, std::memory_order_relaxed);
         if (stats) {
             auto& region = Stats().regions[RegionKey(device_addr)];
             ++region.stream_count;

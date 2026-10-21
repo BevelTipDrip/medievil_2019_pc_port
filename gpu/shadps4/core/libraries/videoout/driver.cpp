@@ -605,6 +605,14 @@ void VideoOutDriver::Flip(const Request& req) {
                 std::printf("Uploads: images %.1f MB/s, buffers %.1f MB/s\n",
                             (image_bytes - window_image_bytes) / 1e6 / window,
                             (buffer_bytes - window_buffer_bytes) / 1e6 / window);
+                if (std::getenv("GOW3_STREAM_CLEAN")) {
+                    std::printf("Small read-only buffers/s: %.0f bound from the arena, %.0f uploaded "
+                                "once, %.0f stream copies, %.0f found dynamic\n",
+                                Gow3Stats::small_arena_binds.exchange(0) / window,
+                                Gow3Stats::small_promotions.exchange(0) / window,
+                                Gow3Stats::small_stream_copies.exchange(0) / window,
+                                Gow3Stats::small_dynamic.exchange(0) / window);
+                }
                 // Synchronous buffer downloads (each a full GPU wait), by cause.
                 static constexpr const char* reasons[] = {"read fault", "write fault",
                                                           "invalidation", "unmap"};
