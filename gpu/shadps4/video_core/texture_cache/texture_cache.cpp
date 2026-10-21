@@ -212,7 +212,7 @@ void TextureCache::NoteTrackedPublish(VAddr address, u64 size, u64 seq) {
 }
 
 TextureCache::ReadbackSnapshot TextureCache::SnapshotReadback(VAddr address, u64 size, void* dst,
-                                                              u64 copy_size) {
+                                                              u64 copy_size, bool restart) {
     if (!deferred_readbacks || !size) return {};
     std::scoped_lock lock{readback_mutex};
     auto it = std::ranges::find_if(tracked_readbacks, [&](const TrackedReadback& t) {
@@ -225,6 +225,10 @@ TextureCache::ReadbackSnapshot TextureCache::SnapshotReadback(VAddr address, u64
         *it = {address, size, 0, 0};
     }
     RetireReadbacks();
+    if (restart) {
+        *it = {address, size, 0, 0};
+        pending_readbacks.ClearSeq(address, size);
+    }
     if (copy_size && !Core::Memory::Instance()->ReadBacking(address, dst, std::min(copy_size, size))) {
         return {};
     }

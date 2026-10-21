@@ -7,8 +7,8 @@
 /* MediEvil (CUSA11227 01.00) HZB occlusion remap (research/docs/study-hzb-double-buffer.md,
  * GOW3_HZB_REMAP=1): UE4's FHZBOcclusionTester::MapResults (image offset 0x15340a0) has one
  * caller, 0x158c4ac (rdi = FSceneViewState + 0x170, rsi = RHICmdList; the caller keeps rdx in
- * rbx across the call). The call goes to a stub that runs MapResults, then the host helper with
- * the tester, which may point the tester's results (+0x40) at a remapped host copy. */
+ * rbx across the call). The host helper takes its place and points the tester's results (+0x40)
+ * at a remapped host copy. */
 enum {
     MEDIEVIL_HZB_CALL = 0x158c4ac,
     MEDIEVIL_HZB_MAP_RESULTS = 0x15340a0,
@@ -49,23 +49,54 @@ static inline int medievil_hzb_signatures_match(const unsigned char *image, uint
            !memcmp(image + MEDIEVIL_HZB_HISTORY_WALK, medievil_hzb_walk_bytes, sizeof(medievil_hzb_walk_bytes));
 }
 
-/* push rdi; call map_results; mov rdi, [rsp]; call helper; pop rdi; ret. rsp is 16-byte
- * aligned at both calls (8 at entry, the push makes 0). */
-enum { MEDIEVIL_HZB_STUB_LENGTH = 31 };
-static inline void medievil_hzb_build_stub(unsigned char code[MEDIEVIL_HZB_STUB_LENGTH],
-                                           uintptr_t map_results, uintptr_t helper) {
-    static const unsigned char pattern[MEDIEVIL_HZB_STUB_LENGTH] = {
-        0x57,                               /* push rdi */
-        0x48,0xb8,0,0,0,0,0,0,0,0,          /* movabs rax, map_results */
-        0xff,0xd0,                          /* call rax */
-        0x48,0x8b,0x3c,0x24,                /* mov rdi, [rsp] */
+/* The MapResults call jumps to the host helper (rdi tester, rsi RHICmdList), which calls the
+ * game's MapResults itself only to synchronise: the game's map spins until the GPU side reaches
+ * the copy's label (RHIMapStagingSurface, Sleep(0)), which held the render thread on stage B every
+ * frame (T-HZ4c: ~430,000 Sleep(0) a second). movabs rax, helper; jmp rax. */
+enum { MEDIEVIL_HZB_MAP_STUB_LENGTH = 12 };
+static inline void medievil_hzb_build_map_stub(unsigned char code[MEDIEVIL_HZB_MAP_STUB_LENGTH], uintptr_t helper) {
+    static const unsigned char pattern[MEDIEVIL_HZB_MAP_STUB_LENGTH] = {
         0x48,0xb8,0,0,0,0,0,0,0,0,          /* movabs rax, helper */
-        0xff,0xd0,                          /* call rax */
-        0x5f,                               /* pop rdi */
-        0xc3                                /* ret */
+        0xff,0xe0                           /* jmp rax */
     };
     memcpy(code, pattern, sizeof(pattern));
-    memcpy(code + 3, &map_results, 8);
-    memcpy(code + 19, &helper, 8);
+    memcpy(code + 2, &helper, 8);
 }
+
+/* FHZBOcclusionTester::Submit (0x1534340), one call per view at 0x11573ec (rdi tester, rsi
+ * RHICmdList, rdx view), only with tested primitives: one results copy per call. The stub counts
+ * it, then jumps to Submit. rsp is 16-byte aligned at the helper call (8 at entry, 3 pushes). */
+enum { MEDIEVIL_HZB_SUBMIT_CALL = 0x11573ec, MEDIEVIL_HZB_SUBMIT = 0x1534340 };
+static const unsigned char medievil_hzb_submit_call_bytes[] = {
+    0x49,0x81,0xc7,0x70,0x01,0x00,0x00, /* add r15, 0x170 */
+    0x48,0x89,0xda,                     /* mov rdx, rbx */
+    0x4c,0x89,0xff,                     /* mov rdi, r15 */
+    0xe8,0x4f,0xcf,0x3d,0x00            /* call Submit */
+};
+static const unsigned char medievil_hzb_submit_bytes[] = {
+    0x55,0x48,0x89,0xe5,0x41,0x57,0x41,0x56,0x41,0x55,0x41,0x54,0x53,0x48,0x83,0xe4,0xe0
+};
+static inline int medievil_hzb_submit_signatures_match(const unsigned char *image, uint64_t size) {
+    if (size < MEDIEVIL_HZB_SUBMIT + 0x40) return 0;
+    return !memcmp(image + MEDIEVIL_HZB_SUBMIT_CALL - 13, medievil_hzb_submit_call_bytes,
+                   sizeof(medievil_hzb_submit_call_bytes)) &&
+           !memcmp(image + MEDIEVIL_HZB_SUBMIT, medievil_hzb_submit_bytes, sizeof(medievil_hzb_submit_bytes));
+}
+enum { MEDIEVIL_HZB_SUBMIT_STUB_LENGTH = 30 };
+static inline void medievil_hzb_build_submit_stub(unsigned char code[MEDIEVIL_HZB_SUBMIT_STUB_LENGTH],
+                                                  uintptr_t helper, uintptr_t submit) {
+    static const unsigned char pattern[MEDIEVIL_HZB_SUBMIT_STUB_LENGTH] = {
+        0x57,0x56,0x52,                     /* push rdi; push rsi; push rdx */
+        0x48,0xb8,0,0,0,0,0,0,0,0,          /* movabs rax, helper */
+        0xff,0xd0,                          /* call rax */
+        0x5a,0x5e,0x5f,                     /* pop rdx; pop rsi; pop rdi */
+        0x48,0xb8,0,0,0,0,0,0,0,0,          /* movabs rax, submit */
+        0xff,0xe0                           /* jmp rax */
+    };
+    memcpy(code, pattern, sizeof(pattern));
+    memcpy(code + 5, &helper, 8);
+    memcpy(code + 20, &submit, 8);
+}
+/* MapResults' "no results" buffer ({0xff}: everything visible). */
+enum { MEDIEVIL_HZB_FIRST_FRAME_BUFFER = 0x5606ac8 };
 #endif

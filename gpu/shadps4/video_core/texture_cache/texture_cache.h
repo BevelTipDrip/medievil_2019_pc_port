@@ -138,11 +138,14 @@ public:
     /// finished (no wait) and copies the first `copy_size` bytes of guest memory into `dst`.
     /// `published` is the number of the copy those bytes come from (0: none numbered yet),
     /// `pushed` the newest queued. ok is false without deferred readbacks or a free slot.
+    /// `restart`: numbering starts again from the next copy queued (copies queued before
+    /// carry none).
     struct ReadbackSnapshot {
         u64 pushed = 0, published = 0;
         bool ok = false;
     };
-    ReadbackSnapshot SnapshotReadback(VAddr address, u64 size, void* dst, u64 copy_size);
+    ReadbackSnapshot SnapshotReadback(VAddr address, u64 size, void* dst, u64 copy_size,
+                                      bool restart = false);
 
     /// Retrieves the image handle of the image with the provided attributes.
     [[nodiscard]] ImageId FindImage(ImageDesc& desc, bool exact_fmt = false);

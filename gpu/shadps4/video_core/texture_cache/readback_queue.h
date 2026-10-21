@@ -70,6 +70,12 @@ public:
             entries.pop_front();
         }
     }
+    /// gow3: queued copies of [address, address + size) lose their copy number.
+    void ClearSeq(std::uint64_t address, std::uint64_t size) {
+        for (auto& entry : entries) {
+            if (address < entry.address + entry.size && entry.address < address + size) entry.seq = 0;
+        }
+    }
     /// Calls `visit(address, size)` for every queued copy.
     template <typename Visit>
     void ForEach(Visit&& visit) const {

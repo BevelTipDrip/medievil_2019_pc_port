@@ -8,7 +8,8 @@
 // culling, T-HZ1) and precise ones wait for the GPU (T-HZ3). After the game's MapResults this
 // serves the newest finished copy instead, remapped by primitive key (PrimitiveId, CustomIndex)
 // from the indices of the frame that produced it to the indices the game reads now. Primitives
-// the older frame did not test read as visible, the game's own rule for missing results.
+// the older frame did not test read as visible, the game's own rule for missing results. The
+// game's own map is skipped after a first synchronising call: it waited for stage B every frame.
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -20,6 +21,8 @@
 #include <vector>
 #include "core/memory.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
+
+using VideoCore::TextureCache;
 
 namespace {
 using Key = std::uint64_t;
@@ -62,23 +65,41 @@ struct Frame {
 
 struct Tester {
     std::uintptr_t tester = 0;
-    std::uintptr_t address = 0; ///< guest address of the results texture
-    std::array<Frame, 4> ring;
+    std::uintptr_t address = 0; ///< guest address of the results texture (learnt at a sync)
+    bool synced = false;
+    std::uint64_t submits = 0;     ///< Submit calls so far: one results copy each
+    std::uint64_t sync_submits = 0; ///< submits at the last sync: copy n is submit sync_submits + n
+    std::array<Frame, 6> ring;
     std::vector<std::uint8_t> source, served;
 };
 
 struct Stats {
-    std::uint64_t calls = 0, invalid = 0, remapped = 0, no_new_copy = 0, unavailable = 0;
-    std::array<std::uint64_t, 6> age{}; // 0, 1, 2, 3, >3 frames, no source
+    std::uint64_t calls = 0, invalid = 0, remapped = 0, syncs = 0, unavailable = 0, drift = 0;
+    std::array<std::uint64_t, 7> age{}; // 0..4, >4 frames, no source
     std::uint64_t keys = 0, unmatched = 0;
     double us_total = 0, us_max = 0;
 };
 
+using MapResultsFn = void(__attribute__((sysv_abi))*)(void*, void*);
+MapResultsFn map_results;
+std::uintptr_t first_frame_buffer;
 std::mutex mutex;
 std::array<Tester, 8> testers;
 std::vector<Entry> scratch;
 Stats stats;
 auto report_time = std::chrono::steady_clock::now();
+
+Tester* Find(std::uint8_t* tester, bool create) {
+    const auto key = reinterpret_cast<std::uintptr_t>(tester);
+    auto state = std::ranges::find(testers, key, &Tester::tester);
+    if (state != testers.end() || !create) return state != testers.end() ? &*state : nullptr;
+    state = std::ranges::find(testers, std::uintptr_t{0}, &Tester::tester);
+    if (state == testers.end()) return nullptr;
+    state->tester = key;
+    state->source.resize(ResultsBytes);
+    state->served.resize(ResultsBytes);
+    return &*state;
+}
 
 /// The histories the game looks up this frame: tested in the frame whose results it maps.
 bool CollectKeys(const std::uint8_t* view_state, std::uint32_t frame, std::vector<Entry>& out,
@@ -115,90 +136,110 @@ bool CollectKeys(const std::uint8_t* view_state, std::uint32_t frame, std::vecto
 void Report(std::chrono::steady_clock::time_point now) {
     if (now - report_time < std::chrono::seconds(5)) return;
     const auto& s = stats;
-    std::printf("HZB remap (5 s): %llu maps (%llu invalid, %llu remapped, %llu without a new copy, "
-                "%llu unavailable); age 0/1/2/3/>3/none %llu/%llu/%llu/%llu/%llu/%llu; keys %llu "
+    const auto u = [](std::uint64_t v) { return static_cast<unsigned long long>(v); };
+    std::printf("HZB remap (5 s): %llu maps (%llu invalid, %llu remapped, %llu syncs, %llu drift, "
+                "%llu unavailable); age 0/1/2/3/4/>4/none %llu/%llu/%llu/%llu/%llu/%llu/%llu; keys %llu "
                 "(%llu read visible); %.1f us avg, %.1f us max\n",
-                (unsigned long long)s.calls, (unsigned long long)s.invalid,
-                (unsigned long long)s.remapped, (unsigned long long)s.no_new_copy,
-                (unsigned long long)s.unavailable, (unsigned long long)s.age[0],
-                (unsigned long long)s.age[1], (unsigned long long)s.age[2],
-                (unsigned long long)s.age[3], (unsigned long long)s.age[4],
-                (unsigned long long)s.age[5], (unsigned long long)s.keys,
-                (unsigned long long)s.unmatched, s.remapped ? s.us_total / s.remapped : 0.0, s.us_max);
+                u(s.calls), u(s.invalid), u(s.remapped), u(s.syncs), u(s.drift), u(s.unavailable),
+                u(s.age[0]), u(s.age[1]), u(s.age[2]), u(s.age[3]), u(s.age[4]), u(s.age[5]),
+                u(s.age[6]), u(s.keys), u(s.unmatched), s.remapped ? s.us_total / s.remapped : 0.0,
+                s.us_max);
     stats = {};
     report_time = now;
 }
 
-void Remap(std::uint8_t* tester) {
+void Serve(std::uint8_t* tester, std::uint8_t* served) {
+    std::memcpy(tester + ResultsBuffer, &served, sizeof(served));
+}
+
+/// Everything visible (no culling this frame): the whole texture, as the indices may be unknown.
+void ServeVisible(std::uint8_t* tester, Tester& state) {
+    std::memset(state.served.data(), 0xff, ResultsBytes);
+    Serve(tester, state.served.data());
+}
+
+/// Runs the game's own MapResults (it waits for the copy of the latest Submit to be queued),
+/// learns the results address and restarts the copy numbering from the next Submit.
+void Sync(std::uint8_t* tester, void* command_list, Tester& state) {
+    ++stats.syncs;
+    map_results(tester, command_list);
+    const auto valid = Load<std::uint32_t>(tester + ValidFrameNumber);
+    const auto address = Load<std::uintptr_t>(tester + ResultsBuffer);
+    if (valid == 0xffffffffu || !address || address == first_frame_buffer) return; // nothing mapped
+    auto* rasterizer = Core::Memory::Instance()->GetRasterizer();
+    if (!rasterizer) return;
+    if (!rasterizer->GetTextureCache().SnapshotReadback(address, ResultsBytes, nullptr, 0, true).ok) return;
+    state.address = address;
+    state.sync_submits = state.submits;
+    for (auto& f : state.ring) f.seq = 0;
+    state.synced = true;
+    ServeVisible(tester, state); // the guest copy is stale (T-HZ1); the remap starts next frame
+}
+
+void Map(std::uint8_t* tester, void* command_list) {
+    Tester* state = Find(tester, true);
+    if (!state) {
+        ++stats.unavailable;
+        map_results(tester, command_list);
+        return;
+    }
+    if (!state->synced) {
+        Sync(tester, command_list, *state);
+        return;
+    }
+    // MapResults without the map: invalid results read the "no results" buffer.
     const auto valid = Load<std::uint32_t>(tester + ValidFrameNumber);
     if (valid == 0xffffffffu) {
         ++stats.invalid;
-        return;
-    }
-    const auto address = Load<std::uintptr_t>(tester + ResultsBuffer);
-    auto* rasterizer = Core::Memory::Instance()->GetRasterizer();
-    if (!address || !rasterizer) {
-        ++stats.unavailable;
-        return;
-    }
-    auto state = std::ranges::find(testers, reinterpret_cast<std::uintptr_t>(tester), &Tester::tester);
-    if (state == testers.end()) {
-        state = std::ranges::find(testers, std::uintptr_t{0}, &Tester::tester);
-        if (state == testers.end()) {
-            ++stats.unavailable;
-            return;
+        if (!Load<std::uintptr_t>(tester + ResultsBuffer)) {
+            std::memcpy(tester + ResultsBuffer, &first_frame_buffer, sizeof(first_frame_buffer));
         }
-        state->tester = reinterpret_cast<std::uintptr_t>(tester);
-        state->source.resize(ResultsBytes);
-        state->served.resize(ResultsBytes);
-    }
-    if (state->address != address) { // a new results texture (RHI re-init): older indices are void
-        state->address = address;
-        for (auto& f : state->ring) f.seq = 0;
+        return;
     }
     std::uint32_t max_index = 0;
     if (!CollectKeys(tester - TesterInViewState, valid, scratch, max_index)) {
         ++stats.unavailable;
+        ServeVisible(tester, *state);
         return;
     }
-    if (scratch.empty()) return; // nothing is read this frame
+    // Copy number of the latest Submit, whose indices the histories now hold.
+    const std::uint64_t seq = state->submits - state->sync_submits;
     std::uint32_t copy_max = max_index;
     for (const auto& f : state->ring) {
         if (f.seq) copy_max = std::max(copy_max, f.max_index);
     }
-    const auto snap = rasterizer->GetTextureCache().SnapshotReadback(
-        address, ResultsBytes, state->source.data(), BytesFor(copy_max));
+    auto* rasterizer = Core::Memory::Instance()->GetRasterizer();
+    const auto snap = rasterizer ? rasterizer->GetTextureCache().SnapshotReadback(
+        state->address, ResultsBytes, state->source.data(), BytesFor(copy_max)) : TextureCache::ReadbackSnapshot{};
     if (!snap.ok) {
         ++stats.unavailable;
+        ServeVisible(tester, *state);
+        return;
+    }
+    if (snap.pushed > seq || seq - snap.pushed > 64) {
+        // More copies than Submits (an extra download) or copies stopped: resynchronise.
+        ++stats.drift;
+        state->synced = false;
+        ServeVisible(tester, *state);
         return;
     }
     std::uint8_t* served = state->served.data();
-    const auto fill_visible = [&] {
-        for (const auto& [key, index] : scratch) std::memset(served + Texel(index), 0xff, 4);
-        std::memcpy(tester + ResultsBuffer, &served, sizeof(served));
-    };
-    // The game's map returns after the copy of the frame it reads was queued (its label is
-    // written after the readback is), so every frame with results has a new copy number. No
-    // new number: the indices cannot be tied to a copy; everything reads visible.
-    auto same = snap.pushed ? std::ranges::find(state->ring, snap.pushed, &Frame::seq) : state->ring.end();
-    if (!snap.pushed || same != state->ring.end()) {
-        if (same != state->ring.end()) same->seq = 0;
-        ++stats.no_new_copy;
-        fill_visible();
+    if (scratch.empty() || !seq) {
+        Serve(tester, served); // nothing is read this frame
         return;
     }
-    auto slot = std::ranges::min_element(state->ring, {}, &Frame::seq);
-    slot->seq = snap.pushed;
+    auto slot = std::ranges::find(state->ring, seq, &Frame::seq);
+    if (slot == state->ring.end()) slot = std::ranges::min_element(state->ring, {}, &Frame::seq);
+    slot->seq = seq;
     slot->max_index = max_index;
     slot->entries.swap(scratch);
     const Frame& now = *slot;
-    const auto age = snap.pushed - snap.published;
     const Frame* source = nullptr;
     if (snap.published) {
         const auto found = std::ranges::find(state->ring, snap.published, &Frame::seq);
         if (found != state->ring.end()) source = &*found;
     }
-    ++stats.age[!source ? 5 : std::min<std::uint64_t>(age, 4)];
+    ++stats.age[!source ? 6 : std::min<std::uint64_t>(seq - snap.published, 5)];
     stats.keys += now.entries.size();
     if (!source) {
         stats.unmatched += now.entries.size();
@@ -218,17 +259,23 @@ void Remap(std::uint8_t* tester) {
             }
         }
     }
-    std::memcpy(tester + ResultsBuffer, &served, sizeof(served));
+    Serve(tester, served);
     ++stats.remapped;
 }
 } // namespace
 
-extern "C" void __attribute__((sysv_abi)) medievil_hzb_after_map(void* tester) {
+extern "C" void medievil_hzb_init(std::uintptr_t map_results_address, std::uintptr_t no_results) {
+    map_results = reinterpret_cast<MapResultsFn>(map_results_address);
+    first_frame_buffer = no_results;
+}
+
+/// In place of FHZBOcclusionTester::MapResults (src/hzb_hook.h).
+extern "C" void __attribute__((sysv_abi)) medievil_hzb_map(void* tester, void* command_list) {
     const auto start = std::chrono::steady_clock::now();
     std::scoped_lock lock{mutex};
     ++stats.calls;
     const auto remapped = stats.remapped;
-    Remap(static_cast<std::uint8_t*>(tester));
+    Map(static_cast<std::uint8_t*>(tester), command_list);
     const auto now = std::chrono::steady_clock::now();
     if (stats.remapped != remapped) {
         const double us = std::chrono::duration<double, std::micro>(now - start).count();
@@ -236,4 +283,10 @@ extern "C" void __attribute__((sysv_abi)) medievil_hzb_after_map(void* tester) {
         stats.us_max = std::max(stats.us_max, us);
     }
     Report(now);
+}
+
+/// Before FHZBOcclusionTester::Submit: one results copy follows.
+extern "C" void __attribute__((sysv_abi)) medievil_hzb_submit(void* tester) {
+    std::scoped_lock lock{mutex};
+    if (Tester* state = Find(static_cast<std::uint8_t*>(tester), true)) ++state->submits;
 }
