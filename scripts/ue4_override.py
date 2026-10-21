@@ -328,6 +328,10 @@ def apply(game, resolution='native', quality='console', fps=60, debug_menu=False
                        'r.NumBufferedOcclusionQueries': '3'})
     else:
         values['r.AllowOcclusionQueries'] = '0'
+    # The PS4 build's depth prepass of opaque occluders (PS4Engine.ini r.EarlyZPass=1) costs
+    # ~120 draws a frame in heavy views for a GPU that is not the limit here: off, ~+10% FPS and
+    # a lower p99 in the same view, no visual change (research: T-Z1, 2026-10-21).
+    values['r.EarlyZPass'] = '0'
     scale = TEMPORAL_UPSCALE.get(upscale) if not percentage else None
     if scale:
         values.update({'r.ScreenPercentage': scale, 'r.TemporalAA.Upsampling': '1'})

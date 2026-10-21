@@ -393,3 +393,13 @@ T-S2b's code): the user: 1% and 0.1% lows worse than with the memo work; "too mu
 but it looks like the memo work is worth it". **Region stamps and the two-way memo stay on.** Lesson: at ~175-185 FPS
 single feel runs differ by about as much as these changes; small stage B changes need logged A/B runs on the same
 route (or several runs) to be judged.
+
+### T-Z1: depth prepass off (2026-10-21 00:58-01:22, launched by Claude with the user's go; build `8acd280`; logs `data/t-z1-earlyz-off.log`, `data/t-z1-baseline.log`)
+
+The game's PS4 config sets `r.EarlyZPass=1` (PS4Engine.ini; DefaultEngine.ini says 0; `r.DBuffer` not set). Same
+heavy spot, panning then standing, frame stats only. Baseline (`r.EarlyZPass=1`): ~2,280-2,310 draws, 157-162 FPS,
+p99 7.4-7.6 ms. `r.EarlyZPass=0`: ~2,180 draws at 176-178 FPS, p99 6.8-6.9 ms (and ~2,015 draws at 189-194 FPS, p99
+5.9-6.2, in the standing view). **About 120 fewer draws, ~+10% FPS, lower p99; the user saw no visual artifacts.
+Default since 2026-10-21 (`ue4_override.py`).** (A first T-Z1 started with the monitor off: a 60 Hz FIFO swapchain plus
+a 60 FPS limit, median 16.67 ms, stddev 0.7, p99 18.2 ms, the user's lows 55/52: the frame limiter beating against
+VSync, `data/t-z1-60hz-capped.log`; also seen at the 240 cap. A baseline launch exited with S1 at a save load.)

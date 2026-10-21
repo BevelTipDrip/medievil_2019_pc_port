@@ -357,6 +357,10 @@ in, after the PSN toolkit threads, `PoolThread 6-9` and the `overbite/intermedia
 been given its own core (CPU sets) at GPU start; whether that changed the boot timing is unknown. Log
 [data/t-hz4h-stage-b-core-s1.log](data/t-hz4h-stage-b-core-s1.log). Three in ~60 launches.
 
+**Fourth, 2026-10-21 01:14 (run `t-z1-baseline`, build `8acd280`, defaults only):** exit 5 about 65 s in, not at boot
+(the log ends in a ~0-draw stall report): the user: **when loading a save**, a first for S1. Log [data/t-z1-baseline-s1.log](data/t-z1-baseline-s1.log).
+Four in ~65 launches; not tied to one change.
+
 ## V2. Fire / torches broken, more box shadows (the user, 2026-10-18, run `perfdiag-heavy`)
 
 "I loaded into the starting area … It looks like fire/torches were broken, and I saw more of those broken 'shadows'
