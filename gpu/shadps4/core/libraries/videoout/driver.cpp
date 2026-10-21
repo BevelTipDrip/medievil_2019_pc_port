@@ -16,6 +16,7 @@
 #endif
 #include "common/assert.h"
 #include "gow3_toggles.h"
+#include "gow3_sections.h"
 #include <x86intrin.h>
 #include "gow3_settings.h"
 #include "gow3_overlay.h"
@@ -489,6 +490,7 @@ void VideoOutDriver::Flip(const Request& req) {
             }();
             static double median_ms = 0;
             static u64 last_occ, last_ends, last_busy, last_tsc, sample, last_idle_ns, last_drain;
+            static std::array<u64, Gow3Sections::Count> last_sections{};
             static u32 slow_shown;
             const u64 occ = Gow3Stats::occlusion_dumps.load(), ends = Gow3Stats::render_pass_ends.load(),
                       busy = Gow3Stats::stage_b_busy_cycles.load(), tsc = __rdtsc(),
@@ -517,6 +519,21 @@ void VideoOutDriver::Flip(const Request& req) {
                             (wait_now[3] - frame_wait[3]) / 1e6, (buffer_bytes - last_buffer_bytes) / 1e6,
                             (image_bytes - last_image_bytes) / 1e6,
                             static_cast<unsigned long long>(sigf_now - frame_sigf));
+                if (Gow3Sections::Enabled()) {
+                    // Stage B's time in this frame by part (inclusive, ms): what grows in slow frames.
+                    std::printf("  stage B ms:");
+                    for (u32 i = 0; i < Gow3Sections::Count; ++i) {
+                        const u64 now_cycles = Gow3Sections::cycles[i].load(std::memory_order_relaxed);
+                        std::printf(" %s %.2f", Gow3Sections::Names[i],
+                                    frame_ms * double(now_cycles - last_sections[i]) / double(tsc - last_tsc));
+                    }
+                    std::printf("\n");
+                }
+            }
+            if (Gow3Sections::Enabled()) {
+                for (u32 i = 0; i < Gow3Sections::Count; ++i) {
+                    last_sections[i] = Gow3Sections::cycles[i].load(std::memory_order_relaxed);
+                }
             }
             window_reset = false;
             last_occ = occ;
