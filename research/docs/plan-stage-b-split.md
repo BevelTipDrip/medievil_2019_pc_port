@@ -445,3 +445,10 @@ T-Z4c / T-Z4d (2026-10-21 03:16-03:25): engine_fps=120 (UE4 SmoothedFrameRateRan
 175-182 FPS (T-Z4c); adding `r.VSync=1` (T-Z4d) still uncapped (the user: "still 240"). **UE4's own tick ceiling does not
 engage in this build from the config; every cap so far was the port's present limiter.** `medievil.ini` restored
 (engine_fps=240). Next: GPU saturation tested by lowering GPU load instead (`r.ScreenPercentage=70` with T-Z3's settings).
+
+T-Z5 (2026-10-21 03:30, `r.DBuffer=0 r.EarlyZPass=1 r.ScreenPercentage=50`; log `data/t-z5-screenpct50.log`): stage B
+never waited on the GPU (0% every window), stage B 90% busy, yet the panning windows still spiked (up to 44 frames over
+1.5x median, worst 9-12 ms); the user: the spikes stay at 50% resolution, 0.1% lows about the same. **The panning spikes
+are stage B work, not GPU saturation.** **Default since 2026-10-21: `r.DBuffer=0`, `r.EarlyZPass=1`** (the user: "we found
+a way to increase the 1% lows significantly in heavy areas"). Next: why panning costs stage B so much (slow-frame
+sections while panning).

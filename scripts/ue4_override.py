@@ -328,10 +328,12 @@ def apply(game, resolution='native', quality='console', fps=60, debug_menu=False
                        'r.NumBufferedOcclusionQueries': '3'})
     else:
         values['r.AllowOcclusionQueries'] = '0'
-    # The PS4 build's depth prepass of opaque occluders (PS4Engine.ini r.EarlyZPass=1) costs
-    # ~120 draws a frame in heavy views for a GPU that is not the limit here: off, ~+10% FPS and
-    # a lower p99 in the same view, no visual change (research: T-Z1, 2026-10-21).
-    values['r.EarlyZPass'] = '0'
+    # DBuffer decals force a full depth prepass in UE4 4.21 (the G-buffer drawn twice: ~630-740
+    # draws a frame in heavy views, ~28%), whatever r.EarlyZPass says; the decals they serve were
+    # invisible in the heavy view (1-4/255 on Dan's boots). Off, and the PS4's own partial prepass
+    # (large occluders, r.EarlyZPass=1) keeps early depth for the GPU: heavy views ~600 fewer
+    # draws, the best 1% lows so far (research: study-heavy-frame-map.md, T-Z2-T-Z5, 2026-10-21).
+    values.update({'r.DBuffer': '0', 'r.EarlyZPass': '1'})
     scale = TEMPORAL_UPSCALE.get(upscale) if not percentage else None
     if scale:
         values.update({'r.ScreenPercentage': scale, 'r.TemporalAA.Upsampling': '1'})
