@@ -32,13 +32,17 @@ enum Id : std::uint32_t {
     Kick,            ///< ResetBindings and the hand-over to the Vulkan recorder
     DispatchRecord,
     RecordCall,      ///< Scheduler::Record (closure into the chunk)
+    TexSetHit,       ///< BindTexturesFromSet: lookup, validation and emit (within textures)
+    TexSetEmit,      ///< its emit loop: found marks, layout checks, image infos
+    Samplers,        ///< BindSamplers
+    TexSlow,         ///< BindTextures without a memoized set
     Count,
 };
 inline constexpr const char* Names[Count] = {
     "packet",   "tasks",  "end of pipe", "draw",         "before record", "render state",
     "bind",     "buffers", "textures",   "ObtainBuffer", "begin render",  "vertex",
     "index",    "emit vertex", "barriers", "descriptors", "dynamic",      "kick",
-    "dispatch", "Record calls",
+    "dispatch", "Record calls", "texset", "texset emit", "samplers", "texslow",
 };
 inline std::array<std::atomic<std::uint64_t>, Count> cycles{};
 /// Scheduler::Record calls on the draw recording thread.
