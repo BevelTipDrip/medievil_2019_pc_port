@@ -323,6 +323,20 @@ void RunDmaData(Vulkan::Rasterizer& rasterizer, const u8* data) {
 }
 
 void SignalFlip(Vulkan::Rasterizer& rasterizer, const u8*) {
+    // gow3 W3b (T-W3b): with the WRITE_DATA flags deferred (W3), the flip waited for the whole
+    // backlog of fences the Vulkan recording thread writes (~1 ms a frame). That thread raises
+    // the flip interrupt after them instead: when the wait would have ended, without holding
+    // the draw recording thread. GOW3_FLIP_DEFERRED=0: the wait as before.
+    static const bool deferred = [] {
+        const char* env = std::getenv("GOW3_FLIP_DEFERRED");
+        return !env || env[0] != '0';
+    }();
+    if (deferred && Vulkan::DrawPipe::OnStageB() &&
+        !Gow3Toggle::Disabled(Gow3Toggle::RecorderFences)) {
+        rasterizer.SignalAfterHostCopies(
+            [] { Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxFlip); });
+        return;
+    }
     rasterizer.WaitDeferredSignals();
     Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxFlip);
 }

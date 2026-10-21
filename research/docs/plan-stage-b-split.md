@@ -363,3 +363,9 @@ each) waited ~0.45 ms each; `0x30000000a0` (8 B, value 0, direct memory, twice a
 (`GOW3_WRITEDATA_DEFERRED`, default on): on stage B, a WRITE_DATA of up to 64 bytes below 0x10'0000'0000 (outside
 direct memory, where GPU resources and labels live) is written by the recording thread after the deferred fences,
 in order, instead of waiting for them. Stage A's WAIT_REG_MEM already tolerates values that land late (E1).
+
+T-W3b (2026-10-20 23:52-00:02, build `2c2c4ba`, `GOW3_SECTIONS=1`; log `data/t-w3b-writedata-deferred.log`): the flags
+now wait 0 ms and `RunWriteData` 0.187 -> 0.013 us per packet, but `SignalFlip` 0.038 -> 0.28-0.46 (the whole
+backlog, ~1 ms a frame) and ordered tasks 0.30 -> 0.68: the wait moved to the flip. The user: no issues loading
+levels or in menus. **W3b** (`GOW3_FLIP_DEFERRED`, default on): the flip interrupt is raised by the recording thread
+after the deferred fences instead of stage B waiting for them.
