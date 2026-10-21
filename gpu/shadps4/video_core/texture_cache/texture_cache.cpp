@@ -1085,6 +1085,7 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     ForEachImageInRegion(info.guest_address, info.guest_size,
                          [&](ImageId image_id, Image& image) { image_ids.push_back(image_id); });
     CACHE_STAT(slow_lookups, 1);
+    if (Gow3Stats::enabled) Gow3Stats::image_slow_lookups.fetch_add(1, std::memory_order_relaxed);
     CACHE_STAT(slow_candidates, image_ids.size());
 
     ImageId image_id{};

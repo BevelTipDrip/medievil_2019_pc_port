@@ -2736,7 +2736,7 @@ bool Rasterizer::BindTexturesFromSet(const Shader::Info& stage, const PreparedSt
                                   prepared->image_hashes);
     if (!match) {
         ++texture_set_why[!found ? 0 : !current ? 1 : 3];
-        ++texture_set_misses;
+        ++texture_set_misses; if (Gow3Stats::enabled) Gow3Stats::texset_misses.fetch_add(1, std::memory_order_relaxed);
         set.key = key;
         set.stage = &stage;
         set.count = 0;
@@ -2762,7 +2762,7 @@ bool Rasterizer::BindTexturesFromSet(const Shader::Info& stage, const PreparedSt
                          : image.scene_proxy && proxies_on) ||
             (upscaler->Enabled() && upscaler->RedirectsSampled(entry.id))) {
             ++texture_set_why[2];
-            ++texture_set_misses;
+            ++texture_set_misses; if (Gow3Stats::enabled) Gow3Stats::texset_misses.fetch_add(1, std::memory_order_relaxed);
             set.generation = ~0ull;
             return false;
         }
@@ -2841,6 +2841,7 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
             return begin_memo.state;
         }
         ++begin_memo_misses;
+        if (Gow3Stats::enabled) Gow3Stats::render_memo_misses.fetch_add(1, std::memory_order_relaxed);
     }
     begin_memo.valid = false;
     RenderState state = BeginRenderingFull(pipeline);
