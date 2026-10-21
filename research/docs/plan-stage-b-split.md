@@ -440,3 +440,8 @@ the G-buffer drawn twice) whatever `r.EarlyZPass` says: DBuffer decals force it 
 Open: whether the T-Z2/T-Z3 panning spikes are GPU saturation (an engine-side cap test still to do); defaults unchanged
 (`r.DBuffer` on, `r.EarlyZPass=0`). Port limiter note: the in-game frame limit and `GOW3_FPS_LIMIT` are the same
 present-thread limiter; an external limiter (RTSS) sits at the end of a deep pipeline (see the reply of 03:00).
+
+T-Z4c / T-Z4d (2026-10-21 03:16-03:25): engine_fps=120 (UE4 SmoothedFrameRateRange) with `GOW3_FPS_LIMIT=0` ran at
+175-182 FPS (T-Z4c); adding `r.VSync=1` (T-Z4d) still uncapped (the user: "still 240"). **UE4's own tick ceiling does not
+engage in this build from the config; every cap so far was the port's present limiter.** `medievil.ini` restored
+(engine_fps=240). Next: GPU saturation tested by lowering GPU load instead (`r.ScreenPercentage=70` with T-Z3's settings).
