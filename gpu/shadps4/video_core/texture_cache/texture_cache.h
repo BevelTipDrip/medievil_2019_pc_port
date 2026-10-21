@@ -101,6 +101,21 @@ public:
         return registry_generation.load(std::memory_order_acquire);
     }
 
+    /// gow3 region stamps (T-S1a): a sum that grows whenever an image overlapping
+    /// [address, address + size) is registered or unregistered, by 4 MiB region (a region shared
+    /// through the table's wrap only adds misses). RegistryGeneration changes for any image: one
+    /// texture streaming in invalidated every memoized texture set (~half of their misses).
+    static constexpr u32 RegionShift = 22, RegionCount = 1u << 16;
+    [[nodiscard]] u64 RegionStamp(VAddr address, u64 size) const noexcept {
+        const u64 first = address >> RegionShift;
+        const u64 last = (address + std::max<u64>(size, 1) - 1) >> RegionShift;
+        u64 stamp = 0;
+        for (u64 r = first; r <= last && r - first < RegionCount; ++r) {
+            stamp += region_gens[r & (RegionCount - 1)].load(std::memory_order_relaxed);
+        }
+        return stamp;
+    }
+
     /// gow3: FindImage's access tick for an image found by a memoized lookup. The LRU touch
     /// FindImage also does happens in UpdateImage (FindTexture), which every binding reaches.
     void MarkFound(ImageId image_id) {
@@ -553,6 +568,14 @@ private:
     };
     std::array<FindImageCacheEntry, 1024> find_image_cache{};
     std::atomic<u64> registry_generation{0};
+    std::unique_ptr<std::atomic<u32>[]> region_gens{new std::atomic<u32>[RegionCount]{}};
+    void BumpRegions(VAddr address, u64 size) noexcept {
+        const u64 first = address >> RegionShift;
+        const u64 last = (address + std::max<u64>(size, 1) - 1) >> RegionShift;
+        for (u64 r = first; r <= last && r - first < RegionCount; ++r) {
+            region_gens[r & (RegionCount - 1)].fetch_add(1, std::memory_order_release);
+        }
+    }
     /// gow3: GOW3_TEXCACHE_STATS: expands by image and reason since the last report (under mutex).
     std::unordered_map<std::string, u64> expand_sites;
     /// gow3: GOW3_TEXCACHE_STATS: images created since the last report, by description and binding;

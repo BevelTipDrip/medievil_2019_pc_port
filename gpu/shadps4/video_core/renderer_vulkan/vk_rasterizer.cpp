@@ -2325,6 +2325,8 @@ Rasterizer::ImageDescCacheEntry& Rasterizer::CachedImageDescEntry(const AmdGpu::
     return entry;
 }
 
+static bool TextureSetRegions();
+
 void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* prepared,
                               Shader::Backend::Bindings& binding, u32& write_index,
                               bool& barrier, bool on_helper) {
@@ -2346,6 +2348,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
         return;
     }
     GOW3_SECTION(TexSlow);
+    const u64 bind_generation = texture_cache.RegistryGeneration();
     image_bindings.clear();
     image_binding_entries.clear();
     image_desc_overflow.clear();
@@ -2523,7 +2526,9 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
                     image_infos.emplace_back(VK_NULL_HANDLE, proxy->view, proxy->layout);
                     if (set_ok && binding_index < resolved.size()) {
                         resolved[binding_index] = {image_id, proxy->view, image.backing,
-                                                   desc.view_info.range, true};
+                                                   desc.view_info.range, true,
+                                                   image.info.guest_address, desc.info.guest_address,
+                                                   image.info.guest_size, desc.info.guest_size};
                     }
                     ++proxy_samples;
                     continue;
@@ -2572,17 +2577,22 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
             image_infos.emplace_back(VK_NULL_HANDLE, view, layout);
             if (set_ok && binding_index < resolved.size()) {
                 resolved[binding_index] = {image_id, *image_view.image_view, image.backing,
-                                           desc.view_info.range};
+                                           desc.view_info.range, false, image.info.guest_address,
+                                           desc.info.guest_address, image.info.guest_size,
+                                           desc.info.guest_size};
                 set_ok = !is_storage && !binding.force_general && !binding.is_target;
             }
         }
     }
-    if (set_ok && image_bindings.size() == stage.images.size()) {
-        // Remember the set: the same T#s resolve the same way while no image is (un)registered.
+    if (set_ok && image_bindings.size() == stage.images.size() &&
+        (!TextureSetRegions() || texture_cache.RegistryGeneration() == bind_generation)) {
+        // Remember the set: the same T#s resolve the same way while no image is (un)registered
+        // (over their own ranges with region stamps; none was during this bind).
         set_slot->generation = texture_cache.RegistryGeneration();
         set_slot->scene_generation = scene_targets->Generation();
         set_slot->count = static_cast<u32>(stage.images.size());
         std::copy_n(resolved.begin(), set_slot->count, set_slot->entries.begin());
+        set_slot->stamp = TextureSetStamp(*set_slot);
     } else if (set_slot) {
         set_slot->key = 0;
     }
@@ -2658,6 +2668,28 @@ Rasterizer::BeginSignature Rasterizer::MakeBeginSignature(const GraphicsPipeline
     return sig;
 }
 
+/// gow3 T-S1a: memoized texture sets are checked against the region stamps of their own images
+/// instead of the registry generation, which any image (un)registration anywhere changed.
+/// GOW3_TEXSET_REGIONS=0: the generation as before.
+static bool TextureSetRegions() {
+    static const bool on = [] {
+        const char* env = std::getenv("GOW3_TEXSET_REGIONS");
+        return !env || env[0] != '0';
+    }();
+    return on;
+}
+
+u64 Rasterizer::TextureSetStamp(const TextureSet& set) const {
+    u64 stamp = 0;
+    for (u32 i = 0; i < set.count; ++i) {
+        const auto& entry = set.entries[i];
+        if (!entry.id) continue;
+        stamp += texture_cache.RegionStamp(entry.address, entry.size) +
+                 texture_cache.RegionStamp(entry.sharp_address, entry.sharp_size);
+    }
+    return stamp;
+}
+
 bool Rasterizer::BindTexturesFromSet(const Shader::Info& stage, const PreparedStage* prepared,
                                      u32 first_image_idx, bool& barrier, TextureSet*& slot) {
     GOW3_SECTION(TexSetHit);
@@ -2677,13 +2709,17 @@ bool Rasterizer::BindTexturesFromSet(const Shader::Info& stage, const PreparedSt
     auto& set = texture_sets[key % texture_sets.size()];
     slot = &set;
     const u64 generation = texture_cache.RegistryGeneration();
+    const bool regions = TextureSetRegions();
     const bool match = set.key == key && set.stage == &stage && set.count == count &&
-                       set.generation == generation &&
+                       (regions ? set.generation != ~0ull && set.stamp == TextureSetStamp(set)
+                                : set.generation == generation) &&
                        set.scene_generation == scene_targets->Generation() &&
                        std::equal(set.hashes.begin(), set.hashes.begin() + count,
                                   prepared->image_hashes);
     if (!match) {
-        ++texture_set_why[set.key != key ? 0 : set.generation != generation ? 1 : 3];
+        ++texture_set_why[set.key != key ? 0
+                          : (regions ? set.generation == ~0ull || set.stamp != TextureSetStamp(set)
+                                     : set.generation != generation) ? 1 : 3];
         ++texture_set_misses;
         set.key = key;
         set.stage = &stage;

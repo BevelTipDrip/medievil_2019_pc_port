@@ -295,11 +295,14 @@ private:
         const void* backing = nullptr;
         VideoCore::SubresourceRange range;
         bool proxy = false; ///< sampled from the scene proxy (view: SampleProxy on each use)
+        VAddr address = 0, sharp_address = 0; ///< the bound image's guest range and the T#'s
+        u64 size = 0, sharp_size = 0;
     };
     struct TextureSet {
         u64 key = 0;
         const Shader::Info* stage = nullptr;
         u64 generation = ~0ull;
+        u64 stamp = 0; ///< region stamps of its entries (TextureCache::RegionStamp)
         u64 scene_generation = 0; ///< SceneTargets::Generation of the proxy views
         u32 count = 0;
         static constexpr u32 MaxImages = 16; ///< larger sets are not memoized
@@ -312,6 +315,7 @@ private:
     /// Returns true when the stage's images were bound from the memo.
     bool BindTexturesFromSet(const Shader::Info& stage, const PreparedStage* prepared,
                              u32 first_image_idx, bool& barrier, TextureSet*& slot);
+    u64 TextureSetStamp(const TextureSet& set) const;
     /// The prepared sharps of `stage` in the current prepared draw, if they fit it.
     const PreparedStage* FindPreparedStage(const Shader::Info& stage) const;
     /// Whether the helper may bind textures for this pipeline at all (fixed descriptor layout,

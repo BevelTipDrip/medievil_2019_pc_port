@@ -328,3 +328,16 @@ pass is open; written again after that, it is marked dynamic and keeps the strea
 line ("Small read-only buffers/s"). Expected (study): ~0.05-0.1 us per packet on stage B, ~2 GB/s less memcpy for
 the recorder, repeated vertex/index binds (feeds S1). Risk: promoted ranges that the CPU rewrites add write faults
 once each (watch "write faults/s").
+
+### T-S1a: texture binding split (2026-10-20 23:12, launched by Claude with the user's go; build `60d27d4`; log `data/t-s1a-texture-sections.log`)
+
+Defaults (HZB remap, S2) + `GOW3_SECTIONS=1`, 34 gameplay windows, us per packet: packet 2.35, draw 1.79, textures
+0.396 = **slow path 0.200** (sets not memoized, ~12% of calls) + memoized sets 0.109 (lookup and checks 0.054, emit
+loop 0.055) + samplers 0.083 (both paths). Texture-set misses: 53% "other key" (slot last held another set), **47%
+"generation"**: `RegistryGeneration` changes when any image anywhere is (un)registered, so one texture streaming in
+voided every memoized set (the panning link: new textures in view, all sets miss at once).
+
+**Region stamps** (`GOW3_TEXSET_REGIONS`, default on; `=0` the generation as before): the texture cache counts
+(un)registrations per 4 MiB region (`RegionStamp`, `BumpRegions`); a memoized set stores the sum of its entries'
+stamps (each the bound image's range and the T#'s range) and is valid while that sum is unchanged. A set is not
+memoized when any image was (un)registered during its bind (stricter than before).
