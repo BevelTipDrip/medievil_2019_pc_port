@@ -119,8 +119,10 @@ int RenderPreset();
 bool ResolutionNeedsRestart();
 /// A startup graphics option differs from the one this launch started with.
 bool GraphicsNeedRestart();
-/// Writes the file (menu changes).
+/// Writes the settings changed since the last load or save into the file, in place.
 void Save();
+/// Records the current values as unchanged (Load calls it after the environment overrides).
+void TakeBaseline();
 
 /// Render resolution divisor of a preset (1.0 native, 1.5 quality, ...).
 float PresetScale(int preset);

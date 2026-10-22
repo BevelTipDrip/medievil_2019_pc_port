@@ -7,6 +7,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cstdarg>
+#include <map>
 #include <set>
 #include <string>
 #include <string_view>
@@ -201,6 +203,7 @@ void Load() {
     v.startup_engine_fps = v.engine_fps;
     v.startup_deferred_readback = v.deferred_readback;
     v.startup_stale_readback = v.stale_readback;
+    TakeBaseline();
 }
 
 bool GraphicsNeedRestart() {
@@ -289,76 +292,132 @@ std::vector<std::string> ReadLines(const char* path) {
 }
 } // namespace
 
+namespace {
+void Append(std::string& out, const char* format, ...) {
+    char buffer[2048];
+    va_list args;
+    va_start(args, format);
+    const int n = std::vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+    if (n > 0) out.append(buffer, std::min<std::size_t>(std::size_t(n), sizeof(buffer) - 1));
+}
+
+// Every setting this menu owns as "key" -> "value" (the text Save writes).
+std::map<std::string, std::string> Serialize(const Values& v) {
+    std::string out;
+    Append(out,
+           "upscaler=%s\npreset=%d\nsharpen=%d\nsharpness=%.2f\njitter=%d\n"
+           "reactive=%d\nobject_motion=%d\nreactive_scale=%.2f\nreactive_threshold=%.2f\nreactive_max=%.2f\n"
+           "debug_view=%d\nshow_fps=%d\nfsr4_auto_exposure=%d\nfsr4_invert_jitter=%d\n",
+           UpscalerName(v.upscaler), v.preset.load(), int(v.sharpen.load()),
+           v.sharpness.load(), int(v.jitter.load()), int(v.reactive.load()),
+           int(v.object_motion.load()),
+           v.reactive_scale.load(), v.reactive_threshold.load(), v.reactive_max.load(),
+           v.debug_view.load(), int(v.show_fps.load()),
+           int(v.fsr4_auto_exposure.load()), int(v.fsr4_invert_jitter.load()));
+    Append(out, "output_res=%dx%d\n", OutputWidths[v.output_res], OutputHeights[v.output_res]);
+    Append(out, "red_orb_multiplier=%.3f\n", v.red_orb_multiplier.load());
+    Append(out, "damage_dealt=%.3f\n", v.damage_dealt.load());
+    Append(out, "damage_taken=%.3f\n", v.damage_taken.load());
+    Append(out, "green_orb_multiplier=%.3f\n", v.green_orb_multiplier.load());
+    Append(out, "blue_orb_multiplier=%.3f\n", v.blue_orb_multiplier.load());
+    Append(out, "gold_orb_multiplier=%.3f\n", v.gold_orb_multiplier.load());
+    Append(out, "cheat_health=%d\ncheat_magic=%d\ncheat_item=%d\ncheat_rage=%d\ncheat_orbs=%d\n"
+                "cheat_very_hard=%d\ncheat_double_jumps=%d\n",
+           int(v.cheats[0].load()), int(v.cheats[1].load()), int(v.cheats[2].load()),
+           int(v.cheats[3].load()), int(v.cheats[4].load()),
+           int(v.cheats[5].load()), int(v.cheats[6].load()));
+    Append(out, "enemy_health_bar=%d\n", int(v.enemy_health_bar.load()));
+    Append(out,
+           "overlay_fps=%d\noverlay_frametime=%d\noverlay_upscaler=%d\noverlay_gpu=%d\n"
+           "overlay_cpu=%d\noverlay_ram=%d\noverlay_vram=%d\noverlay_scale=%d\noverlay_corner=%d\n"
+           "overlay_opacity=%d\noverlay_layout=%d\nmenu_tab=%d\n",
+           int(v.overlay_items >> 0 & 1), int(v.overlay_items >> 1 & 1), int(v.overlay_items >> 2 & 1),
+           int(v.overlay_items >> 3 & 1), int(v.overlay_items >> 4 & 1), int(v.overlay_items >> 5 & 1),
+           int(v.overlay_items >> 6 & 1), v.overlay_scale.load(), v.overlay_corner.load(),
+           v.overlay_opacity.load(), v.overlay_layout.load(), v.menu_tab.load());
+    Append(out,
+           "display_mode=%s\nvsync=%d\nfps_limit=%d\nasync_shaders=%d\n"
+           "fsr1=%d\nrcas=%d\nrcas_strength=%d\nframes_queued=%d\n"
+           "render_resolution=%s\nengine_fps=%d\ndeferred_readback=%d\nstale_readback=%d\n"
+           "restart_unconfirmed=%d\n",
+           Gow3Graphics::DisplayModeKeys[std::clamp(v.display_mode.load(), 0, 2)].data(),
+           int(v.vsync.load()), v.fps_limit.load(), int(v.async_shaders.load()),
+           int(v.fsr1.load()), int(v.rcas.load()), v.rcas_strength.load(), v.frames_queued.load(),
+           Gow3Graphics::Resolutions[std::clamp(v.render_resolution.load(), 0, int(Gow3Graphics::Resolutions.size()) - 1)].data(),
+           v.engine_fps.load(), int(v.deferred_readback.load()), int(v.stale_readback.load()),
+           int(v.restart_unconfirmed.load()));
+    // Read by run.sh at start.
+    Append(out, "live_resolution=%s\n", v.live_resolution < 0 ? "auto" : v.live_resolution ? "1" : "0");
+    std::map<std::string, std::string> values;
+    std::size_t at = 0;
+    while (at < out.size()) {
+        const std::size_t nl = out.find('\n', at);
+        const std::string line = out.substr(at, nl == std::string::npos ? std::string::npos : nl - at);
+        at = nl == std::string::npos ? out.size() : nl + 1;
+        if (const auto eq = line.find('='); eq != std::string::npos) {
+            values[line.substr(0, eq)] = line.substr(eq + 1);
+        }
+    }
+    return values;
+}
+
+// The values as loaded (environment overrides included) or last saved: Save writes only the
+// settings changed in the menu since then.
+std::map<std::string, std::string>& Baseline() {
+    static std::map<std::string, std::string> baseline;
+    return baseline;
+}
+} // namespace
+
+void TakeBaseline() {
+    Baseline() = Serialize(Get());
+}
+
 void Save() {
-    const auto& v = Get();
-    // medievil.ini also holds the launcher's keys (graphics quality, cheats, upscaling): they are
-    // kept as they are (rewriting only this menu's keys dropped them).
-    const std::vector<std::string> previous = ReadLines(Path());
+    // gow3: only the settings changed in the menu are written, in place; every other line of
+    // medievil.ini (the launcher's keys, values this menu did not touch) stays as it was.
+    // Rewriting every key saved environment overrides of test launches (frames queued, readback
+    // modes) and this menu's own defaults over the launcher's settings.
+    const auto current = Serialize(Get());
+    std::map<std::string, std::string> changes;
+    for (const auto& [key, value] : current) {
+        const auto it = Baseline().find(key);
+        if (it == Baseline().end() || it->second != value) {
+            changes[key] = value;
+        }
+    }
+    if (changes.empty()) {
+        return;
+    }
+    std::vector<std::string> lines = ReadLines(Path());
+    if (lines.empty()) {
+        lines.push_back("# MediEvil settings (in-game menu: Insert / R3+L2)");
+    }
+    std::set<std::string> done;
+    for (std::string& line : lines) {
+        const std::string key = LineKey(line);
+        if (const auto it = changes.find(key); it != changes.end() && !key.empty()) {
+            line = key + "=" + it->second;
+            done.insert(key);
+        }
+    }
+    for (const auto& [key, value] : changes) {
+        if (!done.contains(key)) {
+            lines.push_back(key + "=" + value);
+        }
+    }
     FILE* file = std::fopen(Path(), "w");
     if (!file) {
         std::printf("Settings: cannot write %s\n", Path());
         return;
     }
-    std::fprintf(file,
-                 "# gow3 settings (in-game menu: Insert / R3+L2)\n"
-                 "upscaler=%s\npreset=%d\nsharpen=%d\nsharpness=%.2f\njitter=%d\n"
-                 "reactive=%d\nobject_motion=%d\nreactive_scale=%.2f\nreactive_threshold=%.2f\nreactive_max=%.2f\n"
-                 "debug_view=%d\nshow_fps=%d\nfsr4_auto_exposure=%d\nfsr4_invert_jitter=%d\n",
-                 UpscalerName(v.upscaler), v.preset.load(), int(v.sharpen.load()),
-                 v.sharpness.load(), int(v.jitter.load()), int(v.reactive.load()),
-                 int(v.object_motion.load()),
-                 v.reactive_scale.load(), v.reactive_threshold.load(), v.reactive_max.load(),
-                 v.debug_view.load(), int(v.show_fps.load()),
-                 int(v.fsr4_auto_exposure.load()), int(v.fsr4_invert_jitter.load()));
-    std::fprintf(file, "output_res=%dx%d\n", OutputWidths[v.output_res], OutputHeights[v.output_res]);
-    std::fprintf(file, "red_orb_multiplier=%.3f\n", v.red_orb_multiplier.load());
-    std::fprintf(file, "damage_dealt=%.3f\n", v.damage_dealt.load());
-    std::fprintf(file, "damage_taken=%.3f\n", v.damage_taken.load());
-    std::fprintf(file, "green_orb_multiplier=%.3f\n", v.green_orb_multiplier.load());
-    std::fprintf(file, "blue_orb_multiplier=%.3f\n", v.blue_orb_multiplier.load());
-    std::fprintf(file, "gold_orb_multiplier=%.3f\n", v.gold_orb_multiplier.load());
-    std::fprintf(file, "cheat_health=%d\ncheat_magic=%d\ncheat_item=%d\ncheat_rage=%d\ncheat_orbs=%d\n"
-                       "cheat_very_hard=%d\ncheat_double_jumps=%d\n",
-                 int(v.cheats[0].load()), int(v.cheats[1].load()), int(v.cheats[2].load()),
-                 int(v.cheats[3].load()), int(v.cheats[4].load()),
-                 int(v.cheats[5].load()), int(v.cheats[6].load()));
-    std::fprintf(file, "enemy_health_bar=%d\n", int(v.enemy_health_bar.load()));
-    std::fprintf(file,
-                 "overlay_fps=%d\noverlay_frametime=%d\noverlay_upscaler=%d\noverlay_gpu=%d\n"
-                 "overlay_cpu=%d\noverlay_ram=%d\noverlay_vram=%d\noverlay_scale=%d\noverlay_corner=%d\n"
-                 "overlay_opacity=%d\noverlay_layout=%d\nmenu_tab=%d\n",
-                 int(v.overlay_items >> 0 & 1), int(v.overlay_items >> 1 & 1), int(v.overlay_items >> 2 & 1),
-                 int(v.overlay_items >> 3 & 1), int(v.overlay_items >> 4 & 1), int(v.overlay_items >> 5 & 1),
-                 int(v.overlay_items >> 6 & 1), v.overlay_scale.load(), v.overlay_corner.load(),
-                 v.overlay_opacity.load(), v.overlay_layout.load(), v.menu_tab.load());
-    std::fprintf(file,
-                 "display_mode=%s\nvsync=%d\nfps_limit=%d\nasync_shaders=%d\n"
-                 "fsr1=%d\nrcas=%d\nrcas_strength=%d\nframes_queued=%d\n"
-                 "render_resolution=%s\nengine_fps=%d\ndeferred_readback=%d\nstale_readback=%d\n"
-                 "restart_unconfirmed=%d\n",
-                 Gow3Graphics::DisplayModeKeys[std::clamp(v.display_mode.load(), 0, 2)].data(),
-                 int(v.vsync.load()), v.fps_limit.load(), int(v.async_shaders.load()),
-                 int(v.fsr1.load()), int(v.rcas.load()), v.rcas_strength.load(), v.frames_queued.load(),
-                 Gow3Graphics::Resolutions[std::clamp(v.render_resolution.load(), 0, int(Gow3Graphics::Resolutions.size()) - 1)].data(),
-                 v.engine_fps.load(), int(v.deferred_readback.load()), int(v.stale_readback.load()),
-                 int(v.restart_unconfirmed.load()));
-    // Read by run.sh at start.
-    std::fprintf(file, "live_resolution=%s\n", v.live_resolution < 0 ? "auto"
-                                                  : v.live_resolution ? "1" : "0");
-    std::fclose(file);
-    std::set<std::string> written;
-    for (const std::string& line : ReadLines(Path())) {
-        written.insert(LineKey(line));
+    for (const std::string& line : lines) {
+        std::fprintf(file, "%s\n", line.c_str());
     }
-    if (FILE* append = std::fopen(Path(), "a")) {
-        for (const std::string& line : previous) {
-            const std::string key = LineKey(line);
-            if (!key.empty() && !written.contains(key)) {
-                std::fprintf(append, "%s\n", line.c_str());
-                written.insert(key);
-            }
-        }
-        std::fclose(append);
+    std::fclose(file);
+    for (const auto& [key, value] : changes) {
+        Baseline()[key] = value;
     }
 }
 

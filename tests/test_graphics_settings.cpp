@@ -21,7 +21,7 @@ int main() {
     assert(G::ParseDisplayMode("borderless") == G::Borderless && G::ParseDisplayMode("bogus") == G::Windowed);
     assert(G::ParseFpsLimit(240) == 240 && G::ParseFpsLimit(75) == 0);
     assert(G::ParseResolution("1440p") == 3 && G::ParseResolution("8K") == 0);
-    assert(G::ParseEngineFps(240) == 240 && G::ParseEngineFps(90) == 120);
+    assert(G::ParseEngineFps(240) == 240 && G::ParseEngineFps(90) == 60);
     assert(G::ParseFramesQueued(2) == 2 && G::ParseFramesQueued(0) == 0 && G::ParseFramesQueued(5) == 1);
     assert(G::ParseRcasStrength(100) == 100 && G::ParseRcasStrength(101) == 75 && G::ParseRcasStrength(-1) == 75);
     assert(G::RcasAttenuation(100) == 0.0f && G::RcasAttenuation(0) == 2.0f && G::RcasAttenuation(75) == 0.5f);
@@ -68,7 +68,7 @@ int main() {
     _putenv_s("GOW3_ASYNC_SHADERS", "1");  // the environment still wins at start
     v.async_shaders = false;
     Gow3Settings::Load();
-    assert(v.display_mode == G::Windowed && v.fps_limit == 0 && v.render_resolution == 0 && v.engine_fps == 120);
+    assert(v.display_mode == G::Windowed && v.fps_limit == 0 && v.render_resolution == 0 && v.engine_fps == 60);
     assert(v.rcas_strength == 75 && v.frames_queued == 1);
     assert(v.async_shaders);
     {
@@ -80,6 +80,23 @@ int main() {
     const std::string cheats = Read(path);
     assert(cheats.find("cheat_double_jumps=1\n") != std::string::npos);
     assert(cheats.find("cheat_very_hard=1\n") != std::string::npos);
+
+    // Only the settings changed in the menu are written: an environment override of a test
+    // launch is not saved, the launcher's keys stay, and no other key is added.
+    {
+        std::ofstream out(path);
+        out << "frames_queued=1\nfps_limit=240\nue4_quality=console\n";
+    }
+    _putenv_s("GOW3_FRAMES_AHEAD", "2");
+    Gow3Settings::Load();
+    assert(v.frames_queued == 2);
+    v.fps_limit = 120;
+    Gow3Settings::Save();
+    const std::string partial = Read(path);
+    assert(partial == "frames_queued=1\nfps_limit=120\nue4_quality=console\n");
+    Gow3Settings::Save();  // nothing changed since: the file stays as it is
+    assert(Read(path) == partial);
+    _putenv_s("GOW3_FRAMES_AHEAD", "");
     std::remove(path);
     std::puts("PASS: graphics settings");
 }
