@@ -511,3 +511,18 @@ image uploads, stage B 48-96% busy), 2 host-copy waits (50-80 MB image uploads),
 213 vs 210, p99 6.49 vs 6.38, 18 frames >= 9 ms in ~35 s; the user: "buffering additional frames seems to hurt
 stability every time, especially with 1% lows". **frames_queued stays 1.** The frames-ahead wait is slack, not a limit.
 Next: the new-content bursts (draw preparation falling behind, FindImage page-table lookups).
+
+### T-H3b: one GPU particle pass (2026-10-21 23:10, `r.GPUParticle.FixDeltaSeconds=0`, 4K, frame stats; log `data/t-h3b-particles-fixdelta0.log`)
+
+The user: particles, fire, fog look fine; heavy area slightly better; low risk. Draw counts inconclusive (short, different
+spot). **Default since 2026-10-21** (`GOW3_PARTICLE_FIXED_STEP=1`: the fixed step).
+
+### Launcher: performance patch toggles (2026-10-21)
+
+Performance page, "Performance patches": one switch per bundle, on by default, off sets its variables (HZB occlusion
+`GOW3_HZB_REMAP=0`; decal prepass `GOW3_DECAL_PREPASS=1`; particle pass `GOW3_PARTICLE_FIXED_STEP=1`; small buffers
+`GOW3_STREAM_CLEAN=0`; texture memo `GOW3_TEXSET_REGIONS=0` + `GOW3_TEXSET_TWO_WAY=0`; lock-free memory lookups
+`GOW3_OPTIMISTIC_CLAMP=0` + `GOW3_REGION_BUCKETS=0`; cheap frees `GOW3_DECOMMIT_KEEP_ACCESS=0`; GPU data without waits
+`GOW3_READBACK_QUEUE=0` + `GOW3_GPU_WRITE_TWINS=0` + `GOW3_EOS_DEFERRED=0` + `GOW3_EOP_TARGETED=0`; 4K memory
+`GOW3_PS4_MEMORY=1`), each with its description and measured gain. **The launcher no longer sets `GOW3_FRAME_STATS=1`
+by default** (it did: normal play had the stage B diagnostics on); Advanced > Frame statistics turns it on.

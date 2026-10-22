@@ -20,6 +20,18 @@ class ControlMapTest(unittest.TestCase):
         settings['pipeline_binary_cache'] = False
         self.assertEqual(launcher.game_environment(settings)['GOW3_PIPELINE_BINARIES'], '0')
 
+    def test_performance_patches_default_on_and_switch_off(self):
+        settings = {**launcher.APP_DEFAULTS}
+        env = launcher.game_environment(settings)
+        for key, _title, _hint, off in launcher.PERF_PATCHES:
+            self.assertTrue(settings[key])
+            for name, value in off.items():
+                self.assertNotEqual(env.get(name), value)
+        self.assertNotIn('GOW3_FRAME_STATS', {k for k, v in env.items() if v == '1'} - set(launcher.os.environ))
+        settings['perf_texture_memo'] = False
+        env = launcher.game_environment(settings)
+        self.assertEqual((env['GOW3_TEXSET_REGIONS'], env['GOW3_TEXSET_TWO_WAY']), ('0', '0'))
+
     def test_changed_buttons_in_table_order(self):
         controls = {'key': {'circle': ' Left Shift ', 'cross': 'Q', 'square': ''}, 'pad': {'cross': 'b'}}
         self.assertEqual(launcher.control_map(controls, 'key'), 'cross=Q,circle=Left Shift')

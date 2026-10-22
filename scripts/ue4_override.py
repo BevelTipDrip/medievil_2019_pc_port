@@ -333,7 +333,14 @@ def apply(game, resolution='native', quality='console', fps=60, debug_menu=False
     # invisible in the heavy view (1-4/255 on Dan's boots). Off, and the PS4's own partial prepass
     # (large occluders, r.EarlyZPass=1) keeps early depth for the GPU: heavy views ~600 fewer
     # draws, the best 1% lows so far (research: study-heavy-frame-map.md, T-Z2-T-Z5, 2026-10-21).
-    values.update({'r.DBuffer': '0', 'r.EarlyZPass': '1'})
+    # GOW3_DECAL_PREPASS=1: the PS4's settings (DBuffer decals, their full prepass).
+    if os.environ.get('GOW3_DECAL_PREPASS') != '1':
+        values.update({'r.DBuffer': '0', 'r.EarlyZPass': '1'})
+    # GPU particles: one simulation pass a frame with the real frame time; the default fixed step
+    # (1/30 s) added a second pass that, above 30 FPS, only copied the particles back (~190 draws,
+    # study-heavy-frame-map.md, T-H3b). GOW3_PARTICLE_FIXED_STEP=1: the fixed step.
+    if os.environ.get('GOW3_PARTICLE_FIXED_STEP') != '1':
+        values['r.GPUParticle.FixDeltaSeconds'] = '0'
     scale = TEMPORAL_UPSCALE.get(upscale) if not percentage else None
     if scale:
         values.update({'r.ScreenPercentage': scale, 'r.TemporalAA.Upsampling': '1'})

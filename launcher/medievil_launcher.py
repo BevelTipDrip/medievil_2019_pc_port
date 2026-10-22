@@ -207,6 +207,51 @@ DRAW_PIPE = [('', ('Auto (8+ threads)', 'Авто (8+ потоков)')), ('1', 
 READBACKS = [('', ('Relaxed (default)', 'Relaxed (по умолчанию)')), ('0', ('Off', 'Выключены')),
              ('2', ('Precise',))]
 FRAMES_QUEUED = [('1', ('1 (lowest latency)',)), ('2', ('2',)), ('0', ('Unlimited',))]
+# Performance patches (research/docs/plan-stage-b-split.md, plan-frame-pacing.md): each is on by
+# default; switched off, its environment variables restore the earlier behaviour (A/B tests,
+# or a fallback if one misbehaves on another PC). (settings key, title, description, variables).
+PERF_PATCHES = [
+    ('perf_hzb_occlusion', 'HZB occlusion culling',
+     "Unreal Engine 4's own culling skips objects hidden behind others, served from the GPU's "
+     'finished results without waiting for it. Heavy areas ~130 -> ~165 FPS (MediEvil 01.00 only; '
+     'off: no occlusion culling, as before).',
+     {'GOW3_HZB_REMAP': '0'}),
+    ('perf_no_decal_prepass', 'Skip the decal depth prepass',
+     'The PS4 build draws the whole scene twice (depth first) for a few decals that are almost '
+     'invisible. About 600 fewer draws a frame in heavy areas: ~10% FPS and the best 1% lows.',
+     {'GOW3_DECAL_PREPASS': '1'}),
+    ('perf_particle_single_pass', 'Single GPU particle pass',
+     'Particles are simulated once a frame with the real frame time instead of a second, empty '
+     'fixed-step pass: up to ~190 fewer draws while particles are on screen.',
+     {'GOW3_PARTICLE_FIXED_STEP': '1'}),
+    ('perf_small_buffers', 'Small buffers from VRAM',
+     'Small vertex and constant buffers the game has not changed are read from video memory instead '
+     'of being copied for every draw (~1 GB/s less copying): about 5% in heavy areas.',
+     {'GOW3_STREAM_CLEAN': '0'}),
+    ('perf_texture_memo', 'Texture set memo',
+     'Textures bound by a draw are remembered and reused unless their own memory changes (not '
+     'whenever any texture streams in): texture binding ~7% cheaper, steadier when panning.',
+     {'GOW3_TEXSET_REGIONS': '0', 'GOW3_TEXSET_TWO_WAY': '0'}),
+    ('perf_lockfree_memory', 'Lock-free memory map lookups',
+     "The GPU threads read the game's memory map without waiting for the game to finish committing "
+     'or freeing memory: half the per-draw work while new content streams in (panning spikes).',
+     {'GOW3_OPTIMISTIC_CLAMP': '0', 'GOW3_REGION_BUCKETS': '0'}),
+    ('perf_cheap_frees', 'Cheap memory frees',
+     "Memory the game frees (about a thousand times a second) keeps its page access instead of being "
+     'locked: frees ~7x cheaper, the memory map blocked a third as often (smoother 0.1% lows).',
+     {'GOW3_DECOMMIT_KEEP_ACCESS': '0'}),
+    ('perf_gpu_data_no_waits', 'GPU data without waits',
+     'Data the GPU writes is read back on a separate queue, kept beside the game\'s copy, and fences '
+     'are signalled without stopping the draw thread: removed the constant micro-stutter (frame time '
+     'spread 0.56 -> 0.06 ms in light areas).',
+     {'GOW3_READBACK_QUEUE': '0', 'GOW3_GPU_WRITE_TWINS': '0', 'GOW3_EOS_DEFERRED': '0',
+      'GOW3_EOP_TARGETED': '0'}),
+    ('perf_4k_memory', '4K memory sizes',
+     "At 4K native the game gets more graphics memory and a larger texture streaming pool than the "
+     "PS4's, so small camera moves stop re-loading textures (4K native output only).",
+     {'GOW3_PS4_MEMORY': '1'}),
+]
+APP_DEFAULTS.update({entry[0]: True for entry in PERF_PATCHES})
 UI_LANGUAGES = lang.LANGUAGE_NAMES
 
 FSR4_COMMIT = 'ae8d628fae208813172446d1e49ed94150b04658'
@@ -321,6 +366,9 @@ def game_environment(s):
     env['GOW3_BACKGROUND_WARMUP'] = '1' if s.get('background_warmup', True) else '0'
     env['GOW3_PARALLEL_WARMUP'] = '1' if s.get('parallel_warmup', True) else '0'
     env['GOW3_PIPELINE_BINARIES'] = '1' if s.get('pipeline_binary_cache', True) else '0'
+    for key, _title, _hint, off in PERF_PATCHES:
+        if not s.get(key, True):
+            env.update(off)
     env.setdefault('GOW3_PERF_DIAG', '1' if s.get('perf_diag', False) else '0')
     for key, name in (('frame_stats', 'GOW3_FRAME_STATS'), ('gpu_profile', 'GOW3_GPU_PROFILE'),
                       ('vk_validation', 'GOW3_VK_VALIDATION'), ('frame_capture_key', 'GOW3_FRAME_CAPTURE_KEY')):
@@ -330,7 +378,8 @@ def game_environment(s):
         if value := control_map(s.get('controls', {}), kind):
             env[name] = value
     env.setdefault('GOW3_FPS_LOG', '1')  # FPS and worst frame every 5 s in the log (diagnostics)
-    env.setdefault('GOW3_FRAME_STATS', '1')  # draws, compiles and stalls every 5 s (diagnostics)
+    # Frame statistics (draws, compiles, stalls every 5 s) only with Advanced > Frame statistics:
+    # part of them is printed by the draw recording thread and costs frame time stability (T-S2b).
     # F12 in the game (or creating the trigger file) saves the next frame here, for bug reports.
     # Each session gets its own folder (frame numbers restart at every start); one press saves
     # 8 consecutive frames so flicker shows up between them.
@@ -993,6 +1042,11 @@ class Launcher:
                    '144 Hz): the smoothest picture, with Engine frame rate 120.'))
         self.row(f, _('Frames queued'), self.choice(f, 'frames_queued', 'ini', FRAMES_QUEUED),
                  _('1 is the lowest input latency; more can raise FPS when the graphics card is the limit.'))
+        self.section(f, _('Performance patches'))
+        self.note(f, _('All on by default. Switch one off to compare, or if something looks wrong; '
+                       'applied at the next start.'), top=2)
+        for key, title, hint, _off in PERF_PATCHES:
+            self.check(f, key, 'app', _(title), _(hint), restart=True)
         self.section(f, _('Resolution and quality'))
         self.row(f, _('Graphics quality'), self.choice(f, 'ue4_quality', 'ini', QUALITY_CHOICES),
                  _('High and Ultra go beyond the PS4: sharper, longer-range shadows, better reflections and more distant detail, for strong graphics cards. Console keeps the PS4 look. Low turns off volumetric fog, reflections and ambient occlusion '
