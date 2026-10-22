@@ -2613,3 +2613,16 @@ Texture helper: 0 binds in parallel, 0 partly, 1664000 serial; per fork 0 cycles
 Render state memo: 217195 hits, 44948 misses; texture sets: 193804 hits, 18006 misses
   texture set misses: other key 18006, generation 0, image check 0, other 0
   scene proxies sampled directly: 0 bindings
+Render state memo: 217155 hits, 44988 misses; texture sets: 191650 hits, 17857 misses
+  texture set misses: other key 17857, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Draw pipe: 421804 draws/s pipelined, 1362 drains/s that waited, stage A waited 22.3%, stage B busy 87.0%
+  drains by reason/s: WaitRegMem=590 (3.6%) commands=0 (0.0%) compute=575 (6.6%) submission end=197 (12.2%)
+  stage A waits over 0.5%: Process:192 12.2% ProcessGraphics:1347 3.6% ProcessCompute:1483 6.6%
+Render state memo: 217155 hits, 44988 misses; texture sets: 193078 hits, 17971 misses
+  texture set misses: other key 17971, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
+Draw preparation: 1605600 prepared pipelines used, 97312 not (8 workers, 7 scanner rebases)
+Render state memo: 217356 hits, 44787 misses; texture sets: 191396 hits, 17792 misses
+  texture set misses: other key 17792, generation 0, image check 0, other 0
+  scene proxies sampled directly: 0 bindings
