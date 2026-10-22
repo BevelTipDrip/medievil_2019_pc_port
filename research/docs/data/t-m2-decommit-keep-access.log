@@ -1,0 +1,444 @@
+Game profile: MediEvil (libc.prx, libSceFios2.prx, libSceNpToolkit2.prx)
+Render resolution: 4K_native (r.setres=3840x2160), console quality, up to 240 FPS; extra cvars r.ScreenPercentage=50
+MediEvil | entry=0x2e9acb0 | image=96,917,024 bytes
+928 imported symbols; 552,801 relocations; 58 required modules
+Unavailable non-loadable metadata headers: [10]; not a byte-exact ELF reconstruction
+Output: C:\Users\Ty\MediEvil\medievil_2019_pc_port\out
+libc _init_env verified RET: True
+Linked native libc: base=0x5c70000, 162 fallback exports, TLS=1152 bytes; eboot TLS=16 bytes, fs->gs patched=5
+Linked modules: libc.prx@0x5c70000, libSceFios2.prx@0x5da0000, libSceNpToolkit2.prx@0x5f30000; 348 native bindings, 850 imports left to the host runtime, fs->gs patched=5
+AppContent profile: SKU=full (probe setting), user params=[0, 0, 0, 0], mounted add-ons=0
+Patches: CUSA11227; 13 writes from ['Native 4K framebuffer pool (512 MB)', '4K display metrics at boot']
+Saves backed up to C:\Users\Ty\MediEvil\medievil_2019_pc_port\user\savedata_backups\20261021-215223
+Settings: C:\Users\Ty\MediEvil\medievil_2019_pc_port\medievil.ini
+Window: Borderless
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:294 operator(): Extension VK_AMD_shader_explicit_vertex_parameter unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:294 operator(): Extension VK_EXT_shader_stencil_export unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:294 operator(): Extension VK_AMD_shader_image_load_store_lod unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:294 operator(): Extension VK_AMD_gcn_shader unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:294 operator(): Extension VK_AMD_shader_trinary_minmax unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:294 operator(): Extension VK_AMD_mixed_attachment_samples unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:294 operator(): Extension VK_EXT_shader_atomic_float2 unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=1, number_format=9 is not fully supported (vk_format=R8Srgb, missing features={ ColorAttachment })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=3, number_format=9 is not fully supported (vk_format=R8G8Srgb, missing features={ SampledImage | ColorAttachment | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=9, number_format=1 is not fully supported (vk_format=A2B10G10R10SnormPack32, missing features={ SampledImage | StorageImage | ColorAttachment | TransferSrc | TransferDst | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=9, number_format=5 is not fully supported (vk_format=A2B10G10R10SintPack32, missing features={ SampledImage | StorageImage | ColorAttachment | TransferSrc | TransferDst | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=13, number_format=4 is not fully supported (vk_format=R32G32B32Uint, missing features={ SampledImage | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=13, number_format=5 is not fully supported (vk_format=R32G32B32Sint, missing features={ SampledImage | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=13, number_format=7 is not fully supported (vk_format=R32G32B32Sfloat, missing features={ SampledImage | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=16, number_format=0 is not fully supported (vk_format=R5G6B5UnormPack16, missing features={ StorageImage | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=17, number_format=0 is not fully supported (vk_format=A1R5G5B5UnormPack16, missing features={ StorageImage | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=18, number_format=0 is not fully supported (vk_format=R5G5B5A1UnormPack16, missing features={ StorageImage | ColorAttachment | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:873 CollectImageFormatInfo: Surface format data_format=19, number_format=0 is not fully supported (vk_format=B4G4R4A4UnormPack16, missing features={ StorageImage | ColorAttachment | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:883 CollectImageFormatInfo: Depth format z_format=1, stencil_format=1 is not fully supported (vk_format=D16UnormS8Uint, missing features={ DepthStencilAttachment })
+Swapchain: VSync on (Fifo)
+GPU: deferred image readback enabled (64 copies, 64 MiB pending limit); CPU reads use the previous frame's copy
+GPU: draw preparation workers: 8 (+1 scanner, 16 hardware threads)
+Object motion: off (enable in menu or GOW3_OBJECT_MOTION=1)
+Runtime: disabled optimizations mask=0
+Overlay: menu ready (Insert or R3+L2)
+Pipeline startup: on demand, no bulk warm-up
+GPU: window and Vulkan presenter ready; SDK 0x06008001, 327 HLE symbols
+GPU: vblank follows the display refresh rate, 240 Hz
+VideoOut: vblank 480 Hz, frame limit 240 FPS
+Patches: 13 writes, 46 bytes applied, 0 pointers rebased
+HZB remap: MapResults and Submit hooks ready (results served by occlusion history key, no GPU wait)
+Guest TCB loads redirected to the TEB TLS slot: 5
+Mapped 100602208 bytes, 12 segments; applied 555371 relocations
+Starting linked module 0 at image offset 0x5c70000; native bindings=348
+Runtime: application heap API registered
+Runtime: direct allocation offset=0x0, size=536870912 bytes, type=3
+Runtime: mapped direct memory 0000004000000000, size=536870912, prot=0x32
+Runtime: direct allocation offset=0x20000000, size=6912147456 bytes, type=0
+Runtime: memory pool expanded by 6912147456 bytes at 0x20000000
+Runtime: reserved virtual range 0000001000000000, size=8589934592
+Runtime: reserved virtual range 0000002000000000, size=8589934592
+Runtime: reserved virtual range 0000003000000000, size=1073741824
+Module 0 initializer returned 0
+Starting linked module 1 at image offset 0x5da0000; native bindings=348
+Module 1 initializer returned 0
+Starting linked module 2 at image offset 0x5f30000; native bindings=348
+Module 2 initializer returned 0
+Entering original x86-64 code at guest offset 0x2e9acb0
+Runtime: _init_env returned (verified libc implementation: RET)
+AdditionalArgs before fixup = ../../../OVERBITE/OVERBITE.uproject 
+AdditionalArgs after fixup = ../../../OVERBITE/OVERBITE.uproject -pak
+File root is /app0/!
+Runtime: open(/app0/symbols/shipping-symbols.bin) -> not found
+Runtime: open(/app0/build/ps4/symbols/shipping-symbols.bin) -> not found
+Runtime: open(/app0/overbite/symbols/shipping-symbols.bin) -> not found
+Failed to locate symbol files on /app0 or /app0/overbite/symbols s!
+Runtime: open(shipping-symbols.bin) -> not found
+Failed to load symbols from shipping-symbols.bin!
+Runtime: open(shipping-symbolmetadata.txt) -> not found
+Used memory before allocating anything was 524.56MB
+FIOS2: built with SDK version 0x06008001
+Runtime: guest thread 'SceFiosCallback' created (stack=65536, prio=260)
+Runtime: guest thread 'SceFiosIO' created (stack=81920, prio=260)
+Runtime: internal system module 0xd7 loaded (host implementation)
+Runtime: guest thread 'SceFiosIO /' created (stack=81920, prio=260)
+Runtime: AppContent host provider loaded; references=1
+Runtime: AppContent initialized; offline base-game profile, no mounted add-ons
+Runtime: temporary data mounted at /temp0 -> C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/temp0
+Runtime: open(/app0/deepfiles) -> not found
+Runtime: system module 0x83 loaded (host implementation)
+Runtime: PlayGo initialized; 2 chunks, all installed locally
+Runtime: open(/app0/overbite/saved/paks) -> not found
+Runtime: open(/app0/engine/content/paks) -> not found
+Runtime: open(/app0/overbite/saved/paks) -> not found
+Runtime: open(/app0/engine/content/paks) -> not found
+Runtime: guest thread 'TaskGraphThreadNP 0' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadNP 1' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadNP 2' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadNP 3' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 4' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 5' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 6' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 7' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 8' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 9' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 10' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 11' created (stack=393216, prio=700)
+Runtime: guest thread 'PoolThread 0' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 1' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 2' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 3' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 4' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 5' created (stack=262144, prio=700)
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/res_index.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/plurals.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/lang/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/lang/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/lang/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/region/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/region/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/region/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/zoneinfo64.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/numberingsystems.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/curr/supplementaldata.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/curr/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/curr/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/curr/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/likelysubtags.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/supplementaldata.res) -> not found
+Runtime: UserService initialized (user 1 logged in)
+Runtime: open(/app0/engine/saved/config/ps4/editorsettings.ini) -> not found
+Runtime: guest thread 'HttpManagerThread' created (stack=262144, prio=700)
+Runtime: system module 0x9c loaded (host implementation)
+Runtime: system module 0x85 loaded (host implementation)
+Runtime: UserService initialized (user 1 logged in)
+Runtime: system module 0xa6 loaded (host implementation)
+Runtime: system module 0xd3 loaded (host implementation)
+Runtime: system module 0x81 loaded (host implementation)
+Runtime: UserService initialized (user 1 logged in)
+Runtime: guest thread 'OnlineAsyncTaskThreadPS4 Defau' created (stack=262144, prio=700)
+Runtime: system module 0x102 loaded (host implementation)
+Runtime: system module 0x19 loaded (host implementation)
+Runtime: mapped flexible memory 0000001200000000, size=16777216, prot=0x2
+Runtime: mapped flexible memory 0000001201000000, size=6291456, prot=0x2
+Runtime: guest thread 'Toolkit::NP::Main' created (stack=262144, prio=700)
+Runtime: guest thread 'Toolkit::NP::Notifications' created (stack=65536, prio=700)
+Runtime: guest thread 'Toolkit::NP::AbortThread' created (stack=65536, prio=700)
+Runtime: system module 0xe4 loaded (host implementation)
+Runtime: system module 0xa8 loaded (host implementation)
+Runtime: system module 0xe7 loaded (host implementation)
+Runtime: system module 0xb2 loaded (host implementation)
+Runtime: system module 0xab loaded (host implementation)
+Runtime: system module 0xa2 loaded (host implementation)
+Runtime: system module 0xac loaded (host implementation)
+Runtime: system module 0xb8 loaded (host implementation)
+Runtime: system module 0xad loaded (host implementation)
+Runtime: system module 0x2c loaded (host implementation)
+Runtime: system module 0x1b loaded (host implementation)
+Runtime: guest thread 'PoolThread 6' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 7' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 8' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 9' created (stack=262144, prio=700)
+Runtime: open(/app0/overbite/intermediate/shaders/tmp) -> not found
+Runtime: open(/app0/overbite/intermediate/shaders/workingdirectory) -> not found
+Runtime: UserService initialized (user 1 logged in)
+Runtime: system module 0x96 loaded (host implementation)
+Runtime: guest thread 'SystemEventGatherThreadPS4' created (stack=262144, prio=700)
+Runtime: open(/app0/overbite/saved/preferences/editorkeybindings.txt) -> not found
+Runtime: guest thread 'SubmitDoneAsyncTaskThreadPS4' created (stack=262144, prio=700)
+Runtime: guest thread 'SubmitGPUCommandsAsyncTaskThre' created (stack=262144, prio=700)
+Runtime: open(/app0/overbite/content/shaderarchive-global-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/shaderarchive-paper2d-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/shaderarchive-paper2d_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/content/shaderarchive-paper2d-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/content/shaderarchive-paper2d_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/shaderarchive-cryptokeys-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/shaderarchive-cryptokeys_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/content/shaderarchive-cryptokeys-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/content/shaderarchive-cryptokeys_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/shaderarchive-mesheditor-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/shaderarchive-mesheditor_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/content/shaderarchive-mesheditor-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/content/shaderarchive-mesheditor_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/shaderarchive-datasmithcontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/shaderarchive-datasmithcontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/content/shaderarchive-datasmithcontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/content/shaderarchive-datasmithcontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/shaderarchive-variantmanagercontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/shaderarchive-variantmanagercontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/content/shaderarchive-variantmanagercontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/content/shaderarchive-variantmanagercontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/shaderarchive-mediacompositing-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/shaderarchive-mediacompositing_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/content/shaderarchive-mediacompositing-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/content/shaderarchive-mediacompositing_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/shaderarchive-wwise-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/shaderarchive-wwise_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/content/shaderarchive-wwise-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/content/shaderarchive-wwise_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: guest thread 'RHIThread' created (stack=524288, prio=700)
+Runtime: guest thread 'RenderThread 0' created (stack=262144, prio=700)
+Runtime: guest thread 'RTHeartBeat 0' created (stack=262144, prio=700)
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/brkitr/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/brkitr/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Texture cache: shared image memory on (NVIDIA GeForce RTX 4090)
+Runtime: guest thread 'RHIFrameOffsetThread' created (stack=262144, prio=700)
+Runtime: guest thread 'RHIFrameFlipThread' created (stack=262144, prio=700)
+Runtime: pad opened for user 1 (SDL gamepad or keyboard)
+Runtime: SystemService: splash screen hidden
+Runtime: SystemService: splash screen hidden
+Runtime: open(/app0/overbite/content/shaderarchive-overbite-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/overbite/content/shaderarchive-overbite_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/download0/installedcontent/overbite/content/shaderarchive-overbite-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/download0/installedcontent/overbite/content/shaderarchive-overbite_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: system module 0xa5 loaded (host implementation)
+Runtime: system module 0xcf loaded (host implementation)
+Runtime: system module 0x88 loaded (host implementation)
+Runtime: system module 0xa5 loaded (host implementation)
+Runtime: guest thread 'SlateLoadingThread1' created (stack=262144, prio=700)
+Runtime: SystemService: splash screen hidden
+Runtime: guest thread 'AK::IOThread' created (stack=131072, prio=256)
+Runtime: guest thread 'AK::BankManager' created (stack=131072, prio=700)
+Runtime: guest thread 'AK Suspended' created (stack=131072, prio=256)
+Runtime: Ajm context initialized (ATRAC9 via LibAtrac9, MP3 via FFmpeg)
+Runtime: guest thread 'AK::EventManager' created (stack=131072, prio=256)
+GPU [Render.Vulkan] <Warning> emit_spirv.cpp:459 operator(): Float32 denorm flushing is not supported by the GPU
+Runtime: guest thread 'FImgMediaSchedulerThread 0' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 1' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 2' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 3' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 4' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 5' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 6' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 7' created (stack=262144, prio=700)
+Runtime: guest thread 'FMediaTicker' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 10' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 11' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 12' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 13' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 14' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 15' created (stack=262144, prio=700)
+Runtime: system module 0xb loaded (host implementation)
+Runtime: Ajm context initialized (ATRAC9 via LibAtrac9, MP3 via FFmpeg)
+Runtime: guest thread 'Ngs2AudioRenderingThread' created (stack=262144, prio=700)
+Runtime: NGS2 system created (silent renderer)
+Runtime: audio backend wasapi
+Runtime: audio port 0 opened (type 0, 8 ch, float, 256 frames)
+Runtime: guest thread 'AudioThread' created (stack=262144, prio=700)
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/lang/root.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/region/root.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: audio port 1 opened (type 0, 8 ch, float, 512 frames)
+Runtime: guest thread 'AK::LibAudioOut' created (stack=131072, prio=256)
+Runtime: system module 0xa0 loaded (host implementation)
+Runtime: save data '@MediEvil0005' mounted at /savedata0 (existing, read-only)
+Runtime: gamepad connected: DualSense Wireless Controller
+Runtime: guest thread 'RenderThread 1' created (stack=262144, prio=700)
+Runtime: guest thread 'RTHeartBeat 1' created (stack=262144, prio=700)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2017c00000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2017c00000 +0x240000
+Host map stats (5 s): map 5756 (21989 MiB, 43.0 ms, max 0.87 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 3089 (1988 MiB, 22.1 ms, max 0.18 ms); carve: 5 views unmapped (26 MiB), 1 mapped again (10 MiB); pool views kept 2722, reused 3383; 2422 regions
+Host map stats (5 s): table edits: guest map 20993 (333 MiB moved, 6.0 ms), host views 6787 (21 MiB moved, 0.5 ms); 3926 guest entries; pool commits 5670 (60.8 ms), decommits 2676 (10.7 ms); table lock held exclusively 25438 times, 56.3 ms
+AvPlayer 0.000 s: 0000000387D0DE50 Init -> 0 (no source, 0 frames delivered)
+AvPlayer 0.001 s: 0000000387D0DE50 AddSource -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 0 frames delivered)
+AvPlayer 0.033 s: 0000000387D0DE50 SetLooping off -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 0 frames delivered)
+AvPlayer 0.034 s: 0000000387D0DE50 Start -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 0 frames delivered)
+[aac @ 00000003ed864680] Could not update timestamps for discarded samples.
+Host map stats (5 s): map 2668 (4618 MiB, 31.1 ms, max 0.11 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 4912 (3219 MiB, 50.5 ms, max 0.10 ms); carve: 1 views unmapped (1 MiB), 1 mapped again (0 MiB); pool views kept 2641, reused 2651; 2445 regions
+Host map stats (5 s): table edits: guest map 10693 (116 MiB moved, 3.6 ms), host views 58 (0 MiB moved, 0.0 ms); 3963 guest entries; pool commits 2667 (45.7 ms), decommits 2641 (17.7 ms); table lock held exclusively 15927 times, 38.6 ms
+HLE thread: join failed (thread::join failed: No such device or address); waiting for it to finish
+GPU [Lib.AvPlayer] <Warning> avplayer_source.cpp:308 Stop: Could not stop playback: already stopped.
+AvPlayer 6.975 s: 0000000387D0DE50 Stop -> -2140536830 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 149 frames delivered)
+AvPlayer 6.975 s: 0000000387D0DE50 Close -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 149 frames delivered)
+GPU [Lib.AvPlayer] <Warning> avplayer_source.cpp:308 Stop: Could not stop playback: already stopped.
+Runtime: guest thread 'TAsync 0' created (stack=262144, prio=700)
+AvPlayer 6.981 s: 0000000388243390 Init -> 0 (no source, 0 frames delivered)
+AvPlayer 7.077 s: 0000000388243390 AddSource -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 0 frames delivered)
+AvPlayer 7.091 s: 0000000388243390 SetLooping off -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 0 frames delivered)
+AvPlayer 7.092 s: 0000000388243390 Start -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 0 frames delivered)
+Host map stats (5 s): map 2570 (4063 MiB, 32.2 ms, max 0.18 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 4810 (2848 MiB, 39.5 ms, max 0.18 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 2560, reused 2568; 2448 regions
+Host map stats (5 s): table edits: guest map 10297 (132 MiB moved, 4.2 ms), host views 7 (0 MiB moved, 0.0 ms); 3982 guest entries; pool commits 2570 (54.6 ms), decommits 2559 (15.0 ms); table lock held exclusively 15390 times, 40.5 ms
+Runtime: guest thread 'SlateLoadingThread2' created (stack=262144, prio=700)
+GPU [Render.Vulkan] <Warning> emit_spirv.cpp:516 operator(): Float64 denorm preserving is not supported by the GPU
+Host map stats (5 s): map 5306 (5336 MiB, 48.1 ms, max 0.43 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 4387 (3076 MiB, 44.0 ms, max 0.28 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 3367, reused 4877; 2958 regions
+Host map stats (5 s): table edits: guest map 19177 (671 MiB moved, 11.9 ms), host views 1234 (4 MiB moved, 0.1 ms); 5620 guest entries; pool commits 5230 (83.5 ms), decommits 3327 (23.0 ms); table lock held exclusively 26016 times, 65.9 ms
+Host map stats (5 s): map 7236 (6000 MiB, 64.7 ms, max 0.23 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 13204 (4484 MiB, 100.2 ms, max 0.98 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 7094, reused 7074; 3150 regions
+Host map stats (5 s): table edits: guest map 29195 (1308 MiB moved, 35.4 ms), host views 476 (3 MiB moved, 0.1 ms); 5998 guest entries; pool commits 7100 (123.2 ms), decommits 6952 (45.9 ms); table lock held exclusively 42993 times, 111.9 ms
+Host map stats (5 s): map 6081 (5555 MiB, 53.5 ms, max 0.17 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 12842 (5914 MiB, 91.8 ms, max 0.16 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 6048, reused 6070; 3165 regions
+Host map stats (5 s): table edits: guest map 24384 (985 MiB moved, 25.0 ms), host views 37 (0 MiB moved, 0.0 ms); 6052 guest entries; pool commits 5563 (101.8 ms), decommits 5536 (35.1 ms); table lock held exclusively 36387 times, 88.0 ms
+Host map stats (5 s): map 7839 (6108 MiB, 59.5 ms, max 0.18 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 13660 (4218 MiB, 86.3 ms, max 0.28 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 7805, reused 7827; 3186 regions
+Host map stats (5 s): table edits: guest map 31377 (1388 MiB moved, 35.9 ms), host views 45 (0 MiB moved, 0.0 ms); 6103 guest entries; pool commits 7303 (117.9 ms), decommits 7270 (45.6 ms); table lock held exclusively 46932 times, 107.1 ms
+Host map stats (5 s): map 7157 (6016 MiB, 69.5 ms, max 0.23 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 11944 (4023 MiB, 80.2 ms, max 0.29 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 7158, reused 7152; 3190 regions
+Host map stats (5 s): table edits: guest map 28734 (1199 MiB moved, 30.5 ms), host views 10 (0 MiB moved, 0.0 ms); 6131 guest entries; pool commits 6422 (125.3 ms), decommits 6428 (40.2 ms); table lock held exclusively 42945 times, 110.4 ms
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:358 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0005.sce_sys/icon0.png
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:358 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0004.sce_sys/icon0.png
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:358 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0003.sce_sys/icon0.png
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:358 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0002.sce_sys/icon0.png
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:358 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0001.sce_sys/icon0.png
+Runtime: SaveDataDialog list (Load game): 6 entries shown
+Runtime: SaveDataDialog list: chose @MediEvil0005
+Runtime: save data '@MediEvil0005' mounted at /savedata0 (existing)
+Host map stats (5 s): map 1356 (1168 MiB, 15.6 ms, max 0.24 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 2082 (762 MiB, 15.9 ms, max 0.17 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 1367, reused 1356; 3190 regions
+Host map stats (5 s): table edits: guest map 5444 (219 MiB moved, 6.2 ms), host views 0 (0 MiB moved, 0.0 ms); 6131 guest entries; pool commits 1166 (28.1 ms), decommits 1175 (8.0 ms); table lock held exclusively 8166 times, 24.0 ms
+Runtime: guest thread 'SlateLoadingThread3' created (stack=262144, prio=700)
+Host map stats (5 s): map 7204 (6338 MiB, 78.3 ms, max 0.32 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 10219 (4602 MiB, 90.6 ms, max 0.21 ms); carve: 5 views unmapped (14 MiB), 1 mapped again (5 MiB); pool views kept 7796, reused 7200; 3185 regions
+Host map stats (5 s): table edits: guest map 30662 (1580 MiB moved, 33.1 ms), host views 12 (0 MiB moved, 0.0 ms); 6507 guest entries; pool commits 6289 (135.1 ms), decommits 6886 (41.8 ms); table lock held exclusively 45000 times, 122.5 ms
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 1 and destination layers 2 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 2 and destination layers 3 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 3 and destination layers 4 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 4 and destination layers 5 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 5 and destination layers 6 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 6 and destination layers 8 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 1 and destination layers 2 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 2 and destination layers 3 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 3 and destination layers 4 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 4 and destination layers 5 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 5 and destination layers 6 to minimum.
+Pipeline binary cache: 256 hits, 0 compiled, 0 rejected, 0 saved, 0 cache errors (restore 0.852 ms, compile 0.000 ms each)
+Host map stats (5 s): map 8490 (5499 MiB, 86.6 ms, max 0.50 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 12627 (4022 MiB, 88.2 ms, max 0.35 ms); carve: 32 views unmapped (26 MiB), 3 mapped again (2 MiB); pool views kept 7983, reused 8459; 3143 regions
+Host map stats (5 s): table edits: guest map 33201 (1802 MiB moved, 46.2 ms), host views 62 (0 MiB moved, 0.0 ms); 6576 guest entries; pool commits 6140 (157.5 ms), decommits 5672 (49.2 ms); table lock held exclusively 49422 times, 145.3 ms
+Runtime: save data '@MediEvil0005' mounted at /savedata0 (existing)
+Runtime: guest thread 'SlateLoadingThread4' created (stack=262144, prio=700)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Runtime: system module 0xad loaded (host implementation)
+Host map stats: slow protect 0000002058000000 +0x1556000: 1.1 ms, 0 views unmapped (0 MiB), 3310 regions
+Host map stats: slow protect 0000002060000000 +0x5600000: 2.3 ms, 0 views unmapped (0 MiB), 3312 regions
+GPU [Render] <Warning> page_manager.cpp:121 UpdatePageWatchers: Tracking memory region 0x2025c00000 - 0x2025d01000 which is not fully GPU mapped.
+Host map stats (5 s): map 9203 (5498 MiB, 93.9 ms, max 0.38 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 7935 (3375 MiB, 80.5 ms, max 2.35 ms); carve: 11 views unmapped (11 MiB), 7 mapped again (3 MiB); pool views kept 6779, reused 8934; 3420 regions
+Host map stats (5 s): table edits: guest map 34835 (2537 MiB moved, 49.2 ms), host views 685 (12 MiB moved, 0.3 ms); 8523 guest entries; pool commits 8246 (166.4 ms), decommits 5820 (79.5 ms); table lock held exclusively 47946 times, 154.6 ms
+Host map stats (5 s): map 2800 (3783 MiB, 35.1 ms, max 0.29 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 8349 (2468 MiB, 69.4 ms, max 0.32 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 2714, reused 2770; 3459 regions
+Host map stats (5 s): table edits: guest map 11334 (777 MiB moved, 19.3 ms), host views 93 (0 MiB moved, 0.0 ms); 8744 guest entries; pool commits 2684 (61.8 ms), decommits 2592 (21.9 ms); table lock held exclusively 16542 times, 59.7 ms
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x207e800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x207e800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x207e800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x207e800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x207e800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x207e800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x207e800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x207e800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x207e800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x207e800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x207e800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x207e800000)
+Host map stats (5 s): map 5771 (5320 MiB, 98.6 ms, max 0.53 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 10328 (3689 MiB, 94.5 ms, max 0.21 ms); carve: 1 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 5809, reused 5766; 3460 regions
+Host map stats (5 s): table edits: guest map 23325 (1460 MiB moved, 36.7 ms), host views 9 (0 MiB moved, 0.0 ms); 8811 guest entries; pool commits 5145 (144.3 ms), decommits 5186 (38.8 ms); table lock held exclusively 34740 times, 145.4 ms
+Host map stats (5 s): map 6871 (5762 MiB, 106.1 ms, max 0.74 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 11856 (3948 MiB, 100.6 ms, max 0.42 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 6530, reused 6865; 3462 regions
+Host map stats (5 s): table edits: guest map 26954 (1741 MiB moved, 43.3 ms), host views 4 (0 MiB moved, 0.0 ms); 8870 guest entries; pool commits 6179 (159.8 ms), decommits 5846 (43.8 ms); table lock held exclusively 40200 times, 160.5 ms
+Host map stats (5 s): map 7088 (6795 MiB, 125.3 ms, max 0.47 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 13265 (5091 MiB, 124.0 ms, max 0.43 ms); carve: 1 views unmapped (1 MiB), 1 mapped again (0 MiB); pool views kept 7218, reused 7083; 3463 regions
+Host map stats (5 s): table edits: guest map 28867 (1802 MiB moved, 44.5 ms), host views 6 (0 MiB moved, 0.0 ms); 8931 guest entries; pool commits 6637 (182.9 ms), decommits 6769 (50.2 ms); table lock held exclusively 42918 times, 182.4 ms
+Host map stats (5 s): map 6014 (5725 MiB, 98.3 ms, max 0.26 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 7851 (3907 MiB, 77.8 ms, max 0.21 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 6010, reused 6014; 3463 regions
+Host map stats (5 s): table edits: guest map 24105 (1798 MiB moved, 41.9 ms), host views 0 (0 MiB moved, 0.0 ms); 8929 guest entries; pool commits 5654 (153.2 ms), decommits 5652 (42.9 ms); table lock held exclusively 36075 times, 150.5 ms
+Host map stats (5 s): map 6089 (5758 MiB, 101.2 ms, max 0.66 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 8647 (3925 MiB, 82.5 ms, max 0.21 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 6056, reused 6087; 3464 regions
+Host map stats (5 s): table edits: guest map 24338 (1742 MiB moved, 42.6 ms), host views 3 (0 MiB moved, 0.0 ms); 8944 guest entries; pool commits 5845 (155.0 ms), decommits 5816 (43.9 ms); table lock held exclusively 36435 times, 154.0 ms
+Host map stats (5 s): map 5800 (5491 MiB, 88.6 ms, max 0.39 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 7265 (3674 MiB, 73.0 ms, max 0.22 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 5805, reused 5800; 3464 regions
+Host map stats (5 s): table edits: guest map 23219 (1726 MiB moved, 40.8 ms), host views 0 (0 MiB moved, 0.0 ms); 8951 guest entries; pool commits 5428 (142.5 ms), decommits 5435 (42.4 ms); table lock held exclusively 34812 times, 139.1 ms
+Host map stats (5 s): map 5871 (5479 MiB, 84.8 ms, max 0.27 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 7231 (3679 MiB, 76.3 ms, max 0.25 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 5863, reused 5871; 3464 regions
+Host map stats (5 s): table edits: guest map 23512 (1715 MiB moved, 39.9 ms), host views 0 (0 MiB moved, 0.0 ms); 8961 guest entries; pool commits 5419 (139.6 ms), decommits 5410 (42.0 ms); table lock held exclusively 35205 times, 134.9 ms
+Host map stats (5 s): map 5922 (5492 MiB, 89.7 ms, max 0.31 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 6990 (3678 MiB, 74.4 ms, max 0.29 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 5899, reused 5922; 3464 regions
+Host map stats (5 s): table edits: guest map 23693 (1729 MiB moved, 41.8 ms), host views 0 (0 MiB moved, 0.0 ms); 8966 guest entries; pool commits 5487 (146.6 ms), decommits 5464 (42.9 ms); table lock held exclusively 35463 times, 141.3 ms
+Host map stats (5 s): map 5962 (5515 MiB, 97.8 ms, max 0.37 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 7564 (3678 MiB, 78.7 ms, max 0.26 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 5966, reused 5961; 3465 regions
+Host map stats (5 s): table edits: guest map 23959 (1752 MiB moved, 41.1 ms), host views 3 (0 MiB moved, 0.0 ms); 8972 guest entries; pool commits 5598 (153.9 ms), decommits 5604 (43.1 ms); table lock held exclusively 35784 times, 148.5 ms
+Host map stats (5 s): map 5960 (5331 MiB, 100.3 ms, max 0.57 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 6995 (3661 MiB, 80.6 ms, max 0.29 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 5944, reused 5960; 3465 regions
+Host map stats (5 s): table edits: guest map 23893 (1735 MiB moved, 40.9 ms), host views 0 (0 MiB moved, 0.0 ms); 8972 guest entries; pool commits 5563 (155.4 ms), decommits 5548 (43.5 ms); table lock held exclusively 35712 times, 150.9 ms
+Host map stats (5 s): map 5759 (5473 MiB, 94.3 ms, max 0.61 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 6826 (3676 MiB, 77.4 ms, max 0.25 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 5770, reused 5759; 3465 regions
+Host map stats (5 s): table edits: guest map 23124 (1732 MiB moved, 40.8 ms), host views 0 (0 MiB moved, 0.0 ms); 8973 guest entries; pool commits 5465 (147.1 ms), decommits 5477 (43.3 ms); table lock held exclusively 34587 times, 144.7 ms
+Host map stats (5 s): map 5923 (5388 MiB, 93.5 ms, max 0.29 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 7002 (3670 MiB, 78.3 ms, max 0.23 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 6002, reused 5923; 3465 regions
+Host map stats (5 s): table edits: guest map 23900 (1791 MiB moved, 42.0 ms), host views 0 (0 MiB moved, 0.0 ms); 8990 guest entries; pool commits 5542 (148.1 ms), decommits 5614 (43.2 ms); table lock held exclusively 35772 times, 145.2 ms
+Host map stats (5 s): map 5741 (5485 MiB, 92.3 ms, max 0.30 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 6850 (3669 MiB, 75.5 ms, max 0.29 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 5748, reused 5741; 3465 regions
+Host map stats (5 s): table edits: guest map 23002 (1734 MiB moved, 41.6 ms), host views 0 (0 MiB moved, 0.0 ms); 8988 guest entries; pool commits 5488 (147.8 ms), decommits 5492 (42.2 ms); table lock held exclusively 34470 times, 143.7 ms
+Host map stats (5 s): map 5624 (5450 MiB, 92.1 ms, max 0.26 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 6924 (3664 MiB, 78.6 ms, max 0.27 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 5612, reused 5624; 3465 regions
+Host map stats (5 s): table edits: guest map 22550 (1719 MiB moved, 41.4 ms), host views 0 (0 MiB moved, 0.0 ms); 8994 guest entries; pool commits 5490 (146.3 ms), decommits 5480 (42.5 ms); table lock held exclusively 33705 times, 142.7 ms
+Host map stats (5 s): map 5898 (5477 MiB, 102.6 ms, max 0.61 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 7325 (3675 MiB, 80.5 ms, max 0.37 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 5884, reused 5898; 3465 regions
+Host map stats (5 s): table edits: guest map 23650 (1687 MiB moved, 40.3 ms), host views 0 (0 MiB moved, 0.0 ms); 8995 guest entries; pool commits 5518 (158.7 ms), decommits 5504 (41.7 ms); table lock held exclusively 35346 times, 152.8 ms
+Host map stats (5 s): map 5910 (5501 MiB, 97.9 ms, max 0.57 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 7328 (3675 MiB, 77.0 ms, max 0.10 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 5909, reused 5910; 3465 regions
+Host map stats (5 s): table edits: guest map 23722 (1719 MiB moved, 41.2 ms), host views 0 (0 MiB moved, 0.0 ms); 8995 guest entries; pool commits 5607 (156.0 ms), decommits 5605 (42.7 ms); table lock held exclusively 35457 times, 149.4 ms
+Host map stats (5 s): map 6031 (5520 MiB, 103.3 ms, max 0.44 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 7587 (3707 MiB, 80.8 ms, max 0.36 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 5917, reused 6030; 3465 regions
+Host map stats (5 s): table edits: guest map 23961 (1698 MiB moved, 40.5 ms), host views 0 (0 MiB moved, 0.0 ms); 9004 guest entries; pool commits 5649 (158.7 ms), decommits 5538 (41.0 ms); table lock held exclusively 35844 times, 153.9 ms
+Host map stats (5 s): map 6476 (6016 MiB, 121.6 ms, max 0.48 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 7969 (4185 MiB, 98.5 ms, max 0.39 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 6524, reused 6474; 3467 regions
+Host map stats (5 s): table edits: guest map 26078 (1692 MiB moved, 42.6 ms), host views 4 (0 MiB moved, 0.0 ms); 9016 guest entries; pool commits 6076 (178.6 ms), decommits 6123 (46.1 ms); table lock held exclusively 39003 times, 175.6 ms
+Host map stats (5 s): map 6263 (5761 MiB, 118.0 ms, max 0.59 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 8530 (3950 MiB, 102.9 ms, max 0.55 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 6197, reused 6262; 3467 regions
+Host map stats (5 s): table edits: guest map 24990 (1570 MiB moved, 40.1 ms), host views 0 (0 MiB moved, 0.0 ms); 9021 guest entries; pool commits 5880 (174.5 ms), decommits 5816 (43.0 ms); table lock held exclusively 37380 times, 168.4 ms
+Host map stats (5 s): map 6424 (5982 MiB, 114.8 ms, max 0.68 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 8610 (4162 MiB, 100.6 ms, max 0.37 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 6517, reused 6424; 3467 regions
+Host map stats (5 s): table edits: guest map 25973 (1765 MiB moved, 45.5 ms), host views 0 (0 MiB moved, 0.0 ms); 9061 guest entries; pool commits 6175 (177.3 ms), decommits 6264 (46.3 ms); table lock held exclusively 38820 times, 171.4 ms
+Host map stats (5 s): map 8143 (8509 MiB, 155.3 ms, max 0.55 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 12406 (6726 MiB, 148.7 ms, max 0.45 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 8136, reused 8141; 3467 regions
+Host map stats (5 s): table edits: guest map 32895 (2013 MiB moved, 51.0 ms), host views 0 (0 MiB moved, 0.0 ms); 9061 guest entries; pool commits 7629 (232.6 ms), decommits 7621 (56.4 ms); table lock held exclusively 48840 times, 219.9 ms
+Host map stats (5 s): map 5978 (6358 MiB, 112.2 ms, max 0.63 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 7659 (4526 MiB, 95.3 ms, max 0.42 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 5959, reused 5978; 3467 regions
+Host map stats (5 s): table edits: guest map 23932 (1819 MiB moved, 46.2 ms), host views 0 (0 MiB moved, 0.0 ms); 9067 guest entries; pool commits 5889 (172.2 ms), decommits 5870 (48.1 ms); table lock held exclusively 35811 times, 168.7 ms
+Host map stats (5 s): map 5540 (5721 MiB, 96.0 ms, max 0.46 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 10131 (3904 MiB, 90.6 ms, max 0.43 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 5572, reused 5540; 3467 regions
+Host map stats (5 s): table edits: guest map 22262 (1768 MiB moved, 43.3 ms), host views 0 (0 MiB moved, 0.0 ms); 9063 guest entries; pool commits 5534 (150.9 ms), decommits 5567 (43.5 ms); table lock held exclusively 33336 times, 148.9 ms
+Host map stats (5 s): map 6429 (5740 MiB, 103.2 ms, max 0.52 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 10399 (4002 MiB, 97.6 ms, max 0.23 ms); carve: 1 views unmapped (8 MiB), 1 mapped again (7 MiB); pool views kept 6393, reused 6423; 3469 regions
+Host map stats (5 s): table edits: guest map 25849 (2016 MiB moved, 50.5 ms), host views 9 (0 MiB moved, 0.0 ms); 9099 guest entries; pool commits 6248 (164.3 ms), decommits 6213 (49.0 ms); table lock held exclusively 38466 times, 164.5 ms
+Host map stats (5 s): map 7877 (6658 MiB, 134.4 ms, max 0.43 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 9297 (4835 MiB, 113.8 ms, max 0.39 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 7754, reused 7875; 3469 regions
+Host map stats (5 s): table edits: guest map 31386 (1972 MiB moved, 49.9 ms), host views 0 (0 MiB moved, 0.0 ms); 9122 guest entries; pool commits 6932 (201.3 ms), decommits 6816 (53.1 ms); table lock held exclusively 46893 times, 196.9 ms
+Host map stats (5 s): map 7016 (6236 MiB, 128.7 ms, max 0.44 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 7976 (4612 MiB, 108.7 ms, max 0.90 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 7066, reused 7015; 3471 regions
+Host map stats (5 s): table edits: guest map 28208 (1765 MiB moved, 43.9 ms), host views 4 (0 MiB moved, 0.0 ms); 9124 guest entries; pool commits 5945 (187.6 ms), decommits 5994 (53.6 ms); table lock held exclusively 42246 times, 184.6 ms
+Host map stats (5 s): map 6890 (5850 MiB, 114.6 ms, max 0.43 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 7952 (4008 MiB, 96.6 ms, max 0.27 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 6927, reused 6890; 3471 regions
+Host map stats (5 s): table edits: guest map 27695 (1843 MiB moved, 46.9 ms), host views 0 (0 MiB moved, 0.0 ms); 9136 guest entries; pool commits 6157 (175.4 ms), decommits 6195 (47.7 ms); table lock held exclusively 41448 times, 172.9 ms
+Host map stats (5 s): map 7520 (7396 MiB, 140.6 ms, max 0.60 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 9626 (5608 MiB, 126.3 ms, max 0.37 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 7506, reused 7519; 3472 regions
+Host map stats (5 s): table edits: guest map 30346 (1795 MiB moved, 44.4 ms), host views 3 (0 MiB moved, 0.0 ms); 9149 guest entries; pool commits 6893 (205.5 ms), decommits 6877 (50.8 ms); table lock held exclusively 45081 times, 197.6 ms
+[aac @ 000000040455f680] Could not update timestamps for discarded samples.
+HLE thread: join failed (thread::join failed: No such device or address); waiting for it to finish
+Host map stats (5 s): map 6316 (4934 MiB, 95.1 ms, max 0.67 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 7721 (3700 MiB, 78.9 ms, max 0.27 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 6215, reused 6316; 3472 regions
+Host map stats (5 s): table edits: guest map 25116 (1757 MiB moved, 43.5 ms), host views 0 (0 MiB moved, 0.0 ms); 9145 guest entries; pool commits 5896 (152.5 ms), decommits 5796 (44.1 ms); table lock held exclusively 37593 times, 149.1 ms
+Host map stats (5 s): map 5914 (3470 MiB, 62.1 ms, max 0.41 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 8418 (3199 MiB, 65.4 ms, max 0.52 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 6028, reused 5914; 3472 regions
+Host map stats (5 s): table edits: guest map 23954 (1773 MiB moved, 42.0 ms), host views 0 (0 MiB moved, 0.0 ms); 9143 guest entries; pool commits 5531 (113.9 ms), decommits 5643 (43.2 ms); table lock held exclusively 35826 times, 113.8 ms
+Host map stats (5 s): map 5511 (3082 MiB, 55.2 ms, max 0.37 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 8748 (2777 MiB, 55.1 ms, max 0.28 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 5513, reused 5511; 3472 regions
+Host map stats (5 s): table edits: guest map 22083 (1732 MiB moved, 41.0 ms), host views 0 (0 MiB moved, 0.0 ms); 9143 guest entries; pool commits 5107 (106.1 ms), decommits 5110 (40.4 ms); table lock held exclusively 33069 times, 105.1 ms
+Host map stats (5 s): map 5523 (3081 MiB, 53.9 ms, max 0.24 ms); unmap 0 (0 MiB, 0.0 ms, max 0.00 ms); protect 8776 (2785 MiB, 59.3 ms, max 0.32 ms); carve: 0 views unmapped (0 MiB), 0 mapped again (0 MiB); pool views kept 5525, reused 5523; 3472 regions
+Host map stats (5 s): table edits: guest map 22141 (1730 MiB moved, 41.3 ms), host views 0 (0 MiB moved, 0.0 ms); 9143 guest entries; pool commits 5122 (103.9 ms), decommits 5123 (41.2 ms); table lock held exclusively 33144 times, 104.9 ms

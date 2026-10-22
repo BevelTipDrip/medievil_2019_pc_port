@@ -495,3 +495,8 @@ reused views (~5,500): UE4 decommits and recommits the same pool pages ~5-6 time
 decommit keep its view but flip it to `PAGE_NOACCESS` (`host_keep_view`, not in the protect counter); revoking access
 rewrites page entries and flushes TLBs on all cores. **`GOW3_DECOMMIT_KEEP_ACCESS=1`** (opt-in): the kept view keeps
 its access (a read of decommitted memory sees stale data instead of faulting). Never tried before (M1 kept the fault).
+
+T-M2 (2026-10-21 21:50, `GOW3_DECOMMIT_KEEP_ACCESS=1`, 50%, stats): decommits ~320 -> ~41 ms per 5 s (~60 -> ~8 us
+each), commits ~69 -> ~104 ms, commits + decommits ~390 -> ~145 ms, table lock held exclusively ~330 -> ~105 ms; no
+faults. T-M3 (4K, `-NoStats`, on vs off, same spot): the user: "better with it on"; remaining: smaller high-amplitude
+spikes that drag the 0.1% lows. **Default since 2026-10-21** (`GOW3_DECOMMIT_KEEP_ACCESS=0`: the M1 no-access flip).
