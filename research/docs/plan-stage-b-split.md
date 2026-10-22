@@ -485,3 +485,13 @@ lock; and the sorted-array table itself is a writer cost worth replacing later.)
 T-P5 (2026-10-21 20:15, build `76de0f5`, 4K, `-NoStats`): the user: "quite good, the best it's been", panning included.
 All of the above stays default (no further switch needed: the lock-free reads, region stamps, two-way memo, decals off
 with the partial prepass, the HZB remap, S2 are on by default).
+
+### T-M1 (table stats): what the region table costs (2026-10-21 21:25, launched by Claude with the user's go; build `c7e128e`; `-NoStats`, 50%, `GOW3_HOST_MAP_STATS=1`; log `data/t-m1-table-stats.log`)
+
+Steady (panning or standing), per 5 s: pool commits ~5,430 (~69 ms, ~13 us each), **decommits ~5,420 (~320 ms, ~60 us
+each)**, guest-map edits ~22,000 (~48 ms of memmove, ~2.2 us each: **the sorted array is not the cost**), host map ~5,500
+(~21 ms), protect ~7,500 (~68 ms), table lock held exclusively ~33,000 times for ~330 ms (6.6% of the time). Kept ~=
+reused views (~5,500): UE4 decommits and recommits the same pool pages ~5-6 times a frame. M1 (`40a416a`) made a
+decommit keep its view but flip it to `PAGE_NOACCESS` (`host_keep_view`, not in the protect counter); revoking access
+rewrites page entries and flushes TLBs on all cores. **`GOW3_DECOMMIT_KEEP_ACCESS=1`** (opt-in): the kept view keeps
+its access (a read of decommitted memory sees stale data instead of faulting). Never tried before (M1 kept the fault).

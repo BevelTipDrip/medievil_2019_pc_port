@@ -395,6 +395,13 @@ static int host_keep_view(uintptr_t address, uint64_t size) {
     DWORD old;
     region_changed(address,address+size); /* the view stays but becomes no access */
     if (host_stats_enabled()) HOST_STAT_ADD(views_kept,1);
+    /* gow3 GOW3_DECOMMIT_KEEP_ACCESS=1 (T-M1: ~1,100 decommits a second at ~60 us each, most of it
+     * revoking access: page entries rewritten and a TLB flush on every core, under the table
+     * lock): the kept view keeps its access. A guest read of decommitted memory then sees stale
+     * data instead of faulting. */
+    static int keep_access=-1;
+    if (keep_access<0) { const char *e=getenv("GOW3_DECOMMIT_KEEP_ACCESS"); keep_access=e && e[0]=='1'; }
+    if (keep_access) return 0;
     return VirtualProtect((void *)address,size,PAGE_NOACCESS,&old) ? 0 : -1;
 }
 static int host_protect(uintptr_t address, uint64_t size, int prot) {
