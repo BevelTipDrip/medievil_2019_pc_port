@@ -500,3 +500,14 @@ T-M2 (2026-10-21 21:50, `GOW3_DECOMMIT_KEEP_ACCESS=1`, 50%, stats): decommits ~3
 each), commits ~69 -> ~104 ms, commits + decommits ~390 -> ~145 ms, table lock held exclusively ~330 -> ~105 ms; no
 faults. T-M3 (4K, `-NoStats`, on vs off, same spot): the user: "better with it on"; remaining: smaller high-amplitude
 spikes that drag the 0.1% lows. **Default since 2026-10-21** (`GOW3_DECOMMIT_KEEP_ACCESS=0`: the M1 no-access flip).
+
+### T-S5 / T-Q2: the remaining spikes; frames queued 2 (2026-10-21 22:10-22:22, launched by Claude with the user's go; 50%, slow frames + sections; logs `data/t-s5-spikes.log`, `data/t-q2-frames-queued-2.log`)
+
+T-S5 (defaults): median frame 4.78 ms (~210 FPS), only 23 frames >= 9 ms in ~2 min: 16 "new content" (two bursts of ~8
+frames, 9-23 ms: ~100-250 FindImage page-table lookups, 150-2,250 unprepared draws, 150-330 texture-set misses, some
+image uploads, stage B 48-96% busy), 2 host-copy waits (50-80 MB image uploads), 2 GPU waits. Stage B's profile
+(T-P4): ~27% in the flip's frames-ahead wait (`PrepareFrame` -> `Scheduler::Wait`, `frames_queued=1`), ~11% in
+`RunWriteData`'s deferred-signal wait: stage B's "busy %" includes these waits. T-Q2 (`GOW3_FRAMES_AHEAD=2`): FPS
+213 vs 210, p99 6.49 vs 6.38, 18 frames >= 9 ms in ~35 s; the user: "buffering additional frames seems to hurt
+stability every time, especially with 1% lows". **frames_queued stays 1.** The frames-ahead wait is slack, not a limit.
+Next: the new-content bursts (draw preparation falling behind, FindImage page-table lookups).
