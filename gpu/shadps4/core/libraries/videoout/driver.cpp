@@ -17,6 +17,7 @@
 #include "common/assert.h"
 #include "gow3_toggles.h"
 #include "gow3_sections.h"
+#include "gow3_flip_trace.h"
 #include <x86intrin.h>
 #include "gow3_settings.h"
 #include "gow3_overlay.h"
@@ -308,10 +309,12 @@ int VideoOutDriver::ChangeBufferAttribute(VideoOutPort* port, s32 attributeIndex
 }
 
 void VideoOutDriver::Flip(const Request& req) {
+    Gow3FlipTrace::Note("release", req.flip_arg);
     // Update HDR status before presenting, then present the frame (gow3: on the swap thread).
-    RunPresenter([this, frame = req.frame, hdr = req.port->is_hdr] {
+    RunPresenter([this, frame = req.frame, hdr = req.port->is_hdr, flip_arg = req.flip_arg] {
         presenter->SetHDR(hdr);
         presenter->Present(frame);
+        Gow3FlipTrace::Note("presented", flip_arg);
     });
     Vulkan::FrameCapture::OnFlip(req.index >= 0 ? req.port->buffer_slots[req.index].address_left
                                                 : 0);
@@ -733,6 +736,7 @@ void VideoOutDriver::Flip(const Request& req) {
         }
     }
 
+    Gow3FlipTrace::Note("flipdone", req.flip_arg);
     // Reset prev flip label
     if (port->prev_index != -1) {
         port->buffer_labels[port->prev_index] = 0;
@@ -760,6 +764,7 @@ void VideoOutDriver::DrawLastFrame() {
 
 bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
                                 bool is_eop /*= false*/) {
+    Gow3FlipTrace::Note(is_eop ? "irq" : "submit_direct", flip_arg);
     {
         std::unique_lock lock{port->port_mutex};
         if (index != -1 && port->flip_status.flip_pending_num > 16) {
@@ -804,6 +809,7 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
             .index = index,
             .eop = is_eop,
         });
+        Gow3FlipTrace::Note("queued", flip_arg);
     }
     request_cv.notify_one();
 }
