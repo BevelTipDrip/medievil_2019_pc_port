@@ -72,11 +72,26 @@ static uint64_t table_generation;
  * readers, so a thread takes it once and counts nested reads. */
 static SRWLOCK lock=SRWLOCK_INIT;
 static __thread unsigned shared_depth;
+/* GOW3_HOST_MAP_STATS: exclusive hold time of the table lock. */
+static int host_stats_enabled(void);
+static uint64_t host_now_ns(void);
+static __thread uint64_t write_lock_start;
+static uint64_t write_lock_held_ns, write_lock_acquires; /* atomic */
 static void write_lock(void) {
-    if (!exclusive_depth++) { AcquireSRWLockExclusive(&lock); __atomic_add_fetch(&table_generation,1,__ATOMIC_ACQ_REL); }
+    if (!exclusive_depth++) {
+        AcquireSRWLockExclusive(&lock); __atomic_add_fetch(&table_generation,1,__ATOMIC_ACQ_REL);
+        if (host_stats_enabled()) write_lock_start=host_now_ns();
+    }
 }
 static void write_unlock(void) {
-    if (!--exclusive_depth) { __atomic_add_fetch(&table_generation,1,__ATOMIC_RELEASE); ReleaseSRWLockExclusive(&lock); }
+    if (!--exclusive_depth) {
+        if (write_lock_start) {
+            __atomic_fetch_add(&write_lock_held_ns,host_now_ns()-write_lock_start,__ATOMIC_RELAXED);
+            __atomic_fetch_add(&write_lock_acquires,1,__ATOMIC_RELAXED);
+            write_lock_start=0;
+        }
+        __atomic_add_fetch(&table_generation,1,__ATOMIC_RELEASE); ReleaseSRWLockExclusive(&lock);
+    }
 }
 static void read_lock(void) { if (!exclusive_depth && !shared_depth++) AcquireSRWLockShared(&lock); }
 static void read_unlock(void) { if (!exclusive_depth && !--shared_depth) ReleaseSRWLockShared(&lock); }
@@ -157,6 +172,9 @@ enum { HOST_MAP, HOST_UNMAP, HOST_PROTECT };
 static struct {
     uint64_t calls[3], bytes[3], ns[3], max_ns[3];
     uint64_t views_unmapped, unmapped_bytes, views_remapped, remapped_bytes, views_kept, views_reused;
+    /* Sorted-array edits (guest map vmas, host views regions): count, bytes moved, time. */
+    uint64_t vma_edits, vma_moved, vma_ns, view_edits, view_moved, view_ns;
+    uint64_t commits, commit_ns, decommits, decommit_ns;
 } host_stats; /* atomic */
 static uint64_t host_stats_next; /* atomic */
 static int host_stats_enabled(void) {
@@ -200,6 +218,18 @@ static void host_stats_record(int op, uintptr_t address, uint64_t size, uint64_t
     printf("carve: %" PRIu64 " views unmapped (%" PRIu64 " MiB), %" PRIu64 " mapped again (%" PRIu64 " MiB); "
            "pool views kept %" PRIu64 ", reused %" PRIu64 "; %zu regions\n",
            vu,ub>>20,vr,rb>>20,vk,vre,region_count);
+    {
+        const uint64_t ve=host_stats_take(&host_stats.vma_edits), vm=host_stats_take(&host_stats.vma_moved),
+                       vn=host_stats_take(&host_stats.vma_ns), he=host_stats_take(&host_stats.view_edits),
+                       hm=host_stats_take(&host_stats.view_moved), hn=host_stats_take(&host_stats.view_ns),
+                       pc=host_stats_take(&host_stats.commits), pcn=host_stats_take(&host_stats.commit_ns),
+                       pd=host_stats_take(&host_stats.decommits), pdn=host_stats_take(&host_stats.decommit_ns),
+                       lh=host_stats_take(&write_lock_held_ns), la=host_stats_take(&write_lock_acquires);
+        printf("Host map stats (5 s): table edits: guest map %" PRIu64 " (%" PRIu64 " MiB moved, %.1f ms), host views %"
+               PRIu64 " (%" PRIu64 " MiB moved, %.1f ms); %zu guest entries; pool commits %" PRIu64 " (%.1f ms), "
+               "decommits %" PRIu64 " (%.1f ms); table lock held exclusively %" PRIu64 " times, %.1f ms\n",
+               ve,vm>>20,vn/1e6,he,hm>>20,hn/1e6,vma_count,pc,pcn/1e6,pd,pdn/1e6,la,lh/1e6);
+    }
 }
 static size_t region_index(uintptr_t a) { /* first region with end > a */
     size_t lo=0, hi=region_count;
@@ -213,11 +243,16 @@ static void region_insert(size_t at, HostRegion r) {
         if (!next) { fputs("Out of memory (host regions)\n",stderr); exit(1); }
         regions=next; region_capacity=capacity;
     }
+    const uint64_t t0=host_stats_enabled() ? host_now_ns() : 0;
     memmove(regions+at+1,regions+at,(region_count-at)*sizeof(*regions));
+    if (t0) { HOST_STAT_ADD(view_edits,1); HOST_STAT_ADD(view_moved,(region_count-at)*sizeof(*regions)); HOST_STAT_ADD(view_ns,host_now_ns()-t0); }
     regions[at]=r; ++region_count;
 }
 static void region_erase(size_t at, size_t n) {
-    memmove(regions+at,regions+at+n,(region_count-at-n)*sizeof(*regions)); region_count-=n;
+    const uint64_t t0=host_stats_enabled() ? host_now_ns() : 0;
+    memmove(regions+at,regions+at+n,(region_count-at-n)*sizeof(*regions));
+    if (t0) { HOST_STAT_ADD(view_edits,1); HOST_STAT_ADD(view_moved,(region_count-at-n)*sizeof(*regions)); HOST_STAT_ADD(view_ns,host_now_ns()-t0); }
+    region_count-=n;
 }
 /* The guest range is reserved before anything else can be placed there (runtime_start). */
 void runtime_memory_reserve(void) {
@@ -486,7 +521,9 @@ static int vma_insert(size_t at, Vma v) {
         vma_end();
     }
     vma_begin();
+    const uint64_t t0=host_stats_enabled() ? host_now_ns() : 0;
     memmove(vmas+at+1,vmas+at,(vma_count-at)*sizeof(*vmas));
+    if (t0) { HOST_STAT_ADD(vma_edits,1); HOST_STAT_ADD(vma_moved,(vma_count-at)*sizeof(*vmas)); HOST_STAT_ADD(vma_ns,host_now_ns()-t0); }
     vmas[at]=v; __atomic_store_n(&vma_count,vma_count+1,__ATOMIC_RELEASE);
     vma_end();
     return 0;
@@ -494,7 +531,9 @@ static int vma_insert(size_t at, Vma v) {
 static void vma_erase(size_t at, size_t n) {
     for (size_t k=0;k<n;++k) region_changed(vmas[at+k].start,vmas[at+k].end);
     vma_begin();
+    const uint64_t t0=host_stats_enabled() ? host_now_ns() : 0;
     memmove(vmas+at,vmas+at+n,(vma_count-at-n)*sizeof(*vmas));
+    if (t0) { HOST_STAT_ADD(vma_edits,1); HOST_STAT_ADD(vma_moved,(vma_count-at-n)*sizeof(*vmas)); HOST_STAT_ADD(vma_ns,host_now_ns()-t0); }
     __atomic_store_n(&vma_count,vma_count-n,__ATOMIC_RELEASE);
     vma_end();
 }
@@ -952,8 +991,16 @@ static void pool_give_locked(uint64_t phys, uint64_t size, int state) {
             return;
         }
 }
+static int32_t pool_commit_impl(void *address, uint64_t size, int type, int prot);
 static ABI int32_t pool_commit(void *address, uint64_t size, int type, int prot, int flags) {
     (void)flags;
+    if (!host_stats_enabled()) return pool_commit_impl(address,size,type,prot);
+    const uint64_t t0=host_now_ns();
+    const int32_t r=pool_commit_impl(address,size,type,prot);
+    HOST_STAT_ADD(commits,1); HOST_STAT_ADD(commit_ns,host_now_ns()-t0);
+    return r;
+}
+static int32_t pool_commit_impl(void *address, uint64_t size, int type, int prot) {
     if (!address || (uintptr_t)address%PAGE || !size || size%PAGE) return INVALID;
     /* One physical run per step; GPU notifications drain between steps (bounded queue). */
     for (uint64_t done=0; done<size;) {
@@ -976,8 +1023,16 @@ static ABI int32_t pool_commit(void *address, uint64_t size, int type, int prot,
     }
     return 0;
 }
+static int32_t pool_decommit_impl(void *address, uint64_t size);
 static ABI int32_t pool_decommit(void *address, uint64_t size, int flags) {
     (void)flags;
+    if (!host_stats_enabled()) return pool_decommit_impl(address,size);
+    const uint64_t t0=host_now_ns();
+    const int32_t r=pool_decommit_impl(address,size);
+    HOST_STAT_ADD(decommits,1); HOST_STAT_ADD(decommit_ns,host_now_ns()-t0);
+    return r;
+}
+static int32_t pool_decommit_impl(void *address, uint64_t size) {
     uintptr_t start=(uintptr_t)address, end=start+size;
     if (start%PAGE || !size || size%PAGE) return INVALID;
     /* One mapped region per step, returned to the pool and left reserved. */
