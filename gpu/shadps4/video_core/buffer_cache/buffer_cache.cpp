@@ -14,6 +14,7 @@
 #include "gow3_copy.h"
 #include "gow3_sections.h"
 #include "gow3_toggles.h"
+#include "gow3_settings.h"
 #include "common/alignment.h"
 #include "core/memory.h"
 #include "video_core/amdgpu/liverpool.h"
@@ -778,10 +779,9 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
     // arena: bound there, with no copy and no upload (no render pass break). A CPU-written range
     // is uploaded into the arena outside a render pass (nothing to break) once; written again
     // after that, it is dynamic and keeps the stream copy.
-    static const bool stream_clean = [] {
-        const char* env = std::getenv("GOW3_STREAM_CLEAN");
-        return env && env[0] == '1';
-    }();
+    // The in-game menu switches it live (Performance patches; GOW3_STREAM_CLEAN=0 at start).
+    const bool stream_clean =
+        Gow3Settings::Get().perf[Gow3Settings::PerfSmallBuffers].load(std::memory_order_relaxed);
     bool small_in_arena = false;
     if (stream_clean && !is_written && size <= STREAM_THRESHOLD &&
         !IsRegionGpuModified(device_addr, size)) {

@@ -102,6 +102,31 @@ def patch_names(names, options, texture_fix_available=True):
     return names
 
 
+# Performance patches (launcher > Performance, in-game menu > Performance): medievil.ini key ->
+# the environment that switches the patch off (perf_*=0). Missing keys mean on.
+PERF_SWITCHES = {
+    'perf_hzb_occlusion': {'GOW3_HZB_REMAP': '0'},
+    'perf_no_decal_prepass': {'GOW3_DECAL_PREPASS': '1'},
+    'perf_particle_single_pass': {'GOW3_PARTICLE_FIXED_STEP': '1'},
+    'perf_small_buffers': {'GOW3_STREAM_CLEAN': '0'},
+    'perf_texture_memo': {'GOW3_TEXSET_REGIONS': '0', 'GOW3_TEXSET_TWO_WAY': '0'},
+    'perf_lockfree_memory': {'GOW3_OPTIMISTIC_CLAMP': '0', 'GOW3_REGION_BUCKETS': '0'},
+    'perf_cheap_frees': {'GOW3_DECOMMIT_KEEP_ACCESS': '0'},
+    'perf_gpu_data_no_waits': {'GOW3_READBACK_QUEUE': '0', 'GOW3_GPU_WRITE_TWINS': '0',
+                               'GOW3_EOS_DEFERRED': '0', 'GOW3_EOP_TARGETED': '0'},
+    'perf_4k_memory': {'GOW3_PS4_MEMORY': '1'},
+}
+
+
+def perf_environment(ini):
+    """The switches of the performance patches turned off in medievil.ini."""
+    env = {}
+    for key, off in PERF_SWITCHES.items():
+        if ini.get(key, '1') == '0':
+            env.update(off)
+    return env
+
+
 def environment(options):
     return {'GOW3_DEFERRED_READBACK': options['deferred_readback'],
             'GOW3_STALE_READBACK': options['stale_readback'],

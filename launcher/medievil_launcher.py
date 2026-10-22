@@ -209,7 +209,9 @@ READBACKS = [('', ('Relaxed (default)', 'Relaxed (по умолчанию)')), (
 FRAMES_QUEUED = [('1', ('1 (lowest latency)',)), ('2', ('2',)), ('0', ('Unlimited',))]
 # Performance patches (research/docs/plan-stage-b-split.md, plan-frame-pacing.md): each is on by
 # default; switched off, its environment variables restore the earlier behaviour (A/B tests,
-# or a fallback if one misbehaves on another PC). (settings key, title, description, variables).
+# or a fallback if one misbehaves on another PC). medievil.ini keys, shared with the in-game menu;
+# run.py turns them into the variables (graphics_options.PERF_SWITCHES).
+# (key, title, description, variables).
 PERF_PATCHES = [
     ('perf_hzb_occlusion', 'HZB occlusion culling',
      "Unreal Engine 4's own culling skips objects hidden behind others, served from the GPU's "
@@ -251,7 +253,8 @@ PERF_PATCHES = [
      "PS4's, so small camera moves stop re-loading textures (4K native output only).",
      {'GOW3_PS4_MEMORY': '1'}),
 ]
-APP_DEFAULTS.update({entry[0]: True for entry in PERF_PATCHES})
+INI_FLAGS.update(entry[0] for entry in PERF_PATCHES)
+INI_DEFAULTS.update({entry[0]: '1' for entry in PERF_PATCHES})
 UI_LANGUAGES = lang.LANGUAGE_NAMES
 
 FSR4_COMMIT = 'ae8d628fae208813172446d1e49ed94150b04658'
@@ -366,9 +369,6 @@ def game_environment(s):
     env['GOW3_BACKGROUND_WARMUP'] = '1' if s.get('background_warmup', True) else '0'
     env['GOW3_PARALLEL_WARMUP'] = '1' if s.get('parallel_warmup', True) else '0'
     env['GOW3_PIPELINE_BINARIES'] = '1' if s.get('pipeline_binary_cache', True) else '0'
-    for key, _title, _hint, off in PERF_PATCHES:
-        if not s.get(key, True):
-            env.update(off)
     env.setdefault('GOW3_PERF_DIAG', '1' if s.get('perf_diag', False) else '0')
     for key, name in (('frame_stats', 'GOW3_FRAME_STATS'), ('gpu_profile', 'GOW3_GPU_PROFILE'),
                       ('vk_validation', 'GOW3_VK_VALIDATION'), ('frame_capture_key', 'GOW3_FRAME_CAPTURE_KEY')):
@@ -1046,7 +1046,7 @@ class Launcher:
         self.note(f, _('All on by default. Switch one off to compare, or if something looks wrong; '
                        'applied at the next start.'), top=2)
         for key, title, hint, _off in PERF_PATCHES:
-            self.check(f, key, 'app', _(title), _(hint), restart=True)
+            self.check(f, key, 'ini', _(title), _(hint), restart=True)
         self.section(f, _('Resolution and quality'))
         self.row(f, _('Graphics quality'), self.choice(f, 'ue4_quality', 'ini', QUALITY_CHOICES),
                  _('High and Ultra go beyond the PS4: sharper, longer-range shadows, better reflections and more distant detail, for strong graphics cards. Console keeps the PS4 look. Low turns off volumetric fog, reflections and ambient occlusion '

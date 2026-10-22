@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cstdarg>
+#include <iterator>
 #include <map>
 #include <set>
 #include <string>
@@ -30,6 +31,28 @@ float Clamp(float v, float lo, float hi) {
 void Set(Values& v, const std::string& key, const std::string& value) {
     const float f = float(std::atof(value.c_str()));
     const int i = std::atoi(value.c_str());
+    for (int p = 0; p < PerfCount; ++p) {
+        if (key == PerfKeys[p]) {
+            v.perf[p] = value != "0";
+            return;
+        }
+    }
+    const auto index_of = [&](const auto& keys) {
+        for (int k = 0; k < int(std::size(keys)); ++k) {
+            if (value == keys[k]) return k;
+        }
+        return -1;
+    };
+    if (key == "ue4_quality") {
+        v.ue4_quality = index_of(UE4QualityKeys);
+        v.ue4_quality_raw = value;
+        return;
+    }
+    if (key == "ue4_upscale") {
+        v.ue4_upscale = index_of(UE4UpscaleKeys);
+        v.ue4_upscale_raw = value;
+        return;
+    }
     static const char* const overlay_keys[] = {"overlay_fps", "overlay_frametime", "overlay_upscaler",
                                                "overlay_gpu", "overlay_cpu", "overlay_ram", "overlay_vram"};
     for (unsigned item = 0; item < 7; ++item) {
@@ -203,15 +226,42 @@ void Load() {
     v.startup_engine_fps = v.engine_fps;
     v.startup_deferred_readback = v.deferred_readback;
     v.startup_stale_readback = v.stale_readback;
+    // A launch's own switches (run.py from medievil.ini, or a test) show as the patches' state.
+    static constexpr std::pair<const char*, const char*> perf_off[PerfCount] = {
+        {"GOW3_HZB_REMAP", "0"},     {"GOW3_DECAL_PREPASS", "1"},       {"GOW3_PARTICLE_FIXED_STEP", "1"},
+        {"GOW3_STREAM_CLEAN", "0"},  {"GOW3_TEXSET_REGIONS", "0"},      {"GOW3_OPTIMISTIC_CLAMP", "0"},
+        {"GOW3_DECOMMIT_KEEP_ACCESS", "0"}, {"GOW3_READBACK_QUEUE", "0"}, {"GOW3_PS4_MEMORY", "1"}};
+    for (int p = 0; p < PerfCount; ++p) {
+        if (const char* env = std::getenv(perf_off[p].first); env && env[0]) {
+            v.perf[p] = std::strcmp(env, perf_off[p].second) != 0;
+        }
+        v.startup_perf[p] = v.perf[p];
+    }
+    // Small buffers from VRAM was tested in MediEvil only: on where run.py turns it on.
+    {
+        const char* env = std::getenv("GOW3_STREAM_CLEAN");
+        v.perf[PerfSmallBuffers] = env && env[0] == '1';
+        v.startup_perf[PerfSmallBuffers] = v.perf[PerfSmallBuffers];
+    }
+    v.startup_ue4_quality = v.ue4_quality;
+    v.startup_ue4_upscale = v.ue4_upscale;
     TakeBaseline();
 }
 
-bool GraphicsNeedRestart() {
+int RestartChanges() {
     const auto& v = Get();
-    return v.render_resolution != v.startup_render_resolution ||
-           v.engine_fps != v.startup_engine_fps ||
-           v.deferred_readback != v.startup_deferred_readback ||
-           v.stale_readback != v.startup_stale_readback;
+    int changes = (v.render_resolution != v.startup_render_resolution) + (v.engine_fps != v.startup_engine_fps) +
+                  (v.deferred_readback != v.startup_deferred_readback) +
+                  (v.stale_readback != v.startup_stale_readback) + (v.ue4_quality != v.startup_ue4_quality) +
+                  (v.ue4_upscale != v.startup_ue4_upscale);
+    for (int p = 0; p < PerfCount; ++p) {
+        changes += !PerfLive[p] && v.perf[p] != v.startup_perf[p];
+    }
+    return changes;
+}
+
+bool GraphicsNeedRestart() {
+    return RestartChanges() != 0;
 }
 
 void ConfigureUpscalerSupport(bool fsr4, bool fsr411) {
@@ -349,6 +399,11 @@ std::map<std::string, std::string> Serialize(const Values& v) {
            int(v.restart_unconfirmed.load()));
     // Read by run.sh at start.
     Append(out, "live_resolution=%s\n", v.live_resolution < 0 ? "auto" : v.live_resolution ? "1" : "0");
+    for (int p = 0; p < PerfCount; ++p) {
+        Append(out, "%s=%d\n", PerfKeys[p], int(v.perf[p].load()));
+    }
+    Append(out, "ue4_quality=%s\n", v.ue4_quality >= 0 ? UE4QualityKeys[v.ue4_quality] : v.ue4_quality_raw.c_str());
+    Append(out, "ue4_upscale=%s\n", v.ue4_upscale >= 0 ? UE4UpscaleKeys[v.ue4_upscale] : v.ue4_upscale_raw.c_str());
     std::map<std::string, std::string> values;
     std::size_t at = 0;
     while (at < out.size()) {

@@ -20,17 +20,17 @@ class ControlMapTest(unittest.TestCase):
         settings['pipeline_binary_cache'] = False
         self.assertEqual(launcher.game_environment(settings)['GOW3_PIPELINE_BINARIES'], '0')
 
-    def test_performance_patches_default_on_and_switch_off(self):
-        settings = {**launcher.APP_DEFAULTS}
-        env = launcher.game_environment(settings)
+    def test_performance_patches_are_ini_flags_with_switches(self):
+        import graphics_options
         for key, _title, _hint, off in launcher.PERF_PATCHES:
-            self.assertTrue(settings[key])
-            for name, value in off.items():
-                self.assertNotEqual(env.get(name), value)
-        self.assertNotIn('GOW3_FRAME_STATS', {k for k, v in env.items() if v == '1'} - set(launcher.os.environ))
-        settings['perf_texture_memo'] = False
-        env = launcher.game_environment(settings)
-        self.assertEqual((env['GOW3_TEXSET_REGIONS'], env['GOW3_TEXSET_TWO_WAY']), ('0', '0'))
+            self.assertIn(key, launcher.INI_FLAGS)
+            self.assertEqual(launcher.INI_DEFAULTS[key], '1')
+            self.assertEqual(graphics_options.PERF_SWITCHES[key], off)
+        self.assertEqual(graphics_options.perf_environment({}), {})
+        self.assertEqual(graphics_options.perf_environment({'perf_texture_memo': '0'}),
+                         {'GOW3_TEXSET_REGIONS': '0', 'GOW3_TEXSET_TWO_WAY': '0'})
+        env = launcher.game_environment({**launcher.APP_DEFAULTS})
+        self.assertEqual(env.get('GOW3_FRAME_STATS'), launcher.os.environ.get('GOW3_FRAME_STATS'))
 
     def test_changed_buttons_in_table_order(self):
         controls = {'key': {'circle': ' Left Shift ', 'cross': 'Q', 'square': ''}, 'pad': {'cross': 'b'}}

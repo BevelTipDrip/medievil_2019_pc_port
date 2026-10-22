@@ -128,6 +128,21 @@ static void vma_end(void) {
 static int pool_fd=-1;
 #endif
 static unsigned char *backing_base; /* second view of the pool: host writes bypass guest/GPU page protection */
+/* Live performance switches (in-game menu > Performance patches; their environment at start). */
+static int perf_keep_access=-1, perf_optimistic=-1; /* atomic; -1: not read yet */
+static int decommit_keep_access(void) {
+    int v=__atomic_load_n(&perf_keep_access,__ATOMIC_RELAXED);
+    if (v<0) {
+        const char *e=getenv("GOW3_DECOMMIT_KEEP_ACCESS");
+        v=!(e && e[0]=='0');
+        __atomic_store_n(&perf_keep_access,v,__ATOMIC_RELAXED);
+    }
+    return v;
+}
+void runtime_memory_set_perf(int optimistic, int keep_access) {
+    __atomic_store_n(&perf_optimistic,optimistic ? 1 : 0,__ATOMIC_RELAXED);
+    __atomic_store_n(&perf_keep_access,keep_access ? 1 : 0,__ATOMIC_RELAXED);
+}
 #define FLEX_SPAN (UINT64_C(1024) * 1024 * 1024)
 static uint64_t flex_bitmap[FLEX_SPAN/PAGE/64];
 /* GPU hooks (gow3gpu): notified outside the lock, in order, after each operation. */
@@ -399,9 +414,7 @@ static int host_keep_view(uintptr_t address, uint64_t size) {
      * revoking access: page entries rewritten and a TLB flush on every core, under the table
      * lock): the kept view keeps its access. A guest read of decommitted memory then sees stale
      * data instead of faulting. */
-    static int keep_access=-1;
-    if (keep_access<0) { const char *e=getenv("GOW3_DECOMMIT_KEEP_ACCESS"); keep_access=!(e && e[0]=='0'); }
-    if (keep_access) return 0;
+    if (decommit_keep_access()) return 0;
     return VirtualProtect((void *)address,size,PAGE_NOACCESS,&old) ? 0 : -1;
 }
 static int host_protect(uintptr_t address, uint64_t size, int prot) {
@@ -1276,8 +1289,12 @@ static void cache_region(size_t i) {
  * the whole writer section, host calls included. Spin through an edit for up to ~100 us. */
 #define OPTIMISTIC_SPIN_CYCLES (UINT64_C(400000))
 static int optimistic_enabled(void) {
-    static int enabled=-1;
-    if (enabled<0) { const char *e=getenv("GOW3_OPTIMISTIC_CLAMP"); enabled=!(e && e[0]=='0'); }
+    int enabled=__atomic_load_n(&perf_optimistic,__ATOMIC_RELAXED);
+    if (enabled<0) {
+        const char *e=getenv("GOW3_OPTIMISTIC_CLAMP");
+        enabled=!(e && e[0]=='0');
+        __atomic_store_n(&perf_optimistic,enabled,__ATOMIC_RELAXED);
+    }
     return enabled && !exclusive_depth;
 }
 static int clamp_optimistic(uintptr_t address, uint64_t size, uint64_t *out) {

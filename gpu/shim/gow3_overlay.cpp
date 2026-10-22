@@ -417,6 +417,61 @@ void ImageTab() {
     }
 }
 
+// Choice over a plain int index (-1: a value the menu does not list, shown until changed).
+void IndexChoiceRow(const char* label, int& value, const char* const* labels, int count, const char* help) {
+    Row(label);
+    const char* preview = value >= 0 && value < count ? labels[value] : "(custom)";
+    if (ImGui::BeginCombo("##value", preview)) {
+        for (int i = 0; i < count; ++i) {
+            if (ImGui::Selectable(labels[i], i == value)) {
+                value = i;
+                dirty = true;
+            }
+        }
+        ImGui::EndCombo();
+    }
+    Help(help);
+    ImGui::PopID();
+}
+
+extern "C" void runtime_memory_set_perf(int optimistic, int keep_access);
+
+// MediEvil: the launcher's performance patches. Live ones apply at once.
+void PerfPatchesSection() {
+    namespace S = Gow3Settings;
+    auto& s = S::Get();
+    static const char* const titles[S::PerfCount] = {
+        "HZB occlusion culling", "Skip the decal depth prepass", "Single GPU particle pass",
+        "Small buffers from VRAM", "Texture set memo", "Lock-free memory map lookups", "Cheap memory frees",
+        "GPU data without waits", "4K memory sizes"};
+    static const char* const hints[S::PerfCount] = {
+        "Skips objects hidden behind others, without waiting for the GPU. Heavy areas ~130 -> ~165 FPS.",
+        "No second depth-only drawing of the scene for nearly invisible decals: ~600 fewer draws, ~10%.",
+        "One particle simulation pass a frame instead of an extra empty one: up to ~190 fewer draws.",
+        "Unchanged small buffers are read from video memory instead of copied every draw: ~5%.",
+        "Remembered texture bindings survive other textures streaming in: binding ~7% cheaper.",
+        "The GPU threads read the memory map without waiting for the game: fewer panning spikes.",
+        "Freed memory keeps its page access: frees ~7x cheaper, smoother 0.1% lows.",
+        "Readback queue, GPU write twins and deferred fences: removed the constant micro-stutter.",
+        "More graphics memory and texture pool at 4K native: no reloads on small camera moves."};
+    ImGui::SeparatorText("Performance patches");
+    if (BeginRows("##perf_live")) {
+        for (int p = 0; p < S::PerfCount; ++p) {
+            if (S::PerfLive[p]) CheckRow(titles[p], s.perf[p], hints[p]);
+        }
+        ImGui::EndTable();
+    }
+    // The live ones in the memory runtime (src/runtime_memory.c); the buffer cache reads its own.
+    runtime_memory_set_perf(s.perf[S::PerfLockfreeMemory] ? 1 : 0, s.perf[S::PerfCheapFrees] ? 1 : 0);
+    ImGui::TextDisabled("Applied on restart:");
+    if (BeginRows("##perf_restart")) {
+        for (int p = 0; p < S::PerfCount; ++p) {
+            if (!S::PerfLive[p]) CheckRow(titles[p], s.perf[p], hints[p]);
+        }
+        ImGui::EndTable();
+    }
+}
+
 void PerformanceTab() {
     namespace G = Gow3Graphics;
     auto& s = Gow3Settings::Get();
@@ -489,7 +544,22 @@ void PerformanceTab() {
                  "Big FPS gain. Switch it off if lighting or objects look wrong.");
         CheckRow("Deferred GPU readbacks", s.deferred_readback,
                  "Fewer waits for the GPU. Switch it off if textures or shadows look wrong.");
+        if (!IsGow3()) {
+            // MediEvil (launcher > Performance): the override pak's quality and upscaling.
+            static const char* const quality_labels[] = {"Ultra", "High", "Console (PS4)", "Medium",
+                                                         "Low (integrated graphics)"};
+            IndexChoiceRow("Graphics quality", s.ue4_quality, quality_labels, 5,
+                           "Console keeps the PS4 look; High and Ultra go beyond it, Low is for "
+                           "integrated graphics.");
+            static const char* const upscale_labels[] = {"Off", "Quality (67%)", "Balanced (58%)",
+                                                         "Performance (50%)"};
+            IndexChoiceRow("Upscaling (native output)", s.ue4_upscale, upscale_labels, 4,
+                           "The game's own temporal upscaler, for the native output modes.");
+        }
         ImGui::EndTable();
+    }
+    if (!IsGow3()) {
+        PerfPatchesSection();
     }
 }
 
@@ -565,11 +635,8 @@ void OverlayTab() {
     }
 }
 
-// Startup options changed since this launch (applied by "Apply and restart").
 int RestartChanges() {
-    const auto& s = Gow3Settings::Get();
-    return (s.render_resolution != s.startup_render_resolution) + (s.engine_fps != s.startup_engine_fps) +
-           (s.deferred_readback != s.startup_deferred_readback) + (s.stale_readback != s.startup_stale_readback);
+    return Gow3Settings::RestartChanges();
 }
 
 void Menu() {

@@ -526,3 +526,17 @@ Performance page, "Performance patches": one switch per bundle, on by default, o
 `GOW3_READBACK_QUEUE=0` + `GOW3_GPU_WRITE_TWINS=0` + `GOW3_EOS_DEFERRED=0` + `GOW3_EOP_TARGETED=0`; 4K memory
 `GOW3_PS4_MEMORY=1`), each with its description and measured gain. **The launcher no longer sets `GOW3_FRAME_STATS=1`
 by default** (it did: normal play had the stage B diagnostics on); Advanced > Frame statistics turns it on.
+
+### In-game menu and the launcher share the settings (2026-10-22)
+
+- **Save fix** (`e9d8699`): the in-game menu rewrote every key it knows from its memory, so test launches'
+  environment overrides (frames queued, readback modes) became permanent and ~40 keys (God of War III's included) were
+  added. It now writes only the settings changed in it since the load or the last save, in place.
+- **Performance patches in medievil.ini** (`perf_*`, launcher > Performance and in-game menu > Performance; run.py
+  turns `perf_*=0` into the switches, `graphics_options.PERF_SWITCHES`). In the menu, live: small buffers from VRAM
+  (`perf_small_buffers`, read per draw by the buffer cache), lock-free memory lookups and cheap memory frees
+  (`runtime_memory_set_perf`). On restart: HZB occlusion, the decal prepass and the particle pass (override pak cvars
+  read at start), the texture memo and GPU data without waits (switching them mid-run would void state they built:
+  texture sets validated by another rule, twins, the readback queue chosen with the Vulkan device), 4K memory (sizes
+  set at boot). Also in the menu's restart section now: graphics quality and UE4 upscaling (MediEvil).
+- Small buffers from VRAM stays MediEvil-only by default (on where run.py sets `GOW3_STREAM_CLEAN=1`).

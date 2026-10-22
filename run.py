@@ -87,6 +87,8 @@ def main():
     if reverted:
         print('Graphics: the last restart never reached the game; previous options restored', flush=True)
     env.update(graphics_options.environment(graphics))
+    for key, value in graphics_options.perf_environment(graphics_options.read_ini(env['GOW3_CONFIG'])).items():
+        env.setdefault(key, value)
     if not env.get('GOW3_FSR411_DIR') and not (PORT / 'fsr4_411').is_dir() and (data / 'fsr4_411').is_dir():
         env['GOW3_FSR411_DIR'] = str(data / 'fsr4_411')
 
