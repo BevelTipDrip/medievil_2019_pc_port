@@ -160,6 +160,9 @@ inline std::atomic<std::uint64_t> gpu_idle_total_ns{0}, stage_a_drain_cycles{0};
 /// FindImage lookups that searched the page table.
 inline std::atomic<std::uint64_t> texset_misses{0}, render_memo_misses{0}, unprepared_draws{0},
     image_slow_lookups{0};
+/// Unprepared draws by cause: the workers had not reached it, could not prepare it (no such
+/// pipeline yet), or prepared it from other registers.
+inline std::atomic<std::uint64_t> unprep_pending{0}, unprep_unavailable{0}, unprep_checksum{0};
 /// Draws recorded into the reduced scene targets, and draws after the scene started.
 inline std::atomic<std::uint64_t> reduced_draws{0}, scene_draws{0};
 /// Wall time spent blocked in the scheduler (ns): waiting for the recording thread to drain,

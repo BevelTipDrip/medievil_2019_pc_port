@@ -975,9 +975,15 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset, const PreparedDraw* pre
     const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline({}, prepared);
     const PreparedDraw* used_prepared = pipeline_cache.UsedPrepared();
     if (prepared) {
-        draw_prep->Count(pipeline != nullptr &&
-                         prepared->state.load(std::memory_order_acquire) == PreparedDraw::Ready &&
-                         prepared->reg_checksum == liverpool->gfx_reg_checksum);
+        const u32 state = prepared->state.load(std::memory_order_acquire);
+        const bool match = prepared->reg_checksum == liverpool->gfx_reg_checksum;
+        draw_prep->Count(pipeline != nullptr && state == PreparedDraw::Ready && match);
+        if (Gow3Stats::enabled && state != PreparedDraw::Ready) {
+            (state == PreparedDraw::Pending ? Gow3Stats::unprep_pending : Gow3Stats::unprep_unavailable)
+                .fetch_add(1, std::memory_order_relaxed);
+        } else if (Gow3Stats::enabled && !match) {
+            Gow3Stats::unprep_checksum.fetch_add(1, std::memory_order_relaxed);
+        }
     }
     if (!pipeline) {
         return;

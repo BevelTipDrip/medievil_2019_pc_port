@@ -490,7 +490,7 @@ void VideoOutDriver::Flip(const Request& req) {
             }();
             static double median_ms = 0;
             static u64 last_occ, last_ends, last_busy, last_tsc, sample, last_idle_ns, last_drain;
-            static u64 last_texset, last_rmemo, last_unprep, last_slowimg;
+            static u64 last_texset, last_rmemo, last_unprep, last_slowimg, last_upend, last_uunav, last_uchk;
             static std::array<u64, Gow3Sections::Count> last_sections{};
             static u32 slow_shown;
             const u64 occ = Gow3Stats::occlusion_dumps.load(), ends = Gow3Stats::render_pass_ends.load(),
@@ -499,7 +499,9 @@ void VideoOutDriver::Flip(const Request& req) {
                       drain = Gow3Stats::stage_a_drain_cycles.load(),
                       texset = Gow3Stats::texset_misses.load(), rmemo = Gow3Stats::render_memo_misses.load(),
                       unprep = Gow3Stats::unprepared_draws.load(),
-                      slowimg = Gow3Stats::image_slow_lookups.load();
+                      slowimg = Gow3Stats::image_slow_lookups.load(),
+                      upend = Gow3Stats::unprep_pending.load(), uunav = Gow3Stats::unprep_unavailable.load(),
+                      uchk = Gow3Stats::unprep_checksum.load();
             const bool slow = slow_ratio > 0 && median_ms > 0 && frame_ms > slow_ratio * median_ms &&
                               slow_shown < 600;
             const bool sampled = slow_ratio > 0 && median_ms > 0 && ++sample % 100 == 0;
@@ -511,7 +513,8 @@ void VideoOutDriver::Flip(const Request& req) {
                             "waits: readback %.2f, ticks %.2f, recorder %.2f, host copies %.2f ms; "
                             "uploads %.2f MB buffers, %.2f MB images; %llu protection faults; "
                             "misses: %llu texture sets, %llu render states, %llu unprepared draws, "
-                            "%llu image lookups\n",
+                            "%llu image lookups; unprepared: %llu not reached, %llu no pipeline, "
+                            "%llu other registers\n",
                             slow ? "Slow frame" : "Frame sample", frame_ms,
                             static_cast<unsigned long long>(frame_draws),
                             static_cast<unsigned long long>(frame_dispatches),
@@ -528,7 +531,10 @@ void VideoOutDriver::Flip(const Request& req) {
                             static_cast<unsigned long long>(texset - last_texset),
                             static_cast<unsigned long long>(rmemo - last_rmemo),
                             static_cast<unsigned long long>(unprep - last_unprep),
-                            static_cast<unsigned long long>(slowimg - last_slowimg));
+                            static_cast<unsigned long long>(slowimg - last_slowimg),
+                            static_cast<unsigned long long>(upend - last_upend),
+                            static_cast<unsigned long long>(uunav - last_uunav),
+                            static_cast<unsigned long long>(uchk - last_uchk));
                 if (Gow3Sections::Enabled()) {
                     // Stage B's time in this frame by part (inclusive, ms): what grows in slow frames.
                     std::printf("  stage B ms:");
@@ -556,6 +562,9 @@ void VideoOutDriver::Flip(const Request& req) {
             last_rmemo = rmemo;
             last_unprep = unprep;
             last_slowimg = slowimg;
+            last_upend = upend;
+            last_uunav = uunav;
+            last_uchk = uchk;
             if (pacing_median > 0) {
                 median_ms = pacing_median;
                 pacing_median = 0;
