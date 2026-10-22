@@ -1210,6 +1210,9 @@ static void cache_region(size_t i) {
 }
 /* Lock-free runtime_memory_clamp (see vma_seq): 1 with the length in *out when no table entry
  * changed during the search. */
+/* A table edit (a memmove of up to ~13,000 entries) takes tens of microseconds; the lock waits for
+ * the whole writer section, host calls included. Spin through an edit for up to ~100 us. */
+#define OPTIMISTIC_SPIN_CYCLES (UINT64_C(400000))
 static int optimistic_enabled(void) {
     static int enabled=-1;
     if (enabled<0) { const char *e=getenv("GOW3_OPTIMISTIC_CLAMP"); enabled=!(e && e[0]=='0'); }
@@ -1217,10 +1220,15 @@ static int optimistic_enabled(void) {
 }
 static int clamp_optimistic(uintptr_t address, uint64_t size, uint64_t *out) {
     if (!optimistic_enabled()) return 0;
-    for (int attempt=0; attempt<4; ++attempt) {
+    const uint64_t deadline=__builtin_ia32_rdtsc()+OPTIMISTIC_SPIN_CYCLES;
+    for (;;) {
         if (!__atomic_load_n(&vma_optimistic,__ATOMIC_ACQUIRE)) return 0;
         const uint64_t s1=__atomic_load_n(&vma_seq,__ATOMIC_ACQUIRE);
-        if (s1 & 1) { __builtin_ia32_pause(); continue; }
+        if (s1 & 1) {
+            if (__builtin_ia32_rdtsc()>deadline) return 0;
+            __builtin_ia32_pause();
+            continue;
+        }
         const Vma *v=__atomic_load_n(&vmas,__ATOMIC_ACQUIRE);
         size_t n=__atomic_load_n(&vma_count,__ATOMIC_ACQUIRE);
         if (!v) return 0;
@@ -1234,8 +1242,8 @@ static int clamp_optimistic(uintptr_t address, uint64_t size, uint64_t *out) {
         }
         __atomic_thread_fence(__ATOMIC_ACQUIRE);
         if (__atomic_load_n(&vma_seq,__ATOMIC_RELAXED)==s1) { *out=length<size ? length : size; return 1; }
+        if (__builtin_ia32_rdtsc()>deadline) return 0;
     }
-    return 0;
 }
 /* Mapped length from address, up to size, across adjacent mappings. */
 uint64_t runtime_memory_clamp(uintptr_t address, uint64_t size) {
@@ -1257,10 +1265,15 @@ uint64_t runtime_memory_clamp(uintptr_t address, uint64_t size) {
  * over from the clamp): 1 when no table entry changed during the search, *found as below. */
 static int region_optimistic(uintptr_t address, uintptr_t *start, uintptr_t *end, int *mapped, int *found) {
     if (!optimistic_enabled()) return 0;
-    for (int attempt=0; attempt<4; ++attempt) {
+    const uint64_t deadline=__builtin_ia32_rdtsc()+OPTIMISTIC_SPIN_CYCLES;
+    for (;;) {
         if (!__atomic_load_n(&vma_optimistic,__ATOMIC_ACQUIRE)) return 0;
         const uint64_t s1=__atomic_load_n(&vma_seq,__ATOMIC_ACQUIRE);
-        if (s1 & 1) { __builtin_ia32_pause(); continue; }
+        if (s1 & 1) {
+            if (__builtin_ia32_rdtsc()>deadline) return 0;
+            __builtin_ia32_pause();
+            continue;
+        }
         const Vma *v=__atomic_load_n(&vmas,__ATOMIC_ACQUIRE);
         size_t n=__atomic_load_n(&vma_count,__ATOMIC_ACQUIRE);
         if (!v) return 0;
@@ -1276,8 +1289,8 @@ static int region_optimistic(uintptr_t address, uintptr_t *start, uintptr_t *end
             *found=f;
             return 1;
         }
+        if (__builtin_ia32_rdtsc()>deadline) return 0;
     }
-    return 0;
 }
 int runtime_memory_region(uintptr_t address, uintptr_t *start, uintptr_t *end, int *mapped) {
     const CachedRegion *c=(runtime_disabled_optimizations & 1) ? NULL : cached_region(address);

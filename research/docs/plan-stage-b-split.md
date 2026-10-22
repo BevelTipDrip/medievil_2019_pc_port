@@ -473,3 +473,11 @@ T-P3 (2026-10-21 19:45, build `e15a859`, `-Samples`, 50%, panning; samples `rese
 the clamp no longer waits (0.46% self, no lock wait), but the same lock moved to `runtime_memory_region`, called by
 `CopySparseMemory` in `CollectRingBindings`: 4.7% of stage A blocked in `RtlAcquireSRWLockShared`, 2% releasing it.
 `runtime_memory_region` now also reads lock-free the same way (same switch).
+
+T-P4 (2026-10-21 20:00, build `45eca39`, same routine; samples `research-data\samples\t-p4-lockfree-region`): stage A
+`CollectRingBindings` 13.4% (T-P2) -> **7.1%**, lock waits 6.4% -> 3.0%, stage A waiting on stage B 26.9% -> **41.8%**
+(stage A no longer the one falling behind). Left: `runtime_memory_clamp` still falls back to the lock (stage A 2.2%,
+stage B 2.1% via ResolveVertexBuffers): a table edit is a `memmove` of half the ~13,000-entry sorted array (~260 KB,
+tens of us, thousands a second while streaming), longer than the 4 short retries. Now the lock-free reads spin through
+an edit for up to ~100 us before taking the lock. (Also seen: `runtime_memory_gpu_protect` ~1% of stage B on the same
+lock; and the sorted-array table itself is a writer cost worth replacing later.)
