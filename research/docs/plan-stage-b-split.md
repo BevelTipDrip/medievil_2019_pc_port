@@ -540,3 +540,14 @@ by default** (it did: normal play had the stage B diagnostics on); Advanced > Fr
   texture sets validated by another rule, twins, the readback queue chosen with the Vulkan device), 4K memory (sizes
   set at boot). Also in the menu's restart section now: graphics quality and UE4 upscaling (MediEvil).
 - Small buffers from VRAM stays MediEvil-only by default (on where run.py sets `GOW3_STREAM_CLEAN=1`).
+
+### T-L2: flip trace, uncapped vs 120 cap (2026-10-22 00:20-00:29, launched by Claude with the user's go; build `1e657ca`; `-NoStats`, `GOW3_FLIP_TRACE`; trace `research-data\flip-trace-1.csv`)
+
+The user: at the 120 cap (in-game limit) 0.1% lows fell from 200+ to 80-90. Trace (per flip: game submit, stage B
+irq, queued, limiter release, presented, flip event). Uncapped (37,030 frames): the limiter waits 0.01 ms; intervals
+follow the game's frame times. **Capped (12,190 frames): each frame waits ~8 ms in the queue for its slot (the game and
+stage B have headroom), yet limiter releases come 6.3-10.4 ms apart: p99 9.86, p99.9 10.43 = 8.33 + one 480 Hz tick.**
+The present-thread limiter releases a frame up to half a vblank early, or at a later tick when its slot falls past
+the current one; the schedule stays anchored, so the next comes early. G-Sync shows it, and the game's flips follow it
+(submit p99.9 10.7 ms). Fix (`GOW3_PRECISE_LIMIT=1`, reworked): the slot is waited for with a high-resolution
+waitable timer (no spin, unlike T-L1b), released within ~0.1 ms of it, never early.

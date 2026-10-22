@@ -848,17 +848,32 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     };
     // Slots count as reached within half a vblank: timer jitter must not cost a whole vblank.
     // gow3 GOW3_PRECISE_LIMIT=1: frames are released at their slot, not up to half a vblank
-    // early (with G-Sync the display shows each frame when it is presented: the early releases
-    // were up to ~1 ms of jitter at 240 FPS), with a short spin after a coarse sleep.
+    // early or a tick late. T-L2 (flip trace, 120 cap, G-Sync): the game's frames waited ~8 ms
+    // for their slot, yet releases came 6.3-10.4 ms apart (8.33 +- one 480 Hz tick): the 0.1%
+    // lows at 80-90 FPS. The wait is a high-resolution waitable timer (no spin: the first
+    // version spun up to 1 ms on this realtime thread, T-L1b), the last ~0.1 ms a short spin.
     static const bool precise_limit = [] {
         const char* env = std::getenv("GOW3_PRECISE_LIMIT");
         return env && env[0] == '1';
     }();
-    const auto slot_slack = precise_limit ? std::chrono::nanoseconds(0)
+    const auto slot_slack = precise_limit ? std::chrono::nanoseconds(100000)
                                           : std::chrono::nanoseconds(500000000 / std::max(vblank_hz, 1u));
     const auto wait_slot = [](std::chrono::steady_clock::time_point slot) {
-        const auto coarse = slot - std::chrono::microseconds(1000);
-        if (std::chrono::steady_clock::now() < coarse) std::this_thread::sleep_until(coarse);
+#ifdef _WIN32
+        static HANDLE hires = CreateWaitableTimerExW(nullptr, nullptr, 0x00000002 /* HIGH_RESOLUTION */,
+                                                     TIMER_ALL_ACCESS);
+        const auto coarse = slot - std::chrono::microseconds(100);
+        if (const auto now = std::chrono::steady_clock::now(); hires && now < coarse) {
+            LARGE_INTEGER due;
+            due.QuadPart = -std::max<LONGLONG>(
+                1, std::chrono::duration_cast<std::chrono::nanoseconds>(coarse - now).count() / 100);
+            if (SetWaitableTimerEx(hires, &due, 0, nullptr, nullptr, nullptr, 0)) {
+                WaitForSingleObject(hires, INFINITE);
+            }
+        }
+#else
+        std::this_thread::sleep_until(slot - std::chrono::microseconds(100));
+#endif
         while (std::chrono::steady_clock::now() < slot) _mm_pause();
     };
     u32 frame_limit = current_limit();
