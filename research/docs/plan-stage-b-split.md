@@ -481,3 +481,7 @@ stage B 2.1% via ResolveVertexBuffers): a table edit is a `memmove` of half the 
 tens of us, thousands a second while streaming), longer than the 4 short retries. Now the lock-free reads spin through
 an edit for up to ~100 us before taking the lock. (Also seen: `runtime_memory_gpu_protect` ~1% of stage B on the same
 lock; and the sorted-array table itself is a writer cost worth replacing later.)
+
+T-P5 (2026-10-21 20:15, build `76de0f5`, 4K, `-NoStats`): the user: "quite good, the best it's been", panning included.
+All of the above stays default (no further switch needed: the lock-free reads, region stamps, two-way memo, decals off
+with the partial prepass, the HZB remap, S2 are on by default).
