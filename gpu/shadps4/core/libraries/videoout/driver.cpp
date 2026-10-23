@@ -917,13 +917,27 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         // Check if it's time to take a request.
         auto& vblank_status = main_port.vblank_status;
         const auto now = std::chrono::steady_clock::now();
-        const bool flip_slot = !frame_limit || now + slot_slack >= next_flip;
-        if (flip_slot && vblank_status.count % (main_port.flip_rate + 1) == 0) {
-            const auto request = receive_request();
+        // Precise: capped frames are released by the loop below at their slot, never at a tick
+        // (the first tick after a slot was up to a tick late, T-L3).
+        // Without a queued frame the tick still redraws (the save list and menus stay live while
+        // the game draws nothing; skipping that froze the save list, T-L4).
+        const bool flip_slot = !frame_limit || (!precise_limit && now + slot_slack >= next_flip);
+        const bool precise_capped = precise_limit && frame_limit;
+        if ((flip_slot || precise_capped) && vblank_status.count % (main_port.flip_rate + 1) == 0) {
+            Request request{};
+            bool pending = false;
+            if (flip_slot) {
+                request = receive_request();
+            } else {
+                std::scoped_lock lk{mutex};
+                pending = !requests.empty();
+            }
             if (request && frame_limit) {
                 next_flip = std::max(next_flip + frame_period, now - frame_period);
             }
-            if (!request) {
+            if (pending) {
+                // released by the slot loop below
+            } else if (!request) {
                 // gow3: the save list / menu / text entry stay live while the game draws nothing.
                 static auto last_redraw = std::chrono::steady_clock::now();
                 if (main_port.is_open && Gow3Overlay::CapturesInput() &&
@@ -997,7 +1011,11 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
                 FRAME_END;
             }
         }
-        std::this_thread::sleep_until(tick_deadline);
+        if (precise_limit) {
+            wait_slot(tick_deadline); // the next window starts on time (Sleep overshoots ~1 ms)
+        } else {
+            std::this_thread::sleep_until(tick_deadline);
+        }
     }
 }
 
