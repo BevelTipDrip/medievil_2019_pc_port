@@ -637,3 +637,9 @@ the user: 1% lows in the 80s on the NVIDIA overlay (RTSS ~110). **The NVIDIA ove
 1% lows better than T-V120p, not T-V120's flat line. Next: T-V120's exact settings again, G-Sync indicator on, with
 display times (`displayed` trace stage: `VK_KHR_present_id` + `VK_KHR_present_wait`, enabled only with
 `GOW3_FLIP_TRACE`; a swapchain thread waits for each game present in order).
+
+**T-V120b (`d18cfdf`, T-V120's settings + display times): not a repeat.** The user: unstable lows again. Trace
+`flip-trace-12.csv`: `displayed` came 0.00 ms after `presented` for every frame (NVIDIA's present wait returns at the
+present: no display information), and present calls spread 1% 7.06 / 99% 9.67 ms like the native run, not T-V120's
+8.42 ms. Present ids are a change on the present path; display times now need `GOW3_DISPLAY_TRACE=1` (off), so the
+trace behaves as in T-V120. The launch environment and `medievil.ini` otherwise match T-V120 (checked).

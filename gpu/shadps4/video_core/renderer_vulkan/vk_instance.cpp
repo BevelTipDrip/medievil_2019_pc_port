@@ -322,8 +322,10 @@ bool Instance::CreateDevice() {
         feature_chain.get<vk::PhysicalDevicePipelineBinaryFeaturesKHR>().pipelineBinaries &&
         add_extension(VK_KHR_PIPELINE_BINARY_EXTENSION_NAME);
     maintenance_8 = add_extension(VK_KHR_MAINTENANCE_8_EXTENSION_NAME);
-    // gow3: display times for the flip trace (GOW3_FLIP_TRACE): vkWaitForPresentKHR.
-    if (const char* trace = std::getenv("GOW3_FLIP_TRACE"); trace && trace[0]) {
+    // gow3: display times for the flip trace (GOW3_FLIP_TRACE + GOW3_DISPLAY_TRACE=1):
+    // vkWaitForPresentKHR. Off by default: on NVIDIA (T-V120b) the wait returned at the present
+    // itself (0.00 ms later), and with present ids the presents spread like the native run.
+    if (const char* display = std::getenv("GOW3_DISPLAY_TRACE"); display && display[0] == '1') {
         present_wait = feature_chain.get<vk::PhysicalDevicePresentIdFeaturesKHR>().presentId &&
                        feature_chain.get<vk::PhysicalDevicePresentWaitFeaturesKHR>().presentWait &&
                        add_extension(VK_KHR_PRESENT_ID_EXTENSION_NAME) &&
