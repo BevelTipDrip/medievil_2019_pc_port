@@ -716,7 +716,8 @@ void VideoOutDriver::Flip(const Request& req) {
     }
 }
 
-static void PreciseWait(std::chrono::steady_clock::time_point slot);
+static void PreciseWait(std::chrono::steady_clock::time_point slot,
+                        std::chrono::microseconds spin = std::chrono::microseconds(100));
 
 void VideoOutDriver::DropOlderFinished() {
     std::vector<Request> stale;
@@ -743,6 +744,11 @@ void VideoOutDriver::PacerThread(std::stop_token token) {
     Common::SetCurrentThreadRealtime(std::chrono::milliseconds(8));
     auto next = std::chrono::steady_clock::now();
     u32 limit = 0;
+    // The last part of the wait spins (GOW3_PACER_SPIN_US, default 700: past the timer's grid).
+    const auto spin = std::chrono::microseconds([] {
+        const char* env = std::getenv("GOW3_PACER_SPIN_US");
+        return env ? std::atol(env) : 700L;
+    }());
     while (!token.stop_requested()) {
         if (const u32 now_limit = pacer_limit.load(std::memory_order_relaxed); now_limit != limit) {
             limit = now_limit;
@@ -753,7 +759,7 @@ void VideoOutDriver::PacerThread(std::stop_token token) {
             continue;
         }
         const auto period = std::chrono::nanoseconds(1000000000 / limit);
-        PreciseWait(next);
+        PreciseWait(next, spin);
         // The newest finished frame; later than the slot only when none has finished yet.
         Request show{};
         while (!token.stop_requested() && pacer_limit.load(std::memory_order_relaxed) == limit) {
@@ -914,12 +920,13 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
 }
 
 // gow3: waits until `slot` within a few microseconds: a high-resolution waitable timer (one per
-// thread) to ~0.1 ms before it, then a short spin.
-static void PreciseWait(std::chrono::steady_clock::time_point slot) {
+// thread) to `spin` before it, then a spin. The timer wakes on a ~0.5 ms grid here (T-L5 run 3:
+// with a 0.1 ms spin the pacer's releases ran 0-0.5 ms late in a sawtooth, 8.33 mod 0.5 per frame).
+static void PreciseWait(std::chrono::steady_clock::time_point slot, std::chrono::microseconds spin) {
 #ifdef _WIN32
     thread_local HANDLE hires = CreateWaitableTimerExW(nullptr, nullptr, 0x00000002 /* HIGH_RESOLUTION */,
                                                  TIMER_ALL_ACCESS);
-    const auto coarse = slot - std::chrono::microseconds(100);
+    const auto coarse = slot - spin;
     if (const auto now = std::chrono::steady_clock::now(); hires && now < coarse) {
         LARGE_INTEGER due;
         due.QuadPart = -std::max<LONGLONG>(
@@ -929,7 +936,7 @@ static void PreciseWait(std::chrono::steady_clock::time_point slot) {
         }
     }
 #else
-    std::this_thread::sleep_until(slot - std::chrono::microseconds(100));
+    std::this_thread::sleep_until(slot - spin);
 #endif
     while (std::chrono::steady_clock::now() < slot) _mm_pause();
 }
@@ -984,7 +991,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     }();
     const auto slot_slack = precise_limit ? std::chrono::nanoseconds(100000)
                                           : std::chrono::nanoseconds(500000000 / std::max(vblank_hz, 1u));
-    const auto wait_slot = PreciseWait;
+    const auto wait_slot = [](std::chrono::steady_clock::time_point slot) { PreciseWait(slot); };
     u32 frame_limit = current_limit();
     auto frame_period = frame_limit ? std::chrono::nanoseconds(1000000000 / frame_limit)
                                     : std::chrono::nanoseconds(0);

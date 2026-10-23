@@ -592,3 +592,11 @@ Next (`GOW3_NEWEST_FRAME` now): a dedicated pacer thread (`gow3:Pacer`) releases
 high-resolution timer plus a 0.1 ms spin; dropped frames return to the pool on the game's side
 (`DropOlderFinished` in `SubmitFlipInternal`). The user also asked for tick-rate runs: `GOW3_VBLANK_HZ` 240 / 120
 (a 120 limit at a 120 tick is off: the tick paces) / 60.
+
+**T-L5 run 3 (`fbce36f`, pacer thread, 480 tick): the cause found.** The user: main menu lows ~110 (uncapped 180+).
+Trace `flip-trace-6.csv`: releases median 8.26, p1 7.91, p99 8.76, p99.9 9.11 (tighter than run 2, not even). The
+interval sequence is a **sawtooth**: three or four of ~8.1-8.3 ms, then one of ~8.6-8.7 ms. The high-resolution
+waitable timer wakes on a ~0.5 ms grid on this system; with a 0.1 ms spin a release lands 0-0.5 ms after its slot,
+and the slot's phase on that grid moves 8.333 mod 0.5 = 0.33 ms a frame. This also explains T-L4's flat +-0.25 ms
+band. Fix: the pacer spins the last 0.7 ms (`GOW3_PACER_SPIN_US`, ~8% of one core at 120 FPS, on its own thread; the
+present thread keeps 0.1 ms: it waits every tick).
