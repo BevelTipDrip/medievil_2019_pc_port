@@ -691,3 +691,34 @@ present thread's limit at min(display refresh, Engine frame rate) with the autom
 (`EmulatorSettings::GetFrameLimit`), (3) the debug menu's `SetFrameRateLimit(60)` (already patched out); "No built-in
 frame caps" removes (1) and (2). An explicit tick rate below the frame rate still paces the game (UE4 waits for each
 vblank).
+
+### T-P120: the configuration that holds the cap (2026-10-23 ~03:00, the user, launcher settings)
+
+**Result (the user, NVIDIA overlay): flat frame-time graph, 1% lows 118-119 at a 120 tick, no cyclical waves, with
+G-Sync on or off, at 4K native, Ultra, no upscaling.** A 165 Hz tick kept 0.1% lows above 150 in the heaviest area.
+`medievil.ini` (Launcher > Performance > Presentation):
+
+| Setting | Value | Active at this tick? |
+|---|---|---|
+| `present_tick_hz` | 120 (also 165) | yes: the game is paced by its own vblank |
+| `present_precise_tick` | 1 | yes: tick on a fixed grid, high-resolution timer + 0.7 ms spin |
+| `present_inline` | 1 | yes: the vblank thread presents (no swap-thread hand-off) |
+| `present_mode` | immediate (`vsync=0`) | yes: the present never waits |
+| `present_no_frame_caps` | 1 | no effect with an explicit tick |
+| `present_precise_limit`, `present_newest_frame` | 1 | inactive: an explicit tick switches the limit off (limit >= tick) |
+| `fps_limit` 0, `engine_fps` 240, `frames_queued` 1, borderless | | |
+
+The user's read: precise vblank tick and present on the vblank thread contribute most, Immediate possibly. No trace
+yet. Interpretation: frames are released on an exact grid at the game's own frame start (UE4 waits for the vblank)
+and reach the display with nothing in between adding jitter; T-V120's flat stretches got the same effect by
+accident (the display's fixed refresh pacing a queued frame, drifting against the PC-clock tick, hence its cycle).
+Earlier capped runs never combined the three: T-V120p had the precise tick with the hand-off and FIFO, T-N120 had
+inline presents with the coarse tick, the 480 Hz tick + present-side limiter paced the present but not the game's
+frame starts. The user's working rule: **tick rate = the desired cap (or the refresh rate), never 480 Hz plus a
+limiter.**
+
+Next (the user, next session): a trace of T-P120 (`present_frame_trace=1`); then one setting back per launch
+(precise tick, inline, Follow VSync instead of Immediate) to find the essential ones; then make that set the
+capped mode ("tick = cap"), and look again at the 480 Hz default for uncapped play. Also open: thread priority
+(`SetCurrentThreadRealtime` is a no-op on Windows, `common/thread.cpp:76-78`), tearing with Immediate and G-Sync
+off, and the research in [study-vrr-present-pacing.md](study-vrr-present-pacing.md).
