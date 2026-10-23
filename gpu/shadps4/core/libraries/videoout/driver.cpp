@@ -708,7 +708,9 @@ void VideoOutDriver::Flip(const Request& req) {
         }
     }
 
-    CompleteFlip(req);
+    if (!req.completed) {
+        CompleteFlip(req);
+    }
 }
 
 void VideoOutDriver::DropFlip(const Request& req) {
@@ -716,7 +718,9 @@ void VideoOutDriver::DropFlip(const Request& req) {
     if (req.frame != nullptr) {
         presenter->DiscardFrame(req.frame);
     }
-    CompleteFlip(req);
+    if (!req.completed) {
+        CompleteFlip(req);
+    }
 }
 
 void VideoOutDriver::CompleteFlip(const Request& req) {
@@ -812,16 +816,25 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
         frame = presenter->PrepareFrame(group, buffer.address_left);
     }
 
+    // gow3 newest-frame mode: the frame is copied out of the guest's buffer (PrepareFrame), so
+    // its flip completes now: the guest's next frame no longer waits for the cap (T-L5: with
+    // completion at present, the game waited for its buffer and no frame was ever dropped).
+    const bool early = newest_active.load(std::memory_order_relaxed);
+    const Request request{
+        .frame = frame,
+        .port = port,
+        .flip_arg = flip_arg,
+        .index = index,
+        .eop = is_eop,
+        .completed = early,
+    };
     {
         std::scoped_lock lock{mutex};
-        requests.push_back({
-            .frame = frame,
-            .port = port,
-            .flip_arg = flip_arg,
-            .index = index,
-            .eop = is_eop,
-        });
+        requests.push_back(request);
         Gow3FlipTrace::Note("queued", flip_arg);
+    }
+    if (early) {
+        CompleteFlip(request);
     }
     request_cv.notify_one();
 }
@@ -923,6 +936,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
             next_flip = std::chrono::steady_clock::now();
             std::printf("VideoOut: frame limit %u FPS\n", limit);
         }
+        newest_active.store(newest_frame && frame_limit != 0, std::memory_order_relaxed);
         timer.Start();
         const auto tick_deadline = std::chrono::steady_clock::now() + vblank_period;
 

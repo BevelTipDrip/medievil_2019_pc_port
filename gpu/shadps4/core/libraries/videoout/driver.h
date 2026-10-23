@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <deque>
 #include <functional>
 
@@ -102,6 +103,8 @@ private:
         s64 flip_arg;
         s32 index;
         bool eop;
+        /// gow3 newest-frame mode: the guest's flip completed when the frame was queued.
+        bool completed = false;
 
         operator bool() const noexcept {
             return frame != nullptr;
@@ -136,6 +139,9 @@ private:
     VideoOutPort main_port{};
     std::jthread present_thread;
     std::deque<Request> requests;
+    /// gow3 newest-frame mode with a frame limit: flips complete for the guest as soon as the
+    /// frame is copied out (SubmitFlipInternal); the present thread picks among the copies.
+    std::atomic<bool> newest_active{false};
 };
 
 } // namespace Libraries::VideoOut

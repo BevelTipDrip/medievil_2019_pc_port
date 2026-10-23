@@ -573,3 +573,10 @@ semaphore); before the slot the present thread waits for that GPU finish or a ne
 Implies `GOW3_PRECISE_LIMIT`. Expected: even presents and lower latency; risk: the game time shown advances unevenly
 (the newest frame is 0 to one render interval old at its slot: Fast Sync micro-judder), and no GPU headroom is freed.
 Trace stage `dropped`; analysis `newest_analyze.py` (display step, content step, their difference, age).
+
+**T-L5 run 1 (`7cca894`, 2026-10-22 22:3x): not working.** The user: even the intro videos had capped-like lows.
+Trace `flip-trace-4.csv`: 0 frames dropped, submits every 8.33 ms, each frame ~7.9 ms in the queue. The guest
+cannot render its next frame until the previous flip completes (it waits for its display buffer's label), so with
+completion at present no newer frame ever arrived. Fix: in this mode the guest's flip completes in
+`SubmitFlipInternal` right after `PrepareFrame` copied the frame out (`Request::completed`; `newest_active` is set
+by the present thread only while a limit applies); the present thread only chooses among the copies.
