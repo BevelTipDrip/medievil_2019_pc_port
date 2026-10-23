@@ -612,3 +612,11 @@ display's refresh, and when its phase nears a refresh boundary the jitter pushes
 try (`GOW3_VBLANK_SYNC=1`): the tick waits for the display's own vblank (DXGI `WaitForVBlank`, primary output,
 every Nth for a tick below the refresh). Open: the user has G-Sync on (windowed too), yet these presents land on a
 fixed 240 Hz grid while the newest-frame runs' did not.
+
+**T-V120s (`c32a18e`, `GOW3_VBLANK_SYNC=1`, G-Sync on, the indicator confirmed it): rejected.** Log: "tick on
+every 2 of the display's vblanks (240 Hz)". Presented median 19 ms (~52 FPS), cycling ~14.5 / 27.7 / 19 ms; the
+user: videos stutter badly, main menu 1% low 1.7 FPS. Under VRR the display has no steady vblank (it refreshes when a
+frame arrives, else at its minimum rate), so waiting for vblanks ties the tick to its own presents. The T-V120 waves
+are therefore not a beat against a fixed refresh (the earlier explanation was wrong); with G-Sync confirmed on, why
+presents snapped to a 4.167 ms grid is open. Next: the plain tick with the pacer's precise wait; if the waves stay,
+measure display times with `VK_KHR_present_wait`.
