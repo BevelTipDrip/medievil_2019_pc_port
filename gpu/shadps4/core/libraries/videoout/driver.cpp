@@ -317,6 +317,7 @@ void VideoOutDriver::Flip(const Request& req) {
     // Update HDR status before presenting, then present the frame (gow3: on the swap thread).
     RunPresenter([this, frame = req.frame, hdr = req.port->is_hdr, flip_arg = req.flip_arg] {
         presenter->SetHDR(hdr);
+        presenter->SetPresentTag(flip_arg);
         presenter->Present(frame);
         Gow3FlipTrace::Note("presented", flip_arg);
     });

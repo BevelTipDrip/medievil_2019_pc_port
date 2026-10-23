@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "gow3_flip_trace.h"
 #include <algorithm>
 #include <cstdio>
 #include <limits>
@@ -29,7 +30,36 @@ Swapchain::Swapchain(const Instance& instance_, const Frontend::WindowSDL& windo
     ImGui::Core::Initialize(instance, window, image_count, surface_format.format);
 }
 
+void Swapchain::DisplayWaitThread(std::stop_token token) {
+    while (!token.stop_requested()) {
+        PendingPresent next{};
+        {
+            std::unique_lock lock{pending_mutex};
+            if (!pending_cv.wait(lock, token, [&] { return !pending.empty(); })) {
+                return;
+            }
+            next = pending.front();
+            pending.pop_front();
+        }
+        for (int tries = 0; tries < 100 && !token.stop_requested(); ++tries) {
+            std::scoped_lock lock{wait_mutex};
+            if (swapchain != next.swapchain) {
+                break; // recreated: its presents are gone
+            }
+            const auto result = instance.GetDevice().waitForPresentKHR(swapchain, next.id, 2000000);
+            if (result == vk::Result::eSuccess) {
+                Gow3FlipTrace::Note("displayed", next.tag);
+                break;
+            }
+            if (result != vk::Result::eTimeout) {
+                break;
+            }
+        }
+    }
+}
+
 Swapchain::~Swapchain() {
+    display_wait_thread = {};
     Destroy();
     instance.GetInstance().destroySurfaceKHR(surface);
 }
@@ -130,15 +160,35 @@ bool Swapchain::AcquireNextImage() {
 }
 
 bool Swapchain::Present() {
-    const vk::PresentInfoKHR present_info = {
+    vk::PresentInfoKHR present_info = {
         .waitSemaphoreCount = 1,
         .pWaitSemaphores = &present_ready[image_index],
         .swapchainCount = 1,
         .pSwapchains = &swapchain,
         .pImageIndices = &image_index,
     };
+    const u64 id = ++present_id;
+    const vk::PresentIdKHR present_id_info = {
+        .swapchainCount = 1,
+        .pPresentIds = &id,
+    };
+    const bool track = instance.IsPresentWaitEnabled();
+    if (track) {
+        present_info.pNext = &present_id_info;
+        if (!display_wait_thread.joinable()) {
+            display_wait_thread = std::jthread([this](std::stop_token token) { DisplayWaitThread(token); });
+        }
+    }
 
     auto result = instance.GetPresentQueue().presentKHR(present_info);
+    if (track && present_tag >= 0 && result == vk::Result::eSuccess) {
+        {
+            std::scoped_lock lock{pending_mutex};
+            pending.push_back({swapchain, id, present_tag});
+        }
+        pending_cv.notify_one();
+    }
+    present_tag = -1;
     if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR) {
         needs_recreation = true;
     } else {
@@ -257,6 +307,7 @@ void Swapchain::SetSurfaceProperties() {
 }
 
 void Swapchain::Destroy() {
+    std::scoped_lock wait_lock{wait_mutex};
     vk::Device device = instance.GetDevice();
     const auto wait_result = device.waitIdle();
     if (wait_result != vk::Result::eSuccess) {

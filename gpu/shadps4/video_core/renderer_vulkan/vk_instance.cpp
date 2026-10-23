@@ -261,7 +261,8 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceComputeShaderDerivativesFeaturesKHR,
         vk::PhysicalDeviceShaderMixedFloatDotProductFeaturesVALVE,
         vk::PhysicalDevicePipelineBinaryFeaturesKHR,
-        vk::PhysicalDeviceMaintenance5FeaturesKHR>();
+        vk::PhysicalDeviceMaintenance5FeaturesKHR, vk::PhysicalDevicePresentIdFeaturesKHR,
+        vk::PhysicalDevicePresentWaitFeaturesKHR>();
     features = feature_chain.get().features;
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
@@ -321,6 +322,13 @@ bool Instance::CreateDevice() {
         feature_chain.get<vk::PhysicalDevicePipelineBinaryFeaturesKHR>().pipelineBinaries &&
         add_extension(VK_KHR_PIPELINE_BINARY_EXTENSION_NAME);
     maintenance_8 = add_extension(VK_KHR_MAINTENANCE_8_EXTENSION_NAME);
+    // gow3: display times for the flip trace (GOW3_FLIP_TRACE): vkWaitForPresentKHR.
+    if (const char* trace = std::getenv("GOW3_FLIP_TRACE"); trace && trace[0]) {
+        present_wait = feature_chain.get<vk::PhysicalDevicePresentIdFeaturesKHR>().presentId &&
+                       feature_chain.get<vk::PhysicalDevicePresentWaitFeaturesKHR>().presentWait &&
+                       add_extension(VK_KHR_PRESENT_ID_EXTENSION_NAME) &&
+                       add_extension(VK_KHR_PRESENT_WAIT_EXTENSION_NAME);
+    }
     attachment_feedback_loop = add_extension(VK_EXT_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_EXTENSION_NAME);
     if (attachment_feedback_loop) {
         attachment_feedback_loop =
@@ -641,7 +649,17 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceShaderMixedFloatDotProductFeaturesVALVE{
             .shaderMixedFloatDotProductFloat16AccFloat32 = true,
         },
+        vk::PhysicalDevicePresentIdFeaturesKHR{
+            .presentId = true,
+        },
+        vk::PhysicalDevicePresentWaitFeaturesKHR{
+            .presentWait = true,
+        },
     };
+    if (!present_wait) {
+        device_chain.unlink<vk::PhysicalDevicePresentIdFeaturesKHR>();
+        device_chain.unlink<vk::PhysicalDevicePresentWaitFeaturesKHR>();
+    }
 
     if (!custom_border_color) {
         device_chain.unlink<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>();

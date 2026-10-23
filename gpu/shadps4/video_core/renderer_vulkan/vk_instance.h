@@ -159,6 +159,11 @@ public:
         return maintenance_8;
     }
 
+    /// gow3: VK_KHR_present_id + VK_KHR_present_wait enabled (only with GOW3_FLIP_TRACE)
+    bool IsPresentWaitEnabled() const {
+        return present_wait;
+    }
+
     /// Returns true if VK_EXT_attachment_feedback_loop_layout is supported
     bool IsAttachmentFeedbackLoopLayoutSupported() const {
         return attachment_feedback_loop;
@@ -588,6 +593,7 @@ private:
     bool pipeline_binaries{};
     vk::PipelineBinaryKeyKHR pipeline_binary_global_key{};
     bool maintenance_8{};
+    bool present_wait{};
     bool attachment_feedback_loop{};
     bool image_2d_view_of_3d{};
     bool image_view_min_lod{};

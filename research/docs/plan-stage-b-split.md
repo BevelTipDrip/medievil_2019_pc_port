@@ -628,3 +628,12 @@ misses are rare, and the 120 Hz tick also paces the game's frame starts (UE4 wai
 tick plus a present-side limiter never did. The 120 Hz tick is the front-runner for a capped mode.
 Next: `GOW3_PRECISE_TICK=1` (`GOW3_TICK_SPIN_US`, default 700): the tick on a fixed grid with `PreciseWait`
 instead of `AccurateTimer` (T-V120 ticks +-0.7 ms; suspect for the waves).
+
+**T-V120p (`181c4c1`, `GOW3_PRECISE_TICK=1`, ~3 min):** ticks exact (p1/p99 8.32/8.34), present calls 7.8-8.9 ms;
+the user: 1% lows in the 80s on the NVIDIA overlay (RTSS ~110). **The NVIDIA overlay is the reference from here**
+(it matches the visible flicker and judder; RTSS and our "presented" stage time the present call, not the display).
+**T-N120 native present** (`GOW3_VBLANK_HZ=120`, `GOW3_PRESENT_THREAD=0`, `GOW3_FRAMES_AHEAD=0`, trace
+`flip-trace-11.csv`, ~11 min): present calls 1% 7.0 / 99% 9.7 ms throughout, **no 12.5 / 4.17 waves**; the user:
+1% lows better than T-V120p, not T-V120's flat line. Next: T-V120's exact settings again, G-Sync indicator on, with
+display times (`displayed` trace stage: `VK_KHR_present_id` + `VK_KHR_present_wait`, enabled only with
+`GOW3_FLIP_TRACE`; a swapchain thread waits for each game present in order).

@@ -104,6 +104,11 @@ public:
     void PresentLoadingFrame();
     Frame* PrepareLastFrame();
 
+    /// gow3 flip trace: the guest flip argument of the next Present (display times).
+    void SetPresentTag(s64 tag) {
+        swapchain.SetPresentTag(tag);
+    }
+
     /// gow3 newest-frame mode (GOW3_NEWEST_FRAME): waits until the frame's image is finished on
     /// the GPU or `until` passes; true when finished. Frames finish in the order prepared.
     bool WaitFrameReady(Frame* frame, std::chrono::steady_clock::time_point until);
