@@ -600,3 +600,15 @@ waitable timer wakes on a ~0.5 ms grid on this system; with a 0.1 ms spin a rele
 and the slot's phase on that grid moves 8.333 mod 0.5 = 0.33 ms a frame. This also explains T-L4's flat +-0.25 ms
 band. Fix: the pacer spins the last 0.7 ms (`GOW3_PACER_SPIN_US`, ~8% of one core at 120 FPS, on its own thread; the
 present thread keeps 0.1 ms: it waits every tick).
+
+### T-V120: 120 Hz tick, VSync (FIFO), no limiter, 50% (`ue4_upscale=performance`) (2026-10-23, launched by Claude with the user's go; `f4ffc01`; `GOW3_VBLANK_HZ=120`; trace `flip-trace-8.csv`)
+
+The user: "1% and .1% lows were a solid 118-119 ... even looking in the heavy area. We weren't able to get a frametime
+this steady before", then a big spike every 5-10 s growing denser and denser. Trace: between episodes the presented
+interval p99 is **8.42 ms**. Episodes at ~245-300, 400-465 and 565-630 s: up to 170 a 5 s window of **exactly 12.50
+ms followed by 4.17 ms** (three and one 240 Hz refreshes); release-to-present 4-4.7 ms for the long one. Presents
+snap to a 4.167 ms grid; the 120 Hz tick (`AccurateTimer`, the PC clock, releases +-0.7 ms) slides against the
+display's refresh, and when its phase nears a refresh boundary the jitter pushes frames across it: a beat. Fix to
+try (`GOW3_VBLANK_SYNC=1`): the tick waits for the display's own vblank (DXGI `WaitForVBlank`, primary output,
+every Nth for a tick below the refresh). Open: the user has G-Sync on (windowed too), yet these presents land on a
+fixed 240 Hz grid while the newest-frame runs' did not.

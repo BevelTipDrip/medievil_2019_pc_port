@@ -10,6 +10,7 @@
 #include <time.h>
 #ifdef _WIN32
 #include <windows.h>
+#include <dxgi.h>
 #endif
 #ifndef _WIN32
 #include <sys/resource.h>
@@ -719,6 +720,70 @@ void VideoOutDriver::Flip(const Request& req) {
 static void PreciseWait(std::chrono::steady_clock::time_point slot,
                         std::chrono::microseconds spin = std::chrono::microseconds(100));
 
+// gow3 GOW3_VBLANK_SYNC=1: the vblank tick follows the display's own vertical blank (DXGI
+// WaitForVBlank on the primary output, the one SDL reports the refresh rate of), every Nth one
+// for a tick below the refresh. T-V120 (120 Hz tick, VSync, 240 Hz display): frames held for
+// exactly two refreshes were steady (p99 8.42 ms), but the tick ran on the PC clock, slid
+// against the display and every ~2.5 min crossed a refresh boundary: waves of 12.5 / 4.17 ms
+// pairs that grew denser and faded. Returns null (PC clock) when there is no output.
+class DisplayVblank {
+public:
+    static DisplayVblank* Create(u32 tick_hz) {
+#ifdef _WIN32
+        const HMODULE dxgi = LoadLibraryA("dxgi.dll");
+        using CreateFactory = HRESULT(WINAPI*)(REFIID, void**);
+        const auto create = dxgi ? reinterpret_cast<CreateFactory>(
+                                       reinterpret_cast<void*>(GetProcAddress(dxgi, "CreateDXGIFactory1")))
+                                 : nullptr;
+        IDXGIFactory1* factory = nullptr;
+        if (!create || FAILED(create(__uuidof(IDXGIFactory1), reinterpret_cast<void**>(&factory)))) {
+            return nullptr;
+        }
+        const HMONITOR primary = MonitorFromPoint(POINT{0, 0}, MONITOR_DEFAULTTOPRIMARY);
+        IDXGIOutput* found = nullptr;
+        IDXGIAdapter1* adapter = nullptr;
+        for (UINT a = 0; !found && factory->EnumAdapters1(a, &adapter) != DXGI_ERROR_NOT_FOUND; ++a) {
+            IDXGIOutput* output = nullptr;
+            for (UINT o = 0; !found && adapter->EnumOutputs(o, &output) != DXGI_ERROR_NOT_FOUND; ++o) {
+                DXGI_OUTPUT_DESC desc{};
+                if (SUCCEEDED(output->GetDesc(&desc)) && desc.Monitor == primary) {
+                    found = output;
+                } else {
+                    output->Release();
+                }
+            }
+            adapter->Release();
+        }
+        factory->Release();
+        if (!found) {
+            std::printf("VideoOut: vblank sync: no display output, the PC clock paces\n");
+            return nullptr;
+        }
+        const u32 refresh = Gow3DisplayRefreshHz();
+        const u32 every = std::max(1u, (refresh + tick_hz / 2) / std::max(tick_hz, 1u));
+        std::printf("VideoOut: vblank sync: tick on every %u of the display's vblanks (%u Hz)\n",
+                    every, refresh);
+        return new DisplayVblank(found, every);
+#else
+        return nullptr;
+#endif
+    }
+    void Wait() {
+#ifdef _WIN32
+        for (u32 i = 0; i < every; ++i) {
+            output->WaitForVBlank();
+        }
+#endif
+    }
+
+private:
+#ifdef _WIN32
+    DisplayVblank(IDXGIOutput* output_, u32 every_) : output(output_), every(every_) {}
+    IDXGIOutput* output;
+#endif
+    u32 every = 1;
+};
+
 void VideoOutDriver::DropOlderFinished() {
     std::vector<Request> stale;
     {
@@ -992,6 +1057,10 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     const auto slot_slack = precise_limit ? std::chrono::nanoseconds(100000)
                                           : std::chrono::nanoseconds(500000000 / std::max(vblank_hz, 1u));
     const auto wait_slot = [](std::chrono::steady_clock::time_point slot) { PreciseWait(slot); };
+    static DisplayVblank* const display_vblank = [&]() -> DisplayVblank* {
+        const char* env = std::getenv("GOW3_VBLANK_SYNC");
+        return env && env[0] == '1' ? DisplayVblank::Create(vblank_hz) : nullptr;
+    }();
     u32 frame_limit = current_limit();
     auto frame_period = frame_limit ? std::chrono::nanoseconds(1000000000 / frame_limit)
                                     : std::chrono::nanoseconds(0);
@@ -1023,7 +1092,11 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         }
         newest_active.store(newest_frame && frame_limit != 0, std::memory_order_relaxed);
         pacer_limit.store(newest_frame ? frame_limit : 0, std::memory_order_relaxed);
-        timer.Start();
+        if (display_vblank) {
+            display_vblank->Wait();
+        } else {
+            timer.Start();
+        }
         const auto tick_deadline = std::chrono::steady_clock::now() + vblank_period;
 
         if (DebugState.IsGuestThreadsPaused()) {
