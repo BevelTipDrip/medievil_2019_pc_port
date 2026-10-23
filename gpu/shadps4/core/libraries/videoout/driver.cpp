@@ -1057,6 +1057,23 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     const auto slot_slack = precise_limit ? std::chrono::nanoseconds(100000)
                                           : std::chrono::nanoseconds(500000000 / std::max(vblank_hz, 1u));
     const auto wait_slot = [](std::chrono::steady_clock::time_point slot) { PreciseWait(slot); };
+    // gow3 GOW3_PRECISE_TICK=1: the vblank tick runs on a fixed grid (no drift) and waits with
+    // PreciseWait (high-resolution timer, then a spin of GOW3_TICK_SPIN_US, default 700) instead
+    // of AccurateTimer's plain waitable timer. T-V120 (120 Hz tick, VSync): the steadiest pacing
+    // yet, but ticks came +-0.7 ms off, and waves of 12.5 / 4.17 ms frames.
+    static const bool precise_tick = [] {
+        const char* env = std::getenv("GOW3_PRECISE_TICK");
+        return env && env[0] == '1';
+    }();
+    const auto tick_spin = std::chrono::microseconds([] {
+        const char* env = std::getenv("GOW3_TICK_SPIN_US");
+        return env ? std::atol(env) : 700L;
+    }());
+    auto next_tick = std::chrono::steady_clock::now();
+    if (precise_tick) {
+        std::printf("VideoOut: precise vblank tick (spin %lld us)\n",
+                    static_cast<long long>(tick_spin.count()));
+    }
     static DisplayVblank* const display_vblank = [&]() -> DisplayVblank* {
         const char* env = std::getenv("GOW3_VBLANK_SYNC");
         return env && env[0] == '1' ? DisplayVblank::Create(vblank_hz) : nullptr;
@@ -1094,6 +1111,9 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         pacer_limit.store(newest_frame ? frame_limit : 0, std::memory_order_relaxed);
         if (display_vblank) {
             display_vblank->Wait();
+        } else if (precise_tick) {
+            PreciseWait(next_tick, tick_spin);
+            next_tick = std::max(next_tick + vblank_period, std::chrono::steady_clock::now() - vblank_period);
         } else {
             timer.Start();
         }

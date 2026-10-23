@@ -620,3 +620,11 @@ frame arrives, else at its minimum rate), so waiting for vblanks ties the tick t
 are therefore not a beat against a fixed refresh (the earlier explanation was wrong); with G-Sync confirmed on, why
 presents snapped to a 4.167 ms grid is open. Next: the plain tick with the pacer's precise wait; if the waves stay,
 measure display times with `VK_KHR_present_wait`.
+
+**The 480 Hz tick and the 120 Hz path.** Upstream `55e1a76` (2026-10-14) set the 480 Hz tick plus a limiter because "a
+120 Hz virtual vblank turned 9 ms frames into 17 ms ones": a frame that misses a tick waits for the next. That build
+could not hold 120; the user's view (agreed): with today's pipeline (heavy-area uncapped 1% lows ~145 FPS, ~6.9 ms)
+misses are rare, and the 120 Hz tick also paces the game's frame starts (UE4 waits for the vblank), which the 480
+tick plus a present-side limiter never did. The 120 Hz tick is the front-runner for a capped mode.
+Next: `GOW3_PRECISE_TICK=1` (`GOW3_TICK_SPIN_US`, default 700): the tick on a fixed grid with `PreciseWait`
+instead of `AccurateTimer` (T-V120 ticks +-0.7 ms; suspect for the waves).
