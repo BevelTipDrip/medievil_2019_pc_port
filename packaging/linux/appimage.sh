@@ -3,9 +3,9 @@
 # Builds dist/MediEvil-x86_64.AppImage from the Linux build (run build.sh first).
 #
 # What is inside: medievil-runtime and libgow3gpu.so, the libraries a desktop may not have
-# (SDL3, FFmpeg, xxHash, the Vulkan loader), a standalone Python 3.13 with Tk, Pillow and
-# cryptography for the launcher and the preparation scripts, and the port's scripts and launcher.
-# The host provides glibc and the GPU's Vulkan driver (Mesa, NVIDIA), as for a native game.
+# (SDL3, FFmpeg, xxHash), a standalone Python 3.13 with Tk, Pillow and cryptography for the
+# launcher and the preparation scripts, and the port's scripts and launcher. The host provides
+# glibc, the Vulkan loader and the GPU's Vulkan driver (Mesa, NVIDIA), as for a native game.
 # libstdc++ is bundled as a fallback, used only when the host's is older than the build's.
 #
 # Usage: bash packaging/linux/appimage.sh [--python DIR] [--appimagetool FILE] [--runtime FILE]
@@ -13,6 +13,9 @@
 #                      with Pillow and cryptography installed; downloaded and set up when missing
 #   --appimagetool     appimagetool-x86_64.AppImage (downloaded when missing)
 #   --runtime          the type2 runtime (downloaded when missing)
+# Downloads are pinned (PINS below): each is checked against its SHA-256 before use, and a cached
+# copy that does not match is downloaded again. Local files given with the options above are the
+# builder's choice; a hash different from the pin is reported, not refused.
 # Libraries are looked up with ldd, so build.sh's PKG_CONFIG_PATH/LD_LIBRARY_PATH must also be
 # set here when the dependencies live in a private prefix (MEDIEVIL_DEPS=/opt/mdeps does that).
 set -euo pipefail
@@ -31,33 +34,97 @@ done
 if [[ -n ${MEDIEVIL_DEPS:-} ]]; then
     export LD_LIBRARY_PATH=$MEDIEVIL_DEPS/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
 fi
+# ---- Pinned downloads (version, URL, SHA-256) ------------------------------------------------
+# To update one: change the version and URL, download the file, put its sha256sum here.
+# python-build-standalone publishes SHA256SUMS with each release (the hash below matches it).
+# appimagetool and type2-runtime publish no checksum files; their hashes were taken from the
+# tagged release assets (downloaded twice, identical) and can be compared with the SHA-256 that
+# GitHub shows for each asset on the release page.
+APPIMAGETOOL_VERSION=1.9.1
+APPIMAGETOOL_URL=https://github.com/AppImage/appimagetool/releases/download/$APPIMAGETOOL_VERSION/appimagetool-x86_64.AppImage
+APPIMAGETOOL_SHA256=ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
+RUNTIME_VERSION=20251108
+RUNTIME_URL=https://github.com/AppImage/type2-runtime/releases/download/$RUNTIME_VERSION/runtime-x86_64
+RUNTIME_SHA256=2fca8b443c92510f1483a883f60061ad09b46b978b2631c807cd873a47ec260d
+# Python 3.13.16 with Tk 9.0.4 (build-tk-xft.sh pins the matching Tcl/Tk sources).
+PYTHON_RELEASE=20261013
+PYTHON_VERSION=3.13.16
+PYTHON_URL=https://github.com/astral-sh/python-build-standalone/releases/download/$PYTHON_RELEASE/cpython-$PYTHON_VERSION+$PYTHON_RELEASE-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz
+PYTHON_SHA256=d0080766b6b74aeb81e1949ef0d9a20e6c17f7b160fb295a69b936ccb17660be
+# The launcher's Python packages (binary wheels only), with their dependencies. Pillow 13.0.0:
+# 12.x has known image-decoder vulnerabilities (OSV: 4 critical, fixed in 13.0.0), and the
+# launcher opens images from the player's game files.
+PYTHON_PACKAGES=(pillow==13.0.0 cryptography==50.0.1 cffi==2.1.1 pycparser==3.0)
+
 tools=out/appimage-tools
 mkdir -p "$tools"
-fetch() { [[ -s $2 ]] || curl -fsSL -o "$2" "$1"; }
+sha256_of() { sha256sum "$1" | cut -d' ' -f1; }
+# fetch URL SHA256 FILE: FILE when it already has that hash, else downloaded and checked.
+fetch() {
+    local url=$1 want=$2 file=$3
+    if [[ -s $file && $(sha256_of "$file") == "$want" ]]; then return 0; fi
+    [[ -e $file ]] && echo "Cached $(basename "$file") does not match its pin; downloading it again."
+    rm -f "$file" "$file.part"
+    curl -fsSL -o "$file.part" "$url" || { echo "Download failed: $url" >&2; rm -f "$file.part"; exit 1; }
+    local got
+    got=$(sha256_of "$file.part")
+    if [[ $got != "$want" ]]; then
+        rm -f "$file.part"
+        echo "SHA-256 mismatch for $url" >&2
+        echo "  expected $want" >&2
+        echo "  got      $got" >&2
+        exit 1
+    fi
+    mv "$file.part" "$file"
+}
+# check_local FILE SHA256 NAME: a file given on the command line; reported when it differs.
+check_local() {
+    local got
+    got=$(sha256_of "$1")
+    [[ $got == "$2" ]] || echo "Note: $3 $1 is not the pinned build (sha256 $got)."
+}
 if [[ -z $tool ]]; then
-    tool=$tools/appimagetool
-    fetch https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage "$tool"
+    tool=$tools/appimagetool-$APPIMAGETOOL_VERSION
+    fetch "$APPIMAGETOOL_URL" "$APPIMAGETOOL_SHA256" "$tool"
     chmod +x "$tool"
+else
+    check_local "$tool" "$APPIMAGETOOL_SHA256" appimagetool
 fi
 if [[ -z $runtime ]]; then
-    runtime=$tools/runtime-x86_64
-    fetch https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-x86_64 "$runtime"
+    runtime=$tools/runtime-x86_64-$RUNTIME_VERSION
+    fetch "$RUNTIME_URL" "$RUNTIME_SHA256" "$runtime"
+else
+    check_local "$runtime" "$RUNTIME_SHA256" runtime
 fi
 if [[ -z $python_dir ]]; then
-    python_dir=$tools/python
-    if [[ ! -x $python_dir/python/bin/python3 ]]; then
-        tag=$(git ls-remote --tags --refs https://github.com/astral-sh/python-build-standalone | awk -F/ '{print $3}' | sort | tail -1)
-        for v in 3.13.{20..10}; do
-            url="https://github.com/astral-sh/python-build-standalone/releases/download/$tag/cpython-$v+$tag-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
-            if curl -fsSL -o "$tools/python.tar.gz" "$url" 2>/dev/null; then break; fi
-        done
-        rm -rf "$python_dir" && mkdir -p "$python_dir" && tar -C "$python_dir" -xzf "$tools/python.tar.gz"
-        "$python_dir/python/bin/python3" -m pip install --quiet pillow cryptography
+    python_dir=$tools/python-$PYTHON_VERSION-$PYTHON_RELEASE
+    archive=$tools/python-$PYTHON_VERSION-$PYTHON_RELEASE.tar.gz
+    fetch "$PYTHON_URL" "$PYTHON_SHA256" "$archive"
+    # Set up again when the pinned packages changed since this tree was made.
+    if [[ ! -x $python_dir/python/bin/python3 ||
+          $(cat "$python_dir/.packages-installed" 2>/dev/null) != "$(printf '%s\n' "${PYTHON_PACKAGES[@]}")" ]]; then
+        rm -rf "$python_dir" && mkdir -p "$python_dir" && tar -C "$python_dir" -xzf "$archive"
+        "$python_dir/python/bin/python3" -m pip install --quiet --no-cache-dir --only-binary=:all: \
+            "${PYTHON_PACKAGES[@]}"
+        printf '%s\n' "${PYTHON_PACKAGES[@]}" > "$python_dir/.packages-installed"
     fi
 fi
 py=$python_dir/python
-"$py/bin/python3" -I -c 'import tkinter, PIL.ImageTk, cryptography' \
-    || { echo "$py: needs tkinter, Pillow and cryptography" >&2; exit 1; }
+# The Python calls the launcher and the scripts make, so a package update that drops one fails
+# here and not in the player's launcher. Installed versions are compared with the pins.
+"$py/bin/python3" -I - "${PYTHON_PACKAGES[@]}" <<'EOF' || { echo "$py: unusable for the launcher (above)" >&2; exit 1; }
+import importlib.metadata, sys, tkinter
+from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageTk  # noqa: F401 (ImageTk: launcher)
+from cryptography.hazmat.primitives.ciphers import Cipher  # noqa: F401 (pkg_extract.py)
+image = Image.new('RGBA', (8, 8)).resize((4, 4), Image.LANCZOS)
+image.filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.GaussianBlur(1))
+ImageDraw.Draw(image).textbbox((0, 0), 'MediEvil', font=ImageFont.load_default(12))
+ImageFont.truetype('gpu/third_party/fonts/DejaVuSans.ttf', 12)
+for pin in sys.argv[1:]:
+    name, want = pin.split('==')
+    if (got := importlib.metadata.version(name)) != want:
+        print(f'Note: {name} {got} is installed, the pin is {want}')
+EOF
 
 app=out/MediEvil.AppDir
 rm -rf "$app"

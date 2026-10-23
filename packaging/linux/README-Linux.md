@@ -68,7 +68,9 @@ of the system it was built on, so build on the oldest one you want to support):
    libX11. `shell.nix` lists them for Nix.
 2. Build: `CC=clang CXX=clang++ bash build.sh`
 3. Package: `bash packaging/linux/appimage.sh` → `dist/MediEvil-x86_64.AppImage`. It downloads
-   appimagetool, the AppImage runtime and a standalone Python (with Tk) when they are missing;
+   appimagetool 1.9.1, the type2 AppImage runtime 20251108, Python 3.13.16 (python-build-standalone
+   20261013, with Tk) and the launcher's Python packages, all at fixed versions; each download is
+   checked against a SHA-256 in the script (`PINS`) and the Tcl/Tk sources against fixed commits.
    `--python`, `--appimagetool` and `--runtime` take local copies instead.
 
 ## What differs from the Windows build

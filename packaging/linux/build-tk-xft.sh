@@ -17,8 +17,21 @@ major=${version%%.*}
 tag=core-${version//./-}
 lib=$(ls "$py"/lib/libtcl*tk*.so | head -1)
 echo "Tk $version with Xft for $lib"
+# Pinned sources: the commit each release tag named when pinned (a moved tag is refused).
+# A new Python with another Tk version needs its two commits added here.
+declare -A PINNED=(
+    [tcl-9.0.4]=c655b4770b1d6d32a8cbffd6cef59db6029fe19e
+    [tk-9.0.4]=584f8fcf62c320d7c341e77171188cb4d79c3725
+)
 for repo in tcl tk; do
+    want=${PINNED[$repo-$version]:-}
+    [[ -n $want ]] || { echo "No pinned $repo commit for Tk $version: add it to PINNED in $0" >&2; exit 1; }
     [[ -d $work/$repo ]] || git clone -q --depth 1 --branch "$tag" "https://github.com/tcltk/$repo" "$work/$repo"
+    got=$(git -C "$work/$repo" rev-parse HEAD)
+    if [[ $got != "$want" ]]; then
+        echo "$repo $tag is $got, pinned $want: refusing to build (moved tag or stale $work/$repo)" >&2
+        exit 1
+    fi
 done
 prefix=$work/prefix
 if ! ls "$work"/tk/unix/libtcl*tk*.so >/dev/null 2>&1; then  # built once per work directory
