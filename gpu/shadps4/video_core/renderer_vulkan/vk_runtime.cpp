@@ -17,6 +17,10 @@
 
 namespace Vulkan {
 
+// gow3: the barrier batch being recorded on this thread (crash reports, issues #18 and #22: AMD
+// drivers crashed inside vkCmdPipelineBarrier2).
+static thread_local const vk::DependencyInfo* recording_barriers;
+
 static vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
     switch (type) {
     case AmdGpu::ImageType::Color1D:
@@ -929,7 +933,9 @@ void Runtime::FlushBarriers() {
             .imageMemoryBarrierCount = static_cast<u32>(images.size()),
             .pImageMemoryBarriers = images.data(),
         };
+        recording_barriers = &info;
         cmdbuf.pipelineBarrier2(info);
+        recording_barriers = nullptr;
     });
 
     memory_barrier.srcStageMask = vk::PipelineStageFlagBits2::eNone;
@@ -941,3 +947,37 @@ void Runtime::FlushBarriers() {
 }
 
 } // namespace Vulkan
+
+extern "C" void gow3gpu_dump_recording_barriers(void) {
+    const vk::DependencyInfo* info = Vulkan::recording_barriers;
+    if (!info) {
+        return;
+    }
+    std::fprintf(stderr, "Crashed recording a barrier batch: %u memory, %u image barriers\n",
+                 info->memoryBarrierCount, info->imageMemoryBarrierCount);
+    for (u32 i = 0; i < info->memoryBarrierCount; ++i) {
+        const auto& b = info->pMemoryBarriers[i];
+        std::fprintf(stderr, "  memory: stages %#llx -> %#llx, access %#llx -> %#llx\n",
+                     (unsigned long long)VkPipelineStageFlags2(b.srcStageMask),
+                     (unsigned long long)VkPipelineStageFlags2(b.dstStageMask),
+                     (unsigned long long)VkAccessFlags2(b.srcAccessMask),
+                     (unsigned long long)VkAccessFlags2(b.dstAccessMask));
+    }
+    for (u32 i = 0; i < info->imageMemoryBarrierCount && i < 64; ++i) {
+        const auto& b = info->pImageMemoryBarriers[i];
+        const VkImage image = b.image;
+        std::fprintf(stderr,
+                     "  image %p%s: layout %d -> %d, stages %#llx -> %#llx, access %#llx -> %#llx, "
+                     "aspect %#x, mips %u+%u, layers %u+%u, queues %u -> %u\n",
+                     (void*)image, VideoCore::DescribeImageHandle(image), int(b.oldLayout),
+                     int(b.newLayout), (unsigned long long)VkPipelineStageFlags2(b.srcStageMask),
+                     (unsigned long long)VkPipelineStageFlags2(b.dstStageMask),
+                     (unsigned long long)VkAccessFlags2(b.srcAccessMask),
+                     (unsigned long long)VkAccessFlags2(b.dstAccessMask),
+                     unsigned(VkImageAspectFlags(b.subresourceRange.aspectMask)),
+                     b.subresourceRange.baseMipLevel, b.subresourceRange.levelCount,
+                     b.subresourceRange.baseArrayLayer, b.subresourceRange.layerCount,
+                     b.srcQueueFamilyIndex, b.dstQueueFamilyIndex);
+    }
+    std::fflush(stderr);
+}

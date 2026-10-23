@@ -57,7 +57,10 @@ _Static_assert(sizeof(ControllerInfo)==28,"OrbisPadControllerInformation layout"
 
 static pthread_mutex_t lock=PTHREAD_MUTEX_INITIALIZER;
 static int initialized, opened, sdl_ready;
-static SDL_Gamepad *gamepad;
+#define MAX_GAMEPADS 8
+static SDL_Gamepad *gamepads[MAX_GAMEPADS];
+static int gamepad_count;
+static uint64_t gamepad_scan_us;
 static size_t reads;
 static uint8_t connected_count;
 
@@ -73,21 +76,55 @@ static void touch_click(PadData *d, int right) {
     d->touches[0]=(PadTouch){.x=right ? 1440 : 480,.y=471,.id=0};
 }
 
-/* Opens the first gamepad SDL knows about; called under lock. */
-static SDL_Gamepad *current_gamepad(void) {
-    if (!sdl_ready) sdl_ready = SDL_WasInit(SDL_INIT_GAMEPAD) ? 1 : SDL_InitSubSystem(SDL_INIT_GAMEPAD) ? 1 : -1;
-    if (sdl_ready<0) return NULL;
-    if (gamepad && !SDL_GamepadConnected(gamepad)) { SDL_CloseGamepad(gamepad); gamepad=NULL; }
-    if (!gamepad) {
-        int count=0;
-        SDL_JoystickID *ids=SDL_GetGamepads(&count);
-        if (ids && count>0) {
-            gamepad=SDL_OpenGamepad(ids[0]);
-            if (gamepad) { ++connected_count; printf("Runtime: gamepad connected: %s\n",SDL_GetGamepadName(gamepad)); }
-        }
-        SDL_free(ids);
+/* Joysticks SDL has no gamepad mapping for are named once in the log (they cannot be read). */
+static void report_unmapped_joysticks(void) {
+    static SDL_JoystickID reported[16];
+    static int reported_count;
+    int count=0;
+    SDL_JoystickID *ids=SDL_GetJoysticks(&count);
+    for (int i=0;ids && i<count;++i) {
+        if (SDL_IsGamepad(ids[i])) continue;
+        int seen=0;
+        for (int j=0;j<reported_count;++j) seen|=reported[j]==ids[i];
+        if (seen || reported_count==16) continue;
+        reported[reported_count++]=ids[i];
+        const char *name=SDL_GetJoystickNameForID(ids[i]);
+        printf("Runtime: joystick without a gamepad mapping (not used): %s (USB %04x:%04x)\n",name ? name : "?",
+               SDL_GetJoystickVendorForID(ids[i]),SDL_GetJoystickProductForID(ids[i]));
     }
-    return gamepad;
+    SDL_free(ids);
+}
+/* Opens every gamepad SDL knows about and returns how many are open; called under lock. All of
+ * them are read: with only the first one, a second device listed before the pad in use (a
+ * virtual pad, a wheel, a receiver) left that pad unread (issue #25). */
+static int current_gamepads(void) {
+    if (!sdl_ready) sdl_ready = SDL_WasInit(SDL_INIT_GAMEPAD) ? 1 : SDL_InitSubSystem(SDL_INIT_GAMEPAD) ? 1 : -1;
+    if (sdl_ready<0) return 0;
+    int open=0;
+    for (int i=0;i<gamepad_count;++i) {
+        if (SDL_GamepadConnected(gamepads[i])) { gamepads[open++]=gamepads[i]; continue; }
+        printf("Runtime: gamepad disconnected: %s\n",SDL_GetGamepadName(gamepads[i]));
+        SDL_CloseGamepad(gamepads[i]);
+    }
+    gamepad_count=open;
+    /* New pads: looked for once a second (and at once while none is open). */
+    const uint64_t now=now_us();
+    if (gamepad_count && now-gamepad_scan_us<1000000u) return gamepad_count;
+    gamepad_scan_us=now;
+    int count=0;
+    SDL_JoystickID *ids=SDL_GetGamepads(&count);
+    for (int i=0;ids && i<count && gamepad_count<MAX_GAMEPADS;++i) {
+        if (SDL_GetGamepadFromID(ids[i])) continue;
+        SDL_Gamepad *g=SDL_OpenGamepad(ids[i]);
+        if (!g) { printf("Runtime: gamepad %s could not be opened: %s\n",SDL_GetGamepadNameForID(ids[i]),SDL_GetError()); continue; }
+        gamepads[gamepad_count++]=g;
+        ++connected_count;
+        printf("Runtime: gamepad connected: %s (USB %04x:%04x, %d open)\n",SDL_GetGamepadName(g),
+               SDL_GetGamepadVendor(g),SDL_GetGamepadProduct(g),gamepad_count);
+    }
+    SDL_free(ids);
+    report_unmapped_joysticks();
+    return gamepad_count;
 }
 /* Button sources: a host button or key and the PS4 button it presses. The defaults below can be
  * changed per PS4 button with GOW3_PAD_MAP (gamepad) and GOW3_KEY_MAP (keyboard), e.g.
@@ -175,28 +212,67 @@ static void load_button_maps(void) {
 static void key_axis(uint8_t *axis, bool negative, bool positive) {
     if (negative || positive) *axis=(uint8_t)(128-(negative ? 128 : 0)+(positive ? 127 : 0));
 }
+/* The mapped buttons of all open gamepads. */
+static uint32_t gamepad_buttons(void) {
+    uint32_t buttons=0;
+    for (int p=0;p<gamepad_count;++p)
+        for (size_t i=0;i<pad_map.count;++i)
+            if (SDL_GetGamepadButton(gamepads[p],(SDL_GamepadButton)pad_map.entries[i].source)) buttons|=pad_map.entries[i].ps;
+    return buttons;
+}
+/* GOW3_STICK_RANGE=<percent> (launcher: Stick range): that much tilt counts as a full push, for
+ * sticks that never reach the edge (some hall-effect pads, issue #36). Default 100. */
+static int16_t stick_range(int16_t v) {
+    static int range;
+    if (!range) {
+        const char *env=getenv("GOW3_STICK_RANGE");
+        range=env ? atoi(env) : 100;
+        if (range<50 || range>100) range=100;
+        if (range!=100) printf("Runtime: stick range %d%% (that much tilt is a full push)\n",range);
+    }
+    const int scaled=v*100/range;
+    return (int16_t)(scaled<-32768 ? -32768 : scaled>32767 ? 32767 : scaled);
+}
+/* A stick of the open gamepad that pushes it furthest (an idle pad's drift does not cover it). */
+static void gamepad_stick(SDL_GamepadAxis x_axis, SDL_GamepadAxis y_axis, uint8_t *x, uint8_t *y) {
+    int64_t best=-1;
+    for (int p=0;p<gamepad_count;++p) {
+        const int16_t vx=SDL_GetGamepadAxis(gamepads[p],x_axis), vy=SDL_GetGamepadAxis(gamepads[p],y_axis);
+        const int64_t d=(int64_t)vx*vx+(int64_t)vy*vy;
+        if (d>best) { best=d; *x=axis(stick_range(vx)); *y=axis(stick_range(vy)); }
+    }
+}
+static uint8_t gamepad_trigger(SDL_GamepadAxis which) {
+    uint8_t value=0;
+    for (int p=0;p<gamepad_count;++p) {
+        const uint8_t v=trigger(SDL_GetGamepadAxis(gamepads[p],which));
+        if (v>value) value=v;
+    }
+    return value;
+}
 static void sample_host(PadData *d) {
     memset(d,0,sizeof(*d));
     d->left_x=d->left_y=d->right_x=d->right_y=128;
     d->orientation[3]=1.0f;
     d->connected=1; d->connected_count=connected_count ? connected_count : 1;
     d->timestamp=now_us();
-    SDL_Gamepad *g=current_gamepad();
+    const int pads=current_gamepads();
     if (gow3gpu_overlay_captures_input()) return; /* settings menu open: neutral input */
     const bool *k=SDL_WasInit(SDL_INIT_VIDEO) ? SDL_GetKeyboardState(NULL) : NULL;
     load_button_maps();
-    if (g) {
-        for (size_t i=0;i<pad_map.count;++i)
-            if (SDL_GetGamepadButton(g,(SDL_GamepadButton)pad_map.entries[i].source)) d->buttons|=pad_map.entries[i].ps;
+    if (pads) {
+        d->buttons=gamepad_buttons();
         const uint32_t mapped=d->buttons;
-        d->left_x=axis(SDL_GetGamepadAxis(g,SDL_GAMEPAD_AXIS_LEFTX)); d->left_y=axis(SDL_GetGamepadAxis(g,SDL_GAMEPAD_AXIS_LEFTY));
-        d->right_x=axis(SDL_GetGamepadAxis(g,SDL_GAMEPAD_AXIS_RIGHTX)); d->right_y=axis(SDL_GetGamepadAxis(g,SDL_GAMEPAD_AXIS_RIGHTY));
-        d->l2=trigger(SDL_GetGamepadAxis(g,SDL_GAMEPAD_AXIS_LEFT_TRIGGER)); d->r2=trigger(SDL_GetGamepadAxis(g,SDL_GAMEPAD_AXIS_RIGHT_TRIGGER));
+        gamepad_stick(SDL_GAMEPAD_AXIS_LEFTX,SDL_GAMEPAD_AXIS_LEFTY,&d->left_x,&d->left_y);
+        gamepad_stick(SDL_GAMEPAD_AXIS_RIGHTX,SDL_GAMEPAD_AXIS_RIGHTY,&d->right_x,&d->right_y);
+        d->l2=gamepad_trigger(SDL_GAMEPAD_AXIS_LEFT_TRIGGER); d->r2=gamepad_trigger(SDL_GAMEPAD_AXIS_RIGHT_TRIGGER);
         if (d->l2>30) d->buttons|=BTN_L2;
         if (d->r2>30) d->buttons|=BTN_R2;
         if (mapped & BTN_L2) d->l2=255;
         if (mapped & BTN_R2) d->r2=255;
-        if (SDL_GetNumGamepadTouchpads(g)>0) {
+        for (int p=0;p<pads && !d->touch_count;++p) {
+            SDL_Gamepad *g=gamepads[p];
+            if (SDL_GetNumGamepadTouchpads(g)<=0) continue;
             const int fingers=SDL_GetNumGamepadTouchpadFingers(g,0);
             for (int finger=0;finger<fingers && d->touch_count<2;++finger) {
                 bool down=false;
@@ -345,9 +421,7 @@ static int hold_after_capture;
 static uint32_t host_buttons(void) {
     uint32_t buttons=0;
     load_button_maps();
-    SDL_Gamepad *g=current_gamepad();
-    if (g) for (size_t i=0;i<pad_map.count;++i)
-        if (SDL_GetGamepadButton(g,(SDL_GamepadButton)pad_map.entries[i].source)) buttons|=pad_map.entries[i].ps;
+    if (current_gamepads()) buttons|=gamepad_buttons();
     const bool *k=SDL_WasInit(SDL_INIT_VIDEO) ? SDL_GetKeyboardState(NULL) : NULL;
     if (k) for (size_t i=0;i<key_map.count;++i) if (k[key_map.entries[i].source]) buttons|=key_map.entries[i].ps;
     return buttons;
@@ -359,9 +433,9 @@ static uint32_t list_buttons(void) {
     pthread_mutex_lock(&lock);
     read_inject();
     uint32_t buttons=host_buttons()|injected.buttons;
-    SDL_Gamepad *g=current_gamepad();
-    if (g) {
-        const int y=SDL_GetGamepadAxis(g,SDL_GAMEPAD_AXIS_LEFTY);
+    const int pads=current_gamepads();
+    for (int p=0;p<pads;++p) {
+        const int y=SDL_GetGamepadAxis(gamepads[p],SDL_GAMEPAD_AXIS_LEFTY);
         if (y<-16000) buttons|=BTN_UP;
         else if (y>16000) buttons|=BTN_DOWN;
     }
@@ -435,7 +509,7 @@ static ABI int32_t pad_info(int32_t handle, ControllerInfo *info) {
     info->dead_zone_left=info->dead_zone_right=2;
     info->connection_type=0; info->connected=1; info->device_class=0;
     pthread_mutex_lock(&lock);
-    current_gamepad();
+    current_gamepads();
     info->connected_count=connected_count ? connected_count : 1;
     pthread_mutex_unlock(&lock);
     return 0;
@@ -444,8 +518,8 @@ static ABI int32_t pad_vibration(int32_t handle, const uint8_t *param) {
     if (handle!=PAD_HANDLE || !opened) return ERR_INVALID_HANDLE;
     if (!param) return ERR_INVALID_ARG;
     pthread_mutex_lock(&lock);
-    SDL_Gamepad *g=current_gamepad();
-    if (g) SDL_RumbleGamepad(g,(uint16_t)(param[0]*257),(uint16_t)(param[1]*257),1000);
+    const int pads=current_gamepads();
+    for (int p=0;p<pads;++p) SDL_RumbleGamepad(gamepads[p],(uint16_t)(param[0]*257),(uint16_t)(param[1]*257),1000);
     pthread_mutex_unlock(&lock);
     return 0;
 }
@@ -473,4 +547,6 @@ static const RuntimeExport exports[]={
     {"scePadSetMotionSensorState",pad_ok_handle_flag},
 };
 uintptr_t runtime_pad_resolve(const char *name) { return RUNTIME_LOOKUP(exports,name); }
-void runtime_pad_report(void) { printf("Runtime: pad reads=%zu, gamepad=%s\n",reads,gamepad ? SDL_GetGamepadName(gamepad) : "none"); }
+void runtime_pad_report(void) {
+    printf("Runtime: pad reads=%zu, gamepads=%d (%s)\n",reads,gamepad_count,gamepad_count ? SDL_GetGamepadName(gamepads[0]) : "none");
+}

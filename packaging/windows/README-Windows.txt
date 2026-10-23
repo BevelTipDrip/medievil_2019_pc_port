@@ -32,16 +32,22 @@ Render resolution
 - 4K draws the 3D scene at 3840 x 2160 and scales it to the game's 1080p picture (much sharper).
   It writes a small override file into the game folder:
   overbite\content\paks\pakchunk99-ps4_P.pak (removed again when you choose Native).
-- MediEvil runs at up to 60 FPS (the game's own limit).
+- 60 FPS is the default and the recommended setting. Engine frame rate 120 or 240 (Performance
+  page) is experimental: it can stutter and needs a fast CPU.
 
 Next time
 - "Play MediEvil.exe" starts the game straight away with the saved settings (shortcut, Steam).
 - Saves, shader cache and the log: user\ next to MediEvil.exe (keep it when updating).
 - Settings: medievil.ini next to MediEvil.exe; launcher options in %APPDATA%\medievil-launcher.
+- Portable mode (USB stick, several copies): create an empty file portable.txt next to
+  MediEvil.exe and the launcher keeps its options in launcher-data\ there instead. Updates keep
+  both.
 
 If something goes wrong
 - Black screen at start: Advanced > Clear shader cache, then start again.
 - The game does not open: check the Log page, or send user\last_run.log with your report.
+- Radeon RX 400/500 or Vega and the game closes when the main menu loads: Performance > Safe GPU
+  mode (older AMD GPUs), then start again.
 
 Online features (PSN) are not available: the game runs as a console that is not signed in.
 

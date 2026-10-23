@@ -312,8 +312,14 @@ def edited_asset(game, name, edits):
     return data
 
 
+# Anti-aliasing (medievil.ini ue4_aa, issue #27): the PS4 game uses temporal AA, soft in motion.
+# r.PostProcessAAQuality 0 is off, 1-2 FXAA, 3+ temporal. Temporal upsampling needs temporal AA,
+# so with upscaling active the setting stays temporal.
+ANTI_ALIASING = {'taa': None, 'fxaa': '2', 'off': '0'}
+
+
 def apply(game, resolution='native', quality='console', fps=60, debug_menu=False, infinite_ammo=False,
-          upscale='off'):
+          upscale='off', aa='taa'):
     """Writes or removes the override pak. Returns a short description of the active state."""
     pak = paks_dir(game) / PAK_NAME
     values = dict(QUALITY.get(quality, {}))
@@ -332,6 +338,9 @@ def apply(game, resolution='native', quality='console', fps=60, debug_menu=False
     scale = TEMPORAL_UPSCALE.get(upscale) if not percentage else None
     if scale:
         values.update({'r.ScreenPercentage': scale, 'r.TemporalAA.Upsampling': '1'})
+    aa_quality = None if scale else ANTI_ALIASING.get(aa)
+    if aa_quality is not None:
+        values['r.PostProcessAAQuality'] = aa_quality
     engine = frame_rate_range(fps) if fps > 60 else {}
     if not values and not engine and not debug_menu and not infinite_ammo:
         pak.unlink(missing_ok=True)
@@ -358,7 +367,8 @@ def apply(game, resolution='native', quality='console', fps=60, debug_menu=False
     return (f'{resolution if percentage or output else "native 1080p"}'
             f'{f" (r.ScreenPercentage={percentage})" if percentage else ""}'
             f'{f" (r.setres={output})" if output else ""}'
-            f'{f", temporal upscaling {upscale} ({scale}%)" if scale else ""}, {quality} quality, '
+            f'{f", temporal upscaling {upscale} ({scale}%)" if scale else ""}'
+            f'{f", anti-aliasing {aa}" if aa_quality is not None else ""}, {quality} quality, '
             f'{f"up to {fps}" if fps > 60 else 60} FPS{", debug menu (R3)" if debug_menu else ""}'
             f'{", unlimited ammo" if infinite_ammo else ""}')
 

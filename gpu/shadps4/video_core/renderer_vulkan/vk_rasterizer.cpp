@@ -989,6 +989,16 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
         static const char* scene_debug = std::getenv("GOW3_SCENE_DEBUG");
         scene_debug_frame = scene_debug && std::remove(scene_debug) == 0;
         scene_targets->debug = scene_debug_frame;
+    } else if (!camera_motion->Enabled()) {
+        // Without camera motion (MediEvil's default) a frame starts at the first draw into a
+        // display buffer (another one each frame while menus draw only there): the GPU profile
+        // and the frame counter need it too (issue #30).
+        const VAddr target = regs.color_buffers[0] ? regs.color_buffers[0].Address() : 0;
+        const VAddr display = target && FrameCapture::IsDisplayBuffer(target) ? target : 0;
+        if (display && display != display_target) {
+            NoteFrameStart();
+        }
+        display_target = display;
     }
     bind_prepared = used_prepared;
     motion_draw = pipeline->GetGraphicsKey().motion_vectors;

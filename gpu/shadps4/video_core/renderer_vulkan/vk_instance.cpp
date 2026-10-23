@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstdio>
 #include <cstdlib>
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
@@ -214,6 +215,19 @@ bool PipelineBinaryCacheRequested() {
     const char* setting = std::getenv("GOW3_PIPELINE_BINARIES");
     return !setting || *setting != '0';
 }
+
+bool EnvOn(const char* name) {
+    const char* setting = std::getenv(name);
+    return setting && setting[0] == '1';
+}
+
+// gow3: GOW3_VULKAN_COMPAT=1 (launcher: safe GPU mode) runs as on older drivers (RX 400/500 and
+// Vega, issues #18 and #22): no maintenance5/8, no 2D views of 3D images and no feedback-loop
+// layouts. GOW3_NO_MAINTENANCE5=1 and GOW3_NO_MAINTENANCE8=1 switch off one of them.
+bool VulkanCompat() {
+    static const bool compat = EnvOn("GOW3_VULKAN_COMPAT");
+    return compat;
+}
 }
 
 bool InitializePipelineBinaryCache(vk::Device device, bool supported,
@@ -315,13 +329,16 @@ bool Instance::CreateDevice() {
                "Required Vulkan feature unavailable: nullDescriptor");
 
     // Optional
-    maintenance_5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+    maintenance_5 = !VulkanCompat() && !EnvOn("GOW3_NO_MAINTENANCE5") &&
+                    add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
     pipeline_binaries = PipelineBinaryCacheRequested() && maintenance_5 &&
         feature_chain.get<vk::PhysicalDeviceMaintenance5FeaturesKHR>().maintenance5 &&
         feature_chain.get<vk::PhysicalDevicePipelineBinaryFeaturesKHR>().pipelineBinaries &&
         add_extension(VK_KHR_PIPELINE_BINARY_EXTENSION_NAME);
-    maintenance_8 = add_extension(VK_KHR_MAINTENANCE_8_EXTENSION_NAME);
-    attachment_feedback_loop = add_extension(VK_EXT_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_EXTENSION_NAME);
+    maintenance_8 = !VulkanCompat() && !EnvOn("GOW3_NO_MAINTENANCE8") &&
+                    add_extension(VK_KHR_MAINTENANCE_8_EXTENSION_NAME);
+    attachment_feedback_loop =
+        !VulkanCompat() && add_extension(VK_EXT_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_EXTENSION_NAME);
     if (attachment_feedback_loop) {
         attachment_feedback_loop =
             add_extension(VK_EXT_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_EXTENSION_NAME);
@@ -390,7 +407,7 @@ bool Instance::CreateDevice() {
     }
     // GOW3_NO_2D_VIEW_OF_3D=1: as on drivers without the extension (tests; AMD, issue #18).
     const char* no_2d_view_of_3d = std::getenv("GOW3_NO_2D_VIEW_OF_3D");
-    image_2d_view_of_3d = !(no_2d_view_of_3d && no_2d_view_of_3d[0] == '1') &&
+    image_2d_view_of_3d = !VulkanCompat() && !(no_2d_view_of_3d && no_2d_view_of_3d[0] == '1') &&
                           add_extension(VK_EXT_IMAGE_2D_VIEW_OF_3D_EXTENSION_NAME);
     if (image_2d_view_of_3d) {
         image_2d_view_of_3d_features =
@@ -655,6 +672,9 @@ bool Instance::CreateDevice() {
     if (!maintenance_8) {
         device_chain.unlink<vk::PhysicalDeviceMaintenance8FeaturesKHR>();
     }
+    std::printf("GPU: maintenance5 %s, maintenance8 %s, feedback loop layouts %s, 2D views of 3D %s\n",
+                maintenance_5 ? "on" : "off", maintenance_8 ? "on" : "off",
+                attachment_feedback_loop ? "on" : "off", image_2d_view_of_3d ? "on" : "off");
     if (!attachment_feedback_loop) {
         device_chain.unlink<vk::PhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT>();
         device_chain.unlink<vk::PhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT>();
@@ -777,6 +797,10 @@ void Instance::CollectDeviceParameters() {
     LOG_INFO(Render_Vulkan, "GPU_Vulkan_Driver: {}", driver_name);
     LOG_INFO(Render_Vulkan, "GPU_Vulkan_Version: {}", api_version);
     LOG_INFO(Render_Vulkan, "GPU_Vulkan_Extensions: {}", extensions);
+    // gow3: the info log is off in release builds; bug reports need the GPU and driver.
+    std::printf("GPU: %s, driver %s, Vulkan %s%s\n", model_name.c_str(), driver_name.c_str(),
+                api_version.c_str(), VulkanCompat() ? ", safe GPU mode" : "");
+    std::fflush(stdout);
 }
 
 void Instance::CollectPhysicalMemoryInfo() {

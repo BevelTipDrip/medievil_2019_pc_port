@@ -159,7 +159,8 @@ def main():
                                                            ini.get('ue4_quality', 'console'), engine_fps,
                                                            ini.get('cheat_menu') == '1',
                                                            ini.get('cheat_infinite_ammo') == '1',
-                                                           ini.get('ue4_upscale', 'off')), flush=True)
+                                                           ini.get('ue4_upscale', 'off'),
+                                                           ini.get('ue4_aa', 'taa')), flush=True)
         except (OSError, ValueError) as error:
             print(f'Render resolution: unchanged ({error})', flush=True)
     original_game = game.resolve()
@@ -176,7 +177,7 @@ def main():
 
         from patches import (eboot_matches, game_app_version, game_profile, game_title_id,
                              patch_requirements, selected_patches)
-        profile = game_profile(game_title_id(game))
+        profile = game_profile(game_title_id(game), game_app_version(game)) or game_profile(game_title_id(game))
         patched = bool(profile) and ((game_app_version(game) == profile[2] and eboot_matches(game, profile))
                                      or bool(env.get('GOW3_FORCE_PATCHES')))
         # The window shows the game's icon (BMP: the format SDL loads without extra libraries).

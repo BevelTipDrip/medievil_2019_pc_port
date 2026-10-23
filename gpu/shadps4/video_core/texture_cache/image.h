@@ -38,6 +38,9 @@ enum ImageFlagBits : u32 {
 };
 DECLARE_ENUM_FLAG_OPERATORS(ImageFlagBits)
 
+// gow3: " (live)", " (DESTROYED)" or " (null)" from recent image lifetimes ("" when unknown).
+const char* DescribeImageHandle(VkImage image);
+
 struct UniqueImage {
     explicit UniqueImage() = default;
     explicit UniqueImage(vk::Device device, VmaAllocator allocator)

@@ -5,7 +5,8 @@
 Every setting of the port in one window: the game (a folder or the .pkg, unpacked once), saves,
 medievil.ini (display, frame rate, shaders, GPU data), start-up options passed to run.py as
 environment variables, mods, third-party patches and controls.
-Launcher options live in %APPDATA%/medievil-launcher/settings.json.
+Launcher options live in %APPDATA%/medievil-launcher/settings.json, or with a portable.txt beside
+the launcher in its launcher-data folder (portable mode).
 
 Frozen with PyInstaller the same MediEvil.exe also runs the game without the window (`--play`),
 run.py (`--run`) and the preparation scripts (`--script`), so a packaged port needs no Python.
@@ -32,19 +33,24 @@ PORT_DIR = Path(sys.executable).resolve().parent if FROZEN else Path(__file__).r
 sys.path.insert(0, str(PORT_DIR / 'scripts'))
 import save_backup  # noqa: E402  (scripts/)
 DATA_DIR = Path(os.environ.get('GOW3_DATA_DIR', PORT_DIR))
-CONFIG_DIR = Path(os.environ.get('APPDATA') or os.environ.get('USERPROFILE') or PORT_DIR) / 'medievil-launcher'
+# Portable mode (issue #19): with a file portable.txt beside the launcher, its settings and caches
+# stay in the launcher folder (launcher-data) instead of %APPDATA%; saves already live there.
+PORTABLE = (PORT_DIR / 'portable.txt').exists()
+CONFIG_DIR = (PORT_DIR / 'launcher-data' if PORTABLE else
+              Path(os.environ.get('APPDATA') or os.environ.get('USERPROFILE') or PORT_DIR) / 'medievil-launcher')
 CONFIG_FILE = CONFIG_DIR / 'settings.json'
 MOD_PRESETS = DATA_DIR / 'mods_presets.json'
 APP_NAME = 'MediEvil'
 MAX_LOG_LINES = 6000
 NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
 # This build. The launcher checks the GitHub releases at start and offers newer versions.
-VERSION = '1.3.5'
+VERSION = '1.3.6'
 RELEASES_API = 'https://api.github.com/repos/bc160201983/medievil_2019_pc_port/releases/latest'
 RELEASES_PAGE = 'https://github.com/bc160201983/medievil_2019_pc_port/releases'
 UPDATE_DIR = Path(tempfile.gettempdir()) / 'medievil-update'
 # Never copied over an installation by an update (the package does not hold them either).
-USER_FILES = ('user', 'out', 'mods', 'medievil.ini', 'mods.json', 'mods_presets.json', 'patches.json', 'last_run.log')
+USER_FILES = ('user', 'out', 'mods', 'medievil.ini', 'mods.json', 'mods_presets.json', 'patches.json', 'last_run.log',
+              'launcher-data', 'portable.txt')
 
 
 # ---------------------------------------------------------------------------------------------
@@ -135,16 +141,16 @@ INI_DEFAULTS = {'upscaler': 'off', 'preset': '1', 'sharpen': '1', 'sharpness': '
                 'live_resolution': 'auto', 'display_mode': 'windowed', 'vsync': '1', 'fps_limit': '0',
                 'async_shaders': '1', 'deferred_readback': '1', 'stale_readback': '0',
                 'render_resolution': 'native', 'engine_fps': '60', 'fps_default_60': '1', 'fsr1': '0', 'rcas': '1',
-                'rcas_strength': '75', 'frames_queued': '1', 'ue4_quality': 'console', 'cheat_very_hard': '0', 'cheat_double_jumps': '0', 'cheat_menu': '0', 'cheat_infinite_ammo': '0', 'ue4_upscale': 'off'}
+                'rcas_strength': '75', 'frames_queued': '1', 'ue4_quality': 'console', 'cheat_very_hard': '0', 'cheat_double_jumps': '0', 'cheat_menu': '0', 'cheat_infinite_ammo': '0', 'ue4_upscale': 'off', 'ue4_aa': 'taa'}
 DISPLAY_MODES = [('windowed', ('Windowed',)), ('borderless', ('Borderless',)), ('fullscreen', ('Fullscreen',))]
 FPS_LIMITS = [('30', ('30',)), ('60', ('60',)), ('120', ('120',)), ('240', ('240',)), ('0', ('Unlimited',)),
               ('-1', ('Half display refresh (smoothest)',))]
 APP_DEFAULTS = {'ui_language': 'en', 'game_dir': os.environ.get('GOW3_GAME_DIR', str(PORT_DIR.parent / 'medieval' / 'CUSA11227')), 'user_dir': '',
                 'mods_dir': '', 'mods_enabled': True, 'patches_dir': '', 'language': '1',
-                'player_name': '', 'hdr': False, 'draw_pipe': '', 'readbacks': '',
+                'player_name': '', 'hdr': False, 'draw_pipe': '', 'readbacks': '', 'vulkan_compat': False,
                 'background_warmup': True, 'parallel_warmup': True, 'pipeline_binary_cache': True, 'perf_diag': False, 'frame_capture_key': False, 'frame_stats': False, 'gpu_profile': False,
                 'vk_validation': False, 'close_on_play': False,
-                'update_check': True, 'game_patches': {}, 'controls': {}, 'pad_style': 'playstation',
+                'update_check': True, 'game_patches': {}, 'controls': {}, 'pad_style': 'playstation', 'stick_range': '',
                 'last_pkg': ''}
 
 # PS4 button, default key, default gamepad button (SDL names; src/runtime_pad.c). L2/R2 come
@@ -213,6 +219,9 @@ DRAW_PIPE = [('', ('Auto (8+ threads)', 'Авто (8+ потоков)')), ('1', 
 # saved choice of it starts with the default.
 READBACKS = [('', ('Relaxed (default)', 'Relaxed (по умолчанию)')), ('0', ('Off', 'Выключены'))]
 FRAMES_QUEUED = [('1', ('1 (lowest latency)',)), ('2', ('2',)), ('0', ('Unlimited',))]
+# GOW3_STICK_RANGE (issue #36): that much tilt is a full push, for sticks that never reach the edge.
+STICK_RANGES = [('', ('Full tilt (default)',)), ('90', ('90%',)), ('85', ('85%',)), ('80', ('80%',)),
+                ('70', ('70%',))]
 UI_LANGUAGES = lang.LANGUAGE_NAMES
 
 FSR4_COMMIT = 'ae8d628fae208813172446d1e49ed94150b04658'
@@ -304,9 +313,10 @@ def game_info(folder):
 
 def game_profile_of(folder):
     """(title id, (ids, built-in XML, app version)) of a game with a patch profile, else (id, None)."""
-    from patches import game_profile, game_title_id
+    from patches import game_app_version, game_profile, game_title_id
     title_id = game_title_id(folder) if folder else None
-    return title_id, game_profile(title_id)
+    version = game_app_version(folder) if folder else None
+    return title_id, game_profile(title_id, version) or game_profile(title_id)
 
 
 def game_environment(s):
@@ -333,6 +343,9 @@ def game_environment(s):
     for key, name in (('draw_pipe', 'GOW3_DRAW_PIPE'), ('readbacks', 'GOW3_READBACKS')):
         if s[key] and not (key == 'readbacks' and s[key] == '2'):
             env[name] = s[key]
+    # Safe GPU mode (issues #18/#22): only the Vulkan features of older AMD drivers (RX 400/500, Vega).
+    if s.get('vulkan_compat', False):
+        env['GOW3_VULKAN_COMPAT'] = '1'
     env['GOW3_BACKGROUND_WARMUP'] = '1' if s.get('background_warmup', True) else '0'
     env['GOW3_PARALLEL_WARMUP'] = '1' if s.get('parallel_warmup', True) else '0'
     env['GOW3_PIPELINE_BINARIES'] = '1' if s.get('pipeline_binary_cache', True) else '0'
@@ -341,6 +354,8 @@ def game_environment(s):
                       ('vk_validation', 'GOW3_VK_VALIDATION'), ('frame_capture_key', 'GOW3_FRAME_CAPTURE_KEY')):
         if s[key]:
             env[name] = '1'
+    if s.get('stick_range'):
+        env['GOW3_STICK_RANGE'] = s['stick_range']
     for kind, name in (('key', 'GOW3_KEY_MAP'), ('pad', 'GOW3_PAD_MAP')):
         if value := control_map(s.get('controls', {}), kind):
             env[name] = value
@@ -425,6 +440,8 @@ RESOLUTION_CHOICES = [('native', ('Native (1080p)',)), ('720p', ('720p (faster)'
                       ('1800p_native', ('1800p native output',)), ('4K_native', ('4K native output (4K TV)',))]
 UPSCALE_CHOICES = [('off', ('Off',)), ('quality', ('Quality (67%)',)), ('balanced', ('Balanced (58%)',)),
                    ('performance', ('Performance (50%)',))]
+AA_CHOICES = [('taa', ('Temporal (default, smooth)',)), ('fxaa', ('FXAA (sharper)',)),
+              ('off', ('Off (sharpest, jagged edges)',))]
 QUALITY_CHOICES = [('ultra', ('Ultra',)), ('high', ('High',)), ('console', ('Console (PS4)',)),
                    ('medium', ('Medium',)), ('low', ('Low (integrated graphics)',))]
 ENGINE_FPS_CHOICES = [('60', ('60 (original, recommended)',)), ('120', ('120 (experimental)',)),
@@ -1033,6 +1050,10 @@ class Launcher:
                    'much sharper edges and detail on a 1080p screen). "Native output": the game itself runs at '
                    'that size, pixel for pixel on a 1440p or 4K display or TV. Applied at start (the in-game '
                    'menu restarts the game for it).'), restart=True)
+        self.row(f, _('Anti-aliasing'), self.choice(f, 'ue4_aa', 'ini', AA_CHOICES),
+                 _("The game's temporal AA smooths edges but blurs a little in motion. FXAA is sharper, Off "
+                   'shows raw pixels (best with a high render resolution). Upscaling always uses temporal AA. '
+                   'Applied at start.'), restart=True)
         self.row(f, _('Upscaling (native output)'), self.choice(f, 'ue4_upscale', 'ini', UPSCALE_CHOICES),
                  _("The game's own temporal upscaler: the 3D scene is drawn at a lower scale and rebuilt at full "
                    'size from its motion vectors (like FSR 2). For the native output modes and Native 1080p on '
@@ -1061,6 +1082,13 @@ class Launcher:
         self.row(f, _('GPU readbacks', 'Чтение данных GPU'), self.choice(f, 'readbacks', 'app', READBACKS),
                  _('How exactly data the GPU writes is copied back for the game.',
                    'Насколько точно данные, записанные GPU, возвращаются игре.'))
+        self.check(f, 'vulkan_compat', 'app', _('Safe GPU mode (older AMD GPUs)',
+                                                'Безопасный режим GPU (старые видеокарты AMD)'),
+                   _('For Radeon RX 400/500 and Vega GPUs that crash when the main menu loads: runs without newer '
+                     'Vulkan features. Can be slower; leave it off on other GPUs.',
+                     'Для Radeon RX 400/500 и Vega, на которых игра вылетает при загрузке главного меню: работает '
+                     'без новых функций Vulkan. Может быть медленнее; на других видеокартах не включайте.'),
+                   restart=True)
 
     def build_game(self):
         f = self.scrolled_page('game', _('Game', 'Игра'), _('Your game (folder or .pkg), saves and language.'))
@@ -1289,6 +1317,9 @@ class Launcher:
             ttk.Radiobutton(names, text=label, value=value, variable=self.pad_style,
                             command=self.relabel_pad_controls).pack(side='left', padx=(0, 14))
         self.row(f, _('Gamepad names'), names)
+        self.row(f, _('Stick range'), self.choice(f, 'stick_range', 'app', STICK_RANGES),
+                 _('How far the sticks must tilt for a full push. Lower it if your character moves slowly '
+                   'with the stick pushed all the way (some hall-effect sticks never reach the edge).'))
         table = ttk.Frame(f)
         table.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(16, 0))
         for column, span, title in ((0, 2, _('GAME BUTTON')), (2, 1, _('KEYBOARD')), (3, 2, _('GAMEPAD'))):

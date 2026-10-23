@@ -24,6 +24,8 @@ uintptr_t gow3gpu_resolve(const char *scoped_nid);
 int gow3gpu_handle_fault(void *ucontext, void *address);
 /* GOW3_WRITE_LOG=1: prints the logged GPU-side writes to guest memory near the fault. */
 void gow3gpu_dump_guest_writes(void *ucontext);
+/* After a crash: the Vulkan barrier batch the faulting thread was recording, if any. */
+void gow3gpu_dump_recording_barriers(void);
 /* Keyboard text entry through the game window (IME dialog). begin returns 0 when
  * no window exists; poll returns 0 typing, 1 confirmed, 2 cancelled (UTF-8 text). */
 int gow3gpu_text_input_begin(const char *initial_utf8, const char *prompt_utf8);

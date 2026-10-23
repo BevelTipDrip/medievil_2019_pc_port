@@ -39,7 +39,11 @@ Captured on Windows 11 (RTX 5080) with this port.
   VSync on, a limit at the display's own refresh (60 on a 60 Hz TV) is left to VSync, which paces it.
 - Audio (Wwise through AudioOut, ATRAC9 and AAC). On stereo speakers and headphones the port mixes
   the game's 7.1 output down itself (SDL's downmix played it about 13 dB too quietly).
-- Controller (DualSense, Xbox and others, through SDL3) and keyboard, both remappable.
+- Controller (DualSense, Xbox and others, through SDL3) and keyboard, both remappable. Every
+  connected controller is read, also while another window has the focus, and the log names each
+  one. Controls > Gamepad names (PlayStation / Xbox) only relabels the launcher; the game keeps its
+  PS4 button prompts. Controls > Stick range (90% to 70%) counts less tilt as a full push, for
+  sticks that never reach the edge (some hall-effect pads).
 - Saving and loading; save backups before every start.
 - **All the game's languages** (launcher > Game > Language): every PS4 system language can be
   picked, Polish included, whatever region your copy is from (a language the game has no text
@@ -62,6 +66,9 @@ Captured on Windows 11 (RTX 5080) with this port.
 - **Temporal upscaling** (launcher > Performance > Upscaling): the game's own UE4 temporal
   upsampling renders the 3D scene at 67%, 58% or 50% and rebuilds the full picture from its
   motion vectors, for native output and slower graphics cards.
+- **Anti-aliasing** (launcher > Performance > Anti-aliasing): the game's temporal AA (default,
+  smooth), FXAA (sharper) or Off (raw pixels, best with a high render resolution). Upscaling always
+  uses temporal AA.
 - **Graphics quality**: Low (integrated graphics such as the Radeon 780M), Medium, Console (PS4),
   High and Ultra (sharper, longer-range shadows, better reflections and more distant detail).
   Every preset keeps point/spot light shadows at one fixed size, which stops the shadow flicker
@@ -113,9 +120,15 @@ Captured on Windows 11 (RTX 5080) with this port.
 - Both MediEvil versions are supported: 01.00 (the base game) and 01.02 (the update), for
   CUSA11227 and CUSA12982. The built-in patches have addresses for each version and are chosen by
   the game's APP_VER and the eboot.bin hash (such as the 4K framebuffer pool); cheat edits that do
-  not match the installed version are skipped (the log says which). The 01.02 eboot does not export
+  not match the installed version are skipped (the log says which). Native output (1440p / 1800p /
+  4K native output) still needs 01.00: its live resolution switch uses 01.00 addresses, so 01.02
+  stays at 1080p output (the render resolutions up to 4K work on both). The 01.02 eboot does not export
   a few `libSceNpToolkit2` C++ functions the game links; those imports are logged no-ops returning
   0, since the port does not implement that module.
+- **Radeon RX 400/500 and Vega** (older AMD drivers): some crash in `amdvlk64.dll` when the main
+  menu loads. Try launcher > Performance > Safe GPU mode (older AMD GPUs) (`GOW3_VULKAN_COMPAT=1`),
+  which runs without newer Vulkan features. The log names the GPU and driver (a `GPU: …` line), and
+  a crash report lists the GPU barriers being recorded: please attach `user/last_run.log`.
 - Experimental PS4 Pro mode (`GOW3_NEO=1`) stops in the texture cache.
 
 ## Download and play
@@ -128,6 +141,9 @@ Captured on Windows 11 (RTX 5080) with this port.
 4. Choose a **Render resolution** on **Home** and press **PLAY**.
 
 `Play MediEvil.exe` starts the game with the saved settings, for shortcuts and Steam.
+**Portable mode**: with an empty file `portable.txt` next to `MediEvil.exe`, the launcher keeps its
+settings in a `launcher-data` folder beside it instead of `%APPDATA%\medievil-launcher` (saves and
+`medievil.ini` are in the port folder already); updates keep both.
 More in [packaging/windows/README-Windows.txt](packaging/windows/README-Windows.txt).
 
 ## Building from source

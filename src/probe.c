@@ -83,7 +83,7 @@ static void protect(void *p, size_t size, unsigned flags) {
  * imports no-ops returning 0, so an offline game runs; every other unresolved
  * import still stops the process. */
 static unsigned char *optional_seen;
-static ABI void optional_stub(uint32_t id, uintptr_t argument) {
+static ABI uint64_t optional_stub(uint32_t id, uintptr_t argument) {
     (void)argument;
     if (id >= import_count) fail("bad import trap index");
     if (!optional_seen[id]) {
@@ -91,6 +91,7 @@ static ABI void optional_stub(uint32_t id, uintptr_t argument) {
         printf("NpToolkit2: unimplemented import %s (index %u) returns 0\n", names[id], id);
         fflush(stdout);
     }
+    return 0;
 }
 static int optional_import(const char *name) {
     return strstr(name, "#libSceNpToolkit2") != NULL;
@@ -171,7 +172,7 @@ static LONG fatal_exception(EXCEPTION_POINTERS *info) {
             RtlVirtualUnwind(UNW_FLAG_NHANDLER,base,u.Rip,fn,&u,&handler_data,&frame,NULL);
         }
     }
-    if (gpu_enabled) gow3gpu_dump_guest_writes(info);
+    if (gpu_enabled) { gow3gpu_dump_recording_barriers(); gow3gpu_dump_guest_writes(info); }
     /* Top stack words: after a call through a null pointer [rsp] is the caller's return address. */
     uintptr_t words[8];
     SIZE_T read=0;
@@ -278,7 +279,7 @@ static void fault(int sig, siginfo_t *info, void *context) {
     else
         snprintf(line, sizeof(line), "Fault (signal %d) at RIP %p, address %p\n", sig, (void *)rip, info->si_addr);
     { ssize_t written_=write(2, line, strlen(line)); (void)written_; }
-    if (gpu_enabled) gow3gpu_dump_guest_writes(context);
+    if (gpu_enabled) { gow3gpu_dump_recording_barriers(); gow3gpu_dump_guest_writes(context); }
     /* Host call chain (frames with unwind info; guest frames end it). */
     void *frames[32];
     int depth = backtrace(frames, 32);
@@ -807,7 +808,7 @@ int main(int argc, char **argv) {
         unsigned char *t = traps + i * 32;
         /* SysV: mov edi, index; movabs rax, handler; jmp rax. No fake return values. */
         uint32_t index = (uint32_t)i;
-        uintptr_t handler = (uintptr_t)(optional_import(names[i]) ? optional_stub : unresolved);
+        uintptr_t handler = optional_import(names[i]) ? (uintptr_t)optional_stub : (uintptr_t)unresolved;
         t[0] = 0x48; t[1] = 0x89; t[2] = 0xfe; /* mov rsi,rdi: preserve arg0 */
         t[3] = 0xbf; memcpy(t + 4, &index, 4);
         t[8] = 0x48; t[9] = 0xb8; memcpy(t + 10, &handler, 8);

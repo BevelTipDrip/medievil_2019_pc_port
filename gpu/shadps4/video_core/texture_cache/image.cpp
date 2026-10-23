@@ -13,6 +13,9 @@
 
 #include <vk_mem_alloc.h>
 
+#include <array>
+#include <atomic>
+
 namespace VideoCore {
 
 using namespace Vulkan;
@@ -85,14 +88,48 @@ static vk::FormatFeatureFlags2 FormatFeatureFlags(const vk::ImageUsageFlags usag
     return feature_flags;
 }
 
+// gow3: recent image creations and destructions, for the barrier dump in crash reports.
+namespace {
+struct ImageEvent {
+    std::atomic<VkImage> image;
+    std::atomic<bool> destroyed;
+};
+std::array<ImageEvent, 8192> image_events;
+std::atomic<u64> image_event_head{0};
+
+void NoteImage(VkImage image, bool destroyed) {
+    ImageEvent& e = image_events[image_event_head.fetch_add(1, std::memory_order_relaxed) %
+                                 image_events.size()];
+    e.image.store(image, std::memory_order_relaxed);
+    e.destroyed.store(destroyed, std::memory_order_relaxed);
+}
+} // namespace
+
+const char* DescribeImageHandle(VkImage image) {
+    if (!image) {
+        return " (null)";
+    }
+    const u64 head = image_event_head.load(std::memory_order_relaxed);
+    const u64 first = head > image_events.size() ? head - image_events.size() : 0;
+    for (u64 i = head; i-- > first;) {
+        const ImageEvent& e = image_events[i % image_events.size()];
+        if (e.image.load(std::memory_order_relaxed) == image) {
+            return e.destroyed.load(std::memory_order_relaxed) ? " (DESTROYED)" : " (live)";
+        }
+    }
+    return "";
+}
+
 UniqueImage::~UniqueImage() {
     if (image) {
+        NoteImage(image, true);
         vmaDestroyImage(allocator, image, allocation);
     }
 }
 
 void UniqueImage::Destroy() {
     if (image) {
+        NoteImage(image, true);
         vmaDestroyImage(allocator, image, allocation);
         image = vk::Image{};
         allocation = {};
@@ -179,6 +216,7 @@ void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
                vk::to_string(vk::Result{result}));
     image = vk::Image{unsafe_image};
     size_bytes = alloc_info.size;
+    NoteImage(unsafe_image, false);
 }
 
 Image::Image(const Vulkan::Instance& instance, Vulkan::Runtime& runtime_,
