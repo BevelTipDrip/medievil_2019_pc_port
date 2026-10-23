@@ -643,3 +643,26 @@ display times (`displayed` trace stage: `VK_KHR_present_id` + `VK_KHR_present_wa
 present: no display information), and present calls spread 1% 7.06 / 99% 9.67 ms like the native run, not T-V120's
 8.42 ms. Present ids are a change on the present path; display times now need `GOW3_DISPLAY_TRACE=1` (off), so the
 trace behaves as in T-V120. The launch environment and `medievil.ini` otherwise match T-V120 (checked).
+
+### Baseline recheck of T-V120 (2026-10-23 01:30-02:10, launched by Claude with the user's go each time)
+
+All at 50% (`ue4_upscale=performance`), `GOW3_VBLANK_HZ=120`, VSync on (FIFO), borderless, `-NoStats`, flip trace.
+Measure: share of presented intervals within 8.33 +- 0.1 ms ("locked"), and the present call's duration
+(release -> presented).
+
+| Run | Build | Display / other | Locked | Present call | The user |
+|---|---|---|---|---|---|
+| T-V120 (00:32, trace 8) | `f4ffc01` | G-Sync state unverified (no indicator), RTSS + NVIDIA overlay on, NVCP present method Auto (= layered on DXGI) | **71%** | 0.3 ms for ~4 min, then **2.4-4.0 ms** (falling), from a 218 ms hitch (the level load) | flat, best ever; waves of 12.5/4.17 ms |
+| T-V120c (trace 13) | `8a96bc7` (lab) | G-Sync on, indicator on | 14% | ~0.3 ms | "completely different" |
+| T-V120d (trace 14) | `8a96bc7` | NVCP present method native Vulkan, then back to DXGI | - | ~0.3 ms | not flat |
+| T-V120e (trace 15) | **`f4ffc01`** | G-Sync on (toggled off mid-run) | 12% | ~0.3 ms | not the same |
+| T-V120f | `f4ffc01` | G-Sync off | - | - | boot crash (pthread, null execute; dump `user/crashdumps/medievil-20261023-020029-28676.dmp`) |
+| T-V120g (trace 16) | `f4ffc01` | G-Sync off from launch | 13% | 0.26 ms | lows identical to the last run |
+| T-V120h (trace 17) | `f4ffc01` | G-Sync off, `GOW3_PRESENT_THREAD=0` | 12% | 0.19 ms | "that isn't it" |
+
+**Established:** not the code (`f4ffc01` = lab today), not G-Sync on/off, not the NVCP present method, not the
+overlays (both were on in T-V120). In T-V120's flat part our releases wobbled as everywhere (1% 7.1 / 99% 9.6 ms);
+the present call waited 2.4-4 ms and frames reached Vulkan at 8.25-8.42 ms: the presentation itself was paced by the
+display, which no run since has shown. **Open:** what put the presents in that state (a Windows / driver
+presentation mode; candidates: independent flip vs composed, a queued frame). Next: PresentMon (presentation mode
+per present) alongside a run; or deliberate pacing at a fixed offset from the display's refresh (G-Sync off only).
