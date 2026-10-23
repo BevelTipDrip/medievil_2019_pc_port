@@ -2067,12 +2067,20 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, const PreparedStage* pre
         const RingBinding* ring = num_ring_stages ? FindRingBinding(stage, buffer_index) : nullptr;
         if (ring) {
             // Copied by the GPU command thread into the constant ring (read-only).
-            if (FrameCapture::Active() && memory->IsValidGpuMapping(ring->address, 0)) {
-                FrameCapture::Buffer(stage.pgm_hash, buffer_index, ring->address,
-                                     reinterpret_cast<const void*>(ring->address), ring->size);
+            if (FrameCapture::Active() && ring->size != 0) {
+                // A flatbuf has no guest address and is copied with address 0: record the
+                // flattened user data it was copied from.
+                const void* data = ring->address
+                                       ? reinterpret_cast<const void*>(ring->address)
+                                       : stage.FlatUserData().data();
+                if (data && (ring->address == 0 ||
+                             memory->IsValidGpuMapping(ring->address, ring->size))) {
+                    FrameCapture::Buffer(stage.pgm_hash, buffer_index, ring->address, data,
+                                         ring->size);
+                }
             }
             if (!desc.IsSpecial()) {
-                if (ring->size == 864 && gbuffer_draw &&
+                if (ring->size == 864 && gbuffer_draw && ring->address != 0 &&
                     memory->IsValidGpuMapping(ring->address, 0)) {
                     camera_motion->OnConstants(reinterpret_cast<const float*>(ring->address));
                 }
