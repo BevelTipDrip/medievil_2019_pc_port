@@ -118,6 +118,44 @@ PERF_SWITCHES = {
 }
 
 
+# Presentation settings (launcher > Performance > Presentation): medievil.ini key -> how its value
+# becomes environment variables (run.py; a variable already set wins, for tests). All default off.
+PRESENT_MODES = ('auto', 'fifo', 'fifo_relaxed', 'mailbox', 'immediate')
+PRESENT_FLAGS = {
+    'present_no_frame_caps': {'GOW3_NO_FRAME_CAP': '1'},
+    'present_inline': {'GOW3_PRESENT_THREAD': '0'},
+    'present_precise_limit': {'GOW3_PRECISE_LIMIT': '1'},
+    'present_newest_frame': {'GOW3_NEWEST_FRAME': '1'},
+    'present_precise_tick': {'GOW3_PRECISE_TICK': '1'},
+    'present_vblank_sync': {'GOW3_VBLANK_SYNC': '1'},
+}
+
+
+def present_environment(ini, trace_path=None):
+    """The environment of the presentation settings in medievil.ini."""
+    env = {}
+    for key, on in PRESENT_FLAGS.items():
+        if ini.get(key, '0') == '1':
+            env.update(on)
+    try:
+        tick = int(ini.get('present_tick_hz', '0'))
+    except ValueError:
+        tick = 0
+    if 1 <= tick <= 2000:
+        env['GOW3_VBLANK_HZ'] = str(tick)
+    mode = ini.get('present_mode', 'auto')
+    if mode in PRESENT_MODES and mode != 'auto':
+        env['GOW3_PRESENT_MODE'] = mode
+    if ini.get('present_frame_trace', '0') == '1' and trace_path:
+        env['GOW3_FLIP_TRACE'] = str(trace_path)
+    return env
+
+
+def no_frame_caps(ini):
+    """Built-in frame caps off: the engine's tick-rate bound and the present thread's limit."""
+    return ini.get('present_no_frame_caps', '0') == '1'
+
+
 def perf_environment(ini):
     """The switches of the performance patches turned off in medievil.ini."""
     env = {}

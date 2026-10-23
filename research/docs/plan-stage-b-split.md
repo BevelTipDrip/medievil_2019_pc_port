@@ -666,3 +666,28 @@ the present call waited 2.4-4 ms and frames reached Vulkan at 8.25-8.42 ms: the 
 display, which no run since has shown. **Open:** what put the presents in that state (a Windows / driver
 presentation mode; candidates: independent flip vs composed, a queued frame). Next: PresentMon (presentation mode
 per present) alongside a run; or deliberate pacing at a fixed offset from the display's refresh (G-Sync off only).
+
+### Presentation settings in the launcher (2026-10-23)
+
+Launcher > Performance > **Presentation** (all `medievil.ini`, applied at start by `run.py` through
+`graphics_options.present_environment`; a variable already in the environment wins, so `run-game.ps1 -Env` tests
+are unchanged; the values are `GOW3_DERIVED`, so an in-game restart takes new ones):
+
+| Setting (ini key) | Variable | Default |
+|---|---|---|
+| Vblank tick rate, Hz (`present_tick_hz`, 0 = automatic) | `GOW3_VBLANK_HZ` | 0: 480 Hz + limiter above 60 FPS, else 60 |
+| Present mode (`present_mode`: auto / fifo / fifo_relaxed / mailbox / immediate) | `GOW3_PRESENT_MODE` (now read by `Swapchain::FindPresentMode`; it was unused) | auto = follow VSync |
+| No built-in frame caps (`present_no_frame_caps`) | `GOW3_NO_FRAME_CAP=1` (present thread: no limit of the port's own; the in-game Frame rate limit still applies) + engine bound 1000 (`run.py`: UE4 `SmoothedFrameRateRange`) | off |
+| Present on the vblank thread (`present_inline`) | `GOW3_PRESENT_THREAD=0` | off |
+| Precise frame limiter (`present_precise_limit`) | `GOW3_PRECISE_LIMIT=1` | off |
+| Newest-frame mode (`present_newest_frame`) | `GOW3_NEWEST_FRAME=1` | off |
+| Precise vblank tick (`present_precise_tick`) | `GOW3_PRECISE_TICK=1` | off |
+| Tick on the display's vblank (`present_vblank_sync`) | `GOW3_VBLANK_SYNC=1` (broken with G-Sync) | off |
+| Frame timing trace (`present_frame_trace`) | `GOW3_FLIP_TRACE=user/logs/flip-trace.csv` | off |
+
+Already there: VSync, Frame rate limit, Frames queued, Engine frame rate, Display mode. The port's frame caps were
+(1) the engine bound `SmoothedFrameRateRange` = Engine frame rate + 2 (`ue4_override.frame_rate_range`), (2) the
+present thread's limit at min(display refresh, Engine frame rate) with the automatic 480 Hz tick
+(`EmulatorSettings::GetFrameLimit`), (3) the debug menu's `SetFrameRateLimit(60)` (already patched out); "No built-in
+frame caps" removes (1) and (2). An explicit tick rate below the frame rate still paces the game (UE4 waits for each
+vblank).

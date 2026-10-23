@@ -3,6 +3,7 @@
 
 #include "gow3_flip_trace.h"
 #include <algorithm>
+#include <string_view>
 #include <cstdio>
 #include <limits>
 #include "common/assert.h"
@@ -254,6 +255,19 @@ void Swapchain::FindPresentMode() {
     // driver has it, else Immediate (tearing allowed), else Fifo.
     vsync = Gow3Settings::Get().vsync;
     const auto has = [&](vk::PresentModeKHR mode) { return std::ranges::find(modes, mode) != modes.cend(); };
+    // gow3 GOW3_PRESENT_MODE (launcher > Presentation > Present mode): a fixed Vulkan present
+    // mode instead of following VSync; unsupported modes fall back to Fifo.
+    if (const char* forced = std::getenv("GOW3_PRESENT_MODE"); forced && forced[0]) {
+        const std::string_view name{forced};
+        const auto mode = name == "fifo_relaxed" ? vk::PresentModeKHR::eFifoRelaxed
+                          : name == "mailbox"    ? vk::PresentModeKHR::eMailbox
+                          : name == "immediate"  ? vk::PresentModeKHR::eImmediate
+                                                 : vk::PresentModeKHR::eFifo;
+        present_mode = has(mode) ? mode : vk::PresentModeKHR::eFifo;
+        std::printf("Swapchain: present mode %s (GOW3_PRESENT_MODE=%s)\n", vk::to_string(present_mode).c_str(),
+                    forced);
+        return;
+    }
     present_mode = vsync ? vk::PresentModeKHR::eFifo
                    : has(vk::PresentModeKHR::eMailbox) ? vk::PresentModeKHR::eMailbox
                    : has(vk::PresentModeKHR::eImmediate) ? vk::PresentModeKHR::eImmediate

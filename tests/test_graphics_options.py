@@ -63,5 +63,18 @@ class GraphicsOptionsTest(unittest.TestCase):
         self.assertEqual(env, {'GOW3_DEFERRED_READBACK': '1', 'GOW3_STALE_READBACK': '0', 'GOW3_ASYNC_SHADERS': '1'})
 
 
+    def test_present_environment(self):
+        self.assertEqual(g.present_environment({}), {})
+        ini = {'present_tick_hz': '120', 'present_mode': 'mailbox', 'present_inline': '1',
+               'present_no_frame_caps': '1', 'present_frame_trace': '1'}
+        self.assertEqual(g.present_environment(ini, 'trace.csv'),
+                         {'GOW3_VBLANK_HZ': '120', 'GOW3_PRESENT_MODE': 'mailbox', 'GOW3_PRESENT_THREAD': '0',
+                          'GOW3_NO_FRAME_CAP': '1', 'GOW3_FLIP_TRACE': 'trace.csv'})
+        # 0 / invalid tick rates and unknown modes stay automatic
+        self.assertEqual(g.present_environment({'present_tick_hz': 'x', 'present_mode': 'vsync'}), {})
+        self.assertEqual(g.present_environment({'present_tick_hz': '0', 'present_mode': 'auto'}), {})
+        self.assertTrue(g.no_frame_caps(ini))
+
+
 if __name__ == '__main__':
     unittest.main()

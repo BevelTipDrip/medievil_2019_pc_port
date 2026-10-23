@@ -87,8 +87,18 @@ def main():
     if reverted:
         print('Graphics: the last restart never reached the game; previous options restored', flush=True)
     env.update(graphics_options.environment(graphics))
-    for key, value in graphics_options.perf_environment(graphics_options.read_ini(env['GOW3_CONFIG'])).items():
+    ini_values = graphics_options.read_ini(env['GOW3_CONFIG'])
+    for key, value in graphics_options.perf_environment(ini_values).items():
         env.setdefault(key, value)
+    # Presentation settings (launcher > Performance > Presentation); derived, so an in-game
+    # restart takes the new values.
+    trace = PORT / 'user' / 'logs' / 'flip-trace.csv'
+    for key, value in graphics_options.present_environment(ini_values, trace).items():
+        if key not in env:
+            env[key] = value
+            derived.append(key)
+    if 'GOW3_FLIP_TRACE' in derived:
+        trace.parent.mkdir(parents=True, exist_ok=True)
     if not env.get('GOW3_FSR411_DIR') and not (PORT / 'fsr4_411').is_dir() and (data / 'fsr4_411').is_dir():
         env['GOW3_FSR411_DIR'] = str(data / 'fsr4_411')
 
@@ -127,6 +137,8 @@ def main():
     if profile['name']:
         print(f'Game profile: {profile["name"]} ({", ".join(profile["modules"])})', flush=True)
     engine_fps = int(graphics['engine_fps'])
+    if graphics_options.no_frame_caps(ini_values):
+        engine_fps = 1000  # no engine bound (UE4 SmoothedFrameRateRange); the present limit is off too
     if profile.get('ue4_render_scale') and engine_fps > 60:
         # Unreal Engine 4 flips at every vblank (rhi.SyncInterval 1). A 480 Hz vblank with a frame
         # limit shows each frame when it is ready: a 120 Hz vblank turned 9 ms frames into 17 ms.

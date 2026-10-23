@@ -255,6 +255,38 @@ PERF_PATCHES = [
 ]
 INI_FLAGS.update(entry[0] for entry in PERF_PATCHES)
 INI_DEFAULTS.update({entry[0]: '1' for entry in PERF_PATCHES})
+
+# Presentation (research/docs/plan-stage-b-split.md, T-L2 to T-V120h): how finished frames reach the
+# screen. All off by default (the tested defaults); run.py turns them into environment variables
+# (graphics_options.present_environment). (key, title, description).
+PRESENT_SWITCHES = [
+    ('present_no_frame_caps', 'No built-in frame caps',
+     "Removes the port's own caps: the engine's frame-rate bound (Engine frame rate) and the present "
+     "thread's limit at the display refresh. Frame rate limit above still applies (set it to "
+     'Unlimited for no cap at all).'),
+    ('present_inline', 'Present on the vblank thread',
+     'Shows frames from the vblank thread itself, as upstream shadPS4 does, instead of a separate swap '
+     'thread. A present that waits for the display then also delays the next vblank.'),
+    ('present_precise_limit', 'Precise frame limiter',
+     'With a frame rate limit: frames leave exactly at their slot (high-resolution timer) instead of '
+     'up to half a vblank early or a tick late.'),
+    ('present_newest_frame', 'Newest-frame mode',
+     'With a frame rate limit: the game renders uncapped and each slot shows the newest finished frame '
+     '(like Fast Sync). Even frame pacing on screen; the motion inside the frames is less even.'),
+    ('present_precise_tick', 'Precise vblank tick',
+     'The vblank tick runs on a fixed grid with a high-resolution timer and a short spin instead of '
+     "Windows' coarse sleep (about 8% of one CPU core at 120 Hz)."),
+    ('present_vblank_sync', 'Tick on the display\'s vblank',
+     "The vblank tick waits for the monitor's own vertical blank. Experimental: broken with G-Sync / "
+     'FreeSync (the display has no steady vblank).'),
+    ('present_frame_trace', 'Frame timing trace (diagnostics)',
+     'Writes every frame\'s timing to user/logs/flip-trace.csv (overwritten at each start).'),
+]
+PRESENT_MODES = [('auto', ('Follow VSync',)), ('fifo', ('FIFO (VSync)',)), ('fifo_relaxed', ('FIFO relaxed',)),
+                 ('mailbox', ('Mailbox',)), ('immediate', ('Immediate (tearing)',))]
+INI_FLAGS.update(entry[0] for entry in PRESENT_SWITCHES)
+INI_DEFAULTS.update({entry[0]: '0' for entry in PRESENT_SWITCHES})
+INI_DEFAULTS.update({'present_tick_hz': '0', 'present_mode': 'auto'})
 UI_LANGUAGES = lang.LANGUAGE_NAMES
 
 FSR4_COMMIT = 'ae8d628fae208813172446d1e49ed94150b04658'
@@ -1042,6 +1074,21 @@ class Launcher:
                    '144 Hz): the smoothest picture, with Engine frame rate 120.'))
         self.row(f, _('Frames queued'), self.choice(f, 'frames_queued', 'ini', FRAMES_QUEUED),
                  _('1 is the lowest input latency; more can raise FPS when the graphics card is the limit.'))
+        self.section(f, _('Presentation'))
+        self.note(f, _('How finished frames reach the screen. Defaults are the tested ones; these are for '
+                       'experiments and comparisons. Applied at the next start.'), top=2)
+        tick = self.ttk.Spinbox(f, from_=0, to=2000, increment=1, width=8, font=self.f('body', 10),
+                                textvariable=self.var('present_tick_hz', 'ini'))
+        self.row(f, _('Vblank tick rate (Hz)'), tick,
+                 _('How often the game\'s virtual vblank fires: the PS4 game waits for it before each frame. '
+                   '0 = automatic (480 Hz with a frame limiter above 60 FPS, else 60). Any other value is used '
+                   'as given, without the port\'s limiter: 120 paces the game itself at 120 FPS. Frame rate '
+                   'limit only applies below this rate.'), restart=True)
+        self.row(f, _('Present mode'), self.choice(f, 'present_mode', 'ini', PRESENT_MODES),
+                 _('Vulkan present mode. Follow VSync: FIFO with VSync on, Mailbox (or Immediate) with it off. '
+                   'A fixed mode here overrides the VSync switch.'), restart=True)
+        for key, title, hint in PRESENT_SWITCHES:
+            self.check(f, key, 'ini', _(title), _(hint), restart=True)
         self.section(f, _('Performance patches'))
         self.note(f, _('All on by default. Switch one off to compare, or if something looks wrong; '
                        'applied at the next start.'), top=2)
