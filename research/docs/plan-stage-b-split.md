@@ -551,3 +551,25 @@ The present-thread limiter releases a frame up to half a vblank early, or at a l
 the current one; the schedule stays anchored, so the next comes early. G-Sync shows it, and the game's flips follow it
 (submit p99.9 10.7 ms). Fix (`GOW3_PRECISE_LIMIT=1`, reworked): the slot is waited for with a high-resolution
 waitable timer (no spin, unlike T-L1b), released within ~0.1 ms of it, never early.
+
+### T-L3 / T-L4: precise limiter (2026-10-22, launched by Claude with the user's go; `-NoStats`, `GOW3_PRECISE_LIMIT=1`; traces `flip-trace-2.csv`, `flip-trace-3.csv`)
+
+T-L3 (`c552021`, high-resolution timer): no change, the tick path still released capped frames a tick late. T-L4
+(slot-only release; `c67b7e1` restores the tick redraw, whose absence froze the save list): **capped 120: presented
+interval median 8.28, p99 9.05, p99.9 9.39, max 12.5 ms; worst 1% average 9.23 ms (108 FPS), worst 0.1% 10.0 ms
+(100 FPS); 3 of 9,411 frames over 10 ms.** Releases sit within +-0.25 ms of an ideal 120 Hz grid, a tail to +1 ms
+(timer wake-ups). Motion error (|submit step - display step|) median 0.32, p99 1.26 ms; latency submit -> presented
+16 ms (the game waits a frame in the queue). The user: "technically better", still dips into the 80s, 1% ~110 /
+0.1% ~100, and **heavy flicker with G-Sync** (OLED VRR brightness following the frame-time spread at ~120 Hz). Stays
+opt-in.
+
+### T-L5: newest-frame mode (`GOW3_NEWEST_FRAME=1`, the user's proposal)
+
+The game renders uncapped; at each slot the newest frame finished on the GPU is shown and every older one completes
+its flip unshown at once (`DropFlip`: flip status, events and labels as a shown flip; the frame goes back to the
+presenter's pool), so the cap never holds the game back. Frames finish on the GPU in queue order: the oldest queued
+frame is dropped as soon as the one after it is finished (`Presenter::WaitFrameReady`, the frame's timeline
+semaphore); before the slot the present thread waits for that GPU finish or a new frame, then the precise slot wait.
+Implies `GOW3_PRECISE_LIMIT`. Expected: even presents and lower latency; risk: the game time shown advances unevenly
+(the newest frame is 0 to one render interval old at its slot: Fast Sync micro-judder), and no GPU headroom is freed.
+Trace stage `dropped`; analysis `newest_analyze.py` (display step, content step, their difference, age).

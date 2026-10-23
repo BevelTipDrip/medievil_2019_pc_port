@@ -708,6 +708,18 @@ void VideoOutDriver::Flip(const Request& req) {
         }
     }
 
+    CompleteFlip(req);
+}
+
+void VideoOutDriver::DropFlip(const Request& req) {
+    Gow3FlipTrace::Note("dropped", req.flip_arg);
+    if (req.frame != nullptr) {
+        presenter->DiscardFrame(req.frame);
+    }
+    CompleteFlip(req);
+}
+
+void VideoOutDriver::CompleteFlip(const Request& req) {
     // Update flip status.
     auto* port = req.port;
     {
@@ -802,7 +814,7 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
 
     {
         std::scoped_lock lock{mutex};
-        requests.push({
+        requests.push_back({
             .frame = frame,
             .port = port,
             .flip_arg = flip_arg,
@@ -852,9 +864,15 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     // for their slot, yet releases came 6.3-10.4 ms apart (8.33 +- one 480 Hz tick): the 0.1%
     // lows at 80-90 FPS. The wait is a high-resolution waitable timer (no spin: the first
     // version spun up to 1 ms on this realtime thread, T-L1b), the last ~0.1 ms a short spin.
+    // gow3 GOW3_NEWEST_FRAME=1 (implies the precise limit): the game renders uncapped and each
+    // slot shows the newest frame finished on the GPU; older ones complete unshown (DropFlip).
+    static const bool newest_frame = [] {
+        const char* env = std::getenv("GOW3_NEWEST_FRAME");
+        return env && env[0] == '1';
+    }();
     static const bool precise_limit = [] {
         const char* env = std::getenv("GOW3_PRECISE_LIMIT");
-        return env && env[0] == '1';
+        return newest_frame || (env && env[0] == '1');
     }();
     const auto slot_slack = precise_limit ? std::chrono::nanoseconds(100000)
                                           : std::chrono::nanoseconds(500000000 / std::max(vblank_hz, 1u));
@@ -887,7 +905,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         std::scoped_lock lk{mutex};
         if (!requests.empty()) {
             const auto request = requests.front();
-            requests.pop();
+            requests.pop_front();
             return request;
         }
         return {};
@@ -985,6 +1003,73 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
             timer.End();
             continue;
         }
+        if (newest_frame) {
+            // Frames finish on the GPU in the order queued: the oldest frame is dropped as soon as
+            // the one after it is finished, so the game's flips complete at its own pace and the
+            // limit never holds it back. At its slot the oldest (the newest finished) is shown.
+            while (!token.stop_requested() && std::chrono::steady_clock::now() < tick_deadline) {
+                std::vector<Request> stale;
+                Request front{}, next{};
+                {
+                    std::unique_lock lk{mutex};
+                    while (requests.size() >= 2 &&
+                           presenter->WaitFrameReady(requests[1].frame, {})) {
+                        stale.push_back(requests.front());
+                        requests.pop_front();
+                    }
+                    if (stale.empty() && requests.empty()) {
+                        if (!request_cv.wait_until(lk, tick_deadline,
+                                                   [&] { return !requests.empty(); })) {
+                            break; // next vblank
+                        }
+                        continue;
+                    }
+                    if (!requests.empty()) {
+                        front = requests.front();
+                        next = requests.size() >= 2 ? requests[1] : Request{};
+                    }
+                }
+                for (const auto& request : stale) {
+                    DropFlip(request);
+                }
+                if (!front) {
+                    continue;
+                }
+                const auto now = std::chrono::steady_clock::now();
+                if (now + slot_slack < next_flip) {
+                    // Before the slot: wait for the next frame to finish (it replaces the
+                    // oldest), or for a new frame, then the precise wait for the slot itself.
+                    const auto until = std::min(next_flip - std::chrono::milliseconds(1), tick_deadline);
+                    if (now < until && next) {
+                        presenter->WaitFrameReady(next.frame, until);
+                    } else if (now < until) {
+                        std::unique_lock lk{mutex};
+                        request_cv.wait_until(lk, until, [&] { return requests.size() >= 2; });
+                    } else if (next_flip <= tick_deadline) {
+                        wait_slot(next_flip);
+                    } else {
+                        break;
+                    }
+                    continue;
+                }
+                // The slot: the oldest frame, once finished (late only when none is ready yet).
+                if (!presenter->WaitFrameReady(front.frame, tick_deadline)) {
+                    continue;
+                }
+                {
+                    std::unique_lock lk{mutex};
+                    if (requests.empty() || requests.front().frame != front.frame ||
+                        (requests.size() >= 2 && presenter->WaitFrameReady(requests[1].frame, {}))) {
+                        continue; // a newer frame finished meanwhile: drop first
+                    }
+                    requests.pop_front();
+                }
+                const auto shown = std::chrono::steady_clock::now();
+                next_flip = std::max(next_flip + frame_period, shown - frame_period);
+                Flip(front);
+                FRAME_END;
+            }
+        } else
         while (!token.stop_requested()) {
             {
                 std::unique_lock lk{mutex};

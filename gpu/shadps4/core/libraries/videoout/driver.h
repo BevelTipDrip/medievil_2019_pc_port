@@ -109,6 +109,10 @@ private:
     };
 
     void Flip(const Request& req);
+    /// The guest side of a flip: flip status, flip events, buffer labels (Flip ends with it).
+    void CompleteFlip(const Request& req);
+    /// gow3 newest-frame mode: completes the flip of a frame that is never shown.
+    void DropFlip(const Request& req);
     void DrawBlankFrame(); // Video port out not open
     void DrawLastFrame();  // Used when there is no flip request
     void SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop = false);
@@ -131,7 +135,7 @@ private:
     std::condition_variable request_cv; ///< gow3: a flip was queued (immediate flips)
     VideoOutPort main_port{};
     std::jthread present_thread;
-    std::queue<Request> requests;
+    std::deque<Request> requests;
 };
 
 } // namespace Libraries::VideoOut

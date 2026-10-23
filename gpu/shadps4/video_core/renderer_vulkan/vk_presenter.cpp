@@ -860,6 +860,50 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
     }
 }
 
+bool Presenter::WaitFrameReady(Frame* frame, std::chrono::steady_clock::time_point until) {
+    if (frame == nullptr) {
+        return true;
+    }
+    Semaphore* semaphore = nullptr;
+    for (Scheduler* scheduler : {&draw_scheduler, &flip_scheduler, &present_scheduler}) {
+        if (scheduler->GetWorkSemaphore()->Handle() == frame->ready_semaphore) {
+            semaphore = scheduler->GetWorkSemaphore();
+        }
+    }
+    if (semaphore == nullptr || semaphore->IsFree(frame->ready_tick)) {
+        return true;
+    }
+    semaphore->Refresh();
+    if (semaphore->IsFree(frame->ready_tick)) {
+        return true;
+    }
+    const auto now = std::chrono::steady_clock::now();
+    if (until <= now) {
+        return false;
+    }
+    const vk::Semaphore handle = semaphore->Handle();
+    const u64 value = frame->ready_tick;
+    const vk::SemaphoreWaitInfo wait_info = {
+        .semaphoreCount = 1,
+        .pSemaphores = &handle,
+        .pValues = &value,
+    };
+    const u64 timeout = std::chrono::duration_cast<std::chrono::nanoseconds>(until - now).count();
+    if (instance.GetDevice().waitSemaphores(&wait_info, timeout) != vk::Result::eSuccess) {
+        return false;
+    }
+    semaphore->Refresh();
+    return true;
+}
+
+void Presenter::DiscardFrame(Frame* frame) {
+    // Its present_done fence is still signaled (only Present resets it) and the next use of the
+    // frame is ordered after this one's copy on the same queue.
+    std::scoped_lock fl{free_mutex};
+    free_queue.push(frame);
+    free_cv.notify_one();
+}
+
 Frame* Presenter::GetRenderFrame() {
     // Wait for free presentation frames
     Frame* frame;

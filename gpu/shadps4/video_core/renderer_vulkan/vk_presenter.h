@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <deque>
 
 #include <condition_variable>
@@ -102,6 +103,12 @@ public:
     /// gow3: a black frame with the loading screen (Gow3Overlay::SetLoading) only.
     void PresentLoadingFrame();
     Frame* PrepareLastFrame();
+
+    /// gow3 newest-frame mode (GOW3_NEWEST_FRAME): waits until the frame's image is finished on
+    /// the GPU or `until` passes; true when finished. Frames finish in the order prepared.
+    bool WaitFrameReady(Frame* frame, std::chrono::steady_clock::time_point until);
+    /// gow3 newest-frame mode: returns a prepared frame to the pool without showing it.
+    void DiscardFrame(Frame* frame);
 
 private:
     Frame* GetRenderFrame();
