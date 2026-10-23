@@ -580,3 +580,15 @@ cannot render its next frame until the previous flip completes (it waits for its
 completion at present no newer frame ever arrived. Fix: in this mode the guest's flip completes in
 `SubmitFlipInternal` right after `PrepareFrame` copied the frame out (`Request::completed`; `newest_active` is set
 by the present thread only while a limit applies); the present thread only chooses among the copies.
+
+**T-L5 run 2 (`03a84b5`): the mode works, the wobble stays.** The user: "once again, it's not working". Trace
+`flip-trace-5.csv` (last 3,000 frames): the game renders every 3.1 ms (~325 FPS), ~2 of 3 frames dropped, a finished
+frame is always waiting at the slot, yet shown frames come median 8.29, p1 7.54, p99 9.24, p99.9 11.3 ms apart, the
+same spread as T-L4. **So the remaining wobble is the present thread's own release timing**, not the game: the
+same thread runs the 480 Hz vblank tick (guest events, coarse condition-variable and semaphore waits that wake 1-2 ms
+late), and 8.33 ms is exactly four ticks, so slot and tick drift slowly against each other. Motion error (|content
+step - display step|) median 0.99, p99 4.18 ms (T-L4: 0.32 / 1.26): the expected newest-frame cost.
+Next (`GOW3_NEWEST_FRAME` now): a dedicated pacer thread (`gow3:Pacer`) releases at each slot with a per-thread
+high-resolution timer plus a 0.1 ms spin; dropped frames return to the pool on the game's side
+(`DropOlderFinished` in `SubmitFlipInternal`). The user also asked for tick-rate runs: `GOW3_VBLANK_HZ` 240 / 120
+(a 120 limit at a 120 tick is off: the tick paces) / 60.

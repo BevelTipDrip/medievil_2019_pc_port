@@ -87,6 +87,9 @@ VideoOutDriver::VideoOutDriver(u32 width, u32 height) {
         swap_thread = std::jthread([&](std::stop_token token) { SwapThread(token); });
     }
     present_thread = std::jthread([&](std::stop_token token) { PresentThread(token); });
+    if (const char* newest = std::getenv("GOW3_NEWEST_FRAME"); newest && newest[0] == '1') {
+        pacer_thread = std::jthread([&](std::stop_token token) { PacerThread(token); });
+    }
 }
 
 void VideoOutDriver::RunPresenter(std::function<void()> work, bool if_idle) {
@@ -713,6 +716,76 @@ void VideoOutDriver::Flip(const Request& req) {
     }
 }
 
+static void PreciseWait(std::chrono::steady_clock::time_point slot);
+
+void VideoOutDriver::DropOlderFinished() {
+    std::vector<Request> stale;
+    {
+        std::scoped_lock lock{mutex};
+        size_t finished = 0; // frames finish in queue order
+        while (finished < requests.size() &&
+               presenter->WaitFrameReady(requests[finished].frame, {})) {
+            ++finished;
+        }
+        while (finished > 1) {
+            stale.push_back(requests.front());
+            requests.pop_front();
+            --finished;
+        }
+    }
+    for (const auto& request : stale) {
+        DropFlip(request);
+    }
+}
+
+void VideoOutDriver::PacerThread(std::stop_token token) {
+    Common::SetCurrentThreadName("gow3:Pacer");
+    Common::SetCurrentThreadRealtime(std::chrono::milliseconds(8));
+    auto next = std::chrono::steady_clock::now();
+    u32 limit = 0;
+    while (!token.stop_requested()) {
+        if (const u32 now_limit = pacer_limit.load(std::memory_order_relaxed); now_limit != limit) {
+            limit = now_limit;
+            next = std::chrono::steady_clock::now();
+        }
+        if (!limit) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+            continue;
+        }
+        const auto period = std::chrono::nanoseconds(1000000000 / limit);
+        PreciseWait(next);
+        // The newest finished frame; later than the slot only when none has finished yet.
+        Request show{};
+        while (!token.stop_requested() && pacer_limit.load(std::memory_order_relaxed) == limit) {
+            DropOlderFinished();
+            Request front{};
+            {
+                std::unique_lock lock{mutex};
+                if (requests.empty()) {
+                    request_cv.wait_for(lock, std::chrono::milliseconds(2),
+                                        [&] { return !requests.empty(); });
+                    continue;
+                }
+                front = requests.front();
+                if (presenter->WaitFrameReady(front.frame, {})) {
+                    requests.pop_front();
+                    show = front;
+                    break;
+                }
+            }
+            presenter->WaitFrameReady(front.frame,
+                                      std::chrono::steady_clock::now() + std::chrono::milliseconds(2));
+        }
+        if (!show) {
+            continue;
+        }
+        const auto now = std::chrono::steady_clock::now();
+        next = std::max(next + period, now - period);
+        Flip(show);
+        FRAME_END;
+    }
+}
+
 void VideoOutDriver::DropFlip(const Request& req) {
     Gow3FlipTrace::Note("dropped", req.flip_arg);
     if (req.frame != nullptr) {
@@ -835,8 +908,30 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
     }
     if (early) {
         CompleteFlip(request);
+        DropOlderFinished(); // frames back to the pool at once (the pool bounds the game)
     }
-    request_cv.notify_one();
+    request_cv.notify_all(); // the present thread and the pacer
+}
+
+// gow3: waits until `slot` within a few microseconds: a high-resolution waitable timer (one per
+// thread) to ~0.1 ms before it, then a short spin.
+static void PreciseWait(std::chrono::steady_clock::time_point slot) {
+#ifdef _WIN32
+    thread_local HANDLE hires = CreateWaitableTimerExW(nullptr, nullptr, 0x00000002 /* HIGH_RESOLUTION */,
+                                                 TIMER_ALL_ACCESS);
+    const auto coarse = slot - std::chrono::microseconds(100);
+    if (const auto now = std::chrono::steady_clock::now(); hires && now < coarse) {
+        LARGE_INTEGER due;
+        due.QuadPart = -std::max<LONGLONG>(
+            1, std::chrono::duration_cast<std::chrono::nanoseconds>(coarse - now).count() / 100);
+        if (SetWaitableTimerEx(hires, &due, 0, nullptr, nullptr, nullptr, 0)) {
+            WaitForSingleObject(hires, INFINITE);
+        }
+    }
+#else
+    std::this_thread::sleep_until(slot - std::chrono::microseconds(100));
+#endif
+    while (std::chrono::steady_clock::now() < slot) _mm_pause();
 }
 
 void VideoOutDriver::PresentThread(std::stop_token token) {
@@ -889,24 +984,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     }();
     const auto slot_slack = precise_limit ? std::chrono::nanoseconds(100000)
                                           : std::chrono::nanoseconds(500000000 / std::max(vblank_hz, 1u));
-    const auto wait_slot = [](std::chrono::steady_clock::time_point slot) {
-#ifdef _WIN32
-        static HANDLE hires = CreateWaitableTimerExW(nullptr, nullptr, 0x00000002 /* HIGH_RESOLUTION */,
-                                                     TIMER_ALL_ACCESS);
-        const auto coarse = slot - std::chrono::microseconds(100);
-        if (const auto now = std::chrono::steady_clock::now(); hires && now < coarse) {
-            LARGE_INTEGER due;
-            due.QuadPart = -std::max<LONGLONG>(
-                1, std::chrono::duration_cast<std::chrono::nanoseconds>(coarse - now).count() / 100);
-            if (SetWaitableTimerEx(hires, &due, 0, nullptr, nullptr, nullptr, 0)) {
-                WaitForSingleObject(hires, INFINITE);
-            }
-        }
-#else
-        std::this_thread::sleep_until(slot - std::chrono::microseconds(100));
-#endif
-        while (std::chrono::steady_clock::now() < slot) _mm_pause();
-    };
+    const auto wait_slot = PreciseWait;
     u32 frame_limit = current_limit();
     auto frame_period = frame_limit ? std::chrono::nanoseconds(1000000000 / frame_limit)
                                     : std::chrono::nanoseconds(0);
@@ -937,6 +1015,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
             std::printf("VideoOut: frame limit %u FPS\n", limit);
         }
         newest_active.store(newest_frame && frame_limit != 0, std::memory_order_relaxed);
+        pacer_limit.store(newest_frame ? frame_limit : 0, std::memory_order_relaxed);
         timer.Start();
         const auto tick_deadline = std::chrono::steady_clock::now() + vblank_period;
 
@@ -1017,72 +1096,8 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
             timer.End();
             continue;
         }
-        if (newest_frame) {
-            // Frames finish on the GPU in the order queued: the oldest frame is dropped as soon as
-            // the one after it is finished, so the game's flips complete at its own pace and the
-            // limit never holds it back. At its slot the oldest (the newest finished) is shown.
-            while (!token.stop_requested() && std::chrono::steady_clock::now() < tick_deadline) {
-                std::vector<Request> stale;
-                Request front{}, next{};
-                {
-                    std::unique_lock lk{mutex};
-                    while (requests.size() >= 2 &&
-                           presenter->WaitFrameReady(requests[1].frame, {})) {
-                        stale.push_back(requests.front());
-                        requests.pop_front();
-                    }
-                    if (stale.empty() && requests.empty()) {
-                        if (!request_cv.wait_until(lk, tick_deadline,
-                                                   [&] { return !requests.empty(); })) {
-                            break; // next vblank
-                        }
-                        continue;
-                    }
-                    if (!requests.empty()) {
-                        front = requests.front();
-                        next = requests.size() >= 2 ? requests[1] : Request{};
-                    }
-                }
-                for (const auto& request : stale) {
-                    DropFlip(request);
-                }
-                if (!front) {
-                    continue;
-                }
-                const auto now = std::chrono::steady_clock::now();
-                if (now + slot_slack < next_flip) {
-                    // Before the slot: wait for the next frame to finish (it replaces the
-                    // oldest), or for a new frame, then the precise wait for the slot itself.
-                    const auto until = std::min(next_flip - std::chrono::milliseconds(1), tick_deadline);
-                    if (now < until && next) {
-                        presenter->WaitFrameReady(next.frame, until);
-                    } else if (now < until) {
-                        std::unique_lock lk{mutex};
-                        request_cv.wait_until(lk, until, [&] { return requests.size() >= 2; });
-                    } else if (next_flip <= tick_deadline) {
-                        wait_slot(next_flip);
-                    } else {
-                        break;
-                    }
-                    continue;
-                }
-                // The slot: the oldest frame, once finished (late only when none is ready yet).
-                if (!presenter->WaitFrameReady(front.frame, tick_deadline)) {
-                    continue;
-                }
-                {
-                    std::unique_lock lk{mutex};
-                    if (requests.empty() || requests.front().frame != front.frame ||
-                        (requests.size() >= 2 && presenter->WaitFrameReady(requests[1].frame, {}))) {
-                        continue; // a newer frame finished meanwhile: drop first
-                    }
-                    requests.pop_front();
-                }
-                const auto shown = std::chrono::steady_clock::now();
-                next_flip = std::max(next_flip + frame_period, shown - frame_period);
-                Flip(front);
-                FRAME_END;
-            }
+        if (newest_active.load(std::memory_order_relaxed)) {
+            // the pacer thread releases frames
         } else
         while (!token.stop_requested()) {
             {

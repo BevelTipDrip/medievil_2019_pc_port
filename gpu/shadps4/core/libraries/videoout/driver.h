@@ -120,6 +120,12 @@ private:
     void DrawLastFrame();  // Used when there is no flip request
     void SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop = false);
     void PresentThread(std::stop_token token);
+    /// gow3 newest-frame mode (GOW3_NEWEST_FRAME=1): releases the newest finished frame at each
+    /// slot of the frame limit, on its own thread (the present thread's vblank tick and its
+    /// coarse waits delayed releases: T-L5 run 2, +-0.75 ms with a finished frame always ready).
+    void PacerThread(std::stop_token token);
+    /// Drops every queued frame older than the newest one finished on the GPU.
+    void DropOlderFinished();
     /// gow3: runs presenter work (acquire, blit, vkQueuePresent) off the vblank thread, in
     /// order. Acquire and present block while the GPU is the bottleneck (much longer on NVIDIA);
     /// on the vblank thread that delayed the guest's vblank events and its frame timing jumped.
@@ -142,6 +148,8 @@ private:
     /// gow3 newest-frame mode with a frame limit: flips complete for the guest as soon as the
     /// frame is copied out (SubmitFlipInternal); the present thread picks among the copies.
     std::atomic<bool> newest_active{false};
+    std::atomic<u32> pacer_limit{0}; ///< the frame limit the pacer keeps (0: none)
+    std::jthread pacer_thread;       ///< last: stopped first
 };
 
 } // namespace Libraries::VideoOut
