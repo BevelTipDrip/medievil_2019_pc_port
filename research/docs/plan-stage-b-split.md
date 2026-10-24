@@ -722,3 +722,27 @@ Next (the user, next session): a trace of T-P120 (`present_frame_trace=1`); then
 capped mode ("tick = cap"), and look again at the 480 Hz default for uncapped play. Also open: thread priority
 (`SetCurrentThreadRealtime` is a no-op on Windows, `common/thread.cpp:76-78`), tearing with Immediate and G-Sync
 off, and the research in [study-vrr-present-pacing.md](study-vrr-present-pacing.md).
+
+### Ablation of the T-P120 settings (2026-10-23 evening; traces `research-data\flip-trace-18.csv` to `-24.csv`)
+
+The user had spent ~2 h testing on their own first: their finding, precise vblank tick + present on the vblank
+thread are required for any cap or VSync to pace well; Immediate helps. Runs (`-NoStats`, 4K native console, trace):
+
+| Run | Settings | Result |
+|---|---|---|
+| 0 (trace 18) | 165 tick, Immediate, Fast Sync on in NVCP | invalid (Fast Sync); its flat end was the user alt-tabbed (DWM composition buffers frames) |
+| 0b (19) | the same, Fast Sync off | intro/menus: 13-15% missed ticks (24 ms); not reproducible: 0d with identical ini and launch path was clean. External state at that moment |
+| 0c (20) | 120 tick, the three inactive settings off | clean: 98% 8.12-8.54 ms, releases 8.331-8.336 |
+| user (`user/logs/flip-trace.csv`) | 165, user's launcher | clean, 1% worst 6.26-6.37 ms |
+| 0d (21) | 165, Immediate, my script | **reference**: 165.0 avg, 1% low 158.1, 0.1% 151.8, 0 frames > 9 ms in 75 s |
+| 5 (22) | 165, Follow VSync + VSync on (FIFO) | 1% low 126.3, 0.1% 81.9: 27 frames of 12.1 ms (missed ticks) a minute; in a big fight 107 x 12.1 ms in 6 s with PrepareFrame waiting >= 3 ms on the GPU for 10% of frames |
+| 5@120 (23) | 120, FIFO | the same fight: 120.0 avg, 2 frames > 9 ms; earlier 16.7 ms frames were game-side late submits in menus/loading |
+| (24) | 120, FIFO, new `gpu_ready` stage | GPU finishes a frame ~4-6 ms after its flip is recorded; heavy moments up to ~9-10 ms |
+
+Notes: launch path (launcher vs `run-game.ps1`): same priority (Normal), no power throttling, both in a job; patch
+lists are the same (run.py adds "4K display metrics at boot" for 4K native regardless of `GOW3_PATCHES`). The
+"80 FPS dips in fights" at 165 are frames whose GPU work exceeds 6.06 ms (two ticks = 82.5 FPS on our present
+stamps); the user reports the same dip size at higher ticks, which our present stamps cannot see (open). Fights load
+the GPU (effects, many animated enemies) unlike the panning tests: next, a frame capture in the fight.
+New: `gpu_ready` trace stage (`Presenter::TraceGpuReady`, timeline semaphore of the frame's copy), analysis
+`gpu_ready_analyze.py` (scratchpad).
