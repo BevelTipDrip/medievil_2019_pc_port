@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <cstdio>
 #include <cstdlib>
 
 #include "video_core/renderer_vulkan/vk_gpu_profiler.h"
@@ -111,6 +112,7 @@ void GpuProfiler::Print() {
     }
     totals.clear();
     frames = 0;
+    std::fflush(stdout); // the log keeps it even if the game exits without flushing
 }
 
 } // namespace Vulkan

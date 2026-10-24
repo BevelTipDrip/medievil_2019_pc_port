@@ -1004,6 +1004,13 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
         BeforeRecord();
     }
     const auto& regs = Regs();
+    // gow3 GOW3_GPU_PROFILE: frames also end at the display pass without the upscaler's motion
+    // vectors (MediEvil with upscaler off never reached NoteFrameStart: no profile was printed).
+    if (auto* profiler = GpuProfiler::Get(); profiler && !camera_motion->Enabled() &&
+                                             regs.color_buffers[0] &&
+                                             FrameCapture::IsDisplayBuffer(regs.color_buffers[0].Address())) {
+        profiler->BeginFrame();
+    }
     // gow3: the pass copying a finished frame to a display buffer; the previous draw's
     // target is that frame.
     if (camera_motion->Enabled() && regs.color_buffers[0] &&
