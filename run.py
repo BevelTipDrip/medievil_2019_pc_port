@@ -133,7 +133,7 @@ def main():
     if profile.get('ue4_render_scale'):
         import ue4_override
         # Native output: the runtime sets the game's r.SetRes live once it runs (runtime_extra.c),
-        # through an address of the analysed eboot only (patches.py GAMES).
+        # on the analysed eboots only (patches.py GAMES: their 4K framebuffer pool patch).
         from patches import (eboot_matches, game_app_version, game_profile as patch_profile,
                              game_title_id)
         # The version's own entry: without it the first entry of the game (01.00) would be
@@ -149,7 +149,7 @@ def main():
             env.setdefault('GOW3_INTERNAL_WIDTH', width)
             env.setdefault('GOW3_INTERNAL_HEIGHT', height)
         elif output:
-            print('Native output: this game build is not the analysed 01.00 eboot; output stays 1080p',
+            print('Native output: this game build is not one of the analysed eboots; output stays 1080p',
                   flush=True)
     for key, value in profile['env'].items():
         env.setdefault(key, value)
@@ -174,6 +174,17 @@ def main():
     mod_view = game if game.resolve() != original_game else None
     try:
         run_script('prepare.py', game, '--out', out)
+        if profile_ue4:
+            # Where this eboot keeps r.SetRes, for native output and the in-game resolution
+            # switches (runtime_extra.c).
+            import ue4_override
+            slot = ue4_override.setres_slot(out / 'eboot.elf')
+            if slot:
+                env['GOW3_UE4_SETRES_CVAR'] = hex(slot)
+            elif env.get('GOW3_UE4_SETRES'):
+                print('Native output: r.SetRes not found in this game build; output stays 1080p', flush=True)
+                for key in ('GOW3_UE4_SETRES', 'GOW3_INTERNAL_WIDTH', 'GOW3_INTERNAL_HEIGHT'):
+                    env.pop(key, None)
         run_script('link_libc.py', game, '--out', out)
         run_script('link_modules.py', game, '--out', out, '--modules', *profile['modules'])
         run_script('content_profile.py', game, '--out', out, '--sku', env.get('GOW3_CONTENT_SKU', 'full'))

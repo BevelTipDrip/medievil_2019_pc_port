@@ -12,6 +12,7 @@ Usage: python scripts/ue4_override.py <game dir> [--resolution native|480p|720p|
 import argparse
 import hashlib
 import os
+import re
 import struct
 import zlib
 from pathlib import Path
@@ -33,6 +34,31 @@ SCREEN_PERCENTAGE = {'native': None, '480p': '44.444', '720p': '66.667', '1440p'
 TEMPORAL_UPSCALE = {'quality': '66.667', 'balanced': '58', 'performance': '50'}
 NATIVE_OUTPUT = {'720p_native': '1280x720', '1440p_native': '2560x1440', '1800p_native': '3200x1800',
                  '4K_native': '3840x2160'}
+
+
+# r.SetRes (native output, runtime_extra.c): UE4's FSystemResolution::RequestResolutionChange loads
+# the variable's IConsoleVariable* with `mov rbx, [rip+rel32]` right before this code. The slot
+# differs between eboots (US 01.00: 0x5c28328; the 01.02 dump of PR #29: 0x5c28368), so run.py
+# finds it in each eboot.elf instead of using one address.
+SETRES_CODE = re.compile(re.escape(bytes.fromhex('488b1d')) + b'(....)' + re.escape(bytes.fromhex(
+    '837db80074044c8b75b0488b034889dfff5020488b0b25000000ff')), re.S)
+
+
+def setres_slot(elf_path):
+    """Image offset of r.SetRes's IConsoleVariable* in eboot.elf; None unless its code is found once."""
+    elf = Path(elf_path).read_bytes()
+    hits = list(SETRES_CODE.finditer(elf))
+    if len(hits) != 1:
+        return None
+    offset = hits[0].start()
+    phoff, = struct.unpack_from('<Q', elf, 0x20)
+    entry_size, count = struct.unpack_from('<HH', elf, 0x36)
+    for i in range(count):
+        kind, _, file_offset, vaddr, _, file_size, _, _ = struct.unpack_from('<IIQQQQQQ', elf, phoff + i * entry_size)
+        if kind == 1 and file_offset <= offset < file_offset + file_size:
+            rel, = struct.unpack('<i', hits[0].group(1))
+            return offset - file_offset + vaddr + 7 + rel
+    return None
 
 
 def paks_dir(game):
