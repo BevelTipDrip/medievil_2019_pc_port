@@ -121,8 +121,9 @@ Captured on Windows 11 (RTX 5080) with this port.
   CUSA11227 and CUSA12982. The built-in patches have addresses for each version and are chosen by
   the game's APP_VER and the eboot.bin hash (such as the 4K framebuffer pool); cheat edits that do
   not match the installed version are skipped (the log says which). Native output (1440p / 1800p /
-  4K native output) still needs 01.00: its live resolution switch uses 01.00 addresses, so 01.02
-  stays at 1080p output (the render resolutions up to 4K work on both). The 01.02 eboot does not export
+  4K native output) finds the game's resolution setting in each version's own code (tested on 01.00;
+  the 01.02 address was found by @Porticus in #29). If a game build doesn't have that code, native
+  output stays at 1080p and the log says so. The 01.02 eboot does not export
   a few `libSceNpToolkit2` C++ functions the game links; those imports are logged no-ops returning
   0, since the port does not implement that module.
 - **Radeon RX 400/500 and Vega** (older AMD drivers): some crash in `amdvlk64.dll` when the main
@@ -168,6 +169,9 @@ More in [packaging/windows/README-Windows.txt](packaging/windows/README-Windows.
    ```
 
 4. Package: `bash packaging/windows/package.sh` builds `dist/medievil-windows.zip`.
+
+Linux (community build, not official yet): see [packaging/linux/README-Linux.md](packaging/linux/README-Linux.md)
+for building from source and the AppImage script (#13, by @nydal91).
 
 ## How it works
 
