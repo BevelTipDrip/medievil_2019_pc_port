@@ -134,8 +134,11 @@ def main():
         import ue4_override
         # Native output: the runtime sets the game's r.SetRes live once it runs (runtime_extra.c),
         # through an address of the analysed eboot only (patches.py GAMES).
-        from patches import eboot_matches, game_profile as patch_profile, game_title_id
-        known = patch_profile(game_title_id(game))
+        from patches import (eboot_matches, game_app_version, game_profile as patch_profile,
+                             game_title_id)
+        # The version's own entry: without it the first entry of the game (01.00) would be
+        # compared with a 01.02 eboot and every native output would be refused.
+        known = patch_profile(game_title_id(game), game_app_version(game))
         known_build = bool(known and known[3]) and eboot_matches(game, known)
         output = ue4_override.NATIVE_OUTPUT.get(graphics['render_resolution'])
         if output and known_build:

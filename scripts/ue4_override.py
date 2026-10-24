@@ -17,7 +17,10 @@ import zlib
 from pathlib import Path
 
 PAK_MAGIC = 0x5A6F12E1
-PAK_NAME = 'pakchunk99-ps4_P.pak'
+# The game's pak loader opens the patch pak in lowercase (`pakchunk99-ps4_p.pak`); on a
+# case-sensitive filesystem the `_P` spelling alone is never mounted. Windows ignores case.
+PAK_NAME = 'pakchunk99-ps4_p.pak'
+OLD_PAK_NAME = 'pakchunk99-ps4_P.pak'
 CONFIG = 'Engine/Config/PS4/PS4Engine.ini'
 # Render resolution (medievil.ini render_resolution) -> scene scale of the 1080p frame, in percent.
 SCREEN_PERCENTAGE = {'native': None, '480p': '44.444', '720p': '66.667', '1440p': '133.333',
@@ -322,6 +325,8 @@ def apply(game, resolution='native', quality='console', fps=60, debug_menu=False
           upscale='off', aa='taa'):
     """Writes or removes the override pak. Returns a short description of the active state."""
     pak = paks_dir(game) / PAK_NAME
+    # Earlier builds wrote the `_P` spelling: on Linux it stayed behind, unread.
+    (paks_dir(game) / OLD_PAK_NAME).unlink(missing_ok=True)
     values = dict(QUALITY.get(quality, {}))
     if quality in LOCAL_SHADOWS:
         size, threshold = LOCAL_SHADOWS[quality]
@@ -333,8 +338,8 @@ def apply(game, resolution='native', quality='console', fps=60, debug_menu=False
     if percentage:
         values['r.ScreenPercentage'] = percentage
     output = NATIVE_OUTPUT.get(resolution)
-    if output:
-        values['r.setres'] = output
+    # Native output is not set here: the runtime requests it live (GOW3_UE4_SETRES). Writing the
+    # same value into the ini first made that request a no-op.
     scale = TEMPORAL_UPSCALE.get(upscale) if not percentage else None
     if scale:
         values.update({'r.ScreenPercentage': scale, 'r.TemporalAA.Upsampling': '1'})
@@ -366,7 +371,7 @@ def apply(game, resolution='native', quality='console', fps=60, debug_menu=False
     write_pak(pak, files)
     return (f'{resolution if percentage or output else "native 1080p"}'
             f'{f" (r.ScreenPercentage={percentage})" if percentage else ""}'
-            f'{f" (r.setres={output})" if output else ""}'
+            f'{f" (native output {output})" if output else ""}'
             f'{f", temporal upscaling {upscale} ({scale}%)" if scale else ""}'
             f'{f", anti-aliasing {aa}" if aa_quality is not None else ""}, {quality} quality, '
             f'{f"up to {fps}" if fps > 60 else 60} FPS{", debug menu (R3)" if debug_menu else ""}'
