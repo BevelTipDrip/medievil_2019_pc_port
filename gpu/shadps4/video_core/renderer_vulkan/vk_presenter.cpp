@@ -380,7 +380,11 @@ static void SaveScreenshot(const Instance& instance, Scheduler& scheduler, vk::C
     const std::filesystem::path dir = env && *env ? env : "screenshots";
     const std::time_t now = std::time(nullptr);
     std::tm local{};
+#ifdef _WIN32
     localtime_s(&local, &now);
+#else
+    localtime_r(&now, &local);
+#endif
     char stamp[64];
     std::strftime(stamp, sizeof(stamp), "MediEvil_%Y%m%d_%H%M%S", &local);
     scheduler.DeferPriorityOperation([allocator = instance.GetAllocator(), buffer, allocation, info, w, h,
@@ -421,7 +425,12 @@ static void SaveScreenshot(const Instance& instance, Scheduler& scheduler, vk::C
             for (int n = 2; std::filesystem::exists(path); ++n) {
                 path = dir / (name + "_" + std::to_string(n) + ".png");
             }
-            if (std::FILE* f = _wfopen(path.wstring().c_str(), L"wb")) {
+#ifdef _WIN32
+            std::FILE* f = _wfopen(path.wstring().c_str(), L"wb");
+#else
+            std::FILE* f = std::fopen(path.c_str(), "wb");
+#endif
+            if (f) {
                 std::fwrite(png, 1, size, f);
                 std::fclose(f);
                 std::printf("Screenshot: %s (%ux%u)\n", path.string().c_str(), w, h);

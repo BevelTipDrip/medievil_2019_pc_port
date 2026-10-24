@@ -3,6 +3,7 @@
 
 Buttons are named as SDL gamepad buttons ('a', 'leftshoulder', 'dpup', ...); the style chooses
 PlayStation or Xbox symbols, colors and labels."""
+import sys
 
 # PlayStation symbols and Xbox letters of the face buttons, with their colors.
 FACE = {
@@ -43,6 +44,11 @@ def spec(button, style):
     return kind, label, INK
 
 
+# Windows' Segoe UI; elsewhere DejaVu Sans (bundled with the AppImage), a little wider.
+UI_FONT = 'Segoe UI' if sys.platform == 'win32' else 'DejaVu Sans'
+UI_SCALE = 1.0 if sys.platform == 'win32' else 0.86
+
+
 def draw(canvas, button, style, size):
     """Draws the icon of `button` filling a size × size canvas (cleared first)."""
     canvas.delete('all')
@@ -51,11 +57,11 @@ def draw(canvas, button, style, size):
         return
     kind, text, color = found
     s, m = size, size / 2
-    font = ('Segoe UI', max(6, int(s * 0.28)), 'bold')
+    font = (UI_FONT, max(6, int(s * 0.28 * UI_SCALE)), 'bold')
     if kind in ('symbol', 'letter'):
         canvas.create_oval(1, 1, s - 1, s - 1, fill=BODY if kind == 'symbol' else color, outline='')
         if kind == 'letter':
-            canvas.create_text(m, m, text=text, fill='#101010', font=('Segoe UI', max(7, int(s * 0.42)), 'bold'))
+            canvas.create_text(m, m, text=text, fill='#101010', font=(UI_FONT, max(7, int(s * 0.42 * UI_SCALE)), 'bold'))
             return
         w, r = max(2, s // 11), s * 0.24
         if text == 'cross':
@@ -86,5 +92,5 @@ def draw(canvas, button, style, size):
         canvas.create_oval(x1 - 2 * r, top, x1, top + 2 * r, fill=BODY, outline='')
         canvas.create_rectangle(x0 + r, top, x1 - r, bottom, fill=BODY, outline='')
         canvas.create_rectangle(x0, top + r, x1, bottom, fill=BODY, outline='')
-        small = ('Segoe UI', max(5, int(s * (0.2 if len(text) > 3 else 0.3))), 'bold')
+        small = (UI_FONT, max(5, int(s * UI_SCALE * (0.2 if len(text) > 3 else 0.3))), 'bold')
         canvas.create_text(m, (top + bottom) / 2, text=text, fill=color, font=small)

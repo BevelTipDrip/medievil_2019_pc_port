@@ -271,7 +271,14 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
     setenv("VK_DRIVER_FILES", icd_path.c_str(), true);
 #endif
 
+#if defined(__linux__)
+    // gow3: the loader the program already links. vulkan.hpp tries "libvulkan.so" first, which
+    // (with the development symlink installed) can be a second loader whose exported functions
+    // are interposed by the first: instance handles then cross loaders and crash.
+    static vk::detail::DynamicLoader dl{"libvulkan.so.1"};
+#else
     static vk::detail::DynamicLoader dl;
+#endif
     VULKAN_HPP_DEFAULT_DISPATCHER.init(
         dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr"));
 

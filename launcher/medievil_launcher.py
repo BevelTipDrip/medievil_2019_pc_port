@@ -32,12 +32,18 @@ FROZEN = getattr(sys, 'frozen', False)
 PORT_DIR = Path(sys.executable).resolve().parent if FROZEN else Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PORT_DIR / 'scripts'))
 import save_backup  # noqa: E402  (scripts/)
+WINDOWS = sys.platform == 'win32'
 DATA_DIR = Path(os.environ.get('GOW3_DATA_DIR', PORT_DIR))
 # Portable mode (issue #19): with a file portable.txt beside the launcher, its settings and caches
-# stay in the launcher folder (launcher-data) instead of %APPDATA%; saves already live there.
+# stay in the launcher folder (launcher-data) instead of %APPDATA% (~/.config on Linux); saves already
+# live there. Inside the read-only AppImage there is no portable.txt, so it never applies there.
 PORTABLE = (PORT_DIR / 'portable.txt').exists()
-CONFIG_DIR = (PORT_DIR / 'launcher-data' if PORTABLE else
-              Path(os.environ.get('APPDATA') or os.environ.get('USERPROFILE') or PORT_DIR) / 'medievil-launcher')
+if PORTABLE:
+    CONFIG_DIR = PORT_DIR / 'launcher-data'
+elif WINDOWS:
+    CONFIG_DIR = Path(os.environ.get('APPDATA') or os.environ.get('USERPROFILE') or PORT_DIR) / 'medievil-launcher'
+else:
+    CONFIG_DIR = Path(os.environ.get('XDG_CONFIG_HOME') or Path.home() / '.config') / 'medievil-launcher'
 CONFIG_FILE = CONFIG_DIR / 'settings.json'
 MOD_PRESETS = DATA_DIR / 'mods_presets.json'
 APP_NAME = 'MediEvil'
@@ -58,6 +64,11 @@ USER_FILES = ('user', 'out', 'mods', 'medievil.ini', 'mods.json', 'mods_presets.
 
 def attach_stdio():
     """A windowed executable starts without sys.stdout; inherited pipes or a console still exist."""
+    if not WINDOWS:
+        for name in ('stdout', 'stderr'):
+            if getattr(sys, name) is None:
+                setattr(sys, name, open(os.devnull, 'w'))
+        return
     import msvcrt
     for name, std in (('stdout', -11), ('stderr', -12)):
         if getattr(sys, name) is not None:
@@ -122,6 +133,12 @@ def _(en, ru=None):
 
 
 def windows_language():
+    if not WINDOWS:  # Linux: the locale (LANGUAGE, LC_ALL, LC_MESSAGES, LANG), e.g. pt_BR.UTF-8
+        for key in ('LANGUAGE', 'LC_ALL', 'LC_MESSAGES', 'LANG'):
+            code = (os.environ.get(key) or '').split(':')[0].split('_')[0].split('.')[0].lower()
+            if code and code not in ('c', 'posix'):
+                return code if code == 'en' or code in lang.WINDOWS_LANGUAGES.values() else 'en'
+        return 'en'
     try:
         primary = ctypes.windll.kernel32.GetUserDefaultUILanguage() & 0x3ff
     except (AttributeError, OSError):
@@ -145,7 +162,8 @@ INI_DEFAULTS = {'upscaler': 'off', 'preset': '1', 'sharpen': '1', 'sharpness': '
 DISPLAY_MODES = [('windowed', ('Windowed',)), ('borderless', ('Borderless',)), ('fullscreen', ('Fullscreen',))]
 FPS_LIMITS = [('30', ('30',)), ('60', ('60',)), ('120', ('120',)), ('240', ('240',)), ('0', ('Unlimited',)),
               ('-1', ('Half display refresh (smoothest)',))]
-APP_DEFAULTS = {'ui_language': 'en', 'game_dir': os.environ.get('GOW3_GAME_DIR', str(PORT_DIR.parent / 'medieval' / 'CUSA11227')), 'user_dir': '',
+# No default game folder on Linux: the port's folder is inside the read-only AppImage there.
+APP_DEFAULTS = {'ui_language': 'en', 'game_dir': os.environ.get('GOW3_GAME_DIR', str(PORT_DIR.parent / 'medieval' / 'CUSA11227') if WINDOWS else ''), 'user_dir': '',
                 'mods_dir': '', 'mods_enabled': True, 'patches_dir': '', 'language': '1',
                 'player_name': '', 'hdr': False, 'draw_pipe': '', 'readbacks': '', 'vulkan_compat': False,
                 'background_warmup': True, 'parallel_warmup': True, 'pipeline_binary_cache': True, 'perf_diag': False, 'frame_capture_key': False, 'frame_stats': False, 'gpu_profile': False,
@@ -601,7 +619,7 @@ class Launcher:
               foreground=[('active', GOLD), ('disabled', MUTED)], bordercolor=[('active', GOLD)])
         s.map('TCombobox', bordercolor=[('focus', GOLD), ('hover', theme.BRONZE)])
         s.map('TEntry', bordercolor=[('focus', GOLD)])
-        s.configure('Play.TButton', background=ACCENT, foreground='#f4ece0', font=('Georgia', 15, 'bold'),
+        s.configure('Play.TButton', background=ACCENT, foreground='#f4ece0', font=('Georgia' if WINDOWS else 'DejaVu Serif', 15, 'bold'),
                     padding=(36, 10), borderwidth=0)
         s.map('Play.TButton', background=[('active', ACCENT_HI), ('disabled', '#1f2a1a')],
               foreground=[('disabled', '#8a7a78')])
@@ -1458,7 +1476,7 @@ class Launcher:
         ttk.Button(top, text=_('Copy', 'Копировать'), command=self.copy_log).pack(side='right')
         ttk.Button(top, text=_('Clear', 'Очистить'), command=lambda: self.set_log('')).pack(side='right', padx=6)
         self.log = tk.Text(page, wrap='none', bg='#0a0810', fg='#d8e8c8', insertbackground=TEXT, relief='flat',
-                           font=('Consolas', 9), padx=8, pady=6, state='disabled', highlightthickness=0)
+                           font=('Consolas', 9) if WINDOWS else 'TkFixedFont', padx=8, pady=6, state='disabled', highlightthickness=0)
         bar = ttk.Scrollbar(page, command=self.log.yview)
         self.log.configure(yscrollcommand=bar.set)
         bar.pack(side='right', fill='y')
@@ -1689,7 +1707,8 @@ class Launcher:
         try:
             self.process = subprocess.Popen(run_command(), cwd=PORT_DIR, env=game_environment(self.app),
                                             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                                            stderr=subprocess.STDOUT, creationflags=NO_WINDOW)
+                                            stderr=subprocess.STDOUT, creationflags=NO_WINDOW,
+                                            start_new_session=not WINDOWS)
         except OSError as error:
             self.append(_('Could not start: {}', 'Не удалось запустить: {}').format(error) + '\n')
             self.process = None
@@ -1774,7 +1793,14 @@ class Launcher:
             self.collect()
         elif not path.exists():
             path.mkdir(parents=True, exist_ok=True)
-        os.startfile(str(path))
+        if WINDOWS:
+            os.startfile(str(path))
+            return
+        try:  # the desktop's file manager or editor
+            subprocess.Popen(['xdg-open', str(path)], stdin=subprocess.DEVNULL,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        except OSError as error:
+            self.messagebox.showerror(APP_NAME, f'{path}\n\n{error}')
 
     # ---- updates -------------------------------------------------------------------------------
     def check_update(self, manual=False):
@@ -1878,8 +1904,41 @@ class Launcher:
                                                  'it is rebuilt.', 'Кэш шейдеров очищен. Следующий запуск несколько '
                                                  'минут будет подтормаживать, пока кэш собирается заново.'))
 
+    def linux_shortcut(self):
+        """MediEvil.desktop in the application menu (and on the desktop when there is one)."""
+        appimage = os.environ.get('APPIMAGE')
+        if appimage:
+            command = f'"{appimage}"'
+        else:
+            command = f'"{sys.executable}" "{Path(__file__).resolve()}"'
+        icon = CONFIG_DIR / 'medievil.png'
+        try:
+            CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+            for source in (Path(self.app.get('game_dir') or '.') / 'sce_sys' / 'icon0.png',
+                           PORT_DIR / 'launcher' / 'medievil.png'):
+                if source.is_file():
+                    shutil.copyfile(source, icon)
+                    break
+            entry = ('[Desktop Entry]\nType=Application\nName=MediEvil\nComment=MediEvil (PS4) for PC\n'
+                     f'Exec={command}\nIcon={icon}\nTerminal=false\nCategories=Game;\n')
+            data_home = Path(os.environ.get('XDG_DATA_HOME') or Path.home() / '.local' / 'share')
+            targets = [data_home / 'applications' / 'medievil-pc.desktop']
+            desktop = Path.home() / 'Desktop'
+            if desktop.is_dir():
+                targets.append(desktop / 'MediEvil.desktop')
+            for target in targets:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(entry, encoding='utf-8')
+                target.chmod(0o755)
+        except OSError as error:
+            self.messagebox.showerror(APP_NAME, str(error))
+            return
+        self.messagebox.showinfo(APP_NAME, _('Shortcut created on the desktop.', 'Ярлык создан на рабочем столе.'))
+
     def shortcut(self):
         """MediEvil.lnk on the desktop."""
+        if not WINDOWS:
+            return self.linux_shortcut()
         if FROZEN:
             target, arguments, icon = sys.executable, '', f'{sys.executable},0'
         else:  # a source tree: the launcher script with the windowless Python
@@ -1910,6 +1969,12 @@ class GameJob:
     by the in-game restart (no longer descendants of the first process)."""
 
     def __init__(self, process):
+        self.process = process
+        if not WINDOWS:
+            # Linux: run.py starts in its own session (play()), so its process group holds
+            # medievil-runtime and the launches of the in-game restart.
+            self.handle = None
+            return
         kernel32 = ctypes.windll.kernel32
         kernel32.CreateJobObjectW.restype = ctypes.c_void_p
         self.handle = kernel32.CreateJobObjectW(None, None)
@@ -1917,6 +1982,12 @@ class GameJob:
             kernel32.AssignProcessToJobObject(ctypes.c_void_p(self.handle), ctypes.c_void_p(int(process._handle)))
 
     def terminate(self):
+        if not WINDOWS:
+            try:
+                os.killpg(self.process.pid, 15)
+            except OSError:
+                pass
+            return
         if self.handle:
             ctypes.windll.kernel32.TerminateJobObject(ctypes.c_void_p(self.handle), 1)
 
@@ -1996,7 +2067,7 @@ def main():
         sys.exit(run_role(args))
     settings = {**APP_DEFAULTS, **load_json(CONFIG_FILE, {})}
     LANG = settings.get('ui_language') or windows_language()
-    if args[:1] == ['--install-update'] and len(args) == 3:
+    if WINDOWS and args[:1] == ['--install-update'] and len(args) == 3:
         sys.exit(install_update(args[1], args[2]))
     if FROZEN and UPDATE_DIR not in PORT_DIR.parents:
         shutil.rmtree(UPDATE_DIR, ignore_errors=True)  # what a finished update left behind
@@ -2010,8 +2081,16 @@ def main():
     import tkinter as tk
     from tkinter import filedialog, messagebox, ttk
     root = tk.Tk()
-    Launcher(root, tk, ttk, filedialog, messagebox)
+    launcher = Launcher(root, tk, ttk, filedialog, messagebox)
     root.mainloop()
+    # Linux: the window is gone but a running game is still this process's child. An AppImage is
+    # mounted only while its first process lives, so stay until the game ends (its output keeps
+    # going to last_run.log through the reader thread).
+    if not WINDOWS and launcher.process and launcher.process.poll() is None:
+        try:
+            launcher.process.wait()
+        except KeyboardInterrupt:
+            pass
 
 
 if __name__ == '__main__':
