@@ -959,6 +959,7 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
         ASSERT_MSG(buffer.group_index >= 0, "Trying to flip an unregistered buffer!");
         const auto& group = port->groups[buffer.group_index];
         frame = presenter->PrepareFrame(group, buffer.address_left);
+        presenter->TraceGpuReady(frame, flip_arg); // flip trace only
     }
 
     // gow3 newest-frame mode: the frame is copied out of the guest's buffer (PrepareFrame), so

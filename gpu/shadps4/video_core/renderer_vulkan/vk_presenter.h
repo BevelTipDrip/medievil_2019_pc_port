@@ -115,6 +115,10 @@ public:
     /// gow3 newest-frame mode: returns a prepared frame to the pool without showing it.
     void DiscardFrame(Frame* frame);
 
+    /// gow3 flip trace (GOW3_FLIP_TRACE): notes "gpu_ready" once the GPU has finished the frame's
+    /// work (the game's rendering, then the copy out of its buffer), on a thread of its own.
+    void TraceGpuReady(const Frame* frame, s64 flip_arg);
+
 private:
     Frame* GetRenderFrame();
 
@@ -150,6 +154,19 @@ private:
     std::condition_variable free_cv;
     std::condition_variable_any frame_cv;
     std::vector<VAddr> vo_buffers_addr;
+
+    /// Waits until `tick` of `semaphore` (one of the schedulers' work semaphores) or `until`.
+    bool WaitReady(vk::Semaphore semaphore, u64 tick, std::chrono::steady_clock::time_point until);
+    void GpuReadyThread(std::stop_token token);
+    struct GpuReadyEntry {
+        vk::Semaphore semaphore;
+        u64 tick;
+        s64 flip_arg;
+    };
+    std::mutex gpu_ready_mutex;
+    std::condition_variable_any gpu_ready_cv;
+    std::deque<GpuReadyEntry> gpu_ready_queue;
+    std::jthread gpu_ready_thread; ///< last: stopped first
 };
 
 } // namespace Vulkan

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/debug.h"
+#include "common/thread.h"
+#include "gow3_flip_trace.h"
 #include "common/elf_info.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
@@ -864,17 +866,60 @@ bool Presenter::WaitFrameReady(Frame* frame, std::chrono::steady_clock::time_poi
     if (frame == nullptr) {
         return true;
     }
+    return WaitReady(frame->ready_semaphore, frame->ready_tick, until);
+}
+
+void Presenter::TraceGpuReady(const Frame* frame, s64 flip_arg) {
+    if (frame == nullptr || !Gow3FlipTrace::File()) {
+        return;
+    }
+    {
+        std::scoped_lock lock{gpu_ready_mutex};
+        if (!gpu_ready_thread.joinable()) {
+            gpu_ready_thread = std::jthread([this](std::stop_token token) { GpuReadyThread(token); });
+        }
+        gpu_ready_queue.push_back({frame->ready_semaphore, frame->ready_tick, flip_arg});
+    }
+    gpu_ready_cv.notify_one();
+}
+
+void Presenter::GpuReadyThread(std::stop_token token) {
+    Common::SetCurrentThreadName("gow3:GpuReady");
+    while (!token.stop_requested()) {
+        GpuReadyEntry next{};
+        {
+            std::unique_lock lock{gpu_ready_mutex};
+            if (!gpu_ready_cv.wait(lock, token, [&] { return !gpu_ready_queue.empty(); })) {
+                return;
+            }
+            next = gpu_ready_queue.front();
+            gpu_ready_queue.pop_front();
+        }
+        // Frames finish in queue order; a frame not finished in a second is left out.
+        const auto give_up = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+        while (!token.stop_requested() && std::chrono::steady_clock::now() < give_up) {
+            if (WaitReady(next.semaphore, next.tick,
+                          std::chrono::steady_clock::now() + std::chrono::milliseconds(20))) {
+                Gow3FlipTrace::Note("gpu_ready", next.flip_arg);
+                break;
+            }
+        }
+    }
+}
+
+bool Presenter::WaitReady(vk::Semaphore handle_in, u64 tick,
+                          std::chrono::steady_clock::time_point until) {
     Semaphore* semaphore = nullptr;
     for (Scheduler* scheduler : {&draw_scheduler, &flip_scheduler, &present_scheduler}) {
-        if (scheduler->GetWorkSemaphore()->Handle() == frame->ready_semaphore) {
+        if (scheduler->GetWorkSemaphore()->Handle() == handle_in) {
             semaphore = scheduler->GetWorkSemaphore();
         }
     }
-    if (semaphore == nullptr || semaphore->IsFree(frame->ready_tick)) {
+    if (semaphore == nullptr || semaphore->IsFree(tick)) {
         return true;
     }
     semaphore->Refresh();
-    if (semaphore->IsFree(frame->ready_tick)) {
+    if (semaphore->IsFree(tick)) {
         return true;
     }
     const auto now = std::chrono::steady_clock::now();
@@ -882,7 +927,7 @@ bool Presenter::WaitFrameReady(Frame* frame, std::chrono::steady_clock::time_poi
         return false;
     }
     const vk::Semaphore handle = semaphore->Handle();
-    const u64 value = frame->ready_tick;
+    const u64 value = tick;
     const vk::SemaphoreWaitInfo wait_info = {
         .semaphoreCount = 1,
         .pSemaphores = &handle,
