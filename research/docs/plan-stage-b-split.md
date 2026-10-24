@@ -746,3 +746,16 @@ stamps); the user reports the same dip size at higher ticks, which our present s
 the GPU (effects, many animated enemies) unlike the panning tests: next, a frame capture in the fight.
 New: `gpu_ready` trace stage (`Presenter::TraceGpuReady`, timeline semaphore of the frame's copy), analysis
 `gpu_ready_analyze.py` (scratchpad).
+
+### T-P960: high tick + limiter, on top of the T-P120 settings (2026-10-23, trace `flip-trace-25.csv`)
+
+The user's idea: a much higher tick, paced on every Nth. `present_tick_hz=960`, `fps_limit=120` (8 ticks a slot),
+`present_precise_limit=1`, precise tick, present on the vblank thread, Immediate (`vsync=0`). A frame that misses
+its slot leaves at the next ~1 ms tick instead of a whole slot later. **Fight (last 40 s): no 16.7 ms frames (the
+120 tick's exact-60 dips), 34 frames of 9-12 ms, 1% low 107.6, 0.1% low 100.5; presents 8.33-8.34 ms in most 5 s
+windows. The user: matches, dips ~95 FPS instead of 60.** GPU finish times spread more than the presents (1 in
+10 GPU steps 10-11 ms in the fight): the fight's GPU cost, next to profile (`GOW3_GPU_PROFILE=1`). Cost: the
+precise tick spins ~0.7 of every 1.04 ms (two thirds of a core); to lower (`GOW3_TICK_SPIN_US`, or the precise
+tick off at 960 since the precise limiter times the slots).
+This is the 480-tick-plus-limiter design that failed before, now with exact timing and no hand-off: the old failure
+was the coarse timing around it, not the high tick itself.
