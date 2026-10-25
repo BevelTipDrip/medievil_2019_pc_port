@@ -58,7 +58,8 @@ public:
 private:
     GpuProfiler(const Instance& instance, Scheduler& scheduler);
     void WriteTimestamp(u64 key);
-    void Collect(u32 slice);
+    /// Reads a frame's timestamps without waiting; false while the GPU has not written them all.
+    bool Collect(u32 slice);
     void Print();
 
     static constexpr u32 NumSlices = 4;
@@ -73,6 +74,8 @@ private:
     std::array<std::vector<u64>, NumSlices> keys; ///< label of each timestamp but the last
     std::array<u32, NumSlices> used{};
     std::array<bool, NumSlices> pending{};
+    /// The current frame is not profiled: its slice still holds an older frame not read yet.
+    bool skip_frame = false;
     std::unordered_map<u64, std::string> described;
     struct Total {
         double ms = 0;

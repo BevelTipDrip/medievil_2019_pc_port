@@ -34,7 +34,7 @@ GpuProfiler::GpuProfiler(const Instance& instance, Scheduler& scheduler_)
 }
 
 void GpuProfiler::WriteTimestamp(u64 key) {
-    if (used[slice] + 1 >= SliceQueries) {
+    if (skip_frame || used[slice] + 1 >= SliceQueries) {
         return; // the frame's slice is full: the rest of the frame goes to the last label
     }
     // Outside render passes: radv_CmdWriteTimestamp2 crashed inside some. Marks sit where a
@@ -50,7 +50,7 @@ void GpuProfiler::WriteTimestamp(u64 key) {
 
 void GpuProfiler::BeginFrame() {
     // Close the frame: one more timestamp without a label.
-    if (used[slice] > 0 && used[slice] < SliceQueries) {
+    if (!skip_frame && used[slice] > 0 && used[slice] < SliceQueries) {
         scheduler.EndRendering();
         const u32 query = slice * SliceQueries + used[slice]++;
         scheduler.Record([pool = *pool, query](vk::CommandBuffer cmdbuf) {
@@ -59,10 +59,15 @@ void GpuProfiler::BeginFrame() {
         pending[slice] = true;
     }
     slice = (slice + 1) % NumSlices;
-    // The oldest slice: its frame was submitted four frames ago.
-    if (pending[slice]) {
-        Collect(slice);
+    // The oldest slice: its frame was recorded four frames ago. Never wait for it: the draw
+    // recording thread can be behind this one, and a blocking wait here stalled the game at boot
+    // (T-P960 profile runs). Not written yet: this frame is left out, the slice is tried again.
+    if (pending[slice] && !Collect(slice)) {
+        skip_frame = true;
+        Print();
+        return;
     }
+    skip_frame = false;
     if (used[slice]) {
         device.resetQueryPool(*pool, slice * SliceQueries, used[slice]);
     }
@@ -72,15 +77,15 @@ void GpuProfiler::BeginFrame() {
     Print();
 }
 
-void GpuProfiler::Collect(u32 which) {
+bool GpuProfiler::Collect(u32 which) {
     const u32 count = used[which];
     std::vector<u64> stamps(count);
     // Four frames on this is complete unless the GPU lags that far: then wait for it.
     const auto result = device.getQueryPoolResults(
         *pool, which * SliceQueries, count, count * sizeof(u64), stamps.data(), sizeof(u64),
-        vk::QueryResultFlagBits::e64 | vk::QueryResultFlagBits::eWait);
+        vk::QueryResultFlagBits::e64);
     if (result != vk::Result::eSuccess) {
-        return;
+        return false; // eNotReady: the GPU has not written them all yet
     }
     for (u32 i = 0; i + 1 < count; ++i) {
         const double ms = double(stamps[i + 1] - stamps[i]) * period_ns / 1e6;
@@ -89,6 +94,7 @@ void GpuProfiler::Collect(u32 which) {
         ++total.segments;
     }
     ++frames;
+    return true;
 }
 
 void GpuProfiler::Print() {
