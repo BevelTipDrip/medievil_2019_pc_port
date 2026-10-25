@@ -94,6 +94,45 @@ VideoOutDriver::VideoOutDriver(u32 width, u32 height) {
     }
 }
 
+// gow3 GOW3_PRESENT_PRIORITY=1: the presenting threads (vblank tick, pacer, swap) run time-critical
+// and in the MMCSS "Games" task, high priority. Common::SetCurrentThreadRealtime is a no-op on
+// Windows: these threads ran at normal priority, and with a fixed tick grid releases were
+// processed up to a tick late (T-F15: 7/9-tick gaps in equal numbers).
+static void BoostPresentingThread(const char* name) {
+#ifdef _WIN32
+    static const bool enabled = [] {
+        const char* env = std::getenv("GOW3_PRESENT_PRIORITY");
+        return env && env[0] == '1';
+    }();
+    if (!enabled) {
+        return;
+    }
+    const BOOL priority = SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+    bool mmcss = false;
+    if (const HMODULE avrt = LoadLibraryA("avrt.dll")) {
+        using SetTask = HANDLE(WINAPI*)(LPCWSTR, LPDWORD);
+        using SetPriority = BOOL(WINAPI*)(HANDLE, int);
+        const auto set_task = reinterpret_cast<SetTask>(
+            reinterpret_cast<void*>(GetProcAddress(avrt, "AvSetMmThreadCharacteristicsW")));
+        const auto set_priority = reinterpret_cast<SetPriority>(
+            reinterpret_cast<void*>(GetProcAddress(avrt, "AvSetMmThreadPriority")));
+        DWORD task_index = 0;
+        if (set_task) {
+            if (const HANDLE task = set_task(L"Games", &task_index)) {
+                mmcss = true;
+                if (set_priority) {
+                    set_priority(task, 1 /* AVRT_PRIORITY_HIGH */);
+                }
+            }
+        }
+    }
+    std::printf("VideoOut: %s thread priority %s, MMCSS %s\n", name, priority ? "time-critical" : "unchanged",
+                mmcss ? "Games (high)" : "not available");
+#else
+    (void)name;
+#endif
+}
+
 void VideoOutDriver::RunPresenter(std::function<void()> work, bool if_idle) {
     if (!separate_swap) {
         work();
@@ -111,6 +150,7 @@ void VideoOutDriver::RunPresenter(std::function<void()> work, bool if_idle) {
 
 void VideoOutDriver::SwapThread(std::stop_token token) {
     Common::SetCurrentThreadName("gow3:Present");
+    BoostPresentingThread("swap");
     while (true) {
         std::function<void()> work;
         {
@@ -810,6 +850,7 @@ void VideoOutDriver::DropOlderFinished() {
 
 void VideoOutDriver::PacerThread(std::stop_token token) {
     Common::SetCurrentThreadName("gow3:Pacer");
+    BoostPresentingThread("pacer");
     Common::SetCurrentThreadRealtime(std::chrono::milliseconds(8));
     auto next = std::chrono::steady_clock::now();
     u32 limit = 0;
@@ -1016,6 +1057,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
                                                  EmulatorSettings.GetVblankFrequency());
 
     Common::SetCurrentThreadName("shadPS4:PresentThread");
+    BoostPresentingThread("vblank");
     Common::SetCurrentThreadRealtime(vblank_period);
 
     Common::AccurateTimer timer{vblank_period};

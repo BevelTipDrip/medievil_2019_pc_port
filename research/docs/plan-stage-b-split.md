@@ -905,3 +905,6 @@ per 10 s window; releases 7.56-7.83 / 8.84-9.11 ms): with a fixed grid that only
 processed about a tick late, i.e. the tick thread did not get the CPU on time. `SetCurrentThreadRealtime` is a
 no-op on Windows (normal priority); RTSS hides such delays by waiting inside the present. Next: real priority for
 the tick/present/pacer threads (time-critical + MMCSS), behind a switch, tested with the hold mode.
+`GOW3_PRESENT_PRIORITY=1` (off by default): the vblank, pacer and swap threads call `SetThreadPriority(...,
+THREAD_PRIORITY_TIME_CRITICAL)` and join the MMCSS "Games" task at high priority (`avrt.dll` loaded at run time);
+the log prints the result per thread. First test: with the hold mode (`GOW3_LIMIT_HOLD=1`), RTSS off.
