@@ -867,3 +867,14 @@ exactly every 8.333 ms (0 frames off by > 0.1 ms; the alternating bumps are gone
 between the frame's acquire/blit and its present is rejected. RTSS's presents *return* 8.33 apart: it waits after
 the driver's call (back edge), pacing the game's next frame start rather than the present. Next:
 `GOW3_LIMIT_AFTER_PRESENT=1` (with `GOW3_LIMIT_IN_PRESENT=1`): present at once, then hold until the slot.
+
+**T-F12 (`GOW3_LIMIT_IN_PRESENT=1` + `GOW3_LIMIT_AFTER_PRESENT=1`, back edge, trace 43):** every stage matched the
+RTSS run (present returns 8.333 / 8.334, game submits 8.04 / 8.63, GPU finish 8.07 / 8.57); the user: about the same
+as T-F11, larger intermittent spikes, **still flicker**, the graph less steady than with RTSS. Both present-side
+modes rejected (they stay opt-in). NVCP present method in all of these runs: "Prefer native" (the user set it days
+ago; Auto chose non-deterministically), so the 0.2-0.5 ms inside vkQueuePresentKHR is the native path, not DXGI.
+**T-F13 (no new present switches, `GOW3_PACER_SPIN_US=100`, RTSS limiter at 119, trace 44):** our 120 limiter never
+waits; present returns 8.402 / 8.404 ms (1% / 99%), 1% / 0.1% lows 118.8-119.0 / 117.0-118.9, no flicker. RTSS at 120
+flickers: two limiters at the same nominal rate with independent phases fight (the user). Inference: our own modes
+have two clocks too, the limiter's slots and the 960 Hz precise tick, out of step after each hold. Next: one clock
+(tick and slots from the same grid). Also noted: CPU usage alternating 12-25% (spinning waits; to measure).
