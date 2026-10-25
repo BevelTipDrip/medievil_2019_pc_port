@@ -1006,10 +1006,17 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
     const auto& regs = Regs();
     // gow3 GOW3_GPU_PROFILE: frames also end at the display pass without the upscaler's motion
     // vectors (MediEvil with upscaler off never reached NoteFrameStart: no profile was printed).
-    if (auto* profiler = GpuProfiler::Get(); profiler && !camera_motion->Enabled() &&
-                                             regs.color_buffers[0] &&
-                                             FrameCapture::IsDisplayBuffer(regs.color_buffers[0].Address())) {
-        profiler->BeginFrame();
+    // Only the first draw of a display pass: the game draws into the display buffer about four
+    // times a frame (the image, then the UI), which split each frame into slivers (T-P960 profile 4:
+    // 480 "frames" a second, 0.02 ms each).
+    if (auto* profiler = GpuProfiler::Get(); profiler && !camera_motion->Enabled()) {
+        static bool in_display_pass = false;
+        const bool display = regs.color_buffers[0] &&
+                             FrameCapture::IsDisplayBuffer(regs.color_buffers[0].Address());
+        if (display && !in_display_pass) {
+            profiler->BeginFrame();
+        }
+        in_display_pass = display;
     }
     // gow3: the pass copying a finished frame to a display buffer; the previous draw's
     // target is that frame.
