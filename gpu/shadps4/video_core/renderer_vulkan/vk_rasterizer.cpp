@@ -3095,12 +3095,22 @@ RenderState Rasterizer::BeginRenderingFull(const GraphicsPipeline* pipeline) {
                                     ? vk::ImageLayout::eDepthReadOnlyStencilAttachmentOptimal
                                 : has_stencil ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
                                               : vk::ImageLayout::eDepthReadOnlyOptimal;
+        // gow3 GOW3_SKIP_READ_BARRIERS=1: a read-only depth layout cannot be written, so its access
+        // is a read (it was recorded as a write, and every later read then got a barrier: T-F3).
+        static const bool skip_read_barriers = [] {
+            const char* env = std::getenv("GOW3_SKIP_READ_BARRIERS");
+            return env && env[0] == '1';
+        }();
+        const bool read_only_depth = new_layout == vk::ImageLayout::eDepthStencilReadOnlyOptimal ||
+                                     new_layout == vk::ImageLayout::eDepthReadOnlyOptimal;
+        const auto depth_access = skip_read_barriers && read_only_depth
+                                      ? vk::AccessFlagBits2::eDepthStencilAttachmentRead
+                                      : vk::AccessFlagBits2::eDepthStencilAttachmentWrite |
+                                            vk::AccessFlagBits2::eDepthStencilAttachmentRead;
         if (!reduced) needs_barrier |= runtime.Transit(&image, new_layout,
                                          vk::PipelineStageFlagBits2::eEarlyFragmentTests |
                                              vk::PipelineStageFlagBits2::eLateFragmentTests,
-                                         vk::AccessFlagBits2::eDepthStencilAttachmentWrite |
-                                             vk::AccessFlagBits2::eDepthStencilAttachmentRead,
-                                         desc.view_info.range);
+                                         depth_access, desc.view_info.range);
 
         state.width = std::min<u32>(state.width, image.info.size.width);
         state.height = std::min<u32>(state.height, image.info.size.height);
