@@ -891,3 +891,10 @@ when that overran the next tick, `next_tick = max(next + period, now - period)` 
 clock" moved. Releases 7.82 / 8.85 ms, presents 7.78 / 8.88. A real single clock would need a grid that never
 re-anchors and the present off the tick thread (or N = 2 at 240 Hz). Capped-play recommendation for now: RTSS at
 119 with our limiter at 120 (idle), T-F13.
+
+T-F14 split (the user: RTSS at 119 from ~415 s): one clock alone 1% lows 101-113 per 10 s window, releases 7 or 9
+ticks apart in every window; with RTSS on top the screen held 8.40 / 8.40 / 8.40 ms (1% lows 118.9-119.0) while our
+releases still jittered (7.7 / 9.1): RTSS's wait inside the present absorbs everything before it.
+**One clock v2:** a fixed grid (tick k at start + k x period; a missed tick skips to the next grid point, same
+phase), slots counted in grid ticks (`last_release_tick + N`), so a slow loop pass (the inline present) cannot move
+a slot.

@@ -1109,7 +1109,10 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         return env && env[0] == '1';
     }();
     u32 one_clock_ticks = 0; // N; 0: off
-    u32 ticks_since_flip = 0;
+    // The grid: tick k is at grid_start + k * tick_period, never re-anchored (T-F14: re-anchoring on
+    // a late tick moved the "one clock"; frames left after 7 or 9 ticks). Slots count grid ticks.
+    std::chrono::steady_clock::time_point grid_start{};
+    u64 grid_tick = 0, last_release_tick = 0;
     auto tick_period = std::chrono::nanoseconds(vblank_period);
     u32 frame_limit = current_limit();
     auto frame_period = frame_limit ? std::chrono::nanoseconds(1000000000 / frame_limit)
@@ -1118,6 +1121,8 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     const auto set_one_clock = [&](u32 limit) {
         one_clock_ticks = 0;
         tick_period = std::chrono::nanoseconds(vblank_period);
+        grid_start = {};
+        grid_tick = last_release_tick = 0;
         if (one_clock && precise_tick && limit) {
             one_clock_ticks = std::max(1u, (vblank_hz + limit / 2) / limit);
             tick_period = std::chrono::nanoseconds(1000000000ll / (s64(limit) * one_clock_ticks));
@@ -1156,6 +1161,17 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         pacer_limit.store(newest_frame ? frame_limit : 0, std::memory_order_relaxed);
         if (display_vblank) {
             display_vblank->Wait();
+        } else if (precise_tick && one_clock_ticks && frame_limit) {
+            const auto now_tick = std::chrono::steady_clock::now();
+            if (grid_start == std::chrono::steady_clock::time_point{}) {
+                grid_start = now_tick;
+            }
+            ++grid_tick;
+            if (grid_start + tick_period * grid_tick < now_tick - tick_period) {
+                // a whole tick missed: the next grid tick, same phase
+                grid_tick = u64((now_tick - grid_start) / tick_period) + 1;
+            }
+            PreciseWait(grid_start + tick_period * grid_tick, tick_spin);
         } else if (precise_tick) {
             PreciseWait(next_tick, tick_spin);
             next_tick = std::max(next_tick + tick_period, std::chrono::steady_clock::now() - tick_period);
@@ -1195,9 +1211,9 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         const bool flip_slot = !frame_limit || (!precise_limit && now + slot_slack >= next_flip);
         const bool precise_capped = precise_limit && frame_limit;
         if (one_clock_ticks && frame_limit) {
-            if (++ticks_since_flip >= one_clock_ticks) {
+            if (grid_tick >= last_release_tick + one_clock_ticks) {
                 if (const Request request = receive_request()) {
-                    ticks_since_flip = 0;
+                    last_release_tick = grid_tick;
                     Flip(request);
                     FRAME_END;
                 } else {
