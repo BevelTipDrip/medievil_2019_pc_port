@@ -936,3 +936,11 @@ PresentMon (`research-data\pm-reflex.csv`, the user's capture, last ~18 s): pres
 present calls. Next: the same capture with RTSS's Reflex limiter at 119 (our Reflex off) for the target numbers.
 Tool: `research/tools/presentmon-capture.ps1 -Tag <name>` (10 s delay, 30 s, elevated relaunch; output in
 `research-data`).
+
+**T-F19 (RTSS Reflex limiter at 119.98, our Reflex off; PresentMon `research-data\pm-rtss119.csv`):** display side
+equal to our Reflex mode (T-F18, `pm-reflex.csv`): screen intervals 7.94 / 8.34 / 8.70 ms (1% / median / 99%; ours
+7.98 / 8.33 / 8.70), on-screen 1% / 0.1% lows 109.6 / 102.7 (ours 111.4 / 104.2), frames over 9 ms 18 (ours 12),
+both Hardware: Legacy Flip. **The user: RTSS's own statistics were measured at "frame start"** (which Reflex makes
+exact); switched to "frame present" they match these numbers and show the occasional present-timing gaps behind the
+flicker. 119.98 flickers visibly, 119 barely. So: frame starts are steady in both, the present (and display)
+timing varies +-0.2-0.4 ms with the frame's render time.
