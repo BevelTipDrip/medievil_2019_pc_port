@@ -926,3 +926,13 @@ user: 1% / 0.1% lows ~110 / ~108, behind RTSS. With our limiter off for Reflex t
 the next 960 Hz tick (queued -> release 0.85 ms, up to 1.13; releases 5-9 ticks apart), so presents reached the
 driver 7.91 / 8.91 ms apart; the driver's sleep woke 8.32 / 8.73. Fix: immediate flips in Reflex mode (frames go
 to the driver when queued, as into RTSS's hook).
+
+**T-F18 (`GOW3_REFLEX=1` + immediate release, RTSS off, trace 49):** our side at RTSS level: frames queued and
+released 8.26 / 8.41 ms (1% / 99%), present calls 8.25 / 8.42, **the driver's sleep ended 8.327 / 8.340 ms**; the
+user: 1% low 117, 0.1% 114, and a drop to ~60 every couple of seconds, not in our trace (max 9.58 ms).
+PresentMon (`research-data\pm-reflex.csv`, the user's capture, last ~18 s): present mode **Hardware: Legacy Flip**
+(0.5 s composited at the start: the PresentMon window took focus); present calls 8.14 / 8.52 ms, **display changes
+8.18 / 8.48 ms (max 9.55, none over 12)**, present to display a constant 3.76-4.10 ms: the display follows the
+present calls. Next: the same capture with RTSS's Reflex limiter at 119 (our Reflex off) for the target numbers.
+Tool: `research/tools/presentmon-capture.ps1 -Tag <name>` (10 s delay, 30 s, elevated relaunch; output in
+`research-data`).
