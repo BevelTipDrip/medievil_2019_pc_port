@@ -1097,12 +1097,37 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         const char* env = std::getenv("GOW3_VBLANK_SYNC");
         return env && env[0] == '1' ? DisplayVblank::Create(vblank_hz) : nullptr;
     }();
+    // gow3 GOW3_ONE_CLOCK=1 (with the precise tick and a frame limit): one clock paces everything.
+    // The tick runs at limit x N (N whole ticks a frame, N = round(vblank Hz / limit)) and frames
+    // are released on ticks only: on the Nth tick after the last release, else on the first tick
+    // a late frame arrives (the count restarts there; the grid never moves). T-F13: two limiters
+    // at one rate with independent phases (ours and RTSS at 120) fought and flickered, RTSS
+    // alone (at 119, ours idle) held 8.403 +- 0.001 ms; our limiter's slots and the 960 Hz tick
+    // were two such clocks.
+    static const bool one_clock = [] {
+        const char* env = std::getenv("GOW3_ONE_CLOCK");
+        return env && env[0] == '1';
+    }();
+    u32 one_clock_ticks = 0; // N; 0: off
+    u32 ticks_since_flip = 0;
+    auto tick_period = std::chrono::nanoseconds(vblank_period);
     u32 frame_limit = current_limit();
     auto frame_period = frame_limit ? std::chrono::nanoseconds(1000000000 / frame_limit)
                                     : std::chrono::nanoseconds(0);
     auto next_flip = std::chrono::steady_clock::now();
+    const auto set_one_clock = [&](u32 limit) {
+        one_clock_ticks = 0;
+        tick_period = std::chrono::nanoseconds(vblank_period);
+        if (one_clock && precise_tick && limit) {
+            one_clock_ticks = std::max(1u, (vblank_hz + limit / 2) / limit);
+            tick_period = std::chrono::nanoseconds(1000000000ll / (s64(limit) * one_clock_ticks));
+            std::printf("VideoOut: one clock: %u ticks a frame at %u FPS (tick %.3f us)\n", one_clock_ticks,
+                        limit, tick_period.count() / 1000.0);
+        }
+    };
     std::printf("VideoOut: vblank %u Hz, frame limit %u FPS\n",
                 EmulatorSettings.GetVblankFrequency(), frame_limit);
+    set_one_clock(frame_limit);
 
     const auto receive_request = [this] -> Request {
         std::scoped_lock lk{mutex};
@@ -1125,6 +1150,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
             immediate_flips = limit != 0;
             next_flip = std::chrono::steady_clock::now();
             std::printf("VideoOut: frame limit %u FPS\n", limit);
+            set_one_clock(limit);
         }
         newest_active.store(newest_frame && frame_limit != 0, std::memory_order_relaxed);
         pacer_limit.store(newest_frame ? frame_limit : 0, std::memory_order_relaxed);
@@ -1132,7 +1158,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
             display_vblank->Wait();
         } else if (precise_tick) {
             PreciseWait(next_tick, tick_spin);
-            next_tick = std::max(next_tick + vblank_period, std::chrono::steady_clock::now() - vblank_period);
+            next_tick = std::max(next_tick + tick_period, std::chrono::steady_clock::now() - tick_period);
         } else {
             timer.Start();
         }
@@ -1151,9 +1177,34 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         // (the first tick after a slot was up to a tick late, T-L3).
         // Without a queued frame the tick still redraws (the save list and menus stay live while
         // the game draws nothing; skipping that froze the save list, T-L4).
+        const auto redraw_idle = [&] {
+            // gow3: the save list / menu / text entry stay live while the game draws nothing.
+            static auto last_redraw = std::chrono::steady_clock::now();
+            if (main_port.is_open && Gow3Overlay::CapturesInput() &&
+                now - last_redraw >= std::chrono::milliseconds(16)) {
+                last_redraw = now;
+                DrawLastFrame();
+            } else if (timer.GetTotalWait().count() < 0) { // Dont draw too fast
+                if (!main_port.is_open) {
+                    DrawBlankFrame();
+                } else if (ImGui::Core::MustKeepDrawing()) {
+                    DrawLastFrame();
+                }
+            }
+        };
         const bool flip_slot = !frame_limit || (!precise_limit && now + slot_slack >= next_flip);
         const bool precise_capped = precise_limit && frame_limit;
-        if ((flip_slot || precise_capped) && vblank_status.count % (main_port.flip_rate + 1) == 0) {
+        if (one_clock_ticks && frame_limit) {
+            if (++ticks_since_flip >= one_clock_ticks) {
+                if (const Request request = receive_request()) {
+                    ticks_since_flip = 0;
+                    Flip(request);
+                    FRAME_END;
+                } else {
+                    redraw_idle();
+                }
+            }
+        } else if ((flip_slot || precise_capped) && vblank_status.count % (main_port.flip_rate + 1) == 0) {
             Request request{};
             bool pending = false;
             if (flip_slot) {
@@ -1211,7 +1262,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
             main_port.vblank_cv.notify_all();
         }
 
-        if (!immediate_flips || main_port.flip_rate != 0) {
+        if (!immediate_flips || main_port.flip_rate != 0 || (one_clock_ticks && frame_limit)) {
             timer.End();
             continue;
         }

@@ -878,3 +878,8 @@ waits; present returns 8.402 / 8.404 ms (1% / 99%), 1% / 0.1% lows 118.8-119.0 /
 flickers: two limiters at the same nominal rate with independent phases fight (the user). Inference: our own modes
 have two clocks too, the limiter's slots and the 960 Hz precise tick, out of step after each hold. Next: one clock
 (tick and slots from the same grid). Also noted: CPU usage alternating 12-25% (spinning waits; to measure).
+
+**One clock (`GOW3_ONE_CLOCK=1`, with the precise tick and a frame limit):** the tick runs at limit x N (N =
+round(tick Hz / limit) whole ticks a frame: 960 / 120 -> 8, 1041.667 us; a 119 limit gives a 952 Hz tick); frames
+are released on ticks only, on the Nth tick after the last release, else on the first tick a late frame arrives
+(the count restarts there, the grid never moves). No separate slot timer, no holds, no waits between ticks.
