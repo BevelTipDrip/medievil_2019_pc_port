@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 #include <vector>
 #include <chrono>
 #include <cstdio>
@@ -315,9 +316,11 @@ int VideoOutDriver::ChangeBufferAttribute(VideoOutPort* port, s32 attributeIndex
 void VideoOutDriver::Flip(const Request& req) {
     Gow3FlipTrace::Note("release", req.flip_arg);
     // Update HDR status before presenting, then present the frame (gow3: on the swap thread).
-    RunPresenter([this, frame = req.frame, hdr = req.port->is_hdr, flip_arg = req.flip_arg] {
+    const auto deadline = std::exchange(flip_deadline, {});
+    RunPresenter([this, frame = req.frame, hdr = req.port->is_hdr, flip_arg = req.flip_arg, deadline] {
         presenter->SetHDR(hdr);
         presenter->SetPresentTag(flip_arg);
+        presenter->SetPresentDeadline(deadline);
         presenter->Present(frame);
         Gow3FlipTrace::Note("presented", flip_arg);
     });
@@ -1059,6 +1062,12 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     const auto slot_slack = precise_limit ? std::chrono::nanoseconds(100000)
                                           : std::chrono::nanoseconds(500000000 / std::max(vblank_hz, 1u));
     const auto wait_slot = [](std::chrono::steady_clock::time_point slot) { PreciseWait(slot); };
+    // gow3 GOW3_LIMIT_IN_PRESENT=1 (with the precise limiter): frames are released when they arrive
+    // and the present waits for the slot after its acquire and blit, as the RTSS limiter does.
+    static const bool limit_in_present = [] {
+        const char* env = std::getenv("GOW3_LIMIT_IN_PRESENT");
+        return env && env[0] == '1';
+    }();
     static const bool limit_hold = [] {
         const char* env = std::getenv("GOW3_LIMIT_HOLD");
         return env && env[0] == '1';
@@ -1223,10 +1232,14 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
                 // the RTSS limiter does inside the present (T-F7/T-F8: with RTSS the game's submits
                 // were 8.0-8.6 ms apart and the lows rose; with our ticks running on during the
                 // wait, 7.5-9.1 ms).
-                if (next_flip - slot_slack >= tick_deadline && !(precise_limit && limit_hold)) {
+                if (precise_limit && limit_in_present) {
+                    // released now; the present waits for the slot (Presenter::SetPresentDeadline)
+                    flip_deadline = next_flip;
+                } else if (next_flip - slot_slack >= tick_deadline && !(precise_limit && limit_hold)) {
                     break;
                 }
-                if (precise_limit) {
+                if (precise_limit && limit_in_present) {
+                } else if (precise_limit) {
                     // The slot itself: the long final spin (the timer wakes on a ~0.5 ms grid;
                     // with 0.1 ms the releases spread 7.6-9.1 ms at a 120 cap, T-F7, while the
                     // RTSS limiter held 8.33; GOW3_PACER_SPIN_US, default 700).

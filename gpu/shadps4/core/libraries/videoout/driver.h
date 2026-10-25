@@ -148,6 +148,8 @@ private:
     /// gow3 newest-frame mode with a frame limit: flips complete for the guest as soon as the
     /// frame is copied out (SubmitFlipInternal); the present thread picks among the copies.
     std::atomic<bool> newest_active{false};
+    /// gow3 GOW3_LIMIT_IN_PRESENT: the slot of the next Flip, waited for in its present ({}: none).
+    std::chrono::steady_clock::time_point flip_deadline{};
     std::atomic<u32> pacer_limit{0}; ///< the frame limit the pacer keeps (0: none)
     std::jthread pacer_thread;       ///< last: stopped first
 };

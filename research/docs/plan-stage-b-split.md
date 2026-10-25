@@ -841,3 +841,12 @@ present until the slot, so no ticks or vblank events reach the game during the w
 apart vs 7.5-9.1 with our limiter, whose 960 Hz ticks run on during the wait). Next (`GOW3_LIMIT_HOLD=1`, with the
 precise limiter): a frame waiting for its slot holds the vblank thread until the slot, as RTSS does. Also open:
 `SetCurrentThreadRealtime` is a no-op on Windows (normal priority).
+
+**T-F9 (`GOW3_LIMIT_HOLD=1`, trace 40; RTSS on for the first ~minute by accident, then off; last minute a still
+camera in a light area):** RTSS part: screen 8.33 / 8.34. Hold part: **our releases exact (8.333 / 8.334 ms)**, the
+game's submits 8.0 / 8.6, but release -> presented 0.35 ms +- 0.25 and screen 8.05-8.11 / 8.56-8.61. The user: still
+not near RTSS. The variable work after our release (PrepareFrame copy, acquire, blit, submit) lands on the frame
+times; the RTSS limiter waits inside vkQueuePresentKHR, after that work, which absorbs it. Next
+(`GOW3_LIMIT_IN_PRESENT=1`, with the precise limiter): frames are released when they arrive and
+`Presenter::Present` waits for the slot (high-resolution timer + 0.7 ms spin) right before vkQueuePresentKHR,
+outside `submit_mutex`; with presents on the vblank thread it blocks it as RTSS does.

@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+#include <cstdlib>
+#include <immintrin.h>
 #include "common/debug.h"
 #include "common/thread.h"
 #include "gow3_flip_trace.h"
@@ -848,6 +853,31 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
     info.AddSignal(frame->present_done);
     scheduler.Flush(info);
 
+    // gow3 GOW3_LIMIT_IN_PRESENT: the frame limit's slot, waited for here, after the variable
+    // work above (T-F9: released exactly on time, frames still reached the present 0.35 +- 0.25 ms
+    // later; the RTSS limiter waits at this point and held 8.33 ms). Not under submit_mutex.
+    if (present_deadline != std::chrono::steady_clock::time_point{}) {
+        const auto deadline = present_deadline;
+        present_deadline = {};
+#ifdef _WIN32
+        thread_local HANDLE hires = CreateWaitableTimerExW(nullptr, nullptr, 0x00000002, TIMER_ALL_ACCESS);
+        static const auto spin = std::chrono::microseconds([] {
+            const char* env = std::getenv("GOW3_PACER_SPIN_US");
+            return env ? std::atol(env) : 700L;
+        }());
+        if (const auto now = std::chrono::steady_clock::now(); hires && now < deadline - spin) {
+            LARGE_INTEGER due;
+            due.QuadPart = -std::max<LONGLONG>(
+                1, std::chrono::duration_cast<std::chrono::nanoseconds>(deadline - spin - now).count() / 100);
+            if (SetWaitableTimerEx(hires, &due, 0, nullptr, nullptr, nullptr, 0)) {
+                WaitForSingleObject(hires, INFINITE);
+            }
+        }
+#endif
+        while (std::chrono::steady_clock::now() < deadline) {
+            _mm_pause();
+        }
+    }
     // Present to swapchain.
     {
         std::scoped_lock submit_lock{Scheduler::submit_mutex};

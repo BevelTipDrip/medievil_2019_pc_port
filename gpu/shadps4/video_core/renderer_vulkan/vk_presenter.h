@@ -104,6 +104,12 @@ public:
     void PresentLoadingFrame();
     Frame* PrepareLastFrame();
 
+    /// gow3 GOW3_LIMIT_IN_PRESENT: the next Present waits until `deadline` just before
+    /// vkQueuePresentKHR, after its acquire and blit (where the RTSS limiter waits); {}: none.
+    void SetPresentDeadline(std::chrono::steady_clock::time_point deadline) {
+        present_deadline = deadline;
+    }
+
     /// gow3 flip trace: the guest flip argument of the next Present (display times).
     void SetPresentTag(s64 tag) {
         swapchain.SetPresentTag(tag);
@@ -166,6 +172,7 @@ private:
     std::mutex gpu_ready_mutex;
     std::condition_variable_any gpu_ready_cv;
     std::deque<GpuReadyEntry> gpu_ready_queue;
+    std::chrono::steady_clock::time_point present_deadline{}; ///< SetPresentDeadline
     std::jthread gpu_ready_thread; ///< last: stopped first
 };
 
