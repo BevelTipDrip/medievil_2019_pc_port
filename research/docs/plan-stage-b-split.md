@@ -798,3 +798,15 @@ Step 1 (`GOW3_SKIP_READ_BARRIERS=1`, off by default): a read after a read in the
 the reads are merged into the image's tracked state (access mask and stages) so the next barrier (a write or a
 layout change) waits for all of them. Step 2 (to do): sample depth in DepthReadOnlyStencilAttachment instead of
 switching layouts. A remaining memory barrier still breaks the pass, so step 1 alone cannot remove every break.
+
+**T-F3 / T-F4 (`GOW3_SKIP_READ_BARRIERS=1`).** T-F3 barely changed anything: read-only depth attachments were
+recorded with DepthStencilAttachmentWrite access, so no read followed a read (`63cfac3` records them as reads under
+the switch). T-F4: the DepthStencilReadOnly -> DepthStencilReadOnly barriers are gone; same-target reopens 5.7-17k
+in calm windows (from 20-48k) and 28k in the kill window (from 68k); barrier breaks 77-98k / 126k (from 89-131k /
+157k); slow frames' stage B busy 82% (from 92-97%). The user: no visual issues, all death particles and effects
+present. Remaining in the kill window: DepthReadOnlyStencilAttachment -> DepthStencilReadOnly ~42.7k (to sample
+depth), DepthStencilReadOnly -> DepthAttachment ~19.8k, color attachment <-> shader read ~18k, barriers with a
+memory barrier "from all-graphics" ~18k.
+Step 2 (`GOW3_DEPTH_SAMPLE_IN_PLACE=1`): a depth-aspect sample of an image in DepthReadOnlyStencilAttachment keeps
+that layout (Vulkan allows shader reads of the depth aspect there) and records the read in the tracked state
+(`Runtime::SampleDepthInPlace`; the view's aspect: `ImageView::view_aspect`, `TextureSetEntry::depth_aspect`).

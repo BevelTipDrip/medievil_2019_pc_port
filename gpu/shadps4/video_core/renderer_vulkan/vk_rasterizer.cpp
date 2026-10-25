@@ -2573,7 +2573,9 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
                         &image, vk::ImageLayout::eGeneral, vk::PipelineStageFlagBits2::eAllCommands,
                         vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite,
                         desc.view_info.range);
-                } else {
+                } else if (!(image.info.props.is_depth &&
+                             image_view.view_aspect == vk::ImageAspectFlagBits::eDepth &&
+                             runtime.SampleDepthInPlace(&image))) {
                     const auto new_layout = image.info.props.is_depth
                                                 ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
                                                 : vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -2600,6 +2602,8 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
                                            desc.view_info.range, false, image.info.guest_address,
                                            desc.info.guest_address, image.info.guest_size,
                                            desc.info.guest_size};
+                resolved[binding_index].depth_aspect =
+                    image_view.view_aspect == vk::ImageAspectFlagBits::eDepth;
                 set_ok = !is_storage && !binding.force_general && !binding.is_target;
             }
         }
@@ -2807,11 +2811,13 @@ bool Rasterizer::BindTexturesFromSet(const Shader::Info& stage, const PreparedSt
             ++proxy_samples;
             continue;
         }
-        const auto new_layout = image.info.props.is_depth
-                                    ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
-                                    : vk::ImageLayout::eShaderReadOnlyOptimal;
-        barrier |= runtime.Transit(&image, new_layout, vk::PipelineStageFlagBits2::eAllCommands,
-                                   vk::AccessFlagBits2::eShaderRead, entry.range);
+        if (!(image.info.props.is_depth && entry.depth_aspect && runtime.SampleDepthInPlace(&image))) {
+            const auto new_layout = image.info.props.is_depth
+                                        ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
+                                        : vk::ImageLayout::eShaderReadOnlyOptimal;
+            barrier |= runtime.Transit(&image, new_layout, vk::PipelineStageFlagBits2::eAllCommands,
+                                       vk::AccessFlagBits2::eShaderRead, entry.range);
+        }
         image_infos.emplace_back(VK_NULL_HANDLE, entry.view, image.backing->state.layout);
     }
     (void)first_image_idx;

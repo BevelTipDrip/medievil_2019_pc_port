@@ -53,6 +53,11 @@ public:
     bool Transit(VideoCore::Image* image, vk::ImageLayout dst_layout,
                  vk::PipelineStageFlags2 dst_stage, vk::AccessFlags2 dst_access,
                  std::optional<VideoCore::SubresourceRange> subres_range = {});
+    /// gow3 GOW3_DEPTH_SAMPLE_IN_PLACE=1: a depth-aspect sample of an image in
+    /// DepthReadOnlyStencilAttachmentOptimal keeps that layout (its depth aspect is readable in
+    /// shaders) and only records the read; true when it did. T-F4: the kills' effects flipped
+    /// the depth buffer between it and DepthStencilReadOnly ~43k times a 5 s window.
+    bool SampleDepthInPlace(VideoCore::Image* image);
 
     /// GOW3_GPU_PROFILE: a profiler segment for a transfer of `image` while it lives; the
     /// segment it interrupted continues afterwards.

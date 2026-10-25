@@ -297,6 +297,7 @@ private:
         bool proxy = false; ///< sampled from the scene proxy (view: SampleProxy on each use)
         VAddr address = 0, sharp_address = 0; ///< the bound image's guest range and the T#'s
         u64 size = 0, sharp_size = 0;
+        bool depth_aspect = false; ///< the view samples the depth aspect (SampleDepthInPlace)
     };
     struct TextureSet {
         u64 key = 0;

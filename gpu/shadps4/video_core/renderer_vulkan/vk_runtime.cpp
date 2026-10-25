@@ -207,6 +207,24 @@ bool Runtime::Transit(VideoCore::Image* image, vk::ImageLayout dst_layout,
     return image_barriers.size() != prev_num_barriers;
 }
 
+bool Runtime::SampleDepthInPlace(VideoCore::Image* image) {
+    static const bool enabled = [] {
+        const char* env = std::getenv("GOW3_DEPTH_SAMPLE_IN_PLACE");
+        return env && env[0] == '1';
+    }();
+    auto& backing = *image->backing;
+    if (!enabled || backing.state.layout != vk::ImageLayout::eDepthReadOnlyStencilAttachmentOptimal ||
+        !backing.subresource_states.empty()) {
+        return false;
+    }
+    BeforeImageAccess();
+    if (scene_targets) scene_targets->NativeAccess(*image, vk::AccessFlagBits2::eShaderRead);
+    // The read joins the tracked state: a later barrier (a write, a layout change) waits for it.
+    backing.state.access_mask |= vk::AccessFlagBits2::eShaderRead;
+    backing.state.pl_stage |= vk::PipelineStageFlagBits2::eAllCommands;
+    return true;
+}
+
 Runtime::TransferMark::TransferMark(Runtime& runtime, const char* what,
                                     const VideoCore::Image& image) {
     profiler = GpuProfiler::Get();
