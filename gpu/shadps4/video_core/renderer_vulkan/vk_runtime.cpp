@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "video_core/renderer_vulkan/vk_wait_diagnostics.h"
+#include <mutex>
+#include <string>
+#include <set>
 #include <boost/container/small_vector.hpp>
 #include "gow3_sections.h"
 #include "gow3_toggles.h"
@@ -896,7 +900,39 @@ void Runtime::AccessBuffer(const VideoCore::Buffer* handle, u64 offset, u64 size
     memory_barrier.srcAccessMask |= src_access & WRITE_MASK;
 }
 
-void Runtime::FlushBarriers() {
+// gow3 GOW3_PERF_DIAG: names for a barrier that ends an open render pass.
+static std::string StageNames(vk::PipelineStageFlags2 stages) {
+    using S = vk::PipelineStageFlagBits2;
+    std::string out;
+    const auto add = [&](S bit, const char* name) {
+        if (stages & bit) {
+            out += out.empty() ? "" : "+";
+            out += name;
+        }
+    };
+    add(S::eTransfer, "transfer");
+    add(S::eCopy, "copy");
+    add(S::eComputeShader, "compute");
+    add(S::eVertexInput, "vertex-input");
+    add(S::eVertexShader, "vertex");
+    add(S::eFragmentShader, "fragment");
+    add(S::eEarlyFragmentTests, "early-z");
+    add(S::eLateFragmentTests, "late-z");
+    add(S::eColorAttachmentOutput, "color-out");
+    add(S::eHost, "host");
+    add(S::eAllGraphics, "all-graphics");
+    add(S::eAllCommands, "all");
+    return out.empty() ? "none" : out;
+}
+
+static std::string_view InternKey(std::string key) {
+    static std::mutex mutex;
+    static std::set<std::string> keys;
+    std::scoped_lock lock{mutex};
+    return *keys.insert(std::move(key)).first;
+}
+
+void Runtime::FlushBarriers(std::source_location caller) {
     GOW3_SECTION(FlushBarriers);
     BeforeImageAccess();
     vk::DependencyInfo dep_info{};
@@ -912,6 +948,22 @@ void Runtime::FlushBarriers() {
 
     if (!dep_info.memoryBarrierCount && !dep_info.imageMemoryBarrierCount) {
         return;
+    }
+
+    if (WaitDiagnostics::Enabled() && scheduler.IsRendering()) {
+        std::string file{caller.file_name()};
+        file = file.substr(file.find_last_of("/\\") + 1);
+        std::string key = file + ":" + std::to_string(caller.line()) + " ->";
+        if (dep_info.memoryBarrierCount) {
+            key += " memory from " + StageNames(memory_barrier.srcStageMask);
+        }
+        if (!image_barriers.empty()) {
+            const auto& first = image_barriers.front();
+            key += " " + std::to_string(image_barriers.size()) + " image(s) " +
+                   vk::to_string(first.oldLayout) + ">" + vk::to_string(first.newLayout) + " from " +
+                   StageNames(first.srcStageMask) + " to " + StageNames(first.dstStageMask);
+        }
+        WaitDiagnostics::BarrierBreaks().Add(InternKey(std::move(key)), 0, 0, 0);
     }
 
     scheduler.EndRendering();

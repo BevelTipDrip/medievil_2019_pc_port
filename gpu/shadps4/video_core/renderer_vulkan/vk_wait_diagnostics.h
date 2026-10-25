@@ -67,6 +67,11 @@ public:
         static WaitDiagnostics stats;
         return stats;
     }
+    /// gow3: barriers that ended an open render pass: who asked (site), what they cover.
+    static WaitDiagnostics& BarrierBreaks() {
+        static WaitDiagnostics stats;
+        return stats;
+    }
     /// gow3: a pass ended at a site, then the next pass opened on the same targets: a break that
     /// stored and reloaded the targets for nothing (keyed by the site that ended it).
     static WaitDiagnostics& PassReopens() {
@@ -112,6 +117,14 @@ public:
         for (const auto& row : rows) {
             if (row.calls) {
                 std::printf("Pass switch: %.*s; %u\n", int(row.file.size()), row.file.data(), row.calls);
+            }
+        }
+        rows = BarrierBreaks().Take();
+        std::sort(rows.begin(), rows.end(),
+                  [](const Entry& a, const Entry& b) { return a.calls > b.calls; });
+        for (const auto& row : rows) {
+            if (row.calls) {
+                std::printf("Barrier ended a pass: %.*s; %u\n", int(row.file.size()), row.file.data(), row.calls);
             }
         }
         rows = PassReopens().Take();
