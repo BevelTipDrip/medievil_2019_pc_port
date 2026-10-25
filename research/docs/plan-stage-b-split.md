@@ -920,3 +920,9 @@ Next (`GOW3_REFLEX=1`): VK_NV_low_latency2 (+ present ids), `SwapchainLatencyCre
 `vkLatencySleepNV` + a timeline semaphore wait before the flip completes (the game's next frame starts there);
 markers: simulation start after the sleep, simulation end / render submit / present start and end around the
 present. Our own limiter steps aside (one clock); trace stage `reflex_wake`.
+
+**T-F17 (`GOW3_REFLEX=1`, RTSS off, trace 48):** Reflex enabled, the driver took the 8,333 us interval (log); the
+user: 1% / 0.1% lows ~110 / ~108, behind RTSS. With our limiter off for Reflex the frames fell back to release on
+the next 960 Hz tick (queued -> release 0.85 ms, up to 1.13; releases 5-9 ticks apart), so presents reached the
+driver 7.91 / 8.91 ms apart; the driver's sleep woke 8.32 / 8.73. Fix: immediate flips in Reflex mode (frames go
+to the driver when queued, as into RTSS's hook).

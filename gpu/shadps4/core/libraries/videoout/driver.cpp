@@ -1208,13 +1208,15 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
 
     // gow3: with a frame limit (uncapped presets) a queued flip is presented as soon as it
     // arrives and its slot allows, between vblanks, instead of on the next vblank tick.
-    bool immediate_flips = frame_limit != 0;
+    // gow3 Reflex: frames go to the driver the moment they are queued (T-F17: released on the next
+    // 960 Hz tick instead, up to 1.1 ms late, the presents reached the driver 7.9-8.9 ms apart).
+    bool immediate_flips = frame_limit != 0 || reflex;
 
     while (!token.stop_requested()) {
         if (const u32 limit = current_limit(); limit != frame_limit) {
             frame_limit = limit;
             frame_period = limit ? std::chrono::nanoseconds(1000000000 / limit) : std::chrono::nanoseconds(0);
-            immediate_flips = limit != 0;
+            immediate_flips = limit != 0 || reflex;
             next_flip = std::chrono::steady_clock::now();
             std::printf("VideoOut: frame limit %u FPS\n", limit);
             set_one_clock(limit);
