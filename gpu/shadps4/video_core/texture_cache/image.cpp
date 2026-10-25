@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstdlib>
 #include "gow3_toggles.h"
 #include <ranges>
 #include "common/assert.h"
@@ -298,6 +299,28 @@ ImageView& Image::FindView(const ImageViewInfo& view_info, bool ensure_guest_sam
     return (*slot_image_views)[view_id];
 }
 
+// gow3 GOW3_SKIP_READ_BARRIERS=1: a read after a read in the same layout needs no barrier (no
+// hazard). The reads are merged into the tracked state instead, so the next real barrier (a
+// write or a layout change) waits for all of them. T-F2: the kills' effects put ~36k barriers a
+// 5 s window between depth-test reads and shader reads of the depth buffer in one read-only
+// layout, each ending and reopening the render pass.
+static bool SkipReadBarriers() {
+    static const bool enabled = [] {
+        const char* env = std::getenv("GOW3_SKIP_READ_BARRIERS");
+        return env && env[0] == '1';
+    }();
+    return enabled;
+}
+
+static bool IsReadOnly(vk::AccessFlags2 access) {
+    constexpr auto writes = vk::AccessFlagBits2::eShaderWrite | vk::AccessFlagBits2::eShaderStorageWrite |
+                            vk::AccessFlagBits2::eColorAttachmentWrite |
+                            vk::AccessFlagBits2::eDepthStencilAttachmentWrite |
+                            vk::AccessFlagBits2::eTransferWrite | vk::AccessFlagBits2::eHostWrite |
+                            vk::AccessFlagBits2::eMemoryWrite;
+    return !(access & writes);
+}
+
 void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
                         vk::PipelineStageFlags2 dst_stage,
                         std::optional<SubresourceRange> subres_range) {
@@ -347,6 +370,12 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
                                              vk::AccessFlagBits2::eShaderWrite |
                                              vk::AccessFlagBits2::eMemoryWrite;
                 const bool is_write = static_cast<bool>(state.access_mask & write_flags);
+                if (SkipReadBarriers() && state.layout == dst_layout &&
+                    IsReadOnly(state.access_mask) && IsReadOnly(dst_mask)) {
+                    state.access_mask |= dst_mask;
+                    state.pl_stage |= dst_stage;
+                    continue;
+                }
                 if (state.layout != dst_layout || state.access_mask != dst_mask || is_write) {
                     barriers.emplace_back(vk::ImageMemoryBarrier2{
                         .srcStageMask = state.pl_stage,
@@ -382,6 +411,12 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
                                      vk::AccessFlagBits2::eMemoryWrite;
         const bool is_write = static_cast<bool>(last_state.access_mask & write_flags);
         if (last_state.layout == dst_layout && last_state.access_mask == dst_mask && !is_write) {
+            return;
+        }
+        if (SkipReadBarriers() && last_state.layout == dst_layout &&
+            IsReadOnly(last_state.access_mask) && IsReadOnly(dst_mask)) {
+            last_state.access_mask |= dst_mask;
+            last_state.pl_stage |= dst_stage;
             return;
         }
 

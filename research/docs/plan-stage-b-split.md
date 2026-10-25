@@ -783,3 +783,18 @@ a store and reload of the targets on the GPU (the user's 95%+ GPU usage for sing
 effects that sample attachments (soft particles reading depth) end the pass per draw. Next: `GOW3_PERF_DIAG=1` now
 also prints "Pass switch: <what differed>" and "Pass reopened on the same targets after an end at <file:line>"
 (`Scheduler::BeginRendering` / `EndRendering`).
+
+### T-F2: which barriers break the passes (log `t-f2-barrier-breaks`, trace 33)
+
+`GOW3_PERF_DIAG` "Barrier ended a pass" (site, stages, image layouts). Nearly all from the draw path
+(`vk_rasterizer.cpp:1074`, `runtime.FlushBarriers()` after `BeginRendering`). Kill window vs the earlier windows:
+barrier breaks 157k vs 89-131k a 5 s window, same-target reopens 68k vs 20-48k. Growth is the **depth buffer**:
+DepthReadOnlyStencilAttachment -> DepthStencilReadOnly (2-3 images) ~64k (from ~120), DepthStencilReadOnly ->
+DepthStencilReadOnly with no layout change (depth tests -> shader reads) ~36.5k (from ~90), DepthStencilReadOnly ->
+DepthAttachment ~21.8k, color attachment <-> shader read ~15k. Many also carry a memory barrier "from all-graphics"
+(cause not known yet). `Image::GetBarriers` skipped a barrier only for an identical layout *and* access mask.
+
+Step 1 (`GOW3_SKIP_READ_BARRIERS=1`, off by default): a read after a read in the same layout records no barrier;
+the reads are merged into the image's tracked state (access mask and stages) so the next barrier (a write or a
+layout change) waits for all of them. Step 2 (to do): sample depth in DepthReadOnlyStencilAttachment instead of
+switching layouts. A remaining memory barrier still breaks the pass, so step 1 alone cannot remove every break.
