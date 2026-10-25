@@ -883,3 +883,11 @@ have two clocks too, the limiter's slots and the 960 Hz precise tick, out of ste
 round(tick Hz / limit) whole ticks a frame: 960 / 120 -> 8, 1041.667 us; a 119 limit gives a 952 Hz tick); frames
 are released on ticks only, on the Nth tick after the last release, else on the first tick a late frame arrives
 (the count restarts there, the grid never moves). No separate slot timer, no holds, no waits between ticks.
+
+**T-F14 (`GOW3_ONE_CLOCK=1`, RTSS off, trace 45): rejected.** The user: the worst of the night, 1% lows 90-107,
+0.1% ~110, many stutters. Release intervals 8 ticks 3,523, **7 ticks 41, 9 ticks 36** (a frame never leaves after 7
+by design): ticks with a release do the inline present (0.3-0.5 ms) and the vblank events inside a 1.04 ms tick;
+when that overran the next tick, `next_tick = max(next + period, now - period)` re-anchored the grid, so the "one
+clock" moved. Releases 7.82 / 8.85 ms, presents 7.78 / 8.88. A real single clock would need a grid that never
+re-anchors and the present off the tick thread (or N = 2 at 240 Hz). Capped-play recommendation for now: RTSS at
+119 with our limiter at 120 (idle), T-F13.
