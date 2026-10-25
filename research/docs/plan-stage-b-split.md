@@ -898,3 +898,10 @@ releases still jittered (7.7 / 9.1): RTSS's wait inside the present absorbs ever
 **One clock v2:** a fixed grid (tick k at start + k x period; a missed tick skips to the next grid point, same
 phase), slots counted in grid ticks (`last_release_tick + N`), so a slow loop pass (the inline present) cannot move
 a slot.
+
+**T-F15 (one clock v2, RTSS off, trace 46): rejected.** The user: 1% / 0.1% lows better than v1, not RTSS's locked
+pace, and real frame-time dips became full stalls. Releases still 7 or 9 ticks apart, in equal numbers (11-26 each
+per 10 s window; releases 7.56-7.83 / 8.84-9.11 ms): with a fixed grid that only happens when a release is
+processed about a tick late, i.e. the tick thread did not get the CPU on time. `SetCurrentThreadRealtime` is a
+no-op on Windows (normal priority); RTSS hides such delays by waiting inside the present. Next: real priority for
+the tick/present/pacer threads (time-critical + MMCSS), behind a switch, tested with the hold mode.
