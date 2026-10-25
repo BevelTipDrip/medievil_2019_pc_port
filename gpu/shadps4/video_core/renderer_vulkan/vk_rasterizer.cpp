@@ -3105,7 +3105,7 @@ RenderState Rasterizer::BeginRenderingFull(const GraphicsPipeline* pipeline) {
         // is a read (it was recorded as a write, and every later read then got a barrier: T-F3).
         static const bool skip_read_barriers = [] {
             const char* env = std::getenv("GOW3_SKIP_READ_BARRIERS");
-            return env && env[0] == '1';
+            return !(env && env[0] == '0'); // default on (launcher: perf_lean_barriers)
         }();
         const bool read_only_depth = new_layout == vk::ImageLayout::eDepthStencilReadOnlyOptimal ||
                                      new_layout == vk::ImageLayout::eDepthReadOnlyOptimal;
@@ -3119,7 +3119,7 @@ RenderState Rasterizer::BeginRenderingFull(const GraphicsPipeline* pipeline) {
         // by rasterization order. Per-image tracking put one there each time (T-F5: ~43k a window).
         static const bool depth_in_place = [] {
             const char* env = std::getenv("GOW3_DEPTH_SAMPLE_IN_PLACE");
-            return env && env[0] == '1';
+            return !(env && env[0] == '0'); // default on (launcher: perf_lean_barriers)
         }();
         if (!reduced && depth_in_place &&
             new_layout == vk::ImageLayout::eDepthReadOnlyStencilAttachmentOptimal &&

@@ -85,8 +85,8 @@ struct Values {
     bool startup_deferred_readback = true, startup_stale_readback = true;
     /// Performance patches (PerfKeys): on by default; live ones apply at once, the others with
     /// "Apply and restart" (run.py: graphics_options.PERF_SWITCHES).
-    std::atomic<bool> perf[9] = {true, true, true, true, true, true, true, true, true};
-    bool startup_perf[9] = {true, true, true, true, true, true, true, true, true};
+    std::atomic<bool> perf[10] = {true, true, true, true, true, true, true, true, true, true};
+    bool startup_perf[10] = {true, true, true, true, true, true, true, true, true, true};
     /// MediEvil graphics quality and UE4 upscaling (UE4QualityKeys / UE4UpscaleKeys; -1: a value
     /// the menu does not list, kept as written). On restart.
     int ue4_quality = 2, ue4_upscale = 0, startup_ue4_quality = 2, startup_ue4_upscale = 0;
@@ -131,14 +131,14 @@ bool GraphicsNeedRestart();
 /// Performance patches (medievil.ini perf_*; launcher > Performance).
 enum PerfPatch {
     PerfHzbOcclusion, PerfNoDecalPrepass, PerfParticleSinglePass, PerfSmallBuffers, PerfTextureMemo,
-    PerfLockfreeMemory, PerfCheapFrees, PerfGpuDataNoWaits, Perf4kMemory, PerfCount
+    PerfLockfreeMemory, PerfCheapFrees, PerfGpuDataNoWaits, Perf4kMemory, PerfLeanBarriers, PerfCount
 };
 inline constexpr const char* PerfKeys[PerfCount] = {
     "perf_hzb_occlusion", "perf_no_decal_prepass", "perf_particle_single_pass", "perf_small_buffers",
     "perf_texture_memo", "perf_lockfree_memory", "perf_cheap_frees", "perf_gpu_data_no_waits",
-    "perf_4k_memory"};
+    "perf_4k_memory", "perf_lean_barriers"};
 /// Switched while the game runs (the others need a restart).
-inline constexpr bool PerfLive[PerfCount] = {false, false, false, true, false, true, true, false, false};
+inline constexpr bool PerfLive[PerfCount] = {false, false, false, true, false, true, true, false, false, false};
 inline constexpr const char* UE4QualityKeys[] = {"ultra", "high", "console", "medium", "low"};
 inline constexpr const char* UE4UpscaleKeys[] = {"off", "quality", "balanced", "performance"};
 /// Startup options changed since this launch (applied by "Apply and restart").

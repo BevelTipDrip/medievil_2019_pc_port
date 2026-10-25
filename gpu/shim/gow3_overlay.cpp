@@ -443,7 +443,7 @@ void PerfPatchesSection() {
     static const char* const titles[S::PerfCount] = {
         "HZB occlusion culling", "Skip the decal depth prepass", "Single GPU particle pass",
         "Small buffers from VRAM", "Texture set memo", "Lock-free memory map lookups", "Cheap memory frees",
-        "GPU data without waits", "4K memory sizes"};
+        "GPU data without waits", "4K memory sizes", "Fewer render pass breaks"};
     static const char* const hints[S::PerfCount] = {
         "Skips objects hidden behind others, without waiting for the GPU. Heavy areas ~130 -> ~165 FPS.",
         "No second depth-only drawing of the scene for nearly invisible decals: ~600 fewer draws, ~10%.",
@@ -453,7 +453,8 @@ void PerfPatchesSection() {
         "The GPU threads read the memory map without waiting for the game: fewer panning spikes.",
         "Freed memory keeps its page access: frees ~7x cheaper, smoother 0.1% lows.",
         "Readback queue, GPU write twins and deferred fences: removed the constant micro-stutter.",
-        "More graphics memory and texture pool at 4K native: no reloads on small camera moves."};
+        "More graphics memory and texture pool at 4K native: no reloads on small camera moves.",
+        "No depth barriers between effect draws: fights' 0.1% lows 100 -> 117 at a 120 cap."};
     ImGui::SeparatorText("Performance patches");
     if (BeginRows("##perf_live")) {
         for (int p = 0; p < S::PerfCount; ++p) {

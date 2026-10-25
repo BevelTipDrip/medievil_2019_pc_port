@@ -307,7 +307,7 @@ ImageView& Image::FindView(const ImageViewInfo& view_info, bool ensure_guest_sam
 static bool SkipReadBarriers() {
     static const bool enabled = [] {
         const char* env = std::getenv("GOW3_SKIP_READ_BARRIERS");
-        return env && env[0] == '1';
+        return !(env && env[0] == '0'); // default on (launcher: perf_lean_barriers)
     }();
     return enabled;
 }

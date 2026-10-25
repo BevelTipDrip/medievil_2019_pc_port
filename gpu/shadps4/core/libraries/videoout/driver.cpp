@@ -1059,6 +1059,10 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     const auto slot_slack = precise_limit ? std::chrono::nanoseconds(100000)
                                           : std::chrono::nanoseconds(500000000 / std::max(vblank_hz, 1u));
     const auto wait_slot = [](std::chrono::steady_clock::time_point slot) { PreciseWait(slot); };
+    const auto slot_spin = std::chrono::microseconds([] {
+        const char* env = std::getenv("GOW3_PACER_SPIN_US");
+        return env ? std::atol(env) : 700L;
+    }());
     // gow3 GOW3_PRECISE_TICK=1: the vblank tick runs on a fixed grid (no drift) and waits with
     // PreciseWait (high-resolution timer, then a spin of GOW3_TICK_SPIN_US, default 700) instead
     // of AccurateTimer's plain waitable timer. T-V120 (120 Hz tick, VSync): the steadiest pacing
@@ -1214,7 +1218,10 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
                     break;
                 }
                 if (precise_limit) {
-                    wait_slot(next_flip);
+                    // The slot itself: the long final spin (the timer wakes on a ~0.5 ms grid;
+                    // with 0.1 ms the releases spread 7.6-9.1 ms at a 120 cap, T-F7, while the
+                    // RTSS limiter held 8.33; GOW3_PACER_SPIN_US, default 700).
+                    PreciseWait(next_flip, slot_spin);
                 } else {
                     std::this_thread::sleep_until(next_flip - slot_slack);
                 }

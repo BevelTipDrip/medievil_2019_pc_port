@@ -210,7 +210,7 @@ bool Runtime::Transit(VideoCore::Image* image, vk::ImageLayout dst_layout,
 bool Runtime::SampleDepthInPlace(VideoCore::Image* image) {
     static const bool enabled = [] {
         const char* env = std::getenv("GOW3_DEPTH_SAMPLE_IN_PLACE");
-        return env && env[0] == '1';
+        return !(env && env[0] == '0'); // default on (launcher: perf_lean_barriers)
     }();
     auto& backing = *image->backing;
     if (!enabled || backing.state.layout != vk::ImageLayout::eDepthReadOnlyStencilAttachmentOptimal ||

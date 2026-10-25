@@ -115,6 +115,7 @@ PERF_SWITCHES = {
     'perf_gpu_data_no_waits': {'GOW3_READBACK_QUEUE': '0', 'GOW3_GPU_WRITE_TWINS': '0',
                                'GOW3_EOS_DEFERRED': '0', 'GOW3_EOP_TARGETED': '0'},
     'perf_4k_memory': {'GOW3_PS4_MEMORY': '1'},
+    'perf_lean_barriers': {'GOW3_SKIP_READ_BARRIERS': '0', 'GOW3_DEPTH_SAMPLE_IN_PLACE': '0'},
 }
 
 

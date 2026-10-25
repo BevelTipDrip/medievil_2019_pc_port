@@ -819,3 +819,17 @@ attachment accesses between draws are ordered by rasterization order. `Runtime::
 switch): re-binding as that attachment after only attachment use and in-place depth reads records no barrier.
 Left after it: depth attachment <-> depth read-only (~50k a kill window): depth written by one draw and sampled by
 the next, a real dependency.
+
+**T-F6 (all three barrier changes, diagnostics on):** barrier breaks 48-70k calm / 84k kill window (from 89-131k /
+157k), same-target reopens 4.4-6.5k / 11.7k (from 20-48k / 68k); slow frames' stage B busy 48% (from 92-97%); kill
+window GPU finish after the CPU side median 4.9 ms (from 6.7). The user: no artefacts.
+**T-F7 feel run (`-NoStats`, trace 38), last 45 s (the fight):** 120.0 avg, **1% low 119.7, 0.1% low 117.4, no frame
+over 10 ms** (T-P960 before the barrier changes: 107.6 / 100.5, 34 frames of 9-12 ms). The user: no issues, the
+fights' dips gone, GPU usage steady instead of 60 -> 100% spikes (fans no longer ramp). **Now the default**
+(launcher / in-game menu: Performance patches > "Fewer render pass breaks", `perf_lean_barriers`; off:
+`GOW3_SKIP_READ_BARRIERS=0`, `GOW3_DEPTH_SAMPLE_IN_PLACE=0`).
+**RTSS limiter in the same run (from ~210 s):** screen intervals 8.33/8.33-8.34 ms (1%/99%) instead of 7.5-7.8 /
+9.0-9.2; the present call took 8.08 ms (RTSS waits inside it) and our limiter waited 0. Our releases in this mode
+(960 tick + precise limiter) spread 7.6-9.1 ms: the slot wait spun only the last 0.1 ms on the ~0.5 ms timer grid
+(the pacer got 0.7 ms in T-L5d, this path never did). Fix: the limiter's slot wait spins `GOW3_PACER_SPIN_US`
+(default 700 us); to test against RTSS.
