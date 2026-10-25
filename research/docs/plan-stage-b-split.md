@@ -759,3 +759,27 @@ precise tick spins ~0.7 of every 1.04 ms (two thirds of a core); to lower (`GOW3
 tick off at 960 since the precise limiter times the slots).
 This is the 480-tick-plus-limiter design that failed before, now with exact timing and no hand-off: the old failure
 was the coarse timing around it, not the high tick itself.
+
+### T-F1: what makes the fight's frames slow (2026-10-25; logs `t-p960-gpu-profile-5`, `t-p960-slow-frames`)
+
+GPU profiler (fixed: frames now end at the first draw of a display pass without the upscaler's motion vectors; the
+results are read without waiting; the blocking read stalled the boot twice): averaged over 5 s the GPU was not
+busier in the fight (~370-475 ms of GPU a second vs ~500 calm): the cost sits in single frames. Slow-frame lines
+(`GOW3_SLOW_FRAMES=1.15`, 960 tick + 120 limit), last 45 s, burst of 24 slow frames at the kills (9.6-11.6 ms):
+
+| Per frame (median) | Ordinary | Slow (kills) |
+|---|---|---|
+| Draws | 1,574 | 2,300-2,700 |
+| **Render passes ended** | **326** | **560-660** |
+| **Stage B busy** | 44% | **92-97%** |
+| Stage A draining (waiting on stage B) | 0.8 ms | 4-6 ms |
+| Uploads (buffers / images) | 3.2 / 0 MB | 2-3.7 / 0-3 MB |
+| Readback / host-copy waits, protection faults | 0 / 0.07 ms, 0 | 0 / 0.04-0.15 ms, 0 |
+| Render-state / texture-set misses | 322 / 106 | 560-650 / 220-290 |
+
+Not copies or waits (the user's PCIe hypothesis does not fit): **stage B saturates on the death effects' extra
+draws and nearly doubled render passes (~4 draws a pass)**; each break is a render-state miss on the CPU and, at 4K,
+a store and reload of the targets on the GPU (the user's 95%+ GPU usage for single frames). Inference to check:
+effects that sample attachments (soft particles reading depth) end the pass per draw. Next: `GOW3_PERF_DIAG=1` now
+also prints "Pass switch: <what differed>" and "Pass reopened on the same targets after an end at <file:line>"
+(`Scheduler::BeginRendering` / `EndRendering`).

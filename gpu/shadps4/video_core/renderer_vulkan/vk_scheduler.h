@@ -881,6 +881,11 @@ public:
         return !(is_rendering && render_state == state);
     }
 
+    /// gow3 GOW3_PERF_DIAG: the last pass ended and where (PassReopens: reopened on its targets).
+    RenderState last_ended{};
+    const char* last_end_file = nullptr;
+    unsigned last_end_line = 0;
+
     /// CommandBuffer() calls that waited for a recording thread (GOW3_FRAME_STATS).
     static inline std::atomic<u64> direct_recordings{0};
 

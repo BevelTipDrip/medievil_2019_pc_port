@@ -62,6 +62,17 @@ public:
         static WaitDiagnostics stats;
         return stats;
     }
+    /// gow3: what differed when an open render pass gave way to another (Scheduler::BeginRendering).
+    static WaitDiagnostics& PassSwitches() {
+        static WaitDiagnostics stats;
+        return stats;
+    }
+    /// gow3: a pass ended at a site, then the next pass opened on the same targets: a break that
+    /// stored and reloaded the targets for nothing (keyed by the site that ended it).
+    static WaitDiagnostics& PassReopens() {
+        static WaitDiagnostics stats;
+        return stats;
+    }
     static void Report() {
         if (!Enabled()) return;
         auto rows = Get().Take();
@@ -94,6 +105,23 @@ public:
             const auto filename = row.file.substr(row.file.find_last_of("/\\") + 1);
             std::printf("Render pass ends: %.*s:%u; %u\n", int(filename.size()), filename.data(),
                         row.line, row.calls);
+        }
+        rows = PassSwitches().Take();
+        std::sort(rows.begin(), rows.end(),
+                  [](const Entry& a, const Entry& b) { return a.calls > b.calls; });
+        for (const auto& row : rows) {
+            if (row.calls) {
+                std::printf("Pass switch: %.*s; %u\n", int(row.file.size()), row.file.data(), row.calls);
+            }
+        }
+        rows = PassReopens().Take();
+        std::sort(rows.begin(), rows.end(),
+                  [](const Entry& a, const Entry& b) { return a.calls > b.calls; });
+        for (const auto& row : rows) {
+            if (!row.calls) continue;
+            const auto filename = row.file.substr(row.file.find_last_of("/\\") + 1);
+            std::printf("Pass reopened on the same targets after an end at %.*s:%u; %u\n",
+                        int(filename.size()), filename.data(), row.line, row.calls);
         }
     }
 private:

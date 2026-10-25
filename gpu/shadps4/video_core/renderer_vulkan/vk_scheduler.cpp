@@ -57,9 +57,47 @@ Scheduler::~Scheduler() {
 #endif
 }
 
+// gow3 GOW3_PERF_DIAG: the targets (views) of two render states are the same.
+static bool SameTargets(const RenderState& a, const RenderState& b) {
+    if (a.num_color_attachments != b.num_color_attachments ||
+        a.depth_stencil_attachment.image_view != b.depth_stencil_attachment.image_view) {
+        return false;
+    }
+    for (u32 i = 0; i < a.num_color_attachments; ++i) {
+        if (a.color_attachments[i].image_view != b.color_attachments[i].image_view) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static const char* SwitchReason(const RenderState& a, const RenderState& b) {
+    if (!SameTargets(a, b)) {
+        return "other targets";
+    }
+    if (a.width != b.width || a.height != b.height || a.num_layers != b.num_layers) {
+        return "same targets, other size or layers";
+    }
+    bool layout = a.depth_stencil_attachment.image_layout != b.depth_stencil_attachment.image_layout;
+    bool clear = b.depth_stencil_attachment.is_clear != 0;
+    for (u32 i = 0; i < a.num_color_attachments; ++i) {
+        layout |= a.color_attachments[i].image_layout != b.color_attachments[i].image_layout;
+        clear |= b.color_attachments[i].is_clear != 0;
+    }
+    return layout ? "same targets, other layout" : clear ? "same targets, a clear" : "same targets, other";
+}
+
 void Scheduler::BeginRendering(const RenderState& new_state) {
     if (is_rendering && render_state == new_state) {
         return;
+    }
+    if (WaitDiagnostics::Enabled()) {
+        if (is_rendering) {
+            WaitDiagnostics::PassSwitches().Add(SwitchReason(render_state, new_state), 0, 0, 0);
+        } else if (last_end_file && SameTargets(last_ended, new_state)) {
+            WaitDiagnostics::PassReopens().Add(last_end_file, last_end_line, 0, 0);
+        }
+        last_end_file = nullptr;
     }
     EndRendering();
     is_rendering = true;
@@ -140,6 +178,9 @@ void Scheduler::EndRendering(std::source_location caller) {
     Gow3Stats::render_pass_ends.fetch_add(1, std::memory_order_relaxed);
     if (WaitDiagnostics::Enabled()) {
         WaitDiagnostics::RenderPassEnds().Add(caller.file_name(), caller.line(), 0, 0);
+        last_ended = render_state;
+        last_end_file = caller.file_name();
+        last_end_line = caller.line();
     }
     if (render_pass_hook) {
         render_pass_hook->OnEndRendering();
