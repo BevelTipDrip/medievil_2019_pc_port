@@ -110,6 +110,14 @@ public:
         present_deadline = deadline;
     }
 
+    /// gow3 Reflex (GOW3_REFLEX): the driver's minimum frame interval; its sleep after a present.
+    void SetLatencyInterval(u32 interval_us) {
+        swapchain.SetLatencyInterval(interval_us);
+    }
+    bool LatencySleep() {
+        return swapchain.LatencySleep();
+    }
+
     /// gow3 flip trace: the guest flip argument of the next Present (display times).
     void SetPresentTag(s64 tag) {
         swapchain.SetPresentTag(tag);

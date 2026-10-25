@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstdio>
 #include <cstdlib>
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
@@ -331,6 +332,20 @@ bool Instance::CreateDevice() {
                        add_extension(VK_KHR_PRESENT_ID_EXTENSION_NAME) &&
                        add_extension(VK_KHR_PRESENT_WAIT_EXTENSION_NAME);
     }
+    // gow3 GOW3_REFLEX=1: NVIDIA Reflex (VK_NV_low_latency2) paces frames in the driver: the frame
+    // limit becomes its minimum interval. The RTSS limiter in "NVIDIA Reflex" mode held 8.403 +-
+    // 0.002 ms where our own limiters, waiting outside the driver, kept its 0.2-0.6 ms present
+    // time on the frames (T-F16). Present ids mark its frames.
+    if (const char* reflex = std::getenv("GOW3_REFLEX"); reflex && reflex[0] == '1') {
+        const bool ids = present_wait ||
+                         (feature_chain.get<vk::PhysicalDevicePresentIdFeaturesKHR>().presentId &&
+                          add_extension(VK_KHR_PRESENT_ID_EXTENSION_NAME));
+        present_id = ids;
+        low_latency2 = ids && add_extension(VK_NV_LOW_LATENCY_2_EXTENSION_NAME);
+        std::printf("Vulkan: NVIDIA Reflex (VK_NV_low_latency2) %s\n",
+                    low_latency2 ? "enabled" : "not available");
+    }
+    present_id = present_id || present_wait;
     attachment_feedback_loop = add_extension(VK_EXT_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_EXTENSION_NAME);
     if (attachment_feedback_loop) {
         attachment_feedback_loop =
@@ -659,8 +674,10 @@ bool Instance::CreateDevice() {
         },
     };
     if (!present_wait) {
-        device_chain.unlink<vk::PhysicalDevicePresentIdFeaturesKHR>();
         device_chain.unlink<vk::PhysicalDevicePresentWaitFeaturesKHR>();
+    }
+    if (!present_id) {
+        device_chain.unlink<vk::PhysicalDevicePresentIdFeaturesKHR>();
     }
 
     if (!custom_border_color) {

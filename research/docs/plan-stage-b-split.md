@@ -908,3 +908,15 @@ the tick/present/pacer threads (time-critical + MMCSS), behind a switch, tested 
 `GOW3_PRESENT_PRIORITY=1` (off by default): the vblank, pacer and swap threads call `SetThreadPriority(...,
 THREAD_PRIORITY_TIME_CRITICAL)` and join the MMCSS "Games" task at high priority (`avrt.dll` loaded at run time);
 the log prints the result per thread. First test: with the hold mode (`GOW3_LIMIT_HOLD=1`), RTSS off.
+
+**T-F16 (`GOW3_LIMIT_HOLD=1` + `GOW3_PRESENT_PRIORITY=1`, trace 47): our best capped mode without RTSS.** The vblank
+thread ran time-critical + MMCSS Games (log). Our releases 8.333 / 8.334 ms (1% / 99%), present calls start 8.313 /
+8.354; the driver's present call takes 0.27-0.57 ms, so presents return 8.06-8.15 / 8.51-8.60 apart; 1% lows 112-117,
+0.1% 85-116. The user: significantly better than the other runs, still behind RTSS; frames sometimes faster than
+120, then slower. RTSS (119) on top from ~375 s: returns 8.401 / 8.405, lows 118.4-119.0 / 112.5-118.9. **The user's
+RTSS framerate limiter is set to "NVIDIA Reflex"**: the driver paces, so its own present time is absorbed.
+Next (`GOW3_REFLEX=1`): VK_NV_low_latency2 (+ present ids), `SwapchainLatencyCreateInfoNV`, the frame limit as
+`minimumIntervalUs` (`vkSetLatencySleepModeNV`, re-applied on swapchain recreation); after each present
+`vkLatencySleepNV` + a timeline semaphore wait before the flip completes (the game's next frame starts there);
+markers: simulation start after the sleep, simulation end / render submit / present start and end around the
+present. Our own limiter steps aside (one clock); trace stage `reflex_wake`.

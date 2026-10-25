@@ -45,6 +45,13 @@ public:
         return present_tag;
     }
 
+    /// gow3 Reflex (VK_NV_low_latency2): the driver's minimum frame interval (0: no limit),
+    /// applied now and to every recreated swapchain.
+    void SetLatencyInterval(u32 interval_us);
+    /// gow3 Reflex: blocks until the driver says the next frame should start, then marks its
+    /// simulation start. False without Reflex.
+    bool LatencySleep();
+
     vk::SurfaceKHR GetSurface() const {
         return surface;
     }
@@ -161,6 +168,11 @@ private:
     };
     s64 present_tag = -1;
     u64 present_id = 0;
+    void ApplyLatencyMode();
+    void LatencyMarker(vk::LatencyMarkerNV marker, u64 id);
+    u32 latency_interval_us = 0;
+    vk::Semaphore latency_semaphore{};
+    u64 latency_value = 0;
     std::mutex wait_mutex;
     std::mutex pending_mutex;
     std::condition_variable_any pending_cv;

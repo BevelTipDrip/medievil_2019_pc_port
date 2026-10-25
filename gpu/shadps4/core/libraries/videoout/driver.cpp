@@ -362,6 +362,10 @@ void VideoOutDriver::Flip(const Request& req) {
         presenter->SetPresentTag(flip_arg);
         presenter->SetPresentDeadline(deadline);
         presenter->Present(frame);
+        // gow3 Reflex: the driver's sleep before the game's next frame (the flip completes after it).
+        if (presenter->LatencySleep()) {
+            Gow3FlipTrace::Note("reflex_wake", flip_arg);
+        }
         Gow3FlipTrace::Note("presented", flip_arg);
     });
     Vulkan::FrameCapture::OnFlip(req.index >= 0 ? req.port->buffer_slots[req.index].address_left
@@ -1074,6 +1078,11 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     // before its slot waited a whole extra vblank (stutter with a 60 FPS limit at 60 Hz,
     // MediEvil issue #3).
     const u32 vblank_hz = EmulatorSettings.GetVblankFrequency();
+    static const bool reflex = [] {
+        const char* env = std::getenv("GOW3_REFLEX");
+        return env && env[0] == '1';
+    }();
+    u32 reflex_interval = ~0u;
     const auto current_limit = [&] {
         // -1: half the display refresh, so each frame shows for exactly two refreshes.
         const int raw = Gow3Settings::Get().fps_limit.load();
@@ -1083,7 +1092,18 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
             const u32 base = EmulatorSettings.GetFrameLimit();
             limit = !env_limit && user && (!base || user < base) ? user : base;
         }
-        return limit >= vblank_hz ? 0u : limit;
+        limit = limit >= vblank_hz ? 0u : limit;
+        // gow3 GOW3_REFLEX=1: the driver paces (its minimum interval); our limiter steps aside so
+        // there is one clock (T-F13: two limiters at one rate fight).
+        if (reflex) {
+            const u32 interval = limit ? 1000000u / limit : 0u;
+            if (interval != reflex_interval) {
+                reflex_interval = interval;
+                RunPresenter([this, interval] { presenter->SetLatencyInterval(interval); });
+            }
+            return 0u;
+        }
+        return limit;
     };
     // Slots count as reached within half a vblank: timer jitter must not cost a whole vblank.
     // gow3 GOW3_PRECISE_LIMIT=1: frames are released at their slot, not up to half a vblank

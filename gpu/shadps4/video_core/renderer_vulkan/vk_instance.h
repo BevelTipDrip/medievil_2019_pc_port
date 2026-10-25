@@ -164,6 +164,16 @@ public:
         return present_wait;
     }
 
+    /// gow3: VK_KHR_present_id enabled (present waits or Reflex)
+    bool IsPresentIdEnabled() const {
+        return present_id;
+    }
+
+    /// gow3: VK_NV_low_latency2 enabled (GOW3_REFLEX=1)
+    bool IsLowLatency2Enabled() const {
+        return low_latency2;
+    }
+
     /// Returns true if VK_EXT_attachment_feedback_loop_layout is supported
     bool IsAttachmentFeedbackLoopLayoutSupported() const {
         return attachment_feedback_loop;
@@ -594,6 +604,8 @@ private:
     vk::PipelineBinaryKeyKHR pipeline_binary_global_key{};
     bool maintenance_8{};
     bool present_wait{};
+    bool present_id{};
+    bool low_latency2{};
     bool attachment_feedback_loop{};
     bool image_2d_view_of_3d{};
     bool image_view_min_lod{};

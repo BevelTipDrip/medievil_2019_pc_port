@@ -84,7 +84,9 @@ void Swapchain::Create(u32 width_, u32 height_) {
     const vk::SharingMode sharing_mode =
         exclusive ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent;
     const auto format = needs_hdr ? SURFACE_FORMAT_HDR : surface_format;
+    const vk::SwapchainLatencyCreateInfoNV latency_info = {.latencyModeEnable = true};
     const vk::SwapchainCreateInfoKHR swapchain_info = {
+        .pNext = instance.IsLowLatency2Enabled() ? &latency_info : nullptr,
         .surface = surface,
         .minImageCount = image_count,
         .imageFormat = format.format,
@@ -110,6 +112,59 @@ void Swapchain::Create(u32 width_, u32 height_) {
 
     SetupImages();
     RefreshSemaphores();
+    ApplyLatencyMode();
+}
+
+void Swapchain::SetLatencyInterval(u32 interval_us) {
+    latency_interval_us = interval_us;
+    ApplyLatencyMode();
+}
+
+void Swapchain::ApplyLatencyMode() {
+    if (!instance.IsLowLatency2Enabled() || !swapchain) {
+        return;
+    }
+    const vk::LatencySleepModeInfoNV mode = {
+        .lowLatencyMode = true,
+        .lowLatencyBoost = false,
+        .minimumIntervalUs = latency_interval_us,
+    };
+    const auto result = instance.GetDevice().setLatencySleepModeNV(swapchain, &mode);
+    std::printf("Swapchain: Reflex sleep mode, minimum interval %u us (%s)\n", latency_interval_us,
+                vk::to_string(result).c_str());
+}
+
+void Swapchain::LatencyMarker(vk::LatencyMarkerNV marker, u64 id) {
+    if (!instance.IsLowLatency2Enabled() || !swapchain) {
+        return;
+    }
+    const vk::SetLatencyMarkerInfoNV info = {.presentID = id, .marker = marker};
+    instance.GetDevice().setLatencyMarkerNV(swapchain, &info);
+}
+
+bool Swapchain::LatencySleep() {
+    if (!instance.IsLowLatency2Enabled() || !swapchain) {
+        return false;
+    }
+    const vk::Device device = instance.GetDevice();
+    if (!latency_semaphore) {
+        const vk::SemaphoreTypeCreateInfo type = {.semaphoreType = vk::SemaphoreType::eTimeline,
+                                                  .initialValue = 0};
+        const vk::SemaphoreCreateInfo info = {.pNext = &type};
+        auto [result, semaphore] = device.createSemaphore(info);
+        if (result != vk::Result::eSuccess) {
+            return false;
+        }
+        latency_semaphore = semaphore;
+    }
+    const vk::LatencySleepInfoNV sleep = {.signalSemaphore = latency_semaphore, .value = ++latency_value};
+    if (device.latencySleepNV(swapchain, &sleep) == vk::Result::eSuccess) {
+        const vk::SemaphoreWaitInfo wait = {
+            .semaphoreCount = 1, .pSemaphores = &latency_semaphore, .pValues = &latency_value};
+        (void)device.waitSemaphores(&wait, 100'000'000); // at most 100 ms
+    }
+    LatencyMarker(vk::LatencyMarkerNV::eSimulationStart, present_id + 1);
+    return true;
 }
 
 void Swapchain::Recreate(u32 width_, u32 height_) {
@@ -174,14 +229,22 @@ bool Swapchain::Present() {
         .pPresentIds = &id,
     };
     const bool track = instance.IsPresentWaitEnabled();
-    if (track) {
+    if (track || instance.IsPresentIdEnabled()) {
         present_info.pNext = &present_id_info;
+    }
+    // gow3 Reflex markers of this frame (its simulation started after the last LatencySleep).
+    LatencyMarker(vk::LatencyMarkerNV::eSimulationEnd, id);
+    LatencyMarker(vk::LatencyMarkerNV::eRendersubmitStart, id);
+    LatencyMarker(vk::LatencyMarkerNV::eRendersubmitEnd, id);
+    LatencyMarker(vk::LatencyMarkerNV::ePresentStart, id);
+    if (track) {
         if (!display_wait_thread.joinable()) {
             display_wait_thread = std::jthread([this](std::stop_token token) { DisplayWaitThread(token); });
         }
     }
 
     auto result = instance.GetPresentQueue().presentKHR(present_info);
+    LatencyMarker(vk::LatencyMarkerNV::ePresentEnd, id);
     if (track && present_tag >= 0 && result == vk::Result::eSuccess) {
         {
             std::scoped_lock lock{pending_mutex};
