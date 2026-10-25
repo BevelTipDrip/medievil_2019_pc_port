@@ -225,6 +225,23 @@ bool Runtime::SampleDepthInPlace(VideoCore::Image* image) {
     return true;
 }
 
+bool Runtime::KeepStencilAttachment(VideoCore::Image* image, vk::AccessFlags2 access) {
+    BeforeImageAccess();
+    auto& backing = *image->backing;
+    constexpr auto allowed = vk::AccessFlagBits2::eDepthStencilAttachmentRead |
+                             vk::AccessFlagBits2::eDepthStencilAttachmentWrite |
+                             vk::AccessFlagBits2::eShaderRead;
+    if (backing.state.layout != vk::ImageLayout::eDepthReadOnlyStencilAttachmentOptimal ||
+        !backing.subresource_states.empty() || (backing.state.access_mask & ~allowed)) {
+        return false;
+    }
+    if (scene_targets) scene_targets->NativeAccess(*image, access);
+    backing.state.access_mask |= access;
+    backing.state.pl_stage |= vk::PipelineStageFlagBits2::eEarlyFragmentTests |
+                              vk::PipelineStageFlagBits2::eLateFragmentTests;
+    return true;
+}
+
 Runtime::TransferMark::TransferMark(Runtime& runtime, const char* what,
                                     const VideoCore::Image& image) {
     profiler = GpuProfiler::Get();

@@ -58,6 +58,10 @@ public:
     /// shaders) and only records the read; true when it did. T-F4: the kills' effects flipped
     /// the depth buffer between it and DepthStencilReadOnly ~43k times a 5 s window.
     bool SampleDepthInPlace(VideoCore::Image* image);
+    /// gow3 GOW3_DEPTH_SAMPLE_IN_PLACE: an image in DepthReadOnlyStencilAttachmentOptimal used only
+    /// as that attachment and by in-place depth samples since its last barrier is bound as that
+    /// attachment again without one (records the access); true when it was.
+    bool KeepStencilAttachment(VideoCore::Image* image, vk::AccessFlags2 access);
 
     /// GOW3_GPU_PROFILE: a profiler segment for a transfer of `image` while it lives; the
     /// segment it interrupted continues afterwards.

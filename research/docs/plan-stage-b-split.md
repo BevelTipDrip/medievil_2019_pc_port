@@ -810,3 +810,12 @@ memory barrier "from all-graphics" ~18k.
 Step 2 (`GOW3_DEPTH_SAMPLE_IN_PLACE=1`): a depth-aspect sample of an image in DepthReadOnlyStencilAttachment keeps
 that layout (Vulkan allows shader reads of the depth aspect there) and records the read in the tracked state
 (`Runtime::SampleDepthInPlace`; the view's aspect: `ImageView::view_aspect`, `TextureSetEntry::depth_aspect`).
+
+**T-F5 (both switches): the barrier moved.** DepthReadOnlyStencilAttachment -> DepthStencilReadOnly gone, but
+DepthReadOnlyStencilAttachment -> the same layout (~43k a kill window, from in-place reads to the next stencil
+attachment use) took its place: barrier breaks 134k, same-target reopens 36k. Per-image tracking saw "write after a
+shader read"; the read was of the depth aspect (never written in this layout), the draw writes stencil only, and
+attachment accesses between draws are ordered by rasterization order. `Runtime::KeepStencilAttachment` (same
+switch): re-binding as that attachment after only attachment use and in-place depth reads records no barrier.
+Left after it: depth attachment <-> depth read-only (~50k a kill window): depth written by one draw and sampled by
+the next, a real dependency.

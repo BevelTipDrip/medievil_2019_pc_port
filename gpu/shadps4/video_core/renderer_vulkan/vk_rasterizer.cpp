@@ -3113,7 +3113,19 @@ RenderState Rasterizer::BeginRenderingFull(const GraphicsPipeline* pipeline) {
                                       ? vk::AccessFlagBits2::eDepthStencilAttachmentRead
                                       : vk::AccessFlagBits2::eDepthStencilAttachmentWrite |
                                             vk::AccessFlagBits2::eDepthStencilAttachmentRead;
-        if (!reduced) needs_barrier |= runtime.Transit(&image, new_layout,
+        // gow3 GOW3_DEPTH_SAMPLE_IN_PLACE=1: back to DepthReadOnlyStencilAttachment as an attachment
+        // after in-place depth-aspect samples needs no barrier: depth is never written in this
+        // layout, the draw writes stencil only, and attachment accesses between draws are ordered
+        // by rasterization order. Per-image tracking put one there each time (T-F5: ~43k a window).
+        static const bool depth_in_place = [] {
+            const char* env = std::getenv("GOW3_DEPTH_SAMPLE_IN_PLACE");
+            return env && env[0] == '1';
+        }();
+        if (!reduced && depth_in_place &&
+            new_layout == vk::ImageLayout::eDepthReadOnlyStencilAttachmentOptimal &&
+            runtime.KeepStencilAttachment(&image, depth_access)) {
+            // no barrier: see above
+        } else if (!reduced) needs_barrier |= runtime.Transit(&image, new_layout,
                                          vk::PipelineStageFlagBits2::eEarlyFragmentTests |
                                              vk::PipelineStageFlagBits2::eLateFragmentTests,
                                          depth_access, desc.view_info.range);
