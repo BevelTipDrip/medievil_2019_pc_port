@@ -860,27 +860,37 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
     // +-0.2 ms back on the frame times (T-F10); the RTSS wait sits inside it.
     const auto deadline = present_deadline;
     present_deadline = {};
-    const bool limited = deadline != std::chrono::steady_clock::time_point{};
-    if (limited) {
-        const auto lock_at = deadline - std::chrono::microseconds(500);
+    // gow3 GOW3_LIMIT_AFTER_PRESENT=1: present at once, then hold the thread until the slot (the
+    // RTSS limiter's order, back edge: T-F11 showed its present *returns* 8.33 ms apart while ours,
+    // waiting before the call, returned 8.14-8.53 ms apart: the driver's 0.2-0.5 ms inside it).
+    static const bool after_present = [] {
+        const char* env = std::getenv("GOW3_LIMIT_AFTER_PRESENT");
+        return env && env[0] == '1';
+    }();
+    const auto wait_until = [](std::chrono::steady_clock::time_point until) {
 #ifdef _WIN32
         thread_local HANDLE hires = CreateWaitableTimerExW(nullptr, nullptr, 0x00000002, TIMER_ALL_ACCESS);
         static const auto spin = std::chrono::microseconds([] {
             const char* env = std::getenv("GOW3_PACER_SPIN_US");
             return env ? std::atol(env) : 700L;
         }());
-        if (const auto now = std::chrono::steady_clock::now(); hires && now < lock_at - spin) {
+        if (const auto now = std::chrono::steady_clock::now(); hires && now < until - spin) {
             LARGE_INTEGER due;
             due.QuadPart = -std::max<LONGLONG>(
-                1, std::chrono::duration_cast<std::chrono::nanoseconds>(lock_at - spin - now).count() / 100);
+                1, std::chrono::duration_cast<std::chrono::nanoseconds>(until - spin - now).count() / 100);
             if (SetWaitableTimerEx(hires, &due, 0, nullptr, nullptr, nullptr, 0)) {
                 WaitForSingleObject(hires, INFINITE);
             }
         }
 #endif
-        while (std::chrono::steady_clock::now() < lock_at) {
+        while (std::chrono::steady_clock::now() < until) {
             _mm_pause();
         }
+    };
+    const bool limited = deadline != std::chrono::steady_clock::time_point{} && !after_present;
+    if (limited) {
+        const auto lock_at = deadline - std::chrono::microseconds(500);
+        wait_until(lock_at);
     }
     // Present to swapchain.
     {
@@ -894,6 +904,9 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
         if (!swapchain.Present() && window.GetWidth() != 0 && window.GetHeight() != 0) {
             swapchain.Recreate(window.GetWidth(), window.GetHeight());
         }
+    }
+    if (after_present && deadline != std::chrono::steady_clock::time_point{}) {
+        wait_until(deadline);
     }
 
     free_frame();

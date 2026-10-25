@@ -859,3 +859,11 @@ stretches. With RTSS on later in the run: every interval 8.33 (max 8.34). Taking
 `present_start` trace stage marks the vkQueuePresentKHR call. **Open: the user saw intermittent flicker in this run
 (RTSS on) that was not there before;** the RTSS part's pacing is exact, so a rendering cause (the barrier changes,
 default since T-F8) is the first suspect; test with `perf_lean_barriers=0`.
+
+**T-F11 (`GOW3_LIMIT_IN_PRESENT=1` + submit_mutex fix, RTSS off, trace 42):** vkQueuePresentKHR now *starts*
+exactly every 8.333 ms (0 frames off by > 0.1 ms; the alternating bumps are gone), but the call takes 0.22-0.48 ms
+(driver, DXGI layering), so it *returns* 8.14 / 8.53 ms apart; the user: 0.1% lows 115-116 in a light area and a
+**persistent flicker** (also seen with RTSS stacked in T-F10; not seen with RTSS and the earlier limiter). Waiting
+between the frame's acquire/blit and its present is rejected. RTSS's presents *return* 8.33 apart: it waits after
+the driver's call (back edge), pacing the game's next frame start rather than the present. Next:
+`GOW3_LIMIT_AFTER_PRESENT=1` (with `GOW3_LIMIT_IN_PRESENT=1`): present at once, then hold until the slot.
