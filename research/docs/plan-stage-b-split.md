@@ -850,3 +850,12 @@ times; the RTSS limiter waits inside vkQueuePresentKHR, after that work, which a
 (`GOW3_LIMIT_IN_PRESENT=1`, with the precise limiter): frames are released when they arrive and
 `Presenter::Present` waits for the slot (high-resolution timer + 0.7 ms spin) right before vkQueuePresentKHR,
 outside `submit_mutex`; with presents on the vblank thread it blocks it as RTSS does.
+
+**T-F10 (`GOW3_LIMIT_IN_PRESENT=1`, trace 41):** the present call took 8.06 ms (the wait now sits where RTSS's
+does), our limiter waited 0; static camera, light area: screen 8.11 / 8.33 / 8.56 ms (1% / median / 99%), 1,087 of
+3,589 frames off by > 0.1 ms, alternating long/short; the user: 0.1% low 115, 1% 117, small bumps between flat
+stretches. With RTSS on later in the run: every interval 8.33 (max 8.34). Taking `submit_mutex` after the wait
+(another thread mid-submit) is the likely +-0.2 ms; now the last 0.5 ms are spun holding it, and a
+`present_start` trace stage marks the vkQueuePresentKHR call. **Open: the user saw intermittent flicker in this run
+(RTSS on) that was not there before;** the RTSS part's pacing is exact, so a rendering cause (the barrier changes,
+default since T-F8) is the first suspect; test with `perf_lean_barriers=0`.

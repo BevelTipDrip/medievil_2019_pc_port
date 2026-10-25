@@ -41,6 +41,9 @@ public:
     void SetPresentTag(s64 tag) {
         present_tag = tag;
     }
+    [[nodiscard]] s64 PresentTag() const {
+        return present_tag;
+    }
 
     vk::SurfaceKHR GetSurface() const {
         return surface;
