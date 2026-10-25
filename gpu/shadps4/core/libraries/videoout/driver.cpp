@@ -1059,6 +1059,10 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     const auto slot_slack = precise_limit ? std::chrono::nanoseconds(100000)
                                           : std::chrono::nanoseconds(500000000 / std::max(vblank_hz, 1u));
     const auto wait_slot = [](std::chrono::steady_clock::time_point slot) { PreciseWait(slot); };
+    static const bool limit_hold = [] {
+        const char* env = std::getenv("GOW3_LIMIT_HOLD");
+        return env && env[0] == '1';
+    }();
     const auto slot_spin = std::chrono::microseconds([] {
         const char* env = std::getenv("GOW3_PACER_SPIN_US");
         return env ? std::atol(env) : 700L;
@@ -1214,7 +1218,12 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
                 }
             }
             if (std::chrono::steady_clock::now() + slot_slack < next_flip) {
-                if (next_flip - slot_slack >= tick_deadline) {
+                // gow3 GOW3_LIMIT_HOLD=1 (with the precise limiter): a frame waiting for its slot
+                // holds this thread until the slot, with no vblank ticks or events in between, as
+                // the RTSS limiter does inside the present (T-F7/T-F8: with RTSS the game's submits
+                // were 8.0-8.6 ms apart and the lows rose; with our ticks running on during the
+                // wait, 7.5-9.1 ms).
+                if (next_flip - slot_slack >= tick_deadline && !(precise_limit && limit_hold)) {
                     break;
                 }
                 if (precise_limit) {

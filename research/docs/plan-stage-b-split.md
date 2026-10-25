@@ -833,3 +833,11 @@ fights' dips gone, GPU usage steady instead of 60 -> 100% spikes (fans no longer
 (960 tick + precise limiter) spread 7.6-9.1 ms: the slot wait spun only the last 0.1 ms on the ~0.5 ms timer grid
 (the pacer got 0.7 ms in T-L5d, this path never did). Fix: the limiter's slot wait spins `GOW3_PACER_SPIN_US`
 (default 700 us); to test against RTSS.
+
+**T-F8 (limiter slot spin 0.7 ms, no RTSS, trace 39):** our releases 8.03 / 8.63 ms (1% / 99%; from 7.6 / 9.1),
+screen 7.8-7.95 / 8.73-8.85; RTSS switched on at ~100 s: screen 8.33 / 8.33, present call 8.07 ms. The user: better,
+not near RTSS, which raises the 1% and 0.1% lows themselves. With RTSS the vblank thread is blocked inside the
+present until the slot, so no ticks or vblank events reach the game during the wait (the game's submits 8.0-8.6 ms
+apart vs 7.5-9.1 with our limiter, whose 960 Hz ticks run on during the wait). Next (`GOW3_LIMIT_HOLD=1`, with the
+precise limiter): a frame waiting for its slot holds the vblank thread until the slot, as RTSS does. Also open:
+`SetCurrentThreadRealtime` is a no-op on Windows (normal priority).
