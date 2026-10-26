@@ -122,32 +122,44 @@ PERF_SWITCHES = {
 # Presentation settings (launcher > Performance > Presentation): medievil.ini key -> how its value
 # becomes environment variables (run.py; a variable already set wins, for tests). All default off.
 PRESENT_MODES = ('auto', 'fifo', 'fifo_relaxed', 'mailbox', 'immediate')
+# Defaults: the tested best (plan-stage-b-split.md T-F27: Reflex, sleep before the present, tick 960,
+# precise tick, presents on the vblank thread).
+PRESENT_DEFAULTS = {'present_limiter': 'reflex', 'present_tick_hz': '960', 'present_precise_tick': '1',
+                    'present_inline': '1', 'present_no_frame_caps': '0', 'present_mode': 'auto',
+                    'present_frame_trace': '0'}
 PRESENT_FLAGS = {
     'present_no_frame_caps': {'GOW3_NO_FRAME_CAP': '1'},
     'present_inline': {'GOW3_PRESENT_THREAD': '0'},
-    'present_precise_limit': {'GOW3_PRECISE_LIMIT': '1'},
-    'present_newest_frame': {'GOW3_NEWEST_FRAME': '1'},
     'present_precise_tick': {'GOW3_PRECISE_TICK': '1'},
-    'present_vblank_sync': {'GOW3_VBLANK_SYNC': '1'},
+}
+# Frame limiter (medievil.ini present_limiter). Reflex falls back to the precise limiter where the
+# driver has no VK_NV_low_latency2 (AMD, Intel): its variables are set too.
+PRESENT_LIMITERS = {
+    'reflex': {'GOW3_REFLEX': '1', 'GOW3_REFLEX_SLEEP_BEFORE_PRESENT': '1', 'GOW3_PRECISE_LIMIT': '1',
+               'GOW3_LIMIT_HOLD': '1', 'GOW3_PRESENT_PRIORITY': '1'},
+    'precise': {'GOW3_PRECISE_LIMIT': '1', 'GOW3_LIMIT_HOLD': '1', 'GOW3_PRESENT_PRIORITY': '1'},
+    'standard': {},
 }
 
 
 def present_environment(ini, trace_path=None):
     """The environment of the presentation settings in medievil.ini."""
     env = {}
+    value = lambda key: ini.get(key, PRESENT_DEFAULTS[key])
     for key, on in PRESENT_FLAGS.items():
-        if ini.get(key, '0') == '1':
+        if value(key) == '1':
             env.update(on)
+    env.update(PRESENT_LIMITERS.get(value('present_limiter'), {}))
     try:
-        tick = int(ini.get('present_tick_hz', '0'))
+        tick = int(value('present_tick_hz'))
     except ValueError:
         tick = 0
     if 1 <= tick <= 2000:
         env['GOW3_VBLANK_HZ'] = str(tick)
-    mode = ini.get('present_mode', 'auto')
+    mode = value('present_mode')
     if mode in PRESENT_MODES and mode != 'auto':
         env['GOW3_PRESENT_MODE'] = mode
-    if ini.get('present_frame_trace', '0') == '1' and trace_path:
+    if value('present_frame_trace') == '1' and trace_path:
         env['GOW3_FLIP_TRACE'] = str(trace_path)
     return env
 

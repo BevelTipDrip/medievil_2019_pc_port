@@ -1,0 +1,1278 @@
+Game profile: MediEvil (libc.prx, libSceFios2.prx, libSceNpToolkit2.prx)
+Render resolution: 4K_native (r.setres=3840x2160), console quality, up to 240 FPS
+MediEvil | entry=0x2e9acb0 | image=96,917,024 bytes
+928 imported symbols; 552,801 relocations; 58 required modules
+Unavailable non-loadable metadata headers: [10]; not a byte-exact ELF reconstruction
+Output: C:\Users\Ty\MediEvil\medievil_2019_pc_port\out
+libc _init_env verified RET: True
+Linked native libc: base=0x5c70000, 162 fallback exports, TLS=1152 bytes; eboot TLS=16 bytes, fs->gs patched=5
+Linked modules: libc.prx@0x5c70000, libSceFios2.prx@0x5da0000, libSceNpToolkit2.prx@0x5f30000; 348 native bindings, 850 imports left to the host runtime, fs->gs patched=5
+AppContent profile: SKU=full (probe setting), user params=[0, 0, 0, 0], mounted add-ons=0
+Patches: CUSA11227; 13 writes from ['Native 4K framebuffer pool (512 MB)', '4K display metrics at boot']
+Saves backed up to C:\Users\Ty\MediEvil\medievil_2019_pc_port\user\savedata_backups\20261025-145808
+Settings: C:\Users\Ty\MediEvil\medievil_2019_pc_port\medievil.ini
+Window: Borderless
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:295 operator(): Extension VK_AMD_shader_explicit_vertex_parameter unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:295 operator(): Extension VK_EXT_shader_stencil_export unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:295 operator(): Extension VK_AMD_shader_image_load_store_lod unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:295 operator(): Extension VK_AMD_gcn_shader unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:295 operator(): Extension VK_AMD_shader_trinary_minmax unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:295 operator(): Extension VK_AMD_mixed_attachment_samples unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:295 operator(): Extension VK_EXT_shader_atomic_float2 unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:893 CollectImageFormatInfo: Surface format data_format=1, number_format=9 is not fully supported (vk_format=R8Srgb, missing features={ ColorAttachment })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:893 CollectImageFormatInfo: Surface format data_format=3, number_format=9 is not fully supported (vk_format=R8G8Srgb, missing features={ SampledImage | ColorAttachment | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:893 CollectImageFormatInfo: Surface format data_format=9, number_format=1 is not fully supported (vk_format=A2B10G10R10SnormPack32, missing features={ SampledImage | StorageImage | ColorAttachment | TransferSrc | TransferDst | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:893 CollectImageFormatInfo: Surface format data_format=9, number_format=5 is not fully supported (vk_format=A2B10G10R10SintPack32, missing features={ SampledImage | StorageImage | ColorAttachment | TransferSrc | TransferDst | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:893 CollectImageFormatInfo: Surface format data_format=13, number_format=4 is not fully supported (vk_format=R32G32B32Uint, missing features={ SampledImage | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:893 CollectImageFormatInfo: Surface format data_format=13, number_format=5 is not fully supported (vk_format=R32G32B32Sint, missing features={ SampledImage | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:893 CollectImageFormatInfo: Surface format data_format=13, number_format=7 is not fully supported (vk_format=R32G32B32Sfloat, missing features={ SampledImage | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:893 CollectImageFormatInfo: Surface format data_format=16, number_format=0 is not fully supported (vk_format=R5G6B5UnormPack16, missing features={ StorageImage | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:893 CollectImageFormatInfo: Surface format data_format=17, number_format=0 is not fully supported (vk_format=A1R5G5B5UnormPack16, missing features={ StorageImage | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:893 CollectImageFormatInfo: Surface format data_format=18, number_format=0 is not fully supported (vk_format=R5G5B5A1UnormPack16, missing features={ StorageImage | ColorAttachment | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:893 CollectImageFormatInfo: Surface format data_format=19, number_format=0 is not fully supported (vk_format=B4G4R4A4UnormPack16, missing features={ StorageImage | ColorAttachment | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:903 CollectImageFormatInfo: Depth format z_format=1, stencil_format=1 is not fully supported (vk_format=D16UnormS8Uint, missing features={ DepthStencilAttachment })
+Swapchain: present mode Immediate (GOW3_PRESENT_MODE=immediate)
+GPU: deferred image readback enabled (64 copies, 64 MiB pending limit); CPU reads use the previous frame's copy
+GPU: draw preparation workers: 8 (+1 scanner, 16 hardware threads)
+Object motion: off (enable in menu or GOW3_OBJECT_MOTION=1)
+GPU profile: on (timestamp period 1.00 ns)
+Runtime: disabled optimizations mask=0
+Overlay: menu ready (Insert or R3+L2)
+Pipeline startup: on demand, no bulk warm-up
+GPU: window and Vulkan presenter ready; SDK 0x06008001, 327 HLE symbols
+VideoOut: precise vblank tick (spin 700 us)
+VideoOut: vblank 960 Hz, frame limit 120 FPS
+Patches: 13 writes, 46 bytes applied, 0 pointers rebased
+HZB remap: MapResults and Submit hooks ready (results served by occlusion history key, no GPU wait)
+Guest TCB loads redirected to the TEB TLS slot: 5
+Mapped 100602208 bytes, 12 segments; applied 555371 relocations
+Starting linked module 0 at image offset 0x5c70000; native bindings=348
+Runtime: application heap API registered
+Runtime: direct allocation offset=0x0, size=536870912 bytes, type=3
+Runtime: mapped direct memory 0000004000000000, size=536870912, prot=0x32
+Runtime: direct allocation offset=0x20000000, size=6912147456 bytes, type=0
+Runtime: memory pool expanded by 6912147456 bytes at 0x20000000
+Runtime: reserved virtual range 0000001000000000, size=8589934592
+Runtime: reserved virtual range 0000002000000000, size=8589934592
+Runtime: reserved virtual range 0000003000000000, size=1073741824
+Module 0 initializer returned 0
+Starting linked module 1 at image offset 0x5da0000; native bindings=348
+Module 1 initializer returned 0
+Starting linked module 2 at image offset 0x5f30000; native bindings=348
+Module 2 initializer returned 0
+Entering original x86-64 code at guest offset 0x2e9acb0
+Runtime: _init_env returned (verified libc implementation: RET)
+AdditionalArgs before fixup = ../../../OVERBITE/OVERBITE.uproject 
+AdditionalArgs after fixup = ../../../OVERBITE/OVERBITE.uproject -pak
+File root is /app0/!
+Runtime: open(/app0/symbols/shipping-symbols.bin) -> not found
+Runtime: open(/app0/build/ps4/symbols/shipping-symbols.bin) -> not found
+Runtime: open(/app0/overbite/symbols/shipping-symbols.bin) -> not found
+Failed to locate symbol files on /app0 or /app0/overbite/symbols s!
+Runtime: open(shipping-symbols.bin) -> not found
+Failed to load symbols from shipping-symbols.bin!
+Runtime: open(shipping-symbolmetadata.txt) -> not found
+Used memory before allocating anything was 524.56MB
+FIOS2: built with SDK version 0x06008001
+Runtime: guest thread 'SceFiosCallback' created (stack=65536, prio=260)
+Runtime: guest thread 'SceFiosIO' created (stack=81920, prio=260)
+Runtime: internal system module 0xd7 loaded (host implementation)
+Runtime: guest thread 'SceFiosIO /' created (stack=81920, prio=260)
+Runtime: AppContent host provider loaded; references=1
+Runtime: AppContent initialized; offline base-game profile, no mounted add-ons
+Runtime: temporary data mounted at /temp0 -> C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/temp0
+Runtime: open(/app0/deepfiles) -> not found
+Runtime: system module 0x83 loaded (host implementation)
+Runtime: PlayGo initialized; 2 chunks, all installed locally
+Runtime: open(/app0/overbite/saved/paks) -> not found
+Runtime: open(/app0/engine/content/paks) -> not found
+Runtime: open(/app0/overbite/saved/paks) -> not found
+Runtime: open(/app0/engine/content/paks) -> not found
+Runtime: guest thread 'TaskGraphThreadNP 0' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadNP 1' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadNP 2' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadNP 3' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 4' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 5' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 6' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 7' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 8' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 9' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 10' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 11' created (stack=393216, prio=700)
+Runtime: guest thread 'PoolThread 0' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 1' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 2' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 3' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 4' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 5' created (stack=262144, prio=700)
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/res_index.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/plurals.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/lang/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/lang/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/lang/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/region/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/region/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/region/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/zoneinfo64.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/numberingsystems.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/curr/supplementaldata.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/curr/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/curr/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/curr/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/likelysubtags.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/supplementaldata.res) -> not found
+Runtime: UserService initialized (user 1 logged in)
+Runtime: open(/app0/engine/saved/config/ps4/editorsettings.ini) -> not found
+Runtime: guest thread 'HttpManagerThread' created (stack=262144, prio=700)
+Runtime: system module 0x9c loaded (host implementation)
+Runtime: system module 0x85 loaded (host implementation)
+Runtime: UserService initialized (user 1 logged in)
+Runtime: system module 0xa6 loaded (host implementation)
+Runtime: system module 0xd3 loaded (host implementation)
+Runtime: system module 0x81 loaded (host implementation)
+Runtime: UserService initialized (user 1 logged in)
+Runtime: guest thread 'OnlineAsyncTaskThreadPS4 Defau' created (stack=262144, prio=700)
+Runtime: system module 0x102 loaded (host implementation)
+Runtime: system module 0x19 loaded (host implementation)
+Runtime: mapped flexible memory 0000001200000000, size=16777216, prot=0x2
+Runtime: mapped flexible memory 0000001201000000, size=6291456, prot=0x2
+Runtime: guest thread 'Toolkit::NP::Main' created (stack=262144, prio=700)
+Runtime: guest thread 'Toolkit::NP::Notifications' created (stack=65536, prio=700)
+Runtime: guest thread 'Toolkit::NP::AbortThread' created (stack=65536, prio=700)
+Runtime: system module 0xe4 loaded (host implementation)
+Runtime: system module 0xa8 loaded (host implementation)
+Runtime: system module 0xe7 loaded (host implementation)
+Runtime: system module 0xb2 loaded (host implementation)
+Runtime: system module 0xab loaded (host implementation)
+Runtime: system module 0xa2 loaded (host implementation)
+Runtime: system module 0xac loaded (host implementation)
+Runtime: system module 0xb8 loaded (host implementation)
+Runtime: system module 0xad loaded (host implementation)
+Runtime: system module 0x2c loaded (host implementation)
+Runtime: system module 0x1b loaded (host implementation)
+Runtime: guest thread 'PoolThread 6' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 7' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 8' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 9' created (stack=262144, prio=700)
+Runtime: open(/app0/overbite/intermediate/shaders/tmp) -> not found
+Runtime: open(/app0/overbite/intermediate/shaders/workingdirectory) -> not found
+Runtime: UserService initialized (user 1 logged in)
+Runtime: system module 0x96 loaded (host implementation)
+Runtime: guest thread 'SystemEventGatherThreadPS4' created (stack=262144, prio=700)
+Runtime: open(/app0/overbite/saved/preferences/editorkeybindings.txt) -> not found
+Runtime: guest thread 'SubmitDoneAsyncTaskThreadPS4' created (stack=262144, prio=700)
+Runtime: guest thread 'SubmitGPUCommandsAsyncTaskThre' created (stack=262144, prio=700)
+Runtime: open(/app0/overbite/content/shaderarchive-global-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/shaderarchive-paper2d-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/shaderarchive-paper2d_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/content/shaderarchive-paper2d-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/content/shaderarchive-paper2d_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/shaderarchive-cryptokeys-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/shaderarchive-cryptokeys_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/content/shaderarchive-cryptokeys-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/content/shaderarchive-cryptokeys_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/shaderarchive-mesheditor-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/shaderarchive-mesheditor_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/content/shaderarchive-mesheditor-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/content/shaderarchive-mesheditor_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/shaderarchive-datasmithcontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/shaderarchive-datasmithcontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/content/shaderarchive-datasmithcontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/content/shaderarchive-datasmithcontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/shaderarchive-variantmanagercontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/shaderarchive-variantmanagercontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/content/shaderarchive-variantmanagercontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/content/shaderarchive-variantmanagercontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/shaderarchive-mediacompositing-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/shaderarchive-mediacompositing_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/content/shaderarchive-mediacompositing-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/content/shaderarchive-mediacompositing_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/shaderarchive-wwise-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/shaderarchive-wwise_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/content/shaderarchive-wwise-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/content/shaderarchive-wwise_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: guest thread 'RHIThread' created (stack=524288, prio=700)
+Runtime: guest thread 'RenderThread 0' created (stack=262144, prio=700)
+Runtime: guest thread 'RTHeartBeat 0' created (stack=262144, prio=700)
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/brkitr/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/brkitr/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Texture cache: shared image memory on (NVIDIA GeForce RTX 4090)
+Runtime: guest thread 'RHIFrameOffsetThread' created (stack=262144, prio=700)
+Runtime: guest thread 'RHIFrameFlipThread' created (stack=262144, prio=700)
+Runtime: pad opened for user 1 (SDL gamepad or keyboard)
+Runtime: SystemService: splash screen hidden
+Runtime: SystemService: splash screen hidden
+Runtime: open(/app0/overbite/content/shaderarchive-overbite-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/overbite/content/shaderarchive-overbite_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/download0/installedcontent/overbite/content/shaderarchive-overbite-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/download0/installedcontent/overbite/content/shaderarchive-overbite_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: system module 0xa5 loaded (host implementation)
+Runtime: system module 0xcf loaded (host implementation)
+Runtime: system module 0x88 loaded (host implementation)
+Runtime: system module 0xa5 loaded (host implementation)
+Runtime: guest thread 'SlateLoadingThread1' created (stack=262144, prio=700)
+Runtime: SystemService: splash screen hidden
+Runtime: guest thread 'AK::IOThread' created (stack=131072, prio=256)
+Runtime: guest thread 'AK::BankManager' created (stack=131072, prio=700)
+Runtime: guest thread 'AK Suspended' created (stack=131072, prio=256)
+Runtime: Ajm context initialized (ATRAC9 via LibAtrac9, MP3 via FFmpeg)
+Runtime: guest thread 'AK::EventManager' created (stack=131072, prio=256)
+GPU [Render.Vulkan] <Warning> emit_spirv.cpp:459 operator(): Float32 denorm flushing is not supported by the GPU
+Runtime: guest thread 'FImgMediaSchedulerThread 0' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 1' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 2' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 3' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 4' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 5' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 6' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 7' created (stack=262144, prio=700)
+Runtime: guest thread 'FMediaTicker' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 10' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 11' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 12' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 13' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 14' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 15' created (stack=262144, prio=700)
+Runtime: system module 0xb loaded (host implementation)
+Runtime: Ajm context initialized (ATRAC9 via LibAtrac9, MP3 via FFmpeg)
+Runtime: guest thread 'Ngs2AudioRenderingThread' created (stack=262144, prio=700)
+Runtime: NGS2 system created (silent renderer)
+Runtime: audio backend wasapi
+Runtime: audio port 0 opened (type 0, 8 ch, float, 256 frames)
+Runtime: guest thread 'AudioThread' created (stack=262144, prio=700)
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/lang/root.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/region/root.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: audio port 1 opened (type 0, 8 ch, float, 512 frames)
+Runtime: guest thread 'AK::LibAudioOut' created (stack=131072, prio=256)
+Runtime: system module 0xa0 loaded (host implementation)
+Runtime: save data '@MediEvil0005' mounted at /savedata0 (existing, read-only)
+Runtime: guest thread 'RenderThread 1' created (stack=262144, prio=700)
+Runtime: guest thread 'RTHeartBeat 1' created (stack=262144, prio=700)
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x7f8000 (known plane 0x201a000000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x7f8000 (known plane 0x201a000000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x7f8000 (known plane 0x201a000000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x7f8000 (known plane 0x201a000000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x7f8000 (known plane 0x201a000000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x7f8000 (known plane 0x201a000000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x7f8000 (known plane 0x201a000000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x7f8000 (known plane 0x201a000000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x7f8000 (known plane 0x201a000000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x7f8000 (known plane 0x201a000000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x7f8000 (known plane 0x201a000000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x7f8000 (known plane 0x201a000000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 3840x2160), stencil plane 0x201a000000 (8355840 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x201a000000 +0x7f8000
+GPU profile: 13.48 ms/frame over 341 frames, 98 labels
+  11.924 ms/frame   2.4/frame  (between submissions: GPU idle)
+   0.334 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs c86a0b18ac08b2b2 ps f9c2a2bbe7f5f532
+   0.157 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.152 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 3632d4c4faaa85d2
+   0.105 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps 1084980c9808441f
+   0.099 ms/frame   5.1/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.066 ms/frame   0.2/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs 05bcd744ac08b2b2 ps 4fe20af683865713
+   0.063 ms/frame   1.5/frame  dispatch cs c9b621669aeb20e1 (16x16x16 groups)
+   0.046 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.044 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.043 ms/frame   1.0/frame  pass 3840x2160 [- ] depth D32SfloatS8Uint vs 80c1a8f4ab0a8c21 ps 5b7eea5f70b0c857
+   0.043 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+   0.039 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.031 ms/frame   2.0/frame  pass 64x64 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs f7457b588f171402 ps f7457b58bca083b6
+   0.024 ms/frame   2.0/frame  pass 32768x32768 [] depth - vs 983931bda17224dd ps 0000000000000000
+   0.021 ms/frame   1.0/frame  pass 960x540 [B10G11R11UfloatPack32 ] depth - vs 7c5da2d0f2627812 ps 0264ef7bff805df4
+   0.020 ms/frame   0.0/frame  image upload R16G16B16A16Sfloat 3840x2160
+   0.020 ms/frame   1.0/frame  pass 960x540 [B10G11R11UfloatPack32 ] depth - vs 7c5da2d0f2627812 ps 79e9478464da5726
+   0.018 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs 813694dab4e07343 ps 640844be32f95d0b
+   0.016 ms/frame   1.0/frame  pass 2048x2048 [R16Sfloat ] depth - vs 678f10f9504d0ce9 ps d66d8b4195a250ca
+   0.015 ms/frame   1.5/frame  pass 2x2 [R16Sfloat ] depth - vs 678f10f9504d0ce9 ps d38f30fc42046d4b
+   0.013 ms/frame   2.0/frame  pass 1x1 [R32G32Sfloat ] depth - vs 678f10f9504d0ce9 ps 0b282e051520c984
+   0.010 ms/frame   1.0/frame  dispatch cs 19d3f95ae106783d (15x9x8 groups)
+   0.010 ms/frame   1.0/frame  pass 32x32 [A2B10G10R10UnormPack32 ] depth - vs f7457b588f171402 ps a4152b3be93c832a
+   0.009 ms/frame   1.0/frame  pass 480x270 [B10G11R11UfloatPack32 ] depth - vs 7c5da2d0f2627812 ps 79e9478464da5726
+   0.009 ms/frame   1.0/frame  pass 480x270 [B10G11R11UfloatPack32 ] depth - vs 7c5da2d0f2627812 ps 0264ef7bff805df4
+   0.008 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e5588ed466d8f2f3
+   0.007 ms/frame   1.0/frame  pass 960x540 [B10G11R11UfloatPack32 ] depth - vs 813694dab4e07343 ps 640844be32f95d0b
+   0.007 ms/frame   1.0/frame  pass 1024x1024 [R16Sfloat ] depth - vs 678f10f9504d0ce9 ps d38f30fc42046d4b
+   0.006 ms/frame   2.0/frame  pass 8x8 [R16Sfloat ] depth - vs 678f10f9504d0ce9 ps d38f30fc42046d4b
+AvPlayer 0.000 s: 00000000FE646C40 Init -> 0 (no source, 0 frames delivered)
+AvPlayer 0.001 s: 00000000FE646C40 AddSource -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 0 frames delivered)
+AvPlayer 0.033 s: 00000000FE646C40 SetLooping off -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 0 frames delivered)
+AvPlayer 0.033 s: 00000000FE646C40 Start -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 0 frames delivered)
+[aac @ 0000000391ec0e00] Could not update timestamps for discarded samples.
+GPU profile: 8.33 ms/frame over 600 frames, 54 labels
+   6.967 ms/frame   2.4/frame  (between submissions: GPU idle)
+   0.292 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs c86a0b18ac08b2b2 ps f9c2a2bbe7f5f532
+   0.163 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.154 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 3632d4c4faaa85d2
+   0.109 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps 1084980c9808441f
+   0.057 ms/frame   5.0/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.049 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.047 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.046 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+   0.042 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.033 ms/frame   2.0/frame  pass 64x64 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs f7457b588f171402 ps f7457b58bca083b6
+   0.028 ms/frame   1.0/frame  pass 3840x2160 [- ] depth D32SfloatS8Uint vs 80c1a8f4ab0a8c21 ps 5b7eea5f70b0c857
+   0.026 ms/frame   1.5/frame  dispatch cs c9b621669aeb20e1 (16x16x16 groups)
+   0.022 ms/frame   1.0/frame  pass 960x540 [B10G11R11UfloatPack32 ] depth - vs 7c5da2d0f2627812 ps 0264ef7bff805df4
+   0.021 ms/frame   1.0/frame  pass 960x540 [B10G11R11UfloatPack32 ] depth - vs 7c5da2d0f2627812 ps 79e9478464da5726
+   0.018 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs 813694dab4e07343 ps 640844be32f95d0b
+   0.017 ms/frame   2.0/frame  pass 32768x32768 [] depth - vs 983931bda17224dd ps 0000000000000000
+   0.017 ms/frame   1.0/frame  pass 2048x2048 [R16Sfloat ] depth - vs 678f10f9504d0ce9 ps d66d8b4195a250ca
+   0.017 ms/frame   1.5/frame  pass 2x2 [R16Sfloat ] depth - vs 678f10f9504d0ce9 ps d38f30fc42046d4b
+   0.016 ms/frame   0.2/frame  image upload R8Unorm 1984x1088
+   0.015 ms/frame   2.0/frame  pass 1x1 [R32G32Sfloat ] depth - vs 678f10f9504d0ce9 ps 0b282e051520c984
+   0.011 ms/frame   1.0/frame  pass 960x540 [B10G11R11UfloatPack32 ] depth - vs 813694dab4e07343 ps 640844be32f95d0b
+   0.010 ms/frame   1.0/frame  dispatch cs 19d3f95ae106783d (15x9x8 groups)
+   0.010 ms/frame   1.0/frame  pass 32x32 [A2B10G10R10UnormPack32 ] depth - vs f7457b588f171402 ps a4152b3be93c832a
+   0.010 ms/frame   1.0/frame  pass 480x270 [B10G11R11UfloatPack32 ] depth - vs 7c5da2d0f2627812 ps 0264ef7bff805df4
+   0.009 ms/frame   1.0/frame  pass 480x270 [B10G11R11UfloatPack32 ] depth - vs 7c5da2d0f2627812 ps 79e9478464da5726
+   0.009 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e5588ed466d8f2f3
+   0.009 ms/frame   2.0/frame  pass 4x4 [R16Sfloat ] depth - vs 678f10f9504d0ce9 ps d38f30fc42046d4b
+   0.008 ms/frame   0.2/frame  image upload R8G8Unorm 992x544
+   0.008 ms/frame   2.0/frame  pass 8x8 [R16Sfloat ] depth - vs 678f10f9504d0ce9 ps d38f30fc42046d4b
+HLE thread: join failed (thread::join failed: No such device or address); waiting for it to finish
+GPU [Lib.AvPlayer] <Warning> avplayer_source.cpp:308 Stop: Could not stop playback: already stopped.
+AvPlayer 6.649 s: 00000000FE646C40 Stop -> -2140536830 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 149 frames delivered)
+AvPlayer 6.649 s: 00000000FE646C40 Close -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 149 frames delivered)
+GPU [Lib.AvPlayer] <Warning> avplayer_source.cpp:308 Stop: Could not stop playback: already stopped.
+Runtime: guest thread 'TAsync 0' created (stack=262144, prio=700)
+AvPlayer 6.653 s: 00000000FE75B2C0 Init -> 0 (no source, 0 frames delivered)
+AvPlayer 6.745 s: 00000000FE75B2C0 AddSource -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 0 frames delivered)
+AvPlayer 6.758 s: 00000000FE75B2C0 SetLooping off -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 0 frames delivered)
+AvPlayer 6.759 s: 00000000FE75B2C0 Start -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 0 frames delivered)
+GPU profile: 8.33 ms/frame over 601 frames, 62 labels
+   6.994 ms/frame   2.3/frame  (between submissions: GPU idle)
+   0.278 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs c86a0b18ac08b2b2 ps f9c2a2bbe7f5f532
+   0.163 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.151 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 3632d4c4faaa85d2
+   0.109 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps 1084980c9808441f
+   0.057 ms/frame   5.0/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.049 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.047 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.046 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+   0.042 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.033 ms/frame   2.0/frame  pass 64x64 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs f7457b588f171402 ps f7457b58bca083b6
+   0.028 ms/frame   1.0/frame  pass 3840x2160 [- ] depth D32SfloatS8Uint vs 80c1a8f4ab0a8c21 ps 5b7eea5f70b0c857
+   0.025 ms/frame   1.5/frame  dispatch cs c9b621669aeb20e1 (16x16x16 groups)
+   0.022 ms/frame   1.0/frame  pass 960x540 [B10G11R11UfloatPack32 ] depth - vs 7c5da2d0f2627812 ps 0264ef7bff805df4
+   0.022 ms/frame   1.0/frame  pass 960x540 [B10G11R11UfloatPack32 ] depth - vs 7c5da2d0f2627812 ps 79e9478464da5726
+   0.018 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs 813694dab4e07343 ps 640844be32f95d0b
+   0.017 ms/frame   1.5/frame  pass 2x2 [R16Sfloat ] depth - vs 678f10f9504d0ce9 ps d38f30fc42046d4b
+   0.017 ms/frame   1.0/frame  pass 2048x2048 [R16Sfloat ] depth - vs 678f10f9504d0ce9 ps d66d8b4195a250ca
+   0.016 ms/frame   2.0/frame  pass 32768x32768 [] depth - vs 983931bda17224dd ps 0000000000000000
+   0.015 ms/frame   2.0/frame  pass 1x1 [R32G32Sfloat ] depth - vs 678f10f9504d0ce9 ps 0b282e051520c984
+   0.011 ms/frame   1.0/frame  pass 960x540 [B10G11R11UfloatPack32 ] depth - vs 813694dab4e07343 ps 640844be32f95d0b
+   0.010 ms/frame   1.0/frame  pass 32x32 [A2B10G10R10UnormPack32 ] depth - vs f7457b588f171402 ps a4152b3be93c832a
+   0.010 ms/frame   1.0/frame  dispatch cs 19d3f95ae106783d (15x9x8 groups)
+   0.010 ms/frame   1.0/frame  pass 480x270 [B10G11R11UfloatPack32 ] depth - vs 7c5da2d0f2627812 ps 0264ef7bff805df4
+   0.010 ms/frame   1.0/frame  pass 480x270 [B10G11R11UfloatPack32 ] depth - vs 7c5da2d0f2627812 ps 79e9478464da5726
+   0.009 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e5588ed466d8f2f3
+   0.009 ms/frame   0.1/frame  image upload R8Unorm 1920x1088
+   0.008 ms/frame   2.0/frame  pass 4x4 [R16Sfloat ] depth - vs 678f10f9504d0ce9 ps d38f30fc42046d4b
+   0.008 ms/frame   2.0/frame  pass 8x8 [R16Sfloat ] depth - vs 678f10f9504d0ce9 ps d38f30fc42046d4b
+   0.007 ms/frame   1.0/frame  pass 120x68 [B10G11R11UfloatPack32 ] depth - vs 3b1ca5d36ab3dd05 ps b816f48078456569
+Runtime: guest thread 'SlateLoadingThread2' created (stack=262144, prio=700)
+GPU [Render.Vulkan] <Warning> emit_spirv.cpp:516 operator(): Float64 denorm preserving is not supported by the GPU
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 2 and destination layers 3 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 3 and destination layers 4 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 4 and destination layers 5 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 5 and destination layers 6 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 2 and destination layers 3 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 3 and destination layers 4 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 4 and destination layers 5 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 5 and destination layers 6 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 6 and destination layers 8 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:61 SanitizeCopyLayers: Coercing copy source layers 6 and destination layers 8 to minimum.
+GPU profile: 10.17 ms/frame over 492 frames, 311 labels
+   6.224 ms/frame   2.6/frame  (between submissions: GPU idle)
+   0.248 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs e44b9b92f318a663 ps 46be39d0d396b6b3
+   0.206 ms/frame   0.8/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs 6f844aecac08b2b2 ps 2809e28fee22731b
+   0.203 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.177 ms/frame   5.2/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.168 ms/frame   0.7/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 177d08d48fdcc047 ps 3aefa1b84bf928da
+   0.167 ms/frame   0.8/frame  dispatch cs 27e12fb9da9f873c (60x34x16 groups)
+   0.165 ms/frame   1.0/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.163 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.154 ms/frame   3.6/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 57a9a78d63c66fd1 ps d82050b780f13585
+   0.114 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps 7df8cd2279bc10e0
+   0.109 ms/frame   1.6/frame  pass 1920x1080 [R16G16B16A16Sfloat ] depth - vs 7c5da2d0f2627812 ps a07cf14cb72422c7
+   0.087 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 3632d4c4faaa85d2
+   0.086 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps ff1529dd7fa4e7c3
+   0.085 ms/frame   0.8/frame  pass 1920x1080 [R16G16B16A16Sfloat ] depth - vs 3b1ca5d36ab3dd05 ps 0ce7f651be0a6dbd
+   0.075 ms/frame   1.6/frame  pass 1920x1080 [R16G16B16A16Sfloat ] depth - vs e76703c6ddfc5f06 ps 8e275640edaa7846
+   0.073 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.069 ms/frame   0.8/frame  pass 3840x2160 [R8G8B8A8Srgb - ] depth - vs 323f9bd125533df4 ps 2905d487e88259ad
+   0.060 ms/frame   0.2/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs c86a0b18ac08b2b2 ps f9c2a2bbe7f5f532
+   0.050 ms/frame   1.7/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 3b573269569fc647 ps 0000000000000000
+   0.050 ms/frame   0.8/frame  pass 960x1080 [R16G16B16A16Sfloat ] depth - vs 3b1ca5d36ab3dd05 ps 0ce7f651be0a6dbd
+   0.049 ms/frame   0.3/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 37a14e088fdcc047 ps a57237a1186b3885
+   0.047 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.046 ms/frame   0.8/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs efa35f8e99e8dde8 ps 3518c50834592382
+   0.045 ms/frame   1.6/frame  pass 3840x2160 [R16G16Unorm ] depth D32SfloatS8Uint vs 8868246469499f07 ps 9f82a9d96c740313
+   0.041 ms/frame   0.8/frame  pass 1920x1080 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f67f551253026c3b
+   0.041 ms/frame   0.8/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth - vs e9036a9995fb326f ps 7baa4e2fcbc7d8cc
+   0.039 ms/frame   0.8/frame  pass 1024x1024 [R32G32B32A32Sfloat R16G16B16A16Sfloat ] depth - vs ca98641d5477124c ps 66ee73a415e4eaae
+   0.038 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 6e3eaf1c135b377f ps 4a83752497e056d2
+   0.037 ms/frame   0.8/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b0f2a5ed874918f0
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:358 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0005.sce_sys/icon0.png
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:358 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0004.sce_sys/icon0.png
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:358 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0003.sce_sys/icon0.png
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:358 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0002.sce_sys/icon0.png
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:358 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0001.sce_sys/icon0.png
+Runtime: SaveDataDialog list (Load game): 6 entries shown
+Runtime: SaveDataDialog list: chose @MediEvil0005
+Runtime: save data '@MediEvil0005' mounted at /savedata0 (existing)
+GPU profile: 8.34 ms/frame over 586 frames, 174 labels
+   3.962 ms/frame   2.5/frame  (between submissions: GPU idle)
+   0.229 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs a1bf2e258fdcc047 ps bf77f5dff8222cc1
+   0.218 ms/frame   1.0/frame  dispatch cs 27e12fb9da9f873c (60x34x16 groups)
+   0.209 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.200 ms/frame   1.0/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.182 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.177 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 33a66b60fa0e1649 ps 028093ba149d2f71
+   0.169 ms/frame   0.9/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs c55c2a3bd480a46a ps 8b9c07db5f6579dc
+   0.152 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs 05bcd744ac08b2b2 ps 4fe20af683865713
+   0.150 ms/frame   5.0/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.142 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs 6f844aecac08b2b2 ps 2809e28fee22731b
+   0.135 ms/frame   2.0/frame  pass 1920x1080 [R16G16B16A16Sfloat ] depth - vs 7c5da2d0f2627812 ps a07cf14cb72422c7
+   0.127 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps 7df8cd2279bc10e0
+   0.107 ms/frame   1.0/frame  pass 1920x1080 [R16G16B16A16Sfloat ] depth - vs 3b1ca5d36ab3dd05 ps 0ce7f651be0a6dbd
+   0.106 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps ff1529dd7fa4e7c3
+   0.095 ms/frame   2.0/frame  pass 1920x1080 [R16G16B16A16Sfloat ] depth - vs e76703c6ddfc5f06 ps 8e275640edaa7846
+   0.092 ms/frame   2.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 2eefc6cc832fbec7 ps 691b1c89f57bbcb8
+   0.086 ms/frame   2.4/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 0000000000000000
+   0.086 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb - ] depth - vs 323f9bd125533df4 ps 2905d487e88259ad
+   0.086 ms/frame   2.5/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth - vs 80c1a8f4ab0a8c21 ps 5b7eea5f70b0c857
+   0.081 ms/frame   3.8/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf534433f10e2
+   0.073 ms/frame   3.3/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 57a9a78d63c66fd1 ps d82050b780f13585
+   0.067 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 3632d4c4faaa85d2
+   0.066 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.063 ms/frame   1.0/frame  pass 960x1080 [R16G16B16A16Sfloat ] depth - vs 3b1ca5d36ab3dd05 ps 0ce7f651be0a6dbd
+   0.059 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs efa35f8e99e8dde8 ps 3518c50834592382
+   0.056 ms/frame   1.9/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 2eefc6cc832fbec7 ps 3b1f1d8977ca89aa
+   0.055 ms/frame   2.0/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 3b573269569fc647 ps 0000000000000000
+   0.052 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.050 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth - vs e9036a9995fb326f ps 7baa4e2fcbc7d8cc
+Runtime: guest thread 'SlateLoadingThread3' created (stack=262144, prio=700)
+GPU profile: 10.09 ms/frame over 554 frames, 111 labels
+   5.317 ms/frame   2.5/frame  (between submissions: GPU idle)
+   0.489 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs a1bf2e258fdcc047 ps bf77f5dff8222cc1
+   0.222 ms/frame   1.0/frame  dispatch cs 27e12fb9da9f873c (60x34x16 groups)
+   0.219 ms/frame   0.8/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs 6f844aecac08b2b2 ps 2809e28fee22731b
+   0.215 ms/frame   0.9/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 33a66b60fa0e1649 ps 028093ba149d2f71
+   0.207 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.196 ms/frame   1.0/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.188 ms/frame   3.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 2eefc6cc832fbec7 ps 691b1c89f57bbcb8
+   0.182 ms/frame   5.0/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 0000000000000000
+   0.173 ms/frame   5.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth - vs 80c1a8f4ab0a8c21 ps 5b7eea5f70b0c857
+   0.173 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.170 ms/frame   8.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf534433f10e2
+   0.136 ms/frame   2.0/frame  pass 1920x1080 [R16G16B16A16Sfloat ] depth - vs 7c5da2d0f2627812 ps a07cf14cb72422c7
+   0.125 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps 7df8cd2279bc10e0
+   0.117 ms/frame   5.0/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.108 ms/frame   1.0/frame  pass 1920x1080 [R16G16B16A16Sfloat ] depth - vs 3b1ca5d36ab3dd05 ps 0ce7f651be0a6dbd
+   0.100 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps ff1529dd7fa4e7c3
+   0.096 ms/frame   2.0/frame  pass 1920x1080 [R16G16B16A16Sfloat ] depth - vs e76703c6ddfc5f06 ps 8e275640edaa7846
+   0.091 ms/frame   3.9/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 57a9a78d63c66fd1 ps d82050b780f13585
+   0.085 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb - ] depth - vs 323f9bd125533df4 ps 2905d487e88259ad
+   0.067 ms/frame   2.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 2eefc6cc832fbec7 ps 3b1f1d8977ca89aa
+   0.066 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 3632d4c4faaa85d2
+   0.065 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.064 ms/frame   1.0/frame  pass 960x1080 [R16G16B16A16Sfloat ] depth - vs 3b1ca5d36ab3dd05 ps 0ce7f651be0a6dbd
+   0.060 ms/frame   0.2/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs 05bcd744ac08b2b2 ps 4fe20af683865713
+   0.059 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs efa35f8e99e8dde8 ps 3518c50834592382
+   0.058 ms/frame   2.0/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 3b573269569fc647 ps 0000000000000000
+   0.054 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.050 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth - vs e9036a9995fb326f ps 7baa4e2fcbc7d8cc
+   0.048 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e28371ada9e9f728 ps e3b625eaec7fca55
+Pipeline binary cache: 256 hits, 0 compiled, 0 rejected, 0 saved, 0 cache errors (restore 0.610 ms, compile 0.000 ms each)
+GPU profile: 9.39 ms/frame over 596 frames, 300 labels
+   4.711 ms/frame   2.6/frame  (between submissions: GPU idle)
+   0.459 ms/frame   1.0/frame  pass 3840x2160 [R8Unorm ] depth - vs 678f10f9504d0ce9 ps cc3daf3174c7ae3c
+   0.250 ms/frame   1.0/frame  dispatch cs 3ab54396073f9987 (60x34x16 groups)
+   0.233 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 829b4db85567b8f4
+   0.206 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.196 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs c97da94a0a00516a ps 7060f8d651d87c80
+   0.193 ms/frame   7.0/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.175 ms/frame   0.6/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs 6f844aecac08b2b2 ps 2809e28fee22731b
+   0.166 ms/frame   0.4/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs 07065c37ac08b2b2 ps aaf40ac4efd4fd16
+   0.166 ms/frame  17.3/frame  pass 256x256 [- ] depth D16Unorm vs 77a42bffe206e02c ps 8998be1c761f1cb4
+   0.159 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.154 ms/frame  18.9/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 2eefc6cc832fbec7 ps 691b1c89f57bbcb8
+   0.128 ms/frame  17.9/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf53483bb04f1
+   0.122 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.119 ms/frame   2.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs b499ad0cd2a6e333 ps 18237179a36ae193
+   0.099 ms/frame   1.0/frame  pass 1920x1080 [R8G8B8A8Unorm ] depth - vs 678f10f9504d0ce9 ps b19e7829f208eeb7
+   0.095 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps c0981c68fe11c2d8
+   0.093 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.084 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps ff1529dd7fa4e7c3
+   0.073 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 26ddf0edf318a663 ps bd3fc9f0122cab49
+   0.071 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.067 ms/frame   1.0/frame  pass 240x135 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs 59e60dfe5201843d ps 59e60dfe32c85d7f
+   0.062 ms/frame  18.9/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth - vs 80c1a8f4ab0a8c21 ps 5b7eea5f70b0c857
+   0.057 ms/frame   1.0/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.056 ms/frame   2.0/frame  pass 240x135 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs 4ce5dbe573666a61 ps 4ce5dbe54ba8fdab
+   0.050 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps 5039ae2ec7b83a0a
+   0.050 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs efa35f8e99e8dde8 ps 3518c50834592382
+   0.044 ms/frame   6.2/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 624e5b4b78cd2ad0 ps a1e33aaa817db9b7
+   0.043 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.043 ms/frame   1.0/frame  pass 1920x1080 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps de498e51296326c1
+GPU profile: 8.33 ms/frame over 601 frames, 138 labels
+   3.282 ms/frame   2.5/frame  (between submissions: GPU idle)
+   0.484 ms/frame   1.0/frame  pass 3840x2160 [R8Unorm ] depth - vs 678f10f9504d0ce9 ps cc3daf3174c7ae3c
+   0.424 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs 07065c37ac08b2b2 ps aaf40ac4efd4fd16
+   0.316 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 26ddf0edf318a663 ps bd3fc9f0122cab49
+   0.283 ms/frame  19.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 2eefc6cc832fbec7 ps 691b1c89f57bbcb8
+   0.259 ms/frame   1.0/frame  dispatch cs 3ab54396073f9987 (60x34x16 groups)
+   0.238 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 829b4db85567b8f4
+   0.212 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.191 ms/frame   5.1/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.184 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.171 ms/frame   2.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs b499ad0cd2a6e333 ps 18237179a36ae193
+   0.140 ms/frame  14.0/frame  pass 256x256 [- ] depth D16Unorm vs 77a42bffe206e02c ps 8998be1c761f1cb4
+   0.134 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.115 ms/frame  15.2/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf53483bb04f1
+   0.104 ms/frame   1.0/frame  pass 1920x1080 [R8G8B8A8Unorm ] depth - vs 678f10f9504d0ce9 ps b19e7829f208eeb7
+   0.095 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps c0981c68fe11c2d8
+   0.093 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.087 ms/frame   0.4/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs c97da94a0a00516a ps 7060f8d651d87c80
+   0.086 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps ff1529dd7fa4e7c3
+   0.075 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.068 ms/frame   1.0/frame  pass 240x135 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs 59e60dfe5201843d ps 59e60dfe32c85d7f
+   0.066 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs efa35f8e99e8dde8 ps 3518c50834592382
+   0.059 ms/frame  16.2/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth - vs 80c1a8f4ab0a8c21 ps 5b7eea5f70b0c857
+   0.056 ms/frame   1.0/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.054 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps 5039ae2ec7b83a0a
+   0.049 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.048 ms/frame   2.2/frame  pass 240x135 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs 4ce5dbe573666a61 ps 4ce5dbe54ba8fdab
+   0.047 ms/frame   1.0/frame  pass 1920x1080 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps de498e51296326c1
+   0.044 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+   0.032 ms/frame   1.0/frame  dispatch cs 5ec79c2cb022e7ab (60x34x16 groups)
+GPU profile: 8.33 ms/frame over 601 frames, 110 labels
+   3.444 ms/frame   2.5/frame  (between submissions: GPU idle)
+   0.481 ms/frame   1.0/frame  pass 3840x2160 [R8Unorm ] depth - vs 678f10f9504d0ce9 ps cc3daf3174c7ae3c
+   0.439 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 26ddf0edf318a663 ps bd3fc9f0122cab49
+   0.329 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs 07065c37ac08b2b2 ps aaf40ac4efd4fd16
+   0.261 ms/frame   2.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs b499ad0cd2a6e333 ps 18237179a36ae193
+   0.247 ms/frame   1.0/frame  dispatch cs 3ab54396073f9987 (60x34x16 groups)
+   0.224 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 829b4db85567b8f4
+   0.216 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.193 ms/frame   5.0/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.183 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.137 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.135 ms/frame  13.8/frame  pass 256x256 [- ] depth D16Unorm vs 77a42bffe206e02c ps 8998be1c761f1cb4
+   0.132 ms/frame  16.1/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 2eefc6cc832fbec7 ps 691b1c89f57bbcb8
+   0.110 ms/frame  15.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf53483bb04f1
+   0.104 ms/frame   1.0/frame  pass 1920x1080 [R8G8B8A8Unorm ] depth - vs 678f10f9504d0ce9 ps b19e7829f208eeb7
+   0.095 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps c0981c68fe11c2d8
+   0.093 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.086 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps ff1529dd7fa4e7c3
+   0.076 ms/frame   0.3/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs c97da94a0a00516a ps 7060f8d651d87c80
+   0.076 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.066 ms/frame   1.0/frame  pass 240x135 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs 59e60dfe5201843d ps 59e60dfe32c85d7f
+   0.059 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs efa35f8e99e8dde8 ps 3518c50834592382
+   0.056 ms/frame  16.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth - vs 80c1a8f4ab0a8c21 ps 5b7eea5f70b0c857
+   0.055 ms/frame   1.0/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.053 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps 5039ae2ec7b83a0a
+   0.048 ms/frame   2.2/frame  pass 240x135 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs 4ce5dbe573666a61 ps 4ce5dbe54ba8fdab
+   0.047 ms/frame   1.0/frame  pass 1920x1080 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps de498e51296326c1
+   0.044 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.042 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+   0.032 ms/frame   1.0/frame  dispatch cs 5ec79c2cb022e7ab (60x34x16 groups)
+GPU profile: 8.33 ms/frame over 601 frames, 118 labels
+   3.174 ms/frame   2.5/frame  (between submissions: GPU idle)
+   0.481 ms/frame   1.0/frame  pass 3840x2160 [R8Unorm ] depth - vs 678f10f9504d0ce9 ps cc3daf3174c7ae3c
+   0.466 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 26ddf0edf318a663 ps bd3fc9f0122cab49
+   0.381 ms/frame  19.6/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 2eefc6cc832fbec7 ps 691b1c89f57bbcb8
+   0.327 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs 07065c37ac08b2b2 ps aaf40ac4efd4fd16
+   0.266 ms/frame   1.0/frame  dispatch cs 3ab54396073f9987 (60x34x16 groups)
+   0.234 ms/frame   2.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs b499ad0cd2a6e333 ps 18237179a36ae193
+   0.219 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 829b4db85567b8f4
+   0.213 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.193 ms/frame   5.0/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.183 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.137 ms/frame  14.0/frame  pass 256x256 [- ] depth D16Unorm vs 77a42bffe206e02c ps 8998be1c761f1cb4
+   0.133 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.116 ms/frame  15.2/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf53483bb04f1
+   0.104 ms/frame   1.0/frame  pass 1920x1080 [R8G8B8A8Unorm ] depth - vs 678f10f9504d0ce9 ps b19e7829f208eeb7
+   0.096 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.095 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps c0981c68fe11c2d8
+   0.087 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps ff1529dd7fa4e7c3
+   0.078 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.072 ms/frame   0.3/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs c97da94a0a00516a ps 7060f8d651d87c80
+   0.066 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs efa35f8e99e8dde8 ps 3518c50834592382
+   0.066 ms/frame   1.0/frame  pass 240x135 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs 59e60dfe5201843d ps 59e60dfe32c85d7f
+   0.058 ms/frame  16.2/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth - vs 80c1a8f4ab0a8c21 ps 5b7eea5f70b0c857
+   0.056 ms/frame   1.0/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.053 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps 5039ae2ec7b83a0a
+   0.047 ms/frame   2.2/frame  pass 240x135 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs 4ce5dbe573666a61 ps 4ce5dbe54ba8fdab
+   0.047 ms/frame   1.0/frame  pass 1920x1080 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps de498e51296326c1
+   0.043 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.043 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+   0.033 ms/frame   1.0/frame  dispatch cs 5ec79c2cb022e7ab (60x34x16 groups)
+GPU profile: 8.33 ms/frame over 601 frames, 110 labels
+   3.455 ms/frame   2.5/frame  (between submissions: GPU idle)
+   0.481 ms/frame   1.0/frame  pass 3840x2160 [R8Unorm ] depth - vs 678f10f9504d0ce9 ps cc3daf3174c7ae3c
+   0.466 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 26ddf0edf318a663 ps bd3fc9f0122cab49
+   0.328 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs 07065c37ac08b2b2 ps aaf40ac4efd4fd16
+   0.248 ms/frame   2.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs b499ad0cd2a6e333 ps 18237179a36ae193
+   0.247 ms/frame   1.0/frame  dispatch cs 3ab54396073f9987 (60x34x16 groups)
+   0.219 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 829b4db85567b8f4
+   0.210 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.193 ms/frame   5.0/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.181 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.141 ms/frame  16.2/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 2eefc6cc832fbec7 ps 691b1c89f57bbcb8
+   0.137 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.134 ms/frame  13.8/frame  pass 256x256 [- ] depth D16Unorm vs 77a42bffe206e02c ps 8998be1c761f1cb4
+   0.110 ms/frame  15.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf53483bb04f1
+   0.104 ms/frame   1.0/frame  pass 1920x1080 [R8G8B8A8Unorm ] depth - vs 678f10f9504d0ce9 ps b19e7829f208eeb7
+   0.095 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps c0981c68fe11c2d8
+   0.093 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.087 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps ff1529dd7fa4e7c3
+   0.075 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.066 ms/frame   1.0/frame  pass 240x135 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs 59e60dfe5201843d ps 59e60dfe32c85d7f
+   0.066 ms/frame   0.3/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs c97da94a0a00516a ps 7060f8d651d87c80
+   0.060 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs efa35f8e99e8dde8 ps 3518c50834592382
+   0.056 ms/frame  16.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth - vs 80c1a8f4ab0a8c21 ps 5b7eea5f70b0c857
+   0.055 ms/frame   1.0/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.053 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps 5039ae2ec7b83a0a
+   0.047 ms/frame   1.0/frame  pass 1920x1080 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps de498e51296326c1
+   0.046 ms/frame   2.1/frame  pass 240x135 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs 4ce5dbe573666a61 ps 4ce5dbe54ba8fdab
+   0.044 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.042 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+   0.033 ms/frame   1.0/frame  dispatch cs 5ec79c2cb022e7ab (60x34x16 groups)
+GPU profile: 8.33 ms/frame over 600 frames, 109 labels
+   3.408 ms/frame   2.5/frame  (between submissions: GPU idle)
+   0.482 ms/frame   1.0/frame  pass 3840x2160 [R8Unorm ] depth - vs 678f10f9504d0ce9 ps cc3daf3174c7ae3c
+   0.379 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 26ddf0edf318a663 ps bd3fc9f0122cab49
+   0.331 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs 07065c37ac08b2b2 ps aaf40ac4efd4fd16
+   0.248 ms/frame   2.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs b499ad0cd2a6e333 ps 18237179a36ae193
+   0.248 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.247 ms/frame   1.0/frame  dispatch cs 3ab54396073f9987 (60x34x16 groups)
+   0.233 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 829b4db85567b8f4
+   0.192 ms/frame   5.0/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.185 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.137 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.135 ms/frame  13.8/frame  pass 256x256 [- ] depth D16Unorm vs 77a42bffe206e02c ps 8998be1c761f1cb4
+   0.129 ms/frame  16.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 2eefc6cc832fbec7 ps 691b1c89f57bbcb8
+   0.111 ms/frame  15.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf53483bb04f1
+   0.104 ms/frame   1.0/frame  pass 1920x1080 [R8G8B8A8Unorm ] depth - vs 678f10f9504d0ce9 ps b19e7829f208eeb7
+   0.095 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps c0981c68fe11c2d8
+   0.093 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.089 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps ff1529dd7fa4e7c3
+   0.077 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.075 ms/frame   0.3/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs c97da94a0a00516a ps 7060f8d651d87c80
+   0.067 ms/frame   1.0/frame  pass 240x135 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs 59e60dfe5201843d ps 59e60dfe32c85d7f
+   0.059 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs efa35f8e99e8dde8 ps 3518c50834592382
+   0.058 ms/frame  16.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth - vs 80c1a8f4ab0a8c21 ps 5b7eea5f70b0c857
+   0.056 ms/frame   1.0/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.054 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps 5039ae2ec7b83a0a
+   0.048 ms/frame   2.2/frame  pass 240x135 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs 4ce5dbe573666a61 ps 4ce5dbe54ba8fdab
+   0.047 ms/frame   1.0/frame  pass 1920x1080 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps de498e51296326c1
+   0.044 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.042 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+   0.036 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs 813694dab4e07343 ps 640844be32f95d0b
+GPU profile: 8.33 ms/frame over 600 frames, 109 labels
+   3.433 ms/frame   2.5/frame  (between submissions: GPU idle)
+   0.482 ms/frame   1.0/frame  pass 3840x2160 [R8Unorm ] depth - vs 678f10f9504d0ce9 ps cc3daf3174c7ae3c
+   0.438 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 26ddf0edf318a663 ps bd3fc9f0122cab49
+   0.329 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs 07065c37ac08b2b2 ps aaf40ac4efd4fd16
+   0.246 ms/frame   1.0/frame  dispatch cs 3ab54396073f9987 (60x34x16 groups)
+   0.235 ms/frame   2.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs b499ad0cd2a6e333 ps 18237179a36ae193
+   0.225 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.224 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 829b4db85567b8f4
+   0.190 ms/frame   5.0/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.184 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.138 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.135 ms/frame  13.8/frame  pass 256x256 [- ] depth D16Unorm vs 77a42bffe206e02c ps 8998be1c761f1cb4
+   0.129 ms/frame  16.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 2eefc6cc832fbec7 ps 691b1c89f57bbcb8
+   0.110 ms/frame  15.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf53483bb04f1
+   0.104 ms/frame   1.0/frame  pass 1920x1080 [R8G8B8A8Unorm ] depth - vs 678f10f9504d0ce9 ps b19e7829f208eeb7
+   0.095 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps c0981c68fe11c2d8
+   0.093 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.089 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps ff1529dd7fa4e7c3
+   0.076 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.075 ms/frame   0.3/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs c97da94a0a00516a ps 7060f8d651d87c80
+   0.067 ms/frame   1.0/frame  pass 240x135 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs 59e60dfe5201843d ps 59e60dfe32c85d7f
+   0.059 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs efa35f8e99e8dde8 ps 3518c50834592382
+   0.057 ms/frame  16.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth - vs 80c1a8f4ab0a8c21 ps 5b7eea5f70b0c857
+   0.055 ms/frame   1.0/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.054 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps 5039ae2ec7b83a0a
+   0.048 ms/frame   2.2/frame  pass 240x135 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs 4ce5dbe573666a61 ps 4ce5dbe54ba8fdab
+   0.047 ms/frame   1.0/frame  pass 1920x1080 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps de498e51296326c1
+   0.043 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.042 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+   0.033 ms/frame   1.0/frame  dispatch cs 5ec79c2cb022e7ab (60x34x16 groups)
+GPU profile: 8.59 ms/frame over 583 frames, 118 labels
+   3.761 ms/frame   2.5/frame  (between submissions: GPU idle)
+   0.481 ms/frame   1.0/frame  pass 3840x2160 [R8Unorm ] depth - vs 678f10f9504d0ce9 ps cc3daf3174c7ae3c
+   0.368 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 26ddf0edf318a663 ps bd3fc9f0122cab49
+   0.327 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs 07065c37ac08b2b2 ps aaf40ac4efd4fd16
+   0.248 ms/frame   1.0/frame  dispatch cs 3ab54396073f9987 (60x34x16 groups)
+   0.227 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.224 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 829b4db85567b8f4
+   0.203 ms/frame   2.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs b499ad0cd2a6e333 ps 18237179a36ae193
+   0.189 ms/frame   5.0/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.184 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.144 ms/frame  16.6/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 2eefc6cc832fbec7 ps 691b1c89f57bbcb8
+   0.138 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.137 ms/frame  14.0/frame  pass 256x256 [- ] depth D16Unorm vs 77a42bffe206e02c ps 8998be1c761f1cb4
+   0.111 ms/frame  15.1/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf53483bb04f1
+   0.104 ms/frame   1.0/frame  pass 1920x1080 [R8G8B8A8Unorm ] depth - vs 678f10f9504d0ce9 ps b19e7829f208eeb7
+   0.095 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps c0981c68fe11c2d8
+   0.095 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.089 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps ff1529dd7fa4e7c3
+   0.076 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.075 ms/frame   0.3/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs c97da94a0a00516a ps 7060f8d651d87c80
+   0.066 ms/frame   1.0/frame  pass 240x135 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs 59e60dfe5201843d ps 59e60dfe32c85d7f
+   0.060 ms/frame   1.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs efa35f8e99e8dde8 ps 3518c50834592382
+   0.058 ms/frame  16.1/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth - vs 80c1a8f4ab0a8c21 ps 5b7eea5f70b0c857
+   0.055 ms/frame   1.0/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.055 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps 5039ae2ec7b83a0a
+   0.048 ms/frame   2.2/frame  pass 240x135 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs 4ce5dbe573666a61 ps 4ce5dbe54ba8fdab
+   0.047 ms/frame   1.0/frame  pass 1920x1080 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps de498e51296326c1
+   0.045 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.042 ms/frame   1.0/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+   0.032 ms/frame   1.0/frame  dispatch cs 5ec79c2cb022e7ab (60x34x16 groups)
+GPU profile: 6.50 ms/frame over 770 frames, 145 labels
+   2.836 ms/frame   2.0/frame  (between submissions: GPU idle)
+   0.376 ms/frame   0.8/frame  pass 3840x2160 [R8Unorm ] depth - vs 678f10f9504d0ce9 ps cc3daf3174c7ae3c
+   0.234 ms/frame  15.7/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 2eefc6cc832fbec7 ps 691b1c89f57bbcb8
+   0.203 ms/frame   0.8/frame  dispatch cs 3ab54396073f9987 (60x34x16 groups)
+   0.186 ms/frame   0.8/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs 07065c37ac08b2b2 ps aaf40ac4efd4fd16
+   0.176 ms/frame   0.6/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 26ddf0edf318a663 ps bd3fc9f0122cab49
+   0.168 ms/frame   0.8/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 829b4db85567b8f4
+   0.163 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.144 ms/frame   3.9/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.141 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.108 ms/frame  11.1/frame  pass 256x256 [- ] depth D16Unorm vs 77a42bffe206e02c ps 8998be1c761f1cb4
+   0.104 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.091 ms/frame  12.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf53483bb04f1
+   0.087 ms/frame   1.6/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs b499ad0cd2a6e333 ps 18237179a36ae193
+   0.081 ms/frame   0.8/frame  pass 1920x1080 [R8G8B8A8Unorm ] depth - vs 678f10f9504d0ce9 ps b19e7829f208eeb7
+   0.075 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps c0981c68fe11c2d8
+   0.072 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.067 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps ff1529dd7fa4e7c3
+   0.060 ms/frame   0.3/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs c97da94a0a00516a ps 7060f8d651d87c80
+   0.060 ms/frame   0.2/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs 77a42bff6b2be8e7 ps b1ee65f9237db63f
+   0.058 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.052 ms/frame   0.8/frame  pass 240x135 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs 59e60dfe5201843d ps 59e60dfe32c85d7f
+   0.050 ms/frame   0.8/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs efa35f8e99e8dde8 ps 3518c50834592382
+   0.046 ms/frame  12.8/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth - vs 80c1a8f4ab0a8c21 ps 5b7eea5f70b0c857
+   0.044 ms/frame   0.8/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.042 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps 5039ae2ec7b83a0a
+   0.039 ms/frame   1.8/frame  pass 240x135 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs 4ce5dbe573666a61 ps 4ce5dbe54ba8fdab
+   0.037 ms/frame   0.8/frame  pass 1920x1080 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps de498e51296326c1
+   0.034 ms/frame   0.8/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.033 ms/frame   0.8/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+Runtime: save data '@MediEvil0005' mounted at /savedata0 (existing)
+Runtime: guest thread 'SlateLoadingThread4' created (stack=262144, prio=700)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Runtime: system module 0xad loaded (host implementation)
+GPU profile: 7.21 ms/frame over 690 frames, 394 labels
+   4.088 ms/frame   1.8/frame  (between submissions: GPU idle)
+   0.176 ms/frame   0.3/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 0ad06755ef833470 ps fa26dbd80e2ab4bc
+   0.162 ms/frame   7.9/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 2eefc6cc832fbec7 ps 691b1c89f57bbcb8
+   0.141 ms/frame   0.6/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.138 ms/frame   0.3/frame  pass 3840x2160 [R8Unorm ] depth - vs 678f10f9504d0ce9 ps cc3daf3174c7ae3c
+   0.125 ms/frame   0.6/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.123 ms/frame   0.8/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs 05bcd744ac08b2b2 ps 4fe20af683865713
+   0.113 ms/frame   4.4/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.086 ms/frame   0.7/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.085 ms/frame   0.3/frame  dispatch cs 3ab54396073f9987 (60x34x16 groups)
+   0.083 ms/frame   0.3/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs b8cf0f1bac08b2b2 ps 61b3bda777d17f77
+   0.074 ms/frame   0.7/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.069 ms/frame   6.5/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf53483bb04f1
+   0.067 ms/frame   0.3/frame  dispatch cs 27e12fb9da9f873c (60x34x16 groups)
+   0.067 ms/frame   0.3/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 829b4db85567b8f4
+   0.057 ms/frame   6.1/frame  pass 256x256 [- ] depth D16Unorm vs 77a42bffe206e02c ps 8998be1c761f1cb4
+   0.056 ms/frame   0.6/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs b499ad0cd2a6e333 ps 18237179a36ae193
+   0.054 ms/frame  11.2/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf534433f10e2
+   0.051 ms/frame   0.7/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.050 ms/frame   0.6/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.048 ms/frame   0.2/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 2780e1c8f318a663 ps 43ada8dd122cab49
+   0.038 ms/frame   0.3/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps c0981c68fe11c2d8
+   0.038 ms/frame   0.3/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps bf9bcd9c07f3c6d0
+   0.034 ms/frame   0.2/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 26ddf0edf318a663 ps bd3fc9f0122cab49
+   0.032 ms/frame   0.2/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs c97da94a0a00516a ps 7060f8d651d87c80
+   0.032 ms/frame   1.7/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 3b573269569fc647 ps 0000000000000000
+   0.032 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 8a187e908fdcc047 ps 7930151d5084d94f
+   0.031 ms/frame   6.8/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth - vs 80c1a8f4ab0a8c21 ps 5b7eea5f70b0c857
+   0.031 ms/frame   0.3/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 30b752b5e3f27bcf ps 80479e30c3e704ae
+   0.030 ms/frame   0.6/frame  pass 1024x1024 [R32G32B32A32Sfloat R16G16B16A16Sfloat ] depth - vs ca98641d5477124c ps 66ee73a415e4eaae
+GPU profile: 4.12 ms/frame over 1200 frames, 214 labels
+   1.841 ms/frame   1.2/frame  (between submissions: GPU idle)
+   0.356 ms/frame   0.4/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 2780e1c8f318a663 ps 43ada8dd122cab49
+   0.139 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs b8cf0f1bac08b2b2 ps 61b3bda777d17f77
+   0.111 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.108 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.104 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.098 ms/frame   0.5/frame  dispatch cs 27e12fb9da9f873c (60x34x16 groups)
+   0.081 ms/frame   0.5/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.075 ms/frame  13.1/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf534433f10e2
+   0.060 ms/frame   3.5/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.058 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps bf9bcd9c07f3c6d0
+   0.055 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 9b602176f318a663 ps 6518a76c00ec74d7
+   0.047 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 30b752b5e3f27bcf ps 80479e30c3e704ae
+   0.044 ms/frame   0.5/frame  dispatch cs b92cf046b9c50195 (240x135x1 groups)
+   0.044 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.043 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.040 ms/frame   8.6/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 0000000000000000
+   0.039 ms/frame   0.5/frame  dispatch cs 9a464f7d2c4ed45e (240x135x1 groups)
+   0.035 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 3632d4c4faaa85d2
+   0.030 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs c14fcd20719e97ba ps 5b759a2a845cdd0f
+   0.029 ms/frame   0.5/frame  pass 1024x1024 [R32G32B32A32Sfloat R16G16B16A16Sfloat ] depth - vs ca98641d5477124c ps 66ee73a415e4eaae
+   0.029 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs be2c60f1f318a663 ps 701b2801fe64f021
+   0.029 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 51f7f8cdf318a663 ps 291e752d9770f39b
+   0.025 ms/frame   1.0/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 3b573269569fc647 ps 0000000000000000
+   0.022 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.021 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+   0.021 ms/frame   2.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 7e626387612428f3 ps 1325b25564eb9b0d
+   0.017 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs 813694dab4e07343 ps 640844be32f95d0b
+   0.017 ms/frame   0.7/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 6f178d79bf2802f1 ps b3592cf66d1638b3
+   0.016 ms/frame   1.0/frame  pass 64x64 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs f7457b588f171402 ps f7457b58bca083b6
+GPU profile: 4.12 ms/frame over 1198 frames, 188 labels
+   2.017 ms/frame   1.2/frame  (between submissions: GPU idle)
+   0.251 ms/frame   0.4/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 2780e1c8f318a663 ps 43ada8dd122cab49
+   0.136 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs b8cf0f1bac08b2b2 ps 61b3bda777d17f77
+   0.112 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.101 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.098 ms/frame   0.5/frame  dispatch cs 27e12fb9da9f873c (60x34x16 groups)
+   0.084 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.081 ms/frame   0.5/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.061 ms/frame  12.1/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf534433f10e2
+   0.060 ms/frame   3.5/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.057 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps bf9bcd9c07f3c6d0
+   0.048 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 30b752b5e3f27bcf ps 80479e30c3e704ae
+   0.046 ms/frame   0.5/frame  dispatch cs b92cf046b9c50195 (240x135x1 groups)
+   0.045 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs be2c60f1f318a663 ps 701b2801fe64f021
+   0.045 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.043 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.040 ms/frame   0.5/frame  dispatch cs 9a464f7d2c4ed45e (240x135x1 groups)
+   0.035 ms/frame   2.2/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 6f178d79bf2802f1 ps b3592cf66d1638b3
+   0.035 ms/frame   8.7/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 0000000000000000
+   0.034 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 3632d4c4faaa85d2
+   0.027 ms/frame   0.5/frame  pass 1024x1024 [R32G32B32A32Sfloat R16G16B16A16Sfloat ] depth - vs ca98641d5477124c ps 66ee73a415e4eaae
+   0.022 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.021 ms/frame   1.0/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 3b573269569fc647 ps 0000000000000000
+   0.021 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+   0.020 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 0bc513c8f318a663 ps e9ef45720d0a9b23
+   0.018 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs 813694dab4e07343 ps 640844be32f95d0b
+   0.018 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 2eefc6cc832fbec7 ps 3b1f1d8977ca89aa
+   0.017 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 51f7f8cdf318a663 ps 291e752d9770f39b
+   0.016 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs d41c4663c7f41d24 ps d74696f135190829
+   0.016 ms/frame   1.0/frame  pass 64x64 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs f7457b588f171402 ps f7457b58bca083b6
+GPU profile: 4.12 ms/frame over 1200 frames, 278 labels
+   1.949 ms/frame   1.2/frame  (between submissions: GPU idle)
+   0.138 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs b8cf0f1bac08b2b2 ps 61b3bda777d17f77
+   0.112 ms/frame   0.2/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 2780e1c8f318a663 ps 43ada8dd122cab49
+   0.110 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.104 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.099 ms/frame   5.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 6f178d79bf2802f1 ps b3592cf66d1638b3
+   0.098 ms/frame   0.5/frame  dispatch cs 27e12fb9da9f873c (60x34x16 groups)
+   0.082 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs be2c60f1f318a663 ps 701b2801fe64f021
+   0.081 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.081 ms/frame   0.5/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.065 ms/frame   0.2/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 26ddf0edf318a663 ps bd3fc9f0122cab49
+   0.061 ms/frame   3.5/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.060 ms/frame  11.5/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf534433f10e2
+   0.057 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps bf9bcd9c07f3c6d0
+   0.052 ms/frame   0.5/frame  dispatch cs b92cf046b9c50195 (240x135x1 groups)
+   0.047 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 30b752b5e3f27bcf ps 80479e30c3e704ae
+   0.045 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.041 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.040 ms/frame   0.5/frame  dispatch cs 9a464f7d2c4ed45e (240x135x1 groups)
+   0.035 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 3632d4c4faaa85d2
+   0.030 ms/frame   7.5/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 0000000000000000
+   0.027 ms/frame   0.5/frame  pass 1024x1024 [R32G32B32A32Sfloat R16G16B16A16Sfloat ] depth - vs ca98641d5477124c ps 66ee73a415e4eaae
+   0.025 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 0bc513c8f318a663 ps e9ef45720d0a9b23
+   0.024 ms/frame   1.4/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 3b573269569fc647 ps 0000000000000000
+   0.022 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.021 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+   0.019 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs adc01b81f318a663 ps bab4631595d98e3d
+   0.018 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs 813694dab4e07343 ps 640844be32f95d0b
+   0.018 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs d41c4663c7f41d24 ps d74696f135190829
+   0.016 ms/frame   0.8/frame  pass 3840x2160 [R16G16Unorm ] depth D32SfloatS8Uint vs 4818673f5f85196a ps 3ee8851c198ba15d
+GPU profile: 4.12 ms/frame over 1202 frames, 240 labels
+   1.368 ms/frame   1.2/frame  (between submissions: GPU idle)
+   0.170 ms/frame   0.3/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 2780e1c8f318a663 ps 43ada8dd122cab49
+   0.134 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs b8cf0f1bac08b2b2 ps 61b3bda777d17f77
+   0.132 ms/frame  32.4/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf534433f10e2
+   0.110 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.108 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.103 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.098 ms/frame   0.5/frame  dispatch cs 27e12fb9da9f873c (60x34x16 groups)
+   0.081 ms/frame   0.5/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.079 ms/frame   4.3/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 6f178d79bf2802f1 ps b3592cf66d1638b3
+   0.073 ms/frame   0.2/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 9b602176f318a663 ps 6518a76c00ec74d7
+   0.063 ms/frame   3.6/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.059 ms/frame   7.8/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 86dfe619e1b27d2e ps f1d9870c6f9f1c3c
+   0.058 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps bf9bcd9c07f3c6d0
+   0.049 ms/frame   0.5/frame  dispatch cs b92cf046b9c50195 (240x135x1 groups)
+   0.048 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 30b752b5e3f27bcf ps 80479e30c3e704ae
+   0.044 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.041 ms/frame   0.5/frame  dispatch cs 9a464f7d2c4ed45e (240x135x1 groups)
+   0.041 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.037 ms/frame  14.9/frame  pass 512x512 [] depth D16Unorm vs 61c8dfbc9f3bedec ps 0000000000000000
+   0.037 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 3632d4c4faaa85d2
+   0.036 ms/frame  11.5/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 0000000000000000
+   0.036 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 51f7f8cdf318a663 ps 291e752d9770f39b
+   0.034 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs be2c60f1f318a663 ps 701b2801fe64f021
+   0.034 ms/frame   8.9/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 3b573269569fc647 ps 0000000000000000
+   0.030 ms/frame   4.3/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 7e626387612428f3 ps 1325b25564eb9b0d
+   0.030 ms/frame   2.1/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs fee2b6fd612428f3 ps cecf6c1cbc6332f1
+   0.029 ms/frame   0.5/frame  pass 1024x1024 [R32G32B32A32Sfloat R16G16B16A16Sfloat ] depth - vs ca98641d5477124c ps 66ee73a415e4eaae
+   0.026 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs d41c4663c7f41d24 ps d74696f135190829
+   0.024 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 7c1ac630280cd7e4 ps e52e0a5de0975dc5
+GPU profile: 4.12 ms/frame over 1200 frames, 247 labels
+   1.614 ms/frame   1.2/frame  (between submissions: GPU idle)
+   0.189 ms/frame   0.3/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 2780e1c8f318a663 ps 43ada8dd122cab49
+   0.134 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs b8cf0f1bac08b2b2 ps 61b3bda777d17f77
+   0.111 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.109 ms/frame  27.2/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf534433f10e2
+   0.108 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.104 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.098 ms/frame   0.5/frame  dispatch cs 27e12fb9da9f873c (60x34x16 groups)
+   0.081 ms/frame   0.5/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.064 ms/frame   3.6/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.064 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 51f7f8cdf318a663 ps 291e752d9770f39b
+   0.058 ms/frame   3.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 6f178d79bf2802f1 ps b3592cf66d1638b3
+   0.058 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps bf9bcd9c07f3c6d0
+   0.048 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 30b752b5e3f27bcf ps 80479e30c3e704ae
+   0.047 ms/frame   4.1/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 86dfe619e1b27d2e ps f1d9870c6f9f1c3c
+   0.044 ms/frame   0.5/frame  dispatch cs b92cf046b9c50195 (240x135x1 groups)
+   0.044 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.042 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs be2c60f1f318a663 ps 701b2801fe64f021
+   0.041 ms/frame   0.5/frame  dispatch cs 9a464f7d2c4ed45e (240x135x1 groups)
+   0.040 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.035 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 3632d4c4faaa85d2
+   0.033 ms/frame  14.2/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 0000000000000000
+   0.032 ms/frame   5.8/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 3b573269569fc647 ps 0000000000000000
+   0.032 ms/frame   0.5/frame  pass 1024x1024 [R32G32B32A32Sfloat R16G16B16A16Sfloat ] depth - vs ca98641d5477124c ps 66ee73a415e4eaae
+   0.030 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 70bf3164ce54256d ps c9d0521c3511cfd0
+   0.028 ms/frame  12.1/frame  pass 512x512 [] depth D16Unorm vs 61c8dfbc9f3bedec ps 0000000000000000
+   0.027 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 7c1ac630280cd7e4 ps e52e0a5de0975dc5
+   0.022 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.021 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 561d66f7b66bb1a6 ps 17441d1a15c56c5a
+   0.021 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+GPU profile: 4.12 ms/frame over 1199 frames, 250 labels
+   1.797 ms/frame   1.2/frame  (between submissions: GPU idle)
+   0.177 ms/frame   0.4/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 2780e1c8f318a663 ps 43ada8dd122cab49
+   0.132 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs b8cf0f1bac08b2b2 ps 61b3bda777d17f77
+   0.112 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.109 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.108 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.102 ms/frame  22.3/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf534433f10e2
+   0.099 ms/frame   0.5/frame  dispatch cs 27e12fb9da9f873c (60x34x16 groups)
+   0.084 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs ee1d2940f318a663 ps e2e2dc686b529460
+   0.081 ms/frame   0.5/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.061 ms/frame   3.5/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.057 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps bf9bcd9c07f3c6d0
+   0.055 ms/frame   2.8/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 6f178d79bf2802f1 ps b3592cf66d1638b3
+   0.048 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 30b752b5e3f27bcf ps 80479e30c3e704ae
+   0.044 ms/frame   0.5/frame  dispatch cs b92cf046b9c50195 (240x135x1 groups)
+   0.043 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.041 ms/frame   0.5/frame  dispatch cs 9a464f7d2c4ed45e (240x135x1 groups)
+   0.039 ms/frame  14.9/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 0000000000000000
+   0.037 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.035 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 3632d4c4faaa85d2
+   0.026 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 51f7f8cdf318a663 ps 291e752d9770f39b
+   0.026 ms/frame   0.5/frame  pass 1024x1024 [R32G32B32A32Sfloat R16G16B16A16Sfloat ] depth - vs ca98641d5477124c ps 66ee73a415e4eaae
+   0.025 ms/frame   3.3/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 3b573269569fc647 ps 0000000000000000
+   0.022 ms/frame   1.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 7e626387612428f3 ps 1325b25564eb9b0d
+   0.022 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.021 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+   0.019 ms/frame   8.8/frame  pass 512x512 [] depth D16Unorm vs 61c8dfbc9f3bedec ps 0000000000000000
+   0.019 ms/frame   1.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 86dfe619e1b27d2e ps f1d9870c6f9f1c3c
+   0.018 ms/frame   1.1/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 2eefc6cc832fbec7 ps 3b1f1d8977ca89aa
+   0.017 ms/frame   0.8/frame  pass 3840x2160 [R16G16Unorm ] depth D32SfloatS8Uint vs 8868246469499f07 ps 9f82a9d96c740313
+GPU profile: 4.12 ms/frame over 1200 frames, 185 labels
+   1.867 ms/frame   1.2/frame  (between submissions: GPU idle)
+   0.250 ms/frame   0.2/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 51f7f8cdf318a663 ps 291e752d9770f39b
+   0.132 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs b8cf0f1bac08b2b2 ps 61b3bda777d17f77
+   0.111 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.101 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.098 ms/frame   0.5/frame  dispatch cs 27e12fb9da9f873c (60x34x16 groups)
+   0.096 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.081 ms/frame   0.5/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.077 ms/frame  19.2/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf534433f10e2
+   0.062 ms/frame   3.5/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.057 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps bf9bcd9c07f3c6d0
+   0.057 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 2780e1c8f318a663 ps 43ada8dd122cab49
+   0.049 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 30b752b5e3f27bcf ps 80479e30c3e704ae
+   0.048 ms/frame   0.4/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 9b602176f318a663 ps 6518a76c00ec74d7
+   0.044 ms/frame   0.5/frame  dispatch cs b92cf046b9c50195 (240x135x1 groups)
+   0.043 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.041 ms/frame   0.5/frame  dispatch cs 9a464f7d2c4ed45e (240x135x1 groups)
+   0.037 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.036 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 26ddf0edf318a663 ps bd3fc9f0122cab49
+   0.035 ms/frame  14.9/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 0000000000000000
+   0.034 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 3632d4c4faaa85d2
+   0.030 ms/frame   0.5/frame  pass 1024x1024 [R32G32B32A32Sfloat R16G16B16A16Sfloat ] depth - vs ca98641d5477124c ps 66ee73a415e4eaae
+   0.025 ms/frame   1.7/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 3b573269569fc647 ps 0000000000000000
+   0.024 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs be2c60f1f318a663 ps 701b2801fe64f021
+   0.023 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs adc01b81f318a663 ps bab4631595d98e3d
+   0.022 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.021 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+   0.021 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 6ab955e88fdcc047 ps 50e7e2dd958d41bc
+   0.020 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 2eefc6cc832fbec7 ps 3b1f1d8977ca89aa
+   0.019 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs d41c4663c7f41d24 ps d74696f135190829
+GPU profile: 4.12 ms/frame over 1202 frames, 241 labels
+   1.839 ms/frame   1.2/frame  (between submissions: GPU idle)
+   0.132 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs b8cf0f1bac08b2b2 ps 61b3bda777d17f77
+   0.112 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.109 ms/frame   0.4/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 2780e1c8f318a663 ps 43ada8dd122cab49
+   0.102 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.100 ms/frame   0.5/frame  dispatch cs 27e12fb9da9f873c (60x34x16 groups)
+   0.098 ms/frame  25.0/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf534433f10e2
+   0.096 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.088 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 51f7f8cdf318a663 ps 291e752d9770f39b
+   0.081 ms/frame   0.5/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.061 ms/frame   3.6/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.057 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps bf9bcd9c07f3c6d0
+   0.051 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs adc01b81f318a663 ps bab4631595d98e3d
+   0.048 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 30b752b5e3f27bcf ps 80479e30c3e704ae
+   0.042 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.041 ms/frame   0.5/frame  dispatch cs b92cf046b9c50195 (240x135x1 groups)
+   0.040 ms/frame   0.5/frame  dispatch cs 9a464f7d2c4ed45e (240x135x1 groups)
+   0.039 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.036 ms/frame  14.8/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 0000000000000000
+   0.035 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 3632d4c4faaa85d2
+   0.031 ms/frame   4.6/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 3b573269569fc647 ps 0000000000000000
+   0.029 ms/frame   0.5/frame  pass 1024x1024 [R32G32B32A32Sfloat R16G16B16A16Sfloat ] depth - vs ca98641d5477124c ps 66ee73a415e4eaae
+   0.025 ms/frame  10.8/frame  pass 512x512 [] depth D16Unorm vs 61c8dfbc9f3bedec ps 0000000000000000
+   0.023 ms/frame   0.6/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs be2c60f1f318a663 ps 701b2801fe64f021
+   0.022 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.021 ms/frame   1.1/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 2eefc6cc832fbec7 ps 3b1f1d8977ca89aa
+   0.021 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+   0.018 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs ee1d2940f318a663 ps e2e2dc686b529460
+   0.017 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs 813694dab4e07343 ps 640844be32f95d0b
+   0.016 ms/frame   1.0/frame  pass 64x64 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs f7457b588f171402 ps f7457b58bca083b6
+GPU profile: 4.12 ms/frame over 1200 frames, 225 labels
+   1.806 ms/frame   1.2/frame  (between submissions: GPU idle)
+   0.132 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs b8cf0f1bac08b2b2 ps 61b3bda777d17f77
+   0.118 ms/frame  24.3/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf534433f10e2
+   0.110 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.100 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.099 ms/frame   0.5/frame  dispatch cs 27e12fb9da9f873c (60x34x16 groups)
+   0.092 ms/frame   0.3/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 2780e1c8f318a663 ps 43ada8dd122cab49
+   0.081 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.081 ms/frame   0.5/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.070 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 51f7f8cdf318a663 ps 291e752d9770f39b
+   0.061 ms/frame   3.5/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.056 ms/frame   0.2/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 9b602176f318a663 ps 6518a76c00ec74d7
+   0.054 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps bf9bcd9c07f3c6d0
+   0.049 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 30b752b5e3f27bcf ps 80479e30c3e704ae
+   0.047 ms/frame  15.0/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 0000000000000000
+   0.043 ms/frame   0.5/frame  dispatch cs b92cf046b9c50195 (240x135x1 groups)
+   0.042 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.040 ms/frame   0.5/frame  dispatch cs 9a464f7d2c4ed45e (240x135x1 groups)
+   0.038 ms/frame   2.8/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 6f178d79bf2802f1 ps b3592cf66d1638b3
+   0.037 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs ee1d2940f318a663 ps e2e2dc686b529460
+   0.034 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 3632d4c4faaa85d2
+   0.034 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.032 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 51922c9ef318a663 ps 21063670820046b5
+   0.028 ms/frame   0.5/frame  pass 1024x1024 [R32G32B32A32Sfloat R16G16B16A16Sfloat ] depth - vs ca98641d5477124c ps 66ee73a415e4eaae
+   0.027 ms/frame   3.2/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 3b573269569fc647 ps 0000000000000000
+   0.026 ms/frame   2.2/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 7e626387612428f3 ps 1325b25564eb9b0d
+   0.026 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs be2c60f1f318a663 ps 701b2801fe64f021
+   0.025 ms/frame  10.6/frame  pass 512x512 [] depth D16Unorm vs 61c8dfbc9f3bedec ps 0000000000000000
+   0.023 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 26ddf0edf318a663 ps bd3fc9f0122cab49
+   0.022 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+GPU profile: 4.10 ms/frame over 1194 frames, 199 labels
+   1.601 ms/frame   1.2/frame  (between submissions: GPU idle)
+   0.267 ms/frame   8.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 6f178d79bf2802f1 ps b3592cf66d1638b3
+   0.192 ms/frame   0.3/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 2780e1c8f318a663 ps 43ada8dd122cab49
+   0.133 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs b8cf0f1bac08b2b2 ps 61b3bda777d17f77
+   0.108 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.102 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.098 ms/frame   0.5/frame  dispatch cs 27e12fb9da9f873c (60x34x16 groups)
+   0.096 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.090 ms/frame  19.7/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf534433f10e2
+   0.080 ms/frame   0.5/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.061 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 51f7f8cdf318a663 ps 291e752d9770f39b
+   0.060 ms/frame   3.5/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.056 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps bf9bcd9c07f3c6d0
+   0.048 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 30b752b5e3f27bcf ps 80479e30c3e704ae
+   0.044 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.043 ms/frame   0.5/frame  dispatch cs b92cf046b9c50195 (240x135x1 groups)
+   0.043 ms/frame   0.5/frame  dispatch cs 9a464f7d2c4ed45e (240x135x1 groups)
+   0.039 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.036 ms/frame  15.0/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 0000000000000000
+   0.034 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 3632d4c4faaa85d2
+   0.034 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs be2c60f1f318a663 ps 701b2801fe64f021
+   0.031 ms/frame   0.2/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 4f78e270ef833470 ps 58ba8fc005df89bc
+   0.029 ms/frame   0.5/frame  pass 1024x1024 [R32G32B32A32Sfloat R16G16B16A16Sfloat ] depth - vs ca98641d5477124c ps 66ee73a415e4eaae
+   0.025 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs a03652ebce54256d ps 388e38e31c978cdf
+   0.025 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 17145e60f318a663 ps 3d069efb04d3b745
+   0.023 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 561d66f7b66bb1a6 ps 17441d1a15c56c5a
+   0.022 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e5588ed466d8f2f3
+   0.022 ms/frame   0.4/frame  pass 3840x2160 [R16G16Unorm ] depth D32SfloatS8Uint vs 56c89cd269499f07 ps 257a18527403ceeb
+   0.022 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.021 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+GPU profile: 4.12 ms/frame over 1202 frames, 216 labels
+   1.824 ms/frame   1.2/frame  (between submissions: GPU idle)
+   0.289 ms/frame   0.3/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 2780e1c8f318a663 ps 43ada8dd122cab49
+   0.131 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs b8cf0f1bac08b2b2 ps 61b3bda777d17f77
+   0.111 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.099 ms/frame   0.5/frame  dispatch cs 27e12fb9da9f873c (60x34x16 groups)
+   0.098 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.093 ms/frame  22.8/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf534433f10e2
+   0.080 ms/frame   0.5/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.075 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 51f7f8cdf318a663 ps 291e752d9770f39b
+   0.071 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.063 ms/frame   3.5/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.055 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps bf9bcd9c07f3c6d0
+   0.049 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 30b752b5e3f27bcf ps 80479e30c3e704ae
+   0.047 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 9b602176f318a663 ps 6518a76c00ec74d7
+   0.041 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.041 ms/frame   0.5/frame  dispatch cs 9a464f7d2c4ed45e (240x135x1 groups)
+   0.040 ms/frame  14.7/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 0000000000000000
+   0.039 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.036 ms/frame   1.3/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 86dfe619e1b27d2e ps f1d9870c6f9f1c3c
+   0.036 ms/frame   0.5/frame  dispatch cs b92cf046b9c50195 (240x135x1 groups)
+   0.034 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 3632d4c4faaa85d2
+   0.031 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs be2c60f1f318a663 ps 701b2801fe64f021
+   0.030 ms/frame   0.5/frame  pass 1024x1024 [R32G32B32A32Sfloat R16G16B16A16Sfloat ] depth - vs ca98641d5477124c ps 66ee73a415e4eaae
+   0.028 ms/frame   3.7/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 3b573269569fc647 ps 0000000000000000
+   0.025 ms/frame  10.3/frame  pass 512x512 [] depth D16Unorm vs 61c8dfbc9f3bedec ps 0000000000000000
+   0.022 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.021 ms/frame   1.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 2eefc6cc832fbec7 ps 3b1f1d8977ca89aa
+   0.021 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+   0.016 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs 813694dab4e07343 ps 640844be32f95d0b
+   0.016 ms/frame   1.0/frame  pass 64x64 [R16G16B16A16Sfloat R16G16B16A16Sfloat ] depth - vs f7457b588f171402 ps f7457b58bca083b6
+GPU profile: 4.12 ms/frame over 1202 frames, 212 labels
+   1.848 ms/frame   1.2/frame  (between submissions: GPU idle)
+   0.130 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs b8cf0f1bac08b2b2 ps 61b3bda777d17f77
+   0.113 ms/frame  28.6/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf534433f10e2
+   0.111 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.105 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.099 ms/frame   0.5/frame  dispatch cs 27e12fb9da9f873c (60x34x16 groups)
+   0.085 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.081 ms/frame   0.5/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.062 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 2780e1c8f318a663 ps 43ada8dd122cab49
+   0.061 ms/frame   3.5/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.061 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs adc01b81f318a663 ps bab4631595d98e3d
+   0.054 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps bf9bcd9c07f3c6d0
+   0.049 ms/frame   0.2/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 51f7f8cdf318a663 ps 291e752d9770f39b
+   0.048 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 30b752b5e3f27bcf ps 80479e30c3e704ae
+   0.043 ms/frame  15.2/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 0000000000000000
+   0.041 ms/frame   0.5/frame  dispatch cs 9a464f7d2c4ed45e (240x135x1 groups)
+   0.041 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.039 ms/frame   0.5/frame  dispatch cs b92cf046b9c50195 (240x135x1 groups)
+   0.038 ms/frame  14.7/frame  pass 512x512 [] depth D16Unorm vs 61c8dfbc9f3bedec ps 0000000000000000
+   0.036 ms/frame   6.2/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 3b573269569fc647 ps 0000000000000000
+   0.035 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.035 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 3632d4c4faaa85d2
+   0.033 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 5d3235de8fdcc047 ps 2eef138316c7ae96
+   0.030 ms/frame   1.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs fee2b6fd612428f3 ps cecf6c1cbc6332f1
+   0.026 ms/frame   0.5/frame  pass 1024x1024 [R32G32B32A32Sfloat R16G16B16A16Sfloat ] depth - vs ca98641d5477124c ps 66ee73a415e4eaae
+   0.026 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs d41c4663c7f41d24 ps d74696f135190829
+   0.023 ms/frame   3.4/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 86dfe619e1b27d2e ps f1d9870c6f9f1c3c
+   0.022 ms/frame   3.0/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 7e626387612428f3 ps 1325b25564eb9b0d
+   0.022 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.021 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+GPU profile: 4.05 ms/frame over 1167 frames, 257 labels
+   1.737 ms/frame   1.2/frame  (between submissions: GPU idle)
+   0.140 ms/frame  30.5/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf534433f10e2
+   0.129 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs b8cf0f1bac08b2b2 ps 61b3bda777d17f77
+   0.105 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.104 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.096 ms/frame   0.5/frame  dispatch cs 27e12fb9da9f873c (60x34x16 groups)
+   0.080 ms/frame   4.6/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 6f178d79bf2802f1 ps b3592cf66d1638b3
+   0.080 ms/frame   0.5/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.077 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.061 ms/frame   3.5/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.058 ms/frame   0.3/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 51f7f8cdf318a663 ps 291e752d9770f39b
+   0.050 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps bf9bcd9c07f3c6d0
+   0.049 ms/frame  16.0/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 0000000000000000
+   0.047 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 30b752b5e3f27bcf ps 80479e30c3e704ae
+   0.043 ms/frame   5.1/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 3b573269569fc647 ps 0000000000000000
+   0.042 ms/frame  17.4/frame  pass 512x512 [] depth D16Unorm vs 61c8dfbc9f3bedec ps 0000000000000000
+   0.042 ms/frame   0.5/frame  dispatch cs b92cf046b9c50195 (240x135x1 groups)
+   0.040 ms/frame   0.5/frame  dispatch cs 9a464f7d2c4ed45e (240x135x1 groups)
+   0.040 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.038 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs adc01b81f318a663 ps bab4631595d98e3d
+   0.037 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.035 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 3632d4c4faaa85d2
+   0.034 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 2780e1c8f318a663 ps 43ada8dd122cab49
+   0.029 ms/frame   3.8/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 86dfe619e1b27d2e ps f1d9870c6f9f1c3c
+   0.027 ms/frame   0.5/frame  pass 1024x1024 [R32G32B32A32Sfloat R16G16B16A16Sfloat ] depth - vs ca98641d5477124c ps 66ee73a415e4eaae
+   0.026 ms/frame   2.8/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 7e626387612428f3 ps 1325b25564eb9b0d
+   0.024 ms/frame   0.3/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 56fd7b4e8fdcc047 ps e7a5d86e01419e37
+   0.022 ms/frame   0.0/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 5d3235de8fdcc047 ps 2eef138316c7ae96
+   0.022 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps 7c99f07f162b452f
+   0.021 ms/frame   0.5/frame  pass 1920x1080 [B10G11R11UfloatPack32 ] depth - vs f4a3a8cd415020a5 ps b1164888661a50d0
+GPU profile: 3.79 ms/frame over 1093 frames, 207 labels
+   0.750 ms/frame   1.1/frame  (between submissions: GPU idle)
+   0.293 ms/frame  14.7/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 6f178d79bf2802f1 ps b3592cf66d1638b3
+   0.166 ms/frame   0.3/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 51f7f8cdf318a663 ps 291e752d9770f39b
+   0.135 ms/frame  30.6/frame  pass 3840x2160 [R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 4e1cf534433f10e2
+   0.132 ms/frame   2.4/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e144e48816af6d38 ps dca3738d1188915b
+   0.122 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs b8cf0f1bac08b2b2 ps 61b3bda777d17f77
+   0.094 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f1eef25b0c2ae13a
+   0.093 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs e76703c6ddfc5f06 ps e88c8fcbe08ea0b6
+   0.091 ms/frame   0.5/frame  dispatch cs 27e12fb9da9f873c (60x34x16 groups)
+   0.080 ms/frame   7.3/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 86dfe619e1b27d2e ps f1d9870c6f9f1c3c
+   0.078 ms/frame   0.1/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs 2780e1c8f318a663 ps 43ada8dd122cab49
+   0.076 ms/frame   0.5/frame  dispatch cs 0ca8545f706d43ff (15x9x8 groups)
+   0.067 ms/frame   2.2/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs 207d1c0216af6d38 ps f7f4ecc4eaf10abb
+   0.061 ms/frame  13.1/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 94e7c61395fb326f ps 0000000000000000
+   0.061 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 2eefc6ccbba02804 ps d2710a5a366705d2
+   0.060 ms/frame   6.4/frame  pass 3840x2160 [] depth D32SfloatS8Uint vs 3b573269569fc647 ps 0000000000000000
+   0.059 ms/frame   3.3/frame  dispatch cs 6846b3858ae55a9e (64x1x1 groups)
+   0.054 ms/frame  21.5/frame  pass 512x512 [] depth D16Unorm vs 61c8dfbc9f3bedec ps 0000000000000000
+   0.045 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 7f76e748b9d60c12 ps bf9bcd9c07f3c6d0
+   0.043 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 30b752b5e3f27bcf ps 80479e30c3e704ae
+   0.042 ms/frame   0.5/frame  dispatch cs b92cf046b9c50195 (240x135x1 groups)
+   0.040 ms/frame   0.9/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs a6c20cf7f318a663 ps fd10daff8144e4d8
+   0.039 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps cf069898bf1f5514
+   0.038 ms/frame   4.2/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs af55adafe1b27d2e ps a1f5ac44b4193c7b
+   0.037 ms/frame   0.5/frame  pass 3840x2160 [R8G8B8A8Srgb ] depth - vs e76703c6ddfc5f06 ps 3632d4c4faaa85d2
+   0.037 ms/frame   0.5/frame  dispatch cs 9a464f7d2c4ed45e (240x135x1 groups)
+   0.034 ms/frame   0.5/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth - vs 678f10f9504d0ce9 ps f8cfb0056f2c2e12
+   0.033 ms/frame   0.8/frame  pass 3840x2160 [R16G16B16A16Sfloat A2B10G10R10UnormPack32 R8G8B8A8Unorm R8G8B8A8Srgb R8G8B8A8Unorm R8G8B8A8Unorm ] depth D32SfloatS8Uint vs abfc0fd0bbaaa2af ps ffeca11cf4a3994e
+   0.031 ms/frame   1.7/frame  pass 3840x2160 [R16G16B16A16Sfloat ] depth D32SfloatS8Uint vs db910ba463c66fd1 ps d32f671bc7226de8
+   0.030 ms/frame   5.1/frame  pass 3840x2160 [- ] depth D32SfloatS8Uint vs eced5d832eaf5c4a ps 88d2d3f3e5dae3e6

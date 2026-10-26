@@ -969,3 +969,20 @@ test VSync on (FIFO), as NVIDIA recommends for G-Sync with a cap below the refre
 200, 0.1% 180 (the headroom). Fix: any limit from 20 to 1000 is accepted; 119 and 237 (one under half and full
 refresh of a 240 Hz G-Sync display) added to the in-game menu and the launcher. Hypothesis: at exactly half refresh
 the VRR controller flips between modes (RTSS at 119.98 flickered, at 119 not).
+
+### T-F27: the capped mode that works, and the launcher consolidation (2026-10-25)
+
+**Our Reflex limiter (sleep before the present) + VSync on + a 119 cap on the 240 Hz OLED: the user: "looks great,
+huge improvement", flicker gone; confirmed in a second run with RTSS's limiter off.** At exactly 120 (half the
+refresh) the VRR display flickered with any limiter (RTSS at 119.98 too). Frame limit choices: "Auto: below half
+refresh" (refresh / 2 - 1), "Auto: below refresh" (NVIDIA Reflex's own rule, refresh - refresh^2 / 3600: 116 / 138
+/ 171 / 189 / 225 at 120 / 144 / 180 / 200 / 240 Hz; Blur Busters' rule is >= 2-3 FPS below), fixed 119 / 141 /
+237, any 20-1000 in the ini.
+Launcher (upstream settings replaced where ours overlap): Display "VSync / present mode" (present_mode; the first
+choice follows the in-game VSync switch) instead of the VSync checkbox; Performance: "Engine frame rate" with
+Unlimited (= present_no_frame_caps), "Frame rate limit" (default Auto: below half refresh), **"Frame limiter":
+NVIDIA Reflex (default; falls back to Precise without VK_NV_low_latency2) / Precise (precise limiter + hold +
+time-critical presenting thread) / Standard**; "Advanced presentation": tick (default 960), precise tick (on),
+presents on the vblank thread (on), frame trace. Removed from the launcher (environment only): newest-frame,
+display-vblank tick, the separate precise-limiter switch, and the experimental present-wait modes. Sharpening
+labels: "Upscaler sharpening" / "Final image sharpening". Not merged yet: the GPU data group (to check first).

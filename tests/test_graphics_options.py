@@ -64,15 +64,20 @@ class GraphicsOptionsTest(unittest.TestCase):
 
 
     def test_present_environment(self):
-        self.assertEqual(g.present_environment({}), {})
-        ini = {'present_tick_hz': '120', 'present_mode': 'mailbox', 'present_inline': '1',
-               'present_no_frame_caps': '1', 'present_frame_trace': '1'}
+        # defaults: the tested best (Reflex limiter, tick 960, precise tick, presents on the vblank thread)
+        self.assertEqual(g.present_environment({}),
+                         {'GOW3_PRESENT_THREAD': '0', 'GOW3_PRECISE_TICK': '1', 'GOW3_VBLANK_HZ': '960',
+                          'GOW3_REFLEX': '1', 'GOW3_REFLEX_SLEEP_BEFORE_PRESENT': '1', 'GOW3_PRECISE_LIMIT': '1',
+                          'GOW3_LIMIT_HOLD': '1', 'GOW3_PRESENT_PRIORITY': '1'})
+        ini = {'present_tick_hz': '120', 'present_mode': 'mailbox', 'present_inline': '0', 'present_precise_tick': '0',
+               'present_no_frame_caps': '1', 'present_frame_trace': '1', 'present_limiter': 'standard'}
         self.assertEqual(g.present_environment(ini, 'trace.csv'),
-                         {'GOW3_VBLANK_HZ': '120', 'GOW3_PRESENT_MODE': 'mailbox', 'GOW3_PRESENT_THREAD': '0',
-                          'GOW3_NO_FRAME_CAP': '1', 'GOW3_FLIP_TRACE': 'trace.csv'})
+                         {'GOW3_VBLANK_HZ': '120', 'GOW3_PRESENT_MODE': 'mailbox', 'GOW3_NO_FRAME_CAP': '1',
+                          'GOW3_FLIP_TRACE': 'trace.csv'})
         # 0 / invalid tick rates and unknown modes stay automatic
-        self.assertEqual(g.present_environment({'present_tick_hz': 'x', 'present_mode': 'vsync'}), {})
-        self.assertEqual(g.present_environment({'present_tick_hz': '0', 'present_mode': 'auto'}), {})
+        plain = {'present_inline': '0', 'present_precise_tick': '0', 'present_limiter': 'standard'}
+        self.assertEqual(g.present_environment({**plain, 'present_tick_hz': 'x', 'present_mode': 'vsync'}), {})
+        self.assertEqual(g.present_environment({**plain, 'present_tick_hz': '0', 'present_mode': 'auto'}), {})
         self.assertTrue(g.no_frame_caps(ini))
 
 

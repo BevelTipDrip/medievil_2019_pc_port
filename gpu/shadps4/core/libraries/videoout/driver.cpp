@@ -1079,9 +1079,11 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     // before its slot waited a whole extra vblank (stutter with a 60 FPS limit at 60 Hz,
     // MediEvil issue #3).
     const u32 vblank_hz = EmulatorSettings.GetVblankFrequency();
-    static const bool reflex = [] {
+    // Without the driver's Reflex (AMD, Intel) the port's own limiter paces (run.py also sets the
+    // precise limiter's switches for that case).
+    const bool reflex = [this] {
         const char* env = std::getenv("GOW3_REFLEX");
-        return env && env[0] == '1';
+        return env && env[0] == '1' && presenter->ReflexEnabled();
     }();
     u32 reflex_interval = ~0u;
     const auto current_limit = [&] {

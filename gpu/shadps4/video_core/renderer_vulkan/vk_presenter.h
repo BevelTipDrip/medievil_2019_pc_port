@@ -118,6 +118,10 @@ public:
     bool LatencySleep() {
         return swapchain.LatencySleep();
     }
+    /// gow3: the driver has Reflex (VK_NV_low_latency2) enabled for this device.
+    bool ReflexEnabled() const {
+        return instance.IsLowLatency2Enabled();
+    }
     /// gow3 GOW3_REFLEX_SLEEP_BEFORE_PRESENT=1: the Reflex sleep runs inside Present, right before
     /// vkQueuePresentKHR (where the RTSS Reflex limiter sleeps), not after it.
     static bool ReflexSleepBeforePresent() {

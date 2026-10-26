@@ -268,33 +268,28 @@ INI_DEFAULTS.update({entry[0]: '1' for entry in PERF_PATCHES})
 # screen. All off by default (the tested defaults); run.py turns them into environment variables
 # (graphics_options.present_environment). (key, title, description).
 PRESENT_SWITCHES = [
-    ('present_no_frame_caps', 'No built-in frame caps',
-     "Removes the port's own caps: the engine's frame-rate bound (Engine frame rate) and the present "
-     "thread's limit at the display refresh. Frame rate limit above still applies (set it to "
-     'Unlimited for no cap at all).'),
     ('present_inline', 'Present on the vblank thread',
      'Shows frames from the vblank thread itself, as upstream shadPS4 does, instead of a separate swap '
      'thread. A present that waits for the display then also delays the next vblank.'),
-    ('present_precise_limit', 'Precise frame limiter',
-     'With a frame rate limit: frames leave exactly at their slot (high-resolution timer) instead of '
-     'up to half a vblank early or a tick late.'),
-    ('present_newest_frame', 'Newest-frame mode',
-     'With a frame rate limit: the game renders uncapped and each slot shows the newest finished frame '
-     '(like Fast Sync). Even frame pacing on screen; the motion inside the frames is less even.'),
     ('present_precise_tick', 'Precise vblank tick',
      'The vblank tick runs on a fixed grid with a high-resolution timer and a short spin instead of '
      "Windows' coarse sleep (about 8% of one CPU core at 120 Hz)."),
-    ('present_vblank_sync', 'Tick on the display\'s vblank',
-     "The vblank tick waits for the monitor's own vertical blank. Experimental: broken with G-Sync / "
-     'FreeSync (the display has no steady vblank).'),
     ('present_frame_trace', 'Frame timing trace (diagnostics)',
      'Writes every frame\'s timing to user/logs/flip-trace.csv (overwritten at each start).'),
 ]
-PRESENT_MODES = [('auto', ('Follow VSync',)), ('fifo', ('FIFO (VSync)',)), ('fifo_relaxed', ('FIFO relaxed',)),
-                 ('mailbox', ('Mailbox',)), ('immediate', ('Immediate (tearing)',))]
+PRESENT_MODES = [('auto', ('VSync from the in-game menu (on by default)',)), ('fifo', ('VSync on (FIFO)',)),
+                 ('fifo_relaxed', ('Adaptive VSync (FIFO relaxed)',)),
+                 ('mailbox', ('VSync off, no tearing (Mailbox)',)), ('immediate', ('VSync off, tearing (Immediate)',))]
+PRESENT_LIMITERS = [('reflex', ('NVIDIA Reflex (recommended)',)), ('precise', ('Precise',)),
+                    ('standard', ('Standard',))]
+# The engine frame rate choice also covers "no built-in caps" (present_no_frame_caps).
+ENGINE_CAP_CHOICES = [('60', ('60 (original)',)), ('120', ('120',)), ('240', ('240',)),
+                      ('unlimited', ('Unlimited (no built-in caps)',))]
 INI_FLAGS.update(entry[0] for entry in PRESENT_SWITCHES)
-INI_DEFAULTS.update({entry[0]: '0' for entry in PRESENT_SWITCHES})
-INI_DEFAULTS.update({'present_tick_hz': '0', 'present_mode': 'auto'})
+INI_FLAGS.add('present_no_frame_caps')
+INI_DEFAULTS.update({'present_inline': '1', 'present_precise_tick': '1', 'present_frame_trace': '0',
+                     'present_no_frame_caps': '0', 'present_tick_hz': '960', 'present_mode': 'auto',
+                     'present_limiter': 'reflex', 'fps_limit': '-3'})
 UI_LANGUAGES = lang.LANGUAGE_NAMES
 
 FSR4_COMMIT = 'ae8d628fae208813172446d1e49ed94150b04658'
@@ -684,9 +679,28 @@ class Launcher:
             self.vars[key] = v
         return self.vars[key]
 
+    def engine_cap_var(self):
+        """Engine frame rate with "Unlimited" (present_no_frame_caps), kept in sync with both keys."""
+        if 'engine_cap' not in self.vars:
+            engine, caps = self.var('engine_fps', 'ini'), self.var('present_no_frame_caps', 'ini')
+            cap = self.tk.StringVar(value='unlimited' if caps.get() else engine.get())
+
+            def write(*_args):
+                unlimited = cap.get() == 'unlimited'
+                caps.set(unlimited)
+                if unlimited:
+                    engine.set('240')
+                else:
+                    engine.set(cap.get())
+            cap.trace_add('write', write)
+            cap.store = 'derived'  # saved through engine_fps and present_no_frame_caps
+            self.vars['engine_cap'] = cap
+        return self.vars['engine_cap']
+
     def choice(self, parent, key, store, options, width=30):
-        """A combobox over (value, (english, russian)) pairs, kept in sync with its variable."""
-        var = self.var(key, store)
+        """A combobox over (value, (english, russian)) pairs, kept in sync with its variable (a key, or
+        a variable itself)."""
+        var = key if store is None else self.var(key, store)
         values = [v for v, _t in options]
         box = self.ttk.Combobox(parent, values=[_(*text) for _v, text in options], state='readonly', width=width,
                                 font=self.f('body', 10))
@@ -1012,7 +1026,7 @@ class Launcher:
                    'game restarts it). On: change output and preset in the game without a restart, at a cost.',
                    'Выкл.: разрешения кроме 1080p задаются патчем при запуске (быстрее). Вкл.: менять в игре '
                    'без перезапуска, но медленнее.'))
-        self.check(f, 'sharpen', 'ini', _('Sharpening (RCAS)', 'Резкость (RCAS)'))
+        self.check(f, 'sharpen', 'ini', _('Upscaler sharpening (RCAS)', 'Резкость апскейлера (RCAS)'))
         holder = ttk.Frame(f)
         ttk.Scale(holder, from_=0.0, to=2.0, variable=self.var('sharpness', 'ini'), length=300).pack(side='left')
         value = ttk.Label(holder, width=5)
@@ -1045,7 +1059,10 @@ class Launcher:
         self.section(f, _('Window', 'Окно'), top=4)
         self.row(f, _('Display mode'), self.choice(f, 'display_mode', 'ini', DISPLAY_MODES),
                  _('Borderless covers the screen without changing the display mode.'))
-        self.check(f, 'vsync', 'ini', _('VSync'), _('Off allows tearing for the lowest latency.'))
+        self.row(f, _('VSync / present mode'), self.choice(f, 'present_mode', 'ini', PRESENT_MODES),
+                 _('VSync on: no tearing; with G-Sync / FreeSync and a frame rate limit below the refresh it '
+                   'adds no latency. VSync off: the lowest latency; Immediate may tear. The first choice follows '
+                   'the in-game menu\'s VSync switch (live).'), restart=True)
         self.check(f, 'hdr', 'app', _('Allow HDR output', 'Разрешить HDR'),
                    _('When HDR is on in Windows and the display supports it.',
                      'Если HDR включён в Windows и монитор его поддерживает.'))
@@ -1053,7 +1070,7 @@ class Launcher:
         self.check(f, 'fsr1', 'ini', _('Upscale with FSR 1'),
                    _('Enlarges a smaller game image to the window. With Render resolution 720p (Performance) '
                      'it raises the FPS; at the size of the window it does nothing.'))
-        self.check(f, 'rcas', 'ini', _('Sharpening (RCAS)'))
+        self.check(f, 'rcas', 'ini', _('Final image sharpening (RCAS)'))
         holder = ttk.Frame(f)
         strength = self.var('rcas_strength', 'ini')
         tk.Scale(holder, from_=0, to=100, orient='horizontal', variable=strength, showvalue=False, length=self.px(260),
@@ -1072,29 +1089,31 @@ class Launcher:
     def build_performance(self):
         f = self.scrolled_page('performance', _('Performance'), _('Frame rate and speed options.'))
         self.section(f, _('Frame rate', 'Частота кадров'), top=4)
-        self.row(f, _('Engine frame rate'), self.choice(f, 'engine_fps', 'ini', ENGINE_FPS_CHOICES),
+        self.row(f, _('Engine frame rate'), self.choice(f, self.engine_cap_var(), None, ENGINE_CAP_CHOICES),
                  _('The highest frame rate MediEvil runs at. The PS4 game stops at 60; 120 and 240 lift '
-                   'that limit (also set Frame rate limit to Unlimited or higher). Applied at start.'),
-                 restart=True)
+                   'that limit; Unlimited also removes the port\'s own caps (only Frame rate limit applies). '
+                   'Applied at start.'), restart=True)
         self.row(f, _('Frame rate limit'), self.choice(f, 'fps_limit', 'ini', FPS_LIMITS),
-                 _('Caps the frame rate below the engine frame rate; a lower limit saves power. "Half display '
-                   'refresh" shows every frame for exactly two refreshes of your screen (for example 72 FPS on '
-                   '144 Hz): the smoothest picture, with Engine frame rate 120.'))
+                 _('With G-Sync / FreeSync: "Auto: below half refresh" (119 FPS on 240 Hz) or "Auto: below '
+                   'refresh" (NVIDIA Reflex\'s caps: 138 on 144 Hz, 225 on 240 Hz). A cap exactly at half the '
+                   'refresh flickered on a 240 Hz OLED. On a fixed-refresh display: "Half display refresh" '
+                   '(every frame shown for two refreshes) with VSync on.'))
+        self.row(f, _('Frame limiter'), self.choice(f, 'present_limiter', 'ini', PRESENT_LIMITERS),
+                 _('NVIDIA Reflex: the graphics driver paces the frames (as RTSS\'s Reflex limiter does): the '
+                   'most even frame times. Falls back to Precise on AMD and Intel. Precise: the port\'s own '
+                   'high-resolution limiter. Standard: the original limiter.'), restart=True)
         self.row(f, _('Frames queued'), self.choice(f, 'frames_queued', 'ini', FRAMES_QUEUED),
                  _('1 is the lowest input latency; more can raise FPS when the graphics card is the limit.'))
-        self.section(f, _('Presentation'))
-        self.note(f, _('How finished frames reach the screen. Defaults are the tested ones; these are for '
-                       'experiments and comparisons. Applied at the next start.'), top=2)
+        self.section(f, _('Advanced presentation'))
+        self.note(f, _('How finished frames reach the screen. The defaults are the tested best; change them '
+                       'to compare. Applied at the next start.'), top=2)
         tick = self.ttk.Spinbox(f, from_=0, to=2000, increment=1, width=8, font=self.f('body', 10),
                                 textvariable=self.var('present_tick_hz', 'ini'))
         self.row(f, _('Vblank tick rate (Hz)'), tick,
-                 _('How often the game\'s virtual vblank fires: the PS4 game waits for it before each frame. '
-                   '0 = automatic (480 Hz with a frame limiter above 60 FPS, else 60). Any other value is used '
-                   'as given, without the port\'s limiter: 120 paces the game itself at 120 FPS. Frame rate '
-                   'limit only applies below this rate.'), restart=True)
-        self.row(f, _('Present mode'), self.choice(f, 'present_mode', 'ini', PRESENT_MODES),
-                 _('Vulkan present mode. Follow VSync: FIFO with VSync on, Mailbox (or Immediate) with it off. '
-                   'A fixed mode here overrides the VSync switch.'), restart=True)
+                 _('How often the game\'s virtual vblank fires (default 960): the PS4 game waits for it before '
+                   'each frame. 0 = automatic (480 Hz above 60 FPS, else 60). A rate at or below the frame rate '
+                   'limit paces the game by itself (120 = 120 FPS) and rounds slow frames up to whole ticks.'),
+                 restart=True)
         for key, title, hint in PRESENT_SWITCHES:
             self.check(f, key, 'ini', _(title), _(hint), restart=True)
         self.section(f, _('Performance patches'))
@@ -1691,6 +1710,8 @@ class Launcher:
         """Writes settings.json, medievil.ini, mods.json and patches.json."""
         self.store_game_patches()
         for key, var in self.vars.items():
+            if var.store == 'derived':
+                continue
             try:
                 value = var.get()
             except self.tk.TclError:  # an unfinished number in a spinbox
