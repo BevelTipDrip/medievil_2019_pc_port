@@ -277,9 +277,9 @@ PRESENT_SWITCHES = [
     ('present_frame_trace', 'Frame timing trace (diagnostics)',
      'Writes every frame\'s timing to user/logs/flip-trace.csv (overwritten at each start).'),
 ]
-PRESENT_MODES = [('auto', ('VSync from the in-game menu (on by default)',)), ('fifo', ('VSync on (FIFO)',)),
-                 ('fifo_relaxed', ('Adaptive VSync (FIFO relaxed)',)),
-                 ('mailbox', ('VSync off, no tearing (Mailbox)',)), ('immediate', ('VSync off, tearing (Immediate)',))]
+PRESENT_MODES = [('auto', ('In-game switch (default on)',)), ('fifo', ('VSync on',)),
+                 ('fifo_relaxed', ('Adaptive VSync',)), ('mailbox', ('VSync off (no tearing)',)),
+                 ('immediate', ('VSync off (tearing)',))]
 PRESENT_LIMITERS = [('reflex', ('NVIDIA Reflex (recommended)',)), ('precise', ('Precise',)),
                     ('standard', ('Standard',))]
 # The engine frame rate choice also covers "no built-in caps" (present_no_frame_caps).
@@ -952,7 +952,7 @@ class Launcher:
             r, c = 2 + index // 2, (index % 2) * 2
             ttk.Label(quick, text=title).grid(row=r, column=c, sticky='w', pady=6, padx=(0, 12))
             quick.grid_rowconfigure(r, minsize=self.px(34))
-            self.choice(quick, key, store, options, width=18).grid(row=r, column=c + 1, sticky='w', padx=(0, 40))
+            self.choice(quick, key, store, options, width=26).grid(row=r, column=c + 1, sticky='w', padx=(0, 40))
         flags = ttk.Frame(quick)
         flags.grid(row=2 + (len(items) + 1) // 2, column=0, columnspan=4, sticky='w', pady=(6, 0))
         # VSync is the present mode above (its first choice follows the in-game VSync switch).
@@ -1062,9 +1062,10 @@ class Launcher:
         self.row(f, _('Display mode'), self.choice(f, 'display_mode', 'ini', DISPLAY_MODES),
                  _('Borderless covers the screen without changing the display mode.'))
         self.row(f, _('VSync / present mode'), self.choice(f, 'present_mode', 'ini', PRESENT_MODES),
-                 _('VSync on: no tearing; with G-Sync / FreeSync and a frame rate limit below the refresh it '
-                   'adds no latency. VSync off: the lowest latency; Immediate may tear. The first choice follows '
-                   'the in-game menu\'s VSync switch (live).'), restart=True)
+                 _('In-game switch: the VSync switch in the game\'s menu (Insert / R3+L2) decides, live (on by '
+                   'default). VSync on: no tearing; with G-Sync / FreeSync and a frame rate limit below the '
+                   'refresh it adds no latency. Adaptive: VSync on, but a late frame shows at once (may tear). '
+                   'VSync off: the lowest latency; "tearing" also skips the driver\'s queue.'), restart=True)
         self.check(f, 'hdr', 'app', _('Allow HDR output', 'Разрешить HDR'),
                    _('When HDR is on in Windows and the display supports it.',
                      'Если HDR включён в Windows и монитор его поддерживает.'))
