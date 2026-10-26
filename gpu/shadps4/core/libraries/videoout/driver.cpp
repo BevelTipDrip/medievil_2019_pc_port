@@ -363,7 +363,7 @@ void VideoOutDriver::Flip(const Request& req) {
         presenter->SetPresentDeadline(deadline);
         presenter->Present(frame);
         // gow3 Reflex: the driver's sleep before the game's next frame (the flip completes after it).
-        if (presenter->LatencySleep()) {
+        if (!Vulkan::Presenter::ReflexSleepBeforePresent() && presenter->LatencySleep()) {
             Gow3FlipTrace::Note("reflex_wake", flip_arg);
         }
         Gow3FlipTrace::Note("presented", flip_arg);

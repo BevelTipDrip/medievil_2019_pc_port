@@ -944,3 +944,14 @@ both Hardware: Legacy Flip. **The user: RTSS's own statistics were measured at "
 exact); switched to "frame present" they match these numbers and show the occasional present-timing gaps behind the
 flicker. 119.98 flickers visibly, 119 barely. So: frame starts are steady in both, the present (and display)
 timing varies +-0.2-0.4 ms with the frame's render time.
+
+**T-F20-T-F23 (our Reflex, RTSS measuring "frame present"):** similar present metrics to RTSS's, but intermittent
+one-frame blips (traced: a present call starting 3 ms late after an on-time release; stage B 12-17 ms for single
+frames; once the driver's sleep ~7 ms long) and persistent low-amplitude spikes (120 -> 116) with a matching
+flicker, up and down (one late present, the next early). The user's controller switching off caused 180-320 ms
+stalls (input bug, to fix). Process CPU swings 10-27% on a ~1 s rhythm; a weak ~375-500 ms rhythm in the present
+wobble; the perf-stats sampler is not running (overlay items off). Power mode "Best performance" (plan still
+Balanced): no change. RTSS's Reflex limiter on top clears the flicker. RTSS sleeps in its present hook, i.e.
+before the real present; ours slept after it. Next: `GOW3_REFLEX_SLEEP_BEFORE_PRESENT=1` (the driver sleep inside
+`Presenter::Present`, right before vkQueuePresentKHR), first with the flip trace off (its flushes run on the
+presenting thread).

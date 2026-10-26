@@ -4,6 +4,7 @@
 #pragma once
 
 #include <chrono>
+#include <cstdlib>
 #include <deque>
 
 #include <condition_variable>
@@ -116,6 +117,15 @@ public:
     }
     bool LatencySleep() {
         return swapchain.LatencySleep();
+    }
+    /// gow3 GOW3_REFLEX_SLEEP_BEFORE_PRESENT=1: the Reflex sleep runs inside Present, right before
+    /// vkQueuePresentKHR (where the RTSS Reflex limiter sleeps), not after it.
+    static bool ReflexSleepBeforePresent() {
+        static const bool enabled = [] {
+            const char* env = std::getenv("GOW3_REFLEX_SLEEP_BEFORE_PRESENT");
+            return env && env[0] == '1';
+        }();
+        return enabled;
     }
 
     /// gow3 flip trace: the guest flip argument of the next Present (display times).

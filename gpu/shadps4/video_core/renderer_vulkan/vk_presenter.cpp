@@ -892,6 +892,11 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
         const auto lock_at = deadline - std::chrono::microseconds(500);
         wait_until(lock_at);
     }
+    // gow3 Reflex sleep before the present (T-F23: sleeping after it made the frame starts exact
+    // but left the presents +-0.4 ms off, with flicker; RTSS sleeps in its present hook).
+    if (is_game_frame && ReflexSleepBeforePresent()) {
+        swapchain.LatencySleep();
+    }
     // Present to swapchain.
     {
         std::scoped_lock submit_lock{Scheduler::submit_mutex};
