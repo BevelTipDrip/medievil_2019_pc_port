@@ -314,8 +314,8 @@ def apply(game, resolution='native', quality='console', fps=60, debug_menu=False
     output = NATIVE_OUTPUT.get(resolution)
     if output:
         values['r.setres'] = output
-    if output == '3840x2160' and os.environ.get('GOW3_PS4_MEMORY') != '1':
-        # The GPU heap and texture streaming pool for 4K (with GOW3_DMEM_MB in run.py).
+    if output in ('3200x1800', '3840x2160') and os.environ.get('GOW3_PS4_MEMORY') != '1':
+        # The GPU heap and texture streaming pool above 1440p (with GOW3_DMEM_MB in run.py).
         values.update({'r.GarlicHeapSizeMB': '4600', 'r.Streaming.PoolSize': '1600'})
     # The port answers the game's occlusion queries "visible" (shadPS4's synthetic counters), so
     # they cull nothing and their bounding-box draws cost ~150 draws a frame in busy views

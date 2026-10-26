@@ -27,6 +27,7 @@
 #include "common/rdtsc.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/libs.h"
+#include "core/emulator_settings.h"
 #include "core/memory.h"
 #include "core/signals.h"
 #include "sdl_window.h"
@@ -231,7 +232,8 @@ extern "C" int gow3gpu_init(const Gow3GpuConfig* config) {
 #endif
     Core::Emulator::FillElfInfo(*config);
     const std::string title = config->title ? config->title : "MediEvil";
-    const s32 width = config->width, height = config->height;
+    // The window starts at the game's output size (GOW3_INTERNAL_WIDTH/HEIGHT, the VideoOut's).
+    const s32 width = s32(EmulatorSettings.GetInternalScreenWidth()), height = s32(EmulatorSettings.GetInternalScreenHeight());
     g_window_thread = std::thread([title, width, height] {
         Common::SetCurrentThreadName("gow3:window");
         auto* window = new Frontend::WindowSDL(width, height, title.c_str());

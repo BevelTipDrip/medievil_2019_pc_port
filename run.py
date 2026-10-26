@@ -148,7 +148,7 @@ def main():
         import ue4_override
         # Native output: the runtime sets the game's r.SetRes live once it runs (runtime_extra.c).
         if output := ue4_override.NATIVE_OUTPUT.get(graphics['render_resolution']):
-            if output == '3840x2160' and env.get('GOW3_PS4_MEMORY') != '1':
+            if output in ('3200x1800', '3840x2160') and env.get('GOW3_PS4_MEMORY') != '1':
                 # The PS4's 400-800 MB texture streaming pool thrashes at 4K: 2 GiB more guest
                 # memory (with the GPU heap and pool sizes in ue4_override.apply) stop small pans
                 # re-streaming (research: T-S2, 2026-10-19). GOW3_PS4_MEMORY=1: the PS4's sizes.
@@ -166,6 +166,20 @@ def main():
                 # own direct memory requirement follows from patch_requirements below).
                 selected = [n for n in env.get('GOW3_PATCHES', '').split(';') if n]
                 for name in ('Native 4K framebuffer pool (512 MB)', '4K display metrics at boot'):
+                    if name not in selected:
+                        selected.append(name)
+                env['GOW3_PATCHES'] = ';'.join(selected)
+            elif env.get('GOW3_UE4_BOOT_SIZE', '1') == '1':
+                # 720p / 1440p / 1800p: the game starts at that size from the default rect of its
+                # display metrics and work area (patches/MediEvil.xml, research: T-R1,
+                # study-boot-resolution.md), a VideoOut of the same size and the 512 MB pool.
+                # GOW3_UE4_BOOT_SIZE=0: the live r.SetRes as before (menu navigation, I1).
+                width, height = output.split('x')
+                env.setdefault('GOW3_INTERNAL_WIDTH', width)
+                env.setdefault('GOW3_INTERNAL_HEIGHT', height)
+                selected = [n for n in env.get('GOW3_PATCHES', '').split(';')
+                            if n and n != '4K display metrics at boot']  # its 3840x2160 would win
+                for name in ('Native 4K framebuffer pool (512 MB)', f'Boot display size {output}'):
                     if name not in selected:
                         selected.append(name)
                 env['GOW3_PATCHES'] = ';'.join(selected)

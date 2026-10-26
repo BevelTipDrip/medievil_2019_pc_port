@@ -990,3 +990,20 @@ The user: the offsets below the refresh are only for VRR; a fixed-refresh displa
 fraction of it. New setting `display_vrr` (launcher Performance and in-game menu: "G-Sync / FreeSync display",
 default on): the Auto limits are refresh - refresh^2 / 3600 and refresh / 2 - 1 with VRR, the refresh and refresh / 2
 without. The tick rate stays a free number (Advanced presentation).
+
+### T-R1 / T-R2: booting at the output resolution (2026-10-25, launched by Claude with the user's go; logs `data/t-r1-boot1440.log`, `data/t-r2-boot1440-window.log`)
+
+Plan and addresses: [study-boot-resolution.md](study-boot-resolution.md). The patch "Boot display size 2560x1440"
+(`patches/MediEvil.xml`) writes 2560x1440 into the default rects of UE4's display metrics and work area (rodata
+0x3cbe750 / 0x3cbe7b0), with a 2560x1440 VideoOut and the 512 MB framebuffer pool. No live `r.SetRes`.
+- **T-R1** (windowed, patches by hand): the scene depth buffer is 2560x1440 from the first frames (stock: 1920x1080).
+  The user: menu navigation fine (I1 does not occur). The window stayed at the fixed 1920x1080, so sharpness was
+  hard to judge.
+- Build: the windowed size now follows the output (`GOW3_INTERNAL_WIDTH/HEIGHT`, `WindowSDL::FitWindowedSize`, in
+  pixels through the Windows DPI scale; fitted to the work area when larger). `run.py`: 720p / 1440p / 1800p native
+  boot through "Boot display size WxH" (+ the pool, without "4K display metrics at boot"); `GOW3_UE4_BOOT_SIZE=0`
+  is the old live `r.SetRes`. 1800p also gets the 4K memory settings (DMEM, GPU heap, streaming pool). 4K keeps its
+  own boot (VideoOut 3840x2160 + the 4K display metrics patch).
+- **T-R2** (`render_resolution=1440p_native`, windowed, launcher selection only): log `Window: windowed size 2560x1440
+  pixels for a 2560x1440 game image`, both patches selected automatically. **The user: "that worked, and menu
+  navigation looks fine."** Not run yet: 720p and 1800p.

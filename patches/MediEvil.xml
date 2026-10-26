@@ -65,4 +65,54 @@
             <Line Type="bytes" Address="0x00f6d696" Value="9090"/>
         </PatchList>
     </Metadata>
+    <!-- UE4's display metrics and work area start from a default rect {0,0,1920,1080} in rodata
+         (0x3cbe750 and 0x3cbe7b0), each read only by its own function, and are cached once at boot.
+         Writing W and H there boots the game at WxH: window, viewport, backbuffers and UI geometry
+         (research/docs/study-boot-resolution.md). Do not combine with "4K display metrics at boot"
+         while VideoOut reports more than 1080 lines (its 3840x2160 constant wins). -->
+    <Metadata Title="MediEvil"
+              Name="Boot display size 2560x1440"
+              Note="Starts the game at 2560x1440 (display metrics and work area); no live r.SetRes. Requires the Native 4K framebuffer pool."
+              Author="medievil_pc"
+              PatchVer="1.0"
+              AppVer="01.00"
+              AppElf="eboot.bin"
+              isEnabled="false">
+        <PatchList>
+            <!-- display metrics default rect (rodata 0x3cbe750): Right, Bottom -->
+            <Line Type="bytes" Address="0x040be758" Value="000a0000a0050000"/>
+            <!-- work area default rect (rodata 0x3cbe7b0): Right, Bottom -->
+            <Line Type="bytes" Address="0x040be7b8" Value="000a0000a0050000"/>
+        </PatchList>
+    </Metadata>
+    <Metadata Title="MediEvil"
+              Name="Boot display size 1280x720"
+              Note="Starts the game at 1280x720 (display metrics and work area); no live r.SetRes."
+              Author="medievil_pc"
+              PatchVer="1.0"
+              AppVer="01.00"
+              AppElf="eboot.bin"
+              isEnabled="false">
+        <PatchList>
+            <!-- display metrics default rect (rodata 0x3cbe750): Right, Bottom -->
+            <Line Type="bytes" Address="0x040be758" Value="00050000d0020000"/>
+            <!-- work area default rect (rodata 0x3cbe7b0): Right, Bottom -->
+            <Line Type="bytes" Address="0x040be7b8" Value="00050000d0020000"/>
+        </PatchList>
+    </Metadata>
+    <Metadata Title="MediEvil"
+              Name="Boot display size 3200x1800"
+              Note="Starts the game at 3200x1800 (display metrics and work area); no live r.SetRes. Requires the Native 4K framebuffer pool."
+              Author="medievil_pc"
+              PatchVer="1.0"
+              AppVer="01.00"
+              AppElf="eboot.bin"
+              isEnabled="false">
+        <PatchList>
+            <!-- display metrics default rect (rodata 0x3cbe750): Right, Bottom -->
+            <Line Type="bytes" Address="0x040be758" Value="800c000008070000"/>
+            <!-- work area default rect (rodata 0x3cbe7b0): Right, Bottom -->
+            <Line Type="bytes" Address="0x040be7b8" Value="800c000008070000"/>
+        </PatchList>
+    </Metadata>
 </Patch>
