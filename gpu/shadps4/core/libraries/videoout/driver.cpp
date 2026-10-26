@@ -22,6 +22,7 @@
 #include "gow3_flip_trace.h"
 #include <x86intrin.h>
 #include "gow3_settings.h"
+#include "gow3_graphics.h"
 #include "gow3_overlay.h"
 #include "video_core/renderer_vulkan/vk_frame_capture.h"
 #include "common/debug.h"
@@ -1086,7 +1087,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     const auto current_limit = [&] {
         // -1: half the display refresh, so each frame shows for exactly two refreshes.
         const int raw = Gow3Settings::Get().fps_limit.load();
-        const u32 user = raw < 0 ? Gow3DisplayRefreshHz() / 2 : u32(raw);
+        const u32 user = u32(std::max(0, Gow3Graphics::ResolveFpsLimit(raw, Gow3DisplayRefreshHz())));
         u32 limit = user;
         if (fixed_limit) {
             const u32 base = EmulatorSettings.GetFrameLimit();

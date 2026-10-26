@@ -15,11 +15,22 @@ inline constexpr std::array<std::string_view, DisplayModeCount> DisplayModeKeys 
 inline constexpr std::array<const char*, DisplayModeCount> DisplayModeNames = {
     "Windowed", "Borderless", "Fullscreen"};
 
-/// Present rate limits; 0 = unlimited.
+/// Present rate limits; 0 = unlimited. Negative: from the display refresh (ResolveFpsLimit).
 /// -1: half the display refresh (each frame shows for exactly two refreshes: even pacing).
-/// 119 / 237: one under half / full refresh of a 240 Hz G-Sync display (at exactly 120 the
-/// VRR display flickered, at 119 it did not: T-F19 / T-F26).
-inline constexpr std::array<int, 8> FpsLimits = {30, 60, 119, 120, 237, 240, 0, -1};
+/// -2: below the refresh by NVIDIA Reflex's rule, refresh - refresh^2 / 3600 (its automatic caps:
+///     116 at 120 Hz, 138 at 144, 171 at 180, 225 at 240), for VRR (G-Sync / FreeSync).
+/// -3: one under half the refresh (119 at 240 Hz: at exactly 120 the VRR display flickered,
+///     T-F19 / T-F27). 119 / 141 / 237: the same as fixed values for 240 and 144 Hz displays.
+inline constexpr std::array<int, 11> FpsLimits = {-2, -3, 30, 60, 119, 120, 141, 237, 240, 0, -1};
+/// The limit in FPS of a FpsLimits value (or any 20-1000) on a `refresh` Hz display; 0: none.
+inline int ResolveFpsLimit(int value, unsigned refresh) {
+    switch (value) {
+    case -1: return int(refresh / 2);
+    case -2: return int(refresh) - int(refresh * refresh / 3600);
+    case -3: return int(refresh / 2) - 1;
+    default: return value < 0 ? 0 : value;
+    }
+}
 
 /// Game patch suffixes ("Resolution Patch - <name>"); "native" is no resolution patch.
 /// Unreal Engine 4 (MediEvil): the scene scale; the *_native ones change the game's output size.

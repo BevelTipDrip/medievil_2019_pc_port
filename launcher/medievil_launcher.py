@@ -137,9 +137,10 @@ INI_DEFAULTS = {'upscaler': 'off', 'preset': '1', 'sharpen': '1', 'sharpness': '
                 'render_resolution': 'native', 'engine_fps': '60', 'fsr1': '0', 'rcas': '1',
                 'rcas_strength': '75', 'frames_queued': '1', 'ue4_quality': 'console', 'cheat_very_hard': '0', 'cheat_double_jumps': '0', 'cheat_menu': '0', 'cheat_infinite_ammo': '0', 'ue4_upscale': 'off'}
 DISPLAY_MODES = [('windowed', ('Windowed',)), ('borderless', ('Borderless',)), ('fullscreen', ('Fullscreen',))]
-FPS_LIMITS = [('30', ('30',)), ('60', ('60',)), ('119', ('119 (G-Sync, 240 Hz)',)), ('120', ('120',)),
-              ('237', ('237 (G-Sync, 240 Hz)',)), ('240', ('240',)), ('0', ('Unlimited',)),
-              ('-1', ('Half display refresh (smoothest)',))]
+FPS_LIMITS = [('-2', ('Auto: below refresh (VRR, Reflex rule)',)), ('-3', ('Auto: below half refresh (VRR)',)),
+              ('30', ('30',)), ('60', ('60',)), ('119', ('119 (VRR, 240 Hz)',)), ('120', ('120',)),
+              ('141', ('141 (VRR, 144 Hz)',)), ('237', ('237 (VRR, 240 Hz)',)), ('240', ('240',)),
+              ('0', ('Unlimited',)), ('-1', ('Half display refresh (fixed refresh)',))]
 APP_DEFAULTS = {'ui_language': 'en', 'game_dir': os.environ.get('GOW3_GAME_DIR', str(PORT_DIR.parent / 'medieval' / 'CUSA11227')), 'user_dir': '',
                 'mods_dir': '', 'mods_enabled': True, 'patches_dir': '', 'language': '1',
                 'player_name': '', 'hdr': False, 'draw_pipe': '', 'readbacks': '',
@@ -1534,6 +1535,7 @@ class Launcher:
         resolution = dict((v, t[0]) for v, t in RESOLUTION_CHOICES).get(self.var('render_resolution', 'ini').get(), '?')
         return _('{} · {} · {} · VSync {}').format(
             _(mode), _(resolution), _('half display refresh') if limit == '-1'
+            else _('auto below refresh') if limit == '-2' else _('auto below half refresh') if limit == '-3'
             else _('up to {} FPS').format(engine) if limit == '0' or int(limit) >= int(engine)
             else _('{} FPS').format(limit),
             _('on') if self.var('vsync', 'ini').get() else _('off'))
