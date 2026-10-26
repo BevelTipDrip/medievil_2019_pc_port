@@ -137,7 +137,8 @@ INI_DEFAULTS = {'upscaler': 'off', 'preset': '1', 'sharpen': '1', 'sharpness': '
                 'render_resolution': 'native', 'engine_fps': '60', 'fsr1': '0', 'rcas': '1',
                 'rcas_strength': '75', 'frames_queued': '1', 'ue4_quality': 'console', 'cheat_very_hard': '0', 'cheat_double_jumps': '0', 'cheat_menu': '0', 'cheat_infinite_ammo': '0', 'ue4_upscale': 'off'}
 DISPLAY_MODES = [('windowed', ('Windowed',)), ('borderless', ('Borderless',)), ('fullscreen', ('Fullscreen',))]
-FPS_LIMITS = [('30', ('30',)), ('60', ('60',)), ('120', ('120',)), ('240', ('240',)), ('0', ('Unlimited',)),
+FPS_LIMITS = [('30', ('30',)), ('60', ('60',)), ('119', ('119 (G-Sync, 240 Hz)',)), ('120', ('120',)),
+              ('237', ('237 (G-Sync, 240 Hz)',)), ('240', ('240',)), ('0', ('Unlimited',)),
               ('-1', ('Half display refresh (smoothest)',))]
 APP_DEFAULTS = {'ui_language': 'en', 'game_dir': os.environ.get('GOW3_GAME_DIR', str(PORT_DIR.parent / 'medieval' / 'CUSA11227')), 'user_dir': '',
                 'mods_dir': '', 'mods_enabled': True, 'patches_dir': '', 'language': '1',

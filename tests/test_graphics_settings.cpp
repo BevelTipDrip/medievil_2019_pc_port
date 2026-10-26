@@ -19,7 +19,7 @@ static std::string Read(const char* path) {
 
 int main() {
     assert(G::ParseDisplayMode("borderless") == G::Borderless && G::ParseDisplayMode("bogus") == G::Windowed);
-    assert(G::ParseFpsLimit(240) == 240 && G::ParseFpsLimit(75) == 0);
+    assert(G::ParseFpsLimit(240) == 240 && G::ParseFpsLimit(75) == 75 && G::ParseFpsLimit(5) == 0);
     assert(G::ParseResolution("1440p") == 3 && G::ParseResolution("8K") == 0);
     assert(G::ParseEngineFps(240) == 240 && G::ParseEngineFps(90) == 60);
     assert(G::ParseFramesQueued(2) == 2 && G::ParseFramesQueued(0) == 0 && G::ParseFramesQueued(5) == 1);

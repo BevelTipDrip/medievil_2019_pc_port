@@ -963,3 +963,9 @@ median / 99%; 4 of 3,600 off by > 0.1 ms); the driver's call takes 0.18-0.55 ms,
 done ~3.7 ms before each present. The user: **best 1% / 0.1% lows so far (up to 118)** and the steadiest average
 from our own pacing, but the flicker is still bad. Next suspect: Immediate (flips mid-scanout under G-Sync);
 test VSync on (FIFO), as NVIDIA recommends for G-Sync with a cap below the refresh.
+
+**T-F25 (T-F24 with VSync on, FIFO):** still a lot of VRR flicker. **T-F26:** meant to test a 119 cap, but
+`ParseFpsLimit` turned any unlisted limit into unlimited (log: Reflex interval 0). Uncapped there: 240 avg, 1% low
+200, 0.1% 180 (the headroom). Fix: any limit from 20 to 1000 is accepted; 119 and 237 (one under half and full
+refresh of a 240 Hz G-Sync display) added to the in-game menu and the launcher. Hypothesis: at exactly half refresh
+the VRR controller flips between modes (RTSS at 119.98 flickered, at 119 not).

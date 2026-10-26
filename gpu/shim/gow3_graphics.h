@@ -17,7 +17,9 @@ inline constexpr std::array<const char*, DisplayModeCount> DisplayModeNames = {
 
 /// Present rate limits; 0 = unlimited.
 /// -1: half the display refresh (each frame shows for exactly two refreshes: even pacing).
-inline constexpr std::array<int, 6> FpsLimits = {30, 60, 120, 240, 0, -1};
+/// 119 / 237: one under half / full refresh of a 240 Hz G-Sync display (at exactly 120 the
+/// VRR display flickered, at 119 it did not: T-F19 / T-F26).
+inline constexpr std::array<int, 8> FpsLimits = {30, 60, 119, 120, 237, 240, 0, -1};
 
 /// Game patch suffixes ("Resolution Patch - <name>"); "native" is no resolution patch.
 /// Unreal Engine 4 (MediEvil): the scene scale; the *_native ones change the game's output size.
@@ -38,9 +40,9 @@ constexpr int IndexOf(const std::array<T, N>& values, const T& value, int fallba
 inline int ParseDisplayMode(std::string_view text) {
     return IndexOf(DisplayModeKeys, text, Windowed);
 }
-/// A listed limit, else unlimited.
+/// A listed limit, or any limit from 20 to 1000 FPS (medievil.ini); else unlimited.
 inline int ParseFpsLimit(int value) {
-    return IndexOf(FpsLimits, value, -1) >= 0 ? value : 0;
+    return IndexOf(FpsLimits, value, -1) >= 0 || (value >= 20 && value <= 1000) ? value : 0;
 }
 /// Index into Resolutions; unknown text is native.
 inline int ParseResolution(std::string_view text) {
