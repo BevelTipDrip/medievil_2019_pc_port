@@ -277,9 +277,14 @@ PRESENT_SWITCHES = [
     ('present_frame_trace', 'Frame timing trace (diagnostics)',
      'Writes every frame\'s timing to user/logs/flip-trace.csv (overwritten at each start).'),
 ]
-PRESENT_MODES = [('auto', ('In-game switch (default on)',)), ('fifo', ('VSync on',)),
-                 ('fifo_relaxed', ('Adaptive VSync',)), ('mailbox', ('VSync off (no tearing)',)),
-                 ('immediate', ('VSync off (tearing)',))]
+# One VSync control (vsync_choice_var): On / Off set the vsync key the in-game menu also switches
+# (live); the two special modes set a fixed present_mode, which overrides that switch.
+VSYNC_CHOICES = [('on', ('On',)), ('off', ('Off',)), ('immediate', ('Off, allow tearing',)),
+                 ('fifo_relaxed', ('Adaptive',))]
+VSYNC_HINT = ('On: no tearing; with G-Sync / FreeSync and a frame rate limit below the refresh it adds no latency. '
+              'Off: lower latency, no tearing. On and Off can also be switched live in the game\'s menu. '
+              'Off, allow tearing: the lowest latency. Adaptive: on, but a late frame shows at once (may tear). '
+              'These two fix the mode: the in-game switch then has no effect.')
 PRESENT_LIMITERS = [('reflex', ('NVIDIA Reflex (recommended)',)), ('precise', ('Precise',)),
                     ('standard', ('Standard',))]
 # The engine frame rate choice also covers "no built-in caps" (present_no_frame_caps).
@@ -679,6 +684,29 @@ class Launcher:
             self.vars[key] = v
         return self.vars[key]
 
+    def vsync_choice_var(self):
+        """VSync On / Off (the vsync key, also switched in the game) or a fixed present mode."""
+        if 'vsync_choice' not in self.vars:
+            vsync, mode = self.var('vsync', 'ini'), self.var('present_mode', 'ini')
+            current = mode.get() if mode.get() in ('immediate', 'fifo_relaxed') else \
+                'on' if mode.get() == 'fifo' else 'off' if mode.get() == 'mailbox' else \
+                'on' if vsync.get() else 'off'
+            choice = self.tk.StringVar(value=current)
+
+            def write(*_args):
+                value = choice.get()
+                if value in ('on', 'off'):
+                    mode.set('auto')
+                    vsync.set(value == 'on')
+                else:
+                    mode.set(value)
+            choice.trace_add('write', write)
+            choice.store = 'derived'  # saved through vsync and present_mode
+            self.vars['vsync_choice'] = choice
+            if mode.get() in ('fifo', 'mailbox'):  # older fixed modes that only duplicated the switch
+                write()
+        return self.vars['vsync_choice']
+
     def engine_cap_var(self):
         """Engine frame rate with "Unlimited" (present_no_frame_caps), kept in sync with both keys."""
         if 'engine_cap' not in self.vars:
@@ -947,7 +975,7 @@ class Launcher:
                  (_('Frame rate limit'), 'fps_limit', 'ini', FPS_LIMITS),
                  (_('Render resolution'), 'render_resolution', 'ini', RESOLUTION_CHOICES),
                  (_('Graphics quality'), 'ue4_quality', 'ini', QUALITY_CHOICES),
-                 (_('VSync / present mode'), 'present_mode', 'ini', PRESENT_MODES))
+                 (_('VSync'), self.vsync_choice_var(), None, VSYNC_CHOICES))
         for index, (title, key, store, options) in enumerate(items):
             r, c = 2 + index // 2, (index % 2) * 2
             ttk.Label(quick, text=title).grid(row=r, column=c, sticky='w', pady=6, padx=(0, 12))
@@ -1061,11 +1089,8 @@ class Launcher:
         self.section(f, _('Window', 'Окно'), top=4)
         self.row(f, _('Display mode'), self.choice(f, 'display_mode', 'ini', DISPLAY_MODES),
                  _('Borderless covers the screen without changing the display mode.'))
-        self.row(f, _('VSync / present mode'), self.choice(f, 'present_mode', 'ini', PRESENT_MODES),
-                 _('In-game switch: the VSync switch in the game\'s menu (Insert / R3+L2) decides, live (on by '
-                   'default). VSync on: no tearing; with G-Sync / FreeSync and a frame rate limit below the '
-                   'refresh it adds no latency. Adaptive: VSync on, but a late frame shows at once (may tear). '
-                   'VSync off: the lowest latency; "tearing" also skips the driver\'s queue.'), restart=True)
+        self.row(f, _('VSync'), self.choice(f, self.vsync_choice_var(), None, VSYNC_CHOICES), _(VSYNC_HINT),
+                 restart=True)
         self.check(f, 'hdr', 'app', _('Allow HDR output', 'Разрешить HDR'),
                    _('When HDR is on in Windows and the display supports it.',
                      'Если HDR включён в Windows и монитор его поддерживает.'))
