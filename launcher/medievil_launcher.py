@@ -946,15 +946,17 @@ class Launcher:
         items = ((_('Display mode'), 'display_mode', 'ini', DISPLAY_MODES),
                  (_('Frame rate limit'), 'fps_limit', 'ini', FPS_LIMITS),
                  (_('Render resolution'), 'render_resolution', 'ini', RESOLUTION_CHOICES),
-                 (_('Graphics quality'), 'ue4_quality', 'ini', QUALITY_CHOICES))
+                 (_('Graphics quality'), 'ue4_quality', 'ini', QUALITY_CHOICES),
+                 (_('VSync / present mode'), 'present_mode', 'ini', PRESENT_MODES))
         for index, (title, key, store, options) in enumerate(items):
             r, c = 2 + index // 2, (index % 2) * 2
             ttk.Label(quick, text=title).grid(row=r, column=c, sticky='w', pady=6, padx=(0, 12))
             quick.grid_rowconfigure(r, minsize=self.px(34))
             self.choice(quick, key, store, options, width=18).grid(row=r, column=c + 1, sticky='w', padx=(0, 40))
         flags = ttk.Frame(quick)
-        flags.grid(row=4, column=0, columnspan=4, sticky='w', pady=(6, 0))
-        for key, title in (('vsync', _('VSync')), ('show_fps', _('Show performance overlay'))):
+        flags.grid(row=2 + (len(items) + 1) // 2, column=0, columnspan=4, sticky='w', pady=(6, 0))
+        # VSync is the present mode above (its first choice follows the in-game VSync switch).
+        for key, title in (('show_fps', _('Show performance overlay')),):
             ttk.Checkbutton(flags, text=title, variable=self.var(key, 'ini')).pack(side='left', padx=(0, 28))
 
     def draw_banner(self):
