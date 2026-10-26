@@ -986,3 +986,7 @@ time-critical presenting thread) / Standard**; "Advanced presentation": tick (de
 presents on the vblank thread (on), frame trace. Removed from the launcher (environment only): newest-frame,
 display-vblank tick, the separate precise-limiter switch, and the experimental present-wait modes. Sharpening
 labels: "Upscaler sharpening" / "Final image sharpening". Not merged yet: the GPU data group (to check first).
+The user: the offsets below the refresh are only for VRR; a fixed-refresh display wants exactly the refresh or a
+fraction of it. New setting `display_vrr` (launcher Performance and in-game menu: "G-Sync / FreeSync display",
+default on): the Auto limits are refresh - refresh^2 / 3600 and refresh / 2 - 1 with VRR, the refresh and refresh / 2
+without. The tick rate stays a free number (Advanced presentation).

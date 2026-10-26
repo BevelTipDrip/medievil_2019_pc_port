@@ -478,13 +478,16 @@ void PerformanceTab() {
     auto& s = Gow3Settings::Get();
     ImGui::SeparatorText("Live");
     if (BeginRows("##live")) {
-        static const char* const fps_labels[] = {"Auto: below refresh (VRR, Reflex rule)",
-                                                 "Auto: below half refresh (VRR)", "30", "60", "119 (VRR, 240 Hz)",
+        static const char* const fps_labels[] = {"Auto: refresh (VRR: below it, Reflex rule)",
+                                                 "Auto: half refresh (VRR: one below)", "30", "60", "119 (VRR, 240 Hz)",
                                                  "120", "141 (VRR, 144 Hz)", "237 (VRR, 240 Hz)", "240", "Unlimited",
                                                  "Half display refresh (fixed refresh)"};
         ChoiceRow("Frame rate limit", s.fps_limit, fps_labels, G::FpsLimits.data(), int(G::FpsLimits.size()),
                   "Caps the frame rate. The engine frame rate (below) is the highest it can go.");
-        const int limit = G::ResolveFpsLimit(s.fps_limit, Gow3DisplayRefreshHz());
+        CheckRow("G-Sync / FreeSync display", s.display_vrr,
+                 "On: the automatic limits stay just below the refresh (VRR). Off (fixed refresh): exactly the "
+                 "refresh or half of it, with VSync on.");
+        const int limit = G::ResolveFpsLimit(s.fps_limit, Gow3DisplayRefreshHz(), s.display_vrr);
         const int effective = G::EffectiveFps(limit, s.startup_engine_fps);
         if (s.fps_limit < 0) {
             char text[64];

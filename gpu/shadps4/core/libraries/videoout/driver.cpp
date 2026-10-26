@@ -1089,7 +1089,8 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     const auto current_limit = [&] {
         // -1: half the display refresh, so each frame shows for exactly two refreshes.
         const int raw = Gow3Settings::Get().fps_limit.load();
-        const u32 user = u32(std::max(0, Gow3Graphics::ResolveFpsLimit(raw, Gow3DisplayRefreshHz())));
+        const u32 user = u32(std::max(0, Gow3Graphics::ResolveFpsLimit(raw, Gow3DisplayRefreshHz(),
+                                                                             Gow3Settings::Get().display_vrr)));
         u32 limit = user;
         if (fixed_limit) {
             const u32 base = EmulatorSettings.GetFrameLimit();

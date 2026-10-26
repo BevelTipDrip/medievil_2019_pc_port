@@ -17,17 +17,20 @@ inline constexpr std::array<const char*, DisplayModeCount> DisplayModeNames = {
 
 /// Present rate limits; 0 = unlimited. Negative: from the display refresh (ResolveFpsLimit).
 /// -1: half the display refresh (each frame shows for exactly two refreshes: even pacing).
-/// -2: below the refresh by NVIDIA Reflex's rule, refresh - refresh^2 / 3600 (its automatic caps:
-///     116 at 120 Hz, 138 at 144, 171 at 180, 225 at 240), for VRR (G-Sync / FreeSync).
-/// -3: one under half the refresh (119 at 240 Hz: at exactly 120 the VRR display flickered,
-///     T-F19 / T-F27). 119 / 141 / 237: the same as fixed values for 240 and 144 Hz displays.
+/// -2: with VRR (G-Sync / FreeSync) below the refresh by NVIDIA Reflex's rule, refresh -
+///     refresh^2 / 3600 (its automatic caps: 116 at 120 Hz, 138 at 144, 171 at 180, 225 at 240);
+///     on a fixed-refresh display the refresh itself.
+/// -3: with VRR one under half the refresh (119 at 240 Hz: at exactly 120 the VRR display
+///     flickered, T-F19 / T-F27); on a fixed-refresh display exactly half (each frame two
+///     refreshes). 119 / 141 / 237: fixed values for VRR on 240 and 144 Hz displays.
 inline constexpr std::array<int, 11> FpsLimits = {-2, -3, 30, 60, 119, 120, 141, 237, 240, 0, -1};
-/// The limit in FPS of a FpsLimits value (or any 20-1000) on a `refresh` Hz display; 0: none.
-inline int ResolveFpsLimit(int value, unsigned refresh) {
+/// The limit in FPS of a FpsLimits value (or any 20-1000) on a `refresh` Hz display, with or
+/// without VRR (Gow3Settings::display_vrr); 0: none.
+inline int ResolveFpsLimit(int value, unsigned refresh, bool vrr = true) {
     switch (value) {
     case -1: return int(refresh / 2);
-    case -2: return int(refresh) - int(refresh * refresh / 3600);
-    case -3: return int(refresh / 2) - 1;
+    case -2: return int(refresh) - (vrr ? int(refresh * refresh / 3600) : 0);
+    case -3: return int(refresh / 2) - (vrr ? 1 : 0);
     default: return value < 0 ? 0 : value;
     }
 }

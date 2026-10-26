@@ -137,7 +137,7 @@ INI_DEFAULTS = {'upscaler': 'off', 'preset': '1', 'sharpen': '1', 'sharpness': '
                 'render_resolution': 'native', 'engine_fps': '60', 'fsr1': '0', 'rcas': '1',
                 'rcas_strength': '75', 'frames_queued': '1', 'ue4_quality': 'console', 'cheat_very_hard': '0', 'cheat_double_jumps': '0', 'cheat_menu': '0', 'cheat_infinite_ammo': '0', 'ue4_upscale': 'off'}
 DISPLAY_MODES = [('windowed', ('Windowed',)), ('borderless', ('Borderless',)), ('fullscreen', ('Fullscreen',))]
-FPS_LIMITS = [('-2', ('Auto: below refresh (VRR, Reflex rule)',)), ('-3', ('Auto: below half refresh (VRR)',)),
+FPS_LIMITS = [('-2', ('Auto: refresh (VRR: below it, Reflex rule)',)), ('-3', ('Auto: half refresh (VRR: one below)',)),
               ('30', ('30',)), ('60', ('60',)), ('119', ('119 (VRR, 240 Hz)',)), ('120', ('120',)),
               ('141', ('141 (VRR, 144 Hz)',)), ('237', ('237 (VRR, 240 Hz)',)), ('240', ('240',)),
               ('0', ('Unlimited',)), ('-1', ('Half display refresh (fixed refresh)',))]
@@ -286,10 +286,10 @@ PRESENT_LIMITERS = [('reflex', ('NVIDIA Reflex (recommended)',)), ('precise', ('
 ENGINE_CAP_CHOICES = [('60', ('60 (original)',)), ('120', ('120',)), ('240', ('240',)),
                       ('unlimited', ('Unlimited (no built-in caps)',))]
 INI_FLAGS.update(entry[0] for entry in PRESENT_SWITCHES)
-INI_FLAGS.add('present_no_frame_caps')
+INI_FLAGS.update({'present_no_frame_caps', 'display_vrr'})
 INI_DEFAULTS.update({'present_inline': '1', 'present_precise_tick': '1', 'present_frame_trace': '0',
                      'present_no_frame_caps': '0', 'present_tick_hz': '960', 'present_mode': 'auto',
-                     'present_limiter': 'reflex', 'fps_limit': '-3'})
+                     'present_limiter': 'reflex', 'fps_limit': '-3', 'display_vrr': '1'})
 UI_LANGUAGES = lang.LANGUAGE_NAMES
 
 FSR4_COMMIT = 'ae8d628fae208813172446d1e49ed94150b04658'
@@ -1094,10 +1094,13 @@ class Launcher:
                    'that limit; Unlimited also removes the port\'s own caps (only Frame rate limit applies). '
                    'Applied at start.'), restart=True)
         self.row(f, _('Frame rate limit'), self.choice(f, 'fps_limit', 'ini', FPS_LIMITS),
-                 _('With G-Sync / FreeSync: "Auto: below half refresh" (119 FPS on 240 Hz) or "Auto: below '
-                   'refresh" (NVIDIA Reflex\'s caps: 138 on 144 Hz, 225 on 240 Hz). A cap exactly at half the '
-                   'refresh flickered on a 240 Hz OLED. On a fixed-refresh display: "Half display refresh" '
-                   '(every frame shown for two refreshes) with VSync on.'))
+                 _('The Auto choices follow your display: with G-Sync / FreeSync they stay just below the refresh '
+                   '("Auto: half refresh" = 119 FPS on 240 Hz; "Auto: refresh" = NVIDIA Reflex\'s caps, 138 on '
+                   '144 Hz, 225 on 240 Hz; a cap exactly at half the refresh flickered on a 240 Hz OLED); on a '
+                   'fixed-refresh display they are exactly the refresh or half of it (use VSync on).'))
+        self.check(f, 'display_vrr', 'ini', _('G-Sync / FreeSync display (VRR)'),
+                   _('On: the automatic frame rate limits stay just below the refresh. Off: a fixed-refresh '
+                     'display, where they match the refresh exactly.'))
         self.row(f, _('Frame limiter'), self.choice(f, 'present_limiter', 'ini', PRESENT_LIMITERS),
                  _('NVIDIA Reflex: the graphics driver paces the frames (as RTSS\'s Reflex limiter does): the '
                    'most even frame times. Falls back to Precise on AMD and Intel. Precise: the port\'s own '
@@ -1554,7 +1557,7 @@ class Launcher:
         resolution = dict((v, t[0]) for v, t in RESOLUTION_CHOICES).get(self.var('render_resolution', 'ini').get(), '?')
         return _('{} · {} · {} · VSync {}').format(
             _(mode), _(resolution), _('half display refresh') if limit == '-1'
-            else _('auto below refresh') if limit == '-2' else _('auto below half refresh') if limit == '-3'
+            else _('auto (refresh)') if limit == '-2' else _('auto (half refresh)') if limit == '-3'
             else _('up to {} FPS').format(engine) if limit == '0' or int(limit) >= int(engine)
             else _('{} FPS').format(limit),
             _('on') if self.var('vsync', 'ini').get() else _('off'))

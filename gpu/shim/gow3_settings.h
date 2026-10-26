@@ -63,6 +63,9 @@ struct Values {
     std::atomic<int> display_mode{0};
     std::atomic<bool> vsync{true};
     std::atomic<int> fps_limit{-3}; ///< Gow3Graphics::FpsLimits: one under half the refresh
+    /// The display uses G-Sync / FreeSync: the automatic frame limits stay below the refresh
+    /// (fixed refresh: exactly the refresh or half of it).
+    std::atomic<bool> display_vrr{true};
     std::atomic<bool> async_shaders{true};
     std::atomic<bool> fsr1{false};
     std::atomic<bool> rcas{true};

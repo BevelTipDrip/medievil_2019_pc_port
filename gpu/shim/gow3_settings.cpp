@@ -124,6 +124,8 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         v.vsync = i != 0;
     } else if (key == "fps_limit") {
         v.fps_limit = Gow3Graphics::ParseFpsLimit(i);
+    } else if (key == "display_vrr") {
+        v.display_vrr = i != 0;
     } else if (key == "async_shaders") {
         v.async_shaders = i != 0;
     } else if (key == "fsr1") {
@@ -388,12 +390,12 @@ std::map<std::string, std::string> Serialize(const Values& v) {
            int(v.overlay_items >> 6 & 1), v.overlay_scale.load(), v.overlay_corner.load(),
            v.overlay_opacity.load(), v.overlay_layout.load(), v.menu_tab.load());
     Append(out,
-           "display_mode=%s\nvsync=%d\nfps_limit=%d\nasync_shaders=%d\n"
+           "display_mode=%s\nvsync=%d\nfps_limit=%d\ndisplay_vrr=%d\nasync_shaders=%d\n"
            "fsr1=%d\nrcas=%d\nrcas_strength=%d\nframes_queued=%d\n"
            "render_resolution=%s\nengine_fps=%d\ndeferred_readback=%d\nstale_readback=%d\n"
            "restart_unconfirmed=%d\n",
            Gow3Graphics::DisplayModeKeys[std::clamp(v.display_mode.load(), 0, 2)].data(),
-           int(v.vsync.load()), v.fps_limit.load(), int(v.async_shaders.load()),
+           int(v.vsync.load()), v.fps_limit.load(), int(v.display_vrr.load()), int(v.async_shaders.load()),
            int(v.fsr1.load()), int(v.rcas.load()), v.rcas_strength.load(), v.frames_queued.load(),
            Gow3Graphics::Resolutions[std::clamp(v.render_resolution.load(), 0, int(Gow3Graphics::Resolutions.size()) - 1)].data(),
            v.engine_fps.load(), int(v.deferred_readback.load()), int(v.stale_readback.load()),
