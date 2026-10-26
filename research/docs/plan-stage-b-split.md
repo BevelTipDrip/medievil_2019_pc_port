@@ -955,3 +955,11 @@ Balanced): no change. RTSS's Reflex limiter on top clears the flicker. RTSS slee
 before the real present; ours slept after it. Next: `GOW3_REFLEX_SLEEP_BEFORE_PRESENT=1` (the driver sleep inside
 `Presenter::Present`, right before vkQueuePresentKHR), first with the flip trace off (its flushes run on the
 presenting thread).
+
+**T-F24 (`GOW3_REFLEX=1` + `GOW3_REFLEX_SLEEP_BEFORE_PRESENT=1`, Immediate, RTSS limiter off; the trace stayed on:
+PowerShell drops an empty variable, so run.py took `present_frame_trace=1`; copy in
+`research-data\flip-trace-55-reflex-sleep-before.csv`):** present calls start **8.329 / 8.333 / 8.337 ms** (1% /
+median / 99%; 4 of 3,600 off by > 0.1 ms); the driver's call takes 0.18-0.55 ms, so returns 8.06 / 8.61; the GPU is
+done ~3.7 ms before each present. The user: **best 1% / 0.1% lows so far (up to 118)** and the steadiest average
+from our own pacing, but the flicker is still bad. Next suspect: Immediate (flips mid-scanout under G-Sync);
+test VSync on (FIFO), as NVIDIA recommends for G-Sync with a cap below the refresh.
