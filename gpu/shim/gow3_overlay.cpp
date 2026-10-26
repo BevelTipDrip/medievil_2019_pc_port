@@ -511,10 +511,12 @@ void PerformanceTab() {
         ImGui::SeparatorText("Game resolution now");
         static constexpr const char* labels[] = {"1080p", "1440p", "1800p", "4K"};
         static constexpr const char* values[] = {"1920x1080", "2560x1440", "3200x1800", "3840x2160"};
-        // The 1440p, 1800p and 4K render resolutions supersample (r.ScreenPercentage up to 200):
-        // a larger output on top of that ran out of the PS4 memory budget (1800p at 200% needs
-        // 6400x3600 targets: crash). Those keep 1080p.
-        const bool supersampling = s.startup_render_resolution >= 3 && s.startup_render_resolution <= 5;
+        // Render scales above 100% supersample (r.ScreenPercentage up to 200): a larger output on
+        // top of that ran out of the PS4 memory budget (1800p at 200% needs 6400x3600 targets:
+        // crash). Those keep 1080p here.
+        namespace S = Gow3Settings;
+        const bool supersampling = std::atoi(s.startup_render_scale >= 0 ? S::UE4ScaleKeys[s.startup_render_scale]
+                                                                          : s.render_scale_raw.c_str()) > 100;
         for (int i = 0; i < 4; ++i) {
             if (i) {
                 ImGui::SameLine();
@@ -526,22 +528,38 @@ void PerformanceTab() {
             ImGui::EndDisabled();
         }
         ImGui::TextWrapped(supersampling
-                               ? "Unavailable with the 1440p / 1800p / 4K render resolutions (they already "
-                                 "draw the scene larger; more would run out of game memory). Choose Native "
-                                 "or a native output mode to switch the output size here."
-                               : "Switches the game's output now. Use 1080p for the debug menu (R3), then "
+                               ? "Unavailable with a render scale above 100% (the scene is already drawn "
+                                 "larger; more would run out of game memory). Set Render scale 100% or lower "
+                                 "to switch the output size here."
+                               : "Switches the game's output now, until the next start (Output resolution "
+                                 "below is the size it starts at). Use 1080p for the debug menu (R3), then "
                                  "switch back.");
     }
     ImGui::SeparatorText("Applied on restart");
     if (BeginRows("##restart")) {
-        // God of War III: a resolution patch. Unreal Engine 4 games (MediEvil): the scene scale.
-        static const char* const resolution_labels[] = {
-            "1080p output (original)", "1080p, 480p scene", "1080p, 720p scene", "1080p, 1440p scene",
-            "1080p, 1800p scene", "1080p, 4K scene", "720p output", "1440p output", "1800p output", "4K output"};
-        ChoiceRow("Render resolution", s.render_resolution, resolution_labels, nullptr,
-                  int(G::Resolutions.size()),
-                  IsGow3() ? "The resolution the game draws at. Higher is sharper and slower."
-                           : "The resolution the 3D scene is drawn at, shown at 1080p: 4K is the sharpest.");
+        if (IsGow3()) {
+            // God of War III: a resolution patch.
+            static const char* const resolution_labels[] = {
+                "1080p (original)", "480p", "720p", "1440p", "1800p", "4K", "720p", "1440p", "1800p", "4K"};
+            ChoiceRow("Render resolution", s.render_resolution, resolution_labels, nullptr,
+                      int(G::Resolutions.size()), "The resolution the game draws at. Higher is sharper and slower.");
+        } else {
+            // MediEvil: the size the game starts at, and the 3D scene's scale of it (launcher >
+            // Performance; run.py: the boot display size patch, ue4_override's r.ScreenPercentage).
+            static const char* const output_labels[] = {"Match display", "4K (3840x2160)", "1800p (3200x1800)",
+                                                        "1440p (2560x1440)", "1080p (original)", "720p (1280x720)"};
+            IndexChoiceRow("Output resolution", s.output_resolution, output_labels, 6,
+                           "The size of the game's picture; it starts at this size. Match the display for a "
+                           "sharp 1:1 image. Custom sizes: output_resolution=WxH in medievil.ini.");
+            static const char* const scale_labels[] = {"200%: supersampled", "167%: supersampled",
+                                                       "133%: supersampled", "100%: native",
+                                                       "67%: upscaled, Quality", "58%: upscaled, Balanced",
+                                                       "50%: upscaled, Performance"};
+            IndexChoiceRow("Render scale", s.render_scale, scale_labels, 7,
+                           "The 3D scene's size per side compared with the output. Above 100%: drawn larger "
+                           "and scaled down (sharper). Below: drawn smaller and rebuilt by the game's "
+                           "temporal upscaler (faster). The HUD stays at the output size.");
+        }
         // The highest frame rate the game runs at (Unreal Engine 4: run.py's override pak).
         static const char* const engine_labels[] = {"60 (original)", "120", "240"};
         ChoiceRow("Engine frame rate", s.engine_fps, engine_labels, G::EngineFps.data(),
@@ -551,16 +569,12 @@ void PerformanceTab() {
         CheckRow("Deferred GPU readbacks", s.deferred_readback,
                  "Fewer waits for the GPU. Switch it off if textures or shadows look wrong.");
         if (!IsGow3()) {
-            // MediEvil (launcher > Performance): the override pak's quality and upscaling.
+            // MediEvil (launcher > Performance): the override pak's quality.
             static const char* const quality_labels[] = {"Ultra", "High", "Console (PS4)", "Medium",
                                                          "Low (integrated graphics)"};
             IndexChoiceRow("Graphics quality", s.ue4_quality, quality_labels, 5,
                            "Console keeps the PS4 look; High and Ultra go beyond it, Low is for "
                            "integrated graphics.");
-            static const char* const upscale_labels[] = {"Off", "Quality (67%)", "Balanced (58%)",
-                                                         "Performance (50%)"};
-            IndexChoiceRow("Upscaling (native output)", s.ue4_upscale, upscale_labels, 4,
-                           "The game's own temporal upscaler, for the native output modes.");
         }
         ImGui::EndTable();
     }

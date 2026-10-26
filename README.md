@@ -38,18 +38,18 @@ Captured on Windows 11 (RTX 5080) with this port.
 - Controller (DualSense, Xbox and others, through SDL3) and keyboard, both remappable.
 - Saving and loading; save backups before every start.
 - **Install from PKG**: the launcher (or `run.py`) unpacks a fake PKG once, resumably.
-- **Render resolution up to 4K**: the 3D scene is drawn at up to 3840 × 2160 and scaled to the
-  game's 1080p picture (a UE4 config override pak, `scripts/ue4_override.py`): sharpest on a
-  1080p screen.
-- **Native output 720p, 1440p, 1800p and 4K** (for 1440p/4K monitors and TVs): the game itself
-  switches to that size a few seconds after start, through its own `r.SetRes` console variable.
-  The in-game menu (Performance > Game resolution now) switches between 1080p, 1440p, 1800p and
-  4K at any time. Native 4K needs a larger PS4 framebuffer pool: the built-in patch
-  `patches/MediEvil.xml` ("Native 4K framebuffer pool (512 MB)", on by default) raises it from
-  128 MB.
-- **Temporal upscaling** (launcher > Performance > Upscaling): the game's own UE4 temporal
-  upsampling renders the 3D scene at 67%, 58% or 50% and rebuilds the full picture from its
-  motion vectors, for native output and slower graphics cards.
+- **Any output resolution** (launcher > Output resolution: 720p, 1080p, 1440p, 1800p, 4K, your
+  display's size, or any `output_resolution=WxH` in `medievil.ini`): the game starts at that size,
+  as a PS4 starts at its TV's (built-in patch "Boot display size", `patches/MediEvil.xml`), so the
+  menus and controller navigation work at every size. In windowed mode the window opens at it.
+  Above 1080p the port also uses a larger PS4 framebuffer pool ("Native 4K framebuffer pool
+  (512 MB)") and more game memory, by itself.
+- **Render scale** (launcher > Render scale, 50% to 200%): above 100% the 3D scene is drawn larger
+  and scaled down to the output (supersampling, sharpest); below 100% the game's own UE4 temporal
+  upsampling draws it smaller and rebuilds the full picture from its motion vectors (faster). The
+  menus and HUD stay at the output size (a UE4 config override pak, `scripts/ue4_override.py`).
+  The in-game menu (Performance > Game resolution now) can still switch between 1080p, 1440p,
+  1800p and 4K live, for the developer debug menu.
 - **Graphics quality**: Low (integrated graphics such as the Radeon 780M), Medium, Console (PS4),
   High and Ultra (sharper, longer-range shadows, better reflections and more distant detail).
   Every preset keeps point/spot light shadows at one fixed size, which stops the shadow flicker
@@ -98,7 +98,8 @@ Captured on Windows 11 (RTX 5080) with this port.
 2. Open **`MediEvil.exe`** (Windows may warn that it is not signed: More info, Run anyway).
 3. On **Game**, either **Choose .pkg…** to install from your package, or **Browse…** to the
    folder with `eboot.bin`.
-4. Choose a **Render resolution** on **Home** and press **PLAY**.
+4. Choose an **Output resolution** (your display's size for a sharp picture) and a **Render scale** on
+   **Home** and press **PLAY**.
 
 `Play MediEvil.exe` starts the game with the saved settings, for shortcuts and Steam.
 More in [packaging/windows/README-Windows.txt](packaging/windows/README-Windows.txt).

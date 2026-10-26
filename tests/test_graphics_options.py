@@ -20,8 +20,43 @@ class GraphicsOptionsTest(unittest.TestCase):
         self.ini.write_text('render_resolution=8K\nengine_fps=90\nstale_readback=yes\n', encoding='utf-8')
         options, reverted = g.prepare(self.ini, self.state)
         self.assertFalse(reverted)
-        self.assertEqual(options, {'render_resolution': 'native', 'engine_fps': '120', 'deferred_readback': '1',
-                                   'stale_readback': '1', 'async_shaders': '1'})
+        self.assertEqual(options, {'render_resolution': 'native', 'engine_fps': '60', 'deferred_readback': '1',
+                                   'stale_readback': '1', 'async_shaders': '1', 'output_resolution': '1920x1080',
+                                   'render_scale': '100'})
+
+    def test_output_resolution_and_render_scale(self):
+        self.assertEqual([g.parse_output(v) for v in ('2560x1440', ' 3441X1440 ', 'display', '8K', '100x100')],
+                         ['2560x1440', '3440x1440', 'display', '1920x1080', '1920x1080'])
+        self.assertEqual([g.parse_render_scale(v) for v in ('67', '200', '201', 'x')], [67, 200, 100, 100])
+        self.assertEqual(g.output_size('1280x720'), (1280, 720))
+
+    def test_output_environment(self):
+        pool, boot4k = g.POOL_PATCH, g.BOOT_4K_PATCH
+        self.assertEqual(g.output_environment({}, 1920, 1080), {'GOW3_PATCHES': ''})
+        self.assertEqual(g.output_environment({'GOW3_PATCHES': f'Skip intro;{boot4k}'}, 2560, 1440),
+                         {'GOW3_PATCHES': f'Skip intro;{pool};Boot display size 2560x1440', 'GOW3_DMEM_MB': '7104',
+                          'GOW3_INTERNAL_WIDTH': '2560', 'GOW3_INTERNAL_HEIGHT': '1440'})
+        self.assertEqual(g.output_environment({}, 3840, 2160),
+                         {'GOW3_PATCHES': f'{pool};{boot4k}', 'GOW3_DMEM_MB': '7104',
+                          'GOW3_INTERNAL_WIDTH': '3840', 'GOW3_INTERNAL_HEIGHT': '2160'})
+        self.assertEqual(g.output_environment({}, 1280, 720),
+                         {'GOW3_PATCHES': 'Boot display size 1280x720',
+                          'GOW3_INTERNAL_WIDTH': '1280', 'GOW3_INTERNAL_HEIGHT': '720'})
+        live = g.output_environment({'GOW3_UE4_BOOT_SIZE': '0', 'GOW3_PS4_MEMORY': '1'}, 3200, 1800)
+        self.assertEqual((live['GOW3_UE4_SETRES'], live['GOW3_PATCHES'], 'GOW3_DMEM_MB' in live),
+                         ('3200x1800', pool, False))
+
+    def test_resolution_migration(self):
+        # The single render_resolution / ue4_upscale of earlier versions become the two settings.
+        self.assertEqual(g.migrate_resolution({'render_resolution': '4K_native', 'ue4_upscale': 'quality'}),
+                         {'output_resolution': '3840x2160', 'render_scale': '67'})
+        self.assertEqual(g.migrate_resolution({'render_resolution': '1440p'}),
+                         {'output_resolution': '1920x1080', 'render_scale': '133'})
+        self.assertEqual(g.migrate_resolution({'render_resolution': 'native', 'output_resolution': '2560x1440'}), {})
+        self.ini.write_text('render_resolution=1440p_native\nue4_upscale=balanced\n', encoding='utf-8')
+        options, _ = g.prepare(self.ini, self.state)
+        self.assertEqual((options['output_resolution'], options['render_scale']), ('2560x1440', '58'))
+        self.assertEqual(g.read_ini(self.ini)['output_resolution'], '2560x1440')
 
     def test_write_keys_keeps_other_lines(self):
         self.ini.write_text('# comment\nshow_fps=1\nengine_fps=60\n', encoding='utf-8')

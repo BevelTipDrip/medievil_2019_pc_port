@@ -1007,3 +1007,33 @@ Plan and addresses: [study-boot-resolution.md](study-boot-resolution.md). The pa
 - **T-R2** (`render_resolution=1440p_native`, windowed, launcher selection only): log `Window: windowed size 2560x1440
   pixels for a 2560x1440 game image`, both patches selected automatically. **The user: "that worked, and menu
   navigation looks fine."** Not run yet: 720p and 1800p.
+
+### Resolution split: output resolution + render scale (2026-10-25)
+
+The user: everything above 1080p needs the memory patches, and the boot rect should work at any size. One
+`render_resolution` list (output and scene scale mixed, plus `ue4_upscale`) became two settings:
+- **`output_resolution`**: `WxH` (640x360 to 7680x4320, even sizes) or `display` (the primary display's mode,
+  `EnumDisplaySettingsW`, physical pixels). Launcher / in-game list: Match display, 4K, 1800p, 1440p, 1080p
+  (original), 720p; any other ini value shows as "Custom (WxH)". `graphics_options.output_environment`: 1080p as
+  shipped; 4K through the verified 4K path (VideoOut 3840x2160 + "4K display metrics at boot"); every other size
+  through the sized patch **"Boot display size WxH"** (one `MediEvil.xml` entry, `Type="size"` lines that
+  `patches.py` fills with W and H; it replaced the three fixed entries) and a VideoOut of that size. **Above
+  1080p (by area)**: the 512 MB pool patch, `GOW3_DMEM_MB=7104`, `r.GarlicHeapSizeMB=4600`,
+  `r.Streaming.PoolSize=1600` (before: 4K only). `GOW3_UE4_BOOT_SIZE=0`: the live `r.SetRes` at any size.
+- **`render_scale`**: percent of the output per side, 50/58/67/100/133/167/200 (any 25-200 in the ini).
+  `r.ScreenPercentage`; below 100 with `r.TemporalAA.Upsampling=1` (the old "Upscaling" choices), above 100 a
+  supersampled scene (the old "1080p, X scene" choices: those were 1080p output + 133/167/200).
+- Migration (launcher `load_ini`, `graphics_options.prepare`): an ini without `output_resolution` takes it from
+  `render_resolution` / `ue4_upscale` (`X_native` -> that size; `1440p` etc. -> 1080p + its scale; the old
+  "720p scene" without upsampling becomes 67% with it). `render_resolution` stays for God of War III only.
+- The God of War III upscaler page ("Graphics": upscaler, preset, output_res, live resolution, upscaler
+  sharpening, object motion vectors, FSR 4 asset download) was removed from the launcher; it had been hidden since
+  upstream's branding commit and `run.py` sets `GOW3_UPSCALER=none`. Its keys stay readable by the game.
+  The Patches tab hides "Boot display size" and "4K display metrics at boot" (chosen by the output setting).
+- Tests: `test_graphics_options` (parse, migration, `output_environment`), `test_patches` (sized patch bytes =
+  the verified 1440p ones), launcher keys; C++ `graphics-settings-test` PASS. The launcher UI was built off-screen
+  (all pages, summary). Not run in game yet.
+- **T-R3** (2026-10-25, launched by Claude with the user's go; log `data/t-r3-1800p-67.log`): `output_resolution=3200x1800`,
+  `render_scale=67`, windowed. Log: window 3200x1800, pool + "Boot display size 3200x1800" chosen automatically,
+  DMEM 7104 (pool +6.6 GB), scene 2144x1206 with temporal upsampling. **The user: "everything seemed to work as
+  expected"**; windowed mode adds compositor pacing (expected). Next: 4K borderless through the launcher.

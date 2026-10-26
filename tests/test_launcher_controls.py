@@ -82,7 +82,7 @@ class ControlMapTest(unittest.TestCase):
             self.assertIn(key, launcher.APP_DEFAULTS)
         env = launcher.game_environment({**launcher.APP_DEFAULTS, 'player_name': ' Kratos '})
         self.assertEqual(env['GOW3_USER_NAME'], 'Kratos')
-        for key in ('display_mode', 'fps_limit', 'render_resolution', 'engine_fps', 'rcas_strength'):
+        for key in ('display_mode', 'fps_limit', 'output_resolution', 'render_scale', 'engine_fps', 'rcas_strength'):
             self.assertIn(key, launcher.INI_DEFAULTS)
 
     def test_graphics_defaults_match_the_game(self):

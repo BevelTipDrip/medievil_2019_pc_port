@@ -48,9 +48,14 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         v.ue4_quality_raw = value;
         return;
     }
-    if (key == "ue4_upscale") {
-        v.ue4_upscale = index_of(UE4UpscaleKeys);
-        v.ue4_upscale_raw = value;
+    if (key == "output_resolution") {
+        v.output_resolution = index_of(UE4OutputKeys);
+        v.output_resolution_raw = value;
+        return;
+    }
+    if (key == "render_scale") {
+        v.render_scale = index_of(UE4ScaleKeys);
+        v.render_scale_raw = value;
         return;
     }
     static const char* const overlay_keys[] = {"overlay_fps", "overlay_frametime", "overlay_upscaler",
@@ -247,7 +252,8 @@ void Load() {
         v.startup_perf[PerfSmallBuffers] = v.perf[PerfSmallBuffers];
     }
     v.startup_ue4_quality = v.ue4_quality;
-    v.startup_ue4_upscale = v.ue4_upscale;
+    v.startup_output_resolution = v.output_resolution;
+    v.startup_render_scale = v.render_scale;
     TakeBaseline();
 }
 
@@ -256,7 +262,8 @@ int RestartChanges() {
     int changes = (v.render_resolution != v.startup_render_resolution) + (v.engine_fps != v.startup_engine_fps) +
                   (v.deferred_readback != v.startup_deferred_readback) +
                   (v.stale_readback != v.startup_stale_readback) + (v.ue4_quality != v.startup_ue4_quality) +
-                  (v.ue4_upscale != v.startup_ue4_upscale);
+                  (v.output_resolution != v.startup_output_resolution) +
+                  (v.render_scale != v.startup_render_scale);
     for (int p = 0; p < PerfCount; ++p) {
         changes += !PerfLive[p] && v.perf[p] != v.startup_perf[p];
     }
@@ -406,7 +413,9 @@ std::map<std::string, std::string> Serialize(const Values& v) {
         Append(out, "%s=%d\n", PerfKeys[p], int(v.perf[p].load()));
     }
     Append(out, "ue4_quality=%s\n", v.ue4_quality >= 0 ? UE4QualityKeys[v.ue4_quality] : v.ue4_quality_raw.c_str());
-    Append(out, "ue4_upscale=%s\n", v.ue4_upscale >= 0 ? UE4UpscaleKeys[v.ue4_upscale] : v.ue4_upscale_raw.c_str());
+    Append(out, "output_resolution=%s\n",
+           v.output_resolution >= 0 ? UE4OutputKeys[v.output_resolution] : v.output_resolution_raw.c_str());
+    Append(out, "render_scale=%s\n", v.render_scale >= 0 ? UE4ScaleKeys[v.render_scale] : v.render_scale_raw.c_str());
     std::map<std::string, std::string> values;
     std::size_t at = 0;
     while (at < out.size()) {

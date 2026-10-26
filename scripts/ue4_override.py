@@ -2,12 +2,14 @@
 
 UE4 games read their config only from their paks. A small pak whose name ends in _P mounts with
 priority over them, so a changed copy of Engine/Config/PS4/PS4Engine.ini (taken from the game's
-own pak) wins. r.ScreenPercentage scales the 3D scene: 200% of the 1080p frame renders it at
-3840x2160 (4K) and scales it down to the game's 1920x1080 output (supersampling: much sharper
-edges and detail). The HUD stays at 1080p. The game itself keeps its 60 FPS cap.
-The pak is written into the game's Paks folder at every start and removed for native.
+own pak) wins. r.ScreenPercentage scales the 3D scene of the game's output (medievil.ini
+render_scale): 200% of a 1080p output renders it at 3840x2160 and scales it down (supersampling:
+much sharper edges and detail); below 100% UE4's temporal upsampling rebuilds the output from the
+game's own motion vectors. The HUD stays at the output size. The output size itself is booted by
+run.py (output_resolution). The pak is written into the game's Paks folder at every start and
+removed when it changes nothing.
 
-Usage: python scripts/ue4_override.py <game dir> [--resolution native|480p|720p|1440p|1800p|4K]
+Usage: python scripts/ue4_override.py <game dir> [--output 2560x1440] [--scale 67]
 """
 import argparse
 import hashlib
@@ -19,17 +21,11 @@ from pathlib import Path
 PAK_MAGIC = 0x5A6F12E1
 PAK_NAME = 'pakchunk99-ps4_P.pak'
 CONFIG = 'Engine/Config/PS4/PS4Engine.ini'
-# Render resolution (medievil.ini render_resolution) -> scene scale of the 1080p frame, in percent.
-SCREEN_PERCENTAGE = {'native': None, '480p': '44.444', '720p': '66.667', '1440p': '133.333',
-                     '1800p': '166.667', '4K': '200'}
-# Native output: the game's own output size (PS4Engine.ini r.setres, 1920x1080 as shipped), shown
-# pixel for pixel on a 1440p or 4K display. 4K needs the "Native 4K framebuffer pool" patch.
-# Upscaling at native output (medievil.ini ue4_upscale): UE4's temporal upsampling renders the 3D
-# scene at a lower scale and its temporal AA rebuilds the full output from the game's own motion
-# vectors (as FSR 2 / DLSS do, without the AI). Not with the supersampling scales above.
-TEMPORAL_UPSCALE = {'quality': '66.667', 'balanced': '58', 'performance': '50'}
-NATIVE_OUTPUT = {'720p_native': '1280x720', '1440p_native': '2560x1440', '1800p_native': '3200x1800',
-                 '4K_native': '3840x2160'}
+# Render scales below 100% use UE4's temporal upsampling: its temporal AA rebuilds the full
+# output from the game's own motion vectors (as FSR 2 / DLSS do, without the AI).
+# Output sizes above 1080p use the larger GPU heap and texture streaming pool (with GOW3_DMEM_MB
+# in run.py).
+LARGE_OUTPUT = 1920 * 1080
 
 
 def paks_dir(game):
@@ -252,23 +248,24 @@ DEBUG_HUD_EDITS = [
 ]
 
 
-# The debug menu's first resolution button follows the native output setting: the base PS4
-# renderer makes its buffers at the display size at start, so only a live r.SetRes switches.
-# Command and label keep their lengths (the game's own 18 and 22 characters).
-NATIVE_BUTTON = {'720p_native': (b'r.SetRes 1280x720 ', b'Cinematic Mode (720p) '),
-                 '1440p_native': (b'r.SetRes 2560x1440', b'Cinematic Mode (1440p)'),
-                 '1800p_native': (b'r.SetRes 3200x1800', b'Cinematic Mode (1800p)'),
-                 '4K_native': (b'r.SetRes 3840x2160', b'Cinematic Mode (2160p)')}
+# The debug menu's first resolution button follows the output resolution: the debug menu's
+# navigation needs 1080p, and this button switches back. Command and label keep their lengths
+# (the game's own 18 and 22 characters, padded with spaces).
+def native_button(output):
+    command, label = f'r.SetRes {output}'.encode(), f'Cinematic Mode ({output.split("x")[1]}p)'.encode()
+    if len(command) > 18 or len(label) > 22:
+        return None
+    return command.ljust(18), label.ljust(22)
 
 
-def debug_hud(game, resolution='native'):
+def debug_hud(game, output='1920x1080'):
     data = read_file(game, DEBUG_HUD)
     for old, new, count in DEBUG_HUD_EDITS:
         if data.count(old) != count:
             raise ValueError(f'{DEBUG_HUD}: unexpected contents (game version?)')
         data = data.replace(old, new)
-    if resolution in NATIVE_BUTTON:
-        command, label = NATIVE_BUTTON[resolution]
+    if output != '1920x1080' and (button := native_button(output)):
+        command, label = button
         data = data.replace(b'r.SetRes 3840x2160\0', command + b'\0', 1)
         data = data.replace(b'Cinematic Mode (2160p)\0', label + b'\0')
     return data
@@ -297,8 +294,8 @@ def edited_asset(game, name, edits):
     return data
 
 
-def apply(game, resolution='native', quality='console', fps=60, debug_menu=False, infinite_ammo=False,
-          upscale='off', hzb=False):
+def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_menu=False,
+          infinite_ammo=False, hzb=False):
     """Writes or removes the override pak. Returns a short description of the active state."""
     pak = paks_dir(game) / PAK_NAME
     values = dict(QUALITY.get(quality, {}))
@@ -308,14 +305,15 @@ def apply(game, resolution='native', quality='console', fps=60, debug_menu=False
                        'r.Shadow.RadiusThreshold': str(threshold), 'r.Shadow.CacheWholeSceneShadows': '1'})
         cascades, distance = SUN_SHADOWS[quality]
         values.update({'r.Shadow.CSM.MaxCascades': cascades, 'r.Shadow.DistanceScale': distance})
-    percentage = SCREEN_PERCENTAGE.get(resolution)
-    if percentage:
-        values['r.ScreenPercentage'] = percentage
-    output = NATIVE_OUTPUT.get(resolution)
-    if output:
+    if scale != 100:
+        values['r.ScreenPercentage'] = str(scale)
+    if scale < 100:
+        values['r.TemporalAA.Upsampling'] = '1'
+    if output != '1920x1080':
         values['r.setres'] = output
-    if output in ('3200x1800', '3840x2160') and os.environ.get('GOW3_PS4_MEMORY') != '1':
-        # The GPU heap and texture streaming pool above 1440p (with GOW3_DMEM_MB in run.py).
+    width, height = (int(v) for v in output.split('x'))
+    if width * height > LARGE_OUTPUT and os.environ.get('GOW3_PS4_MEMORY') != '1':
+        # The GPU heap and texture streaming pool above 1080p (with GOW3_DMEM_MB in run.py).
         values.update({'r.GarlicHeapSizeMB': '4600', 'r.Streaming.PoolSize': '1600'})
     # The port answers the game's occlusion queries "visible" (shadPS4's synthetic counters), so
     # they cull nothing and their bounding-box draws cost ~150 draws a frame in busy views
@@ -341,9 +339,6 @@ def apply(game, resolution='native', quality='console', fps=60, debug_menu=False
     # study-heavy-frame-map.md, T-H3b). GOW3_PARTICLE_FIXED_STEP=1: the fixed step.
     if os.environ.get('GOW3_PARTICLE_FIXED_STEP') != '1':
         values['r.GPUParticle.FixDeltaSeconds'] = '0'
-    scale = TEMPORAL_UPSCALE.get(upscale) if not percentage else None
-    if scale:
-        values.update({'r.ScreenPercentage': scale, 'r.TemporalAA.Upsampling': '1'})
     # Extra console variables for experiments, "name=value;name=value" (GOW3_UE4_CVARS); they win
     # over the presets above.
     extra = {}
@@ -355,21 +350,19 @@ def apply(game, resolution='native', quality='console', fps=60, debug_menu=False
     engine = frame_rate_range(fps) if fps > 60 else {}
     if not values and not engine and not debug_menu and not infinite_ammo:
         pak.unlink(missing_ok=True)
-        return 'native 1080p, console quality, 60 FPS'
+        return '1920x1080 output, render scale 100%, console quality, 60 FPS'
     files = {CONFIG: set_values(read_file(game, CONFIG), values, engine)}
     # Native output: the base PS4 renderer makes its buffers at the display size at start and only
     # a live r.SetRes changes them; the runtime sets it (GOW3_UE4_SETRES), and the debug menu's
     # first resolution button follows the setting.
     if debug_menu:
         files[GAME_CONFIG] = debug_menu_config(game, True)
-        files[DEBUG_HUD] = debug_hud(game, resolution)
+        files[DEBUG_HUD] = debug_hud(game, output)
     if infinite_ammo:
         files[INFINITE_AMMO] = edited_asset(game, INFINITE_AMMO, INFINITE_AMMO_EDITS)
     write_pak(pak, files)
-    return (f'{resolution if percentage or output else "native 1080p"}'
-            f'{f" (r.ScreenPercentage={percentage})" if percentage else ""}'
-            f'{f" (r.setres={output})" if output else ""}'
-            f'{f", temporal upscaling {upscale} ({scale}%)" if scale else ""}, {quality} quality, '
+    return (f'{output} output, render scale {scale}%'
+            f'{" (temporal upsampling)" if scale < 100 else " (supersampled)" if scale > 100 else ""}, {quality} quality, '
             f'{f"up to {fps}" if fps > 60 else 60} FPS{", debug menu (R3)" if debug_menu else ""}'
             f'{", unlimited ammo" if infinite_ammo else ""}'
             f'{"; extra cvars " + ", ".join(f"{k}={v}" for k, v in extra.items()) if extra else ""}')
@@ -378,9 +371,11 @@ def apply(game, resolution='native', quality='console', fps=60, debug_menu=False
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('game', type=Path)
-    parser.add_argument('--resolution', choices=[*SCREEN_PERCENTAGE, *NATIVE_OUTPUT], default='native')
+    parser.add_argument('--output', default='1920x1080', help="the game's output size, WxH")
+    parser.add_argument('--scale', type=int, default=100, help='render scale in percent (25-200)')
     parser.add_argument('--quality', choices=list(QUALITY), default='console')
     parser.add_argument('--fps', type=int, default=60, help='engine frame rate (60 = original)')
     parser.add_argument('--debug-menu', action='store_true', help='allow the developer debug menu (R3)')
     args = parser.parse_args()
-    print('Render resolution:', apply(args.game, args.resolution, args.quality, args.fps, args.debug_menu))
+    print('Render resolution:', apply(args.game, args.output, args.scale, args.quality, args.fps,
+                                      args.debug_menu))

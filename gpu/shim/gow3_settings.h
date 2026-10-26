@@ -90,10 +90,12 @@ struct Values {
     /// "Apply and restart" (run.py: graphics_options.PERF_SWITCHES).
     std::atomic<bool> perf[10] = {true, true, true, true, true, true, true, true, true, true};
     bool startup_perf[10] = {true, true, true, true, true, true, true, true, true, true};
-    /// MediEvil graphics quality and UE4 upscaling (UE4QualityKeys / UE4UpscaleKeys; -1: a value
-    /// the menu does not list, kept as written). On restart.
-    int ue4_quality = 2, ue4_upscale = 0, startup_ue4_quality = 2, startup_ue4_upscale = 0;
-    std::string ue4_quality_raw = "console", ue4_upscale_raw = "off";
+    /// MediEvil graphics quality, output resolution and render scale (UE4QualityKeys /
+    /// UE4OutputKeys / UE4ScaleKeys; -1: a value the menu does not list, such as a custom WxH,
+    /// kept as written). On restart (run.py: graphics_options, ue4_override).
+    int ue4_quality = 2, output_resolution = 4, render_scale = 3;
+    int startup_ue4_quality = 2, startup_output_resolution = 4, startup_render_scale = 3;
+    std::string ue4_quality_raw = "console", output_resolution_raw = "1920x1080", render_scale_raw = "100";
     // FSR 4 checks (menu): the provider's auto exposure, the jitter sign it is given.
     std::atomic<bool> fsr4_auto_exposure{true};
     std::atomic<bool> fsr4_invert_jitter{false};
@@ -143,7 +145,9 @@ inline constexpr const char* PerfKeys[PerfCount] = {
 /// Switched while the game runs (the others need a restart).
 inline constexpr bool PerfLive[PerfCount] = {false, false, false, true, false, true, true, false, false, false};
 inline constexpr const char* UE4QualityKeys[] = {"ultra", "high", "console", "medium", "low"};
-inline constexpr const char* UE4UpscaleKeys[] = {"off", "quality", "balanced", "performance"};
+inline constexpr const char* UE4OutputKeys[] = {"display", "3840x2160", "3200x1800", "2560x1440", "1920x1080",
+                                                "1280x720"};
+inline constexpr const char* UE4ScaleKeys[] = {"200", "167", "133", "100", "67", "58", "50"};
 /// Startup options changed since this launch (applied by "Apply and restart").
 int RestartChanges();
 

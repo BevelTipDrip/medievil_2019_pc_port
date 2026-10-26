@@ -146,45 +146,13 @@ def main():
         env.setdefault('GOW3_FPS_CAP', str(engine_fps))
     if profile.get('ue4_render_scale'):
         import ue4_override
-        # Native output: the runtime sets the game's r.SetRes live once it runs (runtime_extra.c).
-        if output := ue4_override.NATIVE_OUTPUT.get(graphics['render_resolution']):
-            if output in ('3200x1800', '3840x2160') and env.get('GOW3_PS4_MEMORY') != '1':
-                # The PS4's 400-800 MB texture streaming pool thrashes at 4K: 2 GiB more guest
-                # memory (with the GPU heap and pool sizes in ue4_override.apply) stop small pans
-                # re-streaming (research: T-S2, 2026-10-19). GOW3_PS4_MEMORY=1: the PS4's sizes.
-                env.setdefault('GOW3_DMEM_MB', '7104')
-            # 4K native starts at 4K, as a PS4 Pro on a 4K TV (menu navigation, research: I1);
-            # GOW3_UE4_BOOT_4K=0: the live r.SetRes as before.
-            if output == '3840x2160' and env.get('GOW3_UE4_BOOT_4K', '1') == '1':
-                # Or the game starts at 4K itself, as on a PS4 Pro with a 4K TV: a 3840x2160 VideoOut
-                # and its 4K display-metrics branch (patches/MediEvil.xml). A live change leaves the
-                # menus' navigation at the 1080p area.
-                env.setdefault('GOW3_INTERNAL_WIDTH', '3840')
-                env.setdefault('GOW3_INTERNAL_HEIGHT', '2160')
-                # Both patches, whatever the launcher's Patches tab says: the 4K boot without the
-                # 512 MB framebuffer pool runs out of framebuffer memory and crashes (the pool's
-                # own direct memory requirement follows from patch_requirements below).
-                selected = [n for n in env.get('GOW3_PATCHES', '').split(';') if n]
-                for name in ('Native 4K framebuffer pool (512 MB)', '4K display metrics at boot'):
-                    if name not in selected:
-                        selected.append(name)
-                env['GOW3_PATCHES'] = ';'.join(selected)
-            elif env.get('GOW3_UE4_BOOT_SIZE', '1') == '1':
-                # 720p / 1440p / 1800p: the game starts at that size from the default rect of its
-                # display metrics and work area (patches/MediEvil.xml, research: T-R1,
-                # study-boot-resolution.md), a VideoOut of the same size and the 512 MB pool.
-                # GOW3_UE4_BOOT_SIZE=0: the live r.SetRes as before (menu navigation, I1).
-                width, height = output.split('x')
-                env.setdefault('GOW3_INTERNAL_WIDTH', width)
-                env.setdefault('GOW3_INTERNAL_HEIGHT', height)
-                selected = [n for n in env.get('GOW3_PATCHES', '').split(';')
-                            if n and n != '4K display metrics at boot']  # its 3840x2160 would win
-                for name in ('Native 4K framebuffer pool (512 MB)', f'Boot display size {output}'):
-                    if name not in selected:
-                        selected.append(name)
-                env['GOW3_PATCHES'] = ';'.join(selected)
-            else:
-                env.setdefault('GOW3_UE4_SETRES', output)
+        # The game's output size (medievil.ini output_resolution); the 3D scene's render_scale is in
+        # ue4_override.apply.
+        width, height = graphics_options.output_size(graphics['output_resolution'])
+        output = f'{width}x{height}'
+        print(f'Output resolution: {output}' + (' (the display)' if graphics['output_resolution'] == 'display'
+                                                 else ''), flush=True)
+        graphics_options.output_environment(env, width, height)
         # HZB occlusion through the runtime's remap (research: T-HZ4, study-hzb-double-buffer.md):
         # its hooks fit the analysed eboot only. Small read-only buffers the CPU did not write are
         # bound from VRAM instead of copied every draw (S2, T-S2b). GOW3_HZB_REMAP=0 /
@@ -201,11 +169,10 @@ def main():
         import ue4_override
         try:
             ini = graphics_options.read_ini(env['GOW3_CONFIG'])
-            print('Render resolution:', ue4_override.apply(game, graphics['render_resolution'],
+            print('Render resolution:', ue4_override.apply(game, output, int(graphics['render_scale']),
                                                            ini.get('ue4_quality', 'console'), engine_fps,
                                                            ini.get('cheat_menu') == '1',
                                                            ini.get('cheat_infinite_ammo') == '1',
-                                                           ini.get('ue4_upscale', 'off'),
                                                            env.get('GOW3_HZB_REMAP') == '1'), flush=True)
         except (OSError, ValueError) as error:
             print(f'Render resolution: unchanged ({error})', flush=True)

@@ -13,8 +13,17 @@ from pathlib import Path
 RESOLUTIONS = ('native', '480p', '720p', '1440p', '1800p', '4K',
                '720p_native', '1440p_native', '1800p_native', '4K_native')
 ENGINE_FPS = (60, 120, 240)
+# MediEvil (Unreal Engine 4): the game's output size and the 3D scene's scale of it (two settings
+# since 2026-10-25; render_resolution and ue4_upscale before, see migrate_resolution).
+# output_resolution: WxH (any size from 640x360 to 7680x4320) or 'display' (the desktop's size).
+# The game boots at it (patches/MediEvil.xml "Boot display size", research: T-R1, T-R2).
+OUTPUT_PRESETS = ('1280x720', '1920x1080', '2560x1440', '3200x1800', '3840x2160', 'display')
+# render_scale: percent of the output per axis. Below 100 UE4's temporal upsampling rebuilds the
+# output from its motion vectors; above 100 the scene is drawn larger and scaled down (supersampling).
+RENDER_SCALES = (50, 58, 67, 100, 133, 167, 200)
 DEFAULTS = {'render_resolution': 'native', 'engine_fps': '60', 'deferred_readback': '1',
-            'stale_readback': '1', 'async_shaders': '1'}
+            'stale_readback': '1', 'async_shaders': '1', 'output_resolution': '1920x1080',
+            'render_scale': '100'}
 RESOLUTION_PREFIX = 'Resolution Patch'
 FPS_PREFIX = 'Frame Rate Patch'
 TEXTURE_FIX = 'Bug Fix - Texture Corruption Fix'
@@ -52,9 +61,132 @@ def write_keys(path, updates):
     path.write_text('\n'.join(out) + '\n', encoding='utf-8')
 
 
+def parse_output(value):
+    """'display' or a normalized 'WxH' (even sizes, 640x360 to 7680x4320); else 1920x1080."""
+    value = str(value).strip().lower()
+    if value == 'display':
+        return value
+    width, sep, height = value.partition('x')
+    try:
+        w, h = int(width), int(height)
+    except ValueError:
+        return '1920x1080'
+    if not sep or not (640 <= w <= 7680 and 360 <= h <= 4320):
+        return '1920x1080'
+    return f'{w & ~1}x{h & ~1}'
+
+
+def parse_render_scale(value):
+    """A render scale in percent from 25 to 200; else 100."""
+    try:
+        scale = int(float(value))
+    except (TypeError, ValueError):
+        return 100
+    return scale if 25 <= scale <= 200 else 100
+
+
+def display_size():
+    """(width, height) of the primary display's current mode in pixels; 1920x1080 when unknown."""
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        class DEVMODEW(ctypes.Structure):
+            _fields_ = [('dmDeviceName', wintypes.WCHAR * 32), ('dmSpecVersion', wintypes.WORD),
+                        ('dmDriverVersion', wintypes.WORD), ('dmSize', wintypes.WORD),
+                        ('dmDriverExtra', wintypes.WORD), ('dmFields', wintypes.DWORD),
+                        ('dmPosition', wintypes.LONG * 2), ('dmDisplayOrientation', wintypes.DWORD),
+                        ('dmDisplayFixedOutput', wintypes.DWORD), ('dmColor', ctypes.c_short),
+                        ('dmDuplex', ctypes.c_short), ('dmYResolution', ctypes.c_short),
+                        ('dmTTOption', ctypes.c_short), ('dmCollate', ctypes.c_short),
+                        ('dmFormName', wintypes.WCHAR * 32), ('dmLogPixels', wintypes.WORD),
+                        ('dmBitsPerPel', wintypes.DWORD), ('dmPelsWidth', wintypes.DWORD),
+                        ('dmPelsHeight', wintypes.DWORD), ('dmDisplayFlags', wintypes.DWORD),
+                        ('dmDisplayFrequency', wintypes.DWORD)]
+        mode = DEVMODEW()
+        mode.dmSize = ctypes.sizeof(DEVMODEW)
+        # ENUM_CURRENT_SETTINGS: physical pixels, whatever the Windows display scaling.
+        if ctypes.windll.user32.EnumDisplaySettingsW(None, -1, ctypes.byref(mode)) and mode.dmPelsWidth:
+            return int(mode.dmPelsWidth), int(mode.dmPelsHeight)
+    except (AttributeError, OSError, ValueError):
+        pass
+    return 1920, 1080
+
+
+def output_size(value):
+    """(width, height) of an output_resolution value."""
+    value = parse_output(value)
+    if value == 'display':
+        return tuple(int(v) for v in parse_output('%dx%d' % display_size()).split('x'))
+    return tuple(int(v) for v in value.split('x'))
+
+
+POOL_PATCH = 'Native 4K framebuffer pool (512 MB)'
+BOOT_4K_PATCH = '4K display metrics at boot'
+BOOT_SIZE_PATCH = 'Boot display size'
+
+
+def output_environment(env, width, height):
+    """Sets env (GOW3_PATCHES, GOW3_INTERNAL_WIDTH/HEIGHT, GOW3_DMEM_MB) for a WxH MediEvil output.
+
+    The game boots at that size: a VideoOut of that size and the default rect of UE4's display
+    metrics and work area (patches/MediEvil.xml "Boot display size", research: T-R1, T-R2,
+    study-boot-resolution.md). A live r.SetRes instead leaves the menus' navigation at the 1080p
+    area (I1); GOW3_UE4_BOOT_SIZE=0: that live change, as before."""
+    output = f'{width}x{height}'
+    selected = [n for n in env.get('GOW3_PATCHES', '').split(';') if n]
+    if width * height > 1920 * 1080:
+        # Above 1080p, whatever the launcher's Patches tab says: the 512 MB framebuffer pool (the
+        # stock 128 MB ran out at 4K and crashed; its direct memory requirement follows from the
+        # patch notes), and 2 GiB more guest memory: the PS4's 400-800 MB texture streaming pool
+        # thrashed at 4K (with the GPU heap and pool sizes in ue4_override.apply, research: T-S2,
+        # 2026-10-19). GOW3_PS4_MEMORY=1: the PS4's sizes.
+        selected.append(POOL_PATCH)
+        if env.get('GOW3_PS4_MEMORY') != '1':
+            env.setdefault('GOW3_DMEM_MB', '7104')
+    if output == '1920x1080':
+        pass  # the game's own size
+    elif env.get('GOW3_UE4_BOOT_SIZE', '1') != '1':
+        env.setdefault('GOW3_UE4_SETRES', output)
+    elif output == '3840x2160' and env.get('GOW3_UE4_BOOT_4K', '1') == '1':
+        # 4K as a PS4 Pro on a 4K TV: a 3840x2160 VideoOut and the game's own 4K display-metrics
+        # branch (verified first, ebf85f4). GOW3_UE4_BOOT_4K=0: the boot rect below instead.
+        env.setdefault('GOW3_INTERNAL_WIDTH', '3840')
+        env.setdefault('GOW3_INTERNAL_HEIGHT', '2160')
+        selected.append(BOOT_4K_PATCH)
+    else:
+        env.setdefault('GOW3_INTERNAL_WIDTH', str(width))
+        env.setdefault('GOW3_INTERNAL_HEIGHT', str(height))
+        # Without "4K display metrics at boot": its 3840x2160 would win over the rect.
+        selected = [n for n in selected if n != BOOT_4K_PATCH] + [f'{BOOT_SIZE_PATCH} {output}']
+    env['GOW3_PATCHES'] = ';'.join(dict.fromkeys(selected))
+    return env
+
+
+# The single render_resolution of earlier versions: output size, scene scale.
+LEGACY_RESOLUTION = {'native': ('1920x1080', 100), '480p': ('1920x1080', 50), '720p': ('1920x1080', 67),
+                     '1440p': ('1920x1080', 133), '1800p': ('1920x1080', 167), '4K': ('1920x1080', 200),
+                     '720p_native': ('1280x720', 100), '1440p_native': ('2560x1440', 100),
+                     '1800p_native': ('3200x1800', 100), '4K_native': ('3840x2160', 100)}
+LEGACY_UPSCALE = {'quality': 67, 'balanced': 58, 'performance': 50}
+
+
+def migrate_resolution(ini):
+    """{output_resolution, render_scale} from the older render_resolution / ue4_upscale keys when
+    the ini has no output_resolution yet; else {}."""
+    if 'output_resolution' in ini or ('render_resolution' not in ini and 'ue4_upscale' not in ini):
+        return {}
+    output, scale = LEGACY_RESOLUTION.get(ini.get('render_resolution', 'native'), ('1920x1080', 100))
+    if scale == 100:
+        scale = LEGACY_UPSCALE.get(ini.get('ue4_upscale', 'off'), 100)
+    return {'output_resolution': output, 'render_scale': str(scale)}
+
+
 def startup_options(ini):
     """The startup options, normalized; unknown values fall back to the defaults."""
     options = {key: ini.get(key, value) for key, value in DEFAULTS.items()}
+    options['output_resolution'] = parse_output(options['output_resolution'])
+    options['render_scale'] = str(parse_render_scale(options['render_scale']))
     if options['render_resolution'] not in RESOLUTIONS:
         options['render_resolution'] = 'native'
     if options['engine_fps'] not in {str(f) for f in ENGINE_FPS}:
@@ -68,6 +200,9 @@ def prepare(config, state_path):
     """(options, reverted): the startup options of this launch, restoring the last confirmed
     ones when the previous launch after a restart never confirmed its own."""
     ini = read_ini(config)
+    if migrated := migrate_resolution(ini):
+        write_keys(config, migrated)
+        ini.update(migrated)
     state = {}
     try:
         state = json.loads(Path(state_path).read_text(encoding='utf-8'))

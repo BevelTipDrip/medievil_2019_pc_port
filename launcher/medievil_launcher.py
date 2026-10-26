@@ -31,6 +31,7 @@ FROZEN = getattr(sys, 'frozen', False)
 PORT_DIR = Path(sys.executable).resolve().parent if FROZEN else Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PORT_DIR / 'scripts'))
 import save_backup  # noqa: E402  (scripts/)
+import graphics_options  # noqa: E402  (scripts/)
 DATA_DIR = Path(os.environ.get('GOW3_DATA_DIR', PORT_DIR))
 CONFIG_DIR = Path(os.environ.get('APPDATA') or os.environ.get('USERPROFILE') or PORT_DIR) / 'medievil-launcher'
 CONFIG_FILE = CONFIG_DIR / 'settings.json'
@@ -127,15 +128,16 @@ def windows_language():
 # Settings. medievil.ini keys (the game reads them, the in-game menu edits them) and the
 # launcher's own settings.json (passed to run.py as environment variables).
 
-INI_FLAGS = {'cheat_menu', 'cheat_infinite_ammo', 'cheat_double_jumps', 'cheat_very_hard', 'sharpen', 'object_motion', 'show_fps', 'vsync', 'async_shaders', 'deferred_readback',
+INI_FLAGS = {'cheat_menu', 'cheat_infinite_ammo', 'cheat_double_jumps', 'cheat_very_hard', 'show_fps', 'vsync', 'async_shaders', 'deferred_readback',
              'stale_readback', 'fsr1', 'rcas'}
 # The graphics keys are also in the in-game menu (Insert / R3+L2); run.py reads the startup ones.
-INI_DEFAULTS = {'upscaler': 'off', 'preset': '1', 'sharpen': '1', 'sharpness': '0.50',
-                'object_motion': '1', 'show_fps': '1', 'output_res': '1920x1080',
-                'live_resolution': 'auto', 'display_mode': 'windowed', 'vsync': '1', 'fps_limit': '0',
+# The God of War III port's temporal upscaler keys (upscaler, preset, output_res, sharpen, ...)
+# are not set here: run.py turns that upscaler off for MediEvil (its page was removed).
+INI_DEFAULTS = {'show_fps': '1', 'display_mode': 'windowed', 'vsync': '1', 'fps_limit': '0',
                 'async_shaders': '1', 'deferred_readback': '1', 'stale_readback': '0',
-                'render_resolution': 'native', 'engine_fps': '60', 'fsr1': '0', 'rcas': '1',
-                'rcas_strength': '75', 'frames_queued': '1', 'ue4_quality': 'console', 'cheat_very_hard': '0', 'cheat_double_jumps': '0', 'cheat_menu': '0', 'cheat_infinite_ammo': '0', 'ue4_upscale': 'off'}
+                'output_resolution': '1920x1080', 'render_scale': '100', 'engine_fps': '60', 'fsr1': '0',
+                'rcas': '1', 'rcas_strength': '75', 'frames_queued': '1', 'ue4_quality': 'console',
+                'cheat_very_hard': '0', 'cheat_double_jumps': '0', 'cheat_menu': '0', 'cheat_infinite_ammo': '0'}
 DISPLAY_MODES = [('windowed', ('Windowed',)), ('borderless', ('Borderless',)), ('fullscreen', ('Fullscreen',))]
 FPS_LIMITS = [('-2', ('Auto: refresh (VRR: below it, Reflex rule)',)), ('-3', ('Auto: half refresh (VRR: one below)',)),
               ('30', ('30',)), ('60', ('60',)), ('119', ('119 (VRR, 240 Hz)',)), ('120', ('120',)),
@@ -189,18 +191,6 @@ def control_map(controls, kind):
                     if isinstance(chosen.get(button), str) and chosen[button].strip()
                     and not set(chosen[button]) & set(',='))
 
-UPSCALERS = [('dlss', ('DLSS (NVIDIA GeForce RTX)',)),
-             ('fsr4', ('FSR 4 (best quality)', 'FSR 4 (лучшее качество)')),
-             ('fsr411', ('FSR 4.1.1 (needs fsr4_411 assets)', 'FSR 4.1.1 (нужны ассеты fsr4_411)')),
-             ('fsr3', ('FSR 3.1 (every GPU)', 'FSR 3.1 (любая видеокарта)')),
-             ('taa', ('TAA (native resolution anti-aliasing)', 'TAA (нативное сглаживание)')),
-             ('off', ('Off', 'Выключен'))]
-PRESETS = [('0', ('Native AA (×1.0)',)), ('1', ('Quality (×1.5)',)), ('2', ('Balanced (×1.7)',)),
-           ('3', ('Performance (×2)',)), ('4', ('Ultra Performance (×3)',))]
-OUTPUTS = [('1280x720', ('1280 × 720 (Steam Deck)',)), ('1920x1080', ('1920 × 1080',)),
-           ('2560x1440', ('2560 × 1440',)), ('3840x2160', ('3840 × 2160 (4K)',))]
-LIVE = [('auto', ('Auto (by graphics card)', 'Авто (по видеокарте)')), ('0', ('Off (faster)', 'Выключена (быстрее)')),
-        ('1', ('On (change without restarting)', 'Включена (без перезапуска)'))]
 LANGUAGES = [('1', ('English', 'Английский')), ('8', ('Russian', 'Русский')), ('0', ('Japanese', 'Японский')),
              ('2', ('French', 'Французский')), ('3', ('Spanish', 'Испанский')), ('4', ('German', 'Немецкий')),
              ('5', ('Italian', 'Итальянский'))]
@@ -297,27 +287,6 @@ INI_DEFAULTS.update({'present_inline': '1', 'present_precise_tick': '1', 'presen
                      'present_limiter': 'reflex', 'fps_limit': '-3', 'display_vrr': '1'})
 UI_LANGUAGES = lang.LANGUAGE_NAMES
 
-FSR4_COMMIT = 'ae8d628fae208813172446d1e49ed94150b04658'
-FSR4_BASE = f'https://raw.githubusercontent.com/FireBurn/Q2RTX/{FSR4_COMMIT}/baseq2/fsr4_shaders'
-
-
-def fsr4_files():
-    """The FSR 4 v07 asset set of tools/fetch_fsr4_assets.sh (1080 and 2160 tiers)."""
-    files = ['LICENSE-FSR4-v07.txt', 'rcas.spv', 'spd_auto_exposure.spv']
-    for model in ('native', 'quality', 'balanced', 'performance', 'ultraperf', 'drs'):
-        files += [f'fsr4_model_v07_i8_{model}_initializers.bin', f'fsr4_model_v07_i8_{model}_pre_weights.bin',
-                  f'fsr4_model_v07_i8_{model}_shader_manifest.json']
-        for tier in ('1080', '2160'):
-            files += [f'fsr4_model_v07_i8_{model}_{tier}_pre.spv', f'fsr4_model_v07_i8_{model}_{tier}_post.spv']
-            files += [f'fsr4_model_v07_i8_{model}_{tier}_pass{n}.spv' for n in range(1, 13)]
-    return files
-
-
-def fsr4_missing():
-    folder = PORT_DIR / 'fsr4_shaders'
-    return [name for name in fsr4_files() if not (folder / name).is_file() or not (folder / name).stat().st_size]
-
-
 def load_json(path, default):
     try:
         return json.loads(Path(path).read_text(encoding='utf-8'))
@@ -333,7 +302,7 @@ def ini_path():
 
 
 def load_ini():
-    values, lines = dict(INI_DEFAULTS), []
+    values, lines, found = dict(INI_DEFAULTS), [], {}
     try:
         lines = ini_path().read_text(encoding='utf-8').splitlines()
     except OSError:
@@ -341,7 +310,10 @@ def load_ini():
     for line in lines:
         if '=' in line and not line.lstrip().startswith('#'):
             key, value = line.split('=', 1)
-            values[key.strip()] = value.strip()
+            found[key.strip()] = value.strip()
+    values.update(found)
+    # The single render_resolution (and ue4_upscale) of earlier versions as the two settings.
+    values.update(graphics_options.migrate_resolution(found))
     return values, lines
 
 
@@ -493,13 +465,23 @@ class ImageButton:
         self.label.pack(**kwargs)
 # Output: the game's own picture at that size (for that display). Scene in 1080p: a 1080p picture whose
 # 3D scene is drawn at that size and scaled into it (supersampling for a 1080p display).
-RESOLUTION_CHOICES = [('4K_native', ('4K output (4K display)',)), ('1800p_native', ('1800p output',)),
-                      ('1440p_native', ('1440p output (1440p display)',)), ('native', ('1080p output (original)',)),
-                      ('720p_native', ('720p output',)),
-                      ('4K', ('1080p, 4K scene (supersampled)',)), ('1800p', ('1080p, 1800p scene (supersampled)',)),
-                      ('1440p', ('1080p, 1440p scene (supersampled)',)), ('720p', ('1080p, 720p scene (faster)',))]
-UPSCALE_CHOICES = [('off', ('Off',)), ('quality', ('Quality (67%)',)), ('balanced', ('Balanced (58%)',)),
-                   ('performance', ('Performance (50%)',))]
+# medievil.ini output_resolution: any WxH works (shown as "Custom"); graphics_options.parse_output.
+OUTPUT_CHOICES = [('display', ('Match display ({}x{})'.format(*graphics_options.display_size()),)),
+                  ('3840x2160', ('4K (3840x2160)',)), ('3200x1800', ('1800p (3200x1800)',)),
+                  ('2560x1440', ('1440p (2560x1440)',)), ('1920x1080', ('1080p (original)',)),
+                  ('1280x720', ('720p (1280x720)',))]
+OUTPUT_HINT = ("The size of the game's picture. The game starts at this size, as a PS4 starts at its TV's; "
+               'match your display for a sharp 1:1 image (in windowed mode the window opens at this size). '
+               'Above 1080p the port also turns on its larger memory patches. Any size can be set in '
+               'medievil.ini (output_resolution=WxH). Applied at start.')
+RENDER_SCALE_CHOICES = [('200', ('200%: supersampled (sharpest, slowest)',)), ('167', ('167%: supersampled',)),
+                        ('133', ('133%: supersampled',)), ('100', ('100%: native',)),
+                        ('67', ('67%: upscaled, Quality',)), ('58', ('58%: upscaled, Balanced',)),
+                        ('50', ('50%: upscaled, Performance',))]
+RENDER_SCALE_HINT = ('How large the 3D scene is drawn, per side, compared with the output. Above 100%: drawn '
+                     'larger and scaled down (sharper edges, slower). Below 100%: drawn smaller and rebuilt at '
+                     "full size by the game's own temporal upscaler from its motion vectors (faster). The menus "
+                     'and HUD always draw at the output size. Applied at start.')
 QUALITY_CHOICES = [('ultra', ('Ultra',)), ('high', ('High',)), ('console', ('Console (PS4)',)),
                    ('medium', ('Medium',)), ('low', ('Low (integrated graphics)',))]
 ENGINE_FPS_CHOICES = [('60', ('60 (original)',)), ('120', ('120',)), ('240', ('240',))]
@@ -513,7 +495,6 @@ class Launcher:
         self.ini, self.ini_lines = load_ini()
         self.vars = {}
         self.process = self.job = None
-        self.downloading = False
         self.output = queue.Queue()
         self.banner_source = self.banner_image = None
         self.ui_calls = queue.Queue()  # work for the Tk thread from helper threads
@@ -673,8 +654,6 @@ class Launcher:
                 value = self.ini.get(key, INI_DEFAULTS[key])
                 if key in INI_FLAGS:
                     v = tk.BooleanVar(value=value == '1')
-                elif key == 'sharpness':
-                    v = tk.DoubleVar(value=float(value or 0.5))
                 else:
                     v = tk.StringVar(value=value)
             else:
@@ -728,10 +707,12 @@ class Launcher:
             self.vars['engine_cap'] = cap
         return self.vars['engine_cap']
 
-    def choice(self, parent, key, store, options, width=30):
+    def choice(self, parent, key, store, options, width=30, custom=None):
         """A combobox over (value, (english, russian)) pairs, kept in sync with its variable (a key, or
-        a variable itself)."""
+        a variable itself). custom: a label for a value the list does not have (kept, not reset)."""
         var = key if store is None else self.var(key, store)
+        if custom and var.get() not in [v for v, _t in options]:
+            options = [*options, (var.get(), (custom(var.get()),))]
         values = [v for v, _t in options]
         box = self.ttk.Combobox(parent, values=[_(*text) for _v, text in options], state='readonly', width=width,
                                 font=self.f('body', 10))
@@ -745,6 +726,15 @@ class Launcher:
         box.bind('<<ComboboxSelected>>', lambda _e: var.set(values[box.current()]))
         var.trace_add('write', show)
         return box
+
+    @staticmethod
+    def custom_label(key):
+        """The label of a value set in medievil.ini that a list does not offer."""
+        if key == 'output_resolution':
+            return lambda value: f'Custom ({value})'
+        if key == 'render_scale':
+            return lambda value: f'Custom ({value}%)'
+        return None
 
     def next_row(self, parent):
         return parent.grid_size()[1]
@@ -888,7 +878,6 @@ class Launcher:
 
         self.pages = {}
         self.build_home()
-        self.build_graphics()
         self.build_display()
         self.build_performance()
         self.build_game()
@@ -957,8 +946,6 @@ class Launcher:
             self.refresh_lists()
         if name == 'patches':
             self.refresh_game_patches()
-        elif name == 'graphics':
-            self.refresh_fsr4()
         elif name == 'home':
             self.refresh_status()
 
@@ -976,14 +963,16 @@ class Launcher:
         self.section(quick, _('Quick settings', 'Основное'), top=0, columns=4)
         items = ((_('Display mode'), 'display_mode', 'ini', DISPLAY_MODES),
                  (_('Frame rate limit'), 'fps_limit', 'ini', FPS_LIMITS),
-                 (_('Render resolution'), 'render_resolution', 'ini', RESOLUTION_CHOICES),
+                 (_('Output resolution'), 'output_resolution', 'ini', OUTPUT_CHOICES),
+                 (_('Render scale'), 'render_scale', 'ini', RENDER_SCALE_CHOICES),
                  (_('Graphics quality'), 'ue4_quality', 'ini', QUALITY_CHOICES),
                  (_('VSync'), self.vsync_choice_var(), None, VSYNC_CHOICES))
         for index, (title, key, store, options) in enumerate(items):
             r, c = 2 + index // 2, (index % 2) * 2
             ttk.Label(quick, text=title).grid(row=r, column=c, sticky='w', pady=6, padx=(0, 12))
             quick.grid_rowconfigure(r, minsize=self.px(34))
-            self.choice(quick, key, store, options, width=26).grid(row=r, column=c + 1, sticky='w', padx=(0, 40))
+            self.choice(quick, key, store, options, width=26, custom=self.custom_label(key)).grid(
+                row=r, column=c + 1, sticky='w', padx=(0, 40))
         flags = ttk.Frame(quick)
         flags.grid(row=2 + (len(items) + 1) // 2, column=0, columnspan=4, sticky='w', pady=(6, 0))
         # VSync is the present mode above (its first choice follows the in-game VSync switch).
@@ -1034,57 +1023,6 @@ class Launcher:
         except (ImportError, OSError):
             factor = max(1, round(self.banner_image.width() / max(width, 1)))
             return self.banner_image.subsample(factor) if factor > 1 else self.banner_image
-
-    def build_graphics(self):
-        """Temporal upscalers: not calibrated for this game yet (run.py turns them off), so this page
-        stays out of the menu."""
-        ttk = self.ttk
-        f = self.scrolled_page('graphics', _('Graphics', 'Графика'),
-                               _('Stored in medievil.ini; the in-game menu (Insert or R3+L2) changes the same values.',
-                                 'Хранится в medievil.ini; в игре меняется через меню (Insert или R3+L2).'))
-        self.section(f, _('Upscaling', 'Апскейлинг'), top=4)
-        self.row(f, _('Upscaler', 'Апскейлер'), self.choice(f, 'upscaler', 'ini', UPSCALERS),
-                 _("Temporal upscaling with the game's own motion vectors. FSR 4 needs its assets (below) and "
-                   'a GPU with INT8 dot products; otherwise the game falls back to FSR 3.1 by itself.',
-                   'Временной апскейлинг с векторами движения игры. FSR 4 нужны ассеты (ниже) и GPU с INT8; '
-                   'иначе игра сама переключится на FSR 3.1.'))
-        self.row(f, _('Quality preset', 'Пресет'), self.choice(f, 'preset', 'ini', PRESETS),
-                 _('Render scale per axis: Quality renders at 1/1.5 of the output size.',
-                   'Масштаб рендера по каждой оси: Quality рисует в 1/1.5 размера вывода.'))
-        self.row(f, _('Output resolution', 'Разрешение вывода'), self.choice(f, 'output_res', 'ini', OUTPUTS),
-                 _('What the upscaler produces; the HUD is drawn at this size too.',
-                   'Что выдаёт апскейлер; интерфейс рисуется в этом же размере.'))
-        self.row(f, _('Live resolution changes', 'Смена разрешения на лету'), self.choice(f, 'live_resolution', 'ini', LIVE),
-                 _('Off: outputs other than 1080p are set by a patch at start (fastest; changing them in the '
-                   'game restarts it). On: change output and preset in the game without a restart, at a cost.',
-                   'Выкл.: разрешения кроме 1080p задаются патчем при запуске (быстрее). Вкл.: менять в игре '
-                   'без перезапуска, но медленнее.'))
-        self.check(f, 'sharpen', 'ini', _('Upscaler sharpening (RCAS)', 'Резкость апскейлера (RCAS)'))
-        holder = ttk.Frame(f)
-        ttk.Scale(holder, from_=0.0, to=2.0, variable=self.var('sharpness', 'ini'), length=300).pack(side='left')
-        value = ttk.Label(holder, width=5)
-        value.pack(side='left', padx=10)
-        show = lambda *_a: value.configure(text=f'{self.vars["sharpness"].get():.2f}')
-        self.vars['sharpness'].trace_add('write', show)
-        show()
-        self.row(f, _('Sharpness', 'Сила резкости'), holder)
-        self.check(f, 'object_motion', 'ini', _('Object motion vectors', 'Векторы движения объектов'),
-                   _('Less ghosting on characters, cloth and weapons; costs about 10% FPS.',
-                     'Меньше гостинга на персонажах и одежде; стоит около 10% FPS.'))
-        self.section(f, _('FSR 4 assets', 'Ассеты FSR 4'))
-        self.fsr4_label = ttk.Label(f, text='', wraplength=self.px(640), justify='left')
-        self.fsr4_label.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w')
-        holder = ttk.Frame(f)
-        holder.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(8, 0))
-        self.fsr4_button = ttk.Button(holder, text=_('Download FSR 4 assets', 'Скачать ассеты FSR 4'),
-                                      command=self.download_fsr4)
-        self.fsr4_button.pack(side='left')
-        self.fsr4_progress = ttk.Progressbar(holder, length=280, maximum=len(fsr4_files()))
-        self.fsr4_progress.pack(side='left', padx=12)
-        self.note(f, _("From FireBurn/Q2RTX on GitHub (built from AMD's MIT-licensed FidelityFX source), "
-                       'about 30 MB, into the fsr4_shaders folder of the port.',
-                       'С GitHub FireBurn/Q2RTX (собраны из MIT-исходников AMD FidelityFX), около 30 МБ, '
-                       'в папку fsr4_shaders порта.'), top=6)
 
     def build_display(self):
         tk, ttk = self.tk, self.ttk
@@ -1160,18 +1098,12 @@ class Launcher:
                  _('High and Ultra go beyond the PS4: sharper, longer-range shadows, better reflections and more distant detail, for strong graphics cards. Console keeps the PS4 look. Low turns off volumetric fog, reflections and ambient occlusion '
                    'and lowers shadows and view distance: for integrated graphics (Radeon 780M, Intel Arc) and '
                    'older cards. Applied at start.'), restart=True)
-        self.row(f, _('Render resolution'), self.choice(f, 'render_resolution', 'ini', RESOLUTION_CHOICES),
-                 _('Output: the game\'s own picture at that size, pixel for pixel on a display of that '
-                   'resolution (choose the one matching your display; 4K output also uses the 4K memory sizes and '
-                   'turns on the 4K framebuffer and 4K boot patches by itself). "1080p, ... scene": a 1080p '
-                   'picture whose 3D scene is drawn at that size and scaled down into it (sharper edges on a 1080p '
-                   'display; on a bigger display the 1080p picture is scaled up again). Applied at start (the '
-                   'in-game menu restarts the game for it).'), restart=True)
-        self.row(f, _('Upscaling (native output)'), self.choice(f, 'ue4_upscale', 'ini', UPSCALE_CHOICES),
-                 _("The game's own temporal upscaler: the 3D scene is drawn at a lower scale and rebuilt at full "
-                   'size from its motion vectors (like FSR 2). For the native output modes and Native 1080p on '
-                   'slower graphics cards; Quality looks close to full resolution. Applied at start.'),
-                 restart=True)
+        self.row(f, _('Output resolution'), self.choice(f, 'output_resolution', 'ini', OUTPUT_CHOICES,
+                                                        custom=self.custom_label('output_resolution')),
+                 _(OUTPUT_HINT), restart=True)
+        self.row(f, _('Render scale'), self.choice(f, 'render_scale', 'ini', RENDER_SCALE_CHOICES,
+                                                   custom=self.custom_label('render_scale')),
+                 _(RENDER_SCALE_HINT), restart=True)
         self.section(f, _('Shaders'))
         self.check(f, 'pipeline_binary_cache', 'app', _('Use pipeline binary cache (A/B test)'),
                    _('Reuse saved Vulkan pipelines. Disable to compare FPS with normal compilation. '
@@ -1380,7 +1312,10 @@ class Launcher:
                        '{} · версия {} · {}.').format(title_id, version, xml.name), top=0)
         for meta in metas:
             name = meta.get('Name')
-            if name.startswith(EXCLUSIVE_PREFIX) or name.startswith('Frame Rate Patch'):
+            # Chosen by run.py: the resolution and frame rate patches, and the output size ones
+            # (Performance > Output resolution).
+            if name.startswith(EXCLUSIVE_PREFIX) or name.startswith('Frame Rate Patch') or \
+                    name in (graphics_options.BOOT_SIZE_PATCH, graphics_options.BOOT_4K_PATCH):
                 continue
             var = tk.BooleanVar(value=name in on)
             self.game_patch_vars[name] = var
@@ -1587,49 +1522,16 @@ class Launcher:
         mode = dict((v, t[0]) for v, t in DISPLAY_MODES).get(self.var('display_mode', 'ini').get(), '?')
         limit = self.var('fps_limit', 'ini').get()
         engine = self.var('engine_fps', 'ini').get()
-        resolution = dict((v, t[0]) for v, t in RESOLUTION_CHOICES).get(self.var('render_resolution', 'ini').get(), '?')
+        output = self.var('output_resolution', 'ini').get()
+        resolution = dict((v, t[0]) for v, t in OUTPUT_CHOICES).get(output, output)
+        if (scale := self.var('render_scale', 'ini').get()) != '100':
+            resolution = f'{_(resolution)}, {scale}% scale'
         return _('{} · {} · {} · VSync {}').format(
             _(mode), _(resolution), _('half display refresh') if limit == '-1'
             else _('auto (refresh)') if limit == '-2' else _('auto (half refresh)') if limit == '-3'
             else _('up to {} FPS').format(engine) if limit == '0' or int(limit) >= int(engine)
             else _('{} FPS').format(limit),
             _('on') if self.var('vsync', 'ini').get() else _('off'))
-
-    def refresh_fsr4(self):
-        total, missing = len(fsr4_files()), len(fsr4_missing())
-        self.fsr4_progress.configure(value=total - missing)
-        self.fsr4_label.configure(
-            text=_('Installed: {} files in {}.', 'Установлены: {} файлов в {}.').format(total, PORT_DIR / 'fsr4_shaders')
-            if not missing else _('{} of {} files missing in {}.', 'Нет {} из {} файлов в {}.').format(
-                missing, total, PORT_DIR / 'fsr4_shaders'))
-        self.fsr4_button.configure(state='normal' if missing and not self.downloading else 'disabled')
-
-    def download_fsr4(self):
-        self.downloading = True
-        self.fsr4_button.configure(state='disabled')
-        folder = PORT_DIR / 'fsr4_shaders'
-
-        def work():
-            error = None
-            try:
-                folder.mkdir(parents=True, exist_ok=True)
-                for name in fsr4_missing():
-                    part = folder / (name + '.part')
-                    with urllib.request.urlopen(f'{FSR4_BASE}/{name}', timeout=60) as response:
-                        part.write_bytes(response.read())
-                    part.replace(folder / name)
-                    self.ui_calls.put(self.refresh_fsr4)
-            except OSError as failure:
-                error = failure
-
-            def done():
-                self.downloading = False
-                self.refresh_fsr4()
-                self.refresh_status()
-                if error:
-                    self.messagebox.showerror('FSR 4', _('Download failed: {}', 'Не удалось скачать: {}').format(error))
-            self.ui_calls.put(done)
-        threading.Thread(target=work, daemon=True).start()
 
     def refresh_lists(self):
         if not hasattr(self, 'patches_frame'):
@@ -1753,8 +1655,7 @@ class Launcher:
             except self.tk.TclError:  # an unfinished number in a spinbox
                 value = APP_DEFAULTS.get(key, INI_DEFAULTS.get(key))
             if var.store == 'ini':
-                self.ini[key] = ('1' if value else '0') if key in INI_FLAGS else \
-                    f'{float(value):.2f}' if key == 'sharpness' else str(value)
+                self.ini[key] = ('1' if value else '0') if key in INI_FLAGS else str(value)
             else:
                 self.app[key] = value
         self.app['controls'] = {kind: control_changes({b: v.get() for b, v in vars_.items()}, kind)

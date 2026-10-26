@@ -47,18 +47,39 @@ def encode(line):
     raise ValueError(f'unsupported patch type {kind!r}')
 
 
+# A sized patch, "<name> WxH": the entry <name> with Type="size" lines, each written as W and H
+# (two little-endian int32), e.g. "Boot display size 2560x1440" (MediEvil.xml).
+SIZED=re.compile(r'(.+) (\d+)x(\d+)$')
+
+
+def sized_patch(name):
+    """(entry name, width, height) of a sized patch name, else (name, None, None)."""
+    m=SIZED.match(name)
+    return (m.group(1),int(m.group(2)),int(m.group(3))) if m else (name,None,None)
+
+
 def compile_patches(xml, names, app_version, segments):
     found={}
     for meta in ET.parse(xml).getroot().iter('Metadata'):
-        if meta.get('Name') in names and meta.get('AppVer')==app_version and meta.get('AppElf','eboot.bin')=='eboot.bin':
+        if meta.get('AppVer')==app_version and meta.get('AppElf','eboot.bin')=='eboot.bin':
             found[meta.get('Name')]=meta
-    missing=[n for n in names if n not in found]
+    def entry(name):
+        if name in found: return found[name],None
+        base,w,h=sized_patch(name)
+        meta=found.get(base) if w else None
+        return (meta,(w,h)) if meta is not None and any(l.get('Type')=='size' for l in meta.iter('Line')) else (None,None)
+    missing=[n for n in names if entry(n)[0] is None]
     if missing: raise ValueError(f'patches not found for app version {app_version}: {missing}')
     writes=[]
     for name in names:
-        for line in found[name].iter('Line'):
+        meta,size=entry(name)
+        for line in meta.iter('Line'):
             offset=int(line.get('Address'),0)-EBOOT_BASE
-            data=encode(line)
+            if line.get('Type')=='size':
+                if not size: raise ValueError(f'{name}: needs a size ("{name} WxH")')
+                data=struct.pack('<ii',*size)
+            else:
+                data=encode(line)
             if not any(start<=offset and offset+len(data)<=end for start,end in segments):
                 raise ValueError(f'{name}: address {line.get("Address")} is outside the eboot')
             writes.append((offset,data))
