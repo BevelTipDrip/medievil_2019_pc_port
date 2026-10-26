@@ -161,7 +161,14 @@ def main():
                 # menus' navigation at the 1080p area.
                 env.setdefault('GOW3_INTERNAL_WIDTH', '3840')
                 env.setdefault('GOW3_INTERNAL_HEIGHT', '2160')
-                env['GOW3_PATCHES'] = ';'.join(n for n in (env.get('GOW3_PATCHES', ''), '4K display metrics at boot') if n)
+                # Both patches, whatever the launcher's Patches tab says: the 4K boot without the
+                # 512 MB framebuffer pool runs out of framebuffer memory and crashes (the pool's
+                # own direct memory requirement follows from patch_requirements below).
+                selected = [n for n in env.get('GOW3_PATCHES', '').split(';') if n]
+                for name in ('Native 4K framebuffer pool (512 MB)', '4K display metrics at boot'):
+                    if name not in selected:
+                        selected.append(name)
+                env['GOW3_PATCHES'] = ';'.join(selected)
             else:
                 env.setdefault('GOW3_UE4_SETRES', output)
         # HZB occlusion through the runtime's remap (research: T-HZ4, study-hzb-double-buffer.md):

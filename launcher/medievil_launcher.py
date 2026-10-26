@@ -491,10 +491,13 @@ class ImageButton:
 
     def pack(self, **kwargs):
         self.label.pack(**kwargs)
-RESOLUTION_CHOICES = [('native', ('Native (1080p)',)), ('720p', ('720p (faster)',)),
-                      ('1440p', ('1440p',)), ('1800p', ('1800p',)), ('4K', ('4K (sharpest)',)),
-                      ('720p_native', ('720p native output',)), ('1440p_native', ('1440p native output',)),
-                      ('1800p_native', ('1800p native output',)), ('4K_native', ('4K native output (4K TV)',))]
+# Output: the game's own picture at that size (for that display). Scene in 1080p: a 1080p picture whose
+# 3D scene is drawn at that size and scaled into it (supersampling for a 1080p display).
+RESOLUTION_CHOICES = [('4K_native', ('4K output (4K display)',)), ('1800p_native', ('1800p output',)),
+                      ('1440p_native', ('1440p output (1440p display)',)), ('native', ('1080p output (original)',)),
+                      ('720p_native', ('720p output',)),
+                      ('4K', ('1080p, 4K scene (supersampled)',)), ('1800p', ('1080p, 1800p scene (supersampled)',)),
+                      ('1440p', ('1080p, 1440p scene (supersampled)',)), ('720p', ('1080p, 720p scene (faster)',))]
 UPSCALE_CHOICES = [('off', ('Off',)), ('quality', ('Quality (67%)',)), ('balanced', ('Balanced (58%)',)),
                    ('performance', ('Performance (50%)',))]
 QUALITY_CHOICES = [('ultra', ('Ultra',)), ('high', ('High',)), ('console', ('Console (PS4)',)),
@@ -1158,10 +1161,12 @@ class Launcher:
                    'and lowers shadows and view distance: for integrated graphics (Radeon 780M, Intel Arc) and '
                    'older cards. Applied at start.'), restart=True)
         self.row(f, _('Render resolution'), self.choice(f, 'render_resolution', 'ini', RESOLUTION_CHOICES),
-                 _('720p to 4K: the 3D scene is drawn at that size and scaled to the game\'s 1080p picture (4K: '
-                   'much sharper edges and detail on a 1080p screen). "Native output": the game itself runs at '
-                   'that size, pixel for pixel on a 1440p or 4K display or TV. Applied at start (the in-game '
-                   'menu restarts the game for it).'), restart=True)
+                 _('Output: the game\'s own picture at that size, pixel for pixel on a display of that '
+                   'resolution (choose the one matching your display; 4K output also uses the 4K memory sizes and '
+                   'turns on the 4K framebuffer and 4K boot patches by itself). "1080p, ... scene": a 1080p '
+                   'picture whose 3D scene is drawn at that size and scaled down into it (sharper edges on a 1080p '
+                   'display; on a bigger display the 1080p picture is scaled up again). Applied at start (the '
+                   'in-game menu restarts the game for it).'), restart=True)
         self.row(f, _('Upscaling (native output)'), self.choice(f, 'ue4_upscale', 'ini', UPSCALE_CHOICES),
                  _("The game's own temporal upscaler: the 3D scene is drawn at a lower scale and rebuilt at full "
                    'size from its motion vectors (like FSR 2). For the native output modes and Native 1080p on '

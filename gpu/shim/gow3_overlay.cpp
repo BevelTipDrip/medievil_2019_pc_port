@@ -536,8 +536,8 @@ void PerformanceTab() {
     if (BeginRows("##restart")) {
         // God of War III: a resolution patch. Unreal Engine 4 games (MediEvil): the scene scale.
         static const char* const resolution_labels[] = {
-            "Native (1080p)", "480p", "720p", "1440p", "1800p", "4K",
-            "720p native output", "1440p native output", "1800p native output", "4K native output"};
+            "1080p output (original)", "1080p, 480p scene", "1080p, 720p scene", "1080p, 1440p scene",
+            "1080p, 1800p scene", "1080p, 4K scene", "720p output", "1440p output", "1800p output", "4K output"};
         ChoiceRow("Render resolution", s.render_resolution, resolution_labels, nullptr,
                   int(G::Resolutions.size()),
                   IsGow3() ? "The resolution the game draws at. Higher is sharper and slower."
