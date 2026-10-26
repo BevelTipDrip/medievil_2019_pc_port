@@ -310,7 +310,7 @@ re-tested on top of 1.3.5 before they are offered.
 
 ### Findings worth reporting upstream as issues (no fix on `lab`)
 
-- **The intro movie keeps decoding into gameplay**: `gameintro.mp4` is started at ~19 s and never stopped or closed
+- **The intro movie keeps decoding into gameplay** (fixed on `lab`, T-M1: suspended at the level change, `src/level_hook.h`): `gameintro.mp4` is started at ~19 s and never stopped or closed
   (T-U1 `t-u1-uploads.log`); its NV12 frames are decoded and uploaded at 30/s for ~200 s (~85% of all texture
   re-upload bytes, ~90 MiB/s), well into gameplay. `AvPlayerSource::Stop` logs "already stopped" at start.
 - **Occlusion queries are always "visible"** (`liverpool.cpp:1129`, synthetic ZPASS counts): UE4 draws everything in

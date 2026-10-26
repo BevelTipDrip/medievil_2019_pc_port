@@ -8,6 +8,7 @@
 #include "runtime.h"
 #include "orb_hook.h"
 #include "hzb_hook.h"
+#include "level_hook.h"
 #include "cheat_hook.h"
 #include "actor_hook.h"
 #include "damage_hook.h"
@@ -407,6 +408,7 @@ static int mapped(Segment *segments, uint64_t count, uint64_t address, uint64_t 
 extern ABI float gow3_orbs_gain(void *player, float requested);
 extern ABI void medievil_hzb_map(void *tester, void *command_list);
 extern ABI void medievil_hzb_submit(void *tester);
+extern ABI void medievil_level_change(void);
 extern void medievil_hzb_init(uintptr_t map_results, uintptr_t first_frame_buffer);
 extern void gow3_orbs_status(int supported);
 extern uintptr_t gow3_cheat_flag(unsigned id);
@@ -566,6 +568,24 @@ static void install_hzb_remap(Segment *segments, uint64_t count, uint64_t size) 
     memcpy(image + MEDIEVIL_HZB_CALL + 1, &map_rel, 4);
     memcpy(image + MEDIEVIL_HZB_SUBMIT_CALL + 1, &submit_rel, 4);
     printf("HZB remap: MapResults and Submit hooks ready (results served by occlusion history key, no GPU wait)\n");
+}
+
+/* MediEvil: the movies still playing are suspended at each level change (src/level_hook.h): the
+ * game never stops its intro after the skip. GOW3_MOVIE_SUSPEND=0: off. */
+static void install_level_hook(Segment *segments, uint64_t count, uint64_t size) {
+    const char *env = getenv("GOW3_MOVIE_SUSPEND");
+    if (env && env[0] == '0') return;
+    if (!medievil_level_signatures_match(image, size) || !mapped(segments, count, MEDIEVIL_OPEN_LEVEL_CALL, 5)) return;
+    unsigned char *stub = allocate(page_size);
+    int32_t rel;
+    if (!rel32_to(MEDIEVIL_OPEN_LEVEL_CALL, stub, &rel)) {
+        printf("Movies: level-change suspend unavailable (stub outside relative-call range)\n");
+        return;
+    }
+    medievil_level_build_stub(stub, (uintptr_t)medievil_level_change, (uintptr_t)(image + MEDIEVIL_OPEN_LEVEL));
+    protect(stub, page_size, 5);
+    memcpy(image + MEDIEVIL_OPEN_LEVEL_CALL + 1, &rel, 4);
+    printf("Movies: playing movies are suspended at each level change (OpenLevel hook)\n");
 }
 
 /* Writes a jump from image+at to `stub`; the rest of the replaced bytes become nops (the stub
@@ -933,6 +953,7 @@ int main(int argc, char **argv) {
     if (game_hooks) install_actor_watch(app0, segments, ns, size);
     if (game_hooks) install_stat_multipliers(app0, segments, ns, size);
     if (gpu_enabled) install_hzb_remap(segments, ns, size);
+    if (gpu_enabled) install_level_hook(segments, ns, size);
 #ifdef _WIN32
     printf("Guest TCB loads redirected to the TEB TLS slot: %" PRIu64 "\n", patch_tcb_loads(segments, ns));
 #endif

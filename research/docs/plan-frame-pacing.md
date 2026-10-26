@@ -1195,3 +1195,69 @@ the lows tank."
 Next: (1) per-part maxima of the result latency (find the 59 ms outliers); (2) Ghidra: who spins at 0x689c89
 (occlusion or timestamps); (3) the user's frame-buffering idea (`frames_queued=2`) for the judder, its own launch;
 (4) the stage B multi-threading study.
+
+## CPU oscillation, waits and hitches: trace cpu-osc-1 (2026-10-25)
+
+Trace `research-data\wpr\cpu-osc-1.etl` (WPR full CPU profile, recorded by the user during gameplay with fights; 4K
+borderless, Reflex limiter, 119 cap, engine Unlimited; game log `user\last_run.log`: worst frames 36 / 57 / 75 ms).
+Exported with `xperf -tle -tti -i ... -symbols -a dumper -stacktimeshifting` (8.7 GB; `_NT_SYMBOL_PATH` =
+`research-data\symbols-game;srv*C:\symbols*...`), filtered with grep to the game's samples and all CSwitch /
+ReadyThread records. New tools: `research/tools/etw_gaps.py` (longest off-CPU stretches of chosen threads, wait
+reason, readying thread), `research/tools/etw_locks.py` (kernel lock waits by the process that released them).
+
+- **No 1 s rhythm in the game's CPU.** 0.1 s slices: 4.6 cores falling slowly to 2.5 with the scene, smooth within
+  every second; sleep / yield spinning a steady ~0.2 core. System-wide per second: nothing oscillates either
+  (background: MSI Afterburner a constant 0.22 core, short sqlservr / VS Code / Visual Studio bursts). The 10-27%
+  swing seen in the overlay is not in the trace's 1 kHz samples **[V]**; a measurement artefact of the monitor is
+  likely **[I]**.
+- **The hitch: MSI Afterburner's GPU polling.** The only long stall (33 ms at 10.63 s) starts in stage B
+  (`gow3:DrawRec`) switching out on `WrResource` (a kernel resource lock), readied by `MSIAfterburner.exe`; the
+  recorder, the present thread and UE4's RHI / render threads wait behind stage B. Afterburner's thread at that moment:
+  its window timer -> `RTHAL.dll` -> `nvapi_impl.dll` -> `NtGdiDdDDIEscape` -> `DXGADAPTER::DdiEscape` ->
+  `nvlddmkm.sys` (its hardware monitoring through NVAPI driver escapes) **[V]**. In 20 s: 11 such waits, 62 ms in
+  total (33, 5.1, 4.1, 3.9, 3.9, 3.1, 2.6, 2.4, 1.8, 1.1, 0.8 ms), all but one in stage B; no other process causes a
+  lock wait over 0.7 ms **[V]**. **The blocked call** (the stack of stage B's switch-in, which xperf gives to the
+  thread switched in): `BufferCache::EnsureResident` -> `vk::Device::allocateMemory` -> `nvoglv64` ->
+  `D3DKMTCreateAllocation` -> `DXGDEVICE::CreateAllocation` -> `nvlddmkm` -> `ExAcquireResourceSharedLite`: a GPU
+  memory allocation waiting for a driver lock that Afterburner's escape held **[V]**. (Stage B's first sample after
+  the wait, at the `stream_class` insert in `ObtainBuffer`, is only where it was next; the heap-growth guess in the
+  first version of this note was wrong.)
+- **Stage B calls the GPU driver's memory manager during gameplay:** in the trace, 254 stack records of stage B
+  inside `D3DKMTCreateAllocation` (88) or `D3DKMTDestroyAllocation2` (166), in bursts (69 and 41 in single seconds)
+  **[V]**. Creates: buffer arenas made resident on first use, one `vkAllocateMemory` per new block range
+  (`EnsureResident`). Destroys: `TextureCache::DeleteImage` -> `~UniqueImage` -> VMA `FreeVulkanMemory` (VMA frees
+  a memory block once empty) **[V]**. Each takes the driver's lock, so any GPU monitor's polling (NVAPI) can stall
+  stage B, and the calls themselves are kernel round trips.
+- **Confirmed by the user (run `t-c1-no-afterburner`, Afterburner closed, RTSS alone):** 0.1% and 1% lows higher, no
+  recurring frame time spikes on the graph.
+- **Spinning / waiting that costs CPU:** the recorder (`gow3:VkRecorder`, 0.48 core) spends 58% of its samples in
+  its own pre-sleep spin (`Scheduler::RecorderThread`: 200 us of `pause` after every chunk on >= 12 hardware
+  threads, upstream 2026-09-25, never measured here) **[V]**; stage A ~17% in `Sleep(0)` / yield; NVIDIA's own
+  Reflex pacing thread (starts in `nvoglv64.dll`, `NtDelayExecution` loop) 0.13 core. The `gow3:DrawPrep0-7`
+  workers ~0.06 core each with ~40% in the kernel and ntdll (waits) **[V]**.
+- **The intro movie decodes during gameplay:** `gameintro.mp4` (197 s) is started at 7.35 s and never stopped or
+  closed (the logo movie is); `shadPS4:AvVideoDecoder` used ~0.2 core throughout the trace, much of it page faults /
+  page zeroing (new frame memory per frame) **[V]**. The decoder only runs while the game takes frames, so the game
+  keeps the player running after the intro is skipped, until the movie's end **[I]** (to confirm with the capture's
+  time after launch).
+
+Next: (1) done: confirmed without Afterburner; (2) keep the driver's memory calls off stage B: buffer residency in
+larger pre-made chunks or from a pool filled ahead on another thread, and image memory freed on a worker (or empty
+VMA blocks kept for reuse); (3) the recorder spin as a switch (200 / 20 / 0 us), CPU and pacing compared; (4) the
+intro movie: in `t-c1` it was started at 14.9 s and again never stopped; the user played well past its 197 s in the
+traced run, so it plays the whole session or restarts: confirm, then stop the decode once the game stops showing it.
+
+### T-M1: intro movie suspended at the level change (2026-10-26, launched by Claude with the user's go; log `data/t-m1-movie-suspend.log`)
+
+Study: [study-intro-movie.md](study-intro-movie.md) (the game plays both movies on one persistent UE4 MediaPlayer; the
+only Stop/Close is in its AvPlayer object's destructor; the skip only ends the widget and opens the next level, so
+the hidden intro kept decoding for 197 s). Change: `src/level_hook.h` redirects the call to
+`UGameplayStatics::OpenLevel` in the Blueprint native `execOpenLevel` (0x290eeda, byte-checked) through a stub to
+`medievil_level_change` -> `AvPlayer::SuspendPlayersForLevelChange`: every player still playing gets its source's
+pause flag only (no state change, no event). `GOW3_MOVIE_SUSPEND=0`: off.
+- Log: hook installed; the skip opened a level at 15.9 s and suspended `gameintro.mp4` at 187 frames; its frame count
+  never moved again; the game itself called `Stop -> 0` at 206.9 s (its own clock reached the end), as predicted
+  **[V]**. (Later level changes at 55 s and 121 s found the same player again; already-paused players are now
+  skipped.)
+- Image uploads: ~90 MiB/s for ~200 s before (T-U1); now 0-5 MB/s from ~5 s after the skip (ordinary streaming), the
+  whole session **[V]**.

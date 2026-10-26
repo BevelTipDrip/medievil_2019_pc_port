@@ -57,6 +57,24 @@ void TraceForget(const void* handle) {
 }
 } // namespace
 
+// gow3: called by the game's level change (src/probe.c, the OpenLevel hook): suspends every movie
+// still playing. MediEvil plays its intro on a player it never stops after the skip; it kept
+// decoding and uploading 1080p frames for ~200 s into gameplay (research/docs/study-intro-movie.md).
+// The traces map holds the live players (Close forgets a handle before deleting it, under the
+// same mutex).
+void SuspendPlayersForLevelChange() {
+    std::scoped_lock lock{trace_mutex};
+    for (const auto& [handle, trace] : traces) {
+        auto* player = const_cast<AvPlayer*>(static_cast<const AvPlayer*>(handle));
+        if (player->Suspend()) {
+            std::printf("AvPlayer %.3f s: %p suspended at a level change (%s, %llu frames delivered)\n",
+                        TraceSeconds(), handle, trace.source.empty() ? "no source" : trace.source.c_str(),
+                        trace.frames);
+        }
+    }
+    std::fflush(stdout);
+}
+
 s32 PS4_SYSV_ABI sceAvPlayerAddSource(AvPlayerHandle handle, const char* filename) {
     LOG_TRACE(Lib_AvPlayer, "filename = {}", filename);
     if (handle == nullptr) {
@@ -360,3 +378,9 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
 };
 
 } // namespace Libraries::AvPlayer
+
+// The guest-facing entry of the level-change hook (src/probe.c, MEDIEVIL_OPEN_LEVEL_CALL): called
+// from guest code, so System V.
+extern "C" void __attribute__((sysv_abi)) medievil_level_change(void) {
+    Libraries::AvPlayer::SuspendPlayersForLevelChange();
+}
