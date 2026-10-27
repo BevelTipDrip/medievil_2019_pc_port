@@ -1230,6 +1230,9 @@ reason, readying thread), `research/tools/etw_locks.py` (kernel lock waits by th
   stage B, and the calls themselves are kernel round trips.
 - **Confirmed by the user (run `t-c1-no-afterburner`, Afterburner closed, RTSS alone):** 0.1% and 1% lows higher, no
   recurring frame time spikes on the graph.
+- **The user, 2026-10-26, heavier area, uncapped, Afterburner closed, with T-M1 and the earlier fixes:** 0.1% lows
+  ~170 FPS, average 200+; "MSI was dragging down performance quite a bit" (the lock waits throttle stage B, not
+  only the 33 ms hitches).
 - **Spinning / waiting that costs CPU:** the recorder (`gow3:VkRecorder`, 0.48 core) spends 58% of its samples in
   its own pre-sleep spin (`Scheduler::RecorderThread`: 200 us of `pause` after every chunk on >= 12 hardware
   threads, upstream 2026-09-25, never measured here) **[V]**; stage A ~17% in `Sleep(0)` / yield; NVIDIA's own
