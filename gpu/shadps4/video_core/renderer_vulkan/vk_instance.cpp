@@ -12,6 +12,7 @@
 #include "common/types.h"
 #include "imgui/renderer/imgui_core.h"
 #include "sdl_window.h"
+#include "video_core/texture_cache/image.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_dlss.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -188,6 +189,7 @@ Instance::Instance(const Frontend::WindowSystemInfo& window_info, s32 physical_d
 
 Instance::~Instance() {
     ImGui::Core::Shutdown(GetDevice());
+    VideoCore::DrainImageReleases();
     vmaDestroyAllocator(allocator);
 }
 

@@ -34,6 +34,7 @@ namespace VideoCore {
 
 class TextureCache;
 class MemoryTracker;
+class ResidencyPool;
 class PageManager;
 
 class BufferCache {
@@ -216,6 +217,8 @@ private:
         }
     };
     IntervalList<Backing> resident_ranges;
+    /// gow3: device memory for resident blocks, allocated ahead in chunks (buffer_cache.cpp).
+    std::unique_ptr<ResidencyPool> residency_pool;
 
     u32 arena_memory_type_index{};
     u32 block_size{};

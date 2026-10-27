@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <atomic>
+#include <cstdio>
+#include <stop_token>
+#include <thread>
+#include <condition_variable>
 #include <chrono>
 #include <array>
 #include <map>
@@ -16,6 +20,7 @@
 #include "gow3_toggles.h"
 #include "gow3_settings.h"
 #include "common/alignment.h"
+#include "common/thread.h"
 #include "core/memory.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer.h"
@@ -349,6 +354,102 @@ std::optional<u32> FindMemoryType(const vk::PhysicalDeviceMemoryProperties& prop
     return std::nullopt;
 }
 
+// gow3: device memory for resident arena blocks. EnsureResident allocated each new range itself
+// (vkAllocateMemory on the draw recording thread), a kernel call that takes the GPU driver's lock:
+// a GPU monitor's polling held it up to 33 ms there (MSI Afterburner's NVAPI escapes, research:
+// plan-frame-pacing.md, "CPU oscillation"). Resident blocks are never released, so they are taken
+// from large chunks in order; a worker allocates the next chunk once the current one is half used.
+// GOW3_RESIDENCY_CHUNK_MB (default 32; 0: one allocation per call, as before).
+class ResidencyPool {
+public:
+    struct Piece {
+        vk::DeviceMemory memory;
+        u64 offset;
+        u64 blocks;
+    };
+
+    ResidencyPool(vk::Device device_, u32 memory_type_, u32 block_shift_)
+        : device{device_}, memory_type{memory_type_}, block_shift{block_shift_} {
+        const char* env = std::getenv("GOW3_RESIDENCY_CHUNK_MB");
+        const u64 mb = env ? std::strtoull(env, nullptr, 10) : 32;
+        chunk_blocks = (mb << 20) >> block_shift;
+        if (chunk_blocks == 0) {
+            return;
+        }
+        current = Allocate("at start");
+        worker = std::jthread([this](std::stop_token stop) { Run(stop); });
+    }
+
+    bool Enabled() const {
+        return chunk_blocks != 0;
+    }
+
+    /// Up to `blocks` blocks from the current chunk (at least one); the next chunk when it is full.
+    Piece Take(u64 blocks) {
+        std::unique_lock lock{mutex};
+        if (used == chunk_blocks) {
+            if (!next && requested) {
+                ready_cv.wait(lock, [this] { return next || !requested; });
+            }
+            if (next) {
+                current = std::exchange(next, vk::DeviceMemory{});
+            } else {
+                current = Allocate("on demand");
+            }
+            used = 0;
+        }
+        const u64 count = std::min(blocks, chunk_blocks - used);
+        const Piece piece{current, used << block_shift, count};
+        used += count;
+        if (!next && !requested && used * 2 >= chunk_blocks) {
+            requested = true;
+            request_cv.notify_one();
+        }
+        return piece;
+    }
+
+private:
+    vk::DeviceMemory Allocate(const char* when) {
+        const vk::MemoryAllocateInfo info{.allocationSize = chunk_blocks << block_shift,
+                                          .memoryTypeIndex = memory_type};
+        const auto memory = Vulkan::Check(device.allocateMemory(info));
+        std::printf("Buffer residency: %llu MB chunk %u allocated %s\n",
+                    (unsigned long long)((chunk_blocks << block_shift) >> 20), ++chunks, when);
+        return memory;
+    }
+
+    void Run(std::stop_token stop) {
+        Common::SetCurrentThreadName("gow3:Residency");
+        std::unique_lock lock{mutex};
+        while (true) {
+            request_cv.wait(lock, stop, [this] { return requested; });
+            if (!requested) {
+                return; // stop requested
+            }
+            lock.unlock();
+            const auto memory = Allocate("ahead");
+            lock.lock();
+            next = memory;
+            requested = false;
+            ready_cv.notify_all();
+        }
+    }
+
+    vk::Device device;
+    u32 memory_type;
+    u32 block_shift;
+    u64 chunk_blocks = 0;
+    std::atomic<u32> chunks = 0;
+    std::mutex mutex;
+    std::condition_variable_any request_cv;
+    std::condition_variable_any ready_cv;
+    vk::DeviceMemory current{};
+    vk::DeviceMemory next{};
+    u64 used = 0;
+    bool requested = false;
+    std::jthread worker;
+};
+
 BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                          Vulkan::Runtime& runtime_, AmdGpu::Liverpool* liverpool_,
                          TextureCache& texture_cache_, PageManager& tracker)
@@ -396,6 +497,7 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
         FindMemoryType(instance.GetMemoryProperties(), vk::MemoryPropertyFlagBits::eDeviceLocal,
                        reqs.memoryTypeBits)
             .value();
+    residency_pool = std::make_unique<ResidencyPool>(device, arena_memory_type_index, block_shift);
 
     const u64 bda_pagetable_size =
         (blocks_per_arena_page * num_arena_pages) * sizeof(vk::DeviceAddress);
@@ -1049,11 +1151,16 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
     }
     Gow3Stats::Timer timer{Gow3Stats::t_resident};
 
-    const vk::MemoryAllocateInfo alloc_info = {
-        .allocationSize = resident_blocks << block_shift,
-        .memoryTypeIndex = arena_memory_type_index,
-    };
-    const auto device_memory = Vulkan::Check(instance.GetDevice().allocateMemory(alloc_info));
+    // gow3: memory from the residency pool (allocated ahead, off this thread); without it, one
+    // allocation for all the ranges, as before.
+    vk::DeviceMemory device_memory{};
+    if (!residency_pool->Enabled()) {
+        const vk::MemoryAllocateInfo alloc_info = {
+            .allocationSize = resident_blocks << block_shift,
+            .memoryTypeIndex = arena_memory_type_index,
+        };
+        device_memory = Vulkan::Check(instance.GetDevice().allocateMemory(alloc_info));
+    }
 
     boost::container::small_vector<vk::BufferCopy, 8> copies;
     const auto staging =
@@ -1064,28 +1171,39 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
     auto* bda_addrs = reinterpret_cast<vk::DeviceAddress*>(staging.mapped);
     u64 offset = staging.offset;
     for (const auto& range : bind_ranges) {
-        Backing backing;
-        backing.start = range.start;
-        backing.end = range.end;
-        backing.memory = device_memory;
-        backing.offset = memory_offset;
-        resident_ranges.Add(backing);
+        // A range may span two pool chunks: one backing and one bind per piece.
+        for (u64 block = range.start; block < range.end;) {
+            ResidencyPool::Piece piece{device_memory, memory_offset, range.end - block};
+            if (residency_pool->Enabled()) {
+                piece = residency_pool->Take(range.end - block);
+            } else {
+                memory_offset += piece.blocks << block_shift;
+            }
+            Backing backing;
+            backing.start = block;
+            backing.end = block + piece.blocks;
+            backing.memory = piece.memory;
+            backing.offset = piece.offset;
+            resident_ranges.Add(backing);
 
-        LOG_INFO(Render, "Making range start={}, end={} resident", backing.start, backing.end);
+            LOG_INFO(Render, "Making range start={}, end={} resident", backing.start, backing.end);
 
-        const auto& bind = binds->binds.emplace_back(vk::SparseMemoryBind{
-            .resourceOffset = (range.start << block_shift) - arena->cpu_addr,
-            .size = (range.end - range.start) << block_shift,
-            .memory = device_memory,
-            .memoryOffset = memory_offset,
-        });
-        memory_offset += bind.size;
-
-        for (u32 block = 0; block < bind.size; block += block_size) {
-            *(bda_addrs++) = arena->BufferDeviceAddress() + bind.resourceOffset + block;
+            binds->binds.emplace_back(vk::SparseMemoryBind{
+                .resourceOffset = (block << block_shift) - arena->cpu_addr,
+                .size = piece.blocks << block_shift,
+                .memory = piece.memory,
+                .memoryOffset = piece.offset,
+            });
+            block += piece.blocks;
         }
-        const u64 copy_size = (backing.end - backing.start) * sizeof(vk::DeviceAddress);
-        copies.emplace_back(offset, backing.start * sizeof(vk::DeviceAddress), copy_size);
+
+        const u64 range_offset = (range.start << block_shift) - arena->cpu_addr;
+        const u64 range_size = (range.end - range.start) << block_shift;
+        for (u64 block = 0; block < range_size; block += block_size) {
+            *(bda_addrs++) = arena->BufferDeviceAddress() + range_offset + block;
+        }
+        const u64 copy_size = (range.end - range.start) * sizeof(vk::DeviceAddress);
+        copies.emplace_back(offset, range.start * sizeof(vk::DeviceAddress), copy_size);
         offset += copy_size;
     }
 

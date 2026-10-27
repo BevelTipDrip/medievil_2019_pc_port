@@ -1,10 +1,16 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <condition_variable>
 #include <cstdlib>
+#include <deque>
+#include <mutex>
+#include <stop_token>
+#include <thread>
 #include "gow3_toggles.h"
 #include <ranges>
 #include "common/assert.h"
+#include "common/thread.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_runtime.h"
@@ -86,15 +92,98 @@ static vk::FormatFeatureFlags2 FormatFeatureFlags(const vk::ImageUsageFlags usag
     return feature_flags;
 }
 
-UniqueImage::~UniqueImage() {
-    if (image) {
-        vmaDestroyImage(allocator, image, allocation);
+namespace {
+// gow3: image memory is released on its own thread. Freeing an image can free a whole VMA block
+// (vkFreeMemory), a kernel call that takes the GPU driver's lock; on the draw recording thread a
+// GPU monitor's polling (MSI Afterburner's NVAPI escapes) held it up to 33 ms (research:
+// plan-frame-pacing.md, "CPU oscillation", trace cpu-osc-1). An image is only destroyed once the
+// GPU is done with it, so destroying it a little later is safe. GOW3_IMAGE_RELEASE_THREAD=0: inline.
+class ImageReleaser {
+public:
+    static ImageReleaser& Get() {
+        static ImageReleaser releaser;
+        return releaser;
     }
+
+    bool Enabled() const {
+        return enabled;
+    }
+
+    void Release(VmaAllocator allocator, VkImage image, VmaAllocation allocation) {
+        {
+            std::scoped_lock lock{mutex};
+            items.push_back({allocator, image, allocation});
+            if (!worker.joinable()) {
+                worker = std::jthread([this](std::stop_token stop) { Run(stop); });
+            }
+        }
+        work_cv.notify_one();
+    }
+
+    /// Returns once every queued image is destroyed.
+    void Drain() {
+        std::unique_lock lock{mutex};
+        idle_cv.wait(lock, [this] { return items.empty() && !busy; });
+    }
+
+private:
+    struct Item {
+        VmaAllocator allocator;
+        VkImage image;
+        VmaAllocation allocation;
+    };
+
+    ImageReleaser() {
+        const char* env = std::getenv("GOW3_IMAGE_RELEASE_THREAD");
+        enabled = !env || env[0] != '0';
+    }
+
+    void Run(std::stop_token stop) {
+        Common::SetCurrentThreadName("gow3:ImageRelease");
+        std::unique_lock lock{mutex};
+        while (true) {
+            work_cv.wait(lock, stop, [this] { return !items.empty(); });
+            if (items.empty()) {
+                return; // stop requested
+            }
+            const Item item = items.front();
+            items.pop_front();
+            busy = true;
+            lock.unlock();
+            vmaDestroyImage(item.allocator, item.image, item.allocation);
+            lock.lock();
+            busy = false;
+            if (items.empty()) {
+                idle_cv.notify_all();
+            }
+        }
+    }
+
+    bool enabled = true;
+    std::mutex mutex;
+    std::condition_variable_any work_cv;
+    std::condition_variable_any idle_cv;
+    std::deque<Item> items;
+    bool busy = false;
+    std::jthread worker;
+};
+} // namespace
+
+void DrainImageReleases() {
+    ImageReleaser::Get().Drain();
+}
+
+UniqueImage::~UniqueImage() {
+    Destroy();
 }
 
 void UniqueImage::Destroy() {
     if (image) {
-        vmaDestroyImage(allocator, image, allocation);
+        if (ImageReleaser::Get().Enabled()) {
+            ImageReleaser::Get().Release(allocator, image, allocation);
+        } else {
+            vmaDestroyImage(allocator, image, allocation);
+        }
         image = vk::Image{};
         allocation = {};
     }
@@ -175,6 +264,12 @@ void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
     if (!created) {
         result = vmaCreateImage(allocator, &image_ci_unsafe, &alloc_ci, &unsafe_image, &allocation,
                                 &alloc_info);
+        if (result != VK_SUCCESS && ImageReleaser::Get().Enabled()) {
+            // Within budget only: the images still queued for release may hold the memory.
+            DrainImageReleases();
+            result = vmaCreateImage(allocator, &image_ci_unsafe, &alloc_ci, &unsafe_image, &allocation,
+                                    &alloc_info);
+        }
     }
     ASSERT_MSG(result == VK_SUCCESS, "Failed allocating image with error {}",
                vk::to_string(vk::Result{result}));

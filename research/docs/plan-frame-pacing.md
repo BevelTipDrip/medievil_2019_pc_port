@@ -1264,3 +1264,24 @@ pause flag only (no state change, no event). `GOW3_MOVIE_SUSPEND=0`: off.
   skipped.)
 - Image uploads: ~90 MiB/s for ~200 s before (T-U1); now 0-5 MB/s from ~5 s after the skip (ordinary streaming), the
   whole session **[V]**.
+
+### Stage B's GPU memory calls moved off it (2026-10-26, launched by Claude with the user's go)
+
+- **Step 1, image memory released on a worker** (`texture_cache/image.cpp` `ImageReleaser`, thread `gow3:ImageRelease`;
+  `GOW3_IMAGE_RELEASE_THREAD=0`: inline as before). `UniqueImage::Destroy` queues `vmaDestroyImage` (VMA frees an
+  empty shared block with `vkFreeMemory`); an allocation that fails drains the queue and retries; the instance drains
+  it before `vmaDestroyAllocator`. Trace `img-release-1` (Afterburner on, `t-ir1-image-release.log`): lock waits on
+  Afterburner 11 / 62 ms / max 33 ms -> 1 / 1.5 ms (a driver thread, not stage B); stage B in
+  `D3DKMTDestroyAllocation2` 166 -> 0 (frees on the worker 33, stage A 8) **[V]**. A/B without Afterburner
+  (`t-ir2-release-off.log`): heavy-area windows the same within noise (FPS 194 / 195, p99 6.9 / 6.6 ms); the user saw
+  no real difference (0.1% lows 80s on vs high 90s off in one fight, likely run to run).
+- **Step 2, buffer residency from a pool** (`buffer_cache.cpp` `ResidencyPool`, thread `gow3:Residency`;
+  `GOW3_RESIDENCY_CHUNK_MB`, default 32, 0: one allocation per call as before). Resident blocks are never released,
+  so `EnsureResident` takes pieces of 32 MB chunks in order (a range across a chunk end becomes two binds); the worker
+  allocates the next chunk at half use. `t-rp1-residency-pool.log` (Afterburner ON): 21 chunks, all but the first
+  allocated ahead, none on demand **[V]**; heavy-area windows FPS 193 (min 190), p99 6.84 ms, the same as the
+  Afterburner-off runs. Trace `residency-1` (ring, 22:25:25-22:26:58): Afterburner lock waits 3 / 1.9 ms; the 321 ms
+  stall is the Load Game dialog and level load (22:25:31-32); in the fight, a ~300 ms run of 7-9 ms frames was paced
+  by NVIDIA Reflex's sleep (present thread readied by the driver's pacing thread, stage A waiting on presents):
+  GPU-bound or GPU-busy, not a CPU stall **[V]** pattern, **[I]** cause. The user: the GPU's "usage" may not be real
+  load (seen before); next: the frame trace (`gpu_ready`) and `GOW3_GPU_PROFILE` on the dips.

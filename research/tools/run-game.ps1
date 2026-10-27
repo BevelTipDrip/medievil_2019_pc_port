@@ -52,7 +52,7 @@ if ($Env.ContainsKey('GOW3_UE4_CVARS')) { $cvars = (@($cvars, [string]$Env.GOW3_
 if ($cvars) { $set.GOW3_UE4_CVARS = $cvars }
 
 Write-Host "Launch '$Tag' (build $(git -C $Port rev-parse --short HEAD)); settings from medievil.ini:"
-Get-Content $ini | Where-Object { $_ -match '^(render_resolution|ue4_quality|engine_fps|vsync|async_shaders)=' } |
+Get-Content $ini | Where-Object { $_ -match '^(output_resolution|render_scale|display_mode|fps_limit|ue4_quality|engine_fps|vsync|present_limiter|async_shaders)=' } |
     ForEach-Object { Write-Host "  $_" }
 foreach ($k in $set.Keys) { Write-Host "  env $k=$($set[$k])"; Set-Item "env:$k" $set[$k] }
 

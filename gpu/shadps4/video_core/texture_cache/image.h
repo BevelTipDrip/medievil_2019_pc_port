@@ -39,6 +39,10 @@ enum ImageFlagBits : u32 {
 };
 DECLARE_ENUM_FLAG_OPERATORS(ImageFlagBits)
 
+/// gow3: waits until the images queued for release on the release thread are destroyed (before
+/// the allocator goes; image.cpp).
+void DrainImageReleases();
+
 struct UniqueImage {
     explicit UniqueImage() = default;
     explicit UniqueImage(vk::Device device, VmaAllocator allocator)
