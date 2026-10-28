@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
+
+#include "gow3_async_log.h"
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -81,6 +83,13 @@ public:
     }
     static void Report() {
         if (!Enabled()) return;
+        // Written by a background thread (gow3_async_log.h): printed here, on the flip path, the
+        // report delayed a frame every 5 s.
+        std::string out;
+        struct Flush {
+            std::string& text;
+            ~Flush() { Gow3AsyncLog::Write(std::move(text)); }
+        } flush{out};
         auto rows = Get().Take();
         std::sort(rows.begin(), rows.end(), [](const Entry& a, const Entry& b) {
             return a.submit_ns + a.wait_ns > b.submit_ns + b.wait_ns;
@@ -88,7 +97,7 @@ public:
         for (const auto& row : rows) {
             if (!row.calls) continue;
             const auto filename = row.file.substr(row.file.find_last_of("/\\") + 1);
-            std::printf("Wait profile: %.*s:%u; %u calls, CPU submit %.3f ms, semaphore wait %.3f ms, max wait %.3f ms\n",
+            Gow3AsyncLog::Append(out,"Wait profile: %.*s:%u; %u calls, CPU submit %.3f ms, semaphore wait %.3f ms, max wait %.3f ms\n",
                         int(filename.size()), filename.data(), row.line, row.calls,
                         row.submit_ns / 1e6, row.wait_ns / 1e6, row.max_wait_ns / 1e6);
         }
@@ -99,7 +108,7 @@ public:
         for (const auto& row : rows) {
             if (!row.calls) continue;
             const auto filename = row.file.substr(row.file.find_last_of("/\\") + 1);
-            std::printf("Host copy waits: %.*s:%u; %u waits, recording thread %.3f ms, copy threads %.3f ms, max %.3f ms\n",
+            Gow3AsyncLog::Append(out,"Host copy waits: %.*s:%u; %u waits, recording thread %.3f ms, copy threads %.3f ms, max %.3f ms\n",
                         int(filename.size()), filename.data(), row.line, row.calls,
                         row.submit_ns / 1e6, row.wait_ns / 1e6, row.max_wait_ns / 1e6);
         }
@@ -109,7 +118,7 @@ public:
         for (const auto& row : rows) {
             if (!row.calls) continue;
             const auto filename = row.file.substr(row.file.find_last_of("/\\") + 1);
-            std::printf("Render pass ends: %.*s:%u; %u\n", int(filename.size()), filename.data(),
+            Gow3AsyncLog::Append(out,"Render pass ends: %.*s:%u; %u\n", int(filename.size()), filename.data(),
                         row.line, row.calls);
         }
         rows = PassSwitches().Take();
@@ -117,7 +126,7 @@ public:
                   [](const Entry& a, const Entry& b) { return a.calls > b.calls; });
         for (const auto& row : rows) {
             if (row.calls) {
-                std::printf("Pass switch: %.*s; %u\n", int(row.file.size()), row.file.data(), row.calls);
+                Gow3AsyncLog::Append(out,"Pass switch: %.*s; %u\n", int(row.file.size()), row.file.data(), row.calls);
             }
         }
         rows = BarrierBreaks().Take();
@@ -125,7 +134,7 @@ public:
                   [](const Entry& a, const Entry& b) { return a.calls > b.calls; });
         for (const auto& row : rows) {
             if (row.calls) {
-                std::printf("Barrier: %.*s; %u\n", int(row.file.size()), row.file.data(), row.calls);
+                Gow3AsyncLog::Append(out,"Barrier: %.*s; %u\n", int(row.file.size()), row.file.data(), row.calls);
             }
         }
         rows = PassReopens().Take();
@@ -134,7 +143,7 @@ public:
         for (const auto& row : rows) {
             if (!row.calls) continue;
             const auto filename = row.file.substr(row.file.find_last_of("/\\") + 1);
-            std::printf("Pass reopened on the same targets after an end at %.*s:%u; %u\n",
+            Gow3AsyncLog::Append(out,"Pass reopened on the same targets after an end at %.*s:%u; %u\n",
                         int(filename.size()), filename.data(), row.line, row.calls);
         }
     }

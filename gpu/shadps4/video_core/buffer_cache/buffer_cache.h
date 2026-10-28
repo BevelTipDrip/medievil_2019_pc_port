@@ -5,6 +5,7 @@
 
 #include "gow3_copy.h"
 
+#include <array>
 #include <deque>
 #include <boost/container/small_vector.hpp>
 
@@ -183,7 +184,16 @@ private:
     /// gow3 S2 (GOW3_STREAM_CLEAN=1): small read-only ranges uploaded into the arena once
     /// (value 1), or found CPU-written again after that (2: dynamic, always streamed).
     std::mutex stream_class_mutex;
-    std::unordered_map<VAddr, u8> stream_class;
+    /// gow3: small read-only buffer states by address (0 new, 1 uploaded once, 2 dynamic), in a
+    /// fixed direct-mapped table. It was an unordered_map cleared at 262,144 entries: the
+    /// clear (and each rehash while it grew) took ~8-12 ms on stage B, about once a second
+    /// while panning over new content (t-pan2: "obt_regions"). An evicted address starts again
+    /// as new: at worst one more upload of a small buffer outside a render pass.
+    struct StreamClass {
+        VAddr address;
+        u8 state;
+    };
+    std::array<StreamClass, 1u << 16> stream_class{};
     Buffer gds_buffer;
     RangeSet gpu_modified_ranges;
     void ProcessCpuWritesLocked();

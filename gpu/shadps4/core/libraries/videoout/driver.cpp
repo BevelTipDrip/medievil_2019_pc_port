@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "gow3_async_log.h"
 #include <algorithm>
 #include <cmath>
 #include <utility>
@@ -563,7 +564,9 @@ void VideoOutDriver::Flip(const Request& req) {
             const bool sampled = slow_ratio > 0 && median_ms > 0 && ++sample % 100 == 0;
             if ((slow || sampled) && last_tsc && !window_reset) {
                 slow_shown += slow;
-                std::printf("%s %.2f ms: %llu draws, %llu dispatches, %llu submits, %llu occlusion "
+                // Written by a background thread (gow3_async_log.h): printing here delayed frames.
+                std::string text;
+                Gow3AsyncLog::Append(text, "%s %.2f ms: %llu draws, %llu dispatches, %llu submits, %llu occlusion "
                             "queries, %llu passes ended; stage B busy %.0f%%, stage A CPU %.2f ms, "
                             "idle for submits %.2f ms, draining %.2f ms; "
                             "waits: readback %.2f, ticks %.2f, recorder %.2f, host copies %.2f ms; "
@@ -593,14 +596,16 @@ void VideoOutDriver::Flip(const Request& req) {
                             static_cast<unsigned long long>(uchk - last_uchk));
                 if (Gow3Sections::Enabled()) {
                     // Stage B's time in this frame by part (inclusive, ms): what grows in slow frames.
-                    std::printf("  stage B ms:");
+                    Gow3AsyncLog::Append(text, "  stage B ms:");
                     for (u32 i = 0; i < Gow3Sections::Count; ++i) {
                         const u64 now_cycles = Gow3Sections::cycles[i].load(std::memory_order_relaxed);
-                        std::printf(" %s %.2f", Gow3Sections::Names[i],
-                                    frame_ms * double(now_cycles - last_sections[i]) / double(tsc - last_tsc));
+                        Gow3AsyncLog::Append(text, " %s %.2f", Gow3Sections::Names[i],
+                                             frame_ms * double(now_cycles - last_sections[i]) /
+                                                 double(tsc - last_tsc));
                     }
-                    std::printf("\n");
+                    Gow3AsyncLog::Append(text, "\n");
                 }
+                Gow3AsyncLog::Write(std::move(text));
             }
             if (Gow3Sections::Enabled()) {
                 for (u32 i = 0; i < Gow3Sections::Count; ++i) {

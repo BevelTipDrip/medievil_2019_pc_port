@@ -36,6 +36,12 @@ enum Id : std::uint32_t {
     TexSetEmit,      ///< its emit loop: found marks, layout checks, image infos
     Samplers,        ///< BindSamplers
     TexSlow,         ///< BindTextures without a memoized set
+    // Within ObtainBuffer (t-pan1: ObtainBuffer 10-12 ms in panning hitches, 1.9 ms otherwise):
+    ObtReadbacks,    ///< TextureCache::ResolveReadbacks
+    ObtRegions,      ///< the GPU- / CPU-modified region checks (memory tracker locks)
+    ObtStream,       ///< stream buffer reservation and copy (may wait for the GPU)
+    ObtResident,     ///< EnsureResident (residency pool, sparse binds)
+    ObtSync,         ///< SynchronizeMemory (uploads)
     Count,
 };
 inline constexpr const char* Names[Count] = {
@@ -43,6 +49,7 @@ inline constexpr const char* Names[Count] = {
     "bind",     "buffers", "textures",   "ObtainBuffer", "begin render",  "vertex",
     "index",    "emit vertex", "barriers", "descriptors", "dynamic",      "kick",
     "dispatch", "Record calls", "texset", "texset emit", "samplers", "texslow",
+    "obt_readbacks", "obt_regions", "obt_stream", "obt_resident", "obt_sync",
 };
 inline std::array<std::atomic<std::uint64_t>, Count> cycles{};
 /// Scheduler::Record calls on the draw recording thread.

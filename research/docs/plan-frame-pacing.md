@@ -1483,3 +1483,42 @@ copy on; closed epochs are queued and released once the GPU completed every pack
   reused), stream buffer 2.1 MB: **~4.0 MB a frame through the BAR, was ~17.8** (t-ab-1, ~1,620 draws) **[V]**; p99
   4.57 ms, stddev 0.15-0.19 ms; no visual problems (the user). The one ~8 ms frame per 5 s window was the
   `GOW3_PERF_DIAG` report.
+
+### N-8: panning hitches, the stream-class table, and logging cost (2026-10-28, launched by the user)
+
+- `t-rr3-clean` (no diagnostics): fights hold up (most windows 200-230 FPS, p99 ~5.5-7 ms); panning hitches 13-17 ms
+  where new content enters view. The user: 1% / 0.1% lows higher in heavy fights than two days ago.
+- `t-pan1` (`GOW3_SLOW_FRAMES=1.6`, `GOW3_SECTIONS=1`): gameplay hitches 13-15.5 ms: stage B **`ObtainBuffer` 10-12
+  ms** (1.9 ms in ordinary frames with the same draws and uploads), stage A draining 12 ms. Not the residency pool
+  (no chunk then), not the constant ring (it never fell back). The logging was heavy: ~30 unbuffered printf a slow
+  frame on the flip path, 862 lines; now formatted and queued to a background writer (`gpu/shim/gow3_async_log.h`),
+  the slow-frame lines and the `GOW3_PERF_DIAG` report alike.
+- `t-pan2`: `ObtainBuffer` split into sub-sections (`obt_readbacks`, `obt_regions`, `obt_stream`, `obt_resident`,
+  `obt_sync`): **`obt_regions` 8-12 ms** in the hitches **[V]**. The region bits are lock-free; the block's
+  `stream_class` (small-buffer state by address) was an `unordered_map` cleared at 262,144 entries (ring buffers:
+  new addresses every frame), the clear and each rehash on stage B **[I]**. Replaced by a fixed 65,536-entry
+  direct-mapped table (`BufferCache::StreamClass`; an evicted address starts again as new).
+- `t-pan3`: `ObtainBuffer` ~0.5 ms in every slow frame **[V]**; the user: a big improvement. Remaining stutters with
+  33-100 MB of image uploads in one frame: `end of pipe` (`ProcessDownloadImages`) ~7 ms with a ~7 ms GPU tick wait
+  on the next frame, and `begin render` 3.6-6.9 ms (uploads / detiling inside `BeginRendering`).
+- A/B without diagnostics, same panning, gameplay windows (>900 draws) **[V]**:
+
+  | | Tonight's changes off (`t-ab-tonight-off`) | On (`t-ab-tonight-on`) |
+  |---|---|---|
+  | FPS (median window) | 197.2 | 207.8 |
+  | Worst frame (median / max) | 9.3 / 510 ms | 7.2 / 12.6 ms |
+  | Windows with a frame > 12 ms | 4 of 11 | 1 of 16 |
+  | p99 (median window) | 6.65 ms | 6.15 ms |
+
+  Tonight's changes are a net gain; the large stutters in the logged runs were mostly the logging. **Judge
+  smoothness only from runs without `GOW3_SLOW_FRAMES` / `GOW3_SECTIONS` / `GOW3_PERF_DIAG`.**
+- HZB occlusion during panning: virtually all results 3 frames old, as two days ago (`t-rp1`); the 1-2-frame-old
+  results appeared only on the level-select map.
+- Level-select map oscillation (`t-pan1`, 03:51:26-46): bimodal frames (~4.7 ms and ~8.5-10 ms) at ~620 draws,
+  stage B ~70% idle, stage A not waiting for submissions, no port-side wait growing. The user: the same screen is
+  normally flat when moving between selections, so not the GPU load or the limiter alone: something intermittent.
+  Open.
+- Next (the user): image upload budgeting regardless (streaming costs much more in this port: detection, staging,
+  detiling, upload, all on the pacing threads): first count what a burst is (re-uploads of images with a GPU copy:
+  deferrable; first uploads: not), then a per-frame budget for deferrable ones, and uploads out of `BeginRendering`.
+  The end-of-pipe readback wait after a burst.

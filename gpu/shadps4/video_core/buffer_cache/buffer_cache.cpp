@@ -870,7 +870,10 @@ void PrintBufferStats() {
 std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 size,
                                                         bool is_written, bool is_texel_buffer) {
     GOW3_SECTION(ObtainBuffer);
-    texture_cache.ResolveReadbacks(device_addr, size, true, ReadbackSource::BufferObtain);
+    {
+        GOW3_SECTION(ObtReadbacks);
+        texture_cache.ResolveReadbacks(device_addr, size, true, ReadbackSource::BufferObtain);
+    }
     const bool stats = BufferStatsEnabled();
     if (stats) {
         PrintBufferStats();
@@ -886,28 +889,38 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
     const bool stream_clean =
         Gow3Settings::Get().perf[Gow3Settings::PerfSmallBuffers].load(std::memory_order_relaxed);
     bool small_in_arena = false;
-    if (stream_clean && !is_written && size <= STREAM_THRESHOLD &&
-        !IsRegionGpuModified(device_addr, size)) {
+    // gow3: computed once (it was asked twice below), timed for the sections report.
+    bool small_gpu_modified = true;
+    if (!is_written && size <= STREAM_THRESHOLD) {
+        GOW3_SECTION(ObtRegions);
+        small_gpu_modified = IsRegionGpuModified(device_addr, size);
+    }
+    if (stream_clean && !is_written && size <= STREAM_THRESHOLD && !small_gpu_modified) {
+        GOW3_SECTION(ObtRegions);
         if (!IsRegionCpuModified(device_addr, size)) {
             small_in_arena = true;
             Gow3Stats::small_arena_binds.fetch_add(1, std::memory_order_relaxed);
         } else {
             std::scoped_lock lk{stream_class_mutex};
-            if (stream_class.size() > 262144) stream_class.clear(); // ring buffers: new addresses
-            auto [it, inserted] = stream_class.try_emplace(device_addr, u8{0});
-            if (it->second == 1) {
-                it->second = 2; // written again after its upload
+            // Direct-mapped: an address in another's slot replaces it (starts again as new).
+            auto& entry = stream_class[((device_addr >> 4) * 0x9E3779B97F4A7C15ull >> 48) %
+                                       stream_class.size()];
+            if (entry.address != device_addr) {
+                entry = {device_addr, 0};
+            }
+            if (entry.state == 1) {
+                entry.state = 2; // written again after its upload
                 Gow3Stats::small_dynamic.fetch_add(1, std::memory_order_relaxed);
-            } else if (it->second == 0 && !scheduler.IsRendering()) {
-                it->second = 1;
+            } else if (entry.state == 0 && !scheduler.IsRendering()) {
+                entry.state = 1;
                 small_in_arena = true;
                 Gow3Stats::small_promotions.fetch_add(1, std::memory_order_relaxed);
             }
         }
     }
     // For read-only buffers use device local stream buffer to reduce renderpass breaks.
-    if (!small_in_arena && !is_written && size <= STREAM_THRESHOLD &&
-        !IsRegionGpuModified(device_addr, size)) {
+    if (!small_in_arena && !is_written && size <= STREAM_THRESHOLD && !small_gpu_modified) {
+        GOW3_SECTION(ObtStream);
         if (stream_clean) Gow3Stats::small_stream_copies.fetch_add(1, std::memory_order_relaxed);
         if (stats) {
             auto& region = Stats().regions[RegionKey(device_addr)];
@@ -938,9 +951,15 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
     const u64 first_block = device_addr >> block_shift;
     const u64 last_block = (device_addr + size - 1) >> block_shift;
     const auto* arena = GetArena(first_block, last_block);
-    EnsureResident(arena, first_block, last_block);
+    {
+        GOW3_SECTION(ObtResident);
+        EnsureResident(arena, first_block, last_block);
+    }
     const u64 uploaded_before = Gow3Stats::buffer_upload_bytes.load(std::memory_order_relaxed);
-    SynchronizeMemory(arena, device_addr, size, is_written, is_texel_buffer);
+    {
+        GOW3_SECTION(ObtSync);
+        SynchronizeMemory(arena, device_addr, size, is_written, is_texel_buffer);
+    }
     if (stats) {
         auto& region = Stats().regions[RegionKey(device_addr)];
         ++region.arena_count;
