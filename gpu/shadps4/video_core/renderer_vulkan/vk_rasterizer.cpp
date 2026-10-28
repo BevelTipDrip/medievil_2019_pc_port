@@ -502,10 +502,35 @@ void Rasterizer::CollectRingBindings(const Shader::Info& stage, const PreparedDr
     }
     const u64 alignment = std::max<u64>(instance.StorageMinAlignment(),
                                         instance.UniformMinAlignment());
+    // gow3 GOW3_RING_REUSE (default on; 0: a copy per binding as before): within one guest command
+    // buffer a guest range's bytes do not change (the CPU wrote them before submitting; ranges the
+    // GPU writes are skipped above the copy), so a range bound again binds the first copy. Graphics
+    // queue only; the table resets at each command buffer and each WAIT_REG_MEM (CloseRingReuse).
+    static const bool reuse_enabled = [] {
+        const char* env = std::getenv("GOW3_RING_REUSE");
+        return !(env && env[0] == '0');
+    }();
+    const bool reuse = reuse_enabled && liverpool && liverpool->OnGfxQueue();
     const auto copy = [&](u32 index, const void* source, VAddr address, u64 size) {
-        const auto offset = constant_ring->Allocate(size, alignment);
+        RingReuse* entry = nullptr;
+        if (reuse && address) {
+            u64 hash = (address ^ size << 40) * 0x9E3779B97F4A7C15ull;
+            entry = &ring_reuse[(hash >> 52) % ring_reuse.size()];
+            if (entry->epoch == ring_reuse_epoch && entry->address == address &&
+                entry->size == size) {
+                Gow3Stats::constant_ring_reused_bytes.fetch_add(size, std::memory_order_relaxed);
+                out.push_back({index, static_cast<u32>(size), entry->offset, address});
+                return;
+            }
+        }
+        u64 absolute = 0;
+        const auto offset = constant_ring->Allocate(size, alignment, &absolute);
         if (!offset) {
             return;
+        }
+        if (entry) {
+            constant_ring->Hold(absolute);
+            *entry = {address, static_cast<u32>(size), ring_reuse_epoch, *offset};
         }
         u8* dst = constant_ring->Data(*offset);
         if (source) {
@@ -1495,6 +1520,13 @@ void Rasterizer::Finish() {
     scheduler.Finish();
 }
 
+void Rasterizer::CloseRingReuse() {
+    ++ring_reuse_epoch;
+    if (constant_ring) {
+        constant_ring->CloseReuseEpoch();
+    }
+}
+
 void Rasterizer::OnSubmit() {
     DrainDrawPipe();
     if (fault_process_pending) {
@@ -2347,6 +2379,26 @@ Rasterizer::ImageDescCacheEntry& Rasterizer::CachedImageDescEntry(const AmdGpu::
 
 static bool TextureSetRegions();
 
+// gow3 GOW3_NARROW_IMAGE_STAGES (default on; 0: eAllCommands as upstream; also live through the
+// toggle bit Gow3Toggle::NarrowImageStages, for an A/B on the same frames): the pipeline stages that
+// read a sampled or storage image bound for this shader, as the destination of its transition. The
+// stage is stored as the image's last use, so the next transition (e.g. back to a render target)
+// waits for these shaders only, not for all commands (N-3: nearly every barrier drained the GPU).
+// Image::GetBarriers only skips a read-after-read barrier when the new reader's stage is covered.
+static vk::PipelineStageFlags2 ImageReadStages(const Shader::Info& stage) {
+    static const bool narrow = [] {
+        const char* env = std::getenv("GOW3_NARROW_IMAGE_STAGES");
+        return !(env && env[0] == '0');
+    }();
+    if (!narrow || Gow3Toggle::Disabled(Gow3Toggle::NarrowImageStages)) {
+        return vk::PipelineStageFlagBits2::eAllCommands;
+    }
+    return stage.sw_stage == Shader::SwStage::Compute
+               ? vk::PipelineStageFlagBits2::eComputeShader
+               : vk::PipelineStageFlagBits2::ePreRasterizationShaders |
+                     vk::PipelineStageFlagBits2::eFragmentShader;
+}
+
 void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* prepared,
                               Shader::Backend::Bindings& binding, u32& write_index,
                               bool& barrier, bool on_helper) {
@@ -2564,13 +2616,13 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
                         vk::PipelineStageFlagBits2::eAllGraphics, vk::AccessFlagBits2::eShaderRead);
                 } else {
                     barrier |= runtime.Transit(
-                        &image, vk::ImageLayout::eGeneral, vk::PipelineStageFlagBits2::eAllCommands,
+                        &image, vk::ImageLayout::eGeneral, ImageReadStages(stage),
                         vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite);
                 }
             } else {
                 if (is_storage) {
                     barrier |= runtime.Transit(
-                        &image, vk::ImageLayout::eGeneral, vk::PipelineStageFlagBits2::eAllCommands,
+                        &image, vk::ImageLayout::eGeneral, ImageReadStages(stage),
                         vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite,
                         desc.view_info.range);
                 } else if (!(image.info.props.is_depth &&
@@ -2580,7 +2632,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
                                                 ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
                                                 : vk::ImageLayout::eShaderReadOnlyOptimal;
                     barrier |= runtime.Transit(
-                        &image, new_layout, vk::PipelineStageFlagBits2::eAllCommands,
+                        &image, new_layout, ImageReadStages(stage),
                         vk::AccessFlagBits2::eShaderRead, desc.view_info.range);
                 }
             }
@@ -2815,7 +2867,7 @@ bool Rasterizer::BindTexturesFromSet(const Shader::Info& stage, const PreparedSt
             const auto new_layout = image.info.props.is_depth
                                         ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
                                         : vk::ImageLayout::eShaderReadOnlyOptimal;
-            barrier |= runtime.Transit(&image, new_layout, vk::PipelineStageFlagBits2::eAllCommands,
+            barrier |= runtime.Transit(&image, new_layout, ImageReadStages(stage),
                                        vk::AccessFlagBits2::eShaderRead, entry.range);
         }
         image_infos.emplace_back(VK_NULL_HANDLE, entry.view, image.backing->state.layout);
@@ -3091,10 +3143,22 @@ RenderState Rasterizer::BeginRenderingFull(const GraphicsPipeline* pipeline) {
                 }
             }
         }
+        // gow3 GOW3_DEPTH_WRITE_EFFECTIVE (default on; 0: the write bit alone, as upstream): depth
+        // is written only with the depth test on (DB_DEPTH_CONTROL Z_ENABLE gates Z_WRITE_ENABLE;
+        // Vulkan likewise, and the pipeline uses that: vk_depth_stencil_state.h), or by a pending
+        // clear. A draw with the write bit but no depth test made the depth image writable (a
+        // layout change) and the next draw sampling it changed it back: N-5's depth ping-pong.
+        static const bool effective_writes = [] {
+            const char* env = std::getenv("GOW3_DEPTH_WRITE_EFFECTIVE");
+            return !(env && env[0] == '0');
+        }();
+        const bool depth_written =
+            desc.view_info.is_storage &&
+            (!effective_writes || regs.depth_control.depth_enable || is_depth_clear);
         // Stencil writes can be enabled while depth writes are off.
         const bool stencil_write =
-            has_stencil && regs.depth_control.stencil_enable && !desc.view_info.is_storage;
-        const auto new_layout = desc.view_info.is_storage
+            has_stencil && regs.depth_control.stencil_enable && !depth_written;
+        const auto new_layout = depth_written
                                     ? has_stencil ? vk::ImageLayout::eDepthStencilAttachmentOptimal
                                                   : vk::ImageLayout::eDepthAttachmentOptimal
                                 : stencil_write

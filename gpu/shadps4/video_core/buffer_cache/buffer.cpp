@@ -248,6 +248,9 @@ std::optional<u64> StreamBuffer::Reserve(u64 size, u64 alignment, bool allow_wai
 }
 
 void StreamBuffer::AdvanceAndWatch() {
+    if (written_stat) {
+        written_stat->fetch_add(mapped_size, std::memory_order_relaxed);
+    }
     offset += mapped_size;
     const u64 tick = scheduler.CurrentTick();
     last_tick = tick;

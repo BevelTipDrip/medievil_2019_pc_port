@@ -407,6 +407,30 @@ static bool SkipReadBarriers() {
     return enabled;
 }
 
+// gow3 GOW3_NARROW_IMAGE_STAGES: a sampled image's stored stage is now the shader stages that read
+// it, not all commands. A read by another kind of shader (compute after graphics, or back) is
+// outside the earlier barrier's scope, so it gets its own read-after-read barrier, which chains
+// onto that one. Stored stages that are not only shader stages (depth tests, attachments, all
+// commands) skip as before (T-F2).
+static bool ReadCovered(vk::PipelineStageFlags2 have, vk::PipelineStageFlags2 want) {
+    using S = vk::PipelineStageFlagBits2;
+    constexpr vk::PipelineStageFlags2 pre_raster =
+        S::eVertexShader | S::eTessellationControlShader | S::eTessellationEvaluationShader |
+        S::eGeometryShader;
+    constexpr vk::PipelineStageFlags2 shaders =
+        pre_raster | S::ePreRasterizationShaders | S::eFragmentShader | S::eComputeShader;
+    if (have & ~shaders) {
+        return true;
+    }
+    if (have & S::ePreRasterizationShaders) {
+        have |= pre_raster;
+    }
+    if (want & S::ePreRasterizationShaders) {
+        want = (want & ~vk::PipelineStageFlags2{S::ePreRasterizationShaders}) | pre_raster;
+    }
+    return !(want & ~have);
+}
+
 static bool IsReadOnly(vk::AccessFlags2 access) {
     constexpr auto writes = vk::AccessFlagBits2::eShaderWrite | vk::AccessFlagBits2::eShaderStorageWrite |
                             vk::AccessFlagBits2::eColorAttachmentWrite |
@@ -466,12 +490,19 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
                                              vk::AccessFlagBits2::eMemoryWrite;
                 const bool is_write = static_cast<bool>(state.access_mask & write_flags);
                 if (SkipReadBarriers() && state.layout == dst_layout &&
-                    IsReadOnly(state.access_mask) && IsReadOnly(dst_mask)) {
+                    IsReadOnly(state.access_mask) && IsReadOnly(dst_mask) &&
+                    ReadCovered(state.pl_stage, dst_stage)) {
                     state.access_mask |= dst_mask;
                     state.pl_stage |= dst_stage;
                     continue;
                 }
-                if (state.layout != dst_layout || state.access_mask != dst_mask || is_write) {
+                if (state.layout != dst_layout || state.access_mask != dst_mask || is_write ||
+                    !ReadCovered(state.pl_stage, dst_stage)) {
+                    // A read after a read keeps the earlier readers: a later write waits for all.
+                    const auto keep_stages =
+                        state.layout == dst_layout && IsReadOnly(state.access_mask) && IsReadOnly(dst_mask)
+                            ? state.pl_stage
+                            : vk::PipelineStageFlags2{};
                     barriers.emplace_back(vk::ImageMemoryBarrier2{
                         .srcStageMask = state.pl_stage,
                         .srcAccessMask = state.access_mask,
@@ -492,7 +523,7 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
                     });
                     state.layout = dst_layout;
                     state.access_mask = dst_mask;
-                    state.pl_stage = dst_stage;
+                    state.pl_stage = keep_stages | dst_stage;
                 }
             }
         }
@@ -505,15 +536,22 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
                                      vk::AccessFlagBits2::eShaderWrite |
                                      vk::AccessFlagBits2::eMemoryWrite;
         const bool is_write = static_cast<bool>(last_state.access_mask & write_flags);
-        if (last_state.layout == dst_layout && last_state.access_mask == dst_mask && !is_write) {
+        if (last_state.layout == dst_layout && last_state.access_mask == dst_mask && !is_write &&
+            ReadCovered(last_state.pl_stage, dst_stage)) {
             return;
         }
         if (SkipReadBarriers() && last_state.layout == dst_layout &&
-            IsReadOnly(last_state.access_mask) && IsReadOnly(dst_mask)) {
+            IsReadOnly(last_state.access_mask) && IsReadOnly(dst_mask) &&
+            ReadCovered(last_state.pl_stage, dst_stage)) {
             last_state.access_mask |= dst_mask;
             last_state.pl_stage |= dst_stage;
             return;
         }
+        // A read after a read keeps the earlier readers: a later write waits for all.
+        const auto keep_stages = last_state.layout == dst_layout && IsReadOnly(last_state.access_mask) &&
+                                         IsReadOnly(dst_mask)
+                                     ? last_state.pl_stage
+                                     : vk::PipelineStageFlags2{};
 
         barriers.emplace_back(vk::ImageMemoryBarrier2{
             .srcStageMask = last_state.pl_stage,
@@ -533,6 +571,10 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
                 .layerCount = VK_REMAINING_ARRAY_LAYERS,
             },
         });
+        last_state.layout = dst_layout;
+        last_state.access_mask = dst_mask;
+        last_state.pl_stage = keep_stages | dst_stage;
+        return;
     }
 
     last_state.layout = dst_layout;

@@ -204,6 +204,12 @@ bool Runtime::Transit(VideoCore::Image* image, vk::ImageLayout dst_layout,
     if (scene_targets) scene_targets->NativeAccess(*image, dst_access);
     const size_t prev_num_barriers = static_cast<size_t>(image_barriers.size());
     image->GetBarriers(image_barriers, dst_layout, dst_access, dst_stage, subres_range);
+    // gow3 GOW3_PERF_DIAG: which image the first barrier of the next flush is for (size, format).
+    if (prev_num_barriers == 0 && !image_barriers.empty() && WaitDiagnostics::Enabled()) {
+        first_image_desc = std::to_string(image->info.size.width) + "x" +
+                           std::to_string(image->info.size.height) + " " +
+                           vk::to_string(image->info.pixel_format);
+    }
     return image_barriers.size() != prev_num_barriers;
 }
 
@@ -985,16 +991,19 @@ void Runtime::FlushBarriers(std::source_location caller) {
         return;
     }
 
-    if (WaitDiagnostics::Enabled() && scheduler.IsRendering()) {
+    // Every barrier is counted (each can drain the GPU); those recorded between passes are marked.
+    if (WaitDiagnostics::Enabled()) {
         std::string file{caller.file_name()};
         file = file.substr(file.find_last_of("/\\") + 1);
-        std::string key = file + ":" + std::to_string(caller.line()) + " ->";
+        std::string key = std::string(scheduler.IsRendering() ? "" : "(between passes) ") + file + ":" +
+                          std::to_string(caller.line()) + " ->";
         if (dep_info.memoryBarrierCount) {
             key += " memory from " + StageNames(memory_barrier.srcStageMask);
         }
         if (!image_barriers.empty()) {
             const auto& first = image_barriers.front();
-            key += " " + std::to_string(image_barriers.size()) + " image(s) " +
+            key += " " + std::to_string(image_barriers.size()) + " image(s) [" +
+                   (first_image_desc.empty() ? std::string("?") : first_image_desc) + "] " +
                    vk::to_string(first.oldLayout) + ">" + vk::to_string(first.newLayout) + " from " +
                    StageNames(first.srcStageMask) + " to " + StageNames(first.dstStageMask);
         }
@@ -1018,6 +1027,7 @@ void Runtime::FlushBarriers(std::source_location caller) {
     memory_barrier.srcAccessMask = vk::AccessFlagBits2::eNone;
 
     image_barriers.clear();
+    first_image_desc.clear();
     barrier_tracker.Clear();
     ++access_epoch;
 }

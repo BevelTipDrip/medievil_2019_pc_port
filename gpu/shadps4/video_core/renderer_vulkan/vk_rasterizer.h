@@ -175,6 +175,9 @@ public:
     u64 Flush();
     void Finish();
     void OnSubmit();
+    /// gow3 (stage A): ring copies of guest constants are not reused past this point (a new
+    /// guest command buffer, or a wait the CPU may write memory during).
+    void CloseRingReuse();
 
     PipelineCache& GetPipelineCache() {
         return pipeline_cache;
@@ -565,6 +568,16 @@ private:
         return nullptr;
     }
     std::unique_ptr<ConstantRing> constant_ring;
+    /// gow3 GOW3_RING_REUSE (stage A): ring copies of guest constants within one guest command
+    /// buffer, by (address, size): a later draw binding the same range binds the copy.
+    struct RingReuse {
+        VAddr address;
+        u32 size;
+        u32 epoch;
+        u64 offset;
+    };
+    std::array<RingReuse, 4096> ring_reuse{};
+    u32 ring_reuse_epoch = 1;
     /// Submissions (prepared draws) kept alive until stage B reaches the position.
     std::deque<std::pair<u64, std::shared_ptr<const void>>> pipe_keepalive;
     std::unique_ptr<DrawPipe> draw_pipe;

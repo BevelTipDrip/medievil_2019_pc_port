@@ -818,6 +818,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
     if (draw_prep) {
         draw_prep->BeginSubmission(seq, regs, gfx_reg_checksum);
     }
+    if (seq != NoSeq && rasterizer) {
+        rasterizer->CloseRingReuse(); // constants are reused within one command buffer only
+    }
     static const bool dcb_stats = EmulatorSettingsImpl::Flag("GOW3_DCB_STATS", false);
     const int dcb_depth = g_dcb_depth;
     if (dcb_stats) {
@@ -1268,6 +1271,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 if (dma_data->dst_addr_lo == 0x3022C || !rasterizer) {
                     break;
                 }
+                rasterizer->CloseRingReuse(); // memory changes from here on
                 if (rasterizer->RunInOrder(&RunDmaData, dma_data, sizeof(PM4DmaData),
                                            Gow3Toggle::PipelinedMemoryWrites) &&
                     (dma_data->dst_sel == DmaDataDst::Memory ||
@@ -1282,6 +1286,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 ASSERT(write_data->dst_sel.Value() == 2 || write_data->dst_sel.Value() == 5);
                 ASSERT(!write_data->wr_one_addr.Value());
                 if (rasterizer) {
+                    rasterizer->CloseRingReuse(); // memory changes from here on
                     // In order with the draws (on the draw recording thread when in use).
                     Gow3WriteLog::NoteIntent(write_data->Address<u64>(), write_data->data,
                                            (count - 2) * sizeof(u32),
@@ -1312,6 +1317,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 if (mem_semaphore->IsSignaling()) {
                     mem_semaphore->Signal();
                 } else {
+                    if (rasterizer) {
+                        rasterizer->CloseRingReuse(); // the CPU may write memory meanwhile
+                    }
                     while (!mem_semaphore->Signaled()) {
                         YIELD_GFX();
                     }
@@ -1328,6 +1336,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     break;
                 }
                 const PM4CmdRewind* rewind = reinterpret_cast<const PM4CmdRewind*>(header);
+                rasterizer->CloseRingReuse(); // the CPU may write memory meanwhile
                 while (!rewind->Valid()) {
                     YIELD_GFX();
                 }
@@ -1341,6 +1350,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 // there are no other submits to yield to we can sleep the thread
                 // instead and allow other tasks to run.
                 const u64* wait_addr = wait_reg_mem->Address<u64*>();
+                if (rasterizer) {
+                    rasterizer->CloseRingReuse(); // the CPU may write memory meanwhile
+                }
                 if (vo_port->IsVoLabel(wait_addr) &&
                     num_submits == mapped_queues[GfxQueueId].submits.size()) {
                     if (rasterizer) {

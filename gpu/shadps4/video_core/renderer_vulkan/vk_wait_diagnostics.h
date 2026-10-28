@@ -67,7 +67,8 @@ public:
         static WaitDiagnostics stats;
         return stats;
     }
-    /// gow3: barriers that ended an open render pass: who asked (site), what they cover.
+    /// gow3: every barrier flush: who asked (site), what it covers; "(between passes)" when no
+    /// render pass was open (the others also ended one).
     static WaitDiagnostics& BarrierBreaks() {
         static WaitDiagnostics stats;
         return stats;
@@ -124,7 +125,7 @@ public:
                   [](const Entry& a, const Entry& b) { return a.calls > b.calls; });
         for (const auto& row : rows) {
             if (row.calls) {
-                std::printf("Barrier ended a pass: %.*s; %u\n", int(row.file.size()), row.file.data(), row.calls);
+                std::printf("Barrier: %.*s; %u\n", int(row.file.size()), row.file.data(), row.calls);
             }
         }
         rows = PassReopens().Take();

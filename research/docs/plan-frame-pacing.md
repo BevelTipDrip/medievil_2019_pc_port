@@ -1285,3 +1285,201 @@ pause flag only (no state change, no event). `GOW3_MOVIE_SUSPEND=0`: off.
   by NVIDIA Reflex's sleep (present thread readied by the driver's pacing thread, stage A waiting on presents):
   GPU-bound or GPU-busy, not a CPU stall **[V]** pattern, **[I]** cause. The user: the GPU's "usage" may not be real
   load (seen before); next: the frame trace (`gpu_ready`) and `GOW3_GPU_PROFILE` on the dips.
+
+### N-1: Nsight Systems, GPU busy vs working hard in the fight (2026-10-27, launched by the user; report `research-data\nsys\nsys-fight-1-1.nsys-rep`, log `data/nsys-fight-1.log`)
+
+Setup (`run-game.ps1 -Nsys`, Nsight Systems 2026.5.1, admin): Vulkan trace (per-command-buffer GPU ranges), GPU
+metrics `ad10x` at 20 kHz, GPU/CPU context switches; 8.5 s from just before a big fight (01:14:44.354 session start).
+Getting there: Nsight's Vulkan layer jumps to a null pointer at `vkGetPhysicalDeviceToolProperties` (boot crash;
+skipped by `GOW3_SKIP_TOOL_INFO=1`, set by `-Nsys`); its WDDM trace hangs `nsys stop` forever (found with
+`research/tools/nsys-bisect.ps1` on a dummy program; dropped); its own hotkey never reached the game (the script holds
+F9 itself and runs `nsys start` / `nsys stop`). Reflex off for this run (precaution, not a cause). Tracing overhead
+is high (median frame 6.4 ms vs ~5 ms normally; the profiler thread ~9 ms on-CPU per frame).
+
+Result (subagent with Nsight's analysis skill: bounded SQL per present-to-present frame; method and queries in the
+session scratchpad `nsys-analysis/frames.sql`): **in the fight's dips the GPU works hard, it is not just busy [V]**.
+
+| Per frame (mean) | Ordinary (n=271) | Slow >= p95 (n=66) |
+|---|---|---|
+| Frame / GPU workload / GPU idle ms | 6.40 / 5.71 / 0.69 | 10.19 / 9.88 / 0.31 |
+| Pipeline binds | 1,933 | 2,411 |
+| Stage B (`gow3:DrawRec`) in vkWaitSemaphores ms | 0.13 | 2.58 |
+| GR Active / SMs Active / SM Issue % | 85 / 64 / 30 | 94 / 77 / 43 |
+| Pixel warps in flight (per cycle) | 26 | 44 |
+| DRAM read / write % | 12 / 12 | 8 / 8 |
+| GPC clock | 2.69 GHz | 2.65 GHz |
+
+- The slow frames are one ~1 s stretch (01:14:45.1-46.1): ~25% more draws, ~2.7x the pixel-warp time; the gap
+  between GR and SM active does not grow (21 -> 17 points), memory traffic falls. Extra pixel shading (effects /
+  overdraw at 4K), probably latency-limited (high occupancy, issue 43%, low DRAM) **[I]**: per-pass attribution needs
+  Nsight Graphics GPU Trace.
+- Not the cause: sparse binds (17 in the stretch, 49-142 us CPU each; their GPU time is not in the trace), other
+  processes on the GPU (explorer.exe, 0.05-2 ms about once a second), memory allocation (2 calls in the capture),
+  clocks.
+- A few frames are CPU-side: the slowest (11.6 ms) had stage B on-CPU 11.0 ms and the GPU idle ~1.15 ms; three of
+  9.6-10.2 ms had 2.9-5.4 ms GPU idle. Tracing overhead may account for part of these **[I]**.
+- Each frame is one large command buffer (stage B's, 4.7-10.7 ms), plus small ones from stage A and the present thread.
+- **Correction, the same day: "working hard" holds only relative to ordinary frames.** In absolute terms the GPU is far
+  from saturated [V]: in the slow stretch (1.00-1.45 s) SMs Active 78% while GR Active ~94% (17 points with the
+  graphics engine busy and the SMs empty), SM Issue 45%, DRAM ~8%; warps in flight (Throughput %) pixel 47.1, compute
+  3.6, vertex 1.0, unallocated in active SMs 27.2, so achieved occupancy on active SMs ~66% (~52% over all SMs); fast
+  stretch (5-8.5 s) ~50%, SM Issue 27%. The user: GPU temperatures run far lower than other games at similar frame
+  rates, and the core clocks closer to 3 GHz under real load (here 2.65 GHz, "prefer maximum performance").
+  Hypothesis [I]: the slow frames end ~600 render passes (T-F1); if our Vulkan translation drains the GPU at pass
+  boundaries / barriers, the SMs sit empty there. Matters most for weaker GPUs, where the slow frames would grow
+  non-linearly. Next: Nsight Graphics GPU Trace per pass.
+
+### N-2: Nsight Graphics GPU Trace: the GPU waits for idle most of each frame (2026-10-27, launched by the user; `research-data\ngfx\ngfx-fight-1`)
+
+Setup: `run-game.ps1 -Ngfx` (run.py `GOW3_NGFX`: ngfx GPU Trace Profiler on medievil-runtime.exe, F11 traces 5
+frames, Ada "Top-Level Triage", auto-export; `GOW3_SKIP_TOOL_INFO=1`, Reflex on). ngfx traps: `--platform` is
+taken by Qt (ngfx does not start); `--args` is split on spaces and keeps only backslash-escaped quotes (run.py
+passes `list2cmdline` of the game's arguments); the launched game inherits the environment (`ngfx-test.ps1`). GPU
+Trace locks the clocks to base (~2.2 GHz) and forces V-Sync off. The first trace saved; the game ended during the
+second (no Windows crash or driver-reset event; its output did not come through ngfx: `GOW3_STDOUT_FILE` added,
+`-Ngfx` sets it to `<tag>\game.log`).
+
+Per frame (5 frames, `BASE\GPUTRACE_FRAME.xls`) **[V]**:
+
+| Metric | Range over the 5 frames |
+|---|---|
+| `fe__cycles_stalled_cmd_wfi_queue_sync` (front end stalled on wait-for-idle) | **44-66% of the frame** |
+| `fe__output_ops_cmd_go_idle_queue_sync` (GPU drains) | **312-487** |
+| `fe__draw_count` / `gr__dispatch_count` | ~2,190 / ~125 |
+| `fe__output_ops_cmd_subchsw_queue_sync` (graphics <-> compute switches) | ~50 |
+| `sm__throughput` (= SM instructions vs peak) | 21-34% |
+| `dramc__throughput` / `lts__throughput` | 15-23% / 12-19% |
+| `gr__cycles_active` | 63-95% |
+
+For half or more of each frame the front end waits for the whole GPU to drain before issuing more work: the
+"busy, not working" time, with its cause. Nsight Systems' Vulkan trace (N-1) counts ~102 `vkCmdPipelineBarrier2` a
+frame, fewer than the 312-487 drains: other sources (render-pass begin/end, layout transitions, clears / copies,
+graphics <-> compute switches, driver-inserted WFIs) **[I]**. Next: per-pass view of the trace in the Nsight
+Graphics window (where the WFIs fall), and the barrier / pass sources in the renderer.
+
+### N-3: where the drains come from, by code site (2026-10-27, launched by the user; `GOW3_PERF_DIAG=1`, log `data/t-b1-barrier-sites.log`)
+
+Diagnostic widened: `Runtime::FlushBarriers` now counts every barrier by caller and masks ("(between passes)" when
+no render pass was open); before, only barriers that ended an open pass. Survey of the renderer (subagent, read-only):
+the shared memory barrier has a fixed destination `ALL_COMMANDS` / `MEMORY_READ|WRITE` (`vk_runtime.cpp:110-112`)
+and a source that ORs every tracked access stage, reads included (`:934`); every flush ends the open pass (`:1004`);
+sampled / storage textures transition with destination `eAllCommands` (`vk_rasterizer.cpp:2567`, `:2573`, `:2583`,
+`:2818`), stored as the image's last stage, so the next transition starts from `ALL_COMMANDS` too.
+
+Last 5 s window before quitting (the fight; 206.8 FPS, 1,034 frames, 1,455 draws/frame), per frame **[V]**:
+
+| What | Per frame |
+|---|---|
+| Barriers (all) | **174** |
+| Render-pass ends | **310**: pass switches 168 (`vk_scheduler.cpp:102`), barrier flushes 124 (`vk_runtime.cpp:1006`), buffer copies 7.5 (`:121`), dispatches 4 (`vk_rasterizer.cpp:1408`), `vk_runtime.cpp:331` 4 |
+| Pass switches | other targets 142, same targets for a clear 25 |
+| Passes reopened on the same targets right after an end (wasted) | 11 |
+
+Top barrier sites per frame (all at the draw flush `vk_rasterizer.cpp:1074` unless noted):
+- Depth ping-pong: `DepthAttachment -> DepthStencilReadOnly` early/late-z -> **all**: 29; back, **all** -> early/late-z:
+  25 (+7 with a memory barrier from all-graphics). The depth buffer flips between written and sampled ~30 times a frame.
+- Color target -> sampled, color-out -> **all**: 11 + 7 (2 / 3 images) + 2; sampled -> color target, **all** -> color-out: 8.5 (+1).
+- Dispatch (`:1405`, between passes) storage image `General > General` **all -> all**: 10; sampled -> storage **all -> all**: 2 + 2.
+- Feedback-loop targets (render target also sampled): ~4 + 3 + 3.
+- Copies for a depth/stencil upload, transfer-source copies (`vk_runtime.cpp:342`), 1 each.
+
+Almost every barrier has `all` on one side: each is a full GPU drain. With ~300 passes a frame this matches the GPU
+trace's 312-487 drains (N-2). Plan: (1) destination = the shader stages that read (vertex/fragment, compute) instead
+of `eAllCommands`, so the stored last stage is narrow too; (2) the depth ping-pong: a layout valid for both uses
+(no transition) where the depth is only read; (3) the memory barrier's destination per flush; (4) uploads before
+the pass (the 11 wasted reopens).
+
+### N-4: change 1, image transitions to the reading shader stages (2026-10-27/28, launched by the user)
+
+`GOW3_NARROW_IMAGE_STAGES` (default on; 0: upstream `eAllCommands`): sampled / storage image transitions in
+`BindTextures` / `BindTexturesFromSet` wait for the reading shaders only (`ImageReadStages`: compute, or
+pre-rasterization + fragment), stored as the image's last stage. `Image::GetBarriers`: a read by a shader stage not
+covered by the stored shader-only stages gets its own read-after-read barrier (chains onto the first), keeping the
+earlier readers in the stored stage (`ReadCovered`); stored stages with depth tests / attachments / all skip as
+before (T-F2).
+- `t-nb1-narrow-on.log`: no visual problems in a fight (the user). Fight windows ~170-220 FPS, p99 5.2-7.9 ms: not
+  clearly different from before; the user sees a persistent oscillation on the frame-time graph that was not there
+  before (open).
+- `ngfx-narrow-1` (with `GOW3_PERF_DIAG=1`; game output in `research-data\ngfx\ngfx-narrow-1\game.log`): fight window
+  (187.7 FPS, 939 frames) **163 barriers a frame** (174 before), now narrow: depth ping-pong `fragment <-> early/late-z`
+  (~30 + ~29 a frame), color target -> sampled `color-out -> fragment`, storage `compute -> compute` **[V]**; **0
+  read-after-read barriers added** (not the oscillation's cause) **[V]**; ~7% still with `all` / `all-graphics`, 14%
+  with the memory barrier. The GPU trace saved (`medievil-runtime_2026_10_28_01_58_07.ngfx-gputrace`) but ngfx timed
+  out ("Operation timeout") and ending its session closed the game: no auto-export (run.py now passes
+  `--no-timeout`). Whether the GPU drains less: from that trace (wait-for-idle share vs N-2's 44-66%).
+
+### N-5: same-spot A/B of change 1, and the PCIe split (2026-10-28, launched by the user; `research-data\ngfx\ngfx-ab-1`)
+
+Build: change 1 live (toggle bit `Gow3Toggle::NarrowImageStages` = 2147483648 in `GOW3_TOGGLE_FILE`: all commands),
+"Mapped writes per frame" line (stream buffer / constant ring / staging), shader profiler in `-Ngfx` traces. Two
+traces at the same camera and game state, change 1 off (`BASE-2-off-025306`) then on (`BASE-3-on`), 5 frames each,
+clocks locked ~2.18 GHz:
+
+| Per frame | Off (all commands) | On (change 1) |
+|---|---|---|
+| GPU frame | 5.15-6.69 ms, mean 5.71 | 4.90-5.64 ms, mean 5.22 |
+| Per draw | 3.30 us (1,731 draws) | 3.12 us (1,672 draws) |
+| Go-idle (drains) | 208-214 | 204-211 |
+| Graphics <-> compute switches | 47-49 | 47-49 |
+| GR active / SM throughput / DRAM % | 72-95 / 24-31 / 23-30 | 86-98 / 28-33 / 28-32 |
+
+Change 1: ~0.5 ms (~9%) a frame, ~5% per draw **[V]** (5 frames a side, suggestive); **the drain count does not move**:
+the driver drains at the layout transitions and pass breaks whatever the stage masks **[I]**. Kept on.
+
+PCIe, the port's own writes per frame (fight, ~1,620 draws) **[V]**: constant ring **13.8 MB** (VRAM through the BAR,
+~8.5 KB a draw), stream buffer 4.0 MB, staging uploads 2.75 MB, downloads 0.26 MB: ~21 MB. GPU Trace's 60-80 MB
+includes its own counter stream (4.3 GB PMA buffer in system memory) and driver command buffers **[I]**.
+`CollectRingBindings` (`vk_rasterizer.cpp:490`) copies every small read-only buffer of every stage of every draw,
+no reuse.
+
+Order from here (the user, 2026-10-28):
+1. Depth ping-pong: ~60 of ~210 drains a frame (depth written <-> sampled, per light **[I]**).
+2. Constant-ring reuse: count repeated (address, size, unchanged) bytes first, then reuse copies while the guest
+   pages are unwritten and the ring slot is live.
+3. Pass breaks that reopen on the same targets (~8-11 a frame).
+4. Change 3: the shared memory barrier's destination per flush (tracker redesign).
+
+Further directions (the user): use the game's own sync (PM4 ACQUIRE_MEM / EVENT_WRITE, ignored today) to place
+barriers where the game knew a dependency existed, instead of inferring them; be precise about what the CPU and GPU
+really share (the PS4's memory is unified, so nothing is declared; the port tracks, re-uploads and copies
+conservatively); with that cheaper, revisit culling (whether cheaper proper occlusion culling beats the HZB remap).
+Survey of the MGS Peace Walker patches' call caching (DirectX) for Vulkan equivalents: pending (subagent).
+
+MGS Peace Walker comparison (subagent, read-only; `C:\Users\Ty\MGS4-SSAA-AspectRatio-Enabler\MGS4Enabler\pw\src\features\state_cache.cpp`,
+docs `MGS4Enabler\docs\pw\frame-pacing.md` 3.3a / 5.1): a D3D11 cache of state-object creation (sampler, blend,
+depth-stencil, rasterizer), keyed field by field (not raw bytes: stack padding), ~350 creations a frame -> 0,
+game-thread CPU -8%; the cost was waiting for the device lock held across Present, not the calls. Vulkan / port:
+samplers already cached (`texture_cache.cpp:1467`), blend / depth / raster states are pipeline state (pipeline
+cache) or dynamic state with value-compare setters. Open in the port: per-draw constant-ring copies (item 2 above),
+descriptor pushes without comparing to the previous draw (`vk_pipeline_common.cpp:41-76`), `vkCmdBindPipeline`
+every draw without a same-handle check (`vk_rasterizer.cpp:1198`, `:1333`), `updateDescriptorSets` (a device call)
+on the recording thread (`vk_pipeline_common.cpp:79-84`): time them for lock waits against Submit / Present, the
+method PW used.
+
+### N-6: depth writes only with the depth test on (2026-10-28)
+
+The depth target's "written" flag (`ImageViewInfo::is_storage` = DB_DEPTH_CONTROL `depth_write_enable`,
+`image_view.cpp:86`) chose the writable layout even with the depth test off, where neither the PS4 nor Vulkan writes
+depth (the pipeline already used the effective state, `vk_depth_stencil_state.h:30`). `GOW3_DEPTH_WRITE_EFFECTIVE`
+(default on; 0: as before), `vk_rasterizer.cpp` depth target: writable only with `depth_enable` or a pending clear.
+Expected: fewer of the ~30 + ~29 depth ping-pong transitions a frame, if those draws have the test off **[I]**.
+- Result (`t-dw1-depth-effective.log`, `GOW3_PERF_DIAG=1`): no visual problems; **the ping-pong is unchanged**
+  (29.7 + 29.2 a frame): those draws test and write depth for real **[V]**. Kept (correct, free). The barrier keys now
+  name the image (`[WxH format]`, `Runtime::Transit`): the ping-pong image is **512x512 D16Unorm** (`t-rr1`), not the
+  scene depth (3840x2160 D32S8): a shadow map reused per shadowed light **[I]**, ~38 transitions each way a frame.
+  Candidate: rename its backing from a small pool when it is written again after being sampled (drops the
+  read -> write half, lets light i+1's shadow overlap light i's pass); after the current items.
+
+### N-7: constant-ring reuse (2026-10-28, launched by the user)
+
+`GOW3_RING_REUSE` (default on; 0: a copy per binding): `CollectRingBindings` reuses a ring copy of the same guest
+(address, size) within one guest command buffer (graphics queue only). The table resets (`Rasterizer::CloseRingReuse`)
+at each top-level command buffer and at `WRITE_DATA`, `DMA_DATA`, `WAIT_REG_MEM`, `MEM_SEMAPHORE` waits and `REWIND`;
+GPU-written ranges are skipped before the copy as before. `ConstantRing::Hold` keeps each reusable region from the
+copy on; closed epochs are queued and released once the GPU completed every packet recorded before they closed.
+- `t-rr1`: the first version merged closed epochs into one floor whose release point kept moving: never released, the
+  ring stayed full (0 MB) and everything fell back to the stream buffer (~10 MB/frame, 142-168 FPS). Fixed (a queue).
+- `t-rr2` (~1,160 draws/frame, at the 237 cap): constant ring **1.93 MB copied + 8.13 MB reused** a frame (81%
+  reused), stream buffer 2.1 MB: **~4.0 MB a frame through the BAR, was ~17.8** (t-ab-1, ~1,620 draws) **[V]**; p99
+  4.57 ms, stddev 0.15-0.19 ms; no visual problems (the user). The one ~8 ms frame per 5 s window was the
+  `GOW3_PERF_DIAG` report.

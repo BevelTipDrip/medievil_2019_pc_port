@@ -19,6 +19,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <dbghelp.h>
+#include <io.h>
 #else
 #include <sys/mman.h>
 #include <malloc.h>
@@ -699,6 +700,17 @@ void runtime_restart(void) {
 
 int main(int argc, char **argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
+#ifdef _WIN32
+    /* GOW3_STDOUT_FILE: stdout and stderr into this file, for launches whose console goes nowhere
+     * (Nsight Graphics' ngfx: the crash report would otherwise be lost). */
+    const char *stdout_file=getenv("GOW3_STDOUT_FILE");
+    if (stdout_file && *stdout_file && freopen(stdout_file,"w",stdout)) {
+        setvbuf(stdout,NULL,_IONBF,0);
+        _dup2(_fileno(stdout),_fileno(stderr));
+        SetStdHandle(STD_OUTPUT_HANDLE,(HANDLE)_get_osfhandle(_fileno(stdout)));
+        SetStdHandle(STD_ERROR_HANDLE,(HANDLE)_get_osfhandle(_fileno(stderr)));
+    }
+#endif
 #ifndef _WIN32
     /* Keep host heap objects handed to the guest (thread handles, TLS) in the
        non-PIE brk heap, i.e. below 1 TiB: the guest packs pointers into 40 bits. */

@@ -249,6 +249,23 @@ def main():
             # to <capture>_frameN.rdc); -w waits for the game, so the log still follows it.
             renderdoc = env.get('GOW3_RENDERDOC_CMD', r'C:\Program Files\RenderDoc\renderdoccmd.exe')
             command = [renderdoc, 'capture', '-w', '-c', capture, *command]
+        elif trace_dir := env.get('GOW3_NGFX'):
+            # Diagnostics: Nsight Graphics GPU Trace into <trace_dir>; F11 in the game starts a trace
+            # (GOW3_NGFX_ARGS: other ngfx options). ngfx splits --args on spaces and keeps only
+            # backslash-escaped quotes, which list2cmdline twice gives (once here, once for ngfx's own
+            # command line). The game inherits this environment (checked with ngfx-test.ps1).
+            ngfx = env.get('GOW3_NGFX_CMD', r'C:\Program Files\NVIDIA Corporation\Nsight Graphics 2026.3.1'
+                           r'\host\windows-desktop-nomad-x64\ngfx.exe')
+            # --real-time-shader-profiler: samples per shader (time per shader in the Shader Pipelines
+            # view); it replaces some detailed SM / L1TEX counters, not the frame-level ones.
+            options = env.get('GOW3_NGFX_ARGS', '--start-after-hotkey --limit-to-frames 5 --max-duration-ms 2000 '
+                              '--architecture Ada --metric-set-id 2 --real-time-shader-profiler '
+                              '--auto-export --keep-going').split()
+            # --no-timeout: ngfx otherwise gave up while a trace was collected ("Operation timeout"), and
+            # ending its session closed the game (ngfx-narrow-1, 2026-10-28).
+            command = [ngfx, '--no-timeout', '--activity', 'GPU Trace Profiler', '--output-dir', trace_dir,
+                       '--exe', command[0], '--dir', os.getcwd(), '--args', subprocess.list2cmdline(command[1:]),
+                       *options]
         # No stdin: an inherited pipe (shells such as Git Bash) cost the game its console output.
         return subprocess.run(command, stdin=subprocess.DEVNULL, creationflags=no_console()).returncode
     finally:

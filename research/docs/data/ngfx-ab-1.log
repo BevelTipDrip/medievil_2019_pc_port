@@ -1,0 +1,139 @@
+Game profile: MediEvil (libc.prx, libSceFios2.prx, libSceNpToolkit2.prx)
+Output resolution: 3840x2160
+Render resolution: 3840x2160 output, render scale 100%, console quality, up to 1000 FPS
+MediEvil | entry=0x2e9acb0 | image=96,917,024 bytes
+928 imported symbols; 552,801 relocations; 58 required modules
+Unavailable non-loadable metadata headers: [10]; not a byte-exact ELF reconstruction
+Output: C:\Users\Ty\MediEvil\medievil_2019_pc_port\out
+libc _init_env verified RET: True
+Linked native libc: base=0x5c70000, 162 fallback exports, TLS=1152 bytes; eboot TLS=16 bytes, fs->gs patched=5
+Linked modules: libc.prx@0x5c70000, libSceFios2.prx@0x5da0000, libSceNpToolkit2.prx@0x5f30000; 348 native bindings, 850 imports left to the host runtime, fs->gs patched=5
+AppContent profile: SKU=full (probe setting), user params=[0, 0, 0, 0], mounted add-ons=0
+Patches: CUSA11227; 13 writes from ['Native 4K framebuffer pool (512 MB)', '4K display metrics at boot']
+Saves backed up to C:\Users\Ty\MediEvil\medievil_2019_pc_port\user\savedata_backups\20261028-025113
+HES is not supported on architecture 'Ada'.
+Launching process...
+Preparing to launch the GPU Trace Profiler activity on localhost...
+Launched process: medievil-runtime.exe (pid: 7184)
+C:/Users/Ty/MediEvil/medievil_2019_pc_port/out/medievil-runtime.exe C:\Users\Ty\MediEvil\medievil_2019_pc_port\out\boot-linked.bin --content-profile C:\Users\Ty\MediEvil\medievil_2019_pc_port\out\content.bin --patches C:\Users\Ty\MediEvil\medievil_2019_pc_port\out\patches.bin --app0 "C:\Users\Ty\MediEvil\Game Files\CUSA11227" --user C:\Users\Ty\MediEvil\medievil_2019_pc_port\user --timeout 0
+
+Attempting to automatically connect...
+Searching for attachable processes on localhost:49152-49215...
+Attachable process detected: medievil-runtime.exe (pid: 7184)
+- Status: Process created
+- Uptime: 0.824s
+Searching for attachable processes on localhost:49152-49215...
+Attachable process updated: medievil-runtime.exe (pid: 7184)
+- Status: Presenting
+- Uptime: 1.92s
+Connecting to medievil-runtime.exe (pid: 7184)...
+Session established. Starting activity...
+INFO: Sample duration = 6781ns; Warp State Sampling Interval = 2048; GPU PMA Buffer Size (MB) = 4294.9; SOC PMA Buffer Size (MB) = 0 
+Waiting for target ready...
+Keep collecting GPU Trace reports...
+
+Collecting GPU Trace report (iteration 1) . . .
+
+Generating trace after user trigger (press the trigger hotkey - default F11 - on the running application) with a max duration of 2000ms, limited to 5 frames...
+-- Data transfer progress (10)
+-- Data transfer progress (20)
+-- Data transfer progress (50)
+-- Data transfer progress (60)
+-- Data transfer progress (100)
+GPU Trace report saved to C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\medievil-runtime_2026_10_28_02_52_33.ngfx-gputrace
+-- Loading progress (100)
+-- Loading progress (100)
+-- Loading progress (30)
+-- Loading progress (100)
+-- Loading progress (100)
+-- Loading progress (10)
+-- Loading progress (20)
+-- Loading progress (30)
+-- Loading progress (40)
+-- Loading progress (50)
+-- Loading progress (60)
+-- Loading progress (70)
+-- Loading progress (80)
+-- Loading progress (90)
+-- Loading progress (100)
+Succeeded to export data:
+    C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\ReportGeneratorTags.txt
+    C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\BASE\REPRO_INFO.xls
+    C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\BASE\D3DPERF_EVENTS.xls
+    C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\BASE\FRAME.xls
+    C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\BASE\GPUTRACE_FRAME.xls
+    C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\BASE\GPUTRACE_REGIMES.xls
+
+Collecting GPU Trace report (iteration 2) . . .
+
+Generating trace after user trigger (press the trigger hotkey - default F11 - on the running application) with a max duration of 2000ms, limited to 5 frames...
+-- Data transfer progress (40)
+-- Data transfer progress (40)
+-- Data transfer progress (70)
+-- Data transfer progress (70)
+-- Data transfer progress (80)
+-- Data transfer progress (80)
+-- Data transfer progress (90)
+-- Data transfer progress (90)
+-- Data transfer progress (100)
+-- Data transfer progress (100)
+GPU Trace report saved to C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\medievil-runtime_2026_10_28_02_53_06.ngfx-gputrace
+-- Loading progress (100)
+-- Loading progress (100)
+-- Loading progress (100)
+-- Loading progress (100)
+-- Loading progress (20)
+-- Loading progress (30)
+-- Loading progress (40)
+-- Loading progress (50)
+-- Loading progress (60)
+-- Loading progress (90)
+-- Loading progress (100)
+Succeeded to export data:
+    C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\ReportGeneratorTags.txt
+    C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\BASE\REPRO_INFO.xls
+    C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\BASE\D3DPERF_EVENTS.xls
+    C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\BASE\FRAME.xls
+    C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\BASE\GPUTRACE_FRAME.xls
+    C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\BASE\GPUTRACE_REGIMES.xls
+
+Collecting GPU Trace report (iteration 3) . . .
+
+Generating trace after user trigger (press the trigger hotkey - default F11 - on the running application) with a max duration of 2000ms, limited to 5 frames...
+-- Data transfer progress (10)
+-- Data transfer progress (10)
+-- Data transfer progress (10)
+-- Data transfer progress (20)
+-- Data transfer progress (20)
+-- Data transfer progress (20)
+-- Data transfer progress (100)
+-- Data transfer progress (100)
+-- Data transfer progress (100)
+GPU Trace report saved to C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\medievil-runtime_2026_10_28_02_57_34.ngfx-gputrace
+-- Loading progress (80)
+-- Loading progress (100)
+-- Loading progress (100)
+-- Loading progress (100)
+-- Loading progress (100)
+-- Loading progress (20)
+-- Loading progress (30)
+-- Loading progress (50)
+-- Loading progress (60)
+-- Loading progress (70)
+-- Loading progress (80)
+-- Loading progress (90)
+-- Loading progress (100)
+-- Loading progress (100)
+Succeeded to export data:
+    C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\ReportGeneratorTags.txt
+    C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\BASE\REPRO_INFO.xls
+    C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\BASE\D3DPERF_EVENTS.xls
+    C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\BASE\FRAME.xls
+    C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\BASE\GPUTRACE_FRAME.xls
+    C:\Users\Ty\MediEvil\research-data\ngfx\ngfx-ab-1\BASE\GPUTRACE_REGIMES.xls
+
+Collecting GPU Trace report (iteration 4) . . .
+
+Generating trace after user trigger (press the trigger hotkey - default F11 - on the running application) with a max duration of 2000ms, limited to 5 frames...
+Activity session destroyed, connection error encountered.
+

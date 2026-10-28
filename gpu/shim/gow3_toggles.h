@@ -60,6 +60,9 @@ enum : std::uint64_t {
     OrderedGuestWrites = 1ull << 49,
     SceneHalfRes = 1ull << 50, ///< live scaling also reduces the 960x540 post targets
     UpdateImageFastPath = 1u << 30,
+    /// Image transitions wait for the reading shader stages, not all commands (N-4); the file
+    /// value 2147483648 switches back to all commands live (also GOW3_NARROW_IMAGE_STAGES=0).
+    NarrowImageStages = 1ull << 31,
     // TAA A/B in one run: optional techniques, off by default (no measured gain, 2026-10-02).
     TaaTonemapBlend = 1ull << 51,
     TaaClip = 1ull << 52,
@@ -96,6 +99,13 @@ inline std::atomic<std::uint64_t> buffer_upload_bytes{0};
 /// promoted ranges found CPU-written again (dynamic: streamed from then on).
 inline std::atomic<std::uint64_t> small_arena_binds{0}, small_promotions{0}, small_stream_copies{0},
     small_dynamic{0};
+/// Bytes the CPU writes into GPU-visible mapped memory ("Mapped writes" line): the stream buffer
+/// and the constant ring live in VRAM written through the BAR (PCIe writes); staging uploads are
+/// system memory the GPU copies from (PCIe reads), staging downloads what it copies back.
+inline std::atomic<std::uint64_t> stream_buffer_bytes{0}, constant_ring_bytes{0},
+    staging_upload_bytes{0}, staging_download_bytes{0};
+/// Constant bytes bound from an earlier ring copy instead of copied again (GOW3_RING_REUSE).
+inline std::atomic<std::uint64_t> constant_ring_reused_bytes{0};
 inline std::atomic<int> gpu_thread_clock{-1}; ///< clockid_t of the GPU command thread
 inline std::atomic<unsigned long> gpu_thread_id{0}; ///< Windows thread id of the GPU command thread
 inline std::atomic<std::uint64_t> draws{0}, dispatches{0}, submissions{0};

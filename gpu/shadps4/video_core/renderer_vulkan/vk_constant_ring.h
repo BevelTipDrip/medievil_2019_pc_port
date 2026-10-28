@@ -7,9 +7,11 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <atomic>
 
+#include "gow3_toggles.h"
 #include "common/assert.h"
 #include "common/types.h"
 #include "video_core/buffer_cache/buffer.h"
@@ -33,7 +35,7 @@ public:
 
     /// Stage A: `size` bytes at `alignment`; returns the ring offset, or nullopt when the ring is
     /// still in use by the GPU (the caller leaves the binding to stage B).
-    std::optional<u64> Allocate(u64 size, u64 alignment) {
+    std::optional<u64> Allocate(u64 size, u64 alignment, u64* absolute = nullptr) {
         u64 at = (position + alignment - 1) & ~(alignment - 1);
         if (at % Capacity + size > Capacity) {
             at += Capacity - at % Capacity; // wrap to the ring start
@@ -46,7 +48,36 @@ public:
             }
         }
         position = at + size;
+        Gow3Stats::constant_ring_bytes.fetch_add(size, std::memory_order_relaxed);
+        if (absolute) {
+            *absolute = at;
+        }
         return at % Capacity;
+    }
+
+    /// Stage A (GOW3_RING_REUSE): the region just allocated at this absolute position may be
+    /// bound again by later packets. The ring frees nothing from there on while the reuse epoch
+    /// is open, nor until the GPU has completed every packet recorded before it closed: a region
+    /// is otherwise freed once the packet that first wrote it completes. Held from the copy,
+    /// not from the reuse: by then that first packet may have completed.
+    void Hold(u64 absolute) {
+        reuse_floor = std::min(reuse_floor, absolute);
+    }
+
+    /// Stage A: the copies made so far are no longer reused (a new guest command buffer).
+    void CloseReuseEpoch() {
+        if (reuse_floor == NoFloor) {
+            return;
+        }
+        // One entry per closed epoch, released in order: merging them into one floor with a
+        // moving release point never released it, and the ring stayed full (t-rr1).
+        if (held_count == held.size()) {
+            held[(held_head + held_count - 1) % held.size()].until = position; // full: extend the last
+        } else {
+            held[(held_head + held_count) % held.size()] = {reuse_floor, position};
+            ++held_count;
+        }
+        reuse_floor = NoFloor;
     }
 
     [[nodiscard]] u8* Data(u64 offset) noexcept {
@@ -94,11 +125,20 @@ private:
         u64 at = stamps_tail.load(std::memory_order_relaxed);
         const u64 head = stamps_head.load(std::memory_order_acquire);
         while (at < head && semaphore->IsFree(stamps[at % stamps.size()].tick)) {
-            retired = stamps[at % stamps.size()].end;
+            completed = stamps[at % stamps.size()].end;
             ++at;
         }
         stamps_tail.store(at, std::memory_order_release);
+        // A closed epoch's regions are free once every packet recorded before it closed is done.
+        while (held_count && completed >= held[held_head].until) {
+            held_head = (held_head + 1) % held.size();
+            --held_count;
+        }
+        const u64 held_floor = held_count ? held[held_head].floor : NoFloor;
+        retired = std::min({completed, reuse_floor, held_floor});
     }
+
+    static constexpr u64 NoFloor = ~0ull;
 
     struct StampEntry {
         u64 end;
@@ -107,7 +147,15 @@ private:
     Scheduler& scheduler;
     VideoCore::Buffer buffer;
     u64 position = 0;     ///< stage A
-    u64 retired = 0;      ///< stage A: the GPU is done with everything before this
+    u64 retired = 0;      ///< stage A: free to overwrite everything before this
+    u64 completed = 0;    ///< stage A: the GPU is done with packets ending before this
+    u64 reuse_floor = NoFloor;          ///< stage A: oldest region the open reuse epoch holds
+    struct Held {
+        u64 floor; ///< oldest region the epoch holds
+        u64 until; ///< position when it closed: free once packets up to here are done
+    };
+    std::array<Held, 1024> held{}; ///< stage A: closed epochs, oldest first (floors ascend)
+    u32 held_head = 0, held_count = 0;
     u64 pending_end = 0, pending_tick = 0, last_published = 0; ///< stage B
     std::array<StampEntry, 1024> stamps{};
     alignas(64) std::atomic<u64> stamps_head{0}; ///< stage B writes

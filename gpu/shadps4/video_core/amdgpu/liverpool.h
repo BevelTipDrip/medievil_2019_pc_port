@@ -160,6 +160,11 @@ public:
         gfx_queue.dcb_buffer.reserve(GfxReservedSize);
     }
 
+    /// gow3: the command processor is running the graphics queue (not an async compute queue).
+    bool OnGfxQueue() const {
+        return curr_qid == static_cast<s32>(GfxQueueId);
+    }
+
     inline ComputeProgram& GetCsRegs() {
         return mapped_queues[curr_qid].cs_state;
     }

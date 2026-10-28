@@ -931,6 +931,11 @@ void Instance::CollectToolingInfo() const {
         // Intel: Causes crash on start.
         return;
     }
+    // gow3 GOW3_SKIP_TOOL_INFO=1 (run-game.ps1 -Nsys): Nsight Systems 2026.5.1's Vulkan layer forwards
+    // vkGetPhysicalDeviceToolProperties to a null pointer and the game crashes at boot.
+    if (const char* skip = std::getenv("GOW3_SKIP_TOOL_INFO"); skip && skip[0] == '1') {
+        return;
+    }
     const auto [tools_result, tools] = physical_device.getToolProperties();
     if (tools_result != vk::Result::eSuccess) {
         LOG_ERROR(Render_Vulkan, "Could not get Vulkan tool properties: {}",

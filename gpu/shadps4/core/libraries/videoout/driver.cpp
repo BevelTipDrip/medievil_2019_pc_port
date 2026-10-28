@@ -684,6 +684,19 @@ void VideoOutDriver::Flip(const Request& req) {
                 std::printf("Uploads: images %.1f MB/s, buffers %.1f MB/s\n",
                             (image_bytes - window_image_bytes) / 1e6 / window,
                             (buffer_bytes - window_buffer_bytes) / 1e6 / window);
+                {
+                    // gow3: CPU writes into GPU-visible mapped memory, per frame (the PCIe traffic
+                    // GPU Trace showed: VRAM through the BAR, and staging in system memory).
+                    const double per_frame = frames ? 1e6 * frames : 1e6;
+                    std::printf("Mapped writes per frame: stream buffer %.2f MB, constant ring %.2f "
+                                "MB (%.2f MB more reused) (VRAM through the BAR); staging uploads "
+                                "%.2f MB, downloads %.2f MB (system memory)\n",
+                                Gow3Stats::stream_buffer_bytes.exchange(0) / per_frame,
+                                Gow3Stats::constant_ring_bytes.exchange(0) / per_frame,
+                                Gow3Stats::constant_ring_reused_bytes.exchange(0) / per_frame,
+                                Gow3Stats::staging_upload_bytes.exchange(0) / per_frame,
+                                Gow3Stats::staging_download_bytes.exchange(0) / per_frame);
+                }
                 if (std::getenv("GOW3_STREAM_CLEAN")) {
                     std::printf("Small read-only buffers/s: %.0f bound from the arena, %.0f uploaded "
                                 "once, %.0f stream copies, %.0f found dynamic\n",

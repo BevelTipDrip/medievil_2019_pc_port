@@ -133,6 +133,7 @@ private:
     StagingBufferPool staging_pool;
     BarrierTracker barrier_tracker;
     VideoCore::Image::Barriers image_barriers;
+    std::string first_image_desc; ///< gow3 GOW3_PERF_DIAG: the first image barrier's image
     vk::MemoryBarrier2 memory_barrier{};
     // gow3: ranges inserted into barrier_tracker since its last Clear(); re-inserting a
     // contained range is a no-op, and draws re-bind the same ranges constantly.
