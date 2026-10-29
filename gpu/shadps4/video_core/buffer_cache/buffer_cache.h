@@ -109,6 +109,8 @@ public:
 
     /// gow3 GOW3_PERF_DIAG: prints and clears the write-fault download sites.
     static void ReportDownloadSites(double seconds);
+    /// gow3 GOW3_FRAME_STATS: the GPU write twins' count and bytes, every stats window.
+    static void ReportTwins();
 
     /// Finds a buffer for the specified region.
     [[nodiscard]] std::pair<const Buffer*, u64> ObtainBuffer(

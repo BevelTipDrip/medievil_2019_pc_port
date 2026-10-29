@@ -9,6 +9,7 @@
 #include <time.h>
 #include "gow3_copy.h"
 #include "gow3_sampler.h"
+#include "gow3_sections.h"
 #include "gow3_toggles.h"
 #include <cstdio>
 #include <boost/preprocessor/stringize.hpp>
@@ -340,7 +341,11 @@ void SignalFlip(Vulkan::Rasterizer& rasterizer, const u8*) {
             [] { Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxFlip); });
         return;
     }
-    rasterizer.WaitDeferredSignals();
+    {
+        GOW3_SECTION(FlipSignals);
+        rasterizer.WaitDeferredSignals();
+    }
+    GOW3_SECTION(FlipPresent);
     Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxFlip);
 }
 

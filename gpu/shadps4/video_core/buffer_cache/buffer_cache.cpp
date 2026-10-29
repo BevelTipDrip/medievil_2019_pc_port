@@ -597,6 +597,20 @@ void BufferCache::NoteGpuWriterShader(VAddr device_addr, u64 size, u64 shader_ha
     }
 }
 
+void BufferCache::ReportTwins() {
+    // gow3: the twin table's size (t-nostats6: panning got slower the longer a session ran; with
+    // the 16 KiB twin limit far more pages can be twinned, and every fault and upload searches it).
+    u64 count = 0, bytes = 0;
+    {
+        std::scoped_lock lk{twins_mutex};
+        count = twins.size();
+        for (const auto& [start, data] : twins) {
+            bytes += data.size();
+        }
+    }
+    std::printf("Twins: %llu entries, %.2f MB\n", (unsigned long long)count, bytes / 1e6);
+}
+
 void BufferCache::ReportDownloadSites(double seconds) {
     std::vector<std::pair<u64, std::pair<u64, u64>>> top;
     {

@@ -1638,3 +1638,21 @@ and fell back to stage B's stream path. The stats work slowed stage A just enoug
 **Fix: `ConstantRing::Capacity` 32 -> 96 MiB** (VRAM through the BAR). `t-nostats6-ring96`: one full allocation in
 the run (loading); the user: light-area **0.1% low 230+**, average and 0.1% often converge when left to settle, an
 occasional small bump (open).
+
+### N-15: heavy-area 9-10 ms frames with the GPU partly idle: ring reuse (2026-10-28/29, launched by the user)
+
+The user, heavy area while panning: 220 -> 100 FPS jumps with little change on screen, GPU usage down into the 80s
+in those frames; "a regression". Bisect (heavy area):
+- `t-gpu1-tonight-off` (tonight's five switches off): spikes. `t-gpu2-ring32` (ring 32 MiB): spikes.
+- `t-flip1-split` (new sections `flip_signals` / `flip_present` in `SignalFlip`): 70 spike frames, ~1,500-1,800
+  draws, stage B 4.4 ms median in `flip_present` (0.18 ms in samples): stage B waits in the guest's present for the
+  GPU, which is itself slow and partly idle in those frames. Where it shows, not the cause.
+- `t-nostats5-ring-off` (`GOW3_RING_REUSE=0`, run earlier in the night for N-14, re-checked by the user in the heavy
+  area): **the spikes are gone.** **Ring reuse.**
+The ring was not full in the spiky runs (one "found it full" report each, at loading), so it is not N-14's fallback.
+Mechanism not known [?]. **Fix: ring reuse off by default** (`GOW3_RING_REUSE=1` turns it on for tests); its gain was
+CPU-side (BAR writes ~17.8 -> ~4 MB a frame, N-7), small next to these frames. Open: a same-spot A/B with stats and
+slow-frame lines to find what the GPU waits on with reuse on. Frames queued 2 (the user, live in the menu, with
+reuse on): did not help; back to 1.
+- `t-reg2-reuse-default-off` (the new default, stats off; log has no frame data): the user, panning the heavy area
+  that spiked: **clean, 0.1% low ~160** (with the spikes 70-100; ~125+ before these two nights).

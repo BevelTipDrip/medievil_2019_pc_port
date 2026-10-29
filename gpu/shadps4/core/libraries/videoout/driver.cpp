@@ -733,6 +733,7 @@ void VideoOutDriver::Flip(const Request& req) {
                             Gow3Stats::fault_no_gpu_bytes.exchange(0) / window,
                             Gow3Stats::fault_unknown_tick.exchange(0) / window,
                             Gow3Stats::fault_too_big_for_twin.exchange(0) / window);
+                VideoCore::BufferCache::ReportTwins();
                 if (Vulkan::WaitDiagnostics::Enabled()) {
                     VideoCore::BufferCache::ReportDownloadSites(window);
                 }

@@ -11,6 +11,7 @@
 #include <array>
 #include <atomic>
 #include <chrono>
+#include <cstdlib>
 #include <string>
 
 #include "gow3_async_log.h"
@@ -28,7 +29,13 @@ public:
     /// buffer until the GPU has completed it; with stats off stage A runs further ahead and the
     /// smaller ring ran full (t-nostats bisect: bumps 210 <-> 160 FPS with reuse on, flat off).
     /// VRAM through the BAR: 64 MiB more of a 24 GB card.
-    static constexpr u64 Capacity = 96ull << 20;
+    /// GOW3_CONSTANT_RING_MB: another size for A/B runs (t-pan5: 9-10 ms GPU-starved frames after
+    /// the change from 32 MiB).
+    static inline const u64 Capacity = [] {
+        const char* env = std::getenv("GOW3_CONSTANT_RING_MB");
+        const u64 mb = env ? std::strtoull(env, nullptr, 10) : 96;
+        return std::clamp<u64>(mb, 8, 512) << 20;
+    }();
 
     ConstantRing(const Instance& instance, Scheduler& scheduler_)
         : scheduler{scheduler_},

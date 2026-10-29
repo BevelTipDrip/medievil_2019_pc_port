@@ -42,6 +42,9 @@ enum Id : std::uint32_t {
     ObtStream,       ///< stream buffer reservation and copy (may wait for the GPU)
     ObtResident,     ///< EnsureResident (residency pool, sparse binds)
     ObtSync,         ///< SynchronizeMemory (uploads)
+    // Within SignalFlip (t-pan5: 4-5 ms in the 9 ms frames of the heavy area, GPU usage low):
+    FlipSignals,     ///< WaitDeferredSignals: the recording thread's fence writes caught up
+    FlipPresent,     ///< the flip interrupt: the guest's present (acquire, limiter, Reflex sleep)
     Count,
 };
 inline constexpr const char* Names[Count] = {
@@ -50,6 +53,7 @@ inline constexpr const char* Names[Count] = {
     "index",    "emit vertex", "barriers", "descriptors", "dynamic",      "kick",
     "dispatch", "Record calls", "texset", "texset emit", "samplers", "texslow",
     "obt_readbacks", "obt_regions", "obt_stream", "obt_resident", "obt_sync",
+    "flip_signals", "flip_present",
 };
 inline std::array<std::atomic<std::uint64_t>, Count> cycles{};
 /// Scheduler::Record calls on the draw recording thread.
