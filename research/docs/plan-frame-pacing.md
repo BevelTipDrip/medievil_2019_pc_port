@@ -1606,3 +1606,18 @@ protects per page, so every bone write faults and downloads bytes the CPU never 
 download only when the address is near a GPU-written range, re-protecting later (care: later CPU writes into the
 range); (2) keep those small ranges' twin / readback copy always ready, so a fault never waits (extends what already
 served this run); (3) drop the mark when the shader's write did not happen (unlikely here). Start with (2).
+
+### N-13: the map oscillation's waits (2026-10-28, launched by the user / by Claude at the user's request)
+
+The write-fault paths (`BufferCache::ReadMemory`): a twin (no wait) when the faulting 4 KiB page holds <= 1 KiB of
+GPU-written bytes still in flight; else a download widened to a 512 KiB window, which waits for the newest GPU write
+anywhere in it. `t-up5` (oscillating): all 23-27 faults/s on the readback queue, twins 0, 127-158 ms of waits a
+second; `t-map1` (flat): twins 30-52/s, 1-3 ms.
+- `GOW3_FAULT_PAGE_DOWNLOAD` (default on): a page whose GPU bytes are finished downloads alone (no wait). `t-map2`:
+  the oscillation came back with **0** such downloads: not the case.
+- Then: a page with no GPU-written bytes needs no download (CPU-modified, its GPU mark cleared); the twin limit
+  `GOW3_GPU_WRITE_TWINS_MAX` 1 KiB -> **16 KiB**; the cases left to the window counted (unknown tick, too big for a
+  twin). `t-map3-fault-cases`: no oscillation; the map's ~35 faults/s **twinned** (33.8/s), the rest finished-page
+  downloads; **0** faults in any of the other cases; 0.1-0.6 ms of waits a second **[V]**. So the oscillating runs'
+  page most likely held more than 1 KiB of GPU bytes still in flight **[I]** (intermittent: one flat run does not
+  prove it; the counters name the case if it returns).

@@ -721,12 +721,18 @@ void VideoOutDriver::Flip(const Request& req) {
                                 Gow3Stats::download_ns[r].exchange(0) / 1e6 / window);
                 }
                 std::printf("; unmaps discarded %.1f; precise CPU writes %.1f (%.3f MB); on the readback "
-                            "queue %.1f; twinned (no wait) %.1f\n",
+                            "queue %.1f (finished page only %.1f); twinned (no wait) %.1f; write "
+                            "faults with no GPU bytes on the page %.1f, left to the window: unknown "
+                            "tick %.1f, too big for a twin %.1f\n",
                             Gow3Stats::unmap_discards.exchange(0) / window,
                             Gow3Stats::precise_writes.exchange(0) / window,
                             Gow3Stats::precise_write_bytes.exchange(0) / 1e6 / window,
                             Gow3Stats::fast_downloads.exchange(0) / window,
-                            Gow3Stats::twin_faults.exchange(0) / window);
+                            Gow3Stats::page_downloads.exchange(0) / window,
+                            Gow3Stats::twin_faults.exchange(0) / window,
+                            Gow3Stats::fault_no_gpu_bytes.exchange(0) / window,
+                            Gow3Stats::fault_unknown_tick.exchange(0) / window,
+                            Gow3Stats::fault_too_big_for_twin.exchange(0) / window);
                 if (Vulkan::WaitDiagnostics::Enabled()) {
                     VideoCore::BufferCache::ReportDownloadSites(window);
                 }

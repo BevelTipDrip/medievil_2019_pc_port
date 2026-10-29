@@ -129,6 +129,11 @@ inline std::atomic<std::uint64_t> precise_writes{0}, precise_write_bytes{0};
 inline std::atomic<std::uint64_t> fast_downloads{0};
 /// Write faults on GPU-written pages taken with twins instead of a download (no wait).
 inline std::atomic<std::uint64_t> twin_faults{0};
+/// Write faults on a page whose GPU bytes were finished, downloaded alone (GOW3_FAULT_PAGE_DOWNLOAD).
+inline std::atomic<std::uint64_t> page_downloads{0};
+/// Write faults on a page with no GPU-written bytes (no download), and the ones left to the
+/// window download: no write tick known, or too many bytes still in flight for a twin.
+inline std::atomic<std::uint64_t> fault_no_gpu_bytes{0}, fault_unknown_tick{0}, fault_too_big_for_twin{0};
 /// Sets the reason for the downloads the current thread asks for, restores it after.
 struct DownloadReasonScope {
     unsigned saved = download_reason;

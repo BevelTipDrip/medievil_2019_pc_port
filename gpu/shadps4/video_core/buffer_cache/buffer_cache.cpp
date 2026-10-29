@@ -247,7 +247,9 @@ bool TwinsEnabled() {
 u64 TwinsMaxBytes() {
     static const u64 max_bytes = [] {
         const char* env = std::getenv("GOW3_GPU_WRITE_TWINS_MAX");
-        return env ? std::strtoull(env, nullptr, 10) : 1024ull;
+        // gow3: 16 KiB (was 1 KiB, the Bloodborne port's value): a twin is a snapshot of the
+        // page's GPU-written bytes, microseconds even at this size, against a GPU wait otherwise.
+        return env ? std::strtoull(env, nullptr, 10) : 16384ull;
     }();
     return max_bytes;
 }
@@ -695,6 +697,47 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
         const u32 first_block = device_addr >> block_shift;
         const u32 last_block = (device_addr + size - 1) >> block_shift;
         const auto* arena = GetArena(first_block, last_block);
+
+        // gow3 GOW3_FAULT_PAGE_DOWNLOAD (default on; 0: always the window below): a write fault
+        // on a page whose GPU-written bytes the GPU has finished downloads that page only. The
+        // window below takes in other GPU-written ranges, and DownloadMemory waits for the newest
+        // write into any of them: t-up5's map oscillation, ~25 faults a second each waiting ~6 ms
+        // for an unrelated small range the GPU rewrote every draw (the twin path covers a page
+        // whose own bytes are still being written).
+        static const bool page_download = [] {
+            const char* env = std::getenv("GOW3_FAULT_PAGE_DOWNLOAD");
+            return !(env && env[0] == '0');
+        }();
+        if (is_write && page_download) {
+            const VAddr page_begin = Common::AlignDown(device_addr, TRACKER_BYTES_PER_PAGE);
+            const VAddr page_end = Common::AlignUp(device_addr + size, TRACKER_BYTES_PER_PAGE);
+            u64 tick = 0, gpu_bytes = 0;
+            gpu_modified_ranges.ForEachInRange(page_begin, page_end - page_begin,
+                                               [&](VAddr start, VAddr end) {
+                                                   gpu_bytes += end - start;
+                                                   tick = std::max(tick, WriteTicks().Newest(
+                                                                             start, end - start));
+                                               });
+            if (gpu_bytes != 0 && tick != 0 && scheduler.IsFree(tick)) {
+                DownloadMemory(arena, page_begin, page_end - page_begin);
+                memory_tracker->MarkRegionAsCpuModified(device_addr, size);
+                Gow3Stats::page_downloads.fetch_add(1, std::memory_order_relaxed);
+                return;
+            }
+            // t-map2: the oscillation's faults took none of the paths above. Nothing the GPU wrote
+            // on the faulting page: the write needs no GPU data (the page was protected for a
+            // neighbour's), so it becomes CPU-modified with no download at all.
+            if (gpu_bytes == 0) {
+                memory_tracker->UnmarkRegionAsGpuModified(page_begin, page_end - page_begin);
+                memory_tracker->MarkRegionAsCpuModified(device_addr, size);
+                Gow3Stats::fault_no_gpu_bytes.fetch_add(1, std::memory_order_relaxed);
+                return;
+            }
+            // Left for the window below (each counted): no write tick known for the page's GPU
+            // bytes, or more of them still in flight than a twin takes.
+            (tick == 0 ? Gow3Stats::fault_unknown_tick : Gow3Stats::fault_too_big_for_twin)
+                .fetch_add(1, std::memory_order_relaxed);
+        }
 
         // GPU-modified ranges come as many small scattered islands,
         // so the download is widened to a window around the request
