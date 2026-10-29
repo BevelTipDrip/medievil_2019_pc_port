@@ -1590,3 +1590,19 @@ list now adds ", undefined (unmap-freed)" and the first use's caller (`RefreshIm
   Also seen (no waits): `guest+0x68e109` / `0x68e149` / `0x1538f35` / `0xba9a49` on page 0x204aae0000.
 - `run-game.ps1`: rolling logs (an existing `<tag>.log` moves to `<tag>.<end time>.log`; a re-run of the same command
   overwrote `t-up3-clear-skip`).
+
+### N-12: why the map's bone page counts as GPU-written (2026-10-28, launched by the user; `t-map1-gpu-writer.log`, `GOW3_PERF_DIAG=1`)
+
+New in the write-fault report: who last made each 64 KiB page GPU-written (`ObtainBuffer` caller, the shader for
+shader bindings via `BufferCache::NoteGpuWriterShader`, the range, the count). The oscillation did not happen this run
+(the user), but the faults did **[V]**: page 0x2015060000, written by `guest+0x20da4d0` (bone matrices), `0x1158f78`,
+`0x1538f35`, up to ~60/s; **GPU-written by shader `0x86c25cc15153c173` (writable buffer binding,
+`vk_rasterizer.cpp:2310`), range 0x2015060c00 +0x14** (20 bytes = 5 dwords: an indexed indirect-draw argument block
+**[I]**), ~800-1,000 marks a second. This run the downloads were served without waiting (readback queue: 1.3 ms of
+GPU waits a second; 127-195 ms in `t-up4` / `t-up5`): **the oscillation is the same faults landing while that
+shader's GPU work is still in flight** **[I]**, which is why it comes and goes.
+Cause: the game's allocator puts a 20-byte GPU-written block in the same page as a CPU-filled bone buffer; the port
+protects per page, so every bone write faults and downloads bytes the CPU never touches. Options: (1) on a write fault,
+download only when the address is near a GPU-written range, re-protecting later (care: later CPU writes into the
+range); (2) keep those small ranges' twin / readback copy always ready, so a fault never waits (extends what already
+served this run); (3) drop the mark when the shader's write did not happen (unlikely here). Start with (2).

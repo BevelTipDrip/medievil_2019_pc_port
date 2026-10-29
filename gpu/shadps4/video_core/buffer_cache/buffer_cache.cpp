@@ -570,7 +570,30 @@ struct DownloadSite {
 };
 std::mutex download_sites_mutex;
 std::map<std::pair<u64, u64>, DownloadSite> download_sites;
+// Who last made each 64 KiB page GPU-written: the ObtainBuffer caller, the binding's shader when
+// it was a shader binding (NoteGpuWriterShader), the range, and how often (under the mutex).
+struct GpuWriter {
+    const char* file = nullptr;
+    u32 line = 0;
+    u64 shader = 0;
+    VAddr address = 0;
+    u64 size = 0;
+    u64 marks = 0;
+};
+std::unordered_map<u64, GpuWriter> gpu_writers;
 } // namespace
+
+void BufferCache::NoteGpuWriterShader(VAddr device_addr, u64 size, u64 shader_hash) {
+    if (!Vulkan::WaitDiagnostics::Enabled() || size == 0) {
+        return;
+    }
+    std::scoped_lock lock{download_sites_mutex};
+    for (u64 page = device_addr >> 16; page <= (device_addr + size - 1) >> 16; ++page) {
+        if (auto it = gpu_writers.find(page); it != gpu_writers.end()) {
+            it->second.shader = shader_hash;
+        }
+    }
+}
 
 void BufferCache::ReportDownloadSites(double seconds) {
     std::vector<std::pair<u64, std::pair<u64, u64>>> top;
@@ -591,8 +614,21 @@ void BufferCache::ReportDownloadSites(double seconds) {
         } else {
             std::snprintf(where, sizeof(where), "%#llx", (unsigned long long)rip);
         }
-        std::printf("Write-fault downloads: %s writing %#llx (64 KiB page): %.1f/s\n", where,
-                    (unsigned long long)(page << 16), top[i].first / seconds);
+        GpuWriter writer;
+        {
+            std::scoped_lock lock{download_sites_mutex};
+            if (const auto it = gpu_writers.find(page); it != gpu_writers.end()) {
+                writer = it->second;
+            }
+        }
+        std::string_view file = writer.file ? writer.file : "?";
+        file = file.substr(file.find_last_of("/\\") + 1);
+        std::printf("Write-fault downloads: %s writing %#llx (64 KiB page): %.1f/s; GPU-written by "
+                    "%.*s:%u shader %#llx, range %#llx +%#llx (%llu marks)\n",
+                    where, (unsigned long long)(page << 16), top[i].first / seconds,
+                    int(file.size()), file.data(), writer.line, (unsigned long long)writer.shader,
+                    (unsigned long long)writer.address, (unsigned long long)writer.size,
+                    (unsigned long long)writer.marks);
     }
 }
 
@@ -868,7 +904,8 @@ void PrintBufferStats() {
 } // namespace
 
 std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 size,
-                                                        bool is_written, bool is_texel_buffer) {
+                                                        bool is_written, bool is_texel_buffer,
+                                                        std::source_location caller) {
     GOW3_SECTION(ObtainBuffer);
     {
         GOW3_SECTION(ObtReadbacks);
@@ -968,6 +1005,13 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
             Gow3Stats::buffer_upload_bytes.load(std::memory_order_relaxed) - uploaded_before;
     }
     if (is_written) {
+        if (Vulkan::WaitDiagnostics::Enabled() && size) {
+            std::scoped_lock lock{download_sites_mutex};
+            for (u64 page = device_addr >> 16; page <= (device_addr + size - 1) >> 16; ++page) {
+                auto& writer = gpu_writers[page];
+                writer = {caller.file_name(), caller.line(), 0, device_addr, size, writer.marks + 1};
+            }
+        }
         gpu_modified_ranges.Add(device_addr, size);
         runtime_memory_mark_gpu_written(device_addr, size, 1);
         WriteTicks().Note(device_addr, size, scheduler.CurrentTick());

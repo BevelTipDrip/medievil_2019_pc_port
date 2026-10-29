@@ -2321,6 +2321,8 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, const PreparedStage* pre
                 if (desc.is_written) {
                     // Raw storage-buffer writes can also make an aliased cached image stale.
                     texture_cache.InvalidateMemoryFromGPU(vsharp.base_address, size);
+                    VideoCore::BufferCache::NoteGpuWriterShader(vsharp.base_address, size,
+                                                                stage.pgm_hash);
                 }
                 needs_barrier |= runtime.IsBufferAccessed(buffer, offset, size, desc.is_written);
             }

@@ -7,6 +7,7 @@
 
 #include <array>
 #include <deque>
+#include <source_location>
 #include <boost/container/small_vector.hpp>
 
 #include "common/interval_set.h"
@@ -110,9 +111,13 @@ public:
     static void ReportDownloadSites(double seconds);
 
     /// Finds a buffer for the specified region.
-    [[nodiscard]] std::pair<const Buffer*, u64> ObtainBuffer(VAddr device_addr, u32 size,
-                                                             bool is_written,
-                                                             bool is_texel_buffer = false);
+    [[nodiscard]] std::pair<const Buffer*, u64> ObtainBuffer(
+        VAddr device_addr, u32 size, bool is_written, bool is_texel_buffer = false,
+        std::source_location caller = std::source_location::current());
+
+    /// gow3 GOW3_PERF_DIAG: the shader of a written buffer binding just obtained (BindBuffers), for
+    /// the write-fault download report (who made a page GPU-written).
+    static void NoteGpuWriterShader(VAddr device_addr, u64 size, u64 shader_hash);
 
     /// Attempts to obtain a buffer without modifying the cache contents.
     [[nodiscard]] std::pair<const Buffer*, u64> ObtainBufferForImage(VAddr device_addr, u32 size);
