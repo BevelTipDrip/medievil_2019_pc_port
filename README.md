@@ -48,6 +48,10 @@ Captured on Windows 11 (RTX 5080) with this port.
 - **All the game's languages** (launcher > Game > Language): every PS4 system language can be
   picked, Polish included, whatever region your copy is from (a language the game has no text
   for shows English).
+- **Voice language** (launcher > Game > Voice language): the spoken language can differ from the
+  text. The game has 15 dubs (English, French, German, Italian, Spanish, Latin American Spanish,
+  Portuguese, Brazilian Portuguese, Dutch, Polish, Russian, Czech, Greek, Arabic, Japanese), for
+  example Japanese voices with English text. "Same as game language" keeps the game's own choice.
 - **Screenshots**: F12 in the game saves a PNG of the game's picture at its full resolution
   (3840 × 2160 in native 4K) in `user/screenshots` (launcher > Display > Open screenshots folder).
   Shift+F12 saves raw frames for bug reports.
@@ -93,6 +97,15 @@ Captured on Windows 11 (RTX 5080) with this port.
 
 ### Performance work in this port
 
+- **Fewer hitches (from the Uncharted port)**: a 1 ms Windows timer, no power throttling of the
+  game's threads, a spare GPU memory block per memory type (new textures no longer wait for the
+  driver), pageable video memory where the driver offers it, merged buffer barrier ranges and
+  lighter thread wake-ups. On 4 CPU cores the worst gameplay frame went from 31-32 ms to 18 ms and
+  a busy scene from 33 to 54 FPS (measured twice). Each can be switched off for tests
+  (`GOW3_TIMER_RES=0`, `GOW3_POWER_THROTTLE=1`, `GOW3_SPARE_IMAGE_BLOCK=0`,
+  `GOW3_PAGEABLE_MEMORY=0`, `GOW3_TRACKER_MERGE_GAP=0`, `GOW3_FUTEX_COND=0`).
+- GPU barriers are recorded at most 128 images per call (very large batches are what older AMD
+  drivers crash on).
 - **No more texture churn**: the game draws its lighting volumes and colour grading LUT (3D
   textures) as 2D slices; each switch rebuilt and copied the texture, about 14 times per frame.
   The 3D texture now serves the slices through a 2D array view (~4,700 texture rebuilds per 5 s
@@ -123,7 +136,9 @@ Captured on Windows 11 (RTX 5080) with this port.
   not match the installed version are skipped (the log says which). Native output (1440p / 1800p /
   4K native output) finds the game's resolution setting in each version's own code (tested on 01.00;
   the 01.02 address was found by @Porticus in #29). If a game build doesn't have that code, native
-  output stays at 1080p and the log says so. The 01.02 eboot does not export
+  output stays at 1080p and the log says so. On the European 01.02 (CUSA12982) the 4K pool patch,
+  unlimited ammo, the FPS counter edit and the voice option work, but **the developer cheat menu
+  does not open yet** (R3 does nothing). The 01.02 eboot does not export
   a few `libSceNpToolkit2` C++ functions the game links; those imports are logged no-ops returning
   0, since the port does not implement that module.
 - **Radeon RX 400/500 and Vega** (older AMD drivers): some crash in `amdvlk64.dll` when the main
