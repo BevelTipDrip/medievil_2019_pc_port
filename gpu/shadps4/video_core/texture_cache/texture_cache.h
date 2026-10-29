@@ -12,6 +12,7 @@
 #include "gow3_toggles.h"
 #include <optional>
 #include <cstdlib>
+#include <source_location>
 #include "video_core/renderer_vulkan/vk_staging_buffer_pool.h"
 
 #include <condition_variable>
@@ -201,7 +202,8 @@ public:
     }
 
     /// Updates image contents if it was modified by CPU.
-    void UpdateImage(ImageId image_id) {
+    void UpdateImage(ImageId image_id,
+                     std::source_location caller = std::source_location::current()) {
         // gow3: a clean image already tracked and touched in this GC period needs nothing.
         // Every texture binding comes here; the mutex (shared with the fault handlers of the
         // guest threads) was ~3% of the GPU thread. Flags are read atomically: an invalidation
@@ -224,7 +226,7 @@ public:
         Image& image = slot_images[image_id];
         TrackImage(image_id);
         TouchImage(image);
-        RefreshImage(image);
+        RefreshImage(image, caller);
         SynchronizeAlias(image_id);
     }
 
@@ -232,6 +234,12 @@ public:
     /// (Undefined: made at an address a guest unmap freed) is not uploaded first, the GPU renders
     /// into it. Any other first use uploads it as before (RefreshImage drops the flag).
     void DiscardUndefinedContents(ImageId image_id);
+
+    /// gow3 (GOW3_CLEAR_SKIPS_UPLOAD): before a color target binding whose pass clears the whole
+    /// image (a fast clear pending in its CMASK, one mip and layer): its memory is not uploaded
+    /// first, the clear overwrites it. T-up2: 4K render-target-pool images uploaded 32-64 MB each
+    /// right before being cleared, the large single-frame uploads while playing.
+    void DiscardClearedContents(ImageId image_id);
 
     /// gow3: a GPU write to the image (render target, storage): images sharing its memory
     /// copy from it before their next read. From cuesta4/shadPS4 (eltutz), which fixed God of
@@ -252,7 +260,9 @@ public:
     [[nodiscard]] ImageId ExpandImage(const ImageInfo& info, ImageId image_id);
 
     /// Reuploads image contents.
-    void RefreshImage(Image& image);
+    /// `caller` names the first use in the GOW3_TEXCACHE_STATS refresh list.
+    void RefreshImage(Image& image,
+                      std::source_location caller = std::source_location::current());
 
     /// Retrieves the sampler that matches the provided S# descriptor.
     /// extra_lod_bias: gow3, added to the S#'s bias (reduced scene rendering).
@@ -447,6 +457,21 @@ private:
 
     void FreeImage(ImageId image_id) {
         const auto& image = slot_images[image_id];
+        // gow3 GOW3_UNDEFINED_GPU_FREED (default on; 0: off): the guest memory under a GPU-written
+        // image never received the GPU's data (no write-back), so a new image made there holds
+        // stale bytes, as after an unmap (C3): flagged Undefined at creation, a render / depth
+        // target binding skips its upload. t-up3b: UE4's render-target pool reused memory without
+        // an unmap; 4K targets uploaded 32-64 MB each right before being rendered into.
+        static const bool gpu_freed = [] {
+            const char* env = std::getenv("GOW3_UNDEFINED_GPU_FREED");
+            return !(env && env[0] == '0');
+        }();
+        if (gpu_freed && True(image.flags & ImageFlagBits::GpuModified)) {
+            if (gpu_freed_addresses.size() > 16384) {
+                gpu_freed_addresses.clear();
+            }
+            gpu_freed_addresses.insert(image.info.guest_address);
+        }
         ResolveReadbacks(image.info.guest_address, image.info.guest_size, true,
                          ReadbackSource::ImageFree);
         UntrackImage(image_id);
@@ -588,6 +613,9 @@ private:
     std::unordered_map<std::string, std::pair<u64, u64>> refresh_sites;
     /// gow3: addresses of images freed by guest unmaps, not yet reused (under mutex).
     std::unordered_set<VAddr> unmapped_addresses;
+    /// gow3: addresses of GPU-written images freed (GC, overlaps, unmaps), not yet reused
+    /// (under mutex; GOW3_UNDEFINED_GPU_FREED).
+    std::unordered_set<VAddr> gpu_freed_addresses;
     std::mutex refresh_sites_mutex;
     std::unordered_map<u64, u64> unmapped_recently;
     u64 stats_reports = 0;

@@ -34,7 +34,8 @@ struct CacheStats {
     std::atomic<u64> fast_lookups, slow_lookups, slow_candidates, overlaps, expands, registered,
         unregistered, refreshes, refresh_bytes, alias_copies, alias_syncs, volume_views, unmap_frees,
         unmap_free_bytes, recreated, recreated_bytes, eop_waits, eop_skips, undefined_targets,
-        undefined_target_bytes;
+        undefined_target_bytes, cleared_targets, cleared_target_bytes, gpu_freed_reused,
+        gpu_freed_reused_bytes;
 };
 CacheStats cache_stats;
 bool CacheStatsEnabled() {
@@ -1170,9 +1171,26 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
         // and commits again when it is needed (MediEvil: the first torch in view); the guest
         // memory there holds nothing the GPU needs to load (T-R1: 64 + 32 MiB uploaded per torch
         // coming into view, a 20 ms frame).
-        if (unmapped_addresses.erase(info.guest_address) &&
+        // gow3 GOW3_NEW_IMAGES_UNDEFINED (default on; 0: only the unmap / GPU-freed cases): every
+        // new image counts as undefined until its first use. A first use as a render / depth
+        // target then skips the upload (the GPU renders into it; nothing the CPU wrote there is
+        // read first); any other first use uploads as before (RefreshImage drops the flag), so
+        // textures the CPU loads are unchanged. t-up4: 4K targets in fresh pool memory (no image
+        // had been there) uploaded 32-64 MB each right before being rendered into.
+        static const bool new_undefined = [] {
+            const char* env = std::getenv("GOW3_NEW_IMAGES_UNDEFINED");
+            return !(env && env[0] == '0');
+        }();
+        // Also where a GPU-written image was freed (FreeImage: its memory never got the GPU's data).
+        const bool unmapped = unmapped_addresses.erase(info.guest_address) != 0;
+        const bool gpu_freed = gpu_freed_addresses.erase(info.guest_address) != 0;
+        if ((unmapped || gpu_freed || new_undefined) &&
             !Gow3Toggle::Disabled(Gow3Toggle::UndefinedTargets)) {
             slot_images[image_id].flags |= ImageFlagBits::Undefined;
+            if (!unmapped) {
+                CACHE_STAT(gpu_freed_reused, 1);
+                CACHE_STAT(gpu_freed_reused_bytes, info.guest_size);
+            }
         }
     }
 
@@ -1351,8 +1369,21 @@ void TextureCache::DiscardUndefinedContents(ImageId image_id) {
     }
 }
 
-void TextureCache::RefreshImage(Image& image) {
+void TextureCache::DiscardClearedContents(ImageId image_id) {
+    // Same locking as DiscardUndefinedContents.
+    Image& image = slot_images[image_id];
+    std::atomic_ref<u32> flags{reinterpret_cast<u32&>(image.flags)};
+    constexpr u32 Dirty = static_cast<u32>(ImageFlagBits::Dirty);
+    if (flags.load(std::memory_order_acquire) & Dirty &&
+        flags.fetch_and(~Dirty, std::memory_order_acq_rel) & Dirty) {
+        CACHE_STAT(cleared_targets, 1);
+        CACHE_STAT(cleared_target_bytes, image.info.guest_size);
+    }
+}
+
+void TextureCache::RefreshImage(Image& image, std::source_location caller) {
     // A first use other than as a render / depth target: the contents count from here.
+    const bool was_undefined = True(image.flags & ImageFlagBits::Undefined);
     image.flags &= ~ImageFlagBits::Undefined;
     if (False(image.flags & ImageFlagBits::Dirty) || image.info.num_samples > 1) {
         return;
@@ -1367,13 +1398,19 @@ void TextureCache::RefreshImage(Image& image) {
                           : True(image.flags & ImageFlagBits::GpuDirty)      ? "GPU dirty (buffer)"
                           : True(image.flags & ImageFlagBits::MaybeCpuDirty) ? "maybe CPU dirty"
                                                                              : "?";
-        char key[200];
-        std::snprintf(key, sizeof(key), "%#llx %ux%ux%u %s L%u/%u%s%s%s, %s%s",
+        // Also: an image made where an unmap freed images (C3: its memory is undefined), and the
+        // caller of this first use (sampled, storage, copy, ...).
+        std::string_view file{caller.file_name()};
+        file = file.substr(file.find_last_of("/\\") + 1);
+        char key[300];
+        std::snprintf(key, sizeof(key), "%#llx %ux%ux%u %s L%u/%u%s%s%s, %s%s%s, from %.*s:%u",
                       (unsigned long long)info.guest_address, info.size.width, info.size.height,
                       info.size.depth, vk::to_string(info.pixel_format).c_str(), info.resources.levels,
                       info.resources.layers, image.usage.render_target ? " RT" : "",
                       image.usage.depth_target ? " depth" : "", image.usage.texture ? " tex" : "", why,
-                      True(image.flags & ImageFlagBits::GpuModified) ? ", GPU modified" : "");
+                      True(image.flags & ImageFlagBits::GpuModified) ? ", GPU modified" : "",
+                      was_undefined ? ", undefined (unmap-freed)" : "", int(file.size()), file.data(),
+                      caller.line());
         std::scoped_lock lock{refresh_sites_mutex};
         auto& site = refresh_sites[key];
         ++site.first;
@@ -1852,6 +1889,14 @@ void TextureCache::RunGarbageCollector() {
                       undefined_bytes = take(cache_stats.undefined_target_bytes);
             std::printf("  targets made where an unmap freed images, not uploaded first: %llu (%.1f MiB)\n",
                         (unsigned long long)undefined, undefined_bytes / 1048576.0);
+            const u64 cleared = take(cache_stats.cleared_targets),
+                      cleared_bytes = take(cache_stats.cleared_target_bytes);
+            std::printf("  dirty targets cleared by their pass, not uploaded first: %llu (%.1f MiB)\n",
+                        (unsigned long long)cleared, cleared_bytes / 1048576.0);
+            const u64 reused = take(cache_stats.gpu_freed_reused),
+                      reused_bytes = take(cache_stats.gpu_freed_reused_bytes);
+            std::printf("  other new images flagged undefined (GPU-freed or new): %llu (%.1f MiB)\n",
+                        (unsigned long long)reused, reused_bytes / 1048576.0);
             std::printf("  end of pipe with readback work (host copy wait) %llu, without (skipped) %llu\n",
                         (unsigned long long)take(cache_stats.eop_waits),
                         (unsigned long long)take(cache_stats.eop_skips));

@@ -3030,6 +3030,18 @@ RenderState Rasterizer::BeginRenderingFull(const GraphicsPipeline* pipeline) {
             image = &texture_cache.GetImage(image_id);
         }
         texture_cache.DiscardUndefinedContents(image_id);
+        // gow3 GOW3_CLEAR_SKIPS_UPLOAD (default on; 0: upload as before): the pass clears this
+        // whole image (its pending fast clear, below), so its memory is not uploaded first.
+        static const bool clear_skips_upload = [] {
+            const char* env = std::getenv("GOW3_CLEAR_SKIPS_UPLOAD");
+            return !(env && env[0] == '0');
+        }();
+        if (clear_skips_upload && image->info.resources.levels == 1 &&
+            image->info.resources.layers == 1 &&
+            texture_cache.IsMetaCleared(regs.color_buffers[cb].CmaskAddress(),
+                                        desc.view_info.range.base.layer)) {
+            texture_cache.DiscardClearedContents(image_id);
+        }
         texture_cache.UpdateImage(image_id);
         runtime.SetBackingSamples(image, key.color_samples[cb]);
         const auto& image_view = texture_cache.FindRenderTarget(image_id, desc);

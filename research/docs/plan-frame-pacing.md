@@ -1522,3 +1522,71 @@ copy on; closed epochs are queued and released once the GPU completed every pack
   detiling, upload, all on the pacing threads): first count what a burst is (re-uploads of images with a GPU copy:
   deferrable; first uploads: not), then a per-frame budget for deferrable ones, and uploads out of `BeginRendering`.
   The end-of-pipe readback wait after a burst.
+
+### N-9: UE4 streaming / traversal settings for this game (2026-10-28, research subagent; to test)
+
+Engine: **UE 4.21** (`++UE4+Release-4.21` in the binary, `plan-baseline-issues.md:41`). Every cvar below is in the
+binary (UTF-16 strings in `out/boot-linked.bin`, checked 2026-10-28), so none is silently ignored. Defaults marked
+(guess) are the subagent's memory of 4.21, not verified.
+
+| Cvar | Effect | Default | Try | Cost |
+|---|---|---|---|---|
+| `r.Streaming.MaxEffectiveScreenSize` | caps the screen height used to pick wanted mips | 0 = actual (guess) | 1080 | softer close-ups at 4K; at 4K every texture wants ~1 mip more than on PS4 (~4x bytes) |
+| `r.Streaming.HiddenPrimitiveScale` | wanted resolution for textures not recently seen | 0.5 (guess) | 1.0 | memory only; stops pan-away / pan-back stream-out and back in |
+| `r.Streaming.MaxTempMemoryAllowed` | temp memory for in-flight mip updates: caps a batch | game 35 | 16-24 | slower sharpening |
+| `r.Streaming.MinMipForSplitRequest` | load visible mips first, then hidden ones | 0 | 10 | none |
+| `r.Streaming.NumStaticComponentsProcessedPerFrame` | components added per frame while a level becomes visible | 50 | 10-25 | levels appear a bit later |
+| `s.AsyncLoadingTimeLimit` / `s.AsyncLoadingUseFullTimeLimit` / `s.PriorityAsyncLoadingExtraTime` | game-thread async loading budget | 5 / 1 / 15 (guess) | 2 / 0 / 5 | pop-in later |
+| `s.LevelStreamingActorsUpdateTimeLimit`, `s.LevelStreamingComponents(Un)RegistrationGranularity`, `s.UnregisterComponentsTimeLimit` | time-slice actor / component (un)registration | 5 / 10 / 5 / 1 (guess) | 2 / 5 / 2 / 0.5 | levels finish later |
+| `s.ForceGCAfterLevelStreamedOut` | GC right after a level streams out | 1 (guess) | 0 | memory freed later |
+| `r.Shadow.MaxNum{Point,Spot}ShadowCacheUpdatesPerFrame` | caps shadow-cache refreshes a frame | -1 (guess) | 2-4 | briefly stale shadows |
+
+Avoid: `r.Streaming.FullyLoadUsedTextures=1`, `r.Streaming.PoolSize=0` / `r.TextureStreaming=0` (the pool must fit
+the Garlic heap), debug cvars. Already tested: S1 (`AmortizeCPUToGPUCopy`, 4 textures a frame) little effect; S2
+(pool 1600) fixed small pans, not large ones. The "Epic" quality preset raises view / LOD distances (more draws and
+wanted textures at 4K).
+
+Stream-in in 4.21 allocates a new texture with more mips, copies the shared mips GPU-side (`RHICopySharedMips`),
+uploads the new ones and swaps; the old texture renders until then. Port idea: such a new image whose low mips come
+by GPU copy could keep the old image bound for a few frames while its upload is spread (correctness care needed).
+Before any of this: `GOW3_TEXCACHE_STATS=1` names the images in the 33-100 MB bursts: C3 found a 64 + 32 MiB 4K
+render-target pair per torch (UE4's render-target pool, undefined memory uploaded); if the bursts are such targets
+first used other than as targets, extending C3 removes them outright.
+
+### N-10: what the image upload bursts are (2026-10-28, launched by the user; `t-up1-refresh-sites.log`, `GOW3_TEXCACHE_STATS=1`)
+
+Run 21:20:47-21:27:01; level started 21:23:19. **Not mainly texture streaming [V]:**
+- Menu: the intro movie (`gameintro.mp4`, 21:21:11-21:23:19) re-uploads its YUV planes (1920x1088 R8, 960x544 R8G8,
+  1984x1088 R8) ~30 times a second, 9.1 GB in all; suspended at the level change (T-M1) as designed.
+- Gameplay (~3.5 min), the large single uploads: **4K render-target-pool images first used as a non-target**
+  (3840x2160 RGBA16F x4 at 64 MB, RGBA8 x4 at 32 MB, + an RT pair): ~446 MB, one at a time at 23:23, 23:43, 24:33,
+  26:03, 26:28, 26:58: the 33-100 MB frames; **128x128 RGBA16F 512-layer arrays** 86 MB each (23:23, 24:38);
+  4096x4096 BC3 full chains 21 MB each (mostly at the level start).
+- Real texture streaming (BC1 / BC5 1024-2048, full chains): ~150 MB, spread evenly (~5-15 MB per 5 s).
+C3 skips the undefined upload only when the first use is as a render / depth target. Extending it to other first
+uses is safe only if nothing real was written there (streamed textures also land in recycled memory). The refresh
+list now adds ", undefined (unmap-freed)" and the first use's caller (`RefreshImage` / `UpdateImage` take a
+`std::source_location`), to decide.
+
+### N-11: render targets uploaded before being rendered into; the map oscillation's writer (2026-10-28, launched by the user)
+
+- `t-up2`: the refresh list names the first use: the 4K uploads (3840x2160 RGBA16F at 64 MB, RGBA8 at 32 MB) come
+  from `vk_rasterizer.cpp` color-target binding (`UpdateImage` before rendering into it), not flagged undefined.
+- `GOW3_CLEAR_SKIPS_UPLOAD` (skip when the pass fast-clears the whole image): **0 hits** (`t-up3b`): those passes do
+  not clear. Kept (harmless), no effect.
+- `GOW3_UNDEFINED_GPU_FREED` (`FreeImage` remembers freed GPU-written images' addresses; a new image there is
+  Undefined): 0 hits in the menu (`t-up4`): the 4K targets were in fresh memory, no image had been there.
+- **`GOW3_NEW_IMAGES_UNDEFINED`** (default on; 0: off): every new image is Undefined until its first use; a first use
+  as a render / depth target skips the upload (C3's path), any other first use uploads as before (textures the CPU
+  loads unchanged). `t-up5`: **no 4K render-target uploads in the refresh list**; gameplay image upload peaks 6.5-8.1
+  MB/s (12.5-14.1 in `t-up3b`); no visual problems (the user). (The "not uploaded first" counter now counts every
+  render-target first use of an Undefined image, dirty or not: it overstates the saving.)
+- **Map oscillation (`t-up4`, `t-up5`) [V]:** write-fault downloads only during the event: 14 -> 28 -> 31 -> 30/s,
+  127-195 ms of GPU waits a second (0 otherwise); `GOW3_PERF_DIAG`: **`guest+0x20da4d0` writing page 0x2010450000**,
+  23-27/s. Ghidra (`DisasmAround.java 20da4d0`): a loop that reads a u16 index, loads a 4x4 matrix (64 bytes) and
+  stores it transposed as 3x4 (48 bytes) into a buffer returned by a virtual call (`[rax+0x468]`): UE4 GPU-skinning
+  bone matrices **[I]**. The page counts as GPU-written, so each write downloads it first (~7 ms). Open: why the page
+  is GPU-written (a shader writing there, a pool reused, or a writable binding that is never written).
+  Also seen (no waits): `guest+0x68e109` / `0x68e149` / `0x1538f35` / `0xba9a49` on page 0x204aae0000.
+- `run-game.ps1`: rolling logs (an existing `<tag>.log` moves to `<tag>.<end time>.log`; a re-run of the same command
+  overwrote `t-up3-clear-skip`).

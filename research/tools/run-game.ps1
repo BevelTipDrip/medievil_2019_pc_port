@@ -25,6 +25,17 @@ param([switch]$Validation, [switch]$Samples, [switch]$TextureHelper, [switch]$Ps
 $Port = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 $Game = 'C:\Users\Ty\MediEvil\Game Files\CUSA11227'
 if (-not $Tag) { $Tag = 'run-' + (Get-Date -Format 'yyyy-MM-dd-HHmm') }
+# Rolling logs: a run never overwrites an earlier one (an accidental re-run of the same command did,
+# 2026-10-28). An existing <tag>.log (and .times) moves aside as <tag>.<its end time>.log; this run is
+# always <tag>.log.
+$previous = Join-Path $Port "research\docs\data\$Tag.log"
+if (Test-Path $previous) {
+    $stamp = (Get-Item $previous).LastWriteTime.ToString('yyyyMMdd-HHmmss')
+    $archived = Join-Path $Port "research\docs\data\$Tag.$stamp.log"
+    Move-Item $previous $archived
+    if (Test-Path "$previous.times") { Move-Item "$previous.times" "$archived.times" }
+    Write-Host "Earlier '$Tag' log kept as $(Split-Path $archived -Leaf)"
+}
 if (Get-Process medievil-runtime -ErrorAction SilentlyContinue) { throw 'medievil-runtime.exe is already running.' }
 
 $ini = Join-Path $Port 'medievil.ini'
