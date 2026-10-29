@@ -10,7 +10,10 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <chrono>
+#include <string>
 
+#include "gow3_async_log.h"
 #include "gow3_toggles.h"
 #include "common/assert.h"
 #include "common/types.h"
@@ -21,7 +24,11 @@ namespace Vulkan {
 
 class ConstantRing {
 public:
-    static constexpr u64 Capacity = 32ull << 20;
+    /// gow3: 96 MiB (was 32): ring reuse (GOW3_RING_REUSE) holds every copy of a guest command
+    /// buffer until the GPU has completed it; with stats off stage A runs further ahead and the
+    /// smaller ring ran full (t-nostats bisect: bumps 210 <-> 160 FPS with reuse on, flat off).
+    /// VRAM through the BAR: 64 MiB more of a 24 GB card.
+    static constexpr u64 Capacity = 96ull << 20;
 
     ConstantRing(const Instance& instance, Scheduler& scheduler_)
         : scheduler{scheduler_},
@@ -42,8 +49,11 @@ public:
         }
         const auto in_use = [&] { return at + size > Capacity && at + size - Capacity > retired; };
         if (in_use()) {
+            ++retire_scans;
             Retire();
             if (in_use()) {
+                ++full_allocations;
+                ReportPressure();
                 return std::nullopt;
             }
         }
@@ -139,6 +149,30 @@ private:
     }
 
     static constexpr u64 NoFloor = ~0ull;
+
+    /// Stage A: at most every 5 s, and only when the ring was full (no stats switch needed: the
+    /// t-nostats bisect pointed at ring reuse with stats off; the report goes to the background
+    /// writer, off this thread).
+    void ReportPressure() {
+        const auto now = std::chrono::steady_clock::now();
+        if (now - report_time < std::chrono::seconds(5)) {
+            return;
+        }
+        std::string text;
+        Gow3AsyncLog::Append(text,
+                             "Constant ring (5 s): %llu allocations found it full (left to stage "
+                             "B), %llu retirement scans; held epochs %u, open epoch holds from "
+                             "%llu, position %llu, completed %llu\n",
+                             (unsigned long long)full_allocations, (unsigned long long)retire_scans,
+                             held_count,
+                             (unsigned long long)(reuse_floor == NoFloor ? 0 : position - reuse_floor),
+                             (unsigned long long)position, (unsigned long long)completed);
+        Gow3AsyncLog::Write(std::move(text));
+        full_allocations = retire_scans = 0;
+        report_time = now;
+    }
+    u64 full_allocations = 0, retire_scans = 0;            ///< stage A
+    std::chrono::steady_clock::time_point report_time{};  ///< stage A
 
     struct StampEntry {
         u64 end;

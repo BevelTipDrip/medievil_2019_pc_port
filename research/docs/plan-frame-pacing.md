@@ -1621,3 +1621,20 @@ second; `t-map1` (flat): twins 30-52/s, 1-3 ms.
   downloads; **0** faults in any of the other cases; 0.1-0.6 ms of waits a second **[V]**. So the oscillating runs'
   page most likely held more than 1 KiB of GPU bytes still in flight **[I]** (intermittent: one flat run does not
   prove it; the counters name the case if it returns).
+
+### N-14: bumps with stats off: the constant ring ran full (2026-10-28, launched by the user)
+
+The user: with `-NoStats` (no `GOW3_FRAME_STATS`) the light area's flat graph became fast bumps 210 <-> 160 FPS,
+0.1% low ~145 (~200 before); with stats on it was flat (`t-pan4`). Not the logging: nothing changed since last night
+runs only with stats off (the background writer starts only with slow-frame / `GOW3_PERF_DIAG` lines; the new
+counters are unconditional, the same in both modes). Bisect with `-NoStats` (the user's eyes, no logs):
+- `t-nostats3`: all eight switchable changes of the last two nights off: **flat**.
+- `t-nostats4`: tonight's five off (images undefined, GPU-freed, cleared-target, fault-page, twins 1 KiB): **bumps**.
+- `t-nostats5`: also `GOW3_RING_REUSE=0`: **flat**. **Ring reuse.**
+Cause [V]: ring reuse holds every copy of a guest command buffer until the GPU completed it (N-7); with stats off
+stage A runs further ahead and the **32 MiB** ring ran full: allocations retried retirement (a semaphore query each)
+and fell back to stage B's stream path. The stats work slowed stage A just enough to stay under. New: the ring logs
+"Constant ring (5 s): N allocations found it full ..." only when that happens (background writer, no stats switch).
+**Fix: `ConstantRing::Capacity` 32 -> 96 MiB** (VRAM through the BAR). `t-nostats6-ring96`: one full allocation in
+the run (loading); the user: light-area **0.1% low 230+**, average and 0.1% often converge when left to settle, an
+occasional small bump (open).
