@@ -247,6 +247,9 @@ void Load() {
     if (!v.preshadows) {
         runtime_ue4_request_cvar("r.Shadow.Preshadows", "0");
     }
+    if (v.effects_resolution > 0) { // the override pak sets it at boot too (run.py)
+        runtime_ue4_request_cvar("r.SeparateTranslucencyScreenPercentage", UE4EffectsKeys[v.effects_resolution]);
+    }
     // A launch's own switches (run.py from medievil.ini, or a test) show as the patches' state.
     static constexpr std::pair<const char*, const char*> perf_off[PerfCount] = {
         {"GOW3_HZB_REMAP", "0"},     {"GOW3_DECAL_PREPASS", "1"},       {"GOW3_PARTICLE_FIXED_STEP", "1"},
@@ -278,8 +281,7 @@ int RestartChanges() {
                   (v.deferred_readback != v.startup_deferred_readback) +
                   (v.stale_readback != v.startup_stale_readback) + (v.ue4_quality != v.startup_ue4_quality) +
                   (v.output_resolution != v.startup_output_resolution) +
-                  (v.render_scale != v.startup_render_scale) +
-                  (v.effects_resolution != v.startup_effects_resolution);
+                  (v.render_scale != v.startup_render_scale);
     for (int p = 0; p < PerfCount; ++p) {
         changes += !PerfLive[p] && v.perf[p] != v.startup_perf[p];
     }

@@ -546,6 +546,16 @@ void PerformanceTab() {
             if (s.preshadows != preshadows) {
                 runtime_ue4_request_cvar("r.Shadow.Preshadows", s.preshadows ? "1" : "0");
             }
+            static const char* const effects_labels[] = {"100%", "75%", "50%"};
+            const int effects = s.effects_resolution;
+            IndexChoiceRow("Effects resolution", s.effects_resolution, effects_labels, 3,
+                           "Smoke, fire and enemy death effects drawn at a lower resolution and "
+                           "blended in. At 4K, 50% is the PS4's 1080p effect detail; several deaths "
+                           "at once cost 2-3 ms a frame at 100%. The cost grows with the render resolution.");
+            if (s.effects_resolution != effects && s.effects_resolution >= 0) {
+                runtime_ue4_request_cvar("r.SeparateTranslucencyScreenPercentage",
+                                         Gow3Settings::UE4EffectsKeys[s.effects_resolution]);
+            }
             ImGui::EndTable();
         }
     }
@@ -589,11 +599,6 @@ void PerformanceTab() {
             IndexChoiceRow("Graphics quality", s.ue4_quality, quality_labels, 5,
                            "Console keeps the PS4 look; High and Ultra go beyond it, Low is for "
                            "integrated graphics.");
-            static const char* const effects_labels[] = {"100%", "75%", "50%"};
-            IndexChoiceRow("Effects resolution", s.effects_resolution, effects_labels, 3,
-                           "Smoke, fire and enemy death effects drawn at a lower resolution and "
-                           "blended in. At 4K, 50% is the PS4's 1080p effect detail; several deaths "
-                           "at once cost 2-3 ms a frame at 100%.");
         }
         ImGui::EndTable();
     }

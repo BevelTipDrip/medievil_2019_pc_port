@@ -1851,3 +1851,14 @@ unused: each unmap freed the images (C3 only stopped their re-upload), the next 
 - **Frames queued 2 (the user, 2026-10-30):** with the HZB fix, parking and preshadows off, `frames_queued=2` now
   gives "even cleaner frametime graphs"; in all earlier testing it made the big spikes larger (a long stall backed up
   two frames; N-15). Costs one more frame of latency (~4.2 ms at 237). The user's choice in the menu; default stays 1.
+
+### N-26: effects resolution as a live switch (2026-10-30, launched by Claude with the user's go; `t-fx1-live-effects.log`, `GOW3_GPU_PROFILE=1`)
+
+`r.SeparateTranslucencyScreenPercentage` added to the live table: TAutoConsoleVariable<float> at 0x5bd2d68, registered at
+0x16651ee (0x145d993 is a lookup that keeps its data pointer at 0x5bc0050, read every frame). The menu row moved to
+"Applied now"; no longer a restart change; the override pak still sets it at boot.
+- **[V]** Switched to 50 at 04:06:13; from the next profile window (04:06:20) the separate translucency passes run at
+  1920x1080 R16G16B16A16Sfloat with D32S8 depth (before: 3840x2160): UE4 re-sizes the target live.
+- **The user:** "Slightly less sharp at 50%, but it's hard to notice on most things, because they're in motion. I
+  imagine 75% would be very difficult to tell, and even at 50%, you'd be hard pressed to notice it while playing on
+  anything but a setup like mine (32" 4k OLED, which I stand fairly close to)."

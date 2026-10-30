@@ -600,6 +600,8 @@ static int ue4_setres(const char *text) { return ue4_set_cvar(0x5c28320,"r.SetRe
 static const struct { const char *name; uintptr_t object, site; unsigned char code[7]; } ue4_cvars[]={
     /* site: lea rsi, [rip+name] in its registration */
     {"r.Shadow.Preshadows",0x5bcff28,0x1611700,{0x48,0x8d,0x35,0x1f,0x76,0x74,0x02}},
+    /* Effects resolution; registered at 0x16651ee (0x145d993 only looks it up and keeps its data) */
+    {"r.SeparateTranslucencyScreenPercentage",0x5bd2d68,0x16651ee,{0x48,0x8d,0x35,0x3d,0x8c,0x6f,0x02}},
 };
 #define UE4_CVARS (sizeof(ue4_cvars)/sizeof(ue4_cvars[0]))
 static char ue4_cvar_values[UE4_CVARS][8];

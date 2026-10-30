@@ -137,7 +137,7 @@ INI_DEFAULTS = {'show_fps': '1', 'display_mode': 'windowed', 'vsync': '1', 'fps_
                 'async_shaders': '1', 'deferred_readback': '1', 'stale_readback': '0',
                 'output_resolution': '1920x1080', 'render_scale': '100', 'engine_fps': '60', 'fsr1': '0',
                 'rcas': '1', 'rcas_strength': '75', 'frames_queued': '1', 'ue4_quality': 'console',
-                'effects_resolution': '100',
+                'effects_resolution': '75',
                 'cheat_very_hard': '0', 'cheat_double_jumps': '0', 'cheat_menu': '0', 'cheat_infinite_ammo': '0'}
 DISPLAY_MODES = [('windowed', ('Windowed',)), ('borderless', ('Borderless',)), ('fullscreen', ('Fullscreen',))]
 FPS_LIMITS = [('-2', ('Auto: refresh (VRR: below it, Reflex rule)',)), ('-3', ('Auto: half refresh (VRR: one below)',)),
@@ -485,7 +485,7 @@ RENDER_SCALE_HINT = ('How large the 3D scene is drawn, per side, compared with t
                      'and HUD always draw at the output size. Applied at start.')
 QUALITY_CHOICES = [('ultra', ('Ultra',)), ('high', ('High',)), ('console', ('Console (PS4)',)),
                    ('medium', ('Medium',)), ('low', ('Low (integrated graphics)',))]
-EFFECTS_CHOICES = [('100', ('100%',)), ('75', ('75%',)), ('50', ('50% (PS4 detail at 4K)',))]
+EFFECTS_CHOICES = [('100', ('100%',)), ('75', ('75% (default)',)), ('50', ('50% (PS4 detail at 4K)',))]
 ENGINE_FPS_CHOICES = [('60', ('60 (original)',)), ('120', ('120',)), ('240', ('240',))]
 
 
@@ -1103,7 +1103,8 @@ class Launcher:
         self.row(f, _('Effects resolution'), self.choice(f, 'effects_resolution', 'ini', EFFECTS_CHOICES),
                  _('Smoke, fire and enemy death effects drawn at a lower resolution and blended in. At 4K '
                    'several enemy deaths at once cost 2-3 ms a frame at 100%; 50% matches the effect detail '
-                   'of the PS4 at 1080p. Applied at start.'), restart=True)
+                   'of the PS4 at 1080p. The cost grows with the render resolution. Applied at start; the in-game menu '
+                   'also switches it while playing.'), restart=True)
         self.row(f, _('Output resolution'), self.choice(f, 'output_resolution', 'ini', OUTPUT_CHOICES,
                                                         custom=self.custom_label('output_resolution')),
                  _(OUTPUT_HINT), restart=True)

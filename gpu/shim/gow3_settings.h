@@ -97,10 +97,11 @@ struct Values {
     int startup_ue4_quality = 2, startup_output_resolution = 4, startup_render_scale = 3;
     std::string ue4_quality_raw = "console", output_resolution_raw = "1920x1080", render_scale_raw = "100";
     /// MediEvil effects resolution (UE4EffectsKeys): UE4's separate translucency (enemy death
-    /// effects, smoke, fire) at 100 / 75 / 50% of the render size. On restart (run.py:
-    /// ue4_override). The death effects of several enemies cost 2-3 ms of GPU a frame at 4K (N-19).
-    int effects_resolution = 0, startup_effects_resolution = 0;
-    std::string effects_resolution_raw = "100";
+    /// effects, smoke, fire) at 100 / 75 / 50% of the render size. Live (in-game menu,
+    /// runtime_ue4_request_cvar) and at boot (run.py: ue4_override). The death effects of several
+    /// enemies cost 2-3 ms of GPU a frame at 4K (N-19).
+    int effects_resolution = 1, startup_effects_resolution = 1; // 75% (N-26)
+    std::string effects_resolution_raw = "75";
     /// MediEvil: UE4 preshadows (r.Shadow.Preshadows; moving objects' shadows from fixed lights),
     /// switched live through the game's console variable (runtime_ue4_request_cvar). Off: the
     /// heavy Graveyard view stayed at the frame cap (N-25).

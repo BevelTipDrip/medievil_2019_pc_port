@@ -174,7 +174,7 @@ def main():
                                                            ini.get('cheat_menu') == '1',
                                                            ini.get('cheat_infinite_ammo') == '1',
                                                            env.get('GOW3_HZB_REMAP') == '1',
-                                                           ini.get('effects_resolution', '100')), flush=True)
+                                                           ini.get('effects_resolution', '75')), flush=True)
         except (OSError, ValueError) as error:
             print(f'Render resolution: unchanged ({error})', flush=True)
     original_game = game.resolve()

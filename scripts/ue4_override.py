@@ -295,7 +295,7 @@ def edited_asset(game, name, edits):
 
 
 def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_menu=False,
-          infinite_ammo=False, hzb=False, effects='100'):
+          infinite_ammo=False, hzb=False, effects='75'):
     """Writes or removes the override pak. Returns a short description of the active state."""
     pak = paks_dir(game) / PAK_NAME
     values = dict(QUALITY.get(quality, {}))
@@ -314,7 +314,8 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
     # Effects resolution (medievil.ini effects_resolution): UE4's separate translucency, where the
     # enemy death effects, smoke and fire draw, at 75 or 50% of the render size, blended in by
     # depth. At 4K several deaths at once cost 2-3 ms of GPU a frame at full size; at 50% none
-    # showed (N-19, N-20). 50% at 4K is the PS4's 1080p effect detail.
+    # showed (N-19, N-20). 50% at 4K is the PS4's 1080p effect detail. Default 75: the user saw
+    # 50% only as slightly less sharp on a 32" 4K OLED up close (N-26).
     if effects in ('75', '50'):
         values['r.SeparateTranslucencyScreenPercentage'] = effects
     width, height = (int(v) for v in output.split('x'))
