@@ -49,15 +49,15 @@ if its gate passes; (5) item 4 if gated in; item 8 last (risky). Then the ring r
 | # | Fix | Expected | State |
 |---|---|---|---|
 | 1 | Preshadows cut | stage B -0.4 to -0.9 ms in busy views | **done as a live switch** (N-25, `fdd12e8`), default on. Open: variant (a) `r.Shadow.PreShadowFadeResolution=32;r.Shadow.MinPreShadowResolution=16` (PS4-1080p-equivalent culling at 4K, keeps them) if the user wants them on but cheaper |
-| 2 | Bulk descriptor copy per push (Bloodborne 0.3), one ChunkGuard | stage B -0.1 to -0.2 ms (2.5-6%) | open |
-| 3 | Sampler-handle cache in the texture-set memo, then S1 delta-draw | -0.1 ms, then -0.25 to -0.35 ms | open |
-| 4 | Memoizable sets that contain the draw's own target | -0.08 to -0.17 ms | open, gated on the Step-0 counter |
+| 2 | Bulk descriptor copy per push (Bloodborne 0.3), one ChunkGuard | stage B -0.1 to -0.2 ms (2.5-6%) | **go** (N-28: ~900 pushes a frame, ~15 writes each; descriptors 0.37 ms) |
+| 3 | Sampler-handle cache in the texture-set memo, then S1 delta-draw | -0.1 ms, then -0.25 to -0.35 ms | sampler cache **go** (N-28: samplers 0.12 ms); S1 needs its predicate counter (not built) |
+| 4 | Memoizable sets that contain the draw's own target | -0.08 to -0.17 ms | **gate passed** (N-28: the dropped sets are own-target ones, colour more than depth; ~78 a heavy frame, ~2.3 us each) |
 | 5 | Mid-frame 4K stencil-plane copy | GPU <= 0.1 ms | open, low |
 | 6 | LTO build (ThinLTO, clang/MinGW) | 0-2% stage B | open, quick (no code) |
 | 7 | Volumetric fog grid at PS4 density for 4K (GridPixelSize 16 -> 32) | GPU 0.05-0.2 ms; more on weak GPUs | open; a candidate quality option (item 4) |
 | 8 | Skip identity GPU-particle sim draws | -0.15 to -0.28 ms | open, risky (frozen particles) |
 | 9 | Shadow-map transition batching | GPU 0.02-0.12 ms | open, re-evaluate after 1 |
-| 10 | FindImage generation-only misses | lows +1-3 FPS | open; parking (N-24) removed one source of bumps |
+| 10 | FindImage generation-only misses | lows +1-3 FPS | **dropped** (N-28: 3-9 generation-only misses a frame, gate 50); render-state spikes now 0.8% of heavy frames, in target creation |
 | 11 | `r.Shadow.MaxResolution=1024` | 0-5% | open, after 1; risk to the 0.1% lows |
 | 12 | Real results for the ~20 shadow occlusion queries | -1% to +3% | open, low |
 
