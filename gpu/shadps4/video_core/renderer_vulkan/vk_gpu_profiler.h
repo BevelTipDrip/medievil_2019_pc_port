@@ -83,6 +83,15 @@ private:
     };
     std::unordered_map<u64, Total> totals;
     u64 frames = 0;
+    /// Slow GPU frames (bursts of 7-10 ms in fights, N-17/N-18): the scene part of a frame (a
+    /// profiled frame with >= 1 ms of GPU work; the UI pass after the display pass is its own)
+    /// is slow at >= 1.35x the median of the last 128 scene parts. Labels are summed for slow
+    /// and for other scene parts, printed side by side (largest growth first).
+    std::unordered_map<u64, Total> scene_totals, slow_totals;
+    u64 scene_frames = 0, slow_frames = 0;
+    std::array<double, 128> recent_scene{};
+    u32 recent_count = 0, recent_next = 0;
+    std::vector<std::pair<u64, double>> frame_segments;
     u64 current = 0;
     std::chrono::steady_clock::time_point window = std::chrono::steady_clock::now();
 };

@@ -6,6 +6,7 @@
 #include <boost/container/small_vector.hpp>
 #include <boost/container/static_vector.hpp>
 
+#include "gow3_toggles.h"
 #include "shader_recompiler/resource.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
@@ -81,7 +82,13 @@ void Pipeline::BindResources(DescriptorWrites& set_writes,
     for (auto& set_write : set_writes) {
         set_write.dstSet = desc_set;
     }
-    instance.GetDevice().updateDescriptorSets(set_writes, {});
+    {
+        Gow3Stats::Timer timer{Gow3Stats::t_descriptor_set_updates};
+        instance.GetDevice().updateDescriptorSets(set_writes, {});
+    }
+    if (Gow3Stats::enabled) {
+        Gow3Stats::descriptor_set_updates.fetch_add(1, std::memory_order_relaxed);
+    }
     scheduler.Record([bind_point, layout, desc_set](vk::CommandBuffer cmdbuf) {
         cmdbuf.bindDescriptorSets(bind_point, layout, 0, desc_set, {});
     });

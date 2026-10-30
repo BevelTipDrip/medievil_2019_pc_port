@@ -1656,3 +1656,104 @@ slow-frame lines to find what the GPU waits on with reuse on. Frames queued 2 (t
 reuse on): did not help; back to 1.
 - `t-reg2-reuse-default-off` (the new default, stats off; log has no frame data): the user, panning the heavy area
   that spiked: **clean, 0.1% low ~160** (with the spikes 70-100; ~125+ before these two nights).
+
+### N-16: research: where heavy frames lose time; constant-ring stamp fix (2026-10-29)
+
+Offline study, details in [study-frame-cost-2026-10-29.md](study-frame-cost-2026-10-29.md). Main points:
+- **Corrections.** N-4/N-5's "~9% GPU gain" from narrow image stages is GPU *idle* variance; GPU active time
+  4.876 -> 4.836 ms (-0.8%) in ngfx-ab-1 [V]. The ngfx fight-1 "10 ms" frame is 6.3 ms of work + 3.7 ms idle.
+- **Two kinds of 10 ms frames:** idle-dominated (the GPU waits for stage B: lockstep with frames_queued=1, both
+  sides ~4.1-4.6 ms in heavy views) and real 9.5-10 ms GPU work in **bursts of 30-80 frames in fights** (nsys, t-ab,
+  ngfx-narrow-2: ~2x shader instructions per pixel, not depth-only work). Busy GPU clocks dip to 2.06-2.35 GHz in
+  ~12% of samples (nsys GPU metrics).
+- **Largest single lever found:** UE4 preshadows: the preshadow cache is full and 23-45 preshadows per frame are
+  re-rendered (260-445 draws, 94-160 passes in the RenderDoc captures). First test: `r.Shadow.Preshadows=0` (bound).
+- CPU: bulk descriptor copy (Bloodborne), sampler handles in the texture-set memo, memoizable sets containing the
+  current target (`key = 0` at vk_rasterizer.cpp:2679/2692), LTO (off in build.sh, CMake default on).
+- **Ring bug [V]:** `ConstantRing::Stamp` published a pending stamp only when a different end arrived; once the ring
+  was full the position stopped, the last stamp was never published and the ring stayed full for good:
+  `t-gpu1-tonight-off` from line 418 on, ~1.7 M failed allocations a second (each a retirement scan with a semaphore
+  query on stage A), all constants on the stream buffer (reuse on). Fixed: the same end on a later tick publishes.
+  Not shown to be the N-15 cause (t-pan5 / t-flip1 were not stuck); reuse stays off.
+
+### N-17: baseline on current defaults (2026-10-29, launched by the user; `t-base1.log`, `research-data\smi-base1.csv`)
+
+Reuse off, stamp fix, bind counters; stats + `GOW3_SLOW_FRAMES=1.6` + `GOW3_SECTIONS=1`; nvidia-smi at 100 ms.
+**Measurement artifact:** the descriptor-push counter hashed each push byte by byte on stage B: "descriptors"
+0.68 us/draw (t-pan5 0.27): ~+0.4 us a draw in this run. Result kept (0 identical pushes), hash removed.
+- Capped stretch (20:38:45-20:40:25, ~1,160 draws): flat at 237, p99 4.45-4.57 ms; GPU 384 W, 92-93%, 2,790 MHz.
+- Heavy, ordinary frames (samples from 20:40:45): 4.80 ms, 1,308 draws, stage B packet 4.26 ms (draw 3.29, tasks
+  0.80; ~3.85 ms without the artifact), busy 92%, ticks 0.14 ms: **stage-B-bound**; GPU 330-390 W, 84-96% then.
+- Heavy slow frames: 101 of 133 wait for the GPU (7.0 ms, ~1,140 draws, ticks 2.05, flip_present 2.12 ms), in bursts
+  (20:40:36-41: 62 in a row at 7-7.5 ms with ~710-740 draws; 20:41:3x: 83) coinciding with 415-440 W and SW power cap
+  (clock only 2,715-2,745): **real GPU work with few draws** (pixel/effect cost). 32 CPU-slow (8.0 ms, 1,406 draws).
+- Pipeline binds equal to the previous draw's: 68-72% of draws; descriptor set updates (device call) 33-103 a frame
+  at 0.3-0.6 us each: negligible.
+
+### N-18: preshadows off (2026-10-29, launched by Claude with the user's go; `t-pre1-preshadows-off.log`, `research-data\smi-pre1.csv`)
+
+`GOW3_UE4_CVARS='r.Shadow.Preshadows=0'`; build without the N-17 hash. Route not identical to t-base1, so sampled
+frames are compared at matched draw counts:
+
+| draws | passes base1 -> pre1 | frame ms | stage B packet minus descriptors ms |
+|---|---|---|---|
+| 1100-1300 | 177 -> 145 | 4.22 -> 4.29 | 2.41 -> 2.83 |
+| 1300-1500 | 297 -> 165 | 4.89 -> 4.54 | 3.50 -> 3.32 |
+| 1500-1800 | 315 -> 154 | 5.05 -> 4.96 | 3.52 -> 3.70 |
+
+- The cvar works: passes per draw roughly halve in heavy views [V]. At a matched draw count stage B and frame time
+  are about equal once N-17's hash is taken out: the saving can only come from fewer draws in the same view, which
+  a different route cannot show. A fixed-spot A/B is needed.
+- **The GPU-bound bursts are not preshadows [V]:** still there (20:53:14-19: 58 frames at 9.2 ms; 20:56:24-29: 49
+  at 8.2 ms), 405-444 W and power-capped as in t-base1. Next for them: what is on screen, then a GPU trace in one.
+- Screenshots (NVIDIA overlay, 20:55:13 / 20:55:26, Dan by the mausoleum and a tree): no visible artefact; no
+  preshadows-on image of the same spot to compare yet.
+
+### N-19: what the fight's slow frames are, per pass (2026-10-29, launched by Claude with the user's go; `t-prof1-fight-bursts.log`)
+
+`GOW3_GPU_PROFILE` now also splits each 5 s window's scene parts (profiled frames >= 1 ms) into slow (>= 1.35x the
+median of the last 128) and other, and prints the labels by growth. Same fight as the ngfx captures. Two kinds [V]:
+- **CPU-late** (21:12:09, 21:12:49): the growth is "(between submissions: GPU idle)" +1.8 ms: stage B late.
+- **GPU effect frames** (21:12:24-29: 28 slow frames, 7.95 ms vs 4.94 with the **same** draws and passes, 1,287 /
+  261 vs 1,246 / 262; ticks 2.4 ms): the growth is in 4K `R16G16B16A16Sfloat` passes with scene depth
+  `D32SfloatS8Uint`: vs 6f178d79bf2802f1 / ps b3592cf66d1638b3 +2.33 ms (5.1 passes vs 1.2); at 21:12:54
+  vs 86dfe619e1b27d2e / ps f1d9870c6f9f1c3c +1.28, 4679638716af6d38 / 62aaa0ddeadc0a24 +0.75, cde82342612428f3 /
+  5a186d1550c17597 +0.46, 08072e6863c66fd1 / d3a2b7fa159fd140 +0.40. Translucent effects covering much of the 4K
+  screen: pixel cost, not draws. (study-heavy-frame-map phase 10 says translucency draws into SceneColor; the N-16
+  critic says its own target. If it is UE4's separate translucency, `r.SeparateTranslucencyScreenPercentage` applies;
+  the N-16 drop of that cvar rested on narrow-2 counters and is reopened by this.)
+
+### N-20: the fight's effects at half resolution (2026-10-29, launched by Claude with the user's go; `t-prof2-translucency-50.log`)
+
+`GOW3_UE4_CVARS='r.SeparateTranslucencyScreenPercentage=50'`, `GOW3_GPU_PROFILE=1`. **The N-19 effect passes are UE4
+separate translucency [V]:** all of them now run at 1920x1080 (`R16G16B16A16Sfloat`, depth `D32SfloatS8Uint`), e.g.
+vs 6f178d79bf2802f1 / ps b3592cf66d1638b3, vs 86dfe619e1b27d2e / ps f1d9870c6f9f1c3c, vs 4679638716af6d38 /
+ps 62aaa0ddeadc0a24. Slow scene parts: effect-pass growth <= 0.09 ms in every window (t-prof1: +2.36 and +2.91 ms
+in its effect windows), with effects on screen about as much (window means of those passes up to 0.13 ms vs 0.17).
+The remaining slow frames are all "GPU idle" growth (+3-4 ms): stage B late. This fight was much heavier than
+t-prof1's (1,691 draws / 424 passes in slow frames vs 883 / 191), so overall FPS is not comparable between the runs.
+Visual cost (UE4's upsample of half-resolution translucency at 4K): to judge by the user.
+- **Setting (built, not run yet):** `effects_resolution` = 100 / 75 / 50 in medievil.ini, the in-game menu (Graphics,
+  next to Graphics quality; on restart) and the launcher (Resolution and quality); `ue4_override.apply` writes
+  `r.SeparateTranslucencyScreenPercentage` for 75 / 50. Default 100 (PS4 look) until the user has judged 50 / 75.
+- The user: the slow fight is 4-5 enemy **death effects** at once; most other separate-translucency effects are
+  rarer. Wanted: those effects cheaper at full quality, or only those at lower resolution. The heavy area behind the
+  fight is mostly occluded yet drawn (1,691 draws in t-prof2's fight vs 883 in t-prof1's): HZB occlusion is lenient.
+
+### N-21: why the death effects cost 2-3 ms (2026-10-29, launched by Claude with the user's go; `t-diag1-death-effects.log`, shader dumps in `user\shader\dumps`)
+
+`GOW3_GPU_PROFILE=1 GOW3_PERF_DIAG=1 GOW3_DUMP_SHADERS=1` (diagnostics only: shader dumping and the reports made
+stage B 10-20 ms late in slow frames; not a smoothness run). Death-effect windows again: ps b3592cf66d1638b3
++1.16 ms in slow scene parts at 4.2 passes a frame vs 1.3.
+- **The shaders are light [V]:** ps b3592cf66d1638b3 is 1,372 bytes of GCN, 593 IR lines, 6 texture samples
+  (2 explicit-LOD: scene depth for soft particles), no loops, no discard, ~90 interpolated inputs; f1d9870c6f9f1c3c
+  4 samples; 62aaa0ddeadc0a24 5 samples + 1 image read. Nothing the translation makes expensive.
+- **So the cost is overdraw [?, consistent]:** large soft particles of several deaths at once, blended into an
+  `R16G16B16A16Sfloat` 4K target many layers deep (8 bytes read + write per layer and pixel). Fewer pixels is the
+  fix (N-20: half resolution removed the growth). The extra pass splits during deaths (~3 a frame) cost a barrier
+  each, under ~1 us of drain by N-16's measurements: not the 2 ms.
+- Only the death effects at lower resolution is not available through UE4 (separate translucency is per material,
+  one target for all); a port-side half-resolution target for chosen pipelines would be a large change. The
+  `effects_resolution` setting (75 / 50) is the practical lever.
+- Occlusion (the user): the effects draw after UE4 builds its HZB from opaque depth and write no depth, so they cannot
+  disturb occlusion. The lenient HZB culling behind the fight is its own item (next).

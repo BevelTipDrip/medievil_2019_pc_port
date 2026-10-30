@@ -575,6 +575,11 @@ void PerformanceTab() {
             IndexChoiceRow("Graphics quality", s.ue4_quality, quality_labels, 5,
                            "Console keeps the PS4 look; High and Ultra go beyond it, Low is for "
                            "integrated graphics.");
+            static const char* const effects_labels[] = {"100%", "75%", "50%"};
+            IndexChoiceRow("Effects resolution", s.effects_resolution, effects_labels, 3,
+                           "Smoke, fire and enemy death effects drawn at a lower resolution and "
+                           "blended in. At 4K, 50% is the PS4's 1080p effect detail; several deaths "
+                           "at once cost 2-3 ms a frame at 100%.");
         }
         ImGui::EndTable();
     }

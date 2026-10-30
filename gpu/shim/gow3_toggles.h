@@ -106,6 +106,12 @@ inline std::atomic<std::uint64_t> stream_buffer_bytes{0}, constant_ring_bytes{0}
     staging_upload_bytes{0}, staging_download_bytes{0};
 /// Constant bytes bound from an earlier ring copy instead of copied again (GOW3_RING_REUSE).
 inline std::atomic<std::uint64_t> constant_ring_reused_bytes{0};
+/// Stage B binds ("Binds per frame" line, GOW3_FRAME_STATS): guest-draw pipeline binds and the
+/// ones with the previous guest draw's handle; descriptor set updates (updateDescriptorSets, a
+/// device call: more bindings than push descriptors allow) and their time (ns). Identical
+/// descriptor pushes were counted once (t-base1: 0; a byte hash per push cost ~0.4 us a draw).
+inline std::atomic<std::uint64_t> pipeline_binds{0}, pipeline_bind_repeats{0},
+    descriptor_set_updates{0}, t_descriptor_set_updates{0};
 inline std::atomic<int> gpu_thread_clock{-1}; ///< clockid_t of the GPU command thread
 inline std::atomic<unsigned long> gpu_thread_id{0}; ///< Windows thread id of the GPU command thread
 inline std::atomic<std::uint64_t> draws{0}, dispatches{0}, submissions{0};

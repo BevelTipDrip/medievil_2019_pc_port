@@ -487,6 +487,20 @@ bool Rasterizer::PendingWriteOverlaps(VAddr address, u64 size) {
     return false;
 }
 
+/// gow3 GOW3_FRAME_STATS: guest-draw pipeline binds, and the ones with the previous guest draw's
+/// handle ("Binds per frame" line; an estimate: host passes in between are not counted).
+static void NoteGuestPipelineBind(vk::Pipeline handle) {
+    if (!Gow3Stats::enabled) {
+        return;
+    }
+    thread_local vk::Pipeline last;
+    Gow3Stats::pipeline_binds.fetch_add(1, std::memory_order_relaxed);
+    if (handle == last) {
+        Gow3Stats::pipeline_bind_repeats.fetch_add(1, std::memory_order_relaxed);
+    }
+    last = handle;
+}
+
 void Rasterizer::CollectRingBindings(const Shader::Info& stage, const PreparedDraw* prepared,
                            boost::container::static_vector<RingBinding, Shader::NUM_BUFFERS>& out) {
     const PreparedStage* prepared_stage = nullptr;
@@ -1208,6 +1222,7 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
     const auto [vertex_offset, instance_offset] = GetDrawOffsets(regs, vs_info, fetch_shader);
 
     const vk::Pipeline handle = pipeline->Handle();
+    NoteGuestPipelineBind(handle);
     const vk::Pipeline square = SquarePass(*pipeline);
     const u32 num_indices = regs.num_indices;
     const u32 num_instances = regs.num_instances.NumInstances();
@@ -1347,6 +1362,7 @@ void Rasterizer::DrawIndirectRecord(const GraphicsPipeline* pipeline, bool is_in
     ASSERT(stride == (is_indexed ? sizeof(VkDrawIndexedIndirectCommand)
                                  : sizeof(VkDrawIndirectCommand)));
     const vk::Pipeline handle = pipeline->Handle();
+    NoteGuestPipelineBind(handle);
     const vk::Pipeline square = SquarePass(*pipeline);
     const vk::Buffer args = buffer->Handle();
     const u64 args_offset = base;

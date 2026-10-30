@@ -295,7 +295,7 @@ def edited_asset(game, name, edits):
 
 
 def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_menu=False,
-          infinite_ammo=False, hzb=False):
+          infinite_ammo=False, hzb=False, effects='100'):
     """Writes or removes the override pak. Returns a short description of the active state."""
     pak = paks_dir(game) / PAK_NAME
     values = dict(QUALITY.get(quality, {}))
@@ -311,6 +311,12 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
         values['r.TemporalAA.Upsampling'] = '1'
     if output != '1920x1080':
         values['r.setres'] = output
+    # Effects resolution (medievil.ini effects_resolution): UE4's separate translucency, where the
+    # enemy death effects, smoke and fire draw, at 75 or 50% of the render size, blended in by
+    # depth. At 4K several deaths at once cost 2-3 ms of GPU a frame at full size; at 50% none
+    # showed (N-19, N-20). 50% at 4K is the PS4's 1080p effect detail.
+    if effects in ('75', '50'):
+        values['r.SeparateTranslucencyScreenPercentage'] = effects
     width, height = (int(v) for v in output.split('x'))
     if width * height > LARGE_OUTPUT and os.environ.get('GOW3_PS4_MEMORY') != '1':
         # The GPU heap and texture streaming pool above 1080p (with GOW3_DMEM_MB in run.py).

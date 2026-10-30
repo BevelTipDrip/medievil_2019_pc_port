@@ -701,6 +701,16 @@ void VideoOutDriver::Flip(const Request& req) {
                                 Gow3Stats::constant_ring_reused_bytes.exchange(0) / per_frame,
                                 Gow3Stats::staging_upload_bytes.exchange(0) / per_frame,
                                 Gow3Stats::staging_download_bytes.exchange(0) / per_frame);
+                    // gow3: what skipping repeated binds would save (stage B, guest draws).
+                    const double frames_d = frames ? double(frames) : 1.0;
+                    const u64 set_updates = Gow3Stats::descriptor_set_updates.exchange(0);
+                    const u64 set_update_ns = Gow3Stats::t_descriptor_set_updates.exchange(0);
+                    std::printf("Binds per frame: pipelines %.0f (%.0f same as the previous draw), "
+                                "descriptor set updates %.1f (%.1f us each)\n",
+                                Gow3Stats::pipeline_binds.exchange(0) / frames_d,
+                                Gow3Stats::pipeline_bind_repeats.exchange(0) / frames_d,
+                                set_updates / frames_d,
+                                set_updates ? set_update_ns / 1e3 / set_updates : 0.0);
                 }
                 if (std::getenv("GOW3_STREAM_CLEAN")) {
                     std::printf("Small read-only buffers/s: %.0f bound from the arena, %.0f uploaded "

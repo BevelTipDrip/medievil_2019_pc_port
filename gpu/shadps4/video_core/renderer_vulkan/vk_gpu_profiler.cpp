@@ -87,13 +87,37 @@ bool GpuProfiler::Collect(u32 which) {
     if (result != vk::Result::eSuccess) {
         return false; // eNotReady: the GPU has not written them all yet
     }
+    double frame_ms = 0;
+    frame_segments.clear();
     for (u32 i = 0; i + 1 < count; ++i) {
         const double ms = double(stamps[i + 1] - stamps[i]) * period_ns / 1e6;
         auto& total = totals[keys[which][i]];
         total.ms += ms;
         ++total.segments;
+        frame_ms += ms;
+        frame_segments.emplace_back(keys[which][i], ms);
     }
     ++frames;
+    if (frame_ms >= 1.0) {
+        double median = 0;
+        if (recent_count >= 16) {
+            std::array<double, 128> sorted_recent = recent_scene;
+            const auto middle = sorted_recent.begin() + recent_count / 2;
+            std::nth_element(sorted_recent.begin(), middle, sorted_recent.begin() + recent_count);
+            median = *middle;
+        }
+        const bool slow = median > 0 && frame_ms >= 1.35 * median;
+        auto& bucket = slow ? slow_totals : scene_totals;
+        for (const auto& [key, ms] : frame_segments) {
+            auto& total = bucket[key];
+            total.ms += ms;
+            ++total.segments;
+        }
+        ++(slow ? slow_frames : scene_frames);
+        recent_scene[recent_next] = frame_ms;
+        recent_next = (recent_next + 1) % recent_scene.size();
+        recent_count = std::min<u32>(recent_count + 1, recent_scene.size());
+    }
     return true;
 }
 
@@ -116,6 +140,44 @@ void GpuProfiler::Print() {
         std::printf("  %6.3f ms/frame %5.1f/frame  %s\n", total.ms / frames,
                     double(total.segments) / frames, described[key].c_str());
     }
+    if (slow_frames) {
+        // Labels by growth in slow scene parts over the other scene parts of the window.
+        double slow_sum = 0, scene_sum = 0;
+        for (const auto& [key, total] : slow_totals) {
+            slow_sum += total.ms;
+        }
+        for (const auto& [key, total] : scene_totals) {
+            scene_sum += total.ms;
+        }
+        const double other = scene_frames ? double(scene_frames) : 1.0;
+        std::printf("GPU profile, slow scene parts (>= 1.35x median): %llu of %llu, %.2f ms each "
+                    "vs %.2f; by growth (slow / other ms, segments):\n",
+                    static_cast<unsigned long long>(slow_frames),
+                    static_cast<unsigned long long>(slow_frames + scene_frames),
+                    slow_sum / slow_frames, scene_sum / other);
+        std::vector<std::pair<u64, double>> growth;
+        for (const auto& [key, total] : slow_totals) {
+            const auto it = scene_totals.find(key);
+            const double base = it == scene_totals.end() ? 0.0 : it->second.ms / other;
+            growth.emplace_back(key, total.ms / slow_frames - base);
+        }
+        std::ranges::sort(growth, [](const auto& a, const auto& b) { return a.second > b.second; });
+        for (size_t i = 0; i < std::min<size_t>(growth.size(), 20); ++i) {
+            const u64 key = growth[i].first;
+            const auto& slow_total = slow_totals[key];
+            const auto it = scene_totals.find(key);
+            const double base_ms = it == scene_totals.end() ? 0.0 : it->second.ms / other;
+            const double base_segments =
+                it == scene_totals.end() ? 0.0 : double(it->second.segments) / other;
+            std::printf("  %+6.3f ms: %6.3f / %6.3f ms, %5.1f / %5.1f  %s\n", growth[i].second,
+                        slow_total.ms / slow_frames, base_ms,
+                        double(slow_total.segments) / slow_frames, base_segments,
+                        described[key].c_str());
+        }
+    }
+    slow_totals.clear();
+    scene_totals.clear();
+    slow_frames = scene_frames = 0;
     totals.clear();
     frames = 0;
     std::fflush(stdout); // the log keeps it even if the game exits without flushing

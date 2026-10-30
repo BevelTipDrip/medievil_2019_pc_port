@@ -96,6 +96,11 @@ struct Values {
     int ue4_quality = 2, output_resolution = 4, render_scale = 3;
     int startup_ue4_quality = 2, startup_output_resolution = 4, startup_render_scale = 3;
     std::string ue4_quality_raw = "console", output_resolution_raw = "1920x1080", render_scale_raw = "100";
+    /// MediEvil effects resolution (UE4EffectsKeys): UE4's separate translucency (enemy death
+    /// effects, smoke, fire) at 100 / 75 / 50% of the render size. On restart (run.py:
+    /// ue4_override). The death effects of several enemies cost 2-3 ms of GPU a frame at 4K (N-19).
+    int effects_resolution = 0, startup_effects_resolution = 0;
+    std::string effects_resolution_raw = "100";
     // FSR 4 checks (menu): the provider's auto exposure, the jitter sign it is given.
     std::atomic<bool> fsr4_auto_exposure{true};
     std::atomic<bool> fsr4_invert_jitter{false};
@@ -148,6 +153,7 @@ inline constexpr const char* UE4QualityKeys[] = {"ultra", "high", "console", "me
 inline constexpr const char* UE4OutputKeys[] = {"display", "3840x2160", "3200x1800", "2560x1440", "1920x1080",
                                                 "1280x720"};
 inline constexpr const char* UE4ScaleKeys[] = {"200", "167", "133", "100", "67", "58", "50"};
+inline constexpr const char* UE4EffectsKeys[] = {"100", "75", "50"};
 /// Startup options changed since this launch (applied by "Apply and restart").
 int RestartChanges();
 

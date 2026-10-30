@@ -114,10 +114,17 @@ public:
     /// Stage B, after recording a packet whose allocations end at `end`. Stamps of one
     /// submission tick are merged: only the last end per tick is published.
     void Stamp(u64 end) {
+        const u64 tick = scheduler.CurrentTick();
         if (end == pending_end) {
+            // The same end on a later tick: its region is complete, publish it. Otherwise a ring
+            // that ran full (the position no longer moves) never published its last stamp, never
+            // released anything and stayed full (t-gpu1-tonight-off: ~1.7 M failed allocations
+            // a second, each a retirement scan, all constants left to the stream buffer).
+            if (tick != pending_tick && pending_end != last_published) {
+                Publish(pending_end, pending_tick);
+            }
             return;
         }
-        const u64 tick = scheduler.CurrentTick();
         if (tick != pending_tick && pending_end != last_published) {
             Publish(pending_end, pending_tick);
         }
