@@ -42,4 +42,5 @@ update an item's state here when it moves; details live in the linked plan or st
 | Pak values likely inert: `r.GarlicHeapSizeMB` / `r.OnionHeapSizeMB` (not in the 01.00 eboot), `r.Streaming.PoolSize=1600` (PS4 device profile sets 2000 at a higher priority) (study-live-switches.md) | open: verify, then drop or fix |
 | Toggle-file bit 31 switches two things (narrow image stages, pool views kept across a decommit) (study-live-switches.md) | open, small |
 | CLAUDE.md says `origin` is the public upstream; it is the BevelTipDrip fork (`upstream` is bc160201983, push disabled) | the user to edit (Claude does not edit CLAUDE.md unasked) |
+| S1 boot crash (~1 in 8 launches): `pthread_mutex_lock` on a garbage mutex, found in the Windows event log ([plan-baseline-issues.md](plan-baseline-issues.md) S1) | open: lock sites in `runtime_mutex.c`, then a crash dump |
 | `frames_queued=2` now smoother than 1; default stays 1 so testing does not mask real issues (N-25) | decided |
