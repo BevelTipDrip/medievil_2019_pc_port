@@ -361,6 +361,17 @@ been given its own core (CPU sets) at GPU start; whether that changed the boot t
 (the log ends in a ~0-draw stall report): the user: **when loading a save**, a first for S1. Log [data/t-z1-baseline-s1.log](data/t-z1-baseline-s1.log).
 Four in ~65 launches; not tied to one change.
 
+**The fault, found 2026-10-30 15:45 (run `t-lab-1-premerge-check`, build `d8cd481`, ~6 s in, after `PoolThread 6-9`):**
+S1 is not a silent exit. Windows Error Reporting logs each one (Application log, event 1000 / 1001): **access
+violation `0xc0000005` in `libwinpthread-1.dll` at offset `0x3583`**. All 8 runtime crashes since 2026-10-18 are
+this (10-18, 10-19, 10-20, 10-21, 10-23 ×3, 10-30); one other on 10-23 was in `ntdll` at `0xe7880`. The offset is
+`pthread_mutex_lock`+0x33, `call *0x10(%rax)`. winpthread keeps a pointer to its mutex object in the
+`pthread_mutex_t`. `pthread_mutex_lock` loads it (not 0, not a static-initializer value ≥ -3), then calls through
+that object's vtable. So **a lock on a `pthread_mutex_t` whose contents are garbage**: destroyed and freed, never
+initialised, or overwritten. The "exit code 5" is how the runner reports the crash. Upstream has no fix (checked to
+1.3.8). Next: the lock sites in `runtime_mutex.c` (guest `scePthreadMutex*` mapped to winpthread, destroy vs. a
+late lock), and a crash dump (WER LocalDumps needs admin: the user runs it). Retry after an S1: it boots normally.
+
 ## V2. Fire / torches broken, more box shadows (the user, 2026-10-18, run `perfdiag-heavy`)
 
 "I loaded into the starting area … It looks like fire/torches were broken, and I saw more of those broken 'shadows'
