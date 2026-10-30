@@ -1897,3 +1897,16 @@ converts to wall time and to a WPR capture's offset (the export header's `Trace 
   llvm-symbolizer.
 - Next: more stalls to rank the causes (one TabTip stall out of three); a run with TabTip closed (the user's system,
   the user's call); then the render-thread-late kind (what the game waits on) and the GPU effects burst.
+- **Steady-load slow frames (the user, 2026-10-30: "areas where the .1% lows are in the 160s, while the average is in
+  the 200-240 range ... despite the load not changing at all. Why?").** Open. `research/tools/flip_slow_stages.py`
+  on `t-m138-flip-1` 276-306 s: 44 of 6,984 frames over 1.25x their +-0.5 s median; the stage with the largest excess:
+  stage A 18, the game's own frame (submit to submit) 15, B + recorder 10, GPU 1. No single stage. The excess is
+  ~1-1.5 ms, about one 1 ms timer tick; the game's render thread wakes on timer DPCs about every 1 ms while it waits
+  (stall-1.etl). `compat_sleep_ns` uses a high-resolution waitable timer; timed waits elsewhere (condition variables
+  with a timeout, `WaitForSingleObject(ms)`, the guest's timed waits) round to the tick. Hypothesis to test: a timed
+  wait on the frame path that lands one tick late. WPR's CPU profile has no CSwitch stacks (only samples and
+  ReadyThread), so the wait sites are not in `stall-1.etl`: next capture with `xperf -on PROC_THREAD+LOADER+PROFILE+
+  CSWITCH+DISPATCHER -stackwalk Profile+CSwitch+ReadyThread` in a steady heavy stretch.
+- **The user (2026-10-30):** TabTip is a common Windows bug; the service can be disabled (not the port's problem).
+  The display-wait stall: a slow frame in general. The GPU effects burst: effects resolution is the fix (default 75%),
+  besides making the effects or the GPU work cheaper.
