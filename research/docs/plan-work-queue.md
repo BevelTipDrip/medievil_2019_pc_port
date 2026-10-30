@@ -12,7 +12,17 @@ update an item's state here when it moves; details live in the linked plan or st
 (`t-lab-1-premerge-check`, effects 100, `frames_queued=1`) is no better than the merge (`t-m138-1-check`,
 `t-m138-3-upstream-off`): heavy normal frames 4.55 ms (lab) vs 4.45 / 4.48 ms, lowest gameplay 5-s window 180 FPS vs
 186 / 184, heavy-scene frames ≥ 30 ms 4 (30-37 ms) vs 0 / 1. The better alley lows remembered from before were
-from runs without logging. Next: a clean feel run (`-NoStats`) of the merge, A/B of upstream's switches (`GOW3_FUTEX_COND`, `GOW3_TIMER_RES`, `GOW3_PAGEABLE_MEMORY`, `GOW3_SPARE_IMAGE_BLOCK`, `GOW3_TRACKER_MERGE_GAP`), then **move the user's game to 01.02** (the user is getting the update package) and port our 01.00-only hooks (HZB remap, level hook, live cvars, boot display size / 4K metrics patches) by finding them per eboot, as upstream's `ue4_override.setres_slot` does for r.SetRes. Then the release. | in progress | [plan-upstream-merge.md](plan-upstream-merge.md), [study-upstream-commits.md](study-upstream-commits.md), [repo-boundaries.md](repo-boundaries.md) |
+from runs without logging. **Clean run of the merge with the flip trace** (`t-m138-flip-1`, `-NoStats`,
+`GOW3_FLIP_TRACE`, trace in `research-data\flip`; analysis scripts `flip.py` / `flipstages.py`): (a) the fight dip the
+user sees (~100 FPS) is 86 frames over 0.74 s, ramping smoothly 7.6 → 9.9 ms, with queued → GPU-ready equal to the
+frame time: **GPU-bound** (the effects burst at 100% effects, N-18/N-19); (b) **isolated single-frame stalls of ~7 ms**
+in a flat 237 FPS scene (81, 96, 116 s, ...) that land on a different stage each time (present thread, game submit →
+stage A, recording): process-wide, not draw cost. Whether (b) is new with the merge is open: next, the same trace
+with upstream's host switches off (`GOW3_TIMER_RES=0`, `GOW3_POWER_THROTTLE=1`, `GOW3_PAGEABLE_MEMORY=0`,
+`GOW3_FUTEX_COND=0`), or the `lab` build with the same trace. **Host switches off (`t-m138-flip-2-host-off`):**
+the stalls stay and come more often (5.3/min at the cap vs 2.8/min; 10-200 ms frames 148 in 208 s vs 150 in 467 s):
+upstream's host switches are not the cause and stay on. Next: the `lab` build with the same trace (new with the
+merge or not), then a WPR capture if they are old. Then A/B of upstream's switches (`GOW3_FUTEX_COND`, `GOW3_TIMER_RES`, `GOW3_PAGEABLE_MEMORY`, `GOW3_SPARE_IMAGE_BLOCK`, `GOW3_TRACKER_MERGE_GAP`), then **move the user's game to 01.02** (the user is getting the update package) and port our 01.00-only hooks (HZB remap, level hook, live cvars, boot display size / 4K metrics patches) by finding them per eboot, as upstream's `ue4_override.setres_slot` does for r.SetRes. Then the release. | in progress | [plan-upstream-merge.md](plan-upstream-merge.md), [study-upstream-commits.md](study-upstream-commits.md), [repo-boundaries.md](repo-boundaries.md) |
 | 2 | **Pending fixes from the 2026-10-29 research:** go through the list below, aim also at lower-end hardware. | open | [study-frame-cost-2026-10-29.md](study-frame-cost-2026-10-29.md) §2 |
 | 3 | **Stage B per draw** (pending fixes 2, 3, 4, 6), then the **ring reuse retest** (with the stamp fix; the user saw better 0.1% lows with reuse during effect-heavy stretches, N-15). | open | below; [plan-frame-pacing.md](plan-frame-pacing.md) N-15, N-16 |
 | 4 | **Graphics settings:** live switches for the quality options, and more settings the launcher lacks, so a player can min-max (highest frame rate, keep what they care about). | open | [plan-live-switches.md](plan-live-switches.md) |
