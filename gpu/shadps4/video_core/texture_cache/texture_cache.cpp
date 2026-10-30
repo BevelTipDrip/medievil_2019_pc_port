@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstdio>
+#include <mutex>
+#include <unordered_set>
 #include <xxhash.h>
 #include "video_core/amdgpu/liverpool.h"
 
@@ -49,6 +52,52 @@ bool CacheStatsEnabled() {
     do {                                                                                           \
         if (CacheStatsEnabled()) cache_stats.name.fetch_add((n), std::memory_order_relaxed);      \
     } while (0)
+
+// gow3: GOW3_TEXCACHE_STATS: a render or depth target at the start of a mip of an image with
+// mips, once per kind: whether it resolved as a view of that mip. A rejected one renders into
+// an image of its own and the parent's mip keeps what it held (UE4's HZB is built mip by mip
+// as render targets; small mips are micro tiled, MipOf compared array modes: t-hzb1).
+// merge: an image of its own met by its grown parent, merged into the mip or kept apart.
+void NoteMipTarget(const ImageInfo& target, const ImageInfo& parent, s32 mip, s32 slice,
+                   bool merge) {
+    if (!CacheStatsEnabled() || target.resources.levels != 1) {
+        return;
+    }
+    s32 at = -1;
+    for (u32 m = 1; m < parent.resources.levels; ++m) {
+        if (target.guest_address == parent.guest_address + parent.mips_layout[m].offset) {
+            at = s32(m);
+            break;
+        }
+    }
+    // The next mip, before the image grows to it (a mip's render target comes before its view).
+    const bool next = at < 0 && !merge &&
+                      target.guest_address == parent.guest_address + parent.guest_size;
+    if (at < 0 && !next) {
+        return;
+    }
+    static std::mutex mutex;
+    static std::unordered_set<u64> seen;
+    const u64 key = u64(parent.pixel_format) << 40 ^ u64(parent.size.width) << 26 ^
+                    u64(parent.size.height) << 12 ^ u64(next ? parent.resources.levels : at) << 6 ^
+                    u64(mip + 1) << 3 ^ u64(slice + 1) ^ u64(merge) << 63 ^ u64(next) << 62;
+    std::scoped_lock lock{mutex};
+    if (seen.size() >= 256 || !seen.insert(key).second) {
+        return;
+    }
+    const bool resolved = mip >= 0 && slice >= 0;
+    std::printf("Mip target%s: %ux%u %s L%u at 0x%llx, mip %d%s: target %ux%u pitch %u tile mode %u "
+                "array mode %u, parent tile mode %u array mode %u: %s\n",
+                merge ? " (merge)" : "", parent.size.width, parent.size.height,
+                vk::to_string(parent.pixel_format).c_str(), parent.resources.levels,
+                static_cast<unsigned long long>(parent.guest_address),
+                next ? s32(parent.resources.levels) : at, next ? " (past the image's levels)" : "",
+                target.size.width, target.size.height, target.pitch, u32(target.tile_mode),
+                u32(target.array_mode), u32(parent.tile_mode), u32(parent.array_mode),
+                merge ? (resolved ? "merged into the mip" : "kept apart")
+                      : (resolved ? "view of the mip" : "rejected, own image"));
+    std::fflush(stdout);
+}
 
 // gow3: a volume the guest renders slice by slice and samples as 3D: a 2D render target with
 // one layer per depth slice at the address of a 3D image of the same size. 3D images are
@@ -958,10 +1007,13 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
     // Right overlap, the image requested is a possible subresource of the image from cache.
     if (image_info.guest_address > cache_image.info.guest_address) {
-        if (auto mip = image_info.MipOf(cache_image.info); mip >= 0) {
-            if (auto slice = image_info.SliceOf(cache_image.info, mip); slice >= 0) {
-                return {cache_image_id, mip, slice};
-            }
+        const auto mip = image_info.MipOf(cache_image.info);
+        const auto slice = mip >= 0 ? image_info.SliceOf(cache_image.info, mip) : -1;
+        if (binding == BindingType::RenderTarget || binding == BindingType::DepthTarget) {
+            NoteMipTarget(image_info, cache_image.info, mip, slice, false);
+        }
+        if (mip >= 0 && slice >= 0) {
+            return {cache_image_id, mip, slice};
         }
 
         // Image isn't a subresource but a chance overlap.
@@ -972,7 +1024,13 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
         return {{}, -1, -1};
     } else {
         // Left overlap, the image from cache is a possible subresource of the image requested
-        if (auto mip = cache_image.info.MipOf(image_info); mip >= 0) {
+        const auto merge_mip = cache_image.info.MipOf(image_info);
+        if (cache_image.binding.is_target) {
+            NoteMipTarget(cache_image.info, image_info, merge_mip,
+                          merge_mip >= 0 ? cache_image.info.SliceOf(image_info, merge_mip) : -1,
+                          true);
+        }
+        if (auto mip = merge_mip; mip >= 0) {
             if (auto slice = cache_image.info.SliceOf(image_info, mip); slice >= 0) {
                 // We have a larger image created and a separate one, representing a subres of it
                 // bound as render target. In this case we need to rebind render target.

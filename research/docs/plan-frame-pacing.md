@@ -1757,3 +1757,58 @@ stage B 10-20 ms late in slow frames; not a smoothness run). Death-effect window
   `effects_resolution` setting (75 / 50) is the practical lever.
 - Occlusion (the user): the effects draw after UE4 builds its HZB from opaque depth and write no depth, so they cannot
   disturb occlusion. The lenient HZB culling behind the fight is its own item (next).
+
+### N-22: the HZB's small mips were never rendered (2026-10-30, launched by Claude with the user's go; `t-hzb1-mip-targets.log`, `t-hzb2-micro-mips.log`)
+
+The user: HZB culling is "very gentle" behind the alley fight (detailed area hidden by the crypts still drawn). HZB
+culled ~17% of draws where hardware queries culled 63-68% (T-O2c), and the remap loses under 1% of keys (fight
+windows of t-prof1: ~400-500 keys a frame, 0.2-1.5% read visible unmatched): the leniency is in the results.
+- **Cause [V]:** UE4 4.21 builds its HZB (2048x2048 `R16Sfloat`, 11 mips at 4K, 2D thin tile mode 14) one mip per
+  render pass, reading the mip above. shadPS4 lays out mips smaller than a macro tile micro tiled
+  (`ImageSizeMacroTiled` downgrade), and the guest's colour buffer for such a mip has the 1D tile mode (13, array
+  mode 2); `ImageInfo::MipOf` rejected any array mode difference. t-hzb1 (`GOW3_TEXCACHE_STATS=1`, new "Mip target"
+  lines): mips 1-4 views of the HZB; mips 5-10 (64x64 down) never resolved: each was an image of its own (created on
+  the first frame before the HZB grew to that mip, never merged), so the HZB's own mips 5-10 held nothing rendered and
+  every box tested at those levels (large on screen: buildings behind the crypts) read visible.
+- **Fix:** `MipOf` accepts a 1D thin target for a mip the macro tiled parent's own layout made micro tiled (only that
+  case). `GOW3_MICRO_MIP_TARGETS=0`: off. The HZB remap line counts results read hidden.
+- **t-hzb2 [V]:** mips 5-10 all "view of the mip". Hidden 30-67% of tested keys in gameplay (menus ~9%). Same
+  alley / fight route as t-hzb1: ~850-1,460 draws a frame vs ~1,150-2,120, gameplay windows 186-237 FPS vs 162-215,
+  p99 4.4-7.1 ms (one 9.0) vs 5.6-10.0 ms. The user's overlay at the end: 217.7 avg, 1% low 184.5, 0.1% low 164.9
+  (t-hzb1: 207.6 / 170.6 / 94.3, load spike included). Screenshots of both runs: no missing geometry.
+- **t-hzb3-clean** (`-NoStats`; overlay only): the user: "the 1% and .1% lows are higher in the fight, and
+  significantly higher almost everywhere else". At the gargoyle (Graveyard), 1.7 min overlay window: 227 avg, 1% low
+  179-235, 0.1% low 158-208. A camera angle with the horizon in view gave a large spike when it came into view, then
+  a steady small oscillation; looking down: flat at the cap.
+- **t-hzb4-oscillation** (stats, `GOW3_SLOW_FRAMES=1.4`; HZB line now has hidden min-max per map and per-key flips),
+  camera held still on each view [V]: looking down ~920 draws, 235-237 FPS, p99 4.3-4.8 ms, 130-138 hidden a map,
+  ~0.1 flips a frame; horizon in view ~1,430 draws, ~228 FPS, median 4.24, p99 5.4 ms, 168-176 hidden a map,
+  ~0.3 flips a frame (of ~650 tested). **Visibility is steady: the oscillation is not occlusion.** That view's
+  ~1,430 draws at ~3 us in stage B is ~4.3 ms against the limiter's 4.22: frames just over the cap. Before the fix
+  every heavy view was well over it (the old 130-160 lows). The lever there is stage B per draw (S1 and the rest).
+  The spike when the view opens up: the background now culled arrives in one frame with 2-3 frame old results.
+- Not checked yet: other levels.
+
+### N-23: the view-switch spikes after the HZB fix (2026-10-30, launched by Claude with the user's go; `t-hzb5-switch-waits.log`, `t-hzb6-long-waits.log`, `t-hzb7-switch-profile.log`)
+
+With real culling, switching the gargoyle view (Graveyard) between looking down (~920 draws, flat at the cap) and the
+horizon (~1,430 draws) gave 8-9.5 ms frames in t-hzb4 (and the clean t-hzb3): stage A draining ~5 ms while stage B
+waited ~5 ms on GPU ticks, 100-180 image lookup misses (normal: under 15).
+- **Trigger [V]:** with the horizon in view the game frees and re-creates `512x512 D16Unorm` depth targets 12-38 times
+  a second through guest unmaps (`GOW3_TEXCACHE_STATS`: "freed by guest unmaps" / "created again"), now and then the
+  4K RGBA16F + RGBA8 pair: the torch case of C3 (T-R1 / T-C3b, worst frames 7-11 ms left after C3). Looking down:
+  none. Not new: t-hzb1 (before the HZB fix) had ~1,200 such creates in its run.
+- **The wait [V]:** `GOW3_LONG_WAITS=1` (new: GPU waits >= 1 ms by site and thread): in gameplay only
+  `vk_presenter.cpp:560` on `gow3:DrawRec`, the frames-queued bound (texture_cache.cpp:234 only at loads). t-hzb6 is
+  not a pacing run: the display ran at fixed 240 Hz (median 4.17 ms, worst 8.4 ms in every window, overlay max 239.7;
+  G-SYNC not engaged that launch).
+- **The slow GPU frames [V]:** `GOW3_GPU_PROFILE` (t-hzb7): 1-2 a window, growth almost all "between submissions: GPU
+  idle" (+3.1 to +4.7 ms), the base pass +0.4-0.8 ms; the 512x512 D16 passes unchanged. **The GPU is starved, not
+  loaded** (the user saw the GPU usage drop).
+- **Diagnostics hide them [V]:** no 8-9 ms frames with `GOW3_PERF_DIAG` + `GOW3_TEXCACHE_STATS` (t-hzb5) or
+  `GOW3_GPU_PROFILE` (t-hzb7); both only measure (checked), so it is timing. The user (t-hzb7): "panning in the heavy
+  area has the best frame time graph that it's had", no large spikes, smaller ones on view changes; a persistent
+  oscillation ~225-160 FPS with the horizon in view (N-22: stage B at the cap). Overlay 1% low 166-186, 0.1% 142-164
+  (with the profiler on).
+- Next for the spikes: keep images a guest unmap frees for reuse when the same target comes back at the same address
+  (no re-creation, no lookup-cache invalidation), measured with clean runs and the overlay.

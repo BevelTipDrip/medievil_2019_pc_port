@@ -5,6 +5,9 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
+#include <map>
+#include <mutex>
+#include <string>
 #include <unordered_map>
 #ifndef _WIN32
 #include <dlfcn.h>
@@ -488,6 +491,54 @@ void Scheduler::WaitSubmitted(std::source_location caller) {
     }
 }
 
+namespace {
+// gow3 GOW3_LONG_WAITS=1: GPU waits of 1 ms or more by call site and thread, every 5 s. Only
+// long waits do any work, so frames keep their timing: GOW3_PERF_DIAG's wait profile hid the
+// view-switch spikes it was meant to find (t-hzb5).
+struct LongWaits {
+    struct Site {
+        u64 count = 0, total_ns = 0, max_ns = 0;
+    };
+    static bool Enabled() {
+        static const bool enabled = [] {
+            const char* env = std::getenv("GOW3_LONG_WAITS");
+            return env && env[0] == '1';
+        }();
+        return enabled;
+    }
+    static const std::string& ThreadName() {
+        thread_local const std::string name = Common::GetCurrentThreadName();
+        return name;
+    }
+    static void Note(const std::source_location& caller, u64 ns) {
+        static std::mutex mutex;
+        static std::map<std::string, Site> sites;
+        static auto last = std::chrono::steady_clock::now();
+        std::string_view file{caller.file_name()};
+        file = file.substr(file.find_last_of("/\\") + 1);
+        char key[256];
+        std::snprintf(key, sizeof(key), "%.*s:%u (%s)", int(file.size()), file.data(), caller.line(),
+                      ThreadName().c_str());
+        std::scoped_lock lock{mutex};
+        auto& site = sites[key];
+        ++site.count;
+        site.total_ns += ns;
+        site.max_ns = std::max(site.max_ns, ns);
+        const auto now = std::chrono::steady_clock::now();
+        if (now - last < std::chrono::seconds(5)) return;
+        last = now;
+        std::string out;
+        for (const auto& [name, s] : sites) {
+            Gow3AsyncLog::Append(out, "Long GPU wait (5 s): %s; %llu waits, %.1f ms, max %.1f ms\n",
+                                 name.c_str(), (unsigned long long)s.count, s.total_ns / 1e6,
+                                 s.max_ns / 1e6);
+        }
+        Gow3AsyncLog::Write(std::move(out));
+        sites.clear();
+    }
+};
+} // namespace
+
 void Scheduler::Wait(u64 tick, std::source_location caller, u64 submit_ns) {
     const bool diagnose = WaitDiagnostics::Enabled();
     auto start = diagnose ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
@@ -499,6 +550,11 @@ void Scheduler::Wait(u64 tick, std::source_location caller, u64 submit_ns) {
     Gow3Stats::WaitTimer timer{Gow3Stats::tick_wait_ns};
     const auto submitted = diagnose ? std::chrono::steady_clock::now() : start;
     work_semaphore.Wait(tick);
+    if (LongWaits::Enabled()) {
+        const u64 ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                           std::chrono::steady_clock::now() - timer.start).count();
+        if (ns >= 1'000'000) LongWaits::Note(caller, ns);
+    }
     if (diagnose) {
         const auto completed = std::chrono::steady_clock::now();
         WaitDiagnostics::Get().Add(caller.file_name(), caller.line(),

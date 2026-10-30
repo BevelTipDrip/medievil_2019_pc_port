@@ -72,12 +72,14 @@ struct Tester {
     std::uint64_t sync_submits = 0; ///< submits at the last sync: copy n is submit sync_submits + n
     std::array<Frame, 6> ring;
     std::vector<std::uint8_t> source, served;
+    std::vector<Key> hidden_keys; ///< stats: keys read hidden in the last map, sorted
 };
 
 struct Stats {
     std::uint64_t calls = 0, invalid = 0, remapped = 0, syncs = 0, unavailable = 0, drift = 0;
     std::array<std::uint64_t, 7> age{}; // 0..4, >4 frames, no source
-    std::uint64_t keys = 0, unmatched = 0;
+    std::uint64_t keys = 0, unmatched = 0, hidden = 0, hides = 0, unhides = 0;
+    std::uint64_t hidden_min = ~std::uint64_t{0}, hidden_max = 0; // per map
     double us_total = 0, us_max = 0;
 };
 
@@ -140,10 +142,12 @@ void Report(std::chrono::steady_clock::time_point now) {
     const auto u = [](std::uint64_t v) { return static_cast<unsigned long long>(v); };
     std::printf("HZB remap (5 s): %llu maps (%llu invalid, %llu remapped, %llu syncs, %llu drift, "
                 "%llu unavailable); age 0/1/2/3/4/>4/none %llu/%llu/%llu/%llu/%llu/%llu/%llu; keys %llu "
-                "(%llu read visible); %.1f us avg, %.1f us max\n",
+                "(%llu read visible, %llu hidden, %llu-%llu a map; flips %llu hidden, %llu visible); "
+                "%.1f us avg, %.1f us max\n",
                 u(s.calls), u(s.invalid), u(s.remapped), u(s.syncs), u(s.drift), u(s.unavailable),
                 u(s.age[0]), u(s.age[1]), u(s.age[2]), u(s.age[3]), u(s.age[4]), u(s.age[5]),
-                u(s.age[6]), u(s.keys), u(s.unmatched), s.remapped ? s.us_total / s.remapped : 0.0,
+                u(s.age[6]), u(s.keys), u(s.unmatched), u(s.hidden),
+                u(s.hidden_max ? s.hidden_min : 0), u(s.hidden_max), u(s.hides), u(s.unhides), s.remapped ? s.us_total / s.remapped : 0.0,
                 s.us_max);
     stats = {};
     report_time = now;
@@ -250,14 +254,38 @@ void Map(std::uint8_t* tester, void* command_list) {
         auto it = source->entries.begin();
         const auto end = source->entries.end();
         const std::uint8_t* bytes = state->source.data();
+        // Stats: keys hidden in this map against the last one, as flips per key (camera still:
+        // a steady trickle of flips is visibility oscillating, not the view changing).
+        const bool flips = Gow3Stats::enabled;
+        auto was = state->hidden_keys.cbegin();
+        const auto was_end = state->hidden_keys.cend();
+        scratch.clear();
+        std::uint64_t hidden = 0;
         for (const auto& [key, index] : now.entries) {
             while (it != end && it->first < key) ++it;
+            bool is_hidden = false;
             if (it != end && it->first == key) {
                 std::memcpy(served + Texel(index), bytes + Texel(it->second), 4);
+                is_hidden = bytes[Texel(it->second)] == 0; // IsVisible reads the first byte
             } else {
                 std::memset(served + Texel(index), 0xff, 4);
                 ++stats.unmatched;
             }
+            hidden += is_hidden;
+            if (flips) {
+                while (was != was_end && *was < key) ++was;
+                const bool was_hidden = was != was_end && *was == key;
+                stats.hides += is_hidden && !was_hidden;
+                stats.unhides += was_hidden && !is_hidden;
+                if (is_hidden) scratch.emplace_back(key, 0);
+            }
+        }
+        stats.hidden += hidden;
+        stats.hidden_min = std::min(stats.hidden_min, hidden);
+        stats.hidden_max = std::max(stats.hidden_max, hidden);
+        if (flips) {
+            state->hidden_keys.clear();
+            for (const auto& entry : scratch) state->hidden_keys.push_back(entry.first);
         }
     }
     Serve(tester, served);
