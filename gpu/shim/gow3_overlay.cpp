@@ -309,6 +309,15 @@ void GameTab() {
     auto& s = Gow3Settings::Get();
     if (!IsGow3()) {
         ImGui::SeparatorText("Game");
+        const std::string_view serial = Common::ElfInfo::Instance().GameSerial();
+        if (serial.starts_with("CUSA11227") || serial.starts_with("CUSA12982")) {
+            // Issue #37: players read the generic note as "MediEvil has no cheats".
+            ImGui::TextWrapped("MediEvil's cheats are in the launcher: Game page, Cheats. The developer "
+                               "cheat menu (level select, weapons, gold, life bottles and more) opens "
+                               "with R3 during play; Unlimited ammo keeps every weapon full. Both apply "
+                               "when the game starts from the launcher.");
+            return;
+        }
         ImGui::TextWrapped("%s runs without code patches. The cheats and multipliers of this menu are "
                            "written for God of War III and stay hidden here; image, performance and "
                            "overlay options work in every game.",

@@ -5,7 +5,8 @@
 Every setting of the port in one window: the game (a folder or the .pkg, unpacked once), saves,
 medievil.ini (display, frame rate, shaders, GPU data), start-up options passed to run.py as
 environment variables, mods, third-party patches and controls.
-Launcher options live in %APPDATA%/medievil-launcher/settings.json.
+Launcher options live in %APPDATA%/medievil-launcher/settings.json, or with a portable.txt beside
+the launcher in its launcher-data folder (portable mode).
 
 Frozen with PyInstaller the same MediEvil.exe also runs the game without the window (`--play`),
 run.py (`--run`) and the preparation scripts (`--script`), so a packaged port needs no Python.
@@ -32,20 +33,36 @@ PORT_DIR = Path(sys.executable).resolve().parent if FROZEN else Path(__file__).r
 sys.path.insert(0, str(PORT_DIR / 'scripts'))
 import save_backup  # noqa: E402  (scripts/)
 import graphics_options  # noqa: E402  (scripts/)
+WINDOWS = sys.platform == 'win32'
 DATA_DIR = Path(os.environ.get('GOW3_DATA_DIR', PORT_DIR))
-CONFIG_DIR = Path(os.environ.get('APPDATA') or os.environ.get('USERPROFILE') or PORT_DIR) / 'medievil-launcher'
+# Portable mode (issue #19): with a file portable.txt beside the launcher, its settings and caches
+# stay in the launcher folder (launcher-data) instead of %APPDATA% (~/.config on Linux); saves already
+# live there. Inside the read-only AppImage there is no portable.txt, so it never applies there.
+PORTABLE = (PORT_DIR / 'portable.txt').exists()
+if PORTABLE:
+    CONFIG_DIR = PORT_DIR / 'launcher-data'
+elif WINDOWS:
+    CONFIG_DIR = Path(os.environ.get('APPDATA') or os.environ.get('USERPROFILE') or PORT_DIR) / 'medievil-launcher'
+else:
+    CONFIG_DIR = Path(os.environ.get('XDG_CONFIG_HOME') or Path.home() / '.config') / 'medievil-launcher'
 CONFIG_FILE = CONFIG_DIR / 'settings.json'
 MOD_PRESETS = DATA_DIR / 'mods_presets.json'
 APP_NAME = 'MediEvil'
 MAX_LOG_LINES = 6000
 NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
 # This build. The launcher checks the GitHub releases at start and offers newer versions.
-VERSION = '1.3.5'
+VERSION = '1.3.8'
 RELEASES_API = 'https://api.github.com/repos/bc160201983/medievil_2019_pc_port/releases/latest'
 RELEASES_PAGE = 'https://github.com/bc160201983/medievil_2019_pc_port/releases'
+# The port's pages (Home and Advanced), opened in the browser.
+LINKS = (('GitHub', 'https://github.com/bc160201983/medievil_2019_pc_port'),
+         ('YouTube', 'https://www.youtube.com/@BilalReloaded'),
+         ('Patreon', 'https://www.patreon.com/c/bilalreloaded'))
+WINDOW_TITLE = '{} (PC) — Port By BilalReloaded · v{}'
 UPDATE_DIR = Path(tempfile.gettempdir()) / 'medievil-update'
 # Never copied over an installation by an update (the package does not hold them either).
-USER_FILES = ('user', 'out', 'mods', 'medievil.ini', 'mods.json', 'mods_presets.json', 'patches.json', 'last_run.log')
+USER_FILES = ('user', 'out', 'mods', 'medievil.ini', 'mods.json', 'mods_presets.json', 'patches.json', 'last_run.log',
+              'launcher-data', 'portable.txt')
 
 
 # ---------------------------------------------------------------------------------------------
@@ -53,6 +70,11 @@ USER_FILES = ('user', 'out', 'mods', 'medievil.ini', 'mods.json', 'mods_presets.
 
 def attach_stdio():
     """A windowed executable starts without sys.stdout; inherited pipes or a console still exist."""
+    if not WINDOWS:
+        for name in ('stdout', 'stderr'):
+            if getattr(sys, name) is None:
+                setattr(sys, name, open(os.devnull, 'w'))
+        return
     import msvcrt
     for name, std in (('stdout', -11), ('stderr', -12)):
         if getattr(sys, name) is not None:
@@ -117,6 +139,12 @@ def _(en, ru=None):
 
 
 def windows_language():
+    if not WINDOWS:  # Linux: the locale (LANGUAGE, LC_ALL, LC_MESSAGES, LANG), e.g. pt_BR.UTF-8
+        for key in ('LANGUAGE', 'LC_ALL', 'LC_MESSAGES', 'LANG'):
+            code = (os.environ.get(key) or '').split(':')[0].split('_')[0].split('.')[0].lower()
+            if code and code not in ('c', 'posix'):
+                return code if code == 'en' or code in lang.WINDOWS_LANGUAGES.values() else 'en'
+        return 'en'
     try:
         primary = ctypes.windll.kernel32.GetUserDefaultUILanguage() & 0x3ff
     except (AttributeError, OSError):
@@ -138,18 +166,19 @@ INI_DEFAULTS = {'show_fps': '1', 'display_mode': 'windowed', 'vsync': '1', 'fps_
                 'output_resolution': '1920x1080', 'render_scale': '100', 'engine_fps': '60', 'fsr1': '0',
                 'rcas': '1', 'rcas_strength': '75', 'frames_queued': '1', 'ue4_quality': 'console',
                 'effects_resolution': '75',
-                'cheat_very_hard': '0', 'cheat_double_jumps': '0', 'cheat_menu': '0', 'cheat_infinite_ammo': '0'}
+                'cheat_very_hard': '0', 'cheat_double_jumps': '0', 'cheat_menu': '0', 'cheat_infinite_ammo': '0',
+                'ue4_aa': 'taa', 'ue4_voice': ''}
 DISPLAY_MODES = [('windowed', ('Windowed',)), ('borderless', ('Borderless',)), ('fullscreen', ('Fullscreen',))]
 FPS_LIMITS = [('-2', ('Auto: refresh (VRR: below it, Reflex rule)',)), ('-3', ('Auto: half refresh (VRR: one below)',)),
               ('30', ('30',)), ('60', ('60',)), ('119', ('119 (VRR, 240 Hz)',)), ('120', ('120',)),
               ('141', ('141 (VRR, 144 Hz)',)), ('237', ('237 (VRR, 240 Hz)',)), ('240', ('240',)),
               ('0', ('Unlimited',)), ('-1', ('Half display refresh (fixed refresh)',))]
-APP_DEFAULTS = {'ui_language': 'en', 'game_dir': os.environ.get('GOW3_GAME_DIR', str(PORT_DIR.parent / 'medieval' / 'CUSA11227')), 'user_dir': '',
+APP_DEFAULTS = {'ui_language': 'en', 'game_dir': os.environ.get('GOW3_GAME_DIR', str(PORT_DIR.parent / 'medieval' / 'CUSA11227') if WINDOWS else ''), 'user_dir': '',
                 'mods_dir': '', 'mods_enabled': True, 'patches_dir': '', 'language': '1',
-                'player_name': '', 'hdr': False, 'draw_pipe': '', 'readbacks': '',
+                'player_name': '', 'hdr': False, 'draw_pipe': '', 'readbacks': '', 'vulkan_compat': False,
                 'background_warmup': True, 'parallel_warmup': True, 'pipeline_binary_cache': True, 'perf_diag': False, 'frame_capture_key': False, 'frame_stats': False, 'gpu_profile': False,
                 'vk_validation': False, 'close_on_play': False,
-                'update_check': True, 'game_patches': {}, 'controls': {}, 'pad_style': 'playstation',
+                'update_check': True, 'game_patches': {}, 'controls': {}, 'pad_style': 'playstation', 'stick_range': '',
                 'last_pkg': ''}
 
 # PS4 button, default key, default gamepad button (SDL names; src/runtime_pad.c). L2/R2 come
@@ -200,6 +229,13 @@ LANGUAGES = [('1', ('English', 'Английский')), ('18', ('English (UK)',
              ('17', ('Portuguese (Brazil)',)), ('12', ('Finnish',)), ('13', ('Swedish',)), ('14', ('Danish',)),
              ('15', ('Norwegian',)), ('19', ('Turkish',)), ('21', ('Arabic',)), ('23', ('Czech',)),
              ('24', ('Hungarian',)), ('25', ('Greek',)), ('26', ('Romanian',))]
+# Spoken language (medievil.ini ue4_voice): '' follows the game language (the game's own map).
+VOICE_LANGUAGES = [('', ('Same as game language',)), ('English(US)', ('English',)), ('French', ('French',)),
+                   ('German', ('German',)), ('Italian', ('Italian',)), ('Spanish', ('Spanish',)),
+                   ('es-MX', ('Spanish (Latin America)',)), ('Portuguese', ('Portuguese',)),
+                   ('pt-BR', ('Portuguese (Brazil)',)), ('Dutch', ('Dutch',)), ('Polish', ('Polish',)),
+                   ('Russian', ('Russian',)), ('Czech', ('Czech',)), ('Greek', ('Greek',)), ('Arabic', ('Arabic',)),
+                   ('Japanese', ('Japanese',))]
 DRAW_PIPE = [('', ('Auto (8+ threads)', 'Авто (8+ потоков)')), ('1', ('On', 'Включён')),
              ('0', ('Off (more stable)', 'Выключен (стабильнее)'))]
 # "Precise" (GOW3_READBACKS=2) left MediEvil on a black screen (issue #15): not offered, and a
@@ -292,6 +328,9 @@ INI_FLAGS.update({'present_no_frame_caps', 'display_vrr'})
 INI_DEFAULTS.update({'present_inline': '1', 'present_precise_tick': '1', 'present_frame_trace': '0',
                      'present_no_frame_caps': '0', 'present_tick_hz': '960', 'present_mode': 'auto',
                      'present_limiter': 'reflex', 'fps_limit': '-3', 'display_vrr': '1'})
+# GOW3_STICK_RANGE (issue #36): that much tilt is a full push, for sticks that never reach the edge.
+STICK_RANGES = [('', ('Full tilt (default)',)), ('90', ('90%',)), ('85', ('85%',)), ('80', ('80%',)),
+                ('70', ('70%',))]
 UI_LANGUAGES = lang.LANGUAGE_NAMES
 
 def load_json(path, default):
@@ -361,9 +400,10 @@ def game_info(folder):
 
 def game_profile_of(folder):
     """(title id, (ids, built-in XML, app version)) of a game with a patch profile, else (id, None)."""
-    from patches import game_profile, game_title_id
+    from patches import game_app_version, game_profile, game_title_id
     title_id = game_title_id(folder) if folder else None
-    return title_id, game_profile(title_id)
+    version = game_app_version(folder) if folder else None
+    return title_id, game_profile(title_id, version) or game_profile(title_id)
 
 
 def game_environment(s):
@@ -390,6 +430,9 @@ def game_environment(s):
     for key, name in (('draw_pipe', 'GOW3_DRAW_PIPE'), ('readbacks', 'GOW3_READBACKS')):
         if s[key] and not (key == 'readbacks' and s[key] == '2'):
             env[name] = s[key]
+    # Safe GPU mode (issues #18/#22): only the Vulkan features of older AMD drivers (RX 400/500, Vega).
+    if s.get('vulkan_compat', False):
+        env['GOW3_VULKAN_COMPAT'] = '1'
     env['GOW3_BACKGROUND_WARMUP'] = '1' if s.get('background_warmup', True) else '0'
     env['GOW3_PARALLEL_WARMUP'] = '1' if s.get('parallel_warmup', True) else '0'
     env['GOW3_PIPELINE_BINARIES'] = '1' if s.get('pipeline_binary_cache', True) else '0'
@@ -398,6 +441,8 @@ def game_environment(s):
                       ('vk_validation', 'GOW3_VK_VALIDATION'), ('frame_capture_key', 'GOW3_FRAME_CAPTURE_KEY')):
         if s[key]:
             env[name] = '1'
+    if s.get('stick_range'):
+        env['GOW3_STICK_RANGE'] = s['stick_range']
     for kind, name in (('key', 'GOW3_KEY_MAP'), ('pad', 'GOW3_PAD_MAP')):
         if value := control_map(s.get('controls', {}), kind):
             env[name] = value
@@ -496,6 +541,8 @@ RENDER_SCALE_HINT = ('How large the 3D scene is drawn, per side, compared with t
                      'larger and scaled down (sharper edges, slower). Below 100%: drawn smaller and rebuilt at '
                      "full size by the game's own temporal upscaler from its motion vectors (faster). The menus "
                      'and HUD always draw at the output size. Applied at start.')
+AA_CHOICES = [('taa', ('Temporal (default, smooth)',)), ('fxaa', ('FXAA (sharper)',)),
+              ('off', ('Off (sharpest, jagged edges)',))]
 QUALITY_CHOICES = [('ultra', ('Ultra',)), ('high', ('High',)), ('console', ('Console (PS4)',)),
                    ('medium', ('Medium',)), ('low', ('Low (integrated graphics)',))]
 EFFECTS_CHOICES = [('100', ('100%',)), ('75', ('75% (default)',)), ('50', ('50% (PS4 detail at 4K)',))]
@@ -516,7 +563,7 @@ class Launcher:
         self.banner_source = self.banner_image = None
         self.ui_calls = queue.Queue()  # work for the Tk thread from helper threads
         self.mod_order, self.mod_vars, self.patch_vars = [], {}, {}
-        root.title(f'{APP_NAME} (PC)')
+        root.title(WINDOW_TITLE.format(APP_NAME, VERSION))
         if sys.platform == 'win32':
             try:  # the taskbar shows this window's icon, not Python's
                 import ctypes
@@ -654,7 +701,7 @@ class Launcher:
               foreground=[('active', GOLD), ('disabled', MUTED)], bordercolor=[('active', GOLD)])
         s.map('TCombobox', bordercolor=[('focus', GOLD), ('hover', theme.BRONZE)])
         s.map('TEntry', bordercolor=[('focus', GOLD)])
-        s.configure('Play.TButton', background=ACCENT, foreground='#f4ece0', font=('Georgia', 15, 'bold'),
+        s.configure('Play.TButton', background=ACCENT, foreground='#f4ece0', font=('Georgia' if WINDOWS else 'DejaVu Serif', 15, 'bold'),
                     padding=(36, 10), borderwidth=0)
         s.map('Play.TButton', background=[('active', ACCENT_HI), ('disabled', '#1f2a1a')],
               foreground=[('disabled', '#8a7a78')])
@@ -997,6 +1044,18 @@ class Launcher:
         # VSync is the present mode above (its first choice follows the in-game VSync switch).
         for key, title in (('show_fps', _('Show performance overlay')),):
             ttk.Checkbutton(flags, text=title, variable=self.var(key, 'ini')).pack(side='left', padx=(0, 28))
+        self.link_buttons(quick).grid(row=5, column=0, columnspan=4, sticky='w', pady=(14, 0))
+
+    def link_buttons(self, parent):
+        """GitHub, YouTube and Patreon buttons that open the port's pages in the browser."""
+        ttk = self.ttk
+        holder = ttk.Frame(parent)
+        for index, (name, url) in enumerate(LINKS):
+            ttk.Button(holder, text=name, command=lambda u=url: webbrowser.open(u)).pack(
+                side='left', padx=(0 if index == 0 else 8, 0))
+        ttk.Label(holder, text=_('Support the port on Patreon', 'Поддержите порт на Patreon'),
+                  style='Muted.TLabel').pack(side='left', padx=12)
+        return holder
 
     def draw_banner(self):
         """The cover art of the selected dump (sce_sys/pic1.png) under the title."""
@@ -1135,6 +1194,10 @@ class Launcher:
         self.row(f, _('Render scale'), self.choice(f, 'render_scale', 'ini', RENDER_SCALE_CHOICES,
                                                    custom=self.custom_label('render_scale')),
                  _(RENDER_SCALE_HINT), restart=True)
+        self.row(f, _('Anti-aliasing'), self.choice(f, 'ue4_aa', 'ini', AA_CHOICES),
+                 _("The game's temporal AA smooths edges but blurs a little in motion. FXAA is sharper, Off "
+                   'shows raw pixels (best with a render scale above 100%). A render scale below 100% always '
+                   'uses temporal AA. Applied at start.'), restart=True)
         self.section(f, _('Shaders'))
         self.check(f, 'pipeline_binary_cache', 'app', _('Use pipeline binary cache (A/B test)'),
                    _('Reuse saved Vulkan pipelines. Disable to compare FPS with normal compilation. '
@@ -1158,6 +1221,13 @@ class Launcher:
         self.row(f, _('GPU readbacks', 'Чтение данных GPU'), self.choice(f, 'readbacks', 'app', READBACKS),
                  _('How exactly data the GPU writes is copied back for the game.',
                    'Насколько точно данные, записанные GPU, возвращаются игре.'))
+        self.check(f, 'vulkan_compat', 'app', _('Safe GPU mode (older AMD GPUs)',
+                                                'Безопасный режим GPU (старые видеокарты AMD)'),
+                   _('For Radeon RX 400/500 and Vega GPUs that crash when the main menu loads: runs without newer '
+                     'Vulkan features. Can be slower; leave it off on other GPUs.',
+                     'Для Radeon RX 400/500 и Vega, на которых игра вылетает при загрузке главного меню: работает '
+                     'без новых функций Vulkan. Может быть медленнее; на других видеокартах не включайте.'),
+                   restart=True)
 
     def build_game(self):
         f = self.scrolled_page('game', _('Game', 'Игра'), _('Your game (folder or .pkg), saves and language.'))
@@ -1176,6 +1246,9 @@ class Launcher:
         self.build_save_backups(f)
         self.section(f, _('Language'))
         self.row(f, _('Game language', 'Язык игры'), self.choice(f, 'language', 'app', LANGUAGES))
+        self.row(f, _('Voice language'), self.choice(f, 'ue4_voice', 'ini', VOICE_LANGUAGES),
+                 _('The spoken language: 15 are in the game. "Same as game language" follows the game '
+                   'language (English voices for languages without a dub). Applied at start.'), restart=True)
         self.section(f, _('Cheats'))
         self.check(f, 'cheat_menu', 'ini', _('Developer cheat menu (R3 in the game)'),
                    _("MediEvil's own debug menu, left in the game by its developers: level select, complete "
@@ -1389,6 +1462,9 @@ class Launcher:
             ttk.Radiobutton(names, text=label, value=value, variable=self.pad_style,
                             command=self.relabel_pad_controls).pack(side='left', padx=(0, 14))
         self.row(f, _('Gamepad names'), names)
+        self.row(f, _('Stick range'), self.choice(f, 'stick_range', 'app', STICK_RANGES),
+                 _('How far the sticks must tilt for a full push. Lower it if your character moves slowly '
+                   'with the stick pushed all the way (some hall-effect sticks never reach the edge).'))
         table = ttk.Frame(f)
         table.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(16, 0))
         for column, span, title in ((0, 2, _('GAME BUTTON')), (2, 1, _('KEYBOARD')), (3, 2, _('GAMEPAD'))):
@@ -1475,6 +1551,8 @@ class Launcher:
         self.check(f, 'update_check', 'app', _('Check for updates when the launcher opens'),
                    _('Asks GitHub for a newer release; when there is one, the sidebar offers to download and '
                      'install it (saves, settings and mods are kept).'))
+        self.section(f, _('Links', 'Ссылки'))
+        self.link_buttons(f).grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(6, 0))
         self.section(f, _('Files'))
         holder = ttk.Frame(f)
         holder.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(6, 0))
@@ -1527,7 +1605,7 @@ class Launcher:
         ttk.Button(top, text=_('Copy', 'Копировать'), command=self.copy_log).pack(side='right')
         ttk.Button(top, text=_('Clear', 'Очистить'), command=lambda: self.set_log('')).pack(side='right', padx=6)
         self.log = tk.Text(page, wrap='none', bg='#0a0810', fg='#d8e8c8', insertbackground=TEXT, relief='flat',
-                           font=('Consolas', 9), padx=8, pady=6, state='disabled', highlightthickness=0)
+                           font=('Consolas', 9) if WINDOWS else 'TkFixedFont', padx=8, pady=6, state='disabled', highlightthickness=0)
         bar = ttk.Scrollbar(page, command=self.log.yview)
         self.log.configure(yscrollcommand=bar.set)
         bar.pack(side='right', fill='y')
@@ -1538,7 +1616,7 @@ class Launcher:
         folder = self.var('game_dir', 'app').get()
         info = game_info(folder)
         title = info[0] if info else APP_NAME
-        self.root.title(f'{title} (PC)')
+        self.root.title(WINDOW_TITLE.format(title, VERSION))
         self.side_title.configure(text=title.upper())
         if self.current_page == 'patches':
             self.refresh_game_patches()
@@ -1727,7 +1805,8 @@ class Launcher:
         try:
             self.process = subprocess.Popen(run_command(), cwd=PORT_DIR, env=game_environment(self.app),
                                             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                                            stderr=subprocess.STDOUT, creationflags=NO_WINDOW)
+                                            stderr=subprocess.STDOUT, creationflags=NO_WINDOW,
+                                            start_new_session=not WINDOWS)
         except OSError as error:
             self.append(_('Could not start: {}', 'Не удалось запустить: {}').format(error) + '\n')
             self.process = None
@@ -1812,7 +1891,14 @@ class Launcher:
             self.collect()
         elif not path.exists():
             path.mkdir(parents=True, exist_ok=True)
-        os.startfile(str(path))
+        if WINDOWS:
+            os.startfile(str(path))
+            return
+        try:  # the desktop's file manager or editor
+            subprocess.Popen(['xdg-open', str(path)], stdin=subprocess.DEVNULL,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        except OSError as error:
+            self.messagebox.showerror(APP_NAME, f'{path}\n\n{error}')
 
     # ---- updates -------------------------------------------------------------------------------
     def check_update(self, manual=False):
@@ -1916,8 +2002,41 @@ class Launcher:
                                                  'it is rebuilt.', 'Кэш шейдеров очищен. Следующий запуск несколько '
                                                  'минут будет подтормаживать, пока кэш собирается заново.'))
 
+    def linux_shortcut(self):
+        """MediEvil.desktop in the application menu (and on the desktop when there is one)."""
+        appimage = os.environ.get('APPIMAGE')
+        if appimage:
+            command = f'"{appimage}"'
+        else:
+            command = f'"{sys.executable}" "{Path(__file__).resolve()}"'
+        icon = CONFIG_DIR / 'medievil.png'
+        try:
+            CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+            for source in (Path(self.app.get('game_dir') or '.') / 'sce_sys' / 'icon0.png',
+                           PORT_DIR / 'launcher' / 'medievil.png'):
+                if source.is_file():
+                    shutil.copyfile(source, icon)
+                    break
+            entry = ('[Desktop Entry]\nType=Application\nName=MediEvil\nComment=MediEvil (PS4) for PC\n'
+                     f'Exec={command}\nIcon={icon}\nTerminal=false\nCategories=Game;\n')
+            data_home = Path(os.environ.get('XDG_DATA_HOME') or Path.home() / '.local' / 'share')
+            targets = [data_home / 'applications' / 'medievil-pc.desktop']
+            desktop = Path.home() / 'Desktop'
+            if desktop.is_dir():
+                targets.append(desktop / 'MediEvil.desktop')
+            for target in targets:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(entry, encoding='utf-8')
+                target.chmod(0o755)
+        except OSError as error:
+            self.messagebox.showerror(APP_NAME, str(error))
+            return
+        self.messagebox.showinfo(APP_NAME, _('Shortcut created on the desktop.', 'Ярлык создан на рабочем столе.'))
+
     def shortcut(self):
         """MediEvil.lnk on the desktop."""
+        if not WINDOWS:
+            return self.linux_shortcut()
         if FROZEN:
             target, arguments, icon = sys.executable, '', f'{sys.executable},0'
         else:  # a source tree: the launcher script with the windowless Python
@@ -1948,6 +2067,12 @@ class GameJob:
     by the in-game restart (no longer descendants of the first process)."""
 
     def __init__(self, process):
+        self.process = process
+        if not WINDOWS:
+            # Linux: run.py starts in its own session (play()), so its process group holds
+            # medievil-runtime and the launches of the in-game restart.
+            self.handle = None
+            return
         kernel32 = ctypes.windll.kernel32
         kernel32.CreateJobObjectW.restype = ctypes.c_void_p
         self.handle = kernel32.CreateJobObjectW(None, None)
@@ -1955,6 +2080,12 @@ class GameJob:
             kernel32.AssignProcessToJobObject(ctypes.c_void_p(self.handle), ctypes.c_void_p(int(process._handle)))
 
     def terminate(self):
+        if not WINDOWS:
+            try:
+                os.killpg(self.process.pid, 15)
+            except OSError:
+                pass
+            return
         if self.handle:
             ctypes.windll.kernel32.TerminateJobObject(ctypes.c_void_p(self.handle), 1)
 
@@ -2034,7 +2165,7 @@ def main():
         sys.exit(run_role(args))
     settings = {**APP_DEFAULTS, **load_json(CONFIG_FILE, {})}
     LANG = settings.get('ui_language') or windows_language()
-    if args[:1] == ['--install-update'] and len(args) == 3:
+    if WINDOWS and args[:1] == ['--install-update'] and len(args) == 3:
         sys.exit(install_update(args[1], args[2]))
     if FROZEN and UPDATE_DIR not in PORT_DIR.parents:
         shutil.rmtree(UPDATE_DIR, ignore_errors=True)  # what a finished update left behind
@@ -2048,8 +2179,16 @@ def main():
     import tkinter as tk
     from tkinter import filedialog, messagebox, ttk
     root = tk.Tk()
-    Launcher(root, tk, ttk, filedialog, messagebox)
+    launcher = Launcher(root, tk, ttk, filedialog, messagebox)
     root.mainloop()
+    # Linux: the window is gone but a running game is still this process's child. An AppImage is
+    # mounted only while its first process lives, so stay until the game ends (its output keeps
+    # going to last_run.log through the reader thread).
+    if not WINDOWS and launcher.process and launcher.process.poll() is None:
+        try:
+            launcher.process.wait()
+        except KeyboardInterrupt:
+            pass
 
 
 if __name__ == '__main__':

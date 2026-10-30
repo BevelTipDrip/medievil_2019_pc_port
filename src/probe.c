@@ -84,6 +84,24 @@ static void protect(void *p, size_t size, unsigned flags) {
     if (mprotect(p, size, mode)) fail("mprotect failed");
 #endif
 }
+/* The 01.02 disc links libSceNpToolkit2 (PSN party/network) C++ symbols that the
+ * 01.00 target never calls and this port does not implement. Make only those
+ * imports no-ops returning 0, so an offline game runs; every other unresolved
+ * import still stops the process. */
+static unsigned char *optional_seen;
+static ABI uint64_t optional_stub(uint32_t id, uintptr_t argument) {
+    (void)argument;
+    if (id >= import_count) fail("bad import trap index");
+    if (!optional_seen[id]) {
+        optional_seen[id] = 1;
+        printf("NpToolkit2: unimplemented import %s (index %u) returns 0\n", names[id], id);
+        fflush(stdout);
+    }
+    return 0;
+}
+static int optional_import(const char *name) {
+    return strstr(name, "#libSceNpToolkit2") != NULL;
+}
 static ABI __attribute__((noreturn)) void unresolved(uint32_t id, uintptr_t argument) {
     if (id >= import_count) fail("bad import trap index");
     printf("STOP: first unsupported PS4 import: %s (index %u)\n", names[id], id);
@@ -208,7 +226,7 @@ static LONG fatal_exception(EXCEPTION_POINTERS *info) {
             RtlVirtualUnwind(UNW_FLAG_NHANDLER,base,u.Rip,fn,&u,&handler_data,&frame,NULL);
         }
     }
-    if (gpu_enabled) gow3gpu_dump_guest_writes(info);
+    if (gpu_enabled) { gow3gpu_dump_recording_barriers(); gow3gpu_dump_guest_writes(info); }
     /* Top stack words: after a call through a null pointer [rsp] is the caller's return address. */
     uintptr_t words[8];
     SIZE_T read=0;
@@ -317,7 +335,7 @@ static void fault(int sig, siginfo_t *info, void *context) {
     else
         snprintf(line, sizeof(line), "Fault (signal %d) at RIP %p, address %p\n", sig, (void *)rip, info->si_addr);
     { ssize_t written_=write(2, line, strlen(line)); (void)written_; }
-    if (gpu_enabled) gow3gpu_dump_guest_writes(context);
+    if (gpu_enabled) { gow3gpu_dump_recording_barriers(); gow3gpu_dump_guest_writes(context); }
     /* Host call chain (frames with unwind info; guest frames end it). */
     void *frames[32];
     int depth = backtrace(frames, 32);
@@ -692,9 +710,16 @@ void runtime_restart(void) {
     /* The new launch waits for this process's GPU device to go away (run.py --after). */
     TerminateProcess(GetCurrentProcess(),0);
 #else
-    puts("Runtime: restarting through run.sh");
+    /* run.py sets GOW3_RESTART_COMMAND (a shell-quoted command line); older setups use run.sh. */
+    const char *command=getenv("GOW3_RESTART_COMMAND");
     syscall(SYS_close_range, 3u, ~0u, 0u);
-    execlp("bash", "bash", "run.sh", (char *)NULL);
+    if (command && *command) {
+        puts("Runtime: restarting through run.py");
+        execl("/bin/sh", "sh", "-c", command, (char *)NULL);
+    } else {
+        puts("Runtime: restarting through run.sh");
+        execlp("bash", "bash", "run.sh", (char *)NULL);
+    }
     perror("runtime_restart: exec");
     _exit(1);
 #endif
@@ -770,6 +795,7 @@ int main(int argc, char **argv) {
     snprintf(crash_dump_dir,sizeof(crash_dump_dir),"%s\\crashdumps",user_dir ? user_dir : "user");
     AddVectoredExceptionHandler(1, vectored_fault);
     SetUnhandledExceptionFilter(unhandled_fault);
+    runtime_host_scheduling_init();
     if (getenv("GOW3_STRICT_HANDLES")) {
         PROCESS_MITIGATION_STRICT_HANDLE_CHECK_POLICY strict={0};
         strict.RaiseExceptionOnInvalidHandleReference=1;
@@ -909,11 +935,13 @@ int main(int argc, char **argv) {
     unsigned char *traps = allocate(round_page((import_count + 1) * 32));
     unsigned char *data_traps = allocate((import_count + 1) * page_size);
     protect(data_traps, (import_count + 1) * page_size, 0);
+    optional_seen = calloc(import_count ? import_count : 1, 1);
+    if (!optional_seen) fail("allocation failed");
     for (uint64_t i = 0; i < import_count; ++i) {
         unsigned char *t = traps + i * 32;
         /* SysV: mov edi, index; movabs rax, handler; jmp rax. No fake return values. */
         uint32_t index = (uint32_t)i;
-        uintptr_t handler = (uintptr_t)unresolved;
+        uintptr_t handler = optional_import(names[i]) ? (uintptr_t)optional_stub : (uintptr_t)unresolved;
         t[0] = 0x48; t[1] = 0x89; t[2] = 0xfe; /* mov rsi,rdi: preserve arg0 */
         t[3] = 0xbf; memcpy(t + 4, &index, 4);
         t[8] = 0x48; t[9] = 0xb8; memcpy(t + 10, &handler, 8);

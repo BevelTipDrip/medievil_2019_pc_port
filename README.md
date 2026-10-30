@@ -39,11 +39,19 @@ Captured on Windows 11 (RTX 5080) with this port.
   VSync on, a limit at the display's own refresh (60 on a 60 Hz TV) is left to VSync, which paces it.
 - Audio (Wwise through AudioOut, ATRAC9 and AAC). On stereo speakers and headphones the port mixes
   the game's 7.1 output down itself (SDL's downmix played it about 13 dB too quietly).
-- Controller (DualSense, Xbox and others, through SDL3) and keyboard, both remappable.
+- Controller (DualSense, Xbox and others, through SDL3) and keyboard, both remappable. Every
+  connected controller is read, also while another window has the focus, and the log names each
+  one. Controls > Gamepad names (PlayStation / Xbox) only relabels the launcher; the game keeps its
+  PS4 button prompts. Controls > Stick range (90% to 70%) counts less tilt as a full push, for
+  sticks that never reach the edge (some hall-effect pads).
 - Saving and loading; save backups before every start.
 - **All the game's languages** (launcher > Game > Language): every PS4 system language can be
   picked, Polish included, whatever region your copy is from (a language the game has no text
   for shows English).
+- **Voice language** (launcher > Game > Voice language): the spoken language can differ from the
+  text. The game has 15 dubs (English, French, German, Italian, Spanish, Latin American Spanish,
+  Portuguese, Brazilian Portuguese, Dutch, Polish, Russian, Czech, Greek, Arabic, Japanese), for
+  example Japanese voices with English text. "Same as game language" keeps the game's own choice.
 - **Screenshots**: F12 in the game saves a PNG of the game's picture at its full resolution
   (3840 × 2160 in native 4K) in `user/screenshots` (launcher > Display > Open screenshots folder).
   Shift+F12 saves raw frames for bug reports.
@@ -62,6 +70,9 @@ Captured on Windows 11 (RTX 5080) with this port.
   menus and HUD stay at the output size (a UE4 config override pak, `scripts/ue4_override.py`).
   The in-game menu (Performance > Game resolution now) can still switch between 1080p, 1440p,
   1800p and 4K live, for the developer debug menu.
+- **Anti-aliasing** (launcher > Performance > Anti-aliasing): the game's temporal AA (default,
+  smooth), FXAA (sharper) or Off (raw pixels, best with a high render resolution). A render scale
+  below 100% always uses temporal AA.
 - **Graphics quality**: Low (integrated graphics such as the Radeon 780M), Medium, Console (PS4),
   High and Ultra (sharper, longer-range shadows, better reflections and more distant detail).
   Every preset keeps point/spot light shadows at one fixed size, which stops the shadow flicker
@@ -86,6 +97,15 @@ Captured on Windows 11 (RTX 5080) with this port.
 
 ### Performance work in this port
 
+- **Fewer hitches (from the Uncharted port)**: a 1 ms Windows timer, no power throttling of the
+  game's threads, a spare GPU memory block per memory type (new textures no longer wait for the
+  driver), pageable video memory where the driver offers it, merged buffer barrier ranges and
+  lighter thread wake-ups. On 4 CPU cores the worst gameplay frame went from 31-32 ms to 18 ms and
+  a busy scene from 33 to 54 FPS (measured twice). Each can be switched off for tests
+  (`GOW3_TIMER_RES=0`, `GOW3_POWER_THROTTLE=1`, `GOW3_SPARE_IMAGE_BLOCK=0`,
+  `GOW3_PAGEABLE_MEMORY=0`, `GOW3_TRACKER_MERGE_GAP=0`, `GOW3_FUTEX_COND=0`).
+- GPU barriers are recorded at most 128 images per call (very large batches are what older AMD
+  drivers crash on).
 - **No more texture churn**: the game draws its lighting volumes and colour grading LUT (3D
   textures) as 2D slices; each switch rebuilt and copied the texture, about 14 times per frame.
   The 3D texture now serves the slices through a 2D array view (~4,700 texture rebuilds per 5 s
@@ -110,10 +130,21 @@ Captured on Windows 11 (RTX 5080) with this port.
   menu items outside the top-left 1920×1080 area (pause menu "Quit to Map", the debug menu's right
   column): the game's UI window stays at 1080p while the picture switches. "4K (sharpest)" renders
   the 3D scene at 4K with working menus; or switch to 1080p (in-game menu > Performance) and back.
-- All patches and cheats are for MediEvil 01.00 (the base game: CUSA11227, or CUSA12982 in
-  Europe); do not install the 01.02 update. On 01.02 the game may start, but native output and
-  the built-in executable patches (such as the 4K framebuffer pool) stay off, and cheat edits that
-  do not match the 01.02 files are skipped (the log says which).
+- Both MediEvil versions are supported: 01.00 (the base game) and 01.02 (the update), for
+  CUSA11227 and CUSA12982. The built-in patches have addresses for each version and are chosen by
+  the game's APP_VER and the eboot.bin hash (such as the 4K framebuffer pool); cheat edits that do
+  not match the installed version are skipped (the log says which). Native output (1440p / 1800p /
+  4K native output) finds the game's resolution setting in each version's own code (tested on 01.00;
+  the 01.02 address was found by @Porticus in #29). If a game build doesn't have that code, native
+  output stays at 1080p and the log says so. On the European 01.02 (CUSA12982) the 4K pool patch,
+  unlimited ammo, the FPS counter edit and the voice option work, but **the developer cheat menu
+  does not open yet** (R3 does nothing). The 01.02 eboot does not export
+  a few `libSceNpToolkit2` C++ functions the game links; those imports are logged no-ops returning
+  0, since the port does not implement that module.
+- **Radeon RX 400/500 and Vega** (older AMD drivers): some crash in `amdvlk64.dll` when the main
+  menu loads. Try launcher > Performance > Safe GPU mode (older AMD GPUs) (`GOW3_VULKAN_COMPAT=1`),
+  which runs without newer Vulkan features. The log names the GPU and driver (a `GPU: …` line), and
+  a crash report lists the GPU barriers being recorded: please attach `user/last_run.log`.
 - Experimental PS4 Pro mode (`GOW3_NEO=1`) stops in the texture cache.
 
 ## Download and play
@@ -127,6 +158,9 @@ Captured on Windows 11 (RTX 5080) with this port.
    **Home** and press **PLAY**.
 
 `Play MediEvil.exe` starts the game with the saved settings, for shortcuts and Steam.
+**Portable mode**: with an empty file `portable.txt` next to `MediEvil.exe`, the launcher keeps its
+settings in a `launcher-data` folder beside it instead of `%APPDATA%\medievil-launcher` (saves and
+`medievil.ini` are in the port folder already); updates keep both.
 More in [packaging/windows/README-Windows.txt](packaging/windows/README-Windows.txt).
 
 ## Building from source
@@ -152,6 +186,9 @@ More in [packaging/windows/README-Windows.txt](packaging/windows/README-Windows.
 
 4. Package: `bash packaging/windows/package.sh` builds `dist/medievil-windows.zip`.
 
+Linux (community build, not official yet): see [packaging/linux/README-Linux.md](packaging/linux/README-Linux.md)
+for building from source and the AppImage script (#13, by @nydal91).
+
 ## How it works
 
 | Part | Where | What it does |
@@ -163,7 +200,7 @@ More in [packaging/windows/README-Windows.txt](packaging/windows/README-Windows.
 | Runtime | `src/runtime_*.c` | PS4 system functions; `runtime_extra.c` holds the ones added for MediEvil |
 | GPU | `gpu/shadps4/` | shadPS4 video core (Vulkan) with the speed work of the port it is based on |
 | Override pak | `scripts/ue4_override.py` | Resolution, quality, frame rate cap, debug menu and unlimited ammo (config and Blueprint edits) |
-| Game patches | `patches/MediEvil.xml` | Code patches for 01.00 (native 4K framebuffer pool) |
+| Game patches | `patches/MediEvil.xml` | Code patches for 01.00 and 01.02 (native 4K framebuffer pool) |
 | Launcher | `launcher/medievil_launcher.py` | Settings, PKG install, mods, controls and the play button |
 
 To port another PS4 game the same way: the loader stops at the first system function the runtime

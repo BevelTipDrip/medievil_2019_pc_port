@@ -261,7 +261,11 @@ void Scheduler::ReportStaleRecordData(void* caller) {
     static std::atomic<u32> count{0};
     const u32 n = count.fetch_add(1, std::memory_order_relaxed);
     if (n < 8 || (n & (n - 1)) == 0) {
+#ifdef _WIN32
         const auto base = reinterpret_cast<uintptr_t>(GetModuleHandleA(nullptr));
+#else
+        const uintptr_t base = 0; // medievil-runtime is not position-independent on Linux
+#endif
         std::printf("Scheduler: a command landed in another chunk than its data (%u times; caller "
                     "medievil-runtime.exe+%#llx)\n",
                     n + 1, static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(caller) - base));

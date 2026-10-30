@@ -29,7 +29,8 @@ GAME_FONTS = {
     'head': ('OVERBITE/Content/UI/Fonts/FontesqueOffcPro-Extrabold.ufont', 'Fontesque Offc Pro Extrabold'),
     'body': ('OVERBITE/Content/UI/Fonts/FootlightMTStd-Bold.ufont', 'Footlight MT Std'),
 }
-FALLBACK = {'logo': 'Georgia', 'head': 'Georgia', 'body': 'Segoe UI'}
+FALLBACK = ({'logo': 'Georgia', 'head': 'Georgia', 'body': 'Segoe UI'} if sys.platform == 'win32' else
+            {'logo': 'DejaVu Serif', 'head': 'DejaVu Serif', 'body': 'DejaVu Sans'})
 
 
 class Fonts:
@@ -45,10 +46,13 @@ class Fonts:
 
 
 def load_fonts(game_dir, cache_dir):
-    """The game's fonts (extracted once to cache_dir/fonts), else Windows fonts."""
+    """The game's fonts (extracted once to cache_dir/fonts), else Windows / DejaVu fonts."""
     fonts = Fonts()
-    if sys.platform != 'win32':
-        return fonts
+    if sys.platform != 'win32':  # the fallback fonts bundled with the AppImage
+        import os
+        bundled = os.environ.get('MEDIEVIL_FONT_DIR')
+        for path in sorted(Path(bundled).glob('*.ttf')) if bundled else ():
+            register(path)
     cache = Path(cache_dir) / 'fonts'
     for role, (pak_name, family) in GAME_FONTS.items():
         path = cache / Path(pak_name).name.replace('.ufont', '.ttf')
@@ -68,13 +72,38 @@ def load_fonts(game_dir, cache_dir):
 
 
 def register(path):
-    """Makes a font file usable by this process (GDI private font, as Tk draws with GDI)."""
+    """Makes a font file usable by this process: a GDI private font on Windows; on Linux an
+    application font of fontconfig, which Tk's Xft text uses (call before the Tk window)."""
+    import ctypes
+    import sys
+    if sys.platform != 'win32':
+        try:
+            fontconfig = ctypes.CDLL('libfontconfig.so.1')
+            fontconfig.FcConfigAppFontAddFile.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+            return bool(fontconfig.FcConfigAppFontAddFile(None, str(path).encode()))
+        except (AttributeError, OSError):
+            return False
     try:
-        import ctypes
         FR_PRIVATE = 0x10
         return ctypes.windll.gdi32.AddFontResourceExW(str(path), FR_PRIVATE, 0) > 0
     except (AttributeError, OSError):
         return False
+
+
+def _fallback_font_files(role):
+    """Linux: Georgia / Segoe UI if installed, else DejaVu (bundled in the AppImage, common on Linux)."""
+    import os
+    names = ['georgiab.ttf'] if role != 'body' else ['segoeuib.ttf']
+    serif = role != 'body'
+    names += ['DejaVuSerif-Bold.ttf' if serif else 'DejaVuSans-Bold.ttf', 'DejaVuSans-Bold.ttf', 'DejaVuSans.ttf']
+    dirs = [os.environ.get('MEDIEVIL_FONT_DIR', ''), str(Path(__file__).resolve().parent.parent / 'gpu' / 'third_party' / 'fonts'),
+            '/usr/share/fonts/truetype/dejavu', '/usr/share/fonts/TTF', '/usr/share/fonts/dejavu',
+            '/usr/share/fonts/dejavu-sans-fonts', '/usr/share/fonts/dejavu-serif-fonts']
+    for name in names:
+        yield name
+        for directory in dirs:
+            if directory and (Path(directory) / name).is_file():
+                yield str(Path(directory) / name)
 
 
 def _hex(color, alpha=255):
@@ -85,10 +114,20 @@ def _hex(color, alpha=255):
 def _font(fonts, role, size):
     from PIL import ImageFont
     path = fonts.file.get(role)
+    if sys.platform == 'win32':  # unchanged on Windows: the game's font, else Georgia / Segoe UI
+        try:
+            return ImageFont.truetype(str(path) if path else ('georgiab.ttf' if role != 'body' else 'segoeuib.ttf'),
+                                      size)
+        except OSError:
+            return ImageFont.load_default()
+    for candidate in ([str(path)] if path else []) + list(_fallback_font_files(role)):
+        try:
+            return ImageFont.truetype(candidate, size)
+        except OSError:
+            continue
     try:
-        return ImageFont.truetype(str(path) if path else ('georgiab.ttf' if role != 'body' else 'segoeuib.ttf'),
-                                  size)
-    except OSError:
+        return ImageFont.load_default(size)
+    except TypeError:  # Pillow before 10.1
         return ImageFont.load_default()
 
 

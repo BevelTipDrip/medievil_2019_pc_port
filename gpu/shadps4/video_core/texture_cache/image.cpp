@@ -20,6 +20,15 @@
 
 #include <vk_mem_alloc.h>
 
+#include <array>
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <cstdio>
+#include <mutex>
+#include <thread>
+#include "common/thread.h"
+
 namespace VideoCore {
 
 using namespace Vulkan;
@@ -90,6 +99,38 @@ static vk::FormatFeatureFlags2 FormatFeatureFlags(const vk::ImageUsageFlags usag
     // Note: StorageImage is intentionally ignored for now since it is always set, and can mess up
     // compatibility checks.
     return feature_flags;
+}
+
+// gow3: recent image creations and destructions, for the barrier dump in crash reports.
+namespace {
+struct ImageEvent {
+    std::atomic<VkImage> image;
+    std::atomic<bool> destroyed;
+};
+std::array<ImageEvent, 8192> image_events;
+std::atomic<u64> image_event_head{0};
+
+void NoteImage(VkImage image, bool destroyed) {
+    ImageEvent& e = image_events[image_event_head.fetch_add(1, std::memory_order_relaxed) %
+                                 image_events.size()];
+    e.image.store(image, std::memory_order_relaxed);
+    e.destroyed.store(destroyed, std::memory_order_relaxed);
+}
+} // namespace
+
+const char* DescribeImageHandle(VkImage image) {
+    if (!image) {
+        return " (null)";
+    }
+    const u64 head = image_event_head.load(std::memory_order_relaxed);
+    const u64 first = head > image_events.size() ? head - image_events.size() : 0;
+    for (u64 i = head; i-- > first;) {
+        const ImageEvent& e = image_events[i % image_events.size()];
+        if (e.image.load(std::memory_order_relaxed) == image) {
+            return e.destroyed.load(std::memory_order_relaxed) ? " (DESTROYED)" : " (live)";
+        }
+    }
+    return "";
 }
 
 namespace {
@@ -179,6 +220,7 @@ UniqueImage::~UniqueImage() {
 
 void UniqueImage::Destroy() {
     if (image) {
+        NoteImage(image, true);
         if (ImageReleaser::Get().Enabled()) {
             ImageReleaser::Get().Release(allocator, image, allocation);
         } else {
@@ -188,6 +230,103 @@ void UniqueImage::Destroy() {
         allocation = {};
     }
 }
+
+namespace {
+/// From the Uncharted port (18 Oct 2026): a driver takes up to ~170 ms to allocate a new block of
+/// video memory (256 MiB, AMD Windows), and VMA allocates one the moment an image no longer fits:
+/// the GPU thread stalled for 70-240 ms there (hitches). This thread keeps room in reserve
+/// instead: when a memory type images use has no free range of 64 MiB left, it allocates a 64 MiB
+/// spare there (VMA makes a new block, with room for the next images) and frees the previous
+/// spare. GOW3_SPARE_IMAGE_BLOCK=0: off.
+class SpareBlockKeeper {
+public:
+    static void Note(VmaAllocator allocator, u32 memory_type) {
+        static SpareBlockKeeper* const keeper = [allocator]() -> SpareBlockKeeper* {
+            const char* env = std::getenv("GOW3_SPARE_IMAGE_BLOCK");
+            return env && env[0] == '0' ? nullptr : new SpareBlockKeeper(allocator); // process-long
+        }();
+        if (keeper) {
+            keeper->Wake(memory_type);
+        }
+    }
+
+private:
+    static constexpr VkDeviceSize Spare = VkDeviceSize{64} << 20;
+
+    explicit SpareBlockKeeper(VmaAllocator allocator_) : allocator{allocator_} {
+        std::thread{[this] { Run(); }}.detach();
+    }
+
+    void Wake(u32 memory_type) {
+        {
+            std::scoped_lock lock{mutex};
+            types |= 1u << memory_type;
+            pending = true;
+        }
+        cv.notify_one();
+    }
+
+    void Run() {
+        Common::SetCurrentThreadName("GPU:SpareImageBlock");
+        u32 made = 0;
+        for (;;) {
+            u32 wanted;
+            {
+                std::unique_lock lock{mutex};
+                cv.wait(lock, [this] { return pending; });
+                // Images come in bursts: act once one is over, so that the block is allocated
+                // while the GPU thread creates no images (VMA holds the memory type's lock while
+                // the driver allocates; an image created meanwhile waits for it).
+                do {
+                    pending = false;
+                    cv.wait_for(lock, std::chrono::milliseconds{150}, [this] { return pending; });
+                } while (pending);
+                wanted = types;
+            }
+            VmaTotalStatistics stats{};
+            vmaCalculateStatistics(allocator, &stats);
+            for (u32 type = 0; type < VK_MAX_MEMORY_TYPES; ++type) {
+                if (!(wanted >> type & 1) || stats.memoryType[type].unusedRangeSizeMax >= Spare) {
+                    continue;
+                }
+                const VkMemoryRequirements requirements = {
+                    .size = Spare, .alignment = 64 * 1024, .memoryTypeBits = 1u << type};
+                const VmaAllocationCreateInfo create = {
+                    .flags = VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT,
+                    .usage = VMA_MEMORY_USAGE_UNKNOWN,
+                    .memoryTypeBits = 1u << type,
+                };
+                // The spare stays allocated (a block that only held a freed spare would be
+                // deleted by VMA at the next free); the previous one is freed once the new one
+                // has its block, which opens room for images in an older block.
+                VmaAllocation spare{};
+                const auto started = std::chrono::steady_clock::now();
+                if (vmaAllocateMemory(allocator, &requirements, &create, &spare, nullptr) ==
+                    VK_SUCCESS) {
+                    if (held[type]) {
+                        vmaFreeMemory(allocator, held[type]);
+                    }
+                    held[type] = spare;
+                    if (++made <= 16) {
+                        std::printf("GPU: spare image memory block ready (type %u, %.0f ms)\n", type,
+                                    std::chrono::duration<double, std::milli>(
+                                        std::chrono::steady_clock::now() - started).count());
+                    }
+                }
+            }
+            // At most one check per 20 ms: image creation comes in bursts.
+            std::this_thread::sleep_for(std::chrono::milliseconds{20});
+        }
+    }
+
+    VmaAllocator allocator;
+    std::mutex mutex;
+    std::condition_variable cv;
+    u32 types = 0;
+    bool pending = false;
+    std::array<VmaAllocation, VK_MAX_MEMORY_TYPES> held{};
+};
+} // namespace
 
 void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
     this->image_ci = image_ci;
@@ -224,6 +363,7 @@ void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
     }();
     VkResult result = VK_ERROR_UNKNOWN;
     bool created = false;
+    const auto create_started = std::chrono::steady_clock::now();
     if (suballocate) {
         VmaAllocatorInfo allocator_info{};
         vmaGetAllocatorInfo(allocator, &allocator_info);
@@ -275,6 +415,16 @@ void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
                vk::to_string(vk::Result{result}));
     image = vk::Image{unsafe_image};
     size_bytes = alloc_info.size;
+    NoteImage(unsafe_image, false);
+    // A slow creation is a hitch on the GPU thread: logged (first 64), as in the Uncharted port.
+    const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() -
+                                                                create_started).count();
+    static std::atomic<u32> slow_logged{0};
+    if (ms >= 4.0 && slow_logged.fetch_add(1, std::memory_order_relaxed) < 64) {
+        std::printf("Slow image create: %.1f ms, %ux%u, %.1f MiB\n", ms, image_ci.extent.width,
+                    image_ci.extent.height, alloc_info.size / 1048576.0);
+    }
+    SpareBlockKeeper::Note(allocator, alloc_info.memoryType);
 }
 
 Image::Image(const Vulkan::Instance& instance, Vulkan::Runtime& runtime_,
@@ -483,10 +633,19 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
                                            subres_range->base.layer + subres_range->extent.layers)
                 : std::views::iota(0u, info.resources.layers);
 
+        // gow3: per-layer barriers of the same transition are merged into one per layer range. A
+        // layered image gave 3696 barriers in one batch, and AMD's older Windows driver (RX 400/500,
+        // Vega) crashed recording them (issues #18, #34, #41, #43).
+        // GOW3_BARRIER_MERGE=1 merges; OFF by default: with the background pipeline warm-up it
+        // broke glowing effects (red outlines on the crypt gargoyle, 29 Oct 2026). To be fixed
+        // with the AMD crash work.
+        static const bool merge = [] {
+            const char* env = std::getenv("GOW3_BARRIER_MERGE");
+            return env && env[0] == '1';
+        }();
+        const size_t first_barrier = merge ? barriers.size() : SIZE_MAX;
         for (u32 mip : mips) {
             for (u32 layer : layers) {
-                // NOTE: these loops may produce a lot of small barriers.
-                // If this becomes a problem, we can optimize it by merging adjacent barriers.
                 const auto subres_idx = mip * info.resources.layers + layer;
                 ASSERT(subres_idx < subresource_states.size());
                 auto& state = subresource_states[subres_idx];
@@ -509,6 +668,20 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
                         state.layout == dst_layout && IsReadOnly(state.access_mask) && IsReadOnly(dst_mask)
                             ? state.pl_stage
                             : vk::PipelineStageFlags2{};
+                    if (merge && barriers.size() > first_barrier) {
+                        auto& last = barriers.back();
+                        auto& range = last.subresourceRange;
+                        if (range.baseMipLevel == mip && range.levelCount == 1 &&
+                            range.baseArrayLayer + range.layerCount == layer &&
+                            last.oldLayout == state.layout && last.srcStageMask == state.pl_stage &&
+                            last.srcAccessMask == state.access_mask) {
+                            ++range.layerCount;
+                            state.layout = dst_layout;
+                            state.access_mask = dst_mask;
+                            state.pl_stage = keep_stages | dst_stage;
+                            continue;
+                        }
+                    }
                     barriers.emplace_back(vk::ImageMemoryBarrier2{
                         .srcStageMask = state.pl_stage,
                         .srcAccessMask = state.access_mask,

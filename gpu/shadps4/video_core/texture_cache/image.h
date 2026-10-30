@@ -42,6 +42,8 @@ DECLARE_ENUM_FLAG_OPERATORS(ImageFlagBits)
 /// gow3: waits until the images queued for release on the release thread are destroyed (before
 /// the allocator goes; image.cpp).
 void DrainImageReleases();
+// gow3: " (live)", " (DESTROYED)" or " (null)" from recent image lifetimes ("" when unknown).
+const char* DescribeImageHandle(VkImage image);
 
 struct UniqueImage {
     explicit UniqueImage() = default;

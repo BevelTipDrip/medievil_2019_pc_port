@@ -1,0 +1,95 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
+# MediEvil AppImage entry.
+#   (no arguments)   the launcher
+#   --play           the game with the launcher's saved settings (Steam, shortcuts, Game Mode)
+#   --run [ARGS]     run.py directly: GOW3_GAME_DIR=/path/to/CUSA11227 (or the .pkg)
+#   --vulkan-info    which Vulkan drivers and GPUs the game would see
+#   --help
+# Data (generated files, saves, medievil.ini, mods): ~/.local/share/medievil-pc (GOW3_DATA_DIR).
+# Launcher settings: ~/.config/medievil-launcher.
+set -e
+APPDIR=${APPDIR:-$(dirname -- "$(readlink -f -- "$0")")}
+export APPDIR
+PORT=$APPDIR/usr/share/medievil
+PYTHON=$APPDIR/usr/python/bin/python3
+
+# glibc comes from the host: say so plainly on an older system instead of a loader error.
+want=$(cat "$APPDIR/usr/lib/compat/glibc" 2>/dev/null || echo 2.17)
+have=$(getconf GNU_LIBC_VERSION 2>/dev/null | awk '{print $2}')
+if [ -n "$have" ] && [ "$(printf '%s\n%s\n' "$want" "$have" | sort -V | head -1)" != "$want" ]; then
+    message="This MediEvil AppImage needs glibc $want or newer; this system has $have.
+Use a newer distribution (Ubuntu 24.04+, Fedora 39+, SteamOS 3.6+, Debian 13, Arch), or build it on this one: packaging/linux/README-Linux.md."
+    echo "$message" >&2
+    command -v zenity >/dev/null 2>&1 && zenity --error --title=MediEvil --text="$message" 2>/dev/null
+    command -v kdialog >/dev/null 2>&1 && kdialog --title MediEvil --error "$message" 2>/dev/null
+    exit 1
+fi
+
+# The Vulkan loader is the system's (it comes with any Vulkan driver).
+if ! /sbin/ldconfig -p 2>/dev/null | grep -q 'libvulkan.so.1 ' && [ ! -e /usr/lib/x86_64-linux-gnu/libvulkan.so.1 ] \
+   && [ ! -e /usr/lib64/libvulkan.so.1 ] && [ ! -e /usr/lib/libvulkan.so.1 ]; then
+    echo "MediEvil needs the Vulkan loader (libvulkan.so.1): install libvulkan1 / vulkan-icd-loader and your GPU's Vulkan driver." >&2
+fi
+
+# libstdc++: the host's when it is new enough (GPU drivers link it too), else the bundled one.
+need=$(cat "$APPDIR/usr/lib/compat/needs" 2>/dev/null || echo GLIBCXX_3.4)
+host=$(/sbin/ldconfig -p 2>/dev/null | awk '/libstdc\+\+\.so\.6 .*x86-64/{print $NF; exit}')
+[ -n "$host" ] || for d in /usr/lib/x86_64-linux-gnu /usr/lib64 /usr/lib; do
+    [ -e "$d/libstdc++.so.6" ] && host=$d/libstdc++.so.6 && break
+done
+if [ -z "$host" ] || ! grep -qa "$need" "$host" 2>/dev/null; then
+    LD_LIBRARY_PATH=$APPDIR/usr/lib/compat${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+    export LD_LIBRARY_PATH
+fi
+
+# The bundled Python only: a host PYTHONHOME/PYTHONPATH would load the wrong standard library.
+unset PYTHONHOME PYTHONPATH PYTHONSTARTUP
+export PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1 PYTHONUTF8=1
+data_home=${XDG_DATA_HOME:-$HOME/.local/share}
+export GOW3_DATA_DIR=${GOW3_DATA_DIR:-$data_home/medievil-pc}
+mkdir -p "$GOW3_DATA_DIR"
+# Screenshots (F12 in 1.3.6) beside the saves, as the launcher sets them; never the read-only image.
+export GOW3_SCREENSHOT_DIR=${GOW3_SCREENSHOT_DIR:-$GOW3_DATA_DIR/user/screenshots}
+export MEDIEVIL_FONT_DIR=$APPDIR/usr/share/fonts
+# The launcher's own folder and the game's runtime are inside the read-only image.
+export GOW3_PROBE=${GOW3_PROBE:-$PORT/bin/medievil-runtime}
+
+case ${1:-} in
+    --help|-h)
+        sed -n '3,10p' "$0" | sed 's/^# \{0,1\}//'
+        exit 0 ;;
+    --run)
+        shift
+        if [ -z "${GOW3_GAME_DIR:-}" ]; then
+            echo "Set GOW3_GAME_DIR to your game folder (with eboot.bin) or its .pkg, e.g." >&2
+            echo "  GOW3_GAME_DIR=~/Games/CUSA11227 $0 --run" >&2
+            echo "or start without --run for the launcher." >&2
+            exit 1
+        fi
+        cd "$PORT"
+        exec "$PYTHON" -I "$PORT/run.py" "$@" ;;
+    --vulkan-info)
+        echo "Vulkan drivers (ICD manifests):"
+        found=0
+        for d in ${VK_DRIVER_FILES:+$(echo "$VK_DRIVER_FILES" | tr ':' ' ')} \
+                 /usr/share/vulkan/icd.d /etc/vulkan/icd.d /usr/local/share/vulkan/icd.d \
+                 "${XDG_DATA_HOME:-$HOME/.local/share}/vulkan/icd.d" /run/opengl-driver/share/vulkan/icd.d; do
+            [ -d "$d" ] || continue
+            for manifest in "$d"/*.json; do
+                [ -e "$manifest" ] && echo "  $manifest" && found=1
+            done
+        done
+        if [ "$found" = 0 ]; then
+            echo "  none found: install your GPU's Vulkan driver (mesa-vulkan-drivers / vulkan-radeon /"
+            echo "  vulkan-intel, or NVIDIA's driver with its Vulkan ICD)."
+        fi
+        echo
+        if [ -x "$PORT/bin/medievil-gpu-check" ]; then
+            "$PORT/bin/medievil-gpu-check" || true
+        fi
+        echo
+        exec "$PORT/bin/medievil-runtime" --vulkan-only ;;
+esac
+cd "$PORT"
+exec "$PYTHON" -I "$PORT/launcher/medievil_launcher.py" "$@"

@@ -87,12 +87,17 @@ def compile_patches(xml, names, app_version, segments):
 
 
 PATCHES_DIR=Path(__file__).resolve().parent.parent/'patches'
-# Built-in patch file per game, the app version its addresses are for and, when known, the
-# sha256 of the only eboot.bin they were checked against (another build of the same version has
-# its code elsewhere: byte writes there corrupt it).
-# MediEvil, America and Europe: only the analysed eboot (sha256) gets these patches.
+# Built-in patch file per game version, the app version its addresses are for and, when known, the
+# sha256 of the eboot.bin they were checked against (another build of the same version has its code
+# elsewhere: byte writes there corrupt it).
+# MediEvil, America and Europe: only the analysed eboots (sha256) get these patches.
 GAMES=[({'CUSA11227','CUSA12982'},PATCHES_DIR/'MediEvil.xml','01.00',
-        'a7e976d13b9649c5cd1ccb617b02f4a27b95c45b9f5331470b90a1f014c3b828')]
+        'a7e976d13b9649c5cd1ccb617b02f4a27b95c45b9f5331470b90a1f014c3b828'),
+       # 01.02 exists as at least two eboot builds with the patched code at the same addresses
+       # (e50c9b36: the dump of PR #26; cd273b59: the European CUSA12982 update, 29 Oct 2026).
+       ({'CUSA11227','CUSA12982'},PATCHES_DIR/'MediEvil.xml','01.02',
+        ('e50c9b36153416949d377ad0ddafac1a888c119987095615dc0f69b5ad15e401',
+         'cd273b59a2220ecec970434edf022ff03aa298851dae28b0460814a996ff5634'))]
 DMEM_RETAIL_MB=5056  # runtime_memory.c POOL_SIZE default
 
 
@@ -104,9 +109,11 @@ def game_title_id(game):
         return None
 
 
-def game_profile(title_id):
-    """(title IDs, built-in XML, app version, eboot sha256 or None) for a known game, else None."""
-    return next((g for g in GAMES if title_id in g[0]),None)
+def game_profile(title_id,app_version=None):
+    """(title IDs, built-in XML, app version, eboot sha256 (one, or a tuple of builds) or None)
+    for a known game version,
+    else None; without app_version, the first entry for the game."""
+    return next((g for g in GAMES if title_id in g[0] and (app_version is None or g[2]==app_version)),None)
 
 
 def eboot_matches(game, profile):
@@ -115,7 +122,8 @@ def eboot_matches(game, profile):
         return True
     import hashlib
     try:
-        return hashlib.sha256((Path(game)/'eboot.bin').read_bytes()).hexdigest()==profile[3]
+        known=profile[3] if isinstance(profile[3],tuple) else (profile[3],)
+        return hashlib.sha256((Path(game)/'eboot.bin').read_bytes()).hexdigest() in known
     except OSError:
         return False
 
@@ -219,19 +227,21 @@ def main():
     p.add_argument('--game-dir',type=Path,default=Path(os.environ.get('GOW3_GAME_DIR','../CUSA11227')))
     a=p.parse_args()
     title=game_title_id(a.game_dir)
-    profile=game_profile(title)
+    version=game_app_version(a.game_dir)
+    profile=game_profile(title,version)
+    if not profile and os.environ.get('GOW3_FORCE_PATCHES'):
+        profile=game_profile(title)  # force: apply the first version's addresses anyway
     if not profile:
         write_patches(a.out,[])
-        print(f'Patches: no patch profile for {title}: none applied')
+        known=game_profile(title)
+        if known:
+            print(f'Patches: game version {version}, {known[1].name} is for {known[2]}: none applied')
+        else:
+            print(f'Patches: no patch profile for {title}: none applied')
         return
     ids,xml,needed,_sha=profile
     # The patches are byte writes at the addresses of one game build: on another they would
     # corrupt code, so such a game runs unpatched.
-    version=game_app_version(a.game_dir)
-    if version!=needed and not os.environ.get('GOW3_FORCE_PATCHES'):
-        write_patches(a.out,[])
-        print(f'Patches: game version {version}, {xml.name} is for {needed}: none applied')
-        return
     if not eboot_matches(a.game_dir,profile) and not os.environ.get('GOW3_FORCE_PATCHES'):
         write_patches(a.out,[])
         print(f'Patches: eboot.bin is not the build {xml.name} was checked against: none applied')

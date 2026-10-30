@@ -14,18 +14,47 @@ Usage: python scripts/ue4_override.py <game dir> [--output 2560x1440] [--scale 6
 import argparse
 import hashlib
 import os
+import re
 import struct
 import zlib
 from pathlib import Path
 
 PAK_MAGIC = 0x5A6F12E1
-PAK_NAME = 'pakchunk99-ps4_P.pak'
+# The game's pak loader opens the patch pak in lowercase (`pakchunk99-ps4_p.pak`); on a
+# case-sensitive filesystem the `_P` spelling alone is never mounted. Windows ignores case.
+PAK_NAME = 'pakchunk99-ps4_p.pak'
+OLD_PAK_NAME = 'pakchunk99-ps4_P.pak'
 CONFIG = 'Engine/Config/PS4/PS4Engine.ini'
 # Render scales below 100% use UE4's temporal upsampling: its temporal AA rebuilds the full
 # output from the game's own motion vectors (as FSR 2 / DLSS do, without the AI).
 # Output sizes above 1080p use the larger GPU heap and texture streaming pool (with GOW3_DMEM_MB
 # in run.py).
 LARGE_OUTPUT = 1920 * 1080
+
+
+# r.SetRes (native output, runtime_extra.c): UE4's FSystemResolution::RequestResolutionChange loads
+# the variable's IConsoleVariable* with `mov rbx, [rip+rel32]` right before this code. The slot
+# differs between eboots (US 01.00: 0x5c28328; the 01.02 dump of PR #29: 0x5c28368), so run.py
+# finds it in each eboot.elf instead of using one address.
+SETRES_CODE = re.compile(re.escape(bytes.fromhex('488b1d')) + b'(....)' + re.escape(bytes.fromhex(
+    '837db80074044c8b75b0488b034889dfff5020488b0b25000000ff')), re.S)
+
+
+def setres_slot(elf_path):
+    """Image offset of r.SetRes's IConsoleVariable* in eboot.elf; None unless its code is found once."""
+    elf = Path(elf_path).read_bytes()
+    hits = list(SETRES_CODE.finditer(elf))
+    if len(hits) != 1:
+        return None
+    offset = hits[0].start()
+    phoff, = struct.unpack_from('<Q', elf, 0x20)
+    entry_size, count = struct.unpack_from('<HH', elf, 0x36)
+    for i in range(count):
+        kind, _, file_offset, vaddr, _, file_size, _, _ = struct.unpack_from('<IIQQQQQQ', elf, phoff + i * entry_size)
+        if kind == 1 and file_offset <= offset < file_offset + file_size:
+            rel, = struct.unpack('<i', hits[0].group(1))
+            return offset - file_offset + vaddr + 7 + rel
+    return None
 
 
 def paks_dir(game):
@@ -233,11 +262,14 @@ def debug_menu_config(game, enabled):
 # The debug menu's widget Blueprint: when it is created it calls SetFrameRateLimit(60) and
 # ApplySettings ("Set FPS Max to 30" off), which capped the game at 60 FPS again; 0 is no limit.
 # Its "Cinematic Mode (1440p)" button (r.SetRes) becomes 4K and a profiling toggle 1440p. Same-length edits only (the Blueprint
-# bytecode and the package's export sizes stay valid); each must match exactly once.
+# bytecode and the package's export sizes stay valid); each must match exactly once. An edit given as a
+# list holds one variant per game version (object and name indices differ: US 01.00, then EU 01.02
+# CUSA12982); the variant whose bytes are found is used.
 DEBUG_HUD = 'OVERBITE/Content/Blueprints/Debug/DebugHUD.uexp'
 DEBUG_HUD_EDITS = [
     # SetFrameRateLimit(60.0): EX_FloatConst 60.0 after the call to that import.
-    (bytes.fromhex('1c1dffffff1e00007042'), bytes.fromhex('1c1dffffff1e00000000'), 1),
+    [(bytes.fromhex('1c1dffffff1e00007042'), bytes.fromhex('1c1dffffff1e00000000'), 1),
+     (bytes.fromhex('1c19ffffff1e00007042'), bytes.fromhex('1c19ffffff1e00000000'), 1)],
     # 4K needs the "Native 4K framebuffer pool" patch (patches/MediEvil.xml): the PS4 pool of
     # 128 MB ran out of memory.
     (b'r.SetRes 2560x1440\0', b'r.SetRes 3840x2160\0', 1),
@@ -250,9 +282,24 @@ DEBUG_HUD_EDITS = [
     # every enemy standing still, for the rest of the session (the flag is on the game instance).
     # Destruct runs however the menu closes: its gamma reset ("retain gamma" box) becomes
     # SetAIPaused(false, false, self), copied from CloseDebug, plus two EX_Nothing.
-    (bytes.fromhex('072d2b000000930000004d1920dafeffff13000000000000001c00ffffff171f67616d6d61002a16'),
-     bytes.fromhex('072d2b000000930000000b1920c6feffff11000000000000001b5004000000000000282817160b0b'), 1),
+    [(bytes.fromhex('072d2b000000930000004d1920dafeffff13000000000000001c00ffffff171f67616d6d61002a16'),
+      bytes.fromhex('072d2b000000930000000b1920c6feffff11000000000000001b5004000000000000282817160b0b'), 1),
+     (bytes.fromhex('07d82b000000990000004d1920d5feffff13000000000000001cfbfeffff171f67616d6d61002a16'),
+      bytes.fromhex('07d82b000000990000000b1920c0feffff11000000000000001b6704000000000000282817160b0b'), 1)],
 ]
+
+
+def apply_edits(name, data, edits):
+    """Same-length byte edits; a list entry is one variant per game version (the one found)."""
+    for edit in edits:
+        variants = edit if isinstance(edit, list) else [edit]
+        for old, new, count in variants:
+            if data.count(old) == count:
+                data = data.replace(old, new)
+                break
+        else:
+            raise ValueError(f'{name}: unexpected contents (game version?)')
+    return data
 
 
 # The debug menu's first resolution button follows the output resolution: the debug menu's
@@ -266,11 +313,7 @@ def native_button(output):
 
 
 def debug_hud(game, output='1920x1080', supersampled=False):
-    data = read_file(game, DEBUG_HUD)
-    for old, new, count in DEBUG_HUD_EDITS:
-        if data.count(old) != count:
-            raise ValueError(f'{DEBUG_HUD}: unexpected contents (game version?)')
-        data = data.replace(old, new)
+    data = apply_edits(DEBUG_HUD, read_file(game, DEBUG_HUD), DEBUG_HUD_EDITS)
     if output != '1920x1080' and (button := native_button(output)):
         command, label = button
         data = data.replace(b'r.SetRes 3840x2160\0', command + b'\0', 1)
@@ -294,24 +337,63 @@ def debug_hud(game, output='1920x1080', supersampled=False):
 # charge for what uses the same function.
 INFINITE_AMMO = 'OVERBITE/Content/Blueprints/GameInstance/OverbiteGameInstanceFunctions.uexp'
 INFINITE_AMMO_EDITS = [
-    (bytes.fromhex('6816ffffff1d00000000007d030000161b53'),
-     bytes.fromhex('6816ffffff1d00000000007c030000161b53'), 1),
+    [(bytes.fromhex('6816ffffff1d00000000007d030000161b53'),
+      bytes.fromhex('6816ffffff1d00000000007c030000161b53'), 1),
+     # EU 01.02: Subtract_IntInt is import -244, Health local 0x393, the result local 0x392.
+     (bytes.fromhex('680cffffff1d000000000093030000161b58'),
+      bytes.fromhex('680cffffff1d000000000092030000161b58'), 1)],
 ]
 
 
+# Voice language (medievil.ini ue4_voice): the game takes its spoken language from its text
+# language (GetWWiseLanguageFromLanguageID: LanguageIDToWWiseLanguageMap, else 'English(US)').
+# Both versions ship 15 voice languages. With a voice language chosen, that function skips the map
+# (its JumpIfNot becomes a Jump to the fallback, the condition left as a dead expression) and the
+# fallback becomes the chosen Wwise language, padded with EX_Nothing: the same size on disk and in
+# memory, so text and voices can differ (Japanese voices with English text, for example).
+GAME_INSTANCE = 'OVERBITE/Content/Blueprints/GameInstance/OverbiteGameInstance.uexp'
+VOICE_LANGUAGES = ('English(US)', 'French', 'German', 'Italian', 'Spanish', 'es-MX', 'Portuguese',
+                   'pt-BR', 'Dutch', 'Polish', 'Russian', 'Czech', 'Greek', 'Arabic', 'Japanese')
+VOICE_FUNCTION_END = b'\x1fEnglish(US)\x00\x04\x0b\x53'
+VOICE_FUNCTION_SIZE = 138  # disk bytes of GetWWiseLanguageFromLanguageID in 01.00 and 01.02
+
+
+def voice_language(game, voice):
+    if voice not in VOICE_LANGUAGES:
+        raise ValueError(f'unknown voice language {voice!r}')
+    data = read_file(game, GAME_INSTANCE)
+    if data.count(VOICE_FUNCTION_END) != 1:
+        raise ValueError(f'{GAME_INSTANCE}: unexpected contents (game version?)')
+    end = data.find(VOICE_FUNCTION_END) + len(VOICE_FUNCTION_END)
+    start = end - VOICE_FUNCTION_SIZE
+    script = bytearray(data[start:end])
+    # The map's miss branch: EX_JumpIfNot 0xb8 (EX_LocalVariable condition) after EndFunctionParms.
+    jump = script.find(b'\x16\x07\xb8\x00\x00\x00\x00')
+    if jump < 0 or script.count(b'\x16\x07\xb8\x00\x00\x00\x00') != 1:
+        raise ValueError(f'{GAME_INSTANCE}: unexpected contents (game version?)')
+    script[jump + 1] = 0x06  # EX_Jump: always the fallback
+    text = b'English(US)\x00'
+    at = script.find(b'\x1f' + text) + 1
+    script[at:at + len(text)] = voice.encode() + b'\x00' + b'\x0b' * (len(text) - len(voice) - 1)
+    return data[:start] + bytes(script) + data[end:]
+
+
 def edited_asset(game, name, edits):
-    data = read_file(game, name)
-    for old, new, count in edits:
-        if data.count(old) != count:
-            raise ValueError(f'{name}: unexpected contents (game version?)')
-        data = data.replace(old, new)
-    return data
+    return apply_edits(name, read_file(game, name), edits)
+
+
+# Anti-aliasing (medievil.ini ue4_aa, issue #27): the PS4 game uses temporal AA, soft in motion.
+# r.PostProcessAAQuality 0 is off, 1-2 FXAA, 3+ temporal. Temporal upsampling needs temporal AA,
+# so with upscaling active the setting stays temporal.
+ANTI_ALIASING = {'taa': None, 'fxaa': '2', 'off': '0'}
 
 
 def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_menu=False,
-          infinite_ammo=False, hzb=False, effects='75'):
+          infinite_ammo=False, hzb=False, effects='75', aa='taa', voice=''):
     """Writes or removes the override pak. Returns a short description of the active state."""
     pak = paks_dir(game) / PAK_NAME
+    # Earlier builds wrote the `_P` spelling: on Linux it stayed behind, unread.
+    (paks_dir(game) / OLD_PAK_NAME).unlink(missing_ok=True)
     values = dict(QUALITY.get(quality, {}))
     if quality in LOCAL_SHADOWS:
         size, threshold = LOCAL_SHADOWS[quality]
@@ -332,6 +414,11 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
     # 50% only as slightly less sharp on a 32" 4K OLED up close (N-26).
     if effects in ('75', '50'):
         values['r.SeparateTranslucencyScreenPercentage'] = effects
+    # Anti-aliasing (medievil.ini ue4_aa): temporal (the game's), FXAA or off; below 100% render
+    # scale the temporal upsampler needs TAA.
+    aa_quality = None if scale < 100 else ANTI_ALIASING.get(aa)
+    if aa_quality is not None:
+        values['r.PostProcessAAQuality'] = aa_quality
     width, height = (int(v) for v in output.split('x'))
     if width * height > LARGE_OUTPUT and os.environ.get('GOW3_PS4_MEMORY') != '1':
         # The GPU heap and texture streaming pool above 1080p (with GOW3_DMEM_MB in run.py).
@@ -369,7 +456,7 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
             extra[name.strip()] = value.strip()
     values.update(extra)
     engine = frame_rate_range(fps) if fps > 60 else {}
-    if not values and not engine and not debug_menu and not infinite_ammo:
+    if not values and not engine and not debug_menu and not infinite_ammo and not voice:
         pak.unlink(missing_ok=True)
         return '1920x1080 output, render scale 100%, console quality, 60 FPS'
     files = {CONFIG: set_values(read_file(game, CONFIG), values, engine)}
@@ -390,11 +477,18 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
         except (ValueError, FileNotFoundError) as error:
             print(f'Unlimited ammo: not available for this game build ({error})', flush=True)
             infinite_ammo = False
+    if voice:
+        try:
+            files[GAME_INSTANCE] = voice_language(game, voice)
+        except (ValueError, FileNotFoundError) as error:
+            print(f'Voice language: not available for this game build ({error})', flush=True)
+            voice = ''
     write_pak(pak, files)
     return (f'{output} output, render scale {scale}%'
             f'{" (temporal upsampling)" if scale < 100 else " (supersampled)" if scale > 100 else ""}, {quality} quality, '
             f'{f"up to {fps}" if fps > 60 else 60} FPS{", debug menu (R3)" if debug_menu else ""}'
-            f'{", unlimited ammo" if infinite_ammo else ""}'
+            f'{f", anti-aliasing {aa}" if aa_quality is not None else ""}'
+            f'{", unlimited ammo" if infinite_ammo else ""}{f", voices {voice}" if voice else ""}'
             f'{"; extra cvars " + ", ".join(f"{k}={v}" for k, v in extra.items()) if extra else ""}')
 
 

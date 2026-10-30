@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- MediEvil (CUSA11227) 01.00 patches for this port (shadPS4 XML format; addresses are PS4
+<!-- MediEvil (CUSA11227) patches for this port (shadPS4 XML format; addresses are PS4
      virtual addresses, eboot base 0x400000). Checked against eboot.bin sha256
-     a7e976d13b9649c5cd1ccb617b02f4a27b95c45b9f5331470b90a1f014c3b828 (scripts/patches.py). -->
+     a7e976d13b9649c5cd1ccb617b02f4a27b95c45b9f5331470b90a1f014c3b828 (01.00) and
+     e50c9b36153416949d377ad0ddafac1a888c119987095615dc0f69b5ad15e401 (01.02), see
+     scripts/patches.py. The 01.02 addresses were located by matching the instructions around
+     each 01.00 site; all of them are byte-identical apart from call displacements. -->
 <Patch>
     <TitleID>
         <ID>CUSA11227</ID>
@@ -84,6 +87,39 @@
             <Line Type="size" Address="0x040be758" Value="1920x1080"/>
             <!-- work area default rect (rodata 0x3cbe7b0): Right, Bottom -->
             <Line Type="size" Address="0x040be7b8" Value="1920x1080"/>
+        </PatchList>
+    </Metadata>
+    <!-- Same patch for 01.02. The memory manager moved to 0x8f75b0 (+0x2bb0) and the two free
+         paths to 0x8e3b80 and 0x8e4800; the patched instructions, the pool table at 0x3c8b750
+         and the surrounding code are identical. -->
+    <Metadata Title="MediEvil"
+              Name="Native 4K framebuffer pool (512 MB)"
+              Note="Lets the game draw at 3840x2160 (debug menu: Cinematic Mode). Requires setting DMEM to 512 MB."
+              Author="medievil_pc"
+              PatchVer="1.0"
+              AppVer="01.02"
+              AppElf="eboot.bin"
+              isEnabled="true">
+        <PatchList>
+            <!-- mov esi, 0x800 -> 0x2000 (buddy allocator pages) -->
+            <Line Type="bytes" Address="0x00cf77c1" Value="00200000"/>
+            <!-- mov qword [rbx+0x1d0], 0x800 -> 0x2000 -->
+            <Line Type="bytes" Address="0x00cf77cc" Value="00200000"/>
+            <!-- sceKernelAllocateMainDirectMemory size 0x8000000 -> 0x20000000 -->
+            <Line Type="bytes" Address="0x00cf78ca" Value="00000020"/>
+            <!-- sceKernelMapDirectMemory size 0x8000000 -> 0x20000000 -->
+            <Line Type="bytes" Address="0x00cf78f2" Value="00000020"/>
+            <!-- direct memory accounting: mov eax / add rax, 0x8000000 -> 0x20000000 -->
+            <Line Type="bytes" Address="0x00cf7911" Value="00000020"/>
+            <Line Type="bytes" Address="0x00cf7921" Value="00000020"/>
+            <!-- pool capacity (base 0x4000000000, size 0x8000000 -> 0x20000000) -->
+            <Line Type="bytes" Address="0x0408b758" Value="0000002000000000"/>
+            <!-- The two free paths: framebuffer when addr >> 27 == 0x800, else Flexible;
+                 addr >> 29 == 0x200 covers the 512 MB pool. -->
+            <Line Type="bytes" Address="0x00ce3ba3" Value="1d"/>
+            <Line Type="bytes" Address="0x00ce3ba7" Value="00020000"/>
+            <Line Type="bytes" Address="0x00ce4842" Value="1d"/>
+            <Line Type="bytes" Address="0x00ce4845" Value="00020000"/>
         </PatchList>
     </Metadata>
 </Patch>

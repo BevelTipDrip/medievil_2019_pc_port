@@ -1094,6 +1094,16 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
         static const char* scene_debug = std::getenv("GOW3_SCENE_DEBUG");
         scene_debug_frame = scene_debug && std::remove(scene_debug) == 0;
         scene_targets->debug = scene_debug_frame;
+    } else if (!camera_motion->Enabled()) {
+        // Without camera motion (MediEvil's default) a frame starts at the first draw into a
+        // display buffer (another one each frame while menus draw only there): the GPU profile
+        // and the frame counter need it too (issue #30).
+        const VAddr target = regs.color_buffers[0] ? regs.color_buffers[0].Address() : 0;
+        const VAddr display = target && FrameCapture::IsDisplayBuffer(target) ? target : 0;
+        if (display && display != display_target) {
+            NoteFrameStart();
+        }
+        display_target = display;
     }
     bind_prepared = used_prepared;
     motion_draw = pipeline->GetGraphicsKey().motion_vectors;
@@ -2248,12 +2258,20 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, const PreparedStage* pre
         const RingBinding* ring = num_ring_stages ? FindRingBinding(stage, buffer_index) : nullptr;
         if (ring) {
             // Copied by the GPU command thread into the constant ring (read-only).
-            if (FrameCapture::Active() && memory->IsValidGpuMapping(ring->address, 0)) {
-                FrameCapture::Buffer(stage.pgm_hash, buffer_index, ring->address,
-                                     reinterpret_cast<const void*>(ring->address), ring->size);
+            if (FrameCapture::Active() && ring->size != 0) {
+                // A flatbuf has no guest address and is copied with address 0: record the
+                // flattened user data it was copied from.
+                const void* data = ring->address
+                                       ? reinterpret_cast<const void*>(ring->address)
+                                       : stage.FlatUserData().data();
+                if (data && (ring->address == 0 ||
+                             memory->IsValidGpuMapping(ring->address, ring->size))) {
+                    FrameCapture::Buffer(stage.pgm_hash, buffer_index, ring->address, data,
+                                         ring->size);
+                }
             }
             if (!desc.IsSpecial()) {
-                if (ring->size == 864 && gbuffer_draw &&
+                if (ring->size == 864 && gbuffer_draw && ring->address != 0 &&
                     memory->IsValidGpuMapping(ring->address, 0)) {
                     camera_motion->OnConstants(reinterpret_cast<const float*>(ring->address));
                 }

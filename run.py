@@ -22,7 +22,20 @@ def fail(message):
     sys.exit(1)
 
 
+WINDOWS = sys.platform == 'win32'
+RUNTIME = 'medievil-runtime.exe' if WINDOWS else 'medievil-runtime'
+
+
 def wait_for(pid):
+    if not WINDOWS:
+        import time
+        for _ in range(300):  # 30 s, as on Windows
+            try:
+                os.kill(pid, 0)
+            except OSError:
+                return
+            time.sleep(0.1)
+        return
     kernel32 = ctypes.windll.kernel32
     SYNCHRONIZE = 0x00100000
     handle = kernel32.OpenProcess(SYNCHRONIZE, False, pid)
@@ -33,6 +46,8 @@ def wait_for(pid):
 
 def no_console():
     """Started without a console (the launcher): console programs must not open their own."""
+    if not WINDOWS:
+        return 0
     return 0 if ctypes.windll.kernel32.GetConsoleWindow() else subprocess.CREATE_NO_WINDOW
 
 
@@ -102,11 +117,11 @@ def main():
     if not env.get('GOW3_FSR411_DIR') and not (PORT / 'fsr4_411').is_dir() and (data / 'fsr4_411').is_dir():
         env['GOW3_FSR411_DIR'] = str(data / 'fsr4_411')
 
-    probe = Path(env['GOW3_PROBE']) if env.get('GOW3_PROBE') else find_executable('medievil-runtime.exe')
+    probe = Path(env['GOW3_PROBE']) if env.get('GOW3_PROBE') else find_executable(RUNTIME)
     if not probe or not probe.is_file():
-        fail('medievil-runtime.exe not found: build it with build.sh (MSYS2 CLANG64) or use a packaged build.')
+        fail(f'{RUNTIME} not found: build it with build.sh or use a packaged build.')
     # Development builds run from the MSYS2 tree: its CLANG64 DLLs (SDL3, FFmpeg, ...).
-    if not (probe.parent / 'SDL3.dll').is_file():
+    if WINDOWS and not (probe.parent / 'SDL3.dll').is_file():
         clang64 = Path(env.get('MSYS2_ROOT', r'C:\msys64')) / 'clang64' / 'bin'
         if clang64.is_dir():
             env['PATH'] = f'{clang64}{os.pathsep}{env.get("PATH", "")}'
@@ -174,7 +189,9 @@ def main():
                                                            ini.get('cheat_menu') == '1',
                                                            ini.get('cheat_infinite_ammo') == '1',
                                                            env.get('GOW3_HZB_REMAP') == '1',
-                                                           ini.get('effects_resolution', '75')), flush=True)
+                                                           ini.get('effects_resolution', '75'),
+                                                           ini.get('ue4_aa', 'taa'),
+                                                           ini.get('ue4_voice', '')), flush=True)
         except (OSError, ValueError) as error:
             print(f'Render resolution: unchanged ({error})', flush=True)
     original_game = game.resolve()
@@ -185,13 +202,24 @@ def main():
     mod_view = game if game.resolve() != original_game else None
     try:
         run_script('prepare.py', game, '--out', out)
+        if profile_ue4:
+            # Where this eboot keeps r.SetRes, for native output and the in-game resolution
+            # switches (runtime_extra.c).
+            import ue4_override
+            slot = ue4_override.setres_slot(out / 'eboot.elf')
+            if slot:
+                env['GOW3_UE4_SETRES_CVAR'] = hex(slot)
+            elif env.get('GOW3_UE4_SETRES'):
+                print('Native output: r.SetRes not found in this game build; output stays 1080p', flush=True)
+                for key in ('GOW3_UE4_SETRES', 'GOW3_INTERNAL_WIDTH', 'GOW3_INTERNAL_HEIGHT'):
+                    env.pop(key, None)
         run_script('link_libc.py', game, '--out', out)
         run_script('link_modules.py', game, '--out', out, '--modules', *profile['modules'])
         run_script('content_profile.py', game, '--out', out, '--sku', env.get('GOW3_CONTENT_SKU', 'full'))
 
         from patches import (eboot_matches, game_app_version, game_profile, game_title_id,
                              patch_requirements, selected_patches)
-        profile = game_profile(game_title_id(game))
+        profile = game_profile(game_title_id(game), game_app_version(game)) or game_profile(game_title_id(game))
         patched = bool(profile) and ((game_app_version(game) == profile[2] and eboot_matches(game, profile))
                                      or bool(env.get('GOW3_FORCE_PATCHES')))
         # The window shows the game's icon (BMP: the format SDL loads without extra libraries).
@@ -239,8 +267,14 @@ def main():
         except OSError as error:
             print(f'Save backup failed, starting anyway: {error}', flush=True)
         this = ['--run'] if getattr(sys, 'frozen', False) else [str(Path(__file__).resolve())]
-        restart = [sys.executable, *this, '--after', str(os.getpid()), *args]
-        env['GOW3_RESTART_COMMAND'] = subprocess.list2cmdline(restart)
+        if WINDOWS:
+            restart = [sys.executable, *this, '--after', str(os.getpid()), *args]
+            env['GOW3_RESTART_COMMAND'] = subprocess.list2cmdline(restart)
+        else:
+            # Linux: the runtime replaces itself with this command (exec), so the new launch
+            # runs as this script's child and must not wait for this process.
+            import shlex
+            env['GOW3_RESTART_COMMAND'] = shlex.join([sys.executable, *this, *args])
         command = [str(probe), str(out / 'boot-linked.bin'), '--content-profile', str(out / 'content.bin'),
                    '--patches', str(out / 'patches.bin'), '--app0', str(game),
                    '--user', str(user_dir),

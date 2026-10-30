@@ -217,11 +217,24 @@ bool PipelineBinaryCacheRequested() {
     const char* setting = std::getenv("GOW3_PIPELINE_BINARIES");
     return !setting || *setting != '0';
 }
+
+bool EnvOn(const char* name) {
+    const char* setting = std::getenv(name);
+    return setting && setting[0] == '1';
+}
+
+// gow3: GOW3_VULKAN_COMPAT=1 (launcher: safe GPU mode) runs as on older drivers (RX 400/500 and
+// Vega, issues #18 and #22): no maintenance5/8, no 2D views of 3D images and no feedback-loop
+// layouts. GOW3_NO_MAINTENANCE5=1 and GOW3_NO_MAINTENANCE8=1 switch off one of them.
+bool VulkanCompat() {
+    static const bool compat = EnvOn("GOW3_VULKAN_COMPAT");
+    return compat;
+}
 }
 
 bool InitializePipelineBinaryCache(vk::Device device, bool supported,
                                    vk::PipelineBinaryKeyKHR& global_key) {
-    global_key = {};
+    global_key = vk::PipelineBinaryKeyKHR{};
     if (!PipelineBinaryCacheRequested()) {
         LOG_INFO(Render_Vulkan, "Pipeline binary cache disabled by settings; using normal compilation");
         return false;
@@ -241,7 +254,7 @@ bool InitializePipelineBinaryCache(vk::Device device, bool supported,
     if (result != vk::Result::eSuccess || !global_key.keySize ||
         global_key.keySize > VK_MAX_PIPELINE_BINARY_KEY_SIZE_KHR) {
         const auto key_size = global_key.keySize;
-        global_key = {};
+        global_key = vk::PipelineBinaryKeyKHR{};
         LOG_WARNING(Render_Vulkan,
                     "Pipeline binary cache key unavailable (result {}, size {}); using normal compilation",
                     vk::to_string(result), key_size);
@@ -265,7 +278,8 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceShaderMixedFloatDotProductFeaturesVALVE,
         vk::PhysicalDevicePipelineBinaryFeaturesKHR,
         vk::PhysicalDeviceMaintenance5FeaturesKHR, vk::PhysicalDevicePresentIdFeaturesKHR,
-        vk::PhysicalDevicePresentWaitFeaturesKHR>();
+        vk::PhysicalDevicePresentWaitFeaturesKHR, vk::PhysicalDeviceMemoryPriorityFeaturesEXT,
+        vk::PhysicalDevicePageableDeviceLocalMemoryFeaturesEXT>();
     features = feature_chain.get().features;
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
@@ -319,12 +333,14 @@ bool Instance::CreateDevice() {
                "Required Vulkan feature unavailable: nullDescriptor");
 
     // Optional
-    maintenance_5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+    maintenance_5 = !VulkanCompat() && !EnvOn("GOW3_NO_MAINTENANCE5") &&
+                    add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
     pipeline_binaries = PipelineBinaryCacheRequested() && maintenance_5 &&
         feature_chain.get<vk::PhysicalDeviceMaintenance5FeaturesKHR>().maintenance5 &&
         feature_chain.get<vk::PhysicalDevicePipelineBinaryFeaturesKHR>().pipelineBinaries &&
         add_extension(VK_KHR_PIPELINE_BINARY_EXTENSION_NAME);
-    maintenance_8 = add_extension(VK_KHR_MAINTENANCE_8_EXTENSION_NAME);
+    maintenance_8 = !VulkanCompat() && !EnvOn("GOW3_NO_MAINTENANCE8") &&
+                    add_extension(VK_KHR_MAINTENANCE_8_EXTENSION_NAME);
     // gow3: display times for the flip trace (GOW3_FLIP_TRACE + GOW3_DISPLAY_TRACE=1):
     // vkWaitForPresentKHR. Off by default: on NVIDIA (T-V120b) the wait returned at the present
     // itself (0.00 ms later), and with present ids the presents spread like the native run.
@@ -348,7 +364,8 @@ bool Instance::CreateDevice() {
                     low_latency2 ? "enabled" : "not available");
     }
     present_id = present_id || present_wait;
-    attachment_feedback_loop = add_extension(VK_EXT_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_EXTENSION_NAME);
+    attachment_feedback_loop =
+        !VulkanCompat() && add_extension(VK_EXT_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_EXTENSION_NAME);
     if (attachment_feedback_loop) {
         attachment_feedback_loop =
             add_extension(VK_EXT_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_EXTENSION_NAME);
@@ -366,6 +383,26 @@ bool Instance::CreateDevice() {
                  dynamic_state_3_features.extendedDynamicState3ColorWriteMask);
     }
     custom_border_color = add_extension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
+    // From the Uncharted port (20 Oct 2026, its #81): without this, NVIDIA refuses device-local
+    // memory once the card's own memory is used up (ErrorOutOfDeviceMemory: MediEvil #58 after a
+    // while in a level). With it the driver moves memory to system RAM instead: slower while the
+    // card is full, but the game goes on. GOW3_PAGEABLE_MEMORY=0: off.
+    {
+        const char* env = std::getenv("GOW3_PAGEABLE_MEMORY");
+        const bool wanted = !(env && env[0] == '0');
+        if (wanted &&
+            feature_chain.get<vk::PhysicalDeviceMemoryPriorityFeaturesEXT>().memoryPriority &&
+            feature_chain.get<vk::PhysicalDevicePageableDeviceLocalMemoryFeaturesEXT>()
+                .pageableDeviceLocalMemory) {
+            memory_priority = add_extension(VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME);
+            pageable_device_memory =
+                memory_priority && add_extension(VK_EXT_PAGEABLE_DEVICE_LOCAL_MEMORY_EXTENSION_NAME);
+        }
+        std::printf("GPU: pageable video memory %s\n",
+                    pageable_device_memory
+                        ? "on (when the card is full, the driver moves memory to system RAM)"
+                        : wanted ? "not supported by this driver" : "off (GOW3_PAGEABLE_MEMORY=0)");
+    }
     depth_clip_control = add_extension(VK_EXT_DEPTH_CLIP_CONTROL_EXTENSION_NAME);
     depth_clip_enable = add_extension(VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME);
     vertex_input_dynamic_state = add_extension(VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME);
@@ -417,7 +454,7 @@ bool Instance::CreateDevice() {
     }
     // GOW3_NO_2D_VIEW_OF_3D=1: as on drivers without the extension (tests; AMD, issue #18).
     const char* no_2d_view_of_3d = std::getenv("GOW3_NO_2D_VIEW_OF_3D");
-    image_2d_view_of_3d = !(no_2d_view_of_3d && no_2d_view_of_3d[0] == '1') &&
+    image_2d_view_of_3d = !VulkanCompat() && !(no_2d_view_of_3d && no_2d_view_of_3d[0] == '1') &&
                           add_extension(VK_EXT_IMAGE_2D_VIEW_OF_3D_EXTENSION_NAME);
     if (image_2d_view_of_3d) {
         image_2d_view_of_3d_features =
@@ -656,6 +693,12 @@ bool Instance::CreateDevice() {
             .image2DViewOf3D = image_2d_view_of_3d_features.image2DViewOf3D,
             .sampler2DViewOf3D = image_2d_view_of_3d_features.sampler2DViewOf3D,
         },
+        vk::PhysicalDeviceMemoryPriorityFeaturesEXT{
+            .memoryPriority = true,
+        },
+        vk::PhysicalDevicePageableDeviceLocalMemoryFeaturesEXT{
+            .pageableDeviceLocalMemory = true,
+        },
         vk::PhysicalDeviceImageViewMinLodFeaturesEXT{
             .minLod = true,
         },
@@ -718,6 +761,9 @@ bool Instance::CreateDevice() {
     if (!maintenance_8) {
         device_chain.unlink<vk::PhysicalDeviceMaintenance8FeaturesKHR>();
     }
+    std::printf("GPU: maintenance5 %s, maintenance8 %s, feedback loop layouts %s, 2D views of 3D %s\n",
+                maintenance_5 ? "on" : "off", maintenance_8 ? "on" : "off",
+                attachment_feedback_loop ? "on" : "off", image_2d_view_of_3d ? "on" : "off");
     if (!attachment_feedback_loop) {
         device_chain.unlink<vk::PhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT>();
         device_chain.unlink<vk::PhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT>();
@@ -730,6 +776,12 @@ bool Instance::CreateDevice() {
     }
     if (!image_2d_view_of_3d) {
         device_chain.unlink<vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT>();
+    }
+    if (!memory_priority) {
+        device_chain.unlink<vk::PhysicalDeviceMemoryPriorityFeaturesEXT>();
+    }
+    if (!pageable_device_memory) {
+        device_chain.unlink<vk::PhysicalDevicePageableDeviceLocalMemoryFeaturesEXT>();
     }
     if (!image_view_min_lod) {
         device_chain.unlink<vk::PhysicalDeviceImageViewMinLodFeaturesEXT>();
@@ -844,6 +896,10 @@ void Instance::CollectDeviceParameters() {
     LOG_INFO(Render_Vulkan, "GPU_Vulkan_Driver: {}", driver_name);
     LOG_INFO(Render_Vulkan, "GPU_Vulkan_Version: {}", api_version);
     LOG_INFO(Render_Vulkan, "GPU_Vulkan_Extensions: {}", extensions);
+    // gow3: the info log is off in release builds; bug reports need the GPU and driver.
+    std::printf("GPU: %s, driver %s, Vulkan %s%s\n", model_name.c_str(), driver_name.c_str(),
+                api_version.c_str(), VulkanCompat() ? ", safe GPU mode" : "");
+    std::fflush(stdout);
 }
 
 void Instance::CollectPhysicalMemoryInfo() {

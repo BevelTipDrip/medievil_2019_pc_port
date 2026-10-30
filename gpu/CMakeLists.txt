@@ -183,6 +183,12 @@ if (WIN32)
     target_include_directories(gow3gpu PRIVATE third_party/xbyak)
     target_link_libraries(gow3gpu PUBLIC Vulkan::Vulkan ws2_32 bcrypt ntdll synchronization winmm pdh)
 else()
+    # The submodule's xbyak when the system has none (Nix provides one).
+    include(CheckIncludeFileCXX)
+    check_include_file_cxx(xbyak/xbyak.h GOW3_SYSTEM_XBYAK)
+    if (NOT GOW3_SYSTEM_XBYAK)
+        target_include_directories(gow3gpu PRIVATE third_party/xbyak)
+    endif()
     target_link_libraries(gow3gpu PUBLIC PkgConfig::X11)
 endif()
 

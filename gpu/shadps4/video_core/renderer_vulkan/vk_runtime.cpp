@@ -22,6 +22,10 @@
 
 namespace Vulkan {
 
+// gow3: the barrier batch being recorded on this thread (crash reports, issues #18 and #22: AMD
+// drivers crashed inside vkCmdPipelineBarrier2).
+static thread_local const vk::DependencyInfo* recording_barriers;
+
 static vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
     switch (type) {
     case AmdGpu::ImageType::Color1D:
@@ -1058,17 +1062,35 @@ void Runtime::FlushBarriers(std::source_location caller) {
         WaitDiagnostics::BarrierBreaks().Add(InternKey(std::move(key)), 0, 0, 0);
     }
 
+    // gow3: the largest batches in the log (AMD's older driver crashed at 3696 image barriers).
+    static size_t largest_batch = 64;
+    if (image_barriers.size() > largest_batch) {
+        largest_batch = image_barriers.size();
+        std::printf("Barriers: %zu image barriers in one batch (largest so far)\n", largest_batch);
+        std::fflush(stdout);
+    }
     scheduler.EndRendering();
     scheduler.Record([memory = memory_barrier, has_memory = dep_info.memoryBarrierCount != 0,
                       images = scheduler.RecordData(std::span<const vk::ImageMemoryBarrier2>(
                           image_barriers.data(), image_barriers.size()))](vk::CommandBuffer cmdbuf) {
-        const vk::DependencyInfo info = {
-            .memoryBarrierCount = has_memory ? 1U : 0U,
-            .pMemoryBarriers = has_memory ? &memory : nullptr,
-            .imageMemoryBarrierCount = static_cast<u32>(images.size()),
-            .pImageMemoryBarriers = images.data(),
-        };
-        cmdbuf.pipelineBarrier2(info);
+        // gow3: at most 128 image barriers per call: AMD's older Windows driver (RX 400/500, Vega)
+        // crashed recording thousands in one (issues #18, #34, #41, #43).
+        constexpr size_t MaxImageBarriers = 128;
+        size_t done = 0;
+        do {
+            const size_t count = std::min(images.size() - done, MaxImageBarriers);
+            const bool with_memory = has_memory && done == 0;
+            const vk::DependencyInfo info = {
+                .memoryBarrierCount = with_memory ? 1U : 0U,
+                .pMemoryBarriers = with_memory ? &memory : nullptr,
+                .imageMemoryBarrierCount = static_cast<u32>(count),
+                .pImageMemoryBarriers = images.data() + done,
+            };
+            recording_barriers = &info;
+            cmdbuf.pipelineBarrier2(info);
+            recording_barriers = nullptr;
+            done += count;
+        } while (done < images.size());
     });
 
     memory_barrier.srcStageMask = vk::PipelineStageFlagBits2::eNone;
@@ -1081,3 +1103,37 @@ void Runtime::FlushBarriers(std::source_location caller) {
 }
 
 } // namespace Vulkan
+
+extern "C" void gow3gpu_dump_recording_barriers(void) {
+    const vk::DependencyInfo* info = Vulkan::recording_barriers;
+    if (!info) {
+        return;
+    }
+    std::fprintf(stderr, "Crashed recording a barrier batch: %u memory, %u image barriers\n",
+                 info->memoryBarrierCount, info->imageMemoryBarrierCount);
+    for (u32 i = 0; i < info->memoryBarrierCount; ++i) {
+        const auto& b = info->pMemoryBarriers[i];
+        std::fprintf(stderr, "  memory: stages %#llx -> %#llx, access %#llx -> %#llx\n",
+                     (unsigned long long)VkPipelineStageFlags2(b.srcStageMask),
+                     (unsigned long long)VkPipelineStageFlags2(b.dstStageMask),
+                     (unsigned long long)VkAccessFlags2(b.srcAccessMask),
+                     (unsigned long long)VkAccessFlags2(b.dstAccessMask));
+    }
+    for (u32 i = 0; i < info->imageMemoryBarrierCount && i < 64; ++i) {
+        const auto& b = info->pImageMemoryBarriers[i];
+        const VkImage image = b.image;
+        std::fprintf(stderr,
+                     "  image %p%s: layout %d -> %d, stages %#llx -> %#llx, access %#llx -> %#llx, "
+                     "aspect %#x, mips %u+%u, layers %u+%u, queues %u -> %u\n",
+                     (void*)image, VideoCore::DescribeImageHandle(image), int(b.oldLayout),
+                     int(b.newLayout), (unsigned long long)VkPipelineStageFlags2(b.srcStageMask),
+                     (unsigned long long)VkPipelineStageFlags2(b.dstStageMask),
+                     (unsigned long long)VkAccessFlags2(b.srcAccessMask),
+                     (unsigned long long)VkAccessFlags2(b.dstAccessMask),
+                     unsigned(VkImageAspectFlags(b.subresourceRange.aspectMask)),
+                     b.subresourceRange.baseMipLevel, b.subresourceRange.levelCount,
+                     b.subresourceRange.baseArrayLayer, b.subresourceRange.layerCount,
+                     b.srcQueueFamilyIndex, b.dstQueueFamilyIndex);
+    }
+    std::fflush(stderr);
+}
