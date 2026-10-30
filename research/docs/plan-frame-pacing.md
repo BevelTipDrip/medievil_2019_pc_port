@@ -1862,3 +1862,38 @@ unused: each unmap freed the images (C3 only stopped their re-upload), the next 
 - **The user:** "Slightly less sharp at 50%, but it's hard to notice on most things, because they're in motion. I
   imagine 75% would be very difficult to tell, and even at 50%, you'd be hard pressed to notice it while playing on
   anything but a setup like mine (32" 4k OLED, which I stand fairly close to)."
+
+### N-27: single-frame stalls and the fight dips, measured per frame (2026-10-30, merge branch `merge-1.3.8`, launched by Claude with the user's go; `t-m138-flip-1`, `t-m138-flip-2-host-off`, `t-lab-flip-1`, `t-m138-stall-1` + WPR `stall-1.etl`)
+
+The per-second stats average the tail away. Runs without stats (`-NoStats`) with the flip trace instead
+(`GOW3_FLIP_TRACE=research-data\flip\<tag>.csv`: one line per pipeline stage per frame, cheap). Tools:
+`research/tools/flip_lows.py` (1% / 0.1% lows per 5 s), `flip_stages.py` (stages of single frames),
+`flip_stalls.py` (isolated stalls per minute at the cap), `etw_timeline.py` (threads on-CPU around a moment of a WPR
+export). The trace now starts with a `start` row (steady_clock origin = QueryPerformanceCounter), so a frame's time
+converts to wall time and to a WPR capture's offset (the export header's `Trace Start` is a FILETIME).
+- **Fight dips [V]: GPU-bound, and the same before the merge.** The ~100 FPS the user sees: 86 frames over 0.74 s,
+  ramping 7.6 -> 9.9 ms and back, queued -> GPU-ready equal to the frame time (the GPU is the limit). Effects at 100%.
+  Worst 15-s window 1% low: merge 103, merge with upstream's host switches off 122, pre-merge `lab` 99-105. The
+  user's memory of ~125 FPS lows: fights where the burst landed less hard.
+- **Single-frame stalls [V]: old, not from upstream.** One frame of 6.5-17 ms in a flat 237 FPS stretch: 2.8/min on
+  the merge, 5.3/min with upstream's host switches off (`GOW3_TIMER_RES=0` etc.; the 15.6 ms timer makes them worse:
+  keep them on), 2.0/min on `lab` (smaller there: none over 10 ms of 7, against 7 of 19 on the merge; too few to call).
+  Each lands on a different stage (present thread, game submit -> stage A, recording).
+- **WPR of three stalls (`stall-1.etl`, CPU profile, 45 s, 430 k events lost) [V]:**
+  - **10.4 ms: TabTip.exe held a Windows kernel lock.** The present call (`vkQueuePresentKHR`, present_start ->
+    presented 5.71 ms against 0.12) blocked with wait reason WrResource (an ERESOURCE, likely win32k's user lock) for
+    5.4 ms; the game's window thread blocked on it for 8.45 ms; both were released by **TabTip.exe** (Touch Keyboard
+    and Handwriting Panel). With one frame queued every other thread then waited (stage A, B, the recorder, the
+    game's render thread: 4-7 ms off-CPU at once, cores idle). RTSS (whose `RTSSHooks64.dll` is in the game),
+    the NVIDIA overlay and Explorer take the same lock, for microseconds. Text input is on only while typing in the
+    menu, so the game does not invite TabTip in.
+  - **6.7 ms: the present waited on the display.** Inside the present, ~2.4 ms of 0.45 ms "Executive" waits woken by
+    DPCs: the flip queue full (the display not ready for another frame at 237 under 240 Hz VRR).
+  - **6.8 ms: the game's render thread was late** with its next frame (submit gap 7.2 ms); the pipeline ran dry for
+    ~1.5 ms. No other process involved.
+- Threads in this build (by sampled functions): stage A = `ProcessGraphics` / `DrainDrawPipe` (spins), stage B =
+  `DrawPipe::Run`, recorder = `Scheduler::RecorderThread`, present thread in `dxgkrnl`, the game's render thread in eboot
+  code (0x8000xxxxx). Runtime addresses: subtract the load base (0x7ff609b90000 here) and add 0x140000000 for
+  llvm-symbolizer.
+- Next: more stalls to rank the causes (one TabTip stall out of three); a run with TabTip closed (the user's system,
+  the user's call); then the render-thread-late kind (what the game waits on) and the GPU effects burst.

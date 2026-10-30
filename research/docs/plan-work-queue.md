@@ -13,7 +13,7 @@ update an item's state here when it moves; details live in the linked plan or st
 `t-m138-3-upstream-off`): heavy normal frames 4.55 ms (lab) vs 4.45 / 4.48 ms, lowest gameplay 5-s window 180 FPS vs
 186 / 184, heavy-scene frames ≥ 30 ms 4 (30-37 ms) vs 0 / 1. The better alley lows remembered from before were
 from runs without logging. **Clean run of the merge with the flip trace** (`t-m138-flip-1`, `-NoStats`,
-`GOW3_FLIP_TRACE`, trace in `research-data\flip`; analysis scripts `flip.py` / `flipstages.py`): (a) the fight dip the
+`GOW3_FLIP_TRACE`, trace in `research-data\flip`; tools `research/tools/flip_lows.py` / `flip_stages.py`; N-27): (a) the fight dip the
 user sees (~100 FPS) is 86 frames over 0.74 s, ramping smoothly 7.6 → 9.9 ms, with queued → GPU-ready equal to the
 frame time: **GPU-bound** (the effects burst at 100% effects, N-18/N-19); (b) **isolated single-frame stalls of ~7 ms**
 in a flat 237 FPS scene (81, 96, 116 s, ...) that land on a different stage each time (present thread, game submit →
