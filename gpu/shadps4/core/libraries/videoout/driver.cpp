@@ -547,7 +547,7 @@ void VideoOutDriver::Flip(const Request& req) {
             }();
             static double median_ms = 0;
             static u64 last_occ, last_ends, last_busy, last_tsc, sample, last_idle_ns, last_drain;
-            static u64 last_texset, last_rmemo, last_unprep, last_slowimg, last_upend, last_uunav, last_uchk;
+            static u64 last_texset, last_rmemo, last_unprep, last_slowimg, last_genimg, last_upend, last_uunav, last_uchk;
             static std::array<u64, Gow3Sections::Count> last_sections{};
             static u32 slow_shown;
             const u64 occ = Gow3Stats::occlusion_dumps.load(), ends = Gow3Stats::render_pass_ends.load(),
@@ -557,6 +557,7 @@ void VideoOutDriver::Flip(const Request& req) {
                       texset = Gow3Stats::texset_misses.load(), rmemo = Gow3Stats::render_memo_misses.load(),
                       unprep = Gow3Stats::unprepared_draws.load(),
                       slowimg = Gow3Stats::image_slow_lookups.load(),
+                      genimg = Gow3Stats::image_generation_misses.load(),
                       upend = Gow3Stats::unprep_pending.load(), uunav = Gow3Stats::unprep_unavailable.load(),
                       uchk = Gow3Stats::unprep_checksum.load();
             const bool slow = slow_ratio > 0 && median_ms > 0 && frame_ms > slow_ratio * median_ms &&
@@ -572,7 +573,7 @@ void VideoOutDriver::Flip(const Request& req) {
                             "waits: readback %.2f, ticks %.2f, recorder %.2f, host copies %.2f ms; "
                             "uploads %.2f MB buffers, %.2f MB images; %llu protection faults; "
                             "misses: %llu texture sets, %llu render states, %llu unprepared draws, "
-                            "%llu image lookups; unprepared: %llu not reached, %llu no pipeline, "
+                            "%llu image lookups (%llu generation only); unprepared: %llu not reached, %llu no pipeline, "
                             "%llu other registers\n",
                             slow ? "Slow frame" : "Frame sample", frame_ms,
                             static_cast<unsigned long long>(frame_draws),
@@ -591,6 +592,7 @@ void VideoOutDriver::Flip(const Request& req) {
                             static_cast<unsigned long long>(rmemo - last_rmemo),
                             static_cast<unsigned long long>(unprep - last_unprep),
                             static_cast<unsigned long long>(slowimg - last_slowimg),
+                            static_cast<unsigned long long>(genimg - last_genimg),
                             static_cast<unsigned long long>(upend - last_upend),
                             static_cast<unsigned long long>(uunav - last_uunav),
                             static_cast<unsigned long long>(uchk - last_uchk));
@@ -623,6 +625,7 @@ void VideoOutDriver::Flip(const Request& req) {
             last_rmemo = rmemo;
             last_unprep = unprep;
             last_slowimg = slowimg;
+            last_genimg = genimg;
             last_upend = upend;
             last_uunav = uunav;
             last_uchk = uchk;
@@ -705,12 +708,16 @@ void VideoOutDriver::Flip(const Request& req) {
                     const double frames_d = frames ? double(frames) : 1.0;
                     const u64 set_updates = Gow3Stats::descriptor_set_updates.exchange(0);
                     const u64 set_update_ns = Gow3Stats::t_descriptor_set_updates.exchange(0);
+                    const u64 pushes = Gow3Stats::descriptor_pushes.exchange(0);
+                    const u64 push_writes = Gow3Stats::descriptor_writes.exchange(0);
                     std::printf("Binds per frame: pipelines %.0f (%.0f same as the previous draw), "
-                                "descriptor set updates %.1f (%.1f us each)\n",
+                                "descriptor set updates %.1f (%.1f us each), descriptor pushes %.0f "
+                                "(%.1f writes each)\n",
                                 Gow3Stats::pipeline_binds.exchange(0) / frames_d,
                                 Gow3Stats::pipeline_bind_repeats.exchange(0) / frames_d,
                                 set_updates / frames_d,
-                                set_updates ? set_update_ns / 1e3 / set_updates : 0.0);
+                                set_updates ? set_update_ns / 1e3 / set_updates : 0.0,
+                                pushes / frames_d, pushes ? double(push_writes) / pushes : 0.0);
                 }
                 if (std::getenv("GOW3_STREAM_CLEAN")) {
                     std::printf("Small read-only buffers/s: %.0f bound from the arena, %.0f uploaded "

@@ -45,6 +45,10 @@ enum Id : std::uint32_t {
     // Within SignalFlip (t-pan5: 4-5 ms in the 9 ms frames of the heavy area, GPU usage low):
     FlipSignals,     ///< WaitDeferredSignals: the recording thread's fence writes caught up
     FlipPresent,     ///< the flip interrupt: the guest's present (acquire, limiter, Reflex sleep)
+    // The render-state spikes (study 2026-10-29: 0.5-2 ms in ~8% of heavy frames, cause unknown):
+    RsTarget,        ///< FindTargetMemoized past both memos: the descriptor and FindImage
+    FindImage,       ///< TextureCache::FindImage, from any caller on stage B
+    CacheLock,       ///< waiting for the texture cache mutex in FindImage
     Count,
 };
 inline constexpr const char* Names[Count] = {
@@ -53,7 +57,7 @@ inline constexpr const char* Names[Count] = {
     "index",    "emit vertex", "barriers", "descriptors", "dynamic",      "kick",
     "dispatch", "Record calls", "texset", "texset emit", "samplers", "texslow",
     "obt_readbacks", "obt_regions", "obt_stream", "obt_resident", "obt_sync",
-    "flip_signals", "flip_present",
+    "flip_signals", "flip_present", "rs_target", "find_image", "cache_lock",
 };
 inline std::array<std::atomic<std::uint64_t>, Count> cycles{};
 /// Scheduler::Record calls on the draw recording thread.

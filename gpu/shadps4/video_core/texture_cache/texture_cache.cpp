@@ -1232,9 +1232,14 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
 ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     const auto& info = desc.info;
     ASSERT(info.guest_address != 0);
+    GOW3_SECTION(FindImage);
 
     scheduler.SyncWithDrawRecorder(); // before the lock: the draw recorder takes it too
-    std::scoped_lock lock{mutex};
+    std::unique_lock lock{mutex, std::defer_lock};
+    {
+        GOW3_SECTION(CacheLock);
+        lock.lock();
+    }
 
     u64 key_hash = info.guest_address ^ info.guest_size << 17 ^ u64(info.pixel_format) << 40 ^
                    u64(info.size.width) << 24 ^ info.size.height ^ u64(desc.type) << 58 ^
@@ -1274,6 +1279,16 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
         }
         return cached.image_id;
     }
+
+    // Study 2026-10-29 item 10: a miss only because another image's registration changed the
+    // generation (the same key resolves to the same image again), counted below.
+    const bool same_key = Gow3Stats::enabled && cached.image_id && cached.address == info.guest_address &&
+                          cached.size == info.guest_size && cached.extent == info.size &&
+                          cached.format == info.pixel_format && cached.type == info.type &&
+                          cached.exact_fmt == exact_fmt && cached.binding == desc.type &&
+                          cached.levels == info.resources.levels &&
+                          cached.layers == info.resources.layers;
+    const FindImageCacheEntry previous = cached;
 
     ImageIds image_ids;
     ForEachImageInRegion(info.guest_address, info.guest_size,
@@ -1411,6 +1426,10 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
         desc.view_info.range.base.layer = view_slice;
     }
 
+    if (same_key && previous.image_id == image_id && previous.view_mip == view_mip &&
+        previous.view_slice == view_slice) {
+        Gow3Stats::image_generation_misses.fetch_add(1, std::memory_order_relaxed);
+    }
     cached = FindImageCacheEntry{
         .address = info.guest_address,
         .size = info.guest_size,

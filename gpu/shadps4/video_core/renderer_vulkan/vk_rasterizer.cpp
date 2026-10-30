@@ -222,6 +222,7 @@ VideoCore::ImageId Rasterizer::FindTargetMemoized(VideoCore::TextureCache::Image
         remember(memo.image_id);
         return memo.image_id;
     }
+    GOW3_SECTION(RsTarget);
     make_desc();
     const VideoCore::ImageId image_id = texture_cache.FindImage(desc);
     if (generation == texture_cache.RegistryGeneration()) {
@@ -2477,6 +2478,9 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
         return;
     }
     GOW3_SECTION(TexSlow);
+    if (!on_helper && !set_slot && !stage.images.empty()) {
+        ++texture_set_unkept[7]; // written images, mip fallback, too many, memo off
+    }
     const u64 bind_generation = texture_cache.RegistryGeneration();
     image_bindings.clear();
     image_binding_entries.clear();
@@ -2488,6 +2492,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
     // TextureSetMemo: what this call resolves, to remember when the set qualifies.
     std::array<TextureSetEntry, TextureSet::MaxImages> resolved{};
     bool set_ok = set_slot != nullptr;
+    u32 unkept = ~0u; // why the set is not kept (texture_set_unkept), the first reason found
     // SampleSceneProxies: bindings that may read a reduced scene proxy instead of the native
     // image (normalized sampling only; see Shader::ImageResource::needs_native).
     boost::container::small_vector<bool, 16> binding_proxy_ok;
@@ -2635,6 +2640,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
                 desc_ptr = &rebind_desc;
                 image_id = texture_cache.FindImage(rebind_desc);
                 memo_entry = nullptr;
+                if (set_ok) unkept = 4;
                 set_ok = false;
             }
 
@@ -2714,6 +2720,9 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
                 resolved[binding_index].depth_aspect =
                     image_view.view_aspect == vk::ImageAspectFlagBits::eDepth;
                 set_ok = !is_storage && !binding.force_general && !binding.is_target;
+                if (!set_ok) {
+                    unkept = is_storage ? 0 : binding.force_general ? 1 : image.info.props.is_depth ? 3 : 2;
+                }
             }
         }
     }
@@ -2727,6 +2736,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
         std::copy_n(resolved.begin(), set_slot->count, set_slot->entries.begin());
         if (TextureSetRegions()) set_slot->stamp = TextureSetStamp(*set_slot);
     } else if (set_slot) {
+        ++texture_set_unkept[unkept != ~0u ? unkept : image_bindings.size() != stage.images.size() ? 5 : 6];
         set_slot->key = 0;
     }
 
@@ -2948,6 +2958,14 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
                     "other %llu\n",
                     (unsigned long long)texture_set_why[0], (unsigned long long)texture_set_why[1],
                     (unsigned long long)texture_set_why[2], (unsigned long long)texture_set_why[3]);
+        const auto& u = texture_set_unkept;
+        std::printf("  texture sets not kept: storage %llu, written %llu, own colour target %llu, "
+                    "own depth target %llu, rebind %llu, incomplete %llu, registry changed %llu; "
+                    "not memoizable %llu\n",
+                    (unsigned long long)u[0], (unsigned long long)u[1], (unsigned long long)u[2],
+                    (unsigned long long)u[3], (unsigned long long)u[4], (unsigned long long)u[5],
+                    (unsigned long long)u[6], (unsigned long long)u[7]);
+        texture_set_unkept = {};
         std::printf("  scene proxies sampled directly: %llu bindings\n",
                     static_cast<unsigned long long>(proxy_samples));
         proxy_samples = 0;

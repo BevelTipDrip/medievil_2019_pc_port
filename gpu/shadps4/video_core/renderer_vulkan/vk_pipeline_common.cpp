@@ -55,6 +55,10 @@ void Pipeline::BindResources(DescriptorWrites& set_writes,
                           sizeof(vk::BufferView)) +
                      32;
         }
+        if (Gow3Stats::enabled) {
+            Gow3Stats::descriptor_pushes.fetch_add(1, std::memory_order_relaxed);
+            Gow3Stats::descriptor_writes.fetch_add(set_writes.size(), std::memory_order_relaxed);
+        }
         scheduler.ReserveRecordData(bytes);
         const auto writes = scheduler.RecordData(std::span<const vk::WriteDescriptorSet>{set_writes});
         auto* patched = const_cast<vk::WriteDescriptorSet*>(writes.data());

@@ -112,6 +112,9 @@ inline std::atomic<std::uint64_t> constant_ring_reused_bytes{0};
 /// descriptor pushes were counted once (t-base1: 0; a byte hash per push cost ~0.4 us a draw).
 inline std::atomic<std::uint64_t> pipeline_binds{0}, pipeline_bind_repeats{0},
     descriptor_set_updates{0}, t_descriptor_set_updates{0};
+/// Descriptor pushes on the deferred path and their writes (study 2026-10-29 item 2: one
+/// RecordData() per write plus one for the writes).
+inline std::atomic<std::uint64_t> descriptor_pushes{0}, descriptor_writes{0};
 inline std::atomic<int> gpu_thread_clock{-1}; ///< clockid_t of the GPU command thread
 inline std::atomic<unsigned long> gpu_thread_id{0}; ///< Windows thread id of the GPU command thread
 inline std::atomic<std::uint64_t> draws{0}, dispatches{0}, submissions{0};
@@ -181,6 +184,9 @@ inline std::atomic<std::uint64_t> gpu_idle_total_ns{0}, stage_a_drain_cycles{0};
 /// FindImage lookups that searched the page table.
 inline std::atomic<std::uint64_t> texset_misses{0}, render_memo_misses{0}, unprepared_draws{0},
     image_slow_lookups{0};
+/// Of those lookups: the same key found the same image again (only the registry generation had
+/// changed; study 2026-10-29 item 10).
+inline std::atomic<std::uint64_t> image_generation_misses{0};
 /// Unprepared draws by cause: the workers had not reached it, could not prepare it (no such
 /// pipeline yet), or prepared it from other registers.
 inline std::atomic<std::uint64_t> unprep_pending{0}, unprep_unavailable{0}, unprep_checksum{0};

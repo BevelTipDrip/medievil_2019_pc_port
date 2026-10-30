@@ -318,6 +318,9 @@ private:
     u64 texture_set_hits = 0, texture_set_misses = 0;
     u64 texture_set_tick = 0;
     std::array<u64, 4> texture_set_why{}; ///< misses: other key, generation, image check, new
+    /// Sets the slow path did not keep: storage, written, own colour / depth target, rebind,
+    /// incomplete, registry changed; and stages that cannot use the memo (study 2026-10-29 item 4).
+    std::array<u64, 8> texture_set_unkept{};
     /// Returns true when the stage's images were bound from the memo.
     bool BindTexturesFromSet(const Shader::Info& stage, const PreparedStage* prepared,
                              u32 first_image_idx, bool& barrier, TextureSet*& slot);
