@@ -15,6 +15,8 @@
 #include <string_view>
 #include <vector>
 
+extern "C" void runtime_ue4_request_cvar(const char* name, const char* value); // src/runtime_extra.c
+
 namespace Gow3Settings {
 
 namespace {
@@ -174,6 +176,8 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         v.fsr4_auto_exposure = i != 0;
     } else if (key == "fsr4_invert_jitter") {
         v.fsr4_invert_jitter = i != 0;
+    } else if (key == "preshadows") {
+        v.preshadows = i != 0;
     } else if (key == "live_resolution") {
         v.live_resolution = value == "auto" ? -1 : std::clamp(i, 0, 1);
     } else if (key == "output_res") {
@@ -238,6 +242,11 @@ void Load() {
     v.startup_engine_fps = v.engine_fps;
     v.startup_deferred_readback = v.deferred_readback;
     v.startup_stale_readback = v.stale_readback;
+    // Live console variables off in the ini: set once the game reaches its menu (the runtime
+    // checks the eboot first).
+    if (!v.preshadows) {
+        runtime_ue4_request_cvar("r.Shadow.Preshadows", "0");
+    }
     // A launch's own switches (run.py from medievil.ini, or a test) show as the patches' state.
     static constexpr std::pair<const char*, const char*> perf_off[PerfCount] = {
         {"GOW3_HZB_REMAP", "0"},     {"GOW3_DECAL_PREPASS", "1"},       {"GOW3_PARTICLE_FIXED_STEP", "1"},
@@ -425,6 +434,7 @@ std::map<std::string, std::string> Serialize(const Values& v) {
     Append(out, "render_scale=%s\n", v.render_scale >= 0 ? UE4ScaleKeys[v.render_scale] : v.render_scale_raw.c_str());
     Append(out, "effects_resolution=%s\n", v.effects_resolution >= 0 ? UE4EffectsKeys[v.effects_resolution]
                                                                     : v.effects_resolution_raw.c_str());
+    Append(out, "preshadows=%d\n", int(v.preshadows.load()));
     std::map<std::string, std::string> values;
     std::size_t at = 0;
     while (at < out.size()) {

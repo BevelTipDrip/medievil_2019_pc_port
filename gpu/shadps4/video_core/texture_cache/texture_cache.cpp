@@ -38,7 +38,7 @@ struct CacheStats {
         unregistered, refreshes, refresh_bytes, alias_copies, alias_syncs, volume_views, unmap_frees,
         unmap_free_bytes, recreated, recreated_bytes, eop_waits, eop_skips, undefined_targets,
         undefined_target_bytes, cleared_targets, cleared_target_bytes, gpu_freed_reused,
-        gpu_freed_reused_bytes;
+        gpu_freed_reused_bytes, parked, parked_reused, parked_evicted;
 };
 CacheStats cache_stats;
 bool CacheStatsEnabled() {
@@ -735,9 +735,116 @@ void TextureCache::UnmapMemory(VAddr cpu_addr, size_t size) {
             CACHE_STAT(unmap_free_bytes, info.guest_size);
             unmapped_recently[RecreateKey(info)] = stats_reports;
         }
+        if (ParkImage(id)) {
+            continue;
+        }
         // TODO: Download image data back to host.
         FreeImage(id);
     }
+}
+
+namespace {
+bool ParkUnmappedEnabled() {
+    static const bool enabled = [] {
+        const char* env = std::getenv("GOW3_PARK_UNMAPPED");
+        return !(env && env[0] == '0');
+    }();
+    return enabled;
+}
+// Several 4K pairs and many shadow maps; a parked image is dropped after ParkedMaxAge.
+constexpr u64 ParkedBudget = 768_MB;
+constexpr u64 ParkedMaxImage = 128_MB;
+constexpr auto ParkedMaxAge = std::chrono::seconds(10);
+} // namespace
+
+bool TextureCache::ParkImage(ImageId image_id) {
+    Image& image = slot_images[image_id];
+    if (!ParkUnmappedEnabled() || !(image.usage.render_target || image.usage.depth_target) ||
+        image.usage.vo_surface || image.scene_proxy || True(image.flags & ImageFlagBits::Aliased) ||
+        image.info.guest_size > ParkedMaxImage) {
+        return false;
+    }
+    // As FreeImage and DeleteImage, without releasing the image and its views.
+    ResolveReadbacks(image.info.guest_address, image.info.guest_size, true,
+                     ReadbackSource::ImageFree);
+    CancelReadbacks(image.info.guest_address, image.info.guest_size);
+    UntrackImage(image_id);
+    UnregisterImage(image_id);
+    const auto& meta_info = image.info.meta_info;
+    if (meta_info.cmask_addr) {
+        surface_metas.erase(meta_info.cmask_addr);
+    }
+    if (meta_info.fmask_addr) {
+        surface_metas.erase(meta_info.fmask_addr);
+    }
+    if (meta_info.htile_addr) {
+        surface_metas.erase(meta_info.htile_addr);
+    }
+    {
+        std::unique_lock lk{download_images_mutex};
+        download_images.erase(image_id);
+    }
+    parked_images.push_back({image_id, std::chrono::steady_clock::now()});
+    parked_bytes += image.info.guest_size;
+    parked_count.store(u32(parked_images.size()), std::memory_order_relaxed);
+    CACHE_STAT(parked, 1);
+    EvictParkedImages(true);
+    return true;
+}
+
+ImageId TextureCache::TakeParkedImage(const ImageInfo& info) {
+    for (auto it = parked_images.begin(); it != parked_images.end(); ++it) {
+        Image& image = slot_images[it->id];
+        const ImageInfo& parked = image.info;
+        if (parked.guest_address != info.guest_address || parked.guest_size != info.guest_size ||
+            parked.size != info.size || parked.pixel_format != info.pixel_format ||
+            parked.type != info.type || parked.tile_mode != info.tile_mode ||
+            parked.pitch != info.pitch || parked.resources != info.resources ||
+            parked.num_samples != info.num_samples || parked.num_bits != info.num_bits ||
+            parked.props.is_tiled != info.props.is_tiled ||
+            parked.props.is_depth != info.props.is_depth ||
+            parked.props.has_stencil != info.props.has_stencil ||
+            parked.props.is_block != info.props.is_block ||
+            parked.props.is_pow2 != info.props.is_pow2 ||
+            parked.props.is_volume != info.props.is_volume || parked.alt_tile != info.alt_tile) {
+            continue;
+        }
+        const ImageId image_id = it->id;
+        parked_bytes -= parked.guest_size;
+        parked_images.erase(it);
+        parked_count.store(u32(parked_images.size()), std::memory_order_relaxed);
+        // Back as a new image would start: dirty, not bound, no usage yet (the caller registers
+        // it and flags it Undefined as the unmap's address). Its layout state stays: it is the
+        // Vulkan image's.
+        image.flags = ImageFlagBits::Dirty;
+        image.binding = {};
+        image.usage = {};
+        image.depth_id = {};
+        image.depth_uid = 0;
+        image.info.meta_info = info.meta_info;
+        image.info.stencil_addr = info.stencil_addr;
+        image.info.stencil_size = info.stencil_size;
+        CACHE_STAT(parked_reused, 1);
+        return image_id;
+    }
+    return {};
+}
+
+void TextureCache::EvictParkedImages(bool over_budget_only) {
+    const auto now = std::chrono::steady_clock::now();
+    while (!parked_images.empty()) {
+        const ParkedImage& oldest = parked_images.front();
+        if (parked_bytes <= ParkedBudget &&
+            (over_budget_only || now - oldest.since < ParkedMaxAge)) {
+            break;
+        }
+        const ImageId image_id = oldest.id;
+        parked_bytes -= slot_images[image_id].info.guest_size;
+        parked_images.erase(parked_images.begin());
+        DeleteImage(image_id);
+        CACHE_STAT(parked_evicted, 1);
+    }
+    parked_count.store(u32(parked_images.size()), std::memory_order_relaxed);
 }
 
 ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, BindingType binding,
@@ -1223,7 +1330,19 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
                           bindings[u32(desc.type)], (unsigned long long)(info.guest_size >> 10));
             ++create_sites[key];
         }
-        image_id = slot_images.insert(instance, runtime, slot_image_views, info);
+        if (parked_count.load(std::memory_order_relaxed)) {
+            image_id = TakeParkedImage(info);
+        }
+        if (!image_id) {
+            const auto start = std::chrono::steady_clock::now();
+            image_id = slot_images.insert(instance, runtime, slot_image_views, info);
+            if (CacheStatsEnabled()) {
+                const u64 ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                   std::chrono::steady_clock::now() - start).count();
+                create_ns += ns;
+                create_max_ns = std::max(create_max_ns, ns);
+            }
+        }
         RegisterImage(image_id);
         // gow3: UE4 takes render targets from pool memory it decommits while a pass is unused
         // and commits again when it is needed (MediEvil: the first torch in view); the guest
@@ -1899,6 +2018,10 @@ void TextureCache::RunGarbageCollector() {
         ++gc_tick;
     };
 
+    if (parked_count.load(std::memory_order_relaxed)) {
+        std::scoped_lock lock{mutex};
+        EvictParkedImages(false);
+    }
     GarbageCollectImages();
     GarbageCollectSamplers();
     if (CacheStatsEnabled()) {
@@ -1955,6 +2078,14 @@ void TextureCache::RunGarbageCollector() {
                       reused_bytes = take(cache_stats.gpu_freed_reused_bytes);
             std::printf("  other new images flagged undefined (GPU-freed or new): %llu (%.1f MiB)\n",
                         (unsigned long long)reused, reused_bytes / 1048576.0);
+            // (under mutex, taken above)
+            std::printf("  unmapped targets parked %llu, taken back %llu, evicted %llu (now %zu, "
+                        "%.1f MiB); new images made in %.2f ms, max %.3f ms\n",
+                        (unsigned long long)take(cache_stats.parked),
+                        (unsigned long long)take(cache_stats.parked_reused),
+                        (unsigned long long)take(cache_stats.parked_evicted), parked_images.size(),
+                        parked_bytes / 1048576.0, create_ns / 1e6, create_max_ns / 1e6);
+            create_ns = create_max_ns = 0;
             std::printf("  end of pipe with readback work (host copy wait) %llu, without (skipped) %llu\n",
                         (unsigned long long)take(cache_stats.eop_waits),
                         (unsigned long long)take(cache_stats.eop_skips));

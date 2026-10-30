@@ -109,6 +109,7 @@ uint64_t runtime_memory_flexible_available(void);
 uintptr_t runtime_extra_resolve(const char *name);
 void runtime_extra_report(void);
 unsigned char *runtime_image_base(void);
+uint64_t runtime_image_size(void);
 /* GOW3_WAIT_SITES=1: guest yield / sleep / wait call sites (runtime_waitsites.c), with the time
  * requested and the time the call actually took. kind: 0 yield, 1 pthread_yield, 2 usleep(0),
  * 3 usleep, 4 nanosleep, 5 cond_wait, 6 cond_timedwait, 7 sema_wait, 8 eventflag_wait,
@@ -123,6 +124,7 @@ void runtime_wait_site(void *return_address, unsigned kind, uint64_t requested_n
                                                  runtime_wait_now() - runtime_wait_t0); } while (0)
 void runtime_ue4_setres_poll(void);
 void runtime_ue4_request_setres(const char *text);
+void runtime_ue4_request_cvar(const char *name, const char *value);
 void runtime_sse4a_install(unsigned char *image, size_t image_size, unsigned char *stubs, size_t stubs_size);
 int runtime_sse4a_emulate(void *context_record);
 #endif

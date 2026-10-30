@@ -569,8 +569,9 @@ static const RuntimeExport exports[]={
  * & 0xff000000 (vtable +0x20), Set(value, flags) (vtable +0x68). Called from scePadReadState on
  * the game's input thread. CUSA11227 01.00 only: TAutoConsoleVariable at 0x5c28320, its
  * IConsoleVariable* at +8. */
-/* Sets r.SetRes on the calling (game) thread; 0 when the game's variable is not where expected. */
-static int ue4_setres(const char *text) {
+/* Sets a console variable on the calling (game) thread from its TAutoConsoleVariable at image
+ * offset `object` (IConsoleVariable* at +8); 0 when the game's variable is not where expected. */
+static int ue4_set_cvar(uintptr_t object, const char *name, const char *text) {
     uint16_t value[24];
     size_t n=strlen(text);
     if (!n || n>=sizeof(value)/sizeof(value[0])) return 0;
@@ -578,18 +579,38 @@ static int ue4_setres(const char *text) {
     unsigned char *image=runtime_image_base();
     if (!image) return 0;
     const uintptr_t lo=(uintptr_t)image, hi=lo+0x6000000;
-    uintptr_t cvar=*(const uintptr_t *)(image+0x5c28328);
-    if (!cvar) { printf("Native output: r.SetRes not found\n"); return 0; }
+    uintptr_t cvar=*(const uintptr_t *)(image+object+8);
+    if (!cvar) { printf("UE4: %s not found\n",name); return 0; }
     uintptr_t vtable=*(const uintptr_t *)cvar;
-    if (vtable<lo || vtable>=hi) { printf("Native output: unexpected r.SetRes object\n"); return 0; }
+    if (vtable<lo || vtable>=hi) { printf("UE4: unexpected %s object\n",name); return 0; }
     typedef uint32_t (ABI *GetFlags)(uintptr_t);
     typedef void (ABI *Set)(uintptr_t, const uint16_t *, uint32_t);
     uintptr_t get_flags=*(const uintptr_t *)(vtable+0x20), set=*(const uintptr_t *)(vtable+0x68);
-    if (get_flags<lo || get_flags>=hi || set<lo || set>=hi) { printf("Native output: unexpected r.SetRes methods\n"); return 0; }
+    if (get_flags<lo || get_flags>=hi || set<lo || set>=hi) { printf("UE4: unexpected %s methods\n",name); return 0; }
     uint32_t flags=((GetFlags)get_flags)(cvar)&0xff000000u;
     ((Set)set)(cvar,value,flags);
-    printf("Native output: r.SetRes %s (live resolution change)\n",text);
+    printf("UE4: %s %s (live)\n",name,text);
     return 1;
+}
+static int ue4_setres(const char *text) { return ue4_set_cvar(0x5c28320,"r.SetRes",text); }
+
+/* Console variables the in-game menu switches live (CUSA11227 01.00), set on the next game-thread
+ * poll as r.SetRes is. r.Shadow.Preshadows: registered at 0x1611700, TAutoConsoleVariable at
+ * 0x5bcff28 (found as r.SetRes's 0x5c28320 is: the lea of its name, the object beside it). */
+static const struct { const char *name; uintptr_t object, site; unsigned char code[7]; } ue4_cvars[]={
+    /* site: lea rsi, [rip+name] in its registration */
+    {"r.Shadow.Preshadows",0x5bcff28,0x1611700,{0x48,0x8d,0x35,0x1f,0x76,0x74,0x02}},
+};
+#define UE4_CVARS (sizeof(ue4_cvars)/sizeof(ue4_cvars[0]))
+static char ue4_cvar_values[UE4_CVARS][8];
+static int ue4_cvar_pending[UE4_CVARS];
+void runtime_ue4_request_cvar(const char *name, const char *value) {
+    if (!name || !value || strlen(value)>=sizeof(ue4_cvar_values[0])) return;
+    for (size_t i=0;i<UE4_CVARS;++i) {
+        if (strcmp(ue4_cvars[i].name,name)) continue;
+        strcpy(ue4_cvar_values[i],value);
+        __atomic_store_n(&ue4_cvar_pending[i],1,__ATOMIC_RELEASE);
+    }
 }
 
 /* A switch asked for by the in-game menu (window thread), done on the next game-thread poll. */
@@ -611,14 +632,30 @@ void runtime_ue4_request_setres(const char *text) {
 void runtime_ue4_setres_poll(void) {
     static int automatic_done;
     static unsigned reads;
+    if (reads<600) ++reads; /* 600: the main menu, with the game viewport up */
     if (__atomic_exchange_n(&ue4_request_pending,0,__ATOMIC_ACQ_REL)) {
         char text[sizeof(ue4_requested)];
         strcpy(text,ue4_requested);
         if (reads>=600) ue4_setres(text);
         automatic_done=1; /* a choice in the menu wins over the start setting */
     }
-    if (automatic_done) return;
-    if (++reads<600) return; /* the main menu, with the game viewport up */
+    /* Menu switches, and the ini's at start: kept until the main menu (after the engine has read
+     * its own settings, which would otherwise win). */
+    if (reads>=600) {
+        for (size_t i=0;i<UE4_CVARS;++i) {
+            if (!__atomic_exchange_n(&ue4_cvar_pending[i],0,__ATOMIC_ACQ_REL)) continue;
+            char text[sizeof(ue4_cvar_values[0])];
+            strcpy(text,ue4_cvar_values[i]);
+            const unsigned char *image=runtime_image_base();
+            if (!image || runtime_image_size()<ue4_cvars[i].object+16 ||
+                memcmp(image+ue4_cvars[i].site,ue4_cvars[i].code,sizeof(ue4_cvars[i].code))) {
+                printf("UE4: %s unavailable (not the analysed MediEvil 01.00 eboot)\n",ue4_cvars[i].name);
+                continue;
+            }
+            ue4_set_cvar(ue4_cvars[i].object,ue4_cvars[i].name,text);
+        }
+    }
+    if (automatic_done || reads<600) return;
     automatic_done=1;
     const char *want=getenv("GOW3_UE4_SETRES");
     if (want && *want) ue4_setres(want);

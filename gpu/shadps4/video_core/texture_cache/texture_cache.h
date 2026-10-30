@@ -616,6 +616,21 @@ private:
     /// gow3: addresses of GPU-written images freed (GC, overlaps, unmaps), not yet reused
     /// (under mutex; GOW3_UNDEFINED_GPU_FREED).
     std::unordered_set<VAddr> gpu_freed_addresses;
+    /// gow3 GOW3_PARK_UNMAPPED (default on; 0: off): render / depth targets a guest unmap frees,
+    /// kept unregistered for the same target at the same address (under mutex). UE4's render
+    /// target pool decommits a pass's targets while unused: the torch shadow maps (512x512 D16)
+    /// and the 4K pair were freed and made again up to ~40 times a second (N-23).
+    struct ParkedImage {
+        ImageId id;
+        std::chrono::steady_clock::time_point since;
+    };
+    std::vector<ParkedImage> parked_images;
+    u64 parked_bytes = 0;
+    std::atomic<u32> parked_count{0}; ///< parked_images.size(), read without the lock
+    u64 create_ns = 0, create_max_ns = 0; ///< GOW3_TEXCACHE_STATS: new images (under mutex)
+    bool ParkImage(ImageId image_id);
+    ImageId TakeParkedImage(const ImageInfo& info);
+    void EvictParkedImages(bool over_budget_only);
     std::mutex refresh_sites_mutex;
     std::unordered_map<u64, u64> unmapped_recently;
     u64 stats_reports = 0;

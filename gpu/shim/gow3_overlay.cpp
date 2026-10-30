@@ -24,6 +24,7 @@
 extern Gow3ActorSlot gow3_actor_slots[2];
 extern "C" void runtime_restart(void); // src/probe.c: starts run.py again, ends this process
 extern "C" void runtime_ue4_request_setres(const char* text); // src/runtime_extra.c: live r.SetRes
+extern "C" void runtime_ue4_request_cvar(const char* name, const char* value); // live console variables
 u32 Gow3DisplayRefreshHz(); // gow3gpu.cpp: the display refresh rate
 #include "common/elf_info.h"
 #include "imgui.h"
@@ -534,6 +535,19 @@ void PerformanceTab() {
                                : "Switches the game's output now, until the next start (Output resolution "
                                  "below is the size it starts at). Use 1080p for the debug menu (R3), then "
                                  "switch back.");
+        // UE4 console variables switched live (src/runtime_extra.c), kept in medievil.ini.
+        ImGui::SeparatorText("Applied now");
+        if (BeginRows("##live")) {
+            const bool preshadows = s.preshadows;
+            CheckRow("Preshadows", s.preshadows,
+                     "Shadows that Dan and enemies cast from fixed lights such as torches. Off: "
+                     "faster in busy views with many lights (the Graveyard horizon held the frame "
+                     "cap); some of those shadows go.");
+            if (s.preshadows != preshadows) {
+                runtime_ue4_request_cvar("r.Shadow.Preshadows", s.preshadows ? "1" : "0");
+            }
+            ImGui::EndTable();
+        }
     }
     ImGui::SeparatorText("Applied on restart");
     if (BeginRows("##restart")) {

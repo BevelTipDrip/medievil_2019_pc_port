@@ -101,6 +101,10 @@ struct Values {
     /// ue4_override). The death effects of several enemies cost 2-3 ms of GPU a frame at 4K (N-19).
     int effects_resolution = 0, startup_effects_resolution = 0;
     std::string effects_resolution_raw = "100";
+    /// MediEvil: UE4 preshadows (r.Shadow.Preshadows; moving objects' shadows from fixed lights),
+    /// switched live through the game's console variable (runtime_ue4_request_cvar). Off: the
+    /// heavy Graveyard view stayed at the frame cap (N-25).
+    std::atomic<bool> preshadows{true};
     // FSR 4 checks (menu): the provider's auto exposure, the jitter sign it is given.
     std::atomic<bool> fsr4_auto_exposure{true};
     std::atomic<bool> fsr4_invert_jitter{false};

@@ -1812,3 +1812,42 @@ waited ~5 ms on GPU ticks, 100-180 image lookup misses (normal: under 15).
   (with the profiler on).
 - Next for the spikes: keep images a guest unmap frees for reuse when the same target comes back at the same address
   (no re-creation, no lookup-cache invalidation), measured with clean runs and the overlay.
+
+### N-24: targets a guest unmap frees are parked for reuse (2026-10-30, launched by Claude with the user's go; `t-park1-check.log`, `t-park2-clean.log`)
+
+N-23's spikes come with UE4's render-target pool decommitting the torch shadow maps (512x512 D16) and the 4K pair while
+unused: each unmap freed the images (C3 only stopped their re-upload), the next use made them again.
+- **Change:** `TextureCache::UnmapMemory` parks a render / depth target (not aliased, not a scene proxy, <= 128 MiB)
+  instead of freeing it: unregistered, untracked, metas and pending downloads dropped as in `DeleteImage`, the Vulkan
+  image and its views kept. A new image with the same address and geometry takes it back (dirty, no usage, Undefined
+  as C3). Evicted after 10 s or over 768 MiB, oldest first. `GOW3_PARK_UNMAPPED=0`: off. The texture cache stats line
+  counts parked / taken back / evicted and the time spent making new images.
+- **t-park1 (stats) [V]:** 95-100% of parked targets taken back (e.g. 99/99, 248/240), up to ~200 MiB parked, few
+  evicted. Making the remaining new images cost 0-4.4 ms per 5 s, max 0.87 ms (4K pairs included): creation itself was
+  cheap, so the gain is elsewhere in the free / re-create cycle [?]. Some 4K pairs were still made new while one sat
+  parked (likely a texture lookup first, whose geometry fields differ) [I]. The user: torches, shadows, fire, glow and
+  haze normal.
+- **t-park2 (clean) [V, the user]:** "the big spikes there are gone, it looked about the same as the logging run. The
+  .1% lows in the heavy area are the best they've been compared to all previous clean runs."
+
+### N-25: preshadows as a live switch (2026-10-30, launched by Claude with the user's go; `t-park3-clean-preshadows-off.log`, `t-pre2-live-switch.log`)
+
+- **t-park3 (clean, `r.Shadow.Preshadows=0`, parking on) [V, overlay]:** the Graveyard horizon view at the gargoyle,
+  the one that oscillated in every earlier run, held the cap: 1.7 min window avg 219.5-221.5, 1% low 233-235, 0.1%
+  low 202-219 (t-hzb3-clean: 1% 168-235, 0.1% 106-208); the frame time graph nearly flat.
+- **Live switch:** in-game menu > Game > "Applied now" > Preshadows (`preshadows=0/1` in medievil.ini, default 1).
+  `runtime_ue4_request_cvar` (src/runtime_extra.c) queues the value; the game's input thread sets the console variable
+  through its own `Set` (vtable +0x68), as r.SetRes for native output. `r.Shadow.Preshadows`: TAutoConsoleVariable at
+  0x5bcff28 (IConsoleVariable* at +8), registered at 0x1611700 (`lea rsi, [rip+name]`), found as r.SetRes's 0x5c28320
+  (`scratchpad cvar_find.py`); the runtime checks those 7 bytes and the image size first. An ini value of 0 is set
+  once the game reaches its menu.
+- **t-pre2 [V]:** 34 live switches, all applied. Standing still and switching every 5-10 s: ~1,110-1,150 draws a
+  frame on, ~960-1,010 off: preshadows ~130-150 draws (~12%, ~0.4 ms of stage B) there; N-16's heavy views re-render
+  23-45 preshadows (260-445 draws). **The user:** "The difference is small, and I only noticed it in one place, the
+  shadows cast on dan's shoes by himself."
+- **Found on the way [V]: the in-game menu stutters the game.** Every stretch with the menu open: ~177 FPS, median
+  4.22 ms, almost exactly 60 frames a second at ~8.7 ms (296 per 5 s); closed, the same views 211-237 FPS. Something
+  the menu does at 60 Hz costs a frame each time. To find.
+- **Frames queued 2 (the user, 2026-10-30):** with the HZB fix, parking and preshadows off, `frames_queued=2` now
+  gives "even cleaner frametime graphs"; in all earlier testing it made the big spikes larger (a long stall backed up
+  two frames; N-15). Costs one more frame of latency (~4.2 ms at 237). The user's choice in the menu; default stays 1.

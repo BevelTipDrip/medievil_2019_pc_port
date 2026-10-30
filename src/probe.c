@@ -40,6 +40,8 @@ static uint64_t import_count;
 static unsigned char *image;
 /* The loaded game image (eboot vaddr 0), for runtime code that reads the game's own data. */
 unsigned char *runtime_image_base(void) { return image; }
+static uint64_t image_size;
+uint64_t runtime_image_size(void) { return image_size; }
 static size_t page_size;
 typedef struct { uint64_t base, size, init, tls_address, tls_memsz, tls_filesz, tls_module; } LinkedModule;
 static LinkedModule modules[16];
@@ -951,6 +953,7 @@ int main(int argc, char **argv) {
         _exit(missing ? 1 : 0); /* no destructors: GPU threads are running */
     }
     if (patch_file) apply_patches(patch_file, segments, ns, relocs, nr);
+    image_size = size;
     /* AMD-only SSE4a instructions in the game: SSE2 trampolines on CPUs without them. */
     unsigned char *sse4a_stubs = allocate(page_size);
     runtime_sse4a_install(image, size, sse4a_stubs, page_size);
