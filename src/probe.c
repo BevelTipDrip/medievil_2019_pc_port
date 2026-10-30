@@ -284,6 +284,9 @@ static LONG CALLBACK vectored_fault(EXCEPTION_POINTERS *info) {
         int ours=(image && rip-(uintptr_t)image<0x20000000) ||
                  (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS|GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,(LPCSTR)rip,&module) && module==self) ||
                  !module;
+        /* winpthreads raises no exceptions of its own: a fault there is a bad mutex or condition
+         * handle from the runtime (S1, plan-baseline-issues.md), reported with a dump. */
+        if (!ours && module==GetModuleHandleA("libwinpthread-1.dll")) ours=1;
         if (ours) return fatal_exception(info);
     }
     /* GOW3_STRICT_HANDLES=1: a closed or invalid handle used anywhere is reported (diagnostics). */

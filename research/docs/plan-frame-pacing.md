@@ -1910,3 +1910,23 @@ converts to wall time and to a WPR capture's offset (the export header's `Trace 
 - **The user (2026-10-30):** TabTip is a common Windows bug; the service can be disabled (not the port's problem).
   The display-wait stall: a slow frame in general. The GPU effects burst: effects resolution is the fix (default 75%),
   besides making the effects or the GPU work cheaper.
+
+### N-28: stage B counters, the study's Step 0 (2026-10-30, launched by Claude with the user's go; `t-sb0-counters.log`, build `ae09fcc`, `GOW3_SECTIONS=1`)
+
+Counters added in `ae09fcc` (stats only). Tool: `research/tools/sections_frames.py` (per-frame stage B sections of
+heavy frames, and the render-state spikes). Heavy frames (>= 900 draws): 393 ordinary (4.37 ms, 1,168 draws) and 493
+slow (10.0 ms, 1,397 draws; mostly the GPU-bound fight, flip_present 1.7 ms).
+- **Ordinary heavy frame, stage B ms (sections on):** packet 3.19, draw 2.51, bind 0.84 (textures 0.56, buffers
+  0.17), ObtainBuffer 0.42, vertex 0.39, **descriptors 0.37**, texset 0.22, begin render 0.18, texslow 0.18,
+  **samplers 0.12**, dynamic 0.12, render state 0.09.
+- **Descriptors (study item 2):** ~900 pushes a frame, 14.7-15.2 writes each (one RecordData per write + one). Go.
+- **Samplers (item 3's cache):** 0.12 ms a frame. Go (low risk; key on `ta_bc_base` and `sampler_lod_bias` too).
+- **Texture sets not kept (item 4):** of the sets the slow path drops, all but a handful contain the draw's own
+  target: e.g. own colour target 7,430 and own depth target 6,541 against 14,076 "other key" misses; storage,
+  written, rebind 0; registry changed 14-208. More colour than depth: not only depth sampled in place. 78 misses a
+  heavy frame at ~2.3 us (texslow 0.18 ms): ~0.1-0.18 ms. Gate passed.
+- **FindImage generation-only misses (item 10):** 3 per ordinary heavy frame, 9 per slow one (gate >= 50). Dropped.
+- **Render-state spikes:** >= 0.5 ms in 7 of 886 heavy frames (0.8%; the study saw ~8% before the HZB fix and
+  parking). All in `rs_target` -> FindImage (target lookups creating images, mostly at loads); cache lock waits
+  0.00-0.06 ms. Closed: no lock problem.
+- Not built: the joint S1 repeat predicate (item 3's second half), the particle-sim counters (item 8).

@@ -370,7 +370,7 @@ this (10-18, 10-19, 10-20, 10-21, 10-23 ×3, 10-30); one other on 10-23 was in `
 that object's vtable. So **a lock on a `pthread_mutex_t` whose contents are garbage**: destroyed and freed, never
 initialised, or overwritten. The "exit code 5" is how the runner reports the crash. Upstream has no fix (checked to
 1.3.8). Next: the lock sites in `runtime_mutex.c` (guest `scePthreadMutex*` mapped to winpthread, destroy vs. a
-late lock), and a crash dump (WER LocalDumps needs admin: the user runs it). Retry after an S1: it boots normally.
+late lock), and a crash dump (WER LocalDumps needs admin: the user runs it). Retry after an S1: it boots normally. **Again 2026-10-30 19:47** (`t-sb0-counters`, build `ae09fcc`, ~5 s in, after `PoolThread 6-9`, the same offset): two in ~9 launches today; the boot point matches 15:45 exactly (right after the game creates PoolThread 6-9).
 
 ## V2. Fire / torches broken, more box shadows (the user, 2026-10-18, run `perfdiag-heavy`)
 
