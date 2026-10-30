@@ -35,6 +35,17 @@ Then A/B of upstream's switches (`GOW3_FUTEX_COND`, `GOW3_TIMER_RES`, `GOW3_PAGE
 
 ## Pending fixes (research 2026-10-29, ranked there; state now)
 
+**Stage B review (2026-10-30, on `lab` = upstream 1.3.8 merged).** Still valid after the merge: upstream's
+`GOW3_RECORD_DATA_FIX` adds a `SyncWithDrawRecorder()` to every `RecordData()` (1 + N per descriptor push), but on
+stage B it returns at once (`DrawPipe::OnStageB()`), so per-draw cost is unchanged and item 2's design stands.
+Step 0's bind counter landed (`32586bc`, "Binds per frame"); the rest of the Step-0 counters (joint S1 predicate,
+writes per push, why a texture set is not memoized, FindImage generation-only misses, PrepareRenderState sub-timers
+for the 0.5-2 ms render-state spikes in ~8% of heavy frames) was never built. Order: (1) the Step-0 counter build
+(stats-gated, no behaviour change; gates items 3, 4, 8, 10, and the sub-timers bear on the user's question about
+single slow frames under steady load, N-27); (2) item 6 LTO (no code, A-B-A); (3) item 2 behind a Gow3Toggle bit,
+A/B inside one launch; (4) item 3's sampler-handle cache (key also on `ta_bc_base` and `sampler_lod_bias`), S1 only
+if its gate passes; (5) item 4 if gated in; item 8 last (risky). Then the ring reuse retest (stamp fix in `32586bc`).
+
 | # | Fix | Expected | State |
 |---|---|---|---|
 | 1 | Preshadows cut | stage B -0.4 to -0.9 ms in busy views | **done as a live switch** (N-25, `fdd12e8`), default on. Open: variant (a) `r.Shadow.PreShadowFadeResolution=32;r.Shadow.MinPreShadowResolution=16` (PS4-1080p-equivalent culling at 4K, keeps them) if the user wants them on but cheaper |
