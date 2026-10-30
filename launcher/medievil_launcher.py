@@ -39,9 +39,9 @@ MOD_PRESETS = DATA_DIR / 'mods_presets.json'
 APP_NAME = 'MediEvil'
 MAX_LOG_LINES = 6000
 NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
-# This build. New versions are on the GitHub releases page (the automatic updater is off).
-VERSION = '1.3.2'
-RELEASES_API = None
+# This build. The launcher checks the GitHub releases at start and offers newer versions.
+VERSION = '1.3.5'
+RELEASES_API = 'https://api.github.com/repos/bc160201983/medievil_2019_pc_port/releases/latest'
 RELEASES_PAGE = 'https://github.com/bc160201983/medievil_2019_pc_port/releases'
 UPDATE_DIR = Path(tempfile.gettempdir()) / 'medievil-update'
 # Never copied over an installation by an update (the package does not hold them either).
@@ -149,7 +149,7 @@ APP_DEFAULTS = {'ui_language': 'en', 'game_dir': os.environ.get('GOW3_GAME_DIR',
                 'player_name': '', 'hdr': False, 'draw_pipe': '', 'readbacks': '',
                 'background_warmup': True, 'parallel_warmup': True, 'pipeline_binary_cache': True, 'perf_diag': False, 'frame_capture_key': False, 'frame_stats': False, 'gpu_profile': False,
                 'vk_validation': False, 'close_on_play': False,
-                'check_updates': False, 'game_patches': {}, 'controls': {}, 'pad_style': 'playstation',
+                'update_check': True, 'game_patches': {}, 'controls': {}, 'pad_style': 'playstation',
                 'last_pkg': ''}
 
 # PS4 button, default key, default gamepad button (SDL names; src/runtime_pad.c). L2/R2 come
@@ -192,13 +192,19 @@ def control_map(controls, kind):
                     if isinstance(chosen.get(button), str) and chosen[button].strip()
                     and not set(chosen[button]) & set(',='))
 
-LANGUAGES = [('1', ('English', 'Английский')), ('8', ('Russian', 'Русский')), ('0', ('Japanese', 'Японский')),
-             ('2', ('French', 'Французский')), ('3', ('Spanish', 'Испанский')), ('4', ('German', 'Немецкий')),
-             ('5', ('Italian', 'Итальянский'))]
+# PS4 system language codes (sceSystemServiceParamGetInt LANG) of the languages MediEvil ships.
+LANGUAGES = [('1', ('English', 'Английский')), ('18', ('English (UK)',)), ('8', ('Russian', 'Русский')),
+             ('0', ('Japanese', 'Японский')), ('2', ('French', 'Французский')), ('3', ('Spanish', 'Испанский')),
+             ('20', ('Spanish (Latin America)',)), ('4', ('German', 'Немецкий')), ('5', ('Italian', 'Итальянский')),
+             ('16', ('Polish', 'Польский')), ('6', ('Dutch',)), ('7', ('Portuguese',)),
+             ('17', ('Portuguese (Brazil)',)), ('12', ('Finnish',)), ('13', ('Swedish',)), ('14', ('Danish',)),
+             ('15', ('Norwegian',)), ('19', ('Turkish',)), ('21', ('Arabic',)), ('23', ('Czech',)),
+             ('24', ('Hungarian',)), ('25', ('Greek',)), ('26', ('Romanian',))]
 DRAW_PIPE = [('', ('Auto (8+ threads)', 'Авто (8+ потоков)')), ('1', ('On', 'Включён')),
              ('0', ('Off (more stable)', 'Выключен (стабильнее)'))]
-READBACKS = [('', ('Relaxed (default)', 'Relaxed (по умолчанию)')), ('0', ('Off', 'Выключены')),
-             ('2', ('Precise',))]
+# "Precise" (GOW3_READBACKS=2) left MediEvil on a black screen (issue #15): not offered, and a
+# saved choice of it starts with the default.
+READBACKS = [('', ('Relaxed (default)', 'Relaxed (по умолчанию)')), ('0', ('Off', 'Выключены'))]
 FRAMES_QUEUED = [('1', ('1 (lowest latency)',)), ('2', ('2',)), ('0', ('Unlimited',))]
 # Performance patches (research/docs/plan-stage-b-split.md, plan-frame-pacing.md): each is on by
 # default; switched off, its environment variables restore the earlier behaviour (A/B tests,
@@ -295,6 +301,10 @@ def load_json(path, default):
         return default
 
 
+def screenshots_dir(s):
+    return Path(s.get('user_dir') or DATA_DIR / 'user') / 'screenshots'
+
+
 def ini_path():
     old = DATA_DIR / 'gow3.ini'  # settings of builds before 1.1
     if not (DATA_DIR / 'medievil.ini').exists() and old.exists():
@@ -308,6 +318,7 @@ def load_ini():
         lines = ini_path().read_text(encoding='utf-8').splitlines()
     except OSError:
         pass
+    seen = set()
     for line in lines:
         if '=' in line and not line.lstrip().startswith('#'):
             key, value = line.split('=', 1)
@@ -377,7 +388,7 @@ def game_environment(s):
     if s['hdr']:
         env['GOW3_HDR'] = '1'
     for key, name in (('draw_pipe', 'GOW3_DRAW_PIPE'), ('readbacks', 'GOW3_READBACKS')):
-        if s[key]:
+        if s[key] and not (key == 'readbacks' and s[key] == '2'):
             env[name] = s[key]
     env['GOW3_BACKGROUND_WARMUP'] = '1' if s.get('background_warmup', True) else '0'
     env['GOW3_PARALLEL_WARMUP'] = '1' if s.get('parallel_warmup', True) else '0'
@@ -393,13 +404,15 @@ def game_environment(s):
     env.setdefault('GOW3_FPS_LOG', '1')  # FPS and worst frame every 5 s in the log (diagnostics)
     # Frame statistics (draws, compiles, stalls every 5 s) only with Advanced > Frame statistics:
     # part of them is printed by the draw recording thread and costs frame time stability (T-S2b).
-    # F12 in the game (or creating the trigger file) saves the next frame here, for bug reports.
-    # Each session gets its own folder (frame numbers restart at every start); one press saves
-    # 8 consecutive frames so flicker shows up between them.
-    shots = Path(s['user_dir'] or DATA_DIR / 'user') / 'screenshots'
+    # F12 in the game saves a PNG screenshot of the game's picture.
+    env.setdefault('GOW3_SCREENSHOT_DIR', str(screenshots_dir(s)))
+    # Shift+F12 (or creating the trigger file) saves raw frames for bug reports. Each session gets
+    # its own folder, made on the first dump (frame numbers restart at every start); one press
+    # saves 8 consecutive frames so flicker shows up between them.
+    shots = Path(s['user_dir'] or DATA_DIR / 'user') / 'frame-dumps'
     session = shots / time.strftime('%Y%m%d-%H%M%S')
     try:
-        session.mkdir(parents=True, exist_ok=True)
+        shots.mkdir(parents=True, exist_ok=True)
         env.setdefault('GOW3_DUMP_DIR', str(session))
         env.setdefault('GOW3_FRAME_DUMP_TRIGGER', str(shots / 'trigger'))
         env.setdefault('GOW3_FRAME_DUMP_COUNT', '8')
@@ -494,6 +507,8 @@ class Launcher:
         self.tk, self.ttk, self.filedialog, self.messagebox = tk, ttk, filedialog, messagebox
         self.root = root
         self.app = {**APP_DEFAULTS, **load_json(CONFIG_FILE, {})}
+        if self.app.get('readbacks') == '2':  # "Precise" is no longer offered (issue #15)
+            self.app['readbacks'] = ''
         self.ini, self.ini_lines = load_ini()
         self.vars = {}
         self.process = self.job = None
@@ -520,6 +535,8 @@ class Launcher:
         self.show('home')
         root.protocol('WM_DELETE_WINDOW', self.close)
         root.after(100, self.drain_output)
+        if self.app.get('update_check', True):
+            root.after(1500, lambda: threading.Thread(target=self.check_update, daemon=True).start())
 
     def px(self, size):
         return int(size * self.dpi)
@@ -1056,6 +1073,13 @@ class Launcher:
         self.section(f, _('Overlay'))
         self.check(f, 'show_fps', 'ini', _('Show performance overlay'),
                    _('Items, size and corner: in-game menu (Insert / R3+L2) > Overlay.'))
+        self.section(f, _('Screenshots'))
+        holder = ttk.Frame(f)
+        holder.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(6, 0))
+        ttk.Button(holder, text=_('Open screenshots folder'),
+                   command=lambda: self.open_path(screenshots_dir(self.app))).pack(side='left')
+        ttk.Label(holder, text=_('Press F12 in the game: a PNG of the game picture at its full resolution.'),
+                  style='Muted.TLabel').pack(side='left', padx=10)
 
     def build_performance(self):
         f = self.scrolled_page('performance', _('Performance'), _('Frame rate and speed options.'))
@@ -1444,7 +1468,13 @@ class Launcher:
         holder = ttk.Frame(f)
         holder.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(10, 0))
         ttk.Button(holder, text=_('Desktop shortcut', 'Ярлык на рабочем столе'), command=self.shortcut).pack(side='left')
+        ttk.Button(holder, text=_('Check for updates', 'Проверить обновления'),
+                   command=lambda: threading.Thread(target=self.check_update, args=(True,), daemon=True).start()).pack(
+            side='left', padx=(8, 0))
         ttk.Label(holder, text=f'v{VERSION}', style='Muted.TLabel').pack(side='left', padx=10)
+        self.check(f, 'update_check', 'app', _('Check for updates when the launcher opens'),
+                   _('Asks GitHub for a newer release; when there is one, the sidebar offers to download and '
+                     'install it (saves, settings and mods are kept).'))
         self.section(f, _('Files'))
         holder = ttk.Frame(f)
         holder.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(6, 0))

@@ -1132,6 +1132,12 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
             limit = !env_limit && user && (!base || user < base) ? user : base;
         }
         limit = limit >= vblank_hz ? 0u : limit;
+        // With VSync the display paces the presents too: a limit at its refresh rate is another
+        // clock beside the display's own (often 59.94 Hz) and repeats or drops a frame now and
+        // then (issue #3, 4K TV at 60 Hz); the display alone keeps it even.
+        if (Gow3Settings::Get().vsync.load() && limit + 1 >= Gow3DisplayRefreshHz()) {
+            limit = 0u;
+        }
         // gow3 GOW3_REFLEX=1: the driver paces (its minimum interval); our limiter steps aside so
         // there is one clock (T-F13: two limiters at one rate fight).
         if (reflex) {

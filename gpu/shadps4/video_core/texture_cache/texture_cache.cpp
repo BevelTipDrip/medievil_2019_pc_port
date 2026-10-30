@@ -25,6 +25,7 @@
 #include "video_core/texture_cache/aliasing.h"
 #include "video_core/texture_cache/host_compatibility.h"
 #include "video_core/texture_cache/texture_cache.h"
+#include <unordered_map>
 #include "video_core/texture_cache/tile_manager.h"
 
 namespace VideoCore {
@@ -150,7 +151,10 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
         return;
     }
 
-    const s64 device_local_memory = static_cast<s64>(instance.GetTotalMemoryBudget());
+    // GOW3_GC_TOTAL_MB=N: tests the startup rule as on a GPU with N MiB (e.g. 8192: a laptop).
+    const char* total_env = std::getenv("GOW3_GC_TOTAL_MB");
+    const s64 device_local_memory = total_env ? static_cast<s64>(std::strtoll(total_env, nullptr, 10)) << 20
+                                              : static_cast<s64>(instance.GetTotalMemoryBudget());
     const s64 min_spacing_expected = device_local_memory - 1_GB;
     const s64 min_spacing_critical = device_local_memory - 512_MB;
     const s64 mem_threshold = std::min<s64>(device_local_memory, TARGET_GC_THRESHOLD);
@@ -898,14 +902,17 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
         new_info.UpdateSize();
         const auto new_image_id = slot_images.insert(instance, runtime, slot_image_views, new_info);
         RegisterImage(new_image_id);
+        // gow3 (from the Uncharted port): the insert moves every image when the slot vector
+        // grows, so `cache_image` may point into freed memory now: fetched again.
+        auto& old_image = slot_images[cache_image_id];
 
         // Inherit image usage
         auto& new_image = slot_images[new_image_id];
-        new_image.usage = cache_image.usage;
+        new_image.usage = old_image.usage;
         new_image.flags &= ~ImageFlagBits::Dirty;
         // When creating a depth buffer through overlap resolution don't clear it on first use.
         new_image.info.meta_info.htile_clear_mask = 0;
-        runtime.CopyColorAndDepth(&cache_image, &new_image);
+        runtime.CopyColorAndDepth(&old_image, &new_image);
 
         // Free the cache image.
         FreeImage(cache_image_id);
@@ -949,8 +956,14 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
         // gow3: MediEvil's colour grading LUT and translucency lighting volumes switched
         // between a 2D array (render target) and a 3D image (texture) several times a frame,
-        // each switch a full re-upload from guest memory: about 2 GB/s over PCIe (T-C1).
-        if (IsVolumeSliceTarget(image_info, binding, cache_image.info)) {
+        // each switch a full re-upload from guest memory: about 2 GB/s over PCIe (T-C1). The
+        // 3D image serves the slices through a 2D array view (V3; upstream 1.3.4 has the same
+        // idea; its GOW3_VOLUME_VIEWS=0 also turns this off, as does toggle bit 58).
+        static const bool volume_views = [] {
+            const char* env = std::getenv("GOW3_VOLUME_VIEWS");
+            return !env || env[0] != '0';
+        }();
+        if (volume_views && IsVolumeSliceTarget(image_info, binding, cache_image.info)) {
             CACHE_STAT(volume_views, 1);
             return {cache_image_id, -1, -1};
         }
@@ -1184,6 +1197,20 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
                       (unsigned long long)(info.guest_size >> 10));
         ++expand_sites[key];
     }
+    if (image_stats) {
+        static int logged = 0;
+        if (logged < 12) {
+            ++logged;
+            const auto& old = slot_images[image_id].info;
+            std::printf("Image expand: %#llx %s type %u %ux%ux%u mips %u layers %u tile %u -> type %u "
+                        "%ux%ux%u mips %u layers %u tile %u %s\n",
+                        (unsigned long long)info.guest_address, vk::to_string(info.pixel_format).c_str(),
+                        u32(old.type), old.size.width, old.size.height, old.size.depth,
+                        old.resources.levels, old.resources.layers, u32(old.tile_mode), u32(info.type),
+                        info.size.width, info.size.height, info.size.depth, info.resources.levels,
+                        info.resources.layers, u32(info.tile_mode), vk::to_string(old.pixel_format).c_str());
+        }
+    }
     const auto new_image_id = slot_images.insert(instance, runtime, slot_image_views, info);
     RegisterImage(new_image_id);
 
@@ -1206,6 +1233,7 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     const auto& info = desc.info;
     ASSERT(info.guest_address != 0);
 
+    scheduler.SyncWithDrawRecorder(); // before the lock: the draw recorder takes it too
     std::scoped_lock lock{mutex};
 
     u64 key_hash = info.guest_address ^ info.guest_size << 17 ^ u64(info.pixel_format) << 40 ^
@@ -1509,11 +1537,17 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc
 
     // If there is a stencil attachment, link depth and stencil.
     if (desc.info.stencil_addr != 0) {
+        // Only an 8-bit image (or the format-less placeholder created below) stands for the
+        // stencil plane: a color texture that later starts at this address must not be
+        // redirected to the depth-stencil image (Uncharted port: GPU page fault).
+        const ImageId depth_id = image_id;
         ImageId stencil_id{};
         ForEachImageInRegion(desc.info.stencil_addr, desc.info.stencil_size,
-                             [&](ImageId image_id, Image& image) {
-                                 if (image.info.guest_address == desc.info.stencil_addr) {
-                                     stencil_id = image_id;
+                             [&](ImageId candidate_id, Image& candidate) {
+                                 if (candidate_id != depth_id &&
+                                     candidate.info.guest_address == desc.info.stencil_addr &&
+                                     IsStencilProxyCandidate(candidate)) {
+                                     stencil_id = candidate_id;
                                  }
                              });
         if (!stencil_id) {
@@ -1524,9 +1558,12 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc
             stencil_id = slot_images.insert(instance, runtime, slot_image_views, info);
             RegisterImage(stencil_id);
         }
+        // The insert above moves every image when the slot vector grows: `image` fetched again.
+        Image& depth_image = slot_images[image_id];
         Image& stencil_image = slot_images[stencil_id];
         TouchImage(stencil_image);
-        stencil_image.AssociateDepth(image_id, image.image_uid);
+        stencil_image.AssociateDepth(image_id, depth_image.image_uid);
+        return depth_image.FindView(desc.view_info, false);
     }
 
     return image.FindView(desc.view_info, false);
@@ -1697,10 +1734,53 @@ vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sampler,
     return it->second.Handle();
 }
 
+void TextureCache::NoteImageChurn(bool registered, u32 line, const ImageInfo& info) {
+    struct Churn {
+        std::unordered_map<u32, u64> frees_by_line;
+        std::unordered_map<u64, u64> registrations; // size << 32 | format
+        u64 registered = 0, freed = 0;
+        std::chrono::steady_clock::time_point report = std::chrono::steady_clock::now();
+    };
+    static Churn churn;
+    static std::mutex churn_mutex;
+    std::scoped_lock lk{churn_mutex};
+    if (registered) {
+        ++churn.registered;
+        ++churn.registrations[u64(info.guest_size) << 32 | u32(info.pixel_format)];
+    } else {
+        ++churn.freed;
+        ++churn.frees_by_line[line];
+    }
+    const auto now = std::chrono::steady_clock::now();
+    if (now - churn.report < std::chrono::seconds(5)) {
+        return;
+    }
+    std::printf("Image churn (5 s): %llu registered, %llu freed; frees by texture_cache.cpp line:",
+                (unsigned long long)churn.registered, (unsigned long long)churn.freed);
+    for (const auto& [l, n] : churn.frees_by_line) {
+        std::printf(" %u=%llu", l, (unsigned long long)n);
+    }
+    std::vector<std::pair<u64, u64>> top(churn.registrations.begin(), churn.registrations.end());
+    std::sort(top.begin(), top.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
+    std::printf("\n  most registered (size, format):");
+    for (size_t i = 0; i < std::min<size_t>(top.size(), 8); ++i) {
+        std::printf(" %llu KB %s x%llu;", (unsigned long long)((top[i].first >> 32) >> 10),
+                    vk::to_string(vk::Format(u32(top[i].first))).c_str(),
+                    (unsigned long long)top[i].second);
+    }
+    std::printf("\n");
+    std::fflush(stdout);
+    churn = Churn{};
+    churn.report = now;
+}
+
 void TextureCache::RegisterImage(ImageId image_id) {
     Gow3Stats::images_registered.fetch_add(1, std::memory_order_relaxed);
     CACHE_STAT(registered, 1);
     Image& image = slot_images[image_id];
+    if (image_stats) {
+        NoteImageChurn(true, 0, image.info);
+    }
     ASSERT_MSG(False(image.flags & ImageFlagBits::Registered),
                "Trying to register an already registered image");
     image.flags |= ImageFlagBits::Registered;
@@ -1879,11 +1959,20 @@ void TextureCache::GarbageCollectImages() {
         // collector evicted images used two or three frames ago on every submission and wrote
         // GPU-written ones back. Compare with the driver's current budget instead.
         // GOW3_GC_BUDGET_MB=N: this rule with a fixed budget on any GPU (tests on a desktop).
+        // Discrete GPUs use it too (from the Uncharted port, RTX 5060 Laptop, 8 GB): the startup
+        // rule put the trigger at 0 and the pressure mark at ~40% of an 8 GB card, and the usage
+        // counts the buffer arenas in device memory, so images still in use were evicted and
+        // registered again with all their uploads: 40-75 ms frames while moving through a
+        // level (stutter on RTX 3060/4060/5060). GOW3_GC_STARTUP_RULE=1: the old startup rule.
         static const u64 forced_budget = [] {
             const char* env = std::getenv("GOW3_GC_BUDGET_MB");
             return env ? std::strtoull(env, nullptr, 10) << 20 : 0;
         }();
-        if (instance.IsIntegrated() || forced_budget) {
+        static const bool startup_rule = [] {
+            const char* env = std::getenv("GOW3_GC_STARTUP_RULE");
+            return env && env[0] == '1';
+        }();
+        if (instance.IsIntegrated() || forced_budget || !startup_rule) {
             const u64 budget = forced_budget ? forced_budget : instance.GetDeviceMemoryBudgetNow();
             if (budget != 0) {
                 trigger_gc_memory = budget / 10 * 7;
@@ -1958,12 +2047,15 @@ void TextureCache::GarbageCollectImages() {
         lru_cache.ForEachItemBelow(gc_tick - ticks_to_destroy, clean_up);
     }
     // gow3: evictions under memory pressure, at most every 5 s (GOW3_FRAME_STATS or not).
-    if (pressured || gc_downloads != 0) {
+    static const bool frame_stats = std::getenv("GOW3_FRAME_STATS") != nullptr;
+    if (pressured || gc_downloads != 0 || (frame_stats && gc_evictions != 0)) {
         const auto now = std::chrono::steady_clock::now();
         if (now - gc_report_time >= std::chrono::seconds(5)) {
-            std::printf("Texture cache: memory pressure, %llu of %llu MiB (critical %llu): "
-                        "%llu images evicted, %llu written back since the last report\n",
+            std::printf("Texture cache: %s, %llu MiB used (trigger %llu, pressure %llu, critical %llu "
+                        "MiB): %llu images evicted, %llu written back since the last report\n",
+                        pressured ? "memory pressure" : "collecting",
                         (unsigned long long)(total_used_memory >> 20),
+                        (unsigned long long)(trigger_gc_memory >> 20),
                         (unsigned long long)(pressure_gc_memory >> 20),
                         (unsigned long long)(critical_gc_memory >> 20),
                         (unsigned long long)gc_evictions, (unsigned long long)gc_downloads);
@@ -1996,7 +2088,11 @@ void TextureCache::GarbageCollectSamplers() {
             return true;
         }
         --num_deletions;
-        const size_t lru_id = samplers.at(hash).lru_id;
+        auto& sampler = samplers.at(hash);
+        const size_t lru_id = sampler.lru_id;
+        // Submitted commands may still use the sampler: destroyed once the GPU passed them.
+        auto doomed = std::make_shared<Sampler>(std::move(sampler));
+        scheduler.DeferOperation([doomed] {});
         samplers.erase(hash);
         sampler_lru_cache.Free(lru_id);
         return false;

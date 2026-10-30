@@ -50,6 +50,9 @@ public:
 
     void InlineData(VideoCore::Buffer* dst, u64 offset, u32 value);
 
+    void ClearVolumeSlices(VideoCore::Image* dst, const VideoCore::SubresourceRange& range,
+                           const vk::ClearValue& clear_value);
+
     bool Transit(VideoCore::Image* image, vk::ImageLayout dst_layout,
                  vk::PipelineStageFlags2 dst_stage, vk::AccessFlags2 dst_access,
                  std::optional<VideoCore::SubresourceRange> subres_range = {});

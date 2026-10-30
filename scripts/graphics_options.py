@@ -27,6 +27,9 @@ DEFAULTS = {'render_resolution': 'native', 'engine_fps': '60', 'deferred_readbac
 RESOLUTION_PREFIX = 'Resolution Patch'
 FPS_PREFIX = 'Frame Rate Patch'
 TEXTURE_FIX = 'Bug Fix - Texture Corruption Fix'
+# 1.3.4: 60 FPS is the default again and above it is experimental (stutter and the level 3
+# crash reports came from 120). Settings from before are set back to 60 once; this key marks it.
+FPS_RESET_KEY = 'fps_default_60'
 
 
 def read_ini(path):

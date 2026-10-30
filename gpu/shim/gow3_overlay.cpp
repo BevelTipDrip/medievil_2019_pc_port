@@ -22,6 +22,9 @@
 #include "../../src/actor_hook.h"
 
 extern Gow3ActorSlot gow3_actor_slots[2];
+namespace Gow3Overlay {
+extern std::atomic<bool> screenshot_requested;
+}
 extern "C" void runtime_restart(void); // src/probe.c: starts run.py again, ends this process
 extern "C" void runtime_ue4_request_setres(const char* text); // src/runtime_extra.c: live r.SetRes
 extern "C" void runtime_ue4_request_cvar(const char* name, const char* value); // live console variables
@@ -585,7 +588,7 @@ void PerformanceTab() {
                            "temporal upscaler (faster). The HUD stays at the output size.");
         }
         // The highest frame rate the game runs at (Unreal Engine 4: run.py's override pak).
-        static const char* const engine_labels[] = {"60 (original)", "120", "240"};
+        static const char* const engine_labels[] = {"60 (original)", "120 (experimental)", "240 (experimental)"};
         ChoiceRow("Engine frame rate", s.engine_fps, engine_labels, G::EngineFps.data(),
                   int(G::EngineFps.size()), "The highest frame rate the game itself runs at.");
         CheckRow("Game reads GPU data without waiting", s.stale_readback,
@@ -1209,7 +1212,12 @@ bool HandleEvent(const SDL_Event& event) {
             Vulkan::FrameCapture::Request();
             return true;
         }
-        // F12: saves the next frame (GOW3_FRAME_DUMP_TRIGGER, set by the launcher) for bug reports.
+        // F12: a PNG screenshot of the game's picture. Shift+F12: raw frames for bug reports
+        // (GOW3_FRAME_DUMP_TRIGGER, set by the launcher).
+        if (down && !event.key.repeat && event.key.key == SDLK_F12 && !(event.key.mod & SDL_KMOD_SHIFT)) {
+            screenshot_requested.store(true, std::memory_order_release);
+            return true;
+        }
         if (down && !event.key.repeat && event.key.key == SDLK_F12) {
             if (const char* trigger = std::getenv("GOW3_FRAME_DUMP_TRIGGER")) {
                 if (std::FILE* f = std::fopen(trigger, "wb")) {
@@ -1332,6 +1340,12 @@ void SetLoading(bool active, u32 done, u32 total) {
     loading_done = done;
     loading_total = total;
     loading = active;
+}
+
+std::atomic<bool> screenshot_requested{false};
+
+bool TakeScreenshotRequest() {
+    return screenshot_requested.exchange(false, std::memory_order_acq_rel);
 }
 
 bool Visible() {

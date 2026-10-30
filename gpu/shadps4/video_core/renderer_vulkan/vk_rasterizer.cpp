@@ -68,6 +68,24 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
     if (DrawPipeWanted()) {
         constant_ring = std::make_unique<ConstantRing>(instance, scheduler);
         draw_pipe = std::make_unique<DrawPipe>(&RunDrawPacket, this);
+        // gow3: commands recorded on stage A while stage B still has queued draws land between
+        // them: an EndRendering from a buffer copy closed the render pass stage B was drawing
+        // in (NVIDIA driver crash in level 3, issue #2/#12). Stage A first waits for stage B,
+        // except under the texture cache lock (stage B may need it): those callers drain
+        // before taking the lock (TextureCache::UpdateImage / FindImage).
+        scheduler.SetDrawPipeSync(
+            [](void* self) {
+                auto* rasterizer = static_cast<Rasterizer*>(self);
+                if (DrawPipe::OnStageB() || !rasterizer->draw_pipe || rasterizer->draw_pipe->Idle()) {
+                    return false;
+                }
+                if (!rasterizer->OnStageA() || rasterizer->texture_cache.LockHeldByCurrentThread()) {
+                    return true;
+                }
+                rasterizer->DrainDrawPipe(DrawPipe::ReasonForeignRecord);
+                return false;
+            },
+            this);
     }
     // gow3: this thread joins the texture binding helper before it changes image state.
     runtime.SetImageAccessHook(&JoinBindHelper, this);
@@ -939,7 +957,8 @@ void Rasterizer::PrintPipeStats() {
     for (u32 r = 0; r < DrawPipe::NumReasons; ++r) {
         if (const u64 n = draw_pipe->drains_by_reason[r]) {
             static constexpr const char* names[] = {"ConstRam", "commands", "compute",
-                                                    "submission end", "draw", "rasterizer"};
+                                                    "submission end", "draw", "rasterizer",
+                                                    "foreign record"};
             const double share = 100.0 * draw_pipe->cycles_by_reason[r] / cycles;
             draw_pipe->cycles_by_reason[r] = 0;
             if (r < 256) {

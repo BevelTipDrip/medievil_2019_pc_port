@@ -734,6 +734,7 @@ public:
     /// records directly (Record() included, so callers may mix both) until the next
     /// KickRecording() or submission.
     [[gnu::noinline]] vk::CommandBuffer CommandBuffer() {
+        SyncWithDrawRecorder(__builtin_return_address(0));
         if (recording_threaded && !direct_mode) {
             SyncRecording();
             direct_mode = true;
@@ -764,13 +765,38 @@ public:
             func(current_cmdbuf);
             return;
         }
+        NoteProducer(__builtin_return_address(0));
+        // gow3: data from RecordData() must stay in the chunk of the command using it (chunks are
+        // recycled once executed). Waiting for the draw recorder here, after RecordData(), let it
+        // hand that chunk over meanwhile: the command landed in the next chunk with its data in a
+        // recycled one (garbage barriers: AMD driver crash in 1.3.4, issue #18). With data
+        // pending, the wait already happened in RecordData().
+        const RecordChunk* data_chunk = std::exchange(record_data_chunk, nullptr);
+        if (!data_chunk || !RecordDataFix()) {
+            SyncWithDrawRecorder(__builtin_return_address(0));
+        }
         ChunkGuard guard{chunk_lock};
+        if (data_chunk && data_chunk != record_chunk.get()) {
+            ReportStaleRecordData(__builtin_return_address(0));
+        }
         if (!record_chunk->Push(std::forward<Func>(func))) {
             full_chunks.push_back(std::move(record_chunk));
             record_chunk = AcquireChunk();
             const bool pushed = record_chunk->Push(std::forward<Func>(func));
             ASSERT(pushed);
+            if (data_chunk) {
+                ReportStaleRecordData(__builtin_return_address(0));
+            }
         }
+    }
+
+    /// GOW3_RECORD_DATA_FIX=0: the 1.3.4 order (wait in Record()), for tests.
+    static bool RecordDataFix() {
+        static const bool enabled = [] {
+            const char* env = std::getenv("GOW3_RECORD_DATA_FIX");
+            return !env || env[0] != '0';
+        }();
+        return enabled;
     }
 
     /// True when Record() defers commands (and RecordData() copies into chunks).
@@ -785,8 +811,12 @@ public:
         if (!IsRecordingDeferred()) {
             return;
         }
+        if (RecordDataFix()) {
+            SyncWithDrawRecorder(__builtin_return_address(0)); // before the data: see Record()
+        }
         ChunkGuard guard{chunk_lock};
         ReserveRecordDataLocked(bytes);
+        record_data_chunk = record_chunk.get();
     }
 
     void ReserveRecordDataLocked(size_t bytes) {
@@ -808,8 +838,12 @@ public:
         }
         // Room for the data and the command that follows it, so both stay in one chunk.
         const size_t bytes = data.size_bytes();
+        if (RecordDataFix()) {
+            SyncWithDrawRecorder(__builtin_return_address(0)); // before the data: see Record()
+        }
         ChunkGuard guard{chunk_lock};
         ReserveRecordDataLocked(bytes + alignof(T));
+        record_data_chunk = record_chunk.get();
         auto* dst = static_cast<T*>(record_chunk->Allocate(bytes, alignof(T)));
         if (!dst) {
             dst = static_cast<T*>(record_chunk->AllocateOversized(bytes));
@@ -999,6 +1033,49 @@ private:
     // null) wrote into a null chunk: EndRendering crash in a MediEvil level (issue #2). A spin
     // lock (uncontended: one atomic exchange) keeps every use of the chunk whole.
     std::atomic_flag chunk_lock{};
+    /// Logs each thread that records into this scheduler, once (diagnostics for issue #2/#12:
+    /// a thread besides the GPU and draw recording threads interleaves commands).
+    void NoteProducer(void* caller) {
+        static thread_local const Scheduler* noted[8]{};
+        for (const Scheduler* s : noted) {
+            if (s == this) {
+                return;
+            }
+        }
+        for (auto& s : noted) {
+            if (!s) {
+                s = this;
+                break;
+            }
+        }
+        ReportProducer(caller);
+    }
+    void ReportProducer(void* caller);
+
+public:
+    /// gow3: `sync` runs before a thread records or touches the render pass: on the GPU command
+    /// thread it waits until the draw recording thread has recorded its queued draws, which
+    /// keeps commands in order (issue #2/#12). Returns true when it could not (then logged).
+    void SetDrawPipeSync(bool (*sync)(void*), void* context) {
+        draw_pipe_sync_context = context;
+        draw_pipe_sync = sync;
+    }
+
+    /// Waits for the draw recording thread as above; callers that take a lock the draw
+    /// recording thread also takes call this first.
+    void SyncWithDrawRecorder(void* caller = __builtin_return_address(0)) {
+        if (draw_pipe_sync && draw_pipe_sync(draw_pipe_sync_context)) {
+            ReportInterleave(caller);
+        }
+    }
+
+private:
+    void ReportInterleave(void* caller);
+    void ReportStaleRecordData(void* caller);
+    /// The chunk holding this thread's last RecordData() for the command that follows.
+    static inline thread_local const RecordChunk* record_data_chunk = nullptr;
+    bool (*draw_pipe_sync)(void*){};
+    void* draw_pipe_sync_context{};
     struct ChunkGuard {
         std::atomic_flag& flag;
         explicit ChunkGuard(std::atomic_flag& flag_) : flag{flag_} {

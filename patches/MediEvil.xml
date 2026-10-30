@@ -5,6 +5,7 @@
 <Patch>
     <TitleID>
         <ID>CUSA11227</ID>
+        <ID>CUSA12982</ID>
     </TitleID>
     <!-- The PS4 memory manager (0x8f4a00) gives framebuffers a 128 MB pool at 0x4000000000 with
          a power-of-two buddy allocator over 64 KB pages, backed by 128 MB of direct memory

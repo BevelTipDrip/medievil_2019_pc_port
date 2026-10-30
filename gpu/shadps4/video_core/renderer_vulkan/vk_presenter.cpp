@@ -46,7 +46,9 @@
 #include <sstream>
 #include <system_error>
 #include <vector>
+#include <thread>
 #include <vk_mem_alloc.h>
+#include <miniz.h>
 #ifdef MemoryBarrier
 #undef MemoryBarrier // gow3: winnt.h macro (through fmt), clashes with vk::MemoryBarrier
 #endif
@@ -353,6 +355,90 @@ static vk::Format GetFrameViewFormat(const Libraries::VideoOut::PixelFormat form
     return {};
 }
 
+// MediEvil: F12 screenshot of the game's picture as a PNG (GOW3_SCREENSHOT_DIR), encoded on a
+// thread of its own once the GPU is done (a 4K PNG takes a moment).
+static void SaveScreenshot(const Instance& instance, Scheduler& scheduler, vk::CommandBuffer cmdbuf,
+                           vk::Image image, vk::ImageLayout layout, u32 w, u32 h, vk::Format format) {
+    const bool bgra = format == vk::Format::eB8G8R8A8Unorm || format == vk::Format::eB8G8R8A8Srgb;
+    const bool rgba = format == vk::Format::eR8G8B8A8Unorm || format == vk::Format::eR8G8B8A8Srgb;
+    const bool a2r10 = format == vk::Format::eA2R10G10B10UnormPack32;
+    const bool a2b10 = format == vk::Format::eA2B10G10R10UnormPack32;
+    if (!bgra && !rgba && !a2r10 && !a2b10) {
+        std::printf("Screenshot: picture format %s is not supported\n", vk::to_string(format).c_str());
+        return;
+    }
+    const VkBufferCreateInfo buffer_ci{.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+                                       .size = VkDeviceSize(w) * h * 4,
+                                       .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT};
+    const VmaAllocationCreateInfo alloc_ci{
+        .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT,
+        .usage = VMA_MEMORY_USAGE_AUTO_PREFER_HOST};
+    VkBuffer buffer{};
+    VmaAllocation allocation{};
+    VmaAllocationInfo info{};
+    if (vmaCreateBuffer(instance.GetAllocator(), &buffer_ci, &alloc_ci, &buffer, &allocation,
+                        &info) != VK_SUCCESS) {
+        return;
+    }
+    cmdbuf.copyImageToBuffer(image, layout, buffer,
+                             vk::BufferImageCopy{.imageSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
+                                                 .imageExtent = {w, h, 1}});
+    const char* env = std::getenv("GOW3_SCREENSHOT_DIR");
+    const std::filesystem::path dir = env && *env ? env : "screenshots";
+    const std::time_t now = std::time(nullptr);
+    std::tm local{};
+    localtime_s(&local, &now);
+    char stamp[64];
+    std::strftime(stamp, sizeof(stamp), "MediEvil_%Y%m%d_%H%M%S", &local);
+    scheduler.DeferPriorityOperation([allocator = instance.GetAllocator(), buffer, allocation, info, w, h,
+                                      bgra, a2r10, a2b10, dir, name = std::string{stamp}] {
+        vmaInvalidateAllocation(allocator, allocation, 0, VK_WHOLE_SIZE);
+        std::vector<u8> rgb(size_t(w) * h * 3);
+        const auto* src = static_cast<const u32*>(info.pMappedData);
+        for (size_t i = 0, n = size_t(w) * h; i < n; ++i) {
+            const u32 p = src[i];
+            u8 r, g, b;
+            if (a2r10 || a2b10) {
+                const u8 hi = u8(((p >> 20) & 0x3ff) >> 2), mid = u8(((p >> 10) & 0x3ff) >> 2),
+                         lo = u8((p & 0x3ff) >> 2);
+                r = a2r10 ? hi : lo;
+                g = mid;
+                b = a2r10 ? lo : hi;
+            } else {
+                const u8 c0 = u8(p), c1 = u8(p >> 8), c2 = u8(p >> 16);
+                r = bgra ? c2 : c0;
+                g = c1;
+                b = bgra ? c0 : c2;
+            }
+            rgb[i * 3] = r;
+            rgb[i * 3 + 1] = g;
+            rgb[i * 3 + 2] = b;
+        }
+        vmaDestroyBuffer(allocator, buffer, allocation);
+        std::thread([rgb = std::move(rgb), w, h, dir, name] {
+            size_t size = 0;
+            void* png = tdefl_write_image_to_png_file_in_memory_ex(rgb.data(), int(w), int(h), 3, &size,
+                                                                   MZ_DEFAULT_LEVEL, MZ_FALSE);
+            if (!png) {
+                return;
+            }
+            std::error_code ec;
+            std::filesystem::create_directories(dir, ec);
+            std::filesystem::path path = dir / (name + ".png");
+            for (int n = 2; std::filesystem::exists(path); ++n) {
+                path = dir / (name + "_" + std::to_string(n) + ".png");
+            }
+            if (std::FILE* f = _wfopen(path.wstring().c_str(), L"wb")) {
+                std::fwrite(png, 1, size, f);
+                std::fclose(f);
+                std::printf("Screenshot: %s (%ux%u)\n", path.string().c_str(), w, h);
+                std::fflush(stdout);
+            }
+            mz_free(png);
+        }).detach();
+    });
+}
+
 // gow3: raw copy of an image for GOW3_FRAME_DUMP_TRIGGER, written once the GPU is done.
 static void DumpRaw(const Instance& instance, Scheduler& scheduler, vk::CommandBuffer cmdbuf,
                     vk::Image image, vk::ImageLayout layout, u32 w, u32 h, const char* name,
@@ -380,6 +466,8 @@ static void DumpRaw(const Instance& instance, Scheduler& scheduler, vk::CommandB
     scheduler.DeferPriorityOperation([allocator = instance.GetAllocator(), buffer, allocation, info,
                                       size = buffer_ci.size, file = std::string{path}] {
         vmaInvalidateAllocation(allocator, allocation, 0, VK_WHOLE_SIZE);
+        std::error_code ec;
+        std::filesystem::create_directories(std::filesystem::path{file}.parent_path(), ec);
         if (FILE* f = std::fopen(file.c_str(), "wb")) {
             std::fwrite(info.pMappedData, 1, size, f);
             std::fclose(f);
@@ -484,8 +572,37 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
             .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
         };
         cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &to_read});
+        if (Gow3Overlay::TakeScreenshotRequest()) {
+            auto to_copy = to_read;
+            to_copy.srcStageMask = vk::PipelineStageFlagBits2::eAllCommands;
+            to_copy.srcAccessMask = vk::AccessFlagBits2::eShaderRead;
+            to_copy.dstStageMask = vk::PipelineStageFlagBits2::eTransfer;
+            to_copy.dstAccessMask = vk::AccessFlagBits2::eTransferRead;
+            to_copy.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+            to_copy.newLayout = vk::ImageLayout::eTransferSrcOptimal;
+            cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &to_copy});
+            SaveScreenshot(instance, draw_scheduler, cmdbuf, display.image,
+                           vk::ImageLayout::eTransferSrcOptimal, display.width, display.height,
+                           display.format);
+            auto back = to_copy;
+            back.srcStageMask = vk::PipelineStageFlagBits2::eTransfer;
+            back.srcAccessMask = vk::AccessFlagBits2::eTransferRead;
+            back.dstStageMask = vk::PipelineStageFlagBits2::eAllCommands;
+            back.dstAccessMask = vk::AccessFlagBits2::eShaderRead;
+            back.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
+            back.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+            cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &back});
+        }
     } else {
         auto& image = texture_cache.GetImage(image_id);
+        if (Gow3Overlay::TakeScreenshotRequest()) {
+            runtime.Transit(&image, vk::ImageLayout::eTransferSrcOptimal,
+                            vk::PipelineStageFlagBits2::eTransfer, vk::AccessFlagBits2::eTransferRead);
+            runtime.FlushBarriers();
+            SaveScreenshot(instance, draw_scheduler, cmdbuf, image.GetImage(),
+                           vk::ImageLayout::eTransferSrcOptimal, image.info.size.width,
+                           image.info.size.height, image.info.pixel_format);
+        }
         if (frame_dump) {
             runtime.Transit(&image, vk::ImageLayout::eTransferSrcOptimal,
                             vk::PipelineStageFlagBits2::eTransfer, vk::AccessFlagBits2::eTransferRead);
