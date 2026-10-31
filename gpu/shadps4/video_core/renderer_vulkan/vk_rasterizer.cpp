@@ -546,7 +546,10 @@ void Rasterizer::CollectRingBindings(const Shader::Info& stage, const PreparedDr
         const char* env = std::getenv("GOW3_RING_REUSE");
         return env && env[0] == '1';
     }();
-    const bool reuse = reuse_enabled && liverpool && liverpool->OnGfxQueue();
+    // Second toggle word bit 4 switches it off live (A/B in one launch): copies made while on
+    // keep their hold until the epoch closes, so switching either way mid-epoch is safe.
+    const bool reuse = reuse_enabled && !Gow3Toggle2::Disabled(Gow3Toggle2::RingReuse) && liverpool &&
+                       liverpool->OnGfxQueue();
     const auto copy = [&](u32 index, const void* source, VAddr address, u64 size) {
         RingReuse* entry = nullptr;
         if (reuse && address) {

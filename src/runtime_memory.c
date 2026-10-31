@@ -1151,8 +1151,8 @@ void *runtime_low_map(size_t size, int prot) {
 /* Bits 32 and up: the draw pipeline and related GPU thread work (gpu/shim/gow3_toggles.h);
  * 288230376151711744 (bit 58) volumes rendered slice by slice through 2D array views.
  * An optional second number in the file is a second word of bits (all 64 of the first are
- * taken): 1 bulk descriptor copy per push, 2 sampler handles reused within a GC period
- * (Gow3Toggle2 in gow3_toggles.h). */
+ * taken): 1 bulk descriptor copy per push, 2 sampler handles reused within a GC period,
+ * 4 constant ring reuse (with GOW3_RING_REUSE=1) (Gow3Toggle2 in gow3_toggles.h). */
 uint64_t runtime_disabled_optimizations, runtime_disabled_optimizations2;
 /* Speculative readers of guest memory (GPU draw-preparation workers) register a recovery
  * point: a fault on that thread jumps back to it instead of terminating (probe.c). */
