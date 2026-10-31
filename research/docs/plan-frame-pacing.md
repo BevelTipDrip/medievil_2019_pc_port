@@ -1966,3 +1966,14 @@ second toggle word, bit 2; `toggle-ab.ps1` every 20 s, one heavy view.
 - **[V] On vs off (heavy frames, ~1,490 draws, 188 / 208 frames):** stage B samplers 0.041 vs 0.126 us per draw
   median (0.041 vs 0.129 mean): **-0.085 us a draw, ~-0.13 ms of stage B a heavy frame**. Draw section 1.86 vs
   1.97 us median.
+
+### N-32: ring reuse retest, A/B inside one launch (2026-10-30, launched by Claude with the user's go; `t-ring-1`, build `9fb2d6c`, `-NoStats`, flip trace `research-data\flip\t-ring-1.csv`)
+
+`GOW3_RING_REUSE=1` with the stamp fix (N-16); the second toggle word's bit 4 switched reuse off live every 20 s
+(`toggle-ab.ps1`); `research/tools/flip_toggle_ab.py` splits the trace by phase (1 s after each switch skipped).
+- **[V] No stuck ring:** no "Constant ring ... found it full" report in the whole run.
+- **[V] Steady part (20:39:28-20:44, 8 on / 7 off phases):** 1% low ~188 on vs ~179 off (each of the last six on
+  phases 184-185 vs 169-175 for the off phases between them), 0.1% low ~153 vs ~145, mean frame ~4.34 vs ~4.39 ms.
+  The user's earlier impression (better lows with reuse) holds.
+- **First ~80 s:** bursts of > 9 ms frames in both states (on 90 and 15, off 45 frames): the scene (to confirm with
+  the user), not obviously reuse. N-15's panning spikes: to confirm.
