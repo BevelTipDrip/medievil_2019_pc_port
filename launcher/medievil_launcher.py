@@ -299,6 +299,11 @@ PERF_PATCHES = [
      '~0.3 ms less draw-thread work in heavy frames (~1,500 draws), most useful on slower CPUs. '
      'Applies at once in the in-game menu.',
      {'GOW3_LEAN_BINDING': '0'}),
+    ('perf_ring_reuse', 'Constant ring reuse',
+     "Shader constants the game binds again within one of its command buffers reuse the copy already in "
+     'video memory instead of being copied again (about 13 -> 4 MB a frame written over PCIe): heavy-area '
+     '0.1% lows ~145 -> ~185 FPS. Applies at once in the in-game menu.',
+     {'GOW3_RING_REUSE': '0'}),
 ]
 INI_FLAGS.update(entry[0] for entry in PERF_PATCHES)
 INI_DEFAULTS.update({entry[0]: '1' for entry in PERF_PATCHES})

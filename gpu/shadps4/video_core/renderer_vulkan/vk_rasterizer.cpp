@@ -536,19 +536,16 @@ void Rasterizer::CollectRingBindings(const Shader::Info& stage, const PreparedDr
     }
     const u64 alignment = std::max<u64>(instance.StorageMinAlignment(),
                                         instance.UniformMinAlignment());
-    // gow3 GOW3_RING_REUSE=1 (default off: a copy per binding): within one guest command
-    // buffer a guest range's bytes do not change (the CPU wrote them before submitting; ranges the
-    // GPU writes are skipped above the copy), so a range bound again binds the first copy. Graphics
-    // queue only; the table resets at each command buffer and each WAIT_REG_MEM (CloseRingReuse).
-    // Off by default: with it the heavy area had 9-10 ms frames with the GPU partly idle (220 ->
-    // 100 FPS while panning; t-pan5, t-flip1-split), gone with it off (t-nostats5); cause not known.
-    static const bool reuse_enabled = [] {
-        const char* env = std::getenv("GOW3_RING_REUSE");
-        return env && env[0] == '1';
-    }();
-    // Second toggle word bit 4 switches it off live (A/B in one launch): copies made while on
-    // keep their hold until the epoch closes, so switching either way mid-epoch is safe.
-    const bool reuse = reuse_enabled && !Gow3Toggle2::Disabled(Gow3Toggle2::RingReuse) && liverpool &&
+    // gow3 ring reuse (launcher / menu perf_ring_reuse, live; GOW3_RING_REUSE=0 starts off):
+    // within one guest command buffer a guest range's bytes do not change (the CPU wrote them
+    // before submitting; ranges the GPU writes are skipped above the copy), so a range bound again
+    // binds the first copy. Graphics queue only; the table resets at each command buffer and each
+    // WAIT_REG_MEM (CloseRingReuse). Off from N-15 (9-10 ms frames while panning, cause not found)
+    // until the ring stamp fix (N-16); on again since N-32: heavy-area 0.1% lows ~145 -> ~185, no
+    // full ring, no panning spikes. Second toggle word bit 4 switches it off live (A/B): copies made
+    // while on keep their hold until the epoch closes, so switching either way mid-epoch is safe.
+    const bool reuse = Gow3Settings::PerfOn(Gow3Settings::PerfRingReuse) &&
+                       !Gow3Toggle2::Disabled(Gow3Toggle2::RingReuse) && liverpool &&
                        liverpool->OnGfxQueue();
     const auto copy = [&](u32 index, const void* source, VAddr address, u64 size) {
         RingReuse* entry = nullptr;

@@ -93,7 +93,7 @@ namespace Gow3Toggle2 {
 enum : std::uint64_t {
     BulkDescriptorCopy = 1, ///< a descriptor push copies its writes and info arrays in one piece each
     SamplerMemo = 2,        ///< sampler handles reused within a GC period (Rasterizer::BindSamplers)
-    RingReuse = 4,          ///< with GOW3_RING_REUSE=1: constant ring copies reused (switch off live)
+    RingReuse = 4,          ///< constant ring copies reused (perf_ring_reuse; switch off live)
 };
 inline bool Disabled(std::uint64_t bit) {
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;

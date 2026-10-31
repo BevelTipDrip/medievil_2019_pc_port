@@ -252,6 +252,7 @@ PERF_SWITCHES = {
     'perf_4k_memory': {'GOW3_PS4_MEMORY': '1'},
     'perf_lean_barriers': {'GOW3_SKIP_READ_BARRIERS': '0', 'GOW3_DEPTH_SAMPLE_IN_PLACE': '0'},
     'perf_lean_binding': {'GOW3_LEAN_BINDING': '0'},
+    'perf_ring_reuse': {'GOW3_RING_REUSE': '0'},
 }
 
 
