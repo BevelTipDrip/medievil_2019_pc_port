@@ -421,6 +421,28 @@ circled the broken areas in frame 24679 (right of Dan along the path; lower left
 - Separately, the 1024² cached map 0x2076200000 (not re-rendered this frame) has solid zero-depth strips along its
   right and bottom edges: the lower-left partial darkening; check after the first fix.
 
+## V3. Effects: wrong blending, misplaced, missing at an angle (the user, 2026-10-31, play session on `3cea271`)
+
+A few hours across ~6 levels, no leaks (3-4 GB system RAM). Three effect issues, not reproduced yet:
+- **V3a** transparent effects blended wrong in some scenes (seen in a cutscene).
+- **V3b** an effect drawn where none was expected (swapped, or an artefact); not retried in the same place.
+- **V3c** particles missing unless seen head on.
+
+Suspects (the switch that removes each, live = in-game menu without restart):
+
+| Suspect | Fits | Switch |
+|---|---|---|
+| Effects resolution 75% (UE4 separate translucency at 75%: its depth test and soft-particle fade use a downsampled scene depth, which rejects effects near surfaces at grazing angles; upsampled composite) | a, c | Effects resolution 100, live |
+| Ring reuse (a range bound again in one command buffer gets its first copy: stale constants would move or hide effects) | b, c, a | Constant ring reuse, live |
+| Lean barriers (soft particles sample depth in place; the T-F risk: missing / flickering effects) | a, c | Fewer render pass breaks, restart |
+| Texture set memo (a remembered binding served after the texture changed) | b, a | Texture set memo, restart |
+| Sampler memo / bulk descriptors | b | Cheaper draw binding, live |
+| HZB occlusion (effect bounds read hidden) | c | HZB occlusion culling, restart |
+
+Plan: the user flips the live ones while an issue is on screen (effects resolution first, then ring reuse, then
+cheaper binding); if none changes it, the restart ones one launch each at the same spot. Then a RenderDoc capture of
+the spot.
+
 ## Tests (one change per launch, the user's go each time)
 
 | Test | Change from run 1 | Answers |
