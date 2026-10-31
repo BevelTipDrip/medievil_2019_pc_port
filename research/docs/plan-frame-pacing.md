@@ -1977,3 +1977,11 @@ second toggle word, bit 2; `toggle-ab.ps1` every 20 s, one heavy view.
   The user's earlier impression (better lows with reuse) holds.
 - **First ~80 s:** bursts of > 9 ms frames in both states (on 90 and 15, off 45 frames): the scene (to confirm with
   the user), not obviously reuse. N-15's panning spikes: to confirm.
+- **`t-ring-2` (reuse on all run, `-NoStats`, flip trace; the user panned the heavy area until 20:54:30, then the
+  fight) [V]:** heavy area 20:51:17-20:54:27: 0.1% low 170-190 in most 5-s windows (1% 180-210); the user: "the .1%
+  lows in the heavy area are all the way up in the 185 range. So they're legitimately higher." 7 frames > 8 ms in
+  ~3 min (7-44 s apart), causes mixed (present call 6 ms; GPU 7-9 ms; present thread late 5.6-7.2 ms; stage A late
+  8-9 ms); no N-15 runs of 9-10 ms frames; no full ring. Fight: worst 5-s 1% low ~115 (8.7-8.8 ms GPU bursts).
+- **The user's "really large spike every 5 seconds or so": not in the present timing.** Frames > 5.5 / 6 ms have no
+  phase preference at 1, 2, 4, 5 or 10 s periods (max/mean 1.6-2.9 on 14-50 frames, i.e. flat). Either after the
+  present (display / DWM / VRR) or in the graph used. Open.
