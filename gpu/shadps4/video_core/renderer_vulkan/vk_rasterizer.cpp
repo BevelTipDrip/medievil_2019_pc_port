@@ -1234,7 +1234,8 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
     }
     {
         GOW3_SECTION(PipelineBind);
-        pipeline->BindResources(set_writes, push_data);
+        pipeline->BindResources(set_writes, push_data, {image_infos.data(), image_infos.size()},
+                                {buffer_infos.data(), buffer_infos.size()});
     }
     // gow3: jitter geometry drawn with the scene depth, not full-screen passes (a shifted
     // full-screen quad leaves an edge column unwritten).
@@ -1379,7 +1380,8 @@ void Rasterizer::DrawIndirectRecord(const GraphicsPipeline* pipeline, bool is_in
     push_data.yoffset *= target_scale[1];
     {
         GOW3_SECTION(PipelineBind);
-        pipeline->BindResources(set_writes, push_data);
+        pipeline->BindResources(set_writes, push_data, {image_infos.data(), image_infos.size()},
+                                {buffer_infos.data(), buffer_infos.size()});
     }
     draw_jitter = {};
     if (upscaler->Enabled() && db_desc.first && db_desc.first == camera_motion->Depth()) {
@@ -1482,7 +1484,8 @@ void Rasterizer::DispatchRecord(const ComputePipeline* pipeline) {
     mark();
     {
         GOW3_SECTION(PipelineBind);
-        pipeline->BindResources(set_writes, push_data);
+        pipeline->BindResources(set_writes, push_data, {image_infos.data(), image_infos.size()},
+                                {buffer_infos.data(), buffer_infos.size()});
     }
 
     const vk::Pipeline handle = pipeline->Handle();
@@ -1539,7 +1542,8 @@ void Rasterizer::DispatchIndirectRecord(const ComputePipeline* pipeline, VAddr a
     scheduler.EndRendering();
     {
         GOW3_SECTION(PipelineBind);
-        pipeline->BindResources(set_writes, push_data);
+        pipeline->BindResources(set_writes, push_data, {image_infos.data(), image_infos.size()},
+                                {buffer_infos.data(), buffer_infos.size()});
     }
 
     const vk::Pipeline handle = pipeline->Handle();
