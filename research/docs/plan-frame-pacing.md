@@ -1985,3 +1985,8 @@ second toggle word, bit 2; `toggle-ab.ps1` every 20 s, one heavy view.
 - **The user's "really large spike every 5 seconds or so": not in the present timing.** Frames > 5.5 / 6 ms have no
   phase preference at 1, 2, 4, 5 or 10 s periods (max/mean 1.6-2.9 on 14-50 frames, i.e. flat). Either after the
   present (display / DWM / VRR) or in the graph used. Open.
+- **The user, playing after N-32 without any logging or trace (2026-10-30):** "without logging, I didn't see the
+  spikes, and framestimes were generally better. The heavy area pan had the framerate close to 200" (with
+  `frames_queued=2`, which absorbs part of a single late frame). The flip trace itself is a suspect for some of
+  N-27's isolated spikes: ~1,800 lines a second under one mutex taken by every stage, `fflush` every 2,048 lines on
+  whichever thread notes. Before chasing those spikes again: buffer the trace in memory and write it at exit.
