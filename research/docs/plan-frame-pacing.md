@@ -1956,3 +1956,13 @@ frames by state (frames within 1 s of a switch skipped).
 - **[V] On vs off (heavy frames, ~1,550 draws, 99 / 179 frames):** stage B descriptors 0.217 vs 0.337 us per draw
   median (0.222 vs 0.353 mean): **-0.12 us a draw, ~-0.18 ms of stage B a heavy frame** (the study: -0.1 to -0.2 ms;
   drop below 0.03 us). Draw section 1.88 vs 2.13 us median. Kept on by default.
+
+### N-31: sampler handle memo, A/B inside one launch (2026-10-30, launched by Claude with the user's go; `t-sampler-1.log`, build `5c752e8`, LTO, bulk copy on)
+
+Study item 3's sampler half (`5c752e8`): BindSamplers reuses a handle GetSampler returned in the current GC period
+(per-thread direct-mapped memo keyed on the S#, border colour base, depth, LOD bias); the first use each period
+still goes through GetSampler (LRU touch; the sampler GC keeps a touched sampler >= 16 periods). Live switch:
+second toggle word, bit 2; `toggle-ab.ps1` every 20 s, one heavy view.
+- **[V] On vs off (heavy frames, ~1,490 draws, 188 / 208 frames):** stage B samplers 0.041 vs 0.126 us per draw
+  median (0.041 vs 0.129 mean): **-0.085 us a draw, ~-0.13 ms of stage B a heavy frame**. Draw section 1.86 vs
+  1.97 us median.

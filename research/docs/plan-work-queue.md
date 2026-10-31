@@ -50,7 +50,7 @@ if its gate passes; (5) item 4 if gated in; item 8 last (risky). Then the ring r
 |---|---|---|---|
 | 1 | Preshadows cut | stage B -0.4 to -0.9 ms in busy views | **done as a live switch** (N-25, `fdd12e8`), default on. Open: variant (a) `r.Shadow.PreShadowFadeResolution=32;r.Shadow.MinPreShadowResolution=16` (PS4-1080p-equivalent culling at 4K, keeps them) if the user wants them on but cheaper |
 | 2 | Bulk descriptor copy per push (Bloodborne 0.3), one ChunkGuard | stage B -0.1 to -0.2 ms (2.5-6%) | **done** (`e0c7566`, N-30: descriptors -0.12 us a draw, ~-0.18 ms of stage B a heavy frame) |
-| 3 | Sampler-handle cache in the texture-set memo, then S1 delta-draw | -0.1 ms, then -0.25 to -0.35 ms | sampler cache **go** (N-28: samplers 0.12 ms); S1 needs its predicate counter (not built) |
+| 3 | Sampler-handle cache in the texture-set memo, then S1 delta-draw | -0.1 ms, then -0.25 to -0.35 ms | sampler cache **done** (`5c752e8`, N-31: samplers -0.085 us a draw, ~-0.13 ms a heavy frame); S1 needs its predicate counter (not built) |
 | 4 | Memoizable sets that contain the draw's own target | -0.08 to -0.17 ms | **gate passed** (N-28: the dropped sets are own-target ones, colour more than depth; ~78 a heavy frame, ~2.3 us each) |
 | 5 | Mid-frame 4K stencil-plane copy | GPU <= 0.1 ms | open, low |
 | 6 | LTO build (ThinLTO, clang/MinGW) | 0-2% stage B | **done** (N-29: ThinLTO on by default; equal or slightly better, within noise) |
