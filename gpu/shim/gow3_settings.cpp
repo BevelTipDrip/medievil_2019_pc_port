@@ -55,6 +55,13 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         v.output_resolution_raw = value;
         return;
     }
+    for (int o = 0; o < UE4LiveCount; ++o) {
+        if (key == UE4LiveOptions[o].key) {
+            const int k = index_of(UE4LiveOptions[o].tokens);
+            v.ue4_live[o] = k > 0 && k < UE4LiveOptions[o].count ? k : 0;
+            return;
+        }
+    }
     if (key == "effects_resolution") {
         v.effects_resolution = index_of(UE4EffectsKeys);
         v.effects_resolution_raw = value;
@@ -191,6 +198,36 @@ void Set(Values& v, const std::string& key, const std::string& value) {
 
 } // namespace
 
+void RequestUE4Live(int o, int choice) {
+    if (o < 0 || o >= UE4LiveCount || choice < 0 || choice >= UE4LiveOptions[o].count) {
+        return;
+    }
+    const auto& option = UE4LiveOptions[o];
+    for (int c = 0; c < 2 && option.cvars[c]; ++c) {
+        const char* value = option.values[choice][c];
+        std::string preset;
+        if (choice == 0) {
+            // run.py: "name=value;..." for every cvar of these options, as the preset leaves them.
+            const char* env = std::getenv("GOW3_UE4_PRESET_CVARS");
+            const std::string all = env ? env : "";
+            const std::string want = std::string(option.cvars[c]) + "=";
+            for (std::size_t at = 0; at < all.size();) {
+                const std::size_t end = std::min(all.find(';', at), all.size());
+                if (all.compare(at, want.size(), want) == 0) {
+                    preset = all.substr(at + want.size(), end - at - want.size());
+                }
+                at = end + 1;
+            }
+            if (preset.empty()) {
+                std::printf("UE4: no preset value for %s (restart for the preset)\n", option.cvars[c]);
+                continue;
+            }
+            value = preset.c_str();
+        }
+        runtime_ue4_request_cvar(option.cvars[c], value);
+    }
+}
+
 Values& Get() {
     static Values values;
     return values;
@@ -246,6 +283,11 @@ void Load() {
     // checks the eboot first).
     if (!v.preshadows) {
         runtime_ue4_request_cvar("r.Shadow.Preshadows", "0");
+    }
+    for (int o = 0; o < UE4LiveCount; ++o) {
+        if (v.ue4_live[o] > 0) {
+            RequestUE4Live(o, v.ue4_live[o]);
+        }
     }
     if (v.effects_resolution > 0) { // the override pak sets it at boot too (run.py)
         runtime_ue4_request_cvar("r.SeparateTranslucencyScreenPercentage", UE4EffectsKeys[v.effects_resolution]);
@@ -438,6 +480,9 @@ std::map<std::string, std::string> Serialize(const Values& v) {
     Append(out, "effects_resolution=%s\n", v.effects_resolution >= 0 ? UE4EffectsKeys[v.effects_resolution]
                                                                     : v.effects_resolution_raw.c_str());
     Append(out, "preshadows=%d\n", int(v.preshadows.load()));
+    for (int o = 0; o < UE4LiveCount; ++o) {
+        Append(out, "%s=%s\n", UE4LiveOptions[o].key, UE4LiveOptions[o].tokens[v.ue4_live[o]]);
+    }
     std::map<std::string, std::string> values;
     std::size_t at = 0;
     while (at < out.size()) {

@@ -27,10 +27,12 @@ scratchpad, see the study) or `cvar_find2.py`.
 | Effects resolution | `r.SeparateTranslucencyScreenPercentage` | 0x5bd2d68 | N-26, `9cc915e`; default 75%; verified live (target re-sized next window) |
 | Preshadows | `r.Shadow.Preshadows` | 0x5bcff28 | N-25, `fdd12e8`; default on; ~12% fewer draws off |
 | (Game resolution now) | `r.SetRes` | 0x5c28320 | the output size buttons (native output) |
+| 13 graphics options (2026-10-30) | 16 cvars, `ue4_cvars[]` | study table | `gow3_settings.h` `UE4LiveOptions`: shadow resolution, shadow distance (+ cascades), shadow filtering, view distance, level of detail (static mesh + foliage), ambient occlusion, reflections, volumetric fog, motion blur, depth of field, bloom, lens flares, chromatic aberration. Choice 0 "Preset" restores the boot preset's values (`run.py` -> `GOW3_UE4_PRESET_CVARS`, `ue4_override.preset_cvars`: pak preset > PS4Engine.ini > BaseScalability@3 > engine default). Sites checked against the eboot (lea loads the name). Not yet verified in game: the user tests them one by one |
+| Anisotropic filtering | port side, not a cvar | `sampler.cpp` | 16x for every filtered, linearly mipmapped, non-depth sampler (`GOW3_FORCE_ANISO=0`: the game's S#). No setting: the user wants 16x always |
 
 ## Next, in order
 
-1. **Fix the presets first:** in `scripts/ue4_override.py`, High/Ultra's `r.Shadow.MaxResolution`,
+1. **Done (2026-10-30): presets fixed:** the dead High/Ultra/Medium/Low shadow entries removed (no applied value changed; checked per preset), `preset_values()` shared. Was: in `scripts/ue4_override.py`, High/Ultra's `r.Shadow.MaxResolution`,
    `r.Shadow.DistanceScale`, `r.Shadow.CSM.MaxCascades` are overwritten later by the local / sun shadow tables
    (study). A live preset must apply what the boot preset means.
 2. **Quality preset live:** one batch of Set calls from one table shared with `ue4_override.py` (the study's cvar table

@@ -9,6 +9,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <iterator>
 #include <string>
 
 namespace Gow3Settings {
@@ -106,6 +107,8 @@ struct Values {
     /// switched live through the game's console variable (runtime_ue4_request_cvar). Off: the
     /// heavy Graveyard view stayed at the frame cap (N-25).
     std::atomic<bool> preshadows{true};
+    /// MediEvil live graphics options (UE4LiveOptions): the chosen index, 0 = the preset's value.
+    int ue4_live[13] = {};
     // FSR 4 checks (menu): the provider's auto exposure, the jitter sign it is given.
     std::atomic<bool> fsr4_auto_exposure{true};
     std::atomic<bool> fsr4_invert_jitter{false};
@@ -164,6 +167,77 @@ inline constexpr const char* UE4OutputKeys[] = {"display", "3840x2160", "3200x18
                                                 "1280x720"};
 inline constexpr const char* UE4ScaleKeys[] = {"200", "167", "133", "100", "67", "58", "50"};
 inline constexpr const char* UE4EffectsKeys[] = {"100", "75", "50"};
+/// MediEvil graphics options switched live through UE4 console variables (in-game menu "Applied
+/// now", src/runtime_extra.c ue4_cvars[]). Choice 0, "Preset", follows the quality preset: picking
+/// it again restores the preset's values, which run.py passes in (GOW3_UE4_PRESET_CVARS, from
+/// scripts/ue4_override.py preset_cvars). Values fit the runtime's 7 characters.
+struct UE4LiveOption {
+    const char* key;   ///< medievil.ini; its value is one of `tokens`
+    const char* title;
+    const char* hint;
+    const char* cvars[2]; ///< set together (nullptr: unused)
+    int count;            ///< choices, the first is "Preset"
+    const char* labels[6];
+    const char* tokens[6];
+    const char* values[6][2]; ///< per choice, per cvar (choice 0: from the preset)
+};
+inline constexpr UE4LiveOption UE4LiveOptions[] = {
+    {"shadow_resolution", "Shadow resolution",
+     "Shadow maps of torches and other lights (fixed size: no flicker as lights move). Each shadow "
+     "map costs GPU time; console quality uses 512.",
+     {"r.Shadow.MinResolution", "r.Shadow.MaxResolution"}, 5,
+     {"Preset", "256", "512 (console)", "1024", "2048"}, {"preset", "256", "512", "1024", "2048"},
+     {{}, {"256", "256"}, {"512", "512"}, {"1024", "1024"}, {"2048", "2048"}}},
+    {"shadow_distance", "Shadow distance",
+     "How far the sun and moon cast shadows and in how many cascades; each cascade draws the scene "
+     "again (draw thread and GPU).",
+     {"r.Shadow.DistanceScale", "r.Shadow.CSM.MaxCascades"}, 5,
+     {"Preset", "Short", "Console", "Far", "Farthest"}, {"preset", "short", "console", "far", "farthest"},
+     {{}, {"0.6", "2"}, {"0.8", "2"}, {"1.2", "3"}, {"1.5", "3"}}},
+    {"shadow_quality", "Shadow filtering",
+     "Softness of shadow edges (filter samples). Mostly GPU.", {"r.ShadowQuality", nullptr}, 6,
+     {"Preset", "Low", "Medium", "Console", "High", "Ultra"}, {"preset", "1", "2", "3", "4", "5"},
+     {{}, {"1"}, {"2"}, {"3"}, {"4"}, {"5"}}},
+    {"view_distance", "View distance",
+     "How far away objects are still drawn. Lower: fewer draws (draw thread and GPU), objects "
+     "disappear sooner.",
+     {"r.ViewDistanceScale", nullptr}, 6, {"Preset", "Near", "Medium", "Console", "Far", "Farthest"},
+     {"preset", "0.7", "0.85", "1", "1.5", "2"}, {{}, {"0.7"}, {"0.85"}, {"1"}, {"1.5"}, {"2"}}},
+    {"lod_distance", "Level of detail",
+     "When models and foliage switch to their simpler versions. Higher: detailed models further "
+     "away, more triangles.",
+     {"r.StaticMeshLODDistanceScale", "foliage.LODDistanceScale"}, 5,
+     {"Preset", "Low", "Console", "High", "Ultra"}, {"preset", "low", "console", "high", "ultra"},
+     {{}, {"1.5", "0.7"}, {"1", "1"}, {"0.75", "1.5"}, {"0.5", "2"}}},
+    {"ambient_occlusion", "Ambient occlusion",
+     "Contact shadows in corners and creases (screen space). GPU only.",
+     {"r.AmbientOcclusionLevels", nullptr}, 6, {"Preset", "Off", "Low", "Medium", "High", "Auto (console)"},
+     {"preset", "0", "1", "2", "3", "auto"}, {{}, {"0"}, {"1"}, {"2"}, {"3"}, {"-1"}}},
+    {"reflections", "Reflections",
+     "Screen-space reflections on wet and shiny surfaces. GPU only.", {"r.SSR.Quality", nullptr}, 6,
+     {"Preset", "Off", "Low", "Medium", "Console", "Ultra"}, {"preset", "0", "1", "2", "3", "4"},
+     {{}, {"0"}, {"1"}, {"2"}, {"3"}, {"4"}}},
+    {"volumetric_fog", "Volumetric fog",
+     "Light shafts and lit fog. GPU only; off changes the look of misty areas.", {"r.VolumetricFog", nullptr},
+     3, {"Preset", "Off", "On (console)"}, {"preset", "0", "1"}, {{}, {"0"}, {"1"}}},
+    {"motion_blur", "Motion blur", "Blur of fast camera and object motion.", {"r.MotionBlurQuality", nullptr},
+     4, {"Preset", "Off", "Low", "Console"}, {"preset", "0", "2", "4"}, {{}, {"0"}, {"2"}, {"4"}}},
+    {"depth_of_field", "Depth of field", "Blur of out-of-focus distances (mostly in cutscenes).",
+     {"r.DepthOfFieldQuality", nullptr}, 4, {"Preset", "Off", "Low", "Console"}, {"preset", "0", "1", "2"},
+     {{}, {"0"}, {"1"}, {"2"}}},
+    {"bloom", "Bloom", "Glow around bright lights and fire.", {"r.BloomQuality", nullptr}, 4,
+     {"Preset", "Off", "Low", "Console"}, {"preset", "0", "2", "5"}, {{}, {"0"}, {"2"}, {"5"}}},
+    {"lens_flares", "Lens flares", "Flares from bright lights.", {"r.LensFlareQuality", nullptr}, 4,
+     {"Preset", "Off", "Low", "Console"}, {"preset", "0", "1", "2"}, {{}, {"0"}, {"1"}, {"2"}}},
+    {"chromatic_aberration", "Chromatic aberration", "Colour fringes towards the screen edges.",
+     {"r.SceneColorFringeQuality", nullptr}, 3, {"Preset", "Off", "On (console)"}, {"preset", "0", "1"},
+     {{}, {"0"}, {"1"}}},
+};
+inline constexpr int UE4LiveCount = int(std::size(UE4LiveOptions));
+static_assert(UE4LiveCount == int(sizeof(Values::ue4_live) / sizeof(int)), "Values::ue4_live: one per UE4LiveOptions");
+/// Requests option `o`'s cvars for choice `choice` (0: the preset's values, when run.py gave them).
+void RequestUE4Live(int o, int choice);
+
 /// Startup options changed since this launch (applied by "Apply and restart").
 int RestartChanges();
 

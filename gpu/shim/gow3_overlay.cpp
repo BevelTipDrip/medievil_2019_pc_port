@@ -571,6 +571,15 @@ void PerformanceTab() {
                 runtime_ue4_request_cvar("r.SeparateTranslucencyScreenPercentage",
                                          Gow3Settings::UE4EffectsKeys[s.effects_resolution]);
             }
+            // The quality preset's parts, one at a time ("Preset": what Graphics quality sets).
+            for (int o = 0; o < Gow3Settings::UE4LiveCount; ++o) {
+                const auto& option = Gow3Settings::UE4LiveOptions[o];
+                const int before = s.ue4_live[o];
+                IndexChoiceRow(option.title, s.ue4_live[o], option.labels, option.count, option.hint);
+                if (s.ue4_live[o] != before) {
+                    Gow3Settings::RequestUE4Live(o, s.ue4_live[o]);
+                }
+            }
             ImGui::EndTable();
         }
     }

@@ -192,6 +192,10 @@ def main():
                                                            ini.get('effects_resolution', '75'),
                                                            ini.get('ue4_aa', 'taa'),
                                                            ini.get('ue4_voice', '')), flush=True)
+            # The in-game menu's live graphics options: what "Preset" restores (gow3_settings.cpp).
+            env['GOW3_UE4_PRESET_CVARS'] = ';'.join(
+                f'{name}={value}'
+                for name, value in ue4_override.preset_cvars(game, ini.get('ue4_quality', 'console')).items())
         except (OSError, ValueError) as error:
             print(f'Render resolution: unchanged ({error})', flush=True)
     original_game = game.resolve()

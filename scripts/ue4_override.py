@@ -204,27 +204,24 @@ QUALITY = {
                   'r.SceneColorFringeQuality': '0', 'r.BloomQuality': '2', 'r.RefractionQuality': '0'},
     # Above the PS4: GPU cost, little memory (the game keeps its PS4 memory budget, so texture
     # streaming pools stay as shipped).
+    # Local light shadow sizes and the sun's distance / cascades: LOCAL_SHADOWS and SUN_SHADOWS.
     'high': {
-        'r.ShadowQuality': '4', 'r.Shadow.MaxCSMResolution': '2048', 'r.Shadow.MaxResolution': '2048',
-        'r.Shadow.DistanceScale': '1.5', 'r.AmbientOcclusionLevels': '3', 'r.SSR.Quality': '3',
+        'r.ShadowQuality': '4', 'r.Shadow.MaxCSMResolution': '2048', 'r.AmbientOcclusionLevels': '3',
+        'r.SSR.Quality': '3',
         'r.MaxAnisotropy': '16', 'r.ViewDistanceScale': '1.5', 'r.StaticMeshLODDistanceScale': '0.75',
         'foliage.LODDistanceScale': '1.5',
     },
     'ultra': {
-        'r.ShadowQuality': '5', 'r.Shadow.MaxCSMResolution': '4096', 'r.Shadow.MaxResolution': '2048',
-        'r.Shadow.DistanceScale': '2', 'r.Shadow.CSM.MaxCascades': '4', 'r.AmbientOcclusionLevels': '3',
+        'r.ShadowQuality': '5', 'r.Shadow.MaxCSMResolution': '4096', 'r.AmbientOcclusionLevels': '3',
         'r.SSR.Quality': '4', 'r.MaxAnisotropy': '16', 'r.ViewDistanceScale': '2',
-        'r.StaticMeshLODDistanceScale': '0.5', 'foliage.LODDistanceScale': '2',
-        'r.DetailMode': '2', 'r.MaterialQualityLevel': '1',
+        'r.StaticMeshLODDistanceScale': '0.5', 'foliage.LODDistanceScale': '2', 'r.DetailMode': '2',
     },
     'medium': {
-        'r.ShadowQuality': '2', 'r.Shadow.MaxCSMResolution': '1536', 'r.Shadow.MaxResolution': '1024',
-        'r.AmbientOcclusionLevels': '1', 'r.SSR.Quality': '1', 'r.MotionBlurQuality': '2',
+        'r.ShadowQuality': '2', 'r.Shadow.MaxCSMResolution': '1536', 'r.AmbientOcclusionLevels': '1', 'r.SSR.Quality': '1', 'r.MotionBlurQuality': '2',
         'r.DepthOfFieldQuality': '1', 'r.ViewDistanceScale': '0.85',
     },
     'low': {
-        'r.ShadowQuality': '1', 'r.Shadow.MaxCSMResolution': '1024', 'r.Shadow.MaxResolution': '512',
-        'r.Shadow.CSM.MaxCascades': '2', 'r.VolumetricFog': '0', 'r.AmbientOcclusionLevels': '0',
+        'r.ShadowQuality': '1', 'r.Shadow.MaxCSMResolution': '1024', 'r.VolumetricFog': '0', 'r.AmbientOcclusionLevels': '0',
         'r.SSR.Quality': '0', 'r.MotionBlurQuality': '0', 'r.DepthOfFieldQuality': '0',
         'r.LensFlareQuality': '0', 'r.SceneColorFringeQuality': '0', 'r.BloomQuality': '2',
         'r.RefractionQuality': '0', 'r.ViewDistanceScale': '0.7', 'foliage.DensityScale': '0.6',
@@ -388,12 +385,8 @@ def edited_asset(game, name, edits):
 ANTI_ALIASING = {'taa': None, 'fxaa': '2', 'off': '0'}
 
 
-def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_menu=False,
-          infinite_ammo=False, hzb=False, effects='75', aa='taa', voice=''):
-    """Writes or removes the override pak. Returns a short description of the active state."""
-    pak = paks_dir(game) / PAK_NAME
-    # Earlier builds wrote the `_P` spelling: on Linux it stayed behind, unread.
-    (paks_dir(game) / OLD_PAK_NAME).unlink(missing_ok=True)
+def preset_values(quality):
+    """The console variables a quality preset writes into the override pak."""
     values = dict(QUALITY.get(quality, {}))
     if quality in LOCAL_SHADOWS:
         size, threshold = LOCAL_SHADOWS[quality]
@@ -401,6 +394,65 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
                        'r.Shadow.RadiusThreshold': str(threshold), 'r.Shadow.CacheWholeSceneShadows': '1'})
         cascades, distance = SUN_SHADOWS[quality]
         values.update({'r.Shadow.CSM.MaxCascades': cascades, 'r.Shadow.DistanceScale': distance})
+    return values
+
+
+# The cvars of the in-game menu's live graphics options (gpu/shim/gow3_settings.h UE4LiveOptions),
+# and the engine's own defaults of those neither PS4Engine.ini nor BaseScalability.ini sets.
+LIVE_CVARS = ('r.Shadow.MinResolution', 'r.Shadow.MaxResolution', 'r.Shadow.DistanceScale',
+              'r.Shadow.CSM.MaxCascades', 'r.ShadowQuality', 'r.ViewDistanceScale',
+              'r.StaticMeshLODDistanceScale', 'foliage.LODDistanceScale', 'r.AmbientOcclusionLevels',
+              'r.SSR.Quality', 'r.VolumetricFog', 'r.MotionBlurQuality', 'r.DepthOfFieldQuality',
+              'r.BloomQuality', 'r.LensFlareQuality', 'r.SceneColorFringeQuality')
+LIVE_ENGINE_DEFAULTS = {'r.Shadow.MinResolution': '32', 'r.StaticMeshLODDistanceScale': '1',
+                        'foliage.LODDistanceScale': '1'}
+
+
+def ini_sections(text):
+    """{section: {lowercase key: value}} of an UE4 ini (the last value of a key wins)."""
+    sections, current = {}, None
+    for line in text.replace('\r', '').split('\n'):
+        line = line.strip()
+        if line.startswith('[') and line.endswith(']'):
+            current = sections.setdefault(line[1:-1], {})
+        elif current is not None and '=' in line and not line.startswith(';'):
+            key, value = line.split('=', 1)
+            current[key.strip().lstrip('+').lower()] = value.strip()
+    return sections
+
+
+def preset_cvars(game, quality):
+    """What the live options' cvars are under `quality` at start: the pak's preset value, else the
+    game's PS4Engine.ini [SystemSettings], else its BaseScalability.ini at level 3 (the PS4 starts
+    every scalability group at 3), else the engine default. For the menu's "Preset" choice."""
+    values = preset_values(quality)
+    for item in os.environ.get('GOW3_UE4_CVARS', '').split(';'):
+        name, sep, value = item.partition('=')
+        if sep and name.strip():
+            values[name.strip()] = value.strip()
+    system = ini_sections(read_file(game, CONFIG).decode('utf-8-sig', 'replace')).get('SystemSettings', {})
+    scalability = {}
+    for section, entries in ini_sections(read_file(game, 'Engine/Config/BaseScalability.ini')
+                                         .decode('utf-8-sig', 'replace')).items():
+        if section.endswith('@3'):
+            scalability.update(entries)
+    result = {}
+    for name in LIVE_CVARS:
+        lower = {k.lower(): v for k, v in values.items()}
+        value = lower.get(name.lower()) or system.get(name.lower()) or scalability.get(name.lower()) or \
+            LIVE_ENGINE_DEFAULTS.get(name)
+        if value:
+            result[name] = value
+    return result
+
+
+def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_menu=False,
+          infinite_ammo=False, hzb=False, effects='75', aa='taa', voice=''):
+    """Writes or removes the override pak. Returns a short description of the active state."""
+    pak = paks_dir(game) / PAK_NAME
+    # Earlier builds wrote the `_P` spelling: on Linux it stayed behind, unread.
+    (paks_dir(game) / OLD_PAK_NAME).unlink(missing_ok=True)
+    values = preset_values(quality)
     if scale != 100:
         values['r.ScreenPercentage'] = str(scale)
     if scale < 100:
