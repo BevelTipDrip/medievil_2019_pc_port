@@ -88,8 +88,8 @@ struct Values {
     bool startup_deferred_readback = true, startup_stale_readback = true;
     /// Performance patches (PerfKeys): on by default; live ones apply at once, the others with
     /// "Apply and restart" (run.py: graphics_options.PERF_SWITCHES).
-    std::atomic<bool> perf[10] = {true, true, true, true, true, true, true, true, true, true};
-    bool startup_perf[10] = {true, true, true, true, true, true, true, true, true, true};
+    std::atomic<bool> perf[11] = {true, true, true, true, true, true, true, true, true, true, true};
+    bool startup_perf[11] = {true, true, true, true, true, true, true, true, true, true, true};
     /// MediEvil graphics quality, output resolution and render scale (UE4QualityKeys /
     /// UE4OutputKeys / UE4ScaleKeys; -1: a value the menu does not list, such as a custom WxH,
     /// kept as written). On restart (run.py: graphics_options, ue4_override).
@@ -146,14 +146,19 @@ bool GraphicsNeedRestart();
 /// Performance patches (medievil.ini perf_*; launcher > Performance).
 enum PerfPatch {
     PerfHzbOcclusion, PerfNoDecalPrepass, PerfParticleSinglePass, PerfSmallBuffers, PerfTextureMemo,
-    PerfLockfreeMemory, PerfCheapFrees, PerfGpuDataNoWaits, Perf4kMemory, PerfLeanBarriers, PerfCount
+    PerfLockfreeMemory, PerfCheapFrees, PerfGpuDataNoWaits, Perf4kMemory, PerfLeanBarriers, PerfLeanBinding,
+    PerfCount
 };
 inline constexpr const char* PerfKeys[PerfCount] = {
     "perf_hzb_occlusion", "perf_no_decal_prepass", "perf_particle_single_pass", "perf_small_buffers",
     "perf_texture_memo", "perf_lockfree_memory", "perf_cheap_frees", "perf_gpu_data_no_waits",
-    "perf_4k_memory", "perf_lean_barriers"};
+    "perf_4k_memory", "perf_lean_barriers", "perf_lean_binding"};
 /// Switched while the game runs (the others need a restart).
-inline constexpr bool PerfLive[PerfCount] = {false, false, false, true, false, true, true, false, false, false};
+inline constexpr bool PerfLive[PerfCount] = {false, false, false, true, false, true, true, false, false, false, true};
+/// Whether a live patch is on now (read by the draw thread for every draw).
+inline bool PerfOn(PerfPatch patch) {
+    return Get().perf[patch].load(std::memory_order_relaxed);
+}
 inline constexpr const char* UE4QualityKeys[] = {"ultra", "high", "console", "medium", "low"};
 inline constexpr const char* UE4OutputKeys[] = {"display", "3840x2160", "3200x1800", "2560x1440", "1920x1080",
                                                 "1280x720"};

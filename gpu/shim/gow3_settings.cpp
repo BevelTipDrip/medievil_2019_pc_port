@@ -255,7 +255,7 @@ void Load() {
         {"GOW3_HZB_REMAP", "0"},     {"GOW3_DECAL_PREPASS", "1"},       {"GOW3_PARTICLE_FIXED_STEP", "1"},
         {"GOW3_STREAM_CLEAN", "0"},  {"GOW3_TEXSET_REGIONS", "0"},      {"GOW3_OPTIMISTIC_CLAMP", "0"},
         {"GOW3_DECOMMIT_KEEP_ACCESS", "0"}, {"GOW3_READBACK_QUEUE", "0"}, {"GOW3_PS4_MEMORY", "1"},
-        {"GOW3_SKIP_READ_BARRIERS", "0"}};
+        {"GOW3_SKIP_READ_BARRIERS", "0"}, {"GOW3_LEAN_BINDING", "0"}};
     for (int p = 0; p < PerfCount; ++p) {
         if (const char* env = std::getenv(perf_off[p].first); env && env[0]) {
             v.perf[p] = std::strcmp(env, perf_off[p].second) != 0;

@@ -4,6 +4,7 @@
 #include <xxhash.h>
 #include "video_core/renderer_vulkan/ui_composition.h"
 #include "gow3_sections.h"
+#include "gow3_settings.h"
 #include "gow3_toggles.h"
 #include "video_core/renderer_vulkan/vk_frame_capture.h"
 #include "common/debug.h"
@@ -2782,7 +2783,8 @@ void Rasterizer::BindSamplers(const Shader::Info& stage, const PreparedStage* pr
         vk::Sampler handle{};
     };
     static thread_local std::array<SamplerMemo, 256> sampler_memo{};
-    const bool memo_on = !Gow3Toggle2::Disabled(Gow3Toggle2::SamplerMemo);
+    const bool memo_on = Gow3Settings::PerfOn(Gow3Settings::PerfLeanBinding) &&
+                         !Gow3Toggle2::Disabled(Gow3Toggle2::SamplerMemo);
     const u64 gc_tick = texture_cache.GcTick();
     const u64 border_color = Regs().ta_bc_base.base_addr;
     for (u32 sampler_index = 0; sampler_index < stage.samplers.size(); ++sampler_index) {

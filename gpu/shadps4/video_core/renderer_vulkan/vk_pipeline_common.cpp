@@ -6,6 +6,7 @@
 #include <boost/container/small_vector.hpp>
 #include <boost/container/static_vector.hpp>
 
+#include "gow3_settings.h"
 #include "gow3_toggles.h"
 #include "shader_recompiler/resource.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -59,7 +60,9 @@ void Pipeline::BindResources(DescriptorWrites& set_writes, const Shader::PushDat
         const auto within = [](const auto* p, u32 count, const auto& array) {
             return p >= array.data() && p + count <= array.data() + array.size();
         };
+        // Launcher / menu: perf_lean_binding (GOW3_LEAN_BINDING=0 off), live.
         bool bulk = (!image_infos.empty() || !buffer_infos.empty()) &&
+                    Gow3Settings::PerfOn(Gow3Settings::PerfLeanBinding) &&
                     !Gow3Toggle2::Disabled(Gow3Toggle2::BulkDescriptorCopy);
         for (const auto& write : set_writes) {
             if (!bulk) {

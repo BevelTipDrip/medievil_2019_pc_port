@@ -293,6 +293,12 @@ PERF_PATCHES = [
      'draw thread stays below 50% busy instead of 95%, 0.1% lows ~100 -> ~117 FPS at a 120 cap, '
      'no GPU usage spikes.',
      {'GOW3_SKIP_READ_BARRIERS': '0', 'GOW3_DEPTH_SAMPLE_IN_PLACE': '0'}),
+    ('perf_lean_binding', 'Cheaper draw binding',
+     "Each draw's descriptors are handed to the recording thread in one piece instead of ~16 small "
+     "copies, and sampler handles are reused instead of hashed and looked up under a lock every draw: "
+     '~0.3 ms less draw-thread work in heavy frames (~1,500 draws), most useful on slower CPUs. '
+     'Applies at once in the in-game menu.',
+     {'GOW3_LEAN_BINDING': '0'}),
 ]
 INI_FLAGS.update(entry[0] for entry in PERF_PATCHES)
 INI_DEFAULTS.update({entry[0]: '1' for entry in PERF_PATCHES})
