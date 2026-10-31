@@ -172,8 +172,9 @@ def main():
         # its hooks fit the analysed eboot only. Small read-only buffers the CPU did not write are
         # bound from VRAM instead of copied every draw (S2, T-S2b). GOW3_HZB_REMAP=0 /
         # GOW3_STREAM_CLEAN=0: off.
-        from patches import eboot_matches as hzb_eboot_matches, game_profile as hzb_profile, game_title_id as hzb_title
-        known = hzb_profile(hzb_title(game))
+        from patches import (eboot_matches as hzb_eboot_matches, game_app_version as hzb_version,
+                             game_profile as hzb_profile, game_title_id as hzb_title)
+        known = hzb_profile(hzb_title(game), hzb_version(game))  # 01.00 and 01.02: src/hzb_hook.h
         if known and known[3] and hzb_eboot_matches(game, known):
             env.setdefault('GOW3_HZB_REMAP', '1')
         env.setdefault('GOW3_STREAM_CLEAN', '1')

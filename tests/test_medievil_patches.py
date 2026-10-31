@@ -41,6 +41,13 @@ class MedievilPatchTests(unittest.TestCase):
         self.assertEqual(compile_patches(XML, ['Boot display size 2560x2160'], '01.02', SEGMENTS),
                          [(0x3cc1db8, size), (0x3cc1e18, size)])
 
+    def test_01_02_max_fps_commands_lifted(self):
+        # 01.02's game instance caps with "t.MaxFPS 30/60"; the edit keeps the asset's length.
+        from ue4_override import without_max_fps
+        data = b'\x17\x1ft.MaxFPS 30\x00\x2a\x16\x1ft.MaxFPS 60\x00\x2a'
+        self.assertEqual(without_max_fps(data), b'\x17\x1ft.MaxFPS 00\x00\x2a\x16\x1ft.MaxFPS 00\x00\x2a')
+        self.assertEqual(without_max_fps(b'no commands'), b'no commands')
+
     def test_01_02_patch_is_the_default(self):
         self.assertEqual(selected_patches(XML, '01.02', ''), [NAME])
         self.assertEqual(selected_patches(XML, '01.00', ''), [NAME])

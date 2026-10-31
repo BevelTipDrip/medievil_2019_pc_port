@@ -375,6 +375,18 @@ def voice_language(game, voice):
     return data[:start] + bytes(script) + data[end:]
 
 
+# 01.02 (not 01.00): the game instance runs "t.MaxFPS 30" or "t.MaxFPS 60" (ExecuteConsoleCommand),
+# which capped the game at 60 FPS. Above 60 FPS both become "t.MaxFPS 00" (0: no limit; same
+# length), so the engine range and the port's limiter decide as in 01.00.
+MAX_FPS_COMMANDS = (b'\x1ft.MaxFPS 30\x00', b'\x1ft.MaxFPS 60\x00')
+
+
+def without_max_fps(data):
+    for command in MAX_FPS_COMMANDS:
+        data = data.replace(command, command[:-3] + b'00\x00')
+    return data
+
+
 def edited_asset(game, name, edits):
     return apply_edits(name, read_file(game, name), edits)
 
@@ -535,6 +547,10 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
         except (ValueError, FileNotFoundError) as error:
             print(f'Voice language: not available for this game build ({error})', flush=True)
             voice = ''
+    if fps > 60:
+        instance = files.get(GAME_INSTANCE) or read_file(game, GAME_INSTANCE)
+        if any(command in instance for command in MAX_FPS_COMMANDS):
+            files[GAME_INSTANCE] = without_max_fps(instance)
     write_pak(pak, files)
     return (f'{output} output, render scale {scale}%'
             f'{" (temporal upsampling)" if scale < 100 else " (supersampled)" if scale > 100 else ""}, {quality} quality, '
