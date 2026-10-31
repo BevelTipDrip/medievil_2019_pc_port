@@ -1930,3 +1930,18 @@ slow (10.0 ms, 1,397 draws; mostly the GPU-bound fight, flip_present 1.7 ms).
   parking). All in `rs_target` -> FindImage (target lookups creating images, mostly at loads); cache lock waits
   0.00-0.06 ms. Closed: no lock problem.
 - Not built: the joint S1 repeat predicate (item 3's second half), the particle-sim counters (item 8).
+
+### N-29: ThinLTO on by default (2026-10-30, launched by Claude with the user's go; `t-lto-a1.log`, `t-lto-b.log`, same code `a855b18`)
+
+Study item 6. `out/base` (LTO off) vs `out/lto` (`GOW3_LTO=ON`: CMake IPO, `-flto=thin` on all 360 compile lines,
+lld; symbols still resolve with llvm-nm / llvm-symbolizer). Same heavy view, standing, sections on; tool
+`research/tools/sections_per_draw.py`.
+- **t-lto-a1 is partly invalid:** Claude built the next change during the run (20:06:07-44); the heavy view fell
+  to 139-146 FPS for exactly that time (the user: "particularly bad for the first 30 seconds ... then it cleared
+  up"). Only its frames after 20:06:45 count (110 heavy frames). Rule since: no builds or trace exports while a run
+  is in progress.
+- **Result:** stage B per draw, median / mean: packet 2.62 / 2.66 us (off) vs 2.44 / 2.74 (on), draw section
+  2.07 / 2.15 vs 1.99 / 2.21. Median 4-7% better with LTO, mean ~3% worse: within run-to-run noise (camera angle).
+  **The user: run-to-run variance, no downside to keeping it.** The third run (A2) was skipped.
+- **Done:** `build.sh` and `research/tools/build-pdb.sh` default to `GOW3_LTO=ON` (`GOW3_LTO=OFF` switches it off).
+  Exe 129 MB (150 MB without). PGO stays out (needs clang profile code, study item 6).

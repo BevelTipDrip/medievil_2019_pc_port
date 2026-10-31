@@ -3,7 +3,8 @@ set -euo pipefail
 cd -- "$(dirname -- "$0")"
 mkdir -p out
 # Windows: MSYS2 CLANG64 (packages in packaging/windows/README.md). The GPU library is static
-# there and CMake links medievil-runtime.exe as well; no PGO (GCC-only flags), LTO off by default.
+# there and CMake links medievil-runtime.exe as well; no PGO (GCC-only flags). ThinLTO on by default
+# (GOW3_LTO=OFF disables it): stage B per draw equal or slightly better, t-lto-a1/b, 2026-10-30.
 case $(uname -s) in
 MINGW*|MSYS*)
     # shellcheck source=msys2-env.sh
@@ -21,8 +22,8 @@ MINGW*|MSYS*)
         fi
     done
     cmake -S gpu -B out/gpu -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DGOW3_PGO=off \
-        -DGOW3_LTO="${GOW3_LTO:-OFF}" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ >/dev/null
-    echo "GPU library and loader: LTO ${GOW3_LTO:-OFF}"
+        -DGOW3_LTO="${GOW3_LTO:-ON}" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ >/dev/null
+    echo "GPU library and loader: LTO ${GOW3_LTO:-ON}"
     if ! ninja -C out/gpu medievil-runtime medievil-gpu-check medievil-play > out/gpu-build.log 2>&1; then
         grep -v '^\[' out/gpu-build.log | tail -40 >&2
         echo 'Build failed (full log: out/gpu-build.log)' >&2; exit 1

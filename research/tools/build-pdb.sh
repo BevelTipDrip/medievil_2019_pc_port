@@ -14,7 +14,7 @@ mkdir -p "$tree"
     echo "start: $(date)  commit=$(git rev-parse --short HEAD)"
     # Same configuration as build.sh's Windows branch, plus the debug-info flags.
     cmake -S gpu -B "$tree" -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DGOW3_PGO=off \
-        -DGOW3_LTO="${GOW3_LTO:-OFF}" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
+        -DGOW3_LTO="${GOW3_LTO:-ON}" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
         -DCMAKE_C_FLAGS="-gdwarf -gcodeview" \
         -DCMAKE_CXX_FLAGS="-include cstdlib -include cstdio -include cwchar -include cmath -include new -gdwarf -gcodeview" \
         -DCMAKE_EXE_LINKER_FLAGS="-Wl,--pdb=" >/dev/null &&

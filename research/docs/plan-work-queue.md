@@ -53,7 +53,7 @@ if its gate passes; (5) item 4 if gated in; item 8 last (risky). Then the ring r
 | 3 | Sampler-handle cache in the texture-set memo, then S1 delta-draw | -0.1 ms, then -0.25 to -0.35 ms | sampler cache **go** (N-28: samplers 0.12 ms); S1 needs its predicate counter (not built) |
 | 4 | Memoizable sets that contain the draw's own target | -0.08 to -0.17 ms | **gate passed** (N-28: the dropped sets are own-target ones, colour more than depth; ~78 a heavy frame, ~2.3 us each) |
 | 5 | Mid-frame 4K stencil-plane copy | GPU <= 0.1 ms | open, low |
-| 6 | LTO build (ThinLTO, clang/MinGW) | 0-2% stage B | open, quick (no code) |
+| 6 | LTO build (ThinLTO, clang/MinGW) | 0-2% stage B | **done** (N-29: ThinLTO on by default; equal or slightly better, within noise) |
 | 7 | Volumetric fog grid at PS4 density for 4K (GridPixelSize 16 -> 32) | GPU 0.05-0.2 ms; more on weak GPUs | open; a candidate quality option (item 4) |
 | 8 | Skip identity GPU-particle sim draws | -0.15 to -0.28 ms | open, risky (frozen particles) |
 | 9 | Shadow-map transition batching | GPU 0.02-0.12 ms | open, re-evaluate after 1 |
