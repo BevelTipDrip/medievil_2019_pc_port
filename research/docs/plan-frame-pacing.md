@@ -1945,3 +1945,14 @@ lld; symbols still resolve with llvm-nm / llvm-symbolizer). Same heavy view, sta
   **The user: run-to-run variance, no downside to keeping it.** The third run (A2) was skipped.
 - **Done:** `build.sh` and `research/tools/build-pdb.sh` default to `GOW3_LTO=ON` (`GOW3_LTO=OFF` switches it off).
   Exe 129 MB (150 MB without). PGO stays out (needs clang profile code, study item 6).
+
+### N-30: bulk descriptor copy, A/B inside one launch (2026-10-30, launched by Claude with the user's go; `t-bulk-1.log`, build `ca5636f`, LTO)
+
+Study item 2 (`e0c7566`, from the Bloodborne port): a push whose writes all point into the rasterizer's
+`image_infos` / `buffer_infos` copies the writes and each array once (3 RecordData calls instead of ~16). Live
+switch: second word of the toggle file, bit 1 (`Gow3Toggle2::BulkDescriptorCopy`); `research/tools/toggle-ab.ps1`
+alternated it every 20 s while the user stood in one heavy view; `research/tools/toggle_ab_sections.py` splits the
+frames by state (frames within 1 s of a switch skipped).
+- **[V] On vs off (heavy frames, ~1,550 draws, 99 / 179 frames):** stage B descriptors 0.217 vs 0.337 us per draw
+  median (0.222 vs 0.353 mean): **-0.12 us a draw, ~-0.18 ms of stage B a heavy frame** (the study: -0.1 to -0.2 ms;
+  drop below 0.03 us). Draw section 1.88 vs 2.13 us median. Kept on by default.

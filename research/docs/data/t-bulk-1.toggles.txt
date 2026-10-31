@@ -1,0 +1,9 @@
+﻿20:20:47.462 toggles '0 0' (on)
+20:21:07.492 toggles '0 1' (off)
+20:21:27.501 toggles '0 0' (on)
+20:21:47.510 toggles '0 1' (off)
+20:22:07.521 toggles '0 0' (on)
+20:22:27.529 toggles '0 1' (off)
+20:22:47.539 toggles '0 0' (on)
+20:23:07.547 toggles '0 1' (off)
+Game exited; toggles back to 0
