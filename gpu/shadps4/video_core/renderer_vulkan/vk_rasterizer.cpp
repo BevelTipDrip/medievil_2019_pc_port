@@ -2769,12 +2769,38 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
 void Rasterizer::BindSamplers(const Shader::Info& stage, const PreparedStage* prepared,
                               Shader::Backend::Bindings& binding, u32& write_index) {
     GOW3_SECTION(Samplers);
+    // gow3 (study 2026-10-29 item 3): GetSampler hashes the S# with XXH3 and takes the sampler
+    // mutex for every sampler of every draw (0.12 ms a heavy frame, N-28). A handle it returned
+    // in the current GC period is reused within that period (per thread: the binding helper
+    // binds samplers too); the first use in each period still goes through it (LRU touch).
+    struct SamplerMemo {
+        AmdGpu::Sampler sharp{};
+        u64 border_color = 0;
+        float lod_bias = 0.0f;
+        bool is_depth = false;
+        u64 tick = ~0ull;
+        vk::Sampler handle{};
+    };
+    static thread_local std::array<SamplerMemo, 256> sampler_memo{};
+    const bool memo_on = !Gow3Toggle2::Disabled(Gow3Toggle2::SamplerMemo);
+    const u64 gc_tick = texture_cache.GcTick();
+    const u64 border_color = Regs().ta_bc_base.base_addr;
     for (u32 sampler_index = 0; sampler_index < stage.samplers.size(); ++sampler_index) {
         const auto& sampler = stage.samplers[sampler_index];
         auto ssharp =
             prepared ? prepared->sampler_sharps[sampler_index] : sampler.GetSharp(stage);
-        const auto vk_sampler = texture_cache.GetSampler(
-            ssharp, Regs().ta_bc_base, sampler.is_depth, sampler.is_depth ? 0.0f : sampler_lod_bias);
+        const float lod_bias = sampler.is_depth ? 0.0f : sampler_lod_bias;
+        u64 slot_hash = (ssharp.raw0 ^ ssharp.raw1 * 0x9E3779B97F4A7C15ull ^ border_color) * 0xFF51AFD7ED558CCDull;
+        slot_hash ^= slot_hash >> 29;
+        auto& memo = sampler_memo[(slot_hash ^ sampler.is_depth) % sampler_memo.size()];
+        vk::Sampler vk_sampler;
+        if (memo_on && memo.tick == gc_tick && memo.sharp == ssharp && memo.border_color == border_color &&
+            memo.is_depth == sampler.is_depth && memo.lod_bias == lod_bias) {
+            vk_sampler = memo.handle;
+        } else {
+            vk_sampler = texture_cache.GetSampler(ssharp, Regs().ta_bc_base, sampler.is_depth, lod_bias);
+            memo = {ssharp, border_color, lod_bias, sampler.is_depth, gc_tick, vk_sampler};
+        }
         image_infos.emplace_back(vk_sampler, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
         auto& set_write = set_writes[write_index++];
         set_write.dstSet = VK_NULL_HANDLE;

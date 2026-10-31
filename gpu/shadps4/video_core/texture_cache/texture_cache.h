@@ -271,6 +271,12 @@ public:
                                          AmdGpu::BorderColorBuffer border_color_base,
                                          bool is_depth, float extra_lod_bias = 0.0f);
 
+    /// gow3: the garbage collection period. A sampler GetSampler returned in this period stays
+    /// alive for at least 16 more (the sampler GC), so its handle may be reused within it.
+    [[nodiscard]] u64 GcTick() const noexcept {
+        return std::atomic_ref<u64>(const_cast<u64&>(gc_tick)).load(std::memory_order_relaxed);
+    }
+
     /// Retrieves the image with the specified id.
     Image* TryGetImage(ImageId id, u64 uid) {
         if (!slot_images.is_allocated(id)) return nullptr;
