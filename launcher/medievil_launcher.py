@@ -557,6 +557,46 @@ AA_CHOICES = [('taa', ('Temporal (default, smooth)',)), ('fxaa', ('FXAA (sharper
 QUALITY_CHOICES = [('ultra', ('Ultra',)), ('high', ('High',)), ('console', ('Console (PS4)',)),
                    ('medium', ('Medium',)), ('low', ('Low (integrated graphics)',))]
 EFFECTS_CHOICES = [('100', ('100%',)), ('75', ('75% (default)',)), ('50', ('50% (PS4 detail at 4K)',))]
+# The quality preset's parts, one at a time (medievil.ini; the in-game menu switches them live:
+# gpu/shim/gow3_settings.h UE4LiveOptions, the same keys, values and texts; tests check they match).
+# (key, title, hint, [(value, label)]); "preset" follows Graphics quality.
+GRAPHICS_OPTIONS = [
+    ('shadow_resolution', 'Shadow resolution',
+     'Shadow maps of torches and other lights (fixed size: no flicker as lights move). Each shadow map costs '
+     'GPU time; console quality uses 512.',
+     [('preset', 'Preset'), ('256', '256'), ('512', '512 (console)'), ('1024', '1024'), ('2048', '2048')]),
+    ('shadow_distance', 'Shadow distance',
+     'How far the sun and moon cast shadows and in how many cascades; each cascade draws the scene again '
+     '(draw thread and GPU).',
+     [('preset', 'Preset'), ('short', 'Short'), ('console', 'Console'), ('far', 'Far'), ('farthest', 'Farthest')]),
+    ('shadow_quality', 'Shadow filtering', 'Softness of shadow edges (filter samples). Mostly GPU.',
+     [('preset', 'Preset'), ('1', 'Low'), ('2', 'Medium'), ('3', 'Console'), ('4', 'High'), ('5', 'Ultra')]),
+    ('view_distance', 'View distance',
+     'How far away objects are still drawn. Lower: fewer draws (draw thread and GPU), objects disappear sooner.',
+     [('preset', 'Preset'), ('0.7', 'Near'), ('0.85', 'Medium'), ('1', 'Console'), ('1.5', 'Far'),
+      ('2', 'Farthest')]),
+    ('lod_distance', 'Level of detail',
+     'When models and foliage switch to their simpler versions. Higher: detailed models further away, more '
+     'triangles.',
+     [('preset', 'Preset'), ('low', 'Low'), ('console', 'Console'), ('high', 'High'), ('ultra', 'Ultra')]),
+    ('ambient_occlusion', 'Ambient occlusion', 'Contact shadows in corners and creases (screen space). GPU only.',
+     [('preset', 'Preset'), ('0', 'Off'), ('1', 'Low'), ('2', 'Medium'), ('3', 'High'), ('auto', 'Auto (console)')]),
+    ('reflections', 'Reflections', 'Screen-space reflections on wet and shiny surfaces. GPU only.',
+     [('preset', 'Preset'), ('0', 'Off'), ('1', 'Low'), ('2', 'Medium'), ('3', 'Console'), ('4', 'Ultra')]),
+    ('volumetric_fog', 'Volumetric fog', 'Light shafts and lit fog. GPU only; off changes the look of misty areas.',
+     [('preset', 'Preset'), ('0', 'Off'), ('1', 'On (console)')]),
+    ('motion_blur', 'Motion blur', 'Blur of fast camera and object motion.',
+     [('preset', 'Preset'), ('0', 'Off'), ('2', 'Low'), ('4', 'Console')]),
+    ('depth_of_field', 'Depth of field', 'Blur of out-of-focus distances (mostly in cutscenes).',
+     [('preset', 'Preset'), ('0', 'Off'), ('1', 'Low'), ('2', 'Console')]),
+    ('bloom', 'Bloom', 'Glow around bright lights and fire.',
+     [('preset', 'Preset'), ('0', 'Off'), ('2', 'Low'), ('5', 'Console')]),
+    ('lens_flares', 'Lens flares', 'Flares from bright lights.',
+     [('preset', 'Preset'), ('0', 'Off'), ('1', 'Low'), ('2', 'Console')]),
+    ('chromatic_aberration', 'Chromatic aberration', 'Colour fringes towards the screen edges.',
+     [('preset', 'Preset'), ('0', 'Off'), ('1', 'On (console)')]),
+]
+INI_DEFAULTS.update({key: 'preset' for key, *_rest in GRAPHICS_OPTIONS})
 ENGINE_FPS_CHOICES = [('60', ('60 (original)',)), ('120', ('120',)), ('240', ('240',))]
 
 
@@ -1153,7 +1193,14 @@ class Launcher:
 
     def build_performance(self):
         f = self.scrolled_page('performance', _('Performance'), _('Frame rate and speed options.'))
-        self.section(f, _('Frame rate', 'Частота кадров'), top=4)
+        self.section(f, _('Graphics settings'), top=4)
+        self.note(f, _('Each part of the quality preset on its own: "Preset" follows Graphics quality (below). '
+                       'Applied when the game reaches its main menu; the in-game menu also switches them '
+                       'while playing.'), top=2)
+        for key, title, hint, choices in GRAPHICS_OPTIONS:
+            self.row(f, _(title), self.choice(f, key, 'ini', [(value, (label,)) for value, label in choices]),
+                     _(hint), restart=True)
+        self.section(f, _('Frame rate', 'Частота кадров'))
         self.row(f, _('Engine frame rate'), self.choice(f, self.engine_cap_var(), None, ENGINE_CAP_CHOICES),
                  _('The highest frame rate MediEvil runs at. The PS4 game stops at 60; 120 and 240 lift '
                    'that limit; Unlimited also removes the port\'s own caps (only Frame rate limit applies). '

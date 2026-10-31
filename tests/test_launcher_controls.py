@@ -32,6 +32,19 @@ class ControlMapTest(unittest.TestCase):
         env = launcher.game_environment({**launcher.APP_DEFAULTS})
         self.assertEqual(env.get('GOW3_FRAME_STATS'), launcher.os.environ.get('GOW3_FRAME_STATS'))
 
+    def test_graphics_options_match_the_game(self):
+        # gpu/shim/gow3_settings.h UE4LiveOptions: the same keys, titles, choice labels and ini tokens.
+        import re
+        header = (ROOT / 'gpu' / 'shim' / 'gow3_settings.h').read_text(encoding='utf-8')
+        table = header[header.index('UE4LiveOptions[] = {'):header.index('inline constexpr int UE4LiveCount')]
+        entries = re.findall(r'\{"([a-z_]+)", "([^"]+)",.*?\{([^{}]*)\},\s*\{([^{}]*)\},\s*\{\{', table, re.S)
+        self.assertEqual(len(entries), len(launcher.GRAPHICS_OPTIONS))
+        for (key, title, labels, tokens), (l_key, l_title, _hint, choices) in zip(entries, launcher.GRAPHICS_OPTIONS):
+            self.assertEqual((key, title), (l_key, l_title))
+            self.assertEqual(re.findall(r'"([^"]*)"', labels), [label for _v, label in choices])
+            self.assertEqual(re.findall(r'"([^"]*)"', tokens), [value for value, _l in choices])
+            self.assertEqual(launcher.INI_DEFAULTS[key], 'preset')
+
     def test_changed_buttons_in_table_order(self):
         controls = {'key': {'circle': ' Left Shift ', 'cross': 'Q', 'square': ''}, 'pad': {'cross': 'b'}}
         self.assertEqual(launcher.control_map(controls, 'key'), 'cross=Q,circle=Left Shift')
