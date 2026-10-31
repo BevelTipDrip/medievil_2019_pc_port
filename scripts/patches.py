@@ -93,11 +93,14 @@ PATCHES_DIR=Path(__file__).resolve().parent.parent/'patches'
 # MediEvil, America and Europe: only the analysed eboots (sha256) get these patches.
 GAMES=[({'CUSA11227','CUSA12982'},PATCHES_DIR/'MediEvil.xml','01.00',
         'a7e976d13b9649c5cd1ccb617b02f4a27b95c45b9f5331470b90a1f014c3b828'),
-       # 01.02 exists as at least two eboot builds with the patched code at the same addresses
-       # (e50c9b36: the dump of PR #26; cd273b59: the European CUSA12982 update, 29 Oct 2026).
+       # 01.02 exists as at least three eboot builds with the patched code at the same addresses
+       # (e50c9b36: the dump of PR #26; cd273b59: the European CUSA12982 update, 29 Oct 2026;
+       # fe2f88ba: unpacked from the US update PKG UP9000-CUSA11227_00-MEDIEVILHD000001-A0102-V0100,
+       # every patched and hooked site checked, research/docs/plan-0102.md).
        ({'CUSA11227','CUSA12982'},PATCHES_DIR/'MediEvil.xml','01.02',
         ('e50c9b36153416949d377ad0ddafac1a888c119987095615dc0f69b5ad15e401',
-         'cd273b59a2220ecec970434edf022ff03aa298851dae28b0460814a996ff5634'))]
+         'cd273b59a2220ecec970434edf022ff03aa298851dae28b0460814a996ff5634',
+         'fe2f88baaa97f19c34047b8ec0c9bd41e29cc818f6b72e9e21fafe66a8d01b00'))]
 DMEM_RETAIL_MB=5056  # runtime_memory.c POOL_SIZE default
 
 

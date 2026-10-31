@@ -122,4 +122,37 @@
             <Line Type="bytes" Address="0x00ce4845" Value="00020000"/>
         </PatchList>
     </Metadata>
+    <!-- The two boot patches for 01.02: the same functions +0x2c80 (display metrics 0xb6bc50, work
+         area 0xb702c0), their instructions identical; the default rects at rodata 0x3cc1db0 and
+         0x3cc1e10 (research/docs/plan-0102.md). -->
+    <Metadata Title="MediEvil"
+              Name="4K display metrics at boot"
+              Note="Starts the game at 3840x2160 with a 4K VideoOut (render resolution 4K native). Requires the Native 4K framebuffer pool."
+              Author="medievil_pc"
+              PatchVer="1.0"
+              AppVer="01.02"
+              AppElf="eboot.bin"
+              isEnabled="false">
+        <PatchList>
+            <!-- je past the 4K query when r.PS4Allow4kOutput == 0 -> nop nop (display metrics) -->
+            <Line Type="bytes" Address="0x00f6bcb2" Value="9090"/>
+            <!-- same in the work area function -->
+            <Line Type="bytes" Address="0x00f70316" Value="9090"/>
+        </PatchList>
+    </Metadata>
+    <Metadata Title="MediEvil"
+              Name="Boot display size"
+              Note="Starts the game at the output resolution (display metrics and work area); no live r.SetRes. run.py selects it as &quot;Boot display size WxH&quot;: each Type=&quot;size&quot; line writes W and H (two little-endian int32). Requires the Native 4K framebuffer pool above 1080p."
+              Author="medievil_pc"
+              PatchVer="1.0"
+              AppVer="01.02"
+              AppElf="eboot.bin"
+              isEnabled="false">
+        <PatchList>
+            <!-- display metrics default rect (rodata 0x3cc1db0): Right, Bottom -->
+            <Line Type="size" Address="0x040c1db8" Value="1920x1080"/>
+            <!-- work area default rect (rodata 0x3cc1e10): Right, Bottom -->
+            <Line Type="size" Address="0x040c1e18" Value="1920x1080"/>
+        </PatchList>
+    </Metadata>
 </Patch>

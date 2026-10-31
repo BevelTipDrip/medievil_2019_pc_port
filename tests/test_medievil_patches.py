@@ -33,6 +33,14 @@ class MedievilPatchTests(unittest.TestCase):
             (0x8e4845, bytes.fromhex('00020000')),
         ])
 
+    def test_01_02_boot_patches(self):
+        # The boot resolution patches at their 01.02 addresses (research/docs/plan-0102.md).
+        self.assertEqual(compile_patches(XML, ['4K display metrics at boot'], '01.02', SEGMENTS),
+                         [(0xb6bcb2, bytes.fromhex('9090')), (0xb70316, bytes.fromhex('9090'))])
+        size = bytes.fromhex('000a000070080000')  # 2560, 2160 (int32 LE)
+        self.assertEqual(compile_patches(XML, ['Boot display size 2560x2160'], '01.02', SEGMENTS),
+                         [(0x3cc1db8, size), (0x3cc1e18, size)])
+
     def test_01_02_patch_is_the_default(self):
         self.assertEqual(selected_patches(XML, '01.02', ''), [NAME])
         self.assertEqual(selected_patches(XML, '01.00', ''), [NAME])

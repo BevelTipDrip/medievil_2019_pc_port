@@ -570,28 +570,26 @@ static int rel32_to(uint64_t at, const unsigned char *target, int32_t *out) {
 static void install_hzb_remap(Segment *segments, uint64_t count, uint64_t size) {
     const char *env = getenv("GOW3_HZB_REMAP");
     if (!env || env[0] != '1') return;
-    if (!medievil_hzb_signatures_match(image, size) || !medievil_hzb_submit_signatures_match(image, size) ||
-        !mapped(segments, count, MEDIEVIL_HZB_CALL, 5) || !mapped(segments, count, MEDIEVIL_HZB_SUBMIT_CALL, 5)) {
-        printf("HZB remap: unavailable (not the analysed MediEvil 01.00 eboot)\n");
+    const MedievilHzbSites *sites = medievil_hzb_find(image, size);
+    if (!sites || !mapped(segments, count, sites->call, 5) || !mapped(segments, count, sites->submit_call, 5)) {
+        printf("HZB remap: unavailable (not an analysed MediEvil eboot: 01.00 or 01.02)\n");
         return;
     }
     unsigned char *stubs = allocate(page_size);
     unsigned char *map_stub = stubs, *submit_stub = stubs + 64;
     int32_t map_rel, submit_rel;
-    if (!rel32_to(MEDIEVIL_HZB_CALL, map_stub, &map_rel) ||
-        !rel32_to(MEDIEVIL_HZB_SUBMIT_CALL, submit_stub, &submit_rel)) {
+    if (!rel32_to(sites->call, map_stub, &map_rel) || !rel32_to(sites->submit_call, submit_stub, &submit_rel)) {
         printf("HZB remap: unavailable (stub outside relative-call range)\n");
         return;
     }
-    medievil_hzb_init((uintptr_t)(image + MEDIEVIL_HZB_MAP_RESULTS),
-                      (uintptr_t)(image + MEDIEVIL_HZB_FIRST_FRAME_BUFFER));
+    medievil_hzb_init((uintptr_t)(image + sites->map_results), (uintptr_t)(image + sites->first_frame_buffer));
     medievil_hzb_build_map_stub(map_stub, (uintptr_t)medievil_hzb_map);
-    medievil_hzb_build_submit_stub(submit_stub, (uintptr_t)medievil_hzb_submit,
-                                   (uintptr_t)(image + MEDIEVIL_HZB_SUBMIT));
+    medievil_hzb_build_submit_stub(submit_stub, (uintptr_t)medievil_hzb_submit, (uintptr_t)(image + sites->submit));
     protect(stubs, page_size, 5);
-    memcpy(image + MEDIEVIL_HZB_CALL + 1, &map_rel, 4);
-    memcpy(image + MEDIEVIL_HZB_SUBMIT_CALL + 1, &submit_rel, 4);
-    printf("HZB remap: MapResults and Submit hooks ready (results served by occlusion history key, no GPU wait)\n");
+    memcpy(image + sites->call + 1, &map_rel, 4);
+    memcpy(image + sites->submit_call + 1, &submit_rel, 4);
+    printf("HZB remap: MapResults and Submit hooks ready (game build %s; results served by occlusion history key, "
+           "no GPU wait)\n", sites == medievil_hzb_builds ? "01.00" : "01.02");
 }
 
 /* MediEvil: the movies still playing are suspended at each level change (src/level_hook.h): the
@@ -599,17 +597,22 @@ static void install_hzb_remap(Segment *segments, uint64_t count, uint64_t size) 
 static void install_level_hook(Segment *segments, uint64_t count, uint64_t size) {
     const char *env = getenv("GOW3_MOVIE_SUSPEND");
     if (env && env[0] == '0') return;
-    if (!medievil_level_signatures_match(image, size) || !mapped(segments, count, MEDIEVIL_OPEN_LEVEL_CALL, 5)) return;
+    const MedievilLevelSites *sites = medievil_level_find(image, size);
+    if (!sites || !mapped(segments, count, sites->call, 5)) {
+        printf("Movies: level-change suspend unavailable (not an analysed MediEvil eboot: 01.00 or 01.02)\n");
+        return;
+    }
     unsigned char *stub = allocate(page_size);
     int32_t rel;
-    if (!rel32_to(MEDIEVIL_OPEN_LEVEL_CALL, stub, &rel)) {
+    if (!rel32_to(sites->call, stub, &rel)) {
         printf("Movies: level-change suspend unavailable (stub outside relative-call range)\n");
         return;
     }
-    medievil_level_build_stub(stub, (uintptr_t)medievil_level_change, (uintptr_t)(image + MEDIEVIL_OPEN_LEVEL));
+    medievil_level_build_stub(stub, (uintptr_t)medievil_level_change, (uintptr_t)(image + sites->open_level));
     protect(stub, page_size, 5);
-    memcpy(image + MEDIEVIL_OPEN_LEVEL_CALL + 1, &rel, 4);
-    printf("Movies: playing movies are suspended at each level change (OpenLevel hook)\n");
+    memcpy(image + sites->call + 1, &rel, 4);
+    printf("Movies: playing movies are suspended at each level change (OpenLevel hook, game build %s)\n",
+           sites == medievil_level_builds ? "01.00" : "01.02");
 }
 
 /* Writes a jump from image+at to `stub`; the rest of the replaced bytes become nops (the stub
