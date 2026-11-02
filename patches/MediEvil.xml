@@ -89,6 +89,29 @@
             <Line Type="size" Address="0x040be7b8" Value="1920x1080"/>
         </PatchList>
     </Metadata>
+    <!-- UE4's GPU sprite emitters have no particle positions on the CPU: without a fixed bounding
+         box in the asset, UpdateBoundingBox (0x23828b0) gives them a bogus box of origin -1 / +1,
+         so the whole system is culled once its origin leaves the view, even with its particles on
+         screen (the same on a PS4). 8 of the game's 180 GPU particle systems have no fixed box,
+         among them Dan's crypt's floating dust (PS_air_sparkles: a 400-unit sphere and a vector
+         field). The two loads of the -1.0 / 1.0 constants read -2000.0 / 2000.0 from the
+         constant pool instead: a 40 m box; the artists' boxes for similar ambient effects are
+         +/-10000 (research/docs/plan-0102.md, T-0102-5). -->
+    <Metadata Title="MediEvil"
+              Name="GPU particle bounds"
+              Note="Particle effects such as floating dust no longer vanish when the camera turns a little: GPU particle systems without bounds get a 40 m box instead of a 2-unit one."
+              Author="medievil_pc"
+              PatchVer="1.0"
+              AppVer="01.00"
+              AppElf="eboot.bin"
+              isEnabled="true">
+        <PatchList>
+            <!-- vmovss xmm2, [rip -> 0x3e245ec (-1.0)] -> [rip -> 0x3d28fc0 (-2000.0)] -->
+            <Line Type="bytes" Address="0x027828e1" Value="db669a01"/>
+            <!-- vmovss xmm6, [rip -> 0x3e245f0 (1.0)] -> [rip -> 0x3d298c0 (2000.0)] -->
+            <Line Type="bytes" Address="0x027828e9" Value="d36f9a01"/>
+        </PatchList>
+    </Metadata>
     <!-- Same patch for 01.02. The memory manager moved to 0x8f75b0 (+0x2bb0) and the two free
          paths to 0x8e3b80 and 0x8e4800; the patched instructions, the pool table at 0x3c8b750
          and the surrounding code are identical. -->
@@ -153,6 +176,24 @@
             <Line Type="size" Address="0x040c1db8" Value="1920x1080"/>
             <!-- work area default rect (rodata 0x3cc1e10): Right, Bottom -->
             <Line Type="size" Address="0x040c1e18" Value="1920x1080"/>
+        </PatchList>
+    </Metadata>
+    <!-- GPU particle bounds for 01.02: UpdateBoundingBox at 0x2385680 (+0x2dd0), the same bytes
+         apart from its RIP displacements; the constants at 0x3e276ac / 0x3e276b0 (-1 / 1) and
+         0x3d2c3c0 / 0x3d2ccc0 (-2000 / 2000). -->
+    <Metadata Title="MediEvil"
+              Name="GPU particle bounds"
+              Note="Particle effects such as floating dust no longer vanish when the camera turns a little: GPU particle systems without bounds get a 40 m box instead of a 2-unit one."
+              Author="medievil_pc"
+              PatchVer="1.0"
+              AppVer="01.02"
+              AppElf="eboot.bin"
+              isEnabled="true">
+        <PatchList>
+            <!-- vmovss xmm2, [rip -> 0x3e276ac (-1.0)] -> [rip -> 0x3d2c3c0 (-2000.0)] -->
+            <Line Type="bytes" Address="0x027856b1" Value="0b6d9a01"/>
+            <!-- vmovss xmm6, [rip -> 0x3e276b0 (1.0)] -> [rip -> 0x3d2ccc0 (2000.0)] -->
+            <Line Type="bytes" Address="0x027856b9" Value="03769a01"/>
         </PatchList>
     </Metadata>
 </Patch>

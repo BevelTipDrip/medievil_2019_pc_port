@@ -6,6 +6,7 @@ from patches import compile_patches, game_profile, selected_patches
 
 XML = ROOT / 'patches/MediEvil.xml'
 NAME = 'Native 4K framebuffer pool (512 MB)'
+BOUNDS = 'GPU particle bounds'
 SEGMENTS = [(0, 0x6000000)]
 
 
@@ -48,9 +49,16 @@ class MedievilPatchTests(unittest.TestCase):
         self.assertEqual(without_max_fps(data), b'\x17\x1ft.MaxFPS 00\x00\x2a\x16\x1ft.MaxFPS 00\x00\x2a')
         self.assertEqual(without_max_fps(b'no commands'), b'no commands')
 
-    def test_01_02_patch_is_the_default(self):
-        self.assertEqual(selected_patches(XML, '01.02', ''), [NAME])
-        self.assertEqual(selected_patches(XML, '01.00', ''), [NAME])
+    def test_gpu_particle_bounds(self):
+        # UpdateBoundingBox's -1 / 1 loads read -2000 / 2000 (rel32 displacements, plan-0102.md T-0102-5).
+        self.assertEqual(compile_patches(XML, [BOUNDS], '01.00', SEGMENTS),
+                         [(0x23828e1, bytes.fromhex('db669a01')), (0x23828e9, bytes.fromhex('d36f9a01'))])
+        self.assertEqual(compile_patches(XML, [BOUNDS], '01.02', SEGMENTS),
+                         [(0x23856b1, bytes.fromhex('0b6d9a01')), (0x23856b9, bytes.fromhex('03769a01'))])
+
+    def test_default_patches(self):
+        self.assertEqual(selected_patches(XML, '01.02', ''), [NAME, BOUNDS])
+        self.assertEqual(selected_patches(XML, '01.00', ''), [NAME, BOUNDS])
 
 
 if __name__ == '__main__':
