@@ -423,6 +423,11 @@ circled the broken areas in frame 24679 (right of Dan along the path; lower left
 
 ## V3. Effects: wrong blending, misplaced, missing at an angle (the user, 2026-10-31, play session on `3cea271`)
 
+**Resolved 2026-11-01 ([plan-0102.md](plan-0102.md) T-0102-2 to T-0102-6):** the slow torch and the crypt ember came
+from the single GPU particle pass (`r.GPUParticle.FixDeltaSeconds=0`, now off by default); the particles missing at an
+angle are the game's own culling of GPU emitters without fixed bounds (also on a PS4), fixed by the "GPU particle
+bounds" eboot patch (verified by the user). HZB, the live switches and the effects resolution were not the cause.
+
 A few hours across ~6 levels, no leaks (3-4 GB system RAM). Three effect issues, not reproduced yet:
 - **V3a** transparent effects blended wrong in some scenes (seen in a cutscene).
 - **V3b** an effect drawn where none was expected (swapped, or an artefact); not retried in the same place.
