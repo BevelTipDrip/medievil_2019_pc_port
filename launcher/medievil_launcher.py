@@ -178,7 +178,7 @@ APP_DEFAULTS = {'ui_language': 'en', 'game_dir': os.environ.get('GOW3_GAME_DIR',
                 'player_name': '', 'hdr': False, 'draw_pipe': '', 'readbacks': '', 'vulkan_compat': False,
                 'background_warmup': True, 'parallel_warmup': True, 'pipeline_binary_cache': True, 'perf_diag': False, 'frame_capture_key': False, 'frame_stats': False, 'gpu_profile': False,
                 'vk_validation': False, 'close_on_play': False,
-                'update_check': True, 'game_patches': {}, 'controls': {}, 'pad_style': 'playstation', 'stick_range': '',
+                'update_check': True, 'game_patches': {}, 'game_patches_seen': {}, 'controls': {}, 'pad_style': 'playstation', 'stick_range': '',
                 'last_pkg': ''}
 
 # PS4 button, default key, default gamepad button (SDL names; src/runtime_pad.c). L2/R2 come
@@ -320,9 +320,11 @@ PRESENT_SWITCHES = [
     ('present_precise_tick', 'Precise vblank tick',
      'The vblank tick runs on a fixed grid with a high-resolution timer and a short spin instead of '
      "Windows' coarse sleep (about 8% of one CPU core at 120 Hz)."),
-    ('present_frame_trace', 'Frame timing trace (diagnostics)',
-     'Writes every frame\'s timing to user/logs/flip-trace.csv (overwritten at each start).'),
 ]
+# Advanced > Diagnostics: one CSV line per flip stage (GOW3_FLIP_TRACE, graphics_options.present_environment);
+# not the frame statistics' 5 s summary.
+FRAME_TRACE = ('present_frame_trace', 'Frame timing trace',
+               'Writes every frame\'s timing to user/logs/flip-trace.csv (overwritten at each start).')
 # One VSync control (vsync_choice_var): On / Off set the vsync key the in-game menu also switches
 # (live); the two special modes set a fixed present_mode, which overrides that switch.
 VSYNC_CHOICES = [('on', ('On',)), ('off', ('Off',)), ('immediate', ('Off, allow tearing',)),
@@ -337,7 +339,7 @@ PRESENT_LIMITERS = [('reflex', ('NVIDIA Reflex (recommended)',)), ('precise', ('
 ENGINE_CAP_CHOICES = [('60', ('60 (original)',)), ('120', ('120',)), ('240', ('240',)),
                       ('unlimited', ('Unlimited (no built-in caps)',))]
 INI_FLAGS.update(entry[0] for entry in PRESENT_SWITCHES)
-INI_FLAGS.update({'present_no_frame_caps', 'display_vrr'})
+INI_FLAGS.update({FRAME_TRACE[0], 'present_no_frame_caps', 'display_vrr'})
 INI_DEFAULTS.update({'present_inline': '1', 'present_precise_tick': '1', 'present_frame_trace': '0',
                      'present_no_frame_caps': '0', 'present_tick_hz': '960', 'present_mode': 'auto',
                      'present_limiter': 'reflex', 'fps_limit': '-3', 'display_vrr': '1'})
@@ -419,13 +421,42 @@ def game_profile_of(folder):
     return title_id, game_profile(title_id, version) or game_profile(title_id)
 
 
+def chosen_by_run_py(name):
+    """Patches run.py picks from medievil.ini (resolution, frame rate, output size): not on the Patches page."""
+    from patches import EXCLUSIVE_PREFIX
+    return name.startswith(EXCLUSIVE_PREFIX) or name.startswith('Frame Rate Patch') or \
+        name in (graphics_options.BOOT_SIZE_PATCH, graphics_options.BOOT_4K_PATCH)
+
+
+# Built-in patches added after the launcher started keeping game_patches_seen (2026-11-02): for a
+# selection saved before, every other patch counts as seen.
+PATCHES_AFTER_SEEN_LIST = {'GPU particle bounds'}
+
+
+def game_patch_selection(s, title_id, profile):
+    """[names] on the Patches page for this game's version, or None without a saved selection (the
+    file's defaults). A default patch added after the selection was saved is on: game_patches_seen
+    lists the patches the page showed then, so a default the user switched off stays off."""
+    import xml.etree.ElementTree as ET
+    chosen = s.get('game_patches', {}).get(title_id) if title_id else None
+    if not profile or chosen is None:
+        return None
+    metas = [m for m in ET.parse(profile[1]).getroot().iter('Metadata')
+             if m.get('AppVer') == profile[2] and not chosen_by_run_py(m.get('Name'))]
+    default = {m.get('Name') for m in metas if m.get('isEnabled', 'false').lower() == 'true'}
+    seen = s.get('game_patches_seen', {}).get(title_id)
+    if seen is None:
+        seen = {m.get('Name') for m in metas} - PATCHES_AFTER_SEEN_LIST
+    return [m.get('Name') for m in metas if m.get('Name') in chosen or m.get('Name') in default - set(seen)]
+
+
 def game_environment(s):
     env = dict(os.environ)
     env['GOW3_GAME_DIR'] = s['game_dir']
     # The launcher's patch selection is the whole list (run.py, patches.py).
     title_id, profile = game_profile_of(s['game_dir'])
-    chosen = s.get('game_patches', {}).get(title_id) if title_id else None
-    if profile and chosen is not None:
+    chosen = game_patch_selection(s, title_id, profile)
+    if chosen is not None:
         env['GOW3_PATCHES'] = ';'.join(chosen)
         env['GOW3_PATCHES_ONLY'] = '1'
     if s['user_dir']:
@@ -1157,7 +1188,7 @@ class Launcher:
 
     def build_display(self):
         tk, ttk = self.tk, self.ttk
-        f = self.scrolled_page('display', _('Display'), _('How the game appears on your screen.'))
+        f = self.scrolled_page('display', _('Display'), _('How the game appears on your screen, and its frame rate.'))
         self.section(f, _('Window', 'Окно'), top=4)
         self.row(f, _('Display mode'), self.choice(f, 'display_mode', 'ini', DISPLAY_MODES),
                  _('Borderless covers the screen without changing the display mode.'))
@@ -1166,42 +1197,6 @@ class Launcher:
         self.check(f, 'hdr', 'app', _('Allow HDR output', 'Разрешить HDR'),
                    _('When HDR is on in Windows and the display supports it.',
                      'Если HDR включён в Windows и монитор его поддерживает.'))
-        self.section(f, _('Scaling and sharpening'))
-        self.check(f, 'fsr1', 'ini', _('Upscale with FSR 1'),
-                   _('Enlarges a smaller game image to the window. With Render resolution 720p (Performance) '
-                     'it raises the FPS; at the size of the window it does nothing.'))
-        self.check(f, 'rcas', 'ini', _('Final image sharpening (RCAS)'))
-        holder = ttk.Frame(f)
-        strength = self.var('rcas_strength', 'ini')
-        tk.Scale(holder, from_=0, to=100, orient='horizontal', variable=strength, showvalue=False, length=self.px(260),
-                 width=self.px(12), sliderlength=self.px(18), bg=ACCENT, troughcolor=CARD, activebackground=ACCENT_HI,
-                 highlightthickness=0, bd=0, sliderrelief='flat').pack(side='left')
-        value = ttk.Label(holder, width=5)
-        value.pack(side='left', padx=10)
-        show = lambda *_a: value.configure(text=f'{strength.get()}%')
-        strength.trace_add('write', show)
-        show()
-        self.row(f, _('Sharpening strength'), holder)
-        self.section(f, _('Overlay'))
-        self.check(f, 'show_fps', 'ini', _('Show performance overlay'),
-                   _('Items, size and corner: in-game menu (Insert / R3+L2) > Overlay.'))
-        self.section(f, _('Screenshots'))
-        holder = ttk.Frame(f)
-        holder.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(6, 0))
-        ttk.Button(holder, text=_('Open screenshots folder'),
-                   command=lambda: self.open_path(screenshots_dir(self.app))).pack(side='left')
-        ttk.Label(holder, text=_('Press F12 in the game: a PNG of the game picture at its full resolution.'),
-                  style='Muted.TLabel').pack(side='left', padx=10)
-
-    def build_performance(self):
-        f = self.scrolled_page('performance', _('Performance'), _('Frame rate and speed options.'))
-        self.section(f, _('Graphics settings'), top=4)
-        self.note(f, _('Each part of the quality preset on its own: "Preset" follows Graphics quality (below). '
-                       'Applied when the game reaches its main menu; the in-game menu also switches them '
-                       'while playing.'), top=2)
-        for key, title, hint, choices in GRAPHICS_OPTIONS:
-            self.row(f, _(title), self.choice(f, key, 'ini', [(value, (label,)) for value, label in choices]),
-                     _(hint), restart=True)
         self.section(f, _('Frame rate', 'Частота кадров'))
         self.row(f, _('Engine frame rate'), self.choice(f, self.engine_cap_var(), None, ENGINE_CAP_CHOICES),
                  _('The highest frame rate MediEvil runs at. The PS4 game stops at 60; 120 and 240 lift '
@@ -1233,9 +1228,45 @@ class Launcher:
                  restart=True)
         for key, title, hint in PRESENT_SWITCHES:
             self.check(f, key, 'ini', _(title), _(hint), restart=True)
+        self.section(f, _('Scaling and sharpening'))
+        self.check(f, 'fsr1', 'ini', _('Upscale with FSR 1'),
+                   _('Enlarges a smaller game image to the window. With Render resolution 720p (Performance) '
+                     'it raises the FPS; at the size of the window it does nothing.'))
+        self.check(f, 'rcas', 'ini', _('Final image sharpening (RCAS)'))
+        holder = ttk.Frame(f)
+        strength = self.var('rcas_strength', 'ini')
+        tk.Scale(holder, from_=0, to=100, orient='horizontal', variable=strength, showvalue=False, length=self.px(260),
+                 width=self.px(12), sliderlength=self.px(18), bg=ACCENT, troughcolor=CARD, activebackground=ACCENT_HI,
+                 highlightthickness=0, bd=0, sliderrelief='flat').pack(side='left')
+        value = ttk.Label(holder, width=5)
+        value.pack(side='left', padx=10)
+        show = lambda *_a: value.configure(text=f'{strength.get()}%')
+        strength.trace_add('write', show)
+        show()
+        self.row(f, _('Sharpening strength'), holder)
+        self.section(f, _('Overlay'))
+        self.check(f, 'show_fps', 'ini', _('Show performance overlay'),
+                   _('Items, size and corner: in-game menu (Insert / R3+L2) > Overlay.'))
+        self.section(f, _('Screenshots'))
+        holder = ttk.Frame(f)
+        holder.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(6, 0))
+        ttk.Button(holder, text=_('Open screenshots folder'),
+                   command=lambda: self.open_path(screenshots_dir(self.app))).pack(side='left')
+        ttk.Label(holder, text=_('Press F12 in the game: a PNG of the game picture at its full resolution.'),
+                  style='Muted.TLabel').pack(side='left', padx=10)
+
+    def build_performance(self):
+        f = self.scrolled_page('performance', _('Performance'), _('Graphics and speed options.'))
+        self.section(f, _('Graphics settings'), top=4)
+        self.note(f, _('Each part of the quality preset on its own: "Preset" follows Graphics quality (below). '
+                       'Applied when the game reaches its main menu; the in-game menu also switches them '
+                       'while playing.'), top=2)
+        for key, title, hint, choices in GRAPHICS_OPTIONS:
+            self.row(f, _(title), self.choice(f, key, 'ini', [(value, (label,)) for value, label in choices]),
+                     _(hint), restart=True)
         self.section(f, _('Performance patches'))
-        self.note(f, _('All on by default. Switch one off to compare, or if something looks wrong; '
-                       'applied at the next start.'), top=2)
+        self.note(f, _('On by default except the single particle pass. Switch one off to compare, or if '
+                       'something looks wrong; applied at the next start.'), top=2)
         for key, title, hint, _off in PERF_PATCHES:
             self.check(f, key, 'ini', _(title), _(hint), restart=True)
         self.section(f, _('Resolution and quality'))
@@ -1455,7 +1486,6 @@ class Launcher:
 
     def refresh_game_patches(self):
         import xml.etree.ElementTree as ET
-        from patches import EXCLUSIVE_PREFIX
         tk, f = self.tk, self.game_patch_frame
         self.store_game_patches()
         for widget in f.winfo_children():
@@ -1469,7 +1499,7 @@ class Launcher:
             return
         _ids, xml, version = profile[:3]
         metas = [m for m in ET.parse(xml).getroot().iter('Metadata') if m.get('AppVer') == version]
-        chosen = self.app.get('game_patches', {}).get(title_id)
+        chosen = game_patch_selection(self.app, title_id, profile)
         on = set(chosen) if chosen is not None else {m.get('Name') for m in metas
                                                          if m.get('isEnabled', 'false').lower() == 'true'}
         self.note(f, _('{} · version {} · {}. Resolution and frame rate patches follow Performance.',
@@ -1478,8 +1508,7 @@ class Launcher:
             name = meta.get('Name')
             # Chosen by run.py: the resolution and frame rate patches, and the output size ones
             # (Performance > Output resolution).
-            if name.startswith(EXCLUSIVE_PREFIX) or name.startswith('Frame Rate Patch') or \
-                    name in (graphics_options.BOOT_SIZE_PATCH, graphics_options.BOOT_4K_PATCH):
+            if chosen_by_run_py(name):
                 continue
             var = tk.BooleanVar(value=name in on)
             self.game_patch_vars[name] = var
@@ -1494,6 +1523,9 @@ class Launcher:
             return
         self.app.setdefault('game_patches', {})[self.game_patch_title] = \
             [n for n, v in self.game_patch_vars.items() if v.get()]
+        # What the page showed: a default patch added later starts on (game_patch_selection).
+        seen = self.app.setdefault('game_patches_seen', {})
+        seen[self.game_patch_title] = sorted(set(seen.get(self.game_patch_title, [])) | set(self.game_patch_vars))
 
     def build_mods(self):
         f = self.scrolled_page('mods', _('Mods', 'Моды'),
@@ -1636,6 +1668,8 @@ class Launcher:
                    _('Shows where the frame waits for the GPU and which reads cause it. For performance tests.'))
         self.check(body, 'frame_capture_key', 'app', _('F11 captures a frame for analysis'),
                    _('Records how the next frame is drawn into the captures folder.'))
+        key, title, hint = FRAME_TRACE
+        self.check(body, key, 'ini', _(title), _(hint), restart=True)
         self.check(body, 'vk_validation', 'app', _('Vulkan validation layers (needs the Vulkan SDK; much slower)',
                                                    'Слои валидации Vulkan (нужен Vulkan SDK; сильно замедляет)'))
         shown = tk.BooleanVar(value=False)

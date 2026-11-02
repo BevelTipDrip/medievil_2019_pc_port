@@ -90,6 +90,26 @@ class ControlMapTest(unittest.TestCase):
         self.assertEqual(launcher.game_environment({**settings, 'parallel_warmup': False})['GOW3_PARALLEL_WARMUP'], '0')
         self.assertEqual(launcher.game_environment({**settings, 'background_warmup': False})['GOW3_BACKGROUND_WARMUP'], '0')
 
+    def test_new_default_patches_start_on(self):
+        from patches import game_profile
+        profile = game_profile('CUSA11227', '01.02')
+        pool, bounds = 'Native 4K framebuffer pool (512 MB)', 'GPU particle bounds'
+        select = lambda **s: launcher.game_patch_selection(s, 'CUSA11227', profile)
+        self.assertIsNone(select())  # no saved selection: run.py uses the file's defaults
+        # Saved before game_patches_seen existed: the new default comes on, the chosen ones stay,
+        # a default the user had switched off stays off.
+        self.assertEqual(select(game_patches={'CUSA11227': [pool]}), [pool, bounds])
+        self.assertEqual(select(game_patches={'CUSA11227': []}), [bounds])
+        # Switched off after the page showed it: stays off.
+        self.assertEqual(select(game_patches={'CUSA11227': []}, game_patches_seen={'CUSA11227': [pool, bounds]}), [])
+        # Shown before it became a default (seen): not switched on behind the user's back.
+        self.assertEqual(select(game_patches={'CUSA11227': [pool]}, game_patches_seen={'CUSA11227': [pool]}),
+                         [pool, bounds])
+        self.assertEqual(select(game_patches={'CUSA11227': [pool]},
+                                game_patches_seen={'CUSA11227': [pool, bounds]}), [pool])
+        env = launcher.game_environment({**launcher.APP_DEFAULTS, 'game_dir': '', 'game_patches': {}})
+        self.assertNotIn('GOW3_PATCHES_ONLY', {k for k in env if k not in __import__('os').environ})
+
     def test_settings_keys_kept(self):
         # The redesign hides some options (player name) but keeps every saved setting working.
         for key in ('game_dir', 'user_dir', 'mods_dir', 'patches_dir', 'language', 'player_name', 'hdr',
