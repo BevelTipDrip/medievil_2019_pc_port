@@ -24,10 +24,12 @@ class ControlMapTest(unittest.TestCase):
         import graphics_options
         for key, _title, _hint, off in launcher.PERF_PATCHES:
             self.assertIn(key, launcher.INI_FLAGS)
-            self.assertEqual(launcher.INI_DEFAULTS[key], '1')
+            self.assertEqual(launcher.INI_DEFAULTS[key], '0' if key in graphics_options.PERF_DEFAULT_OFF else '1')
             self.assertEqual(graphics_options.PERF_SWITCHES[key], off)
-        self.assertEqual(graphics_options.perf_environment({}), {})
-        self.assertEqual(graphics_options.perf_environment({'perf_texture_memo': '0'}),
+        # The single particle pass is off without a key (plan-0102.md, T-0102-4).
+        self.assertEqual(graphics_options.perf_environment({}), {'GOW3_PARTICLE_FIXED_STEP': '1'})
+        self.assertEqual(graphics_options.perf_environment({'perf_particle_single_pass': '1'}), {})
+        self.assertEqual(graphics_options.perf_environment({'perf_texture_memo': '0', 'perf_particle_single_pass': '1'}),
                          {'GOW3_TEXSET_REGIONS': '0', 'GOW3_TEXSET_TWO_WAY': '0'})
         env = launcher.game_environment({**launcher.APP_DEFAULTS})
         self.assertEqual(env.get('GOW3_FRAME_STATS'), launcher.os.environ.get('GOW3_FRAME_STATS'))

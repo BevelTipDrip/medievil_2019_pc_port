@@ -238,7 +238,7 @@ def patch_names(names, options, texture_fix_available=True):
 
 
 # Performance patches (launcher > Performance, in-game menu > Performance): medievil.ini key ->
-# the environment that switches the patch off (perf_*=0). Missing keys mean on.
+# the environment that switches the patch off (perf_*=0). Missing keys mean on (PERF_DEFAULT_OFF: off).
 PERF_SWITCHES = {
     'perf_hzb_occlusion': {'GOW3_HZB_REMAP': '0'},
     'perf_no_decal_prepass': {'GOW3_DECAL_PREPASS': '1'},
@@ -254,6 +254,9 @@ PERF_SWITCHES = {
     'perf_lean_binding': {'GOW3_LEAN_BINDING': '0'},
     'perf_ring_reuse': {'GOW3_RING_REUSE': '0'},
 }
+# Off where medievil.ini has no key: the single particle pass slows some torches to a crawl and
+# leaves an ember / golden stream in Dan's crypt (research/docs/plan-0102.md, T-0102-4).
+PERF_DEFAULT_OFF = {'perf_particle_single_pass'}
 
 
 # Presentation settings (launcher > Performance > Presentation): medievil.ini key -> how its value
@@ -310,7 +313,7 @@ def perf_environment(ini):
     """The switches of the performance patches turned off in medievil.ini."""
     env = {}
     for key, off in PERF_SWITCHES.items():
-        if ini.get(key, '1') == '0':
+        if ini.get(key, '0' if key in PERF_DEFAULT_OFF else '1') == '0':
             env.update(off)
     return env
 

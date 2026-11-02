@@ -243,7 +243,7 @@ DRAW_PIPE = [('', ('Auto (8+ threads)', 'Авто (8+ потоков)')), ('1', 
 READBACKS = [('', ('Relaxed (default)', 'Relaxed (по умолчанию)')), ('0', ('Off', 'Выключены'))]
 FRAMES_QUEUED = [('1', ('1 (lowest latency)',)), ('2', ('2',)), ('0', ('Unlimited',))]
 # Performance patches (research/docs/plan-stage-b-split.md, plan-frame-pacing.md): each is on by
-# default; switched off, its environment variables restore the earlier behaviour (A/B tests,
+# default except graphics_options.PERF_DEFAULT_OFF; switched off, its environment variables restore the earlier behaviour (A/B tests,
 # or a fallback if one misbehaves on another PC). medievil.ini keys, shared with the in-game menu;
 # run.py turns them into the variables (graphics_options.PERF_SWITCHES).
 # (key, title, description, variables).
@@ -259,7 +259,8 @@ PERF_PATCHES = [
      {'GOW3_DECAL_PREPASS': '1'}),
     ('perf_particle_single_pass', 'Single GPU particle pass',
      'Particles are simulated once a frame with the real frame time instead of a second, empty '
-     'fixed-step pass: up to ~190 fewer draws while particles are on screen.',
+     'fixed-step pass: up to ~190 fewer draws while particles are on screen. Off by default: some '
+     'torches animate very slowly with it.',
      {'GOW3_PARTICLE_FIXED_STEP': '1'}),
     ('perf_small_buffers', 'Small buffers from VRAM',
      'Small vertex and constant buffers the game has not changed are read from video memory instead '
@@ -306,7 +307,8 @@ PERF_PATCHES = [
      {'GOW3_RING_REUSE': '0'}),
 ]
 INI_FLAGS.update(entry[0] for entry in PERF_PATCHES)
-INI_DEFAULTS.update({entry[0]: '1' for entry in PERF_PATCHES})
+INI_DEFAULTS.update({entry[0]: '0' if entry[0] in graphics_options.PERF_DEFAULT_OFF else '1'
+                     for entry in PERF_PATCHES})
 
 # Presentation (research/docs/plan-stage-b-split.md, T-L2 to T-V120h): how finished frames reach the
 # screen. All off by default (the tested defaults); run.py turns them into environment variables
