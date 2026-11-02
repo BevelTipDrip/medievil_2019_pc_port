@@ -250,7 +250,7 @@ FRAMES_QUEUED = [('1', ('1 (lowest latency)',)), ('2', ('2',)), ('0', ('Unlimite
 PERF_PATCHES = [
     ('perf_hzb_occlusion', 'HZB occlusion culling',
      "Unreal Engine 4's own culling skips objects hidden behind others, served from the GPU's "
-     'finished results without waiting for it. Heavy areas ~130 -> ~165 FPS (MediEvil 01.00 only; '
+     'finished results without waiting for it. Heavy areas ~130 -> ~165 FPS (MediEvil 01.00 and 01.02; '
      'off: no occlusion culling, as before).',
      {'GOW3_HZB_REMAP': '0'}),
     ('perf_no_decal_prepass', 'Skip the decal depth prepass',
