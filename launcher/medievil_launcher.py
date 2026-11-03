@@ -697,26 +697,20 @@ class Launcher:
         return self.photo(image)
 
     def set_icon(self):
-        game_icon = Path(self.var('game_dir', 'app').get() or '.') / 'sce_sys' / 'icon0.png'
-        try:
-            from PIL import Image
-            ico = CONFIG_DIR / 'game_icon.ico'
-            CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-            with Image.open(game_icon) as image:
-                image.convert('RGBA').save(ico, sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (256, 256)])
-            self.root.iconbitmap(default=str(ico))
-            return
-        except (ImportError, OSError, self.tk.TclError):
-            pass
-        for icon in (game_icon, PORT_DIR / 'launcher' / 'medievil.png'):
+        """The port's icon (launcher/medievil.ico, every size Windows asks for; .png elsewhere)."""
+        if WINDOWS:
             try:
-                self.icon = self.tk.PhotoImage(file=str(icon))
-                if self.icon.width() > 128:
-                    self.icon = self.icon.subsample(self.icon.width() // 64)
-                self.root.iconphoto(True, self.icon)
+                self.root.iconbitmap(default=str(PORT_DIR / 'launcher' / 'medievil.ico'))
                 return
-            except (self.tk.TclError, OSError):
-                continue
+            except self.tk.TclError:
+                pass
+        try:
+            self.icon = self.tk.PhotoImage(file=str(PORT_DIR / 'launcher' / 'medievil.png'))
+            if self.icon.width() > 128:
+                self.icon = self.icon.subsample(self.icon.width() // 64)
+            self.root.iconphoto(True, self.icon)
+        except (self.tk.TclError, OSError):
+            pass
 
     # ---- look --------------------------------------------------------------------------------
     def check_images(self):
@@ -2110,11 +2104,7 @@ class Launcher:
         icon = CONFIG_DIR / 'medievil.png'
         try:
             CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-            for source in (Path(self.app.get('game_dir') or '.') / 'sce_sys' / 'icon0.png',
-                           PORT_DIR / 'launcher' / 'medievil.png'):
-                if source.is_file():
-                    shutil.copyfile(source, icon)
-                    break
+            shutil.copyfile(PORT_DIR / 'launcher' / 'medievil.png', icon)
             entry = ('[Desktop Entry]\nType=Application\nName=MediEvil\nComment=MediEvil (PS4) for PC\n'
                      f'Exec={command}\nIcon={icon}\nTerminal=false\nCategories=Game;\n')
             data_home = Path(os.environ.get('XDG_DATA_HOME') or Path.home() / '.local' / 'share')
@@ -2142,9 +2132,7 @@ class Launcher:
             pythonw = Path(sys.executable).with_name('pythonw.exe')
             target = str(pythonw if pythonw.exists() else sys.executable)
             arguments = Path(__file__).resolve()
-        icon = PORT_DIR / 'launcher' / 'medievil-game.ico'
-        if not icon.is_file():  # an older install without it: the launcher's own icon
-            icon = f'{sys.executable},0' if FROZEN else PORT_DIR / 'launcher' / 'medievil.ico'
+        icon = PORT_DIR / 'launcher' / 'medievil.ico'
         result = subprocess.run(['powershell', '-NoProfile', '-Command', shortcut_script(folder, target, arguments, icon)],
                                 capture_output=True, creationflags=NO_WINDOW)
         if result.returncode == 0:

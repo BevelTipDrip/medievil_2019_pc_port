@@ -45,7 +45,7 @@ rm -rf -- out/stage
 mkdir -p "$dest/bin" "$dest/launcher"
 cp -r "out/pyi-dist/MediEvil/." "$dest/"
 llvm-strip -o "$dest/Play MediEvil.exe" out/medievil-play.exe
-cp launcher/medievil.ico launcher/medievil.png launcher/medievil-game.ico "$dest/launcher/"
+cp launcher/medievil.ico launcher/medievil.png "$dest/launcher/"
 # The executables without debug information (out/ keeps the symbols for crash reports).
 for exe in medievil-runtime.exe medievil-gpu-check.exe; do
     llvm-strip --strip-debug -o "$dest/bin/$exe" "out/$exe"

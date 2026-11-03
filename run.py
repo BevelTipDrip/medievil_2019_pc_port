@@ -227,10 +227,10 @@ def main():
         profile = game_profile(game_title_id(game), game_app_version(game)) or game_profile(game_title_id(game))
         patched = bool(profile) and ((game_app_version(game) == profile[2] and eboot_matches(game, profile))
                                      or bool(env.get('GOW3_FORCE_PATCHES')))
-        # The window shows the game's icon (BMP: the format SDL loads without extra libraries).
+        # The window shows the port's icon (BMP: the format SDL loads without extra libraries).
         try:
             from PIL import Image
-            with Image.open(game / 'sce_sys' / 'icon0.png') as icon:
+            with Image.open(PORT / 'launcher' / 'medievil.png') as icon:
                 icon.convert('RGBA').resize((64, 64), Image.LANCZOS).save(out / 'window_icon.bmp')
             env.setdefault('GOW3_WINDOW_ICON', str(out / 'window_icon.bmp'))
         except (ImportError, OSError):

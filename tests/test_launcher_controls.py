@@ -133,7 +133,7 @@ class ControlMapTest(unittest.TestCase):
 
 class ShortcutTest(unittest.TestCase):
     def test_start_menu_shortcut_uses_the_game_icon(self):
-        icon = launcher.PORT_DIR / 'launcher' / 'medievil-game.ico'
+        icon = launcher.PORT_DIR / 'launcher' / 'medievil.ico'
         self.assertTrue(icon.is_file())
         script = launcher.shortcut_script('Programs', r'C:\MediEvil\MediEvil.exe', '', icon)
         self.assertIn('[Environment]::GetFolderPath("Programs")+"\\MediEvil.lnk"', script)
