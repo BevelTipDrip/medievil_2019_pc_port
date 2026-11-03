@@ -99,7 +99,6 @@ void SetOpen(bool value) {
     if (menu_open.exchange(value) == value) {
         return;
     }
-    ImGui::GetIO().MouseDrawCursor = value;
     if (value) {
         requested_tab = Gow3Settings::Get().menu_tab;
     }

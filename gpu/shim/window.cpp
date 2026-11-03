@@ -188,6 +188,9 @@ bool WindowSDL::PollEvents() {
             UpdateTextTitle();
             continue;
         }
+        if (event.type == SDL_EVENT_MOUSE_MOTION) {
+            last_mouse_motion_ms = SDL_GetTicks();
+        }
         if (Gow3Overlay::HandleEvent(event)) {
             continue;
         }
@@ -208,7 +211,21 @@ bool WindowSDL::PollEvents() {
             break;
         }
     }
+    UpdateCursor();
     return is_open;
+}
+
+// The OS cursor over the game (from the Bloodborne port, 4d4d208): hidden in borderless and
+// fullscreen, and in a window after 3 s without moving the mouse; always shown while the menu,
+// the save list or a text entry is open.
+void WindowSDL::UpdateCursor() {
+    const bool fullscreen = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0;
+    const bool hide = !Gow3Overlay::CapturesInput() &&
+                      (fullscreen || SDL_GetTicks() - last_mouse_motion_ms > 3000);
+    if (hide != cursor_hidden) {
+        cursor_hidden = hide;
+        hide ? SDL_HideCursor() : SDL_ShowCursor();
+    }
 }
 
 } // namespace Frontend
