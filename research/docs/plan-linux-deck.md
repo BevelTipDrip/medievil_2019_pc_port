@@ -610,3 +610,16 @@ Next Deck launches, one change each:
 2. If it hangs: `RADV_DEBUG=hang` added (RADV writes a dump of the hung command buffer to `~/radv_dumps_*`; slow).
 3. Then the suspects from [study-fork-spacepepperoni.md](study-fork-spacepepperoni.md) section 2 (1080p output with
    a 67% render scale; `GOW3_DEPTH_SAMPLE_IN_PLACE=0`; presenter timing switches).
+
+## Proton run 2 (2026-11-03, after the update; v2.0.0 package; log `data/deck-proton-2.log`)
+
+- **Runs, no GPU hang** (kernel log clean). SteamOS 3.9.5, `RADV VANGOGH` radv 26.1.99, Vulkan 1.4.350, pageable
+  memory on, maintenance8 on. The hang of run 1 went with the driver update (the log says Borderless both times).
+- Settings: 1280x720 borderless, render scale 100, Console preset, effects 75, `fps_limit=60`, vsync, tick 120 precise,
+  limiter precise, every performance patch default.
+- 136 five-second windows (~11 min): FPS median **52**, min 29, max 60; Dan's Crypt partly a steady 60, map screen
+  30-60, graveyard slower (the user). CPU and GPU both ~80% (the user).
+- Under Proton: `wineserver` ~19% and `xalia` (Proton accessibility helper, hooks the Tk launcher) ~24% of a core in
+  a sample taken after the game exited.
+- Next (one change per launch, same route): Graphics quality Low; render scale 67%; preshadows off; then CPU
+  switches (precise tick off, draw workers); then the native build.
