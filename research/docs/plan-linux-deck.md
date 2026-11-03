@@ -556,3 +556,16 @@ Notes from the user:
   times. First try the fix already noted for the spin (plan-stage-b-split.md, after T-P120: a shorter
   `GOW3_TICK_SPIN_US`, or the precise tick off at high rates since the precise limiter times the slots; L1 above).
 - The user is setting up SSH on the Deck (step S0).
+
+## The Deck as found (2026-11-03, read over SSH)
+
+- Host alias `deck` (`~/.ssh/config`, key `~/.ssh/medievil_deck`), 192.168.8.193, user `deck`; key login works.
+- **SteamOS 3.6.20** (build 20241030.1, kernel 6.5.0-valve22), **glibc 2.39**: a WSL Debian 13 build (glibc 2.41)
+  would not start there. Build in an older userland (Ubuntu 22.04 / Debian 12 container in WSL), which also suits
+  other distributions. The user updates SteamOS after the file copy (newer Mesa / RADV; measure on the updated one).
+- 8 threads, 14 GiB visible RAM; **UMA frame buffer 1 GB** (`mem_info_vram_total`), GTT 8 GB.
+- 378 GB free on the internal drive; SD card 477 GB at `/run/media/deck/9C33-6BBD` (slower, not used).
+- `rsync`, `tar`, `distrobox` present on the Deck.
+- Copied: `~/MediEvil/medievil-windows` (the v2.0.0 package, `0d0097a`) with a copy of the user's saves in its
+  `user/savedata`; `~/MediEvil/CUSA11227-0102` (01.02, 44 GB) on the internal drive.
+- WSL on the PC: Debian 13.5 (glibc 2.41), 16 threads, 31 GB, 956 GB free.
