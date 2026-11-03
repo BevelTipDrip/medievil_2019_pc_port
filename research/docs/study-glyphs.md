@@ -210,3 +210,14 @@ pixel data of the same format and size; no mips to generate (all have one).
   from the runtime thread, and whether the atlas is ever freed and reloaded (level loads).
 - Which layout to show for keyboard on the Button Layout page (it is a controller picture).
 - Art source: hand-drawn by the user / a contributor, or generated in code (reproducible, always original).
+
+## Decisions (the user, 2026-11-03)
+
+- **Art source:** the free pack https://juliocacko.itch.io/free-input-prompts (assets CC0 1.0, "free to use in any
+  project, commercial or non-commercial, no attribution required"; credit given anyway). 128x128 icons, Xbox-style,
+  other gamepads and four keyboard/mouse styles (Default, Light, Alt, retro); its PlayStation set was removed by the
+  author after a trademark dispute, which does not matter here: the game's own PS4 prompts stay.
+- **Static choice at launch (a) is the plan.** Live switching by last-used device (b) is a nice-to-have, lower
+  priority: the user usually overrides an automatic setting anyway.
+- Open: how the pack's flat style sits next to the game's metal HUD (use as is, or the pack's symbols on the game's
+  steel button base); which keyboard/mouse style.

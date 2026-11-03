@@ -301,3 +301,8 @@ segment (file offset 0x4000 = guest 0). Import stubs: `jmp [rip+x]` in guest+0x3
 addends equal to the function-name string, the next slot being the thunk. Disassembly: capstone 5.0.7 under
 `py -3.14 -I`. Paks: `ue4_override.read_index / read_file` (all stored, no compression in pakchunk0); Blueprint
 contents from their name tables only (no bytecode decoding).
+
+## Decision (the user, 2026-11-03)
+
+The recommended design is approved: `sceMouse` from SDL relative mode with `PS4.EnableMouse=1`, the yaw hook on the
+game's own AddControllerYawInput, pitch decided after a test, no dedicated high-rate capture thread.

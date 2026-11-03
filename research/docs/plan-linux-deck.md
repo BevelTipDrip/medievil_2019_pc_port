@@ -533,3 +533,26 @@ PC is not affected by Deck builds, but Deck builds over SSH should not overlap t
 - Steam Linux Runtime sniper SDK: [steam-runtime](https://github.com/ValveSoftware/steam-runtime)
 - Deck frame limiter latency and 40 Hz: [Tom's Hardware](https://www.tomshardware.com/uk/news/steam-deck-framerate-limiter-egregiously-raises-input-latency), [GamingOnLinux](https://gamingonlinux.com/2023/11/valve-refines-new-steam-deck-unified-frame-limit-slider-to-show-refresh-rate), [overkill.wtf settings guide](https://overkill.wtf/how-to-graphic-settings-steam-deck)
 - NTSync in SteamOS 3.7.20: [pulse.bot](https://www.pulse.bot/gaming/news/steamos-3720-released-with-ntsync-driver-plus-big-new-steam-client-update-for-all-f9741ba6-4bb8-47ed-9b68-92cdfb4d26e9)
+
+## Decisions and answers (the user, 2026-11-03)
+
+| Question | Answer |
+|---|---|
+| Game build on the Deck | **01.02** (as on the PC) |
+| Deck model / UMA frame buffer | **OLED**; the BIOS VRAM setting is unknown: U1's heap log reads it |
+| Where to build | **WSL2 on this PC** (the user installs it; admin + reboot). Building on the Deck only if it would perform better, which it should not: same compiler and flags. Use an older-glibc userland in WSL (or a container in it) so the binary runs on SteamOS |
+| Steam shortcut press as the go for a launch | **yes** |
+| Copy the user's save to the Deck | **yes** (copy, never move; the PC save folder is untouched) |
+| Port upstream PR #68 (dvilelaf, movie hang) | **yes, with credit, but first check it is not the same as our fix** (the intro movie that kept playing, T-M1) and write down what it fixes and how |
+| Proton baseline | **yes**, set up after the cursor test (`4bb5565`) |
+
+Notes from the user:
+- **Other Linux forks to read before porting anything:** `spacepepperoni/medievil_ps4_Linux` ("for Linux/Steam
+  Deck"; branches `linux-steamdeck`, `steam-deck-wayland`, `skinning-fix`, `stencil-draw-clear`, `main`, ...; pushed
+  2026-11-03), `TheRhysWyrill/medievil_2019_pc_port-linux`, `dvilelaf/medievil_2019_pc_port` (PR #68's author).
+- **The upstream Deck numbers (issues #21, #13) are probably upstream's problem, not the Deck's:** a video of
+  spacepepperoni's build shows Deck gameplay near 30 FPS. Measure our build before drawing conclusions.
+- **Tick rate on the Deck:** lower than 960, a balance between long frames getting longer and spin CPU raising frame
+  times. First try the fix already noted for the spin (plan-stage-b-split.md, after T-P120: a shorter
+  `GOW3_TICK_SPIN_US`, or the precise tick off at high rates since the precise limiter times the slots; L1 above).
+- The user is setting up SSH on the Deck (step S0).

@@ -202,3 +202,13 @@ cheapest hook that proves the inputs.
   `heavy_frame41595.rdc` with `RD_EIDS=17630,17641,14348,17901,16789`, the 3,296-byte binding decoded with the offsets
   above. Usage (which pass reads velocity, depth, the TAA output) from `dump-41595.json`.
 - No game launch, build or git command.
+
+## Decisions (the user, 2026-11-03)
+
+- **Upscaling (SR) before frame generation**, not FG first as section 5 proposes: on the user's PC the GPU is now at
+  full use most of the time, and rendering below native should cut the costly passes (the fight effects, N-18/N-19).
+- **DLSS-G pacing:** keep the port's improvements up to and including the hand-off to DLSS-G (Reflex, the frame
+  limiter, present timing), then let DLSS-G pace its own presents, tuning only what is needed. Same idea as MGS2.
+- **Particles and translucency:** try to get real motion vectors for them where possible; camera motion only is the
+  fallback and is likely fine for panning.
+- **Sharpening:** DLSS has its own; RCAS / CAS only for native TAA and FSR 1. With DLSS on, the port's RCAS is off.

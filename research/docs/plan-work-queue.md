@@ -10,6 +10,18 @@ Not in any order (the user's numbering kept). The performance items below stay o
 the build on a second PC (5800X3D + RX 6900 XT), the first test on other hardware and on AMD.
 
 **Order (the user, 2026-11-03):** quick wins first (11 cursor, 3/13 mouse, 6 debug menu); then **10/9 Linux and the Steam Deck** (moved up: lower-spec data for every fix, and unified-memory fixes that may help handhelds in general); the second PC and 8 (Anti-Lag 2) when that PC is available; then 1/2 DLSS/FSR; then 4, 12; then 7, 5. Bug reports from players (the build is being shared online) come in alongside. Research running 2026-11-03: `plan-linux-deck.md`, `study-mgs2-temporal-for-ue4.md`, `study-mouse-input.md`, `study-glyphs.md`.
+**Research done and the user's decisions (2026-11-03)**, details in each doc's "Decisions" section:
+- 3/13 mouse: the game has UE4's PS4 mouse path behind `PS4.EnableMouse`; design approved (sceMouse from SDL, yaw
+  hook) ([study-mouse-input.md](study-mouse-input.md)).
+- 12 glyphs: prompts are one atlas row + six textures, swapped in place through the override pak; art from a CC0
+  pack; static choice first, live switching a nice-to-have ([study-glyphs.md](study-glyphs.md)).
+- 1/2 DLSS / FSR: UE 4.21 velocity pass + View buffer give the inputs; **SR before FG**; DLSS-G paces itself after
+  our hand-off; try real MVs for particles; no RCAS with DLSS
+  ([study-mgs2-temporal-for-ue4.md](study-mgs2-temporal-for-ue4.md)).
+- 10/9 Linux / Deck: 01.02, OLED, build in WSL2 here, Proton baseline first, read the other Linux forks, PR #68
+  checked against our movie fix before porting ([plan-linux-deck.md](plan-linux-deck.md)).
+- 11 cursor: built (`4bb5565`), in test.
+- Working rule: one item at a time.
 
 | # | Item | What is known (2026-11-03) | State |
 |---|---|---|---|
