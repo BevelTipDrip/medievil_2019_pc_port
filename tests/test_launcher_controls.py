@@ -132,10 +132,11 @@ class ControlMapTest(unittest.TestCase):
 
 
 class ReleaseVersionTest(unittest.TestCase):
-    def test_god_of_war_release_is_newer_than_the_inherited_tags(self):
-        self.assertEqual(launcher.VERSION, '2.1.3')
-        self.assertGreater(launcher.version_tuple(launcher.VERSION), launcher.version_tuple('windows-v1.5'))
-        self.assertGreater(launcher.version_tuple('windows-v2.2'), launcher.version_tuple(launcher.VERSION))
+    def test_fork_release_is_newer_than_upstream_and_checks_the_fork(self):
+        self.assertEqual(launcher.VERSION, '2.0.0')
+        self.assertGreater(launcher.version_tuple(launcher.VERSION), launcher.version_tuple('v1.3.8'))
+        self.assertGreater(launcher.version_tuple('v2.0.1'), launcher.version_tuple(launcher.VERSION))
+        self.assertIn('/repos/BevelTipDrip/', launcher.RELEASES_API)
 
     def test_first_start_is_in_english(self):
         # The translations are partial; 'System' stays a choice in Advanced.

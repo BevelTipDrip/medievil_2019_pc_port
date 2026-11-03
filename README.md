@@ -5,9 +5,57 @@ Windows 10 and 11, built on the
 [God of War III PC port](https://github.com/FelipePrado0/gow3_pc).
 
 The CPU side is native: the game's original x86-64 executable runs directly on the PC's processor
-and a runtime written for this port replaces the PS4 system libraries, so there is no emulator.
+and a runtime written for this port replaces the PS4 system libraries, so there is no CPU emulator.
 The graphics run on the [shadPS4](https://github.com/shadps4-emu/shadPS4) video core, which
-translates the PS4 GPU commands and shaders to Vulkan.
+emulates the PS4 GPU at a high level: it recompiles the game's shaders and translates its GPU
+commands to Vulkan.
+
+## This fork
+
+This is BevelTipDrip's fork of [bc160201983's MediEvil port](https://github.com/bc160201983/medievil_2019_pc_port),
+**actively maintained**. It contains everything up to upstream 1.3.8, plus performance and correctness work, each
+change measured in game. Its releases start at **2.0.0**, and the launcher checks this fork for updates, so it never
+offers upstream's builds in place of this one.
+
+What it changes, in short:
+
+- **Fights**: kill effects ended and reopened the render pass about 100 times a frame; now they don't
+  (Performance patches > "Fewer render pass breaks"). A fight at a 120 FPS cap holds 1% / 0.1% lows of
+  119.7 / 117.4 FPS, with no frame over 10 ms.
+- **Culling**: Unreal's HZB occlusion culling works (its small mip levels were never rendered), through a runtime
+  remap with no GPU wait. The decal depth prepass, about 600 draws a frame for decals nobody sees, is skipped.
+- **Memory sync**: CPU writes into memory the GPU wrote no longer force downloads (27 a second to 0); the 2–5 s
+  stalls when Windows trimmed the game's memory are gone; lock and memory-pool lookups are cheaper (+17% median FPS
+  in the heaviest view); small buffers live in VRAM.
+- **Draw translation**: less CPU work per draw (texture-set memo, word-wise register scans, deferred fences).
+- **GPU synchronisation**: image barriers wait only for the shader stages that read them (GPU frame 5.71 to
+  5.22 ms in a same-spot A/B).
+- **Correctness**: shadows drawn as black boxes (stencil writes by shaders) fixed; a crash and freeze in the
+  draw pipe fixed; dust and other GPU particles no longer vanish with the camera angle ("GPU particle bounds"
+  game patch).
+- **Frame pacing** (above 60 FPS): NVIDIA Reflex limiter, an automatic frame limit at half the refresh (one below
+  it with VRR), and presents on a precise vblank tick.
+- **Game update 01.02** (CUSA11227) with every hook the port uses mapped.
+
+Every optimisation is a switch (launcher > Performance > Performance patches, or a `GOW3_*` variable), so each one
+can be compared on and off.
+
+### For other ports
+
+Ports with the same lineage (shadPS4 video core → the Bloodborne PC port → the God of War III PC port → this
+port) are welcome to take any of this, under the same license (GPL v2 or later; keep the copyright headers and
+credit the source). Where to start:
+
+- [research/docs/fix-inventory.md](research/docs/fix-inventory.md): every fix with its evidence, commits, files,
+  switch, and whether it is general, depends on how MediEvil behaves, or is MediEvil-only.
+- [research/docs/gpu-threading-reference.md](research/docs/gpu-threading-reference.md): how the GPU threads,
+  waits and memory sync fit together, and the rules learned the hard way.
+- [research/docs/START-HERE.md](research/docs/START-HERE.md): the index of the research docs (plans, tests and
+  measurements).
+- Commit messages name the test (`T-…`) that measured each change. In the video core, changes from shadPS4
+  are marked with `gow3:` comments ([gpu/VENDOR.txt](gpu/VENDOR.txt)).
+
+Pointing an LLM at this repo works well: the docs above are written to be read that way.
 
 > **No game files are included.** You need your own copy of MediEvil (CUSA11227), as an unpacked
 > folder or a fake package (.pkg). This project is not affiliated with Sony Interactive
@@ -171,8 +219,8 @@ More in [packaging/windows/README-Windows.txt](packaging/windows/README-Windows.
 2. Build (newer CLANG64 toolchains need the standard headers forced for some third-party code):
 
    ```bash
-   git clone --recursive https://github.com/bc160201983/medievil_2019_pc_port
-   cd medievil_pc
+   git clone --recursive https://github.com/BevelTipDrip/medievil_2019_pc_port
+   cd medievil_2019_pc_port
    CXXFLAGS="-include cstdlib -include cstdio -include cwchar -include cmath -include new" bash build.sh
    ```
 

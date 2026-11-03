@@ -238,7 +238,7 @@ cat > "$app/usr/share/metainfo/medievil-pc.appdata.xml" <<'EOF'
   <summary>Native PC port runtime for MediEvil (PS4); bring your own game files</summary>
   <description><p>Runs the PlayStation 4 MediEvil executable from your own copy of the game. No game files included.</p></description>
   <launchable type="desktop-id">medievil-pc.desktop</launchable>
-  <url type="homepage">https://github.com/bc160201983/medievil_2019_pc_port</url>
+  <url type="homepage">https://github.com/BevelTipDrip/medievil_2019_pc_port</url>
   <content_rating type="oars-1.1"/>
 </component>
 EOF
