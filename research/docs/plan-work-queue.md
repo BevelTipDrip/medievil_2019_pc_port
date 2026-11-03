@@ -9,6 +9,8 @@ update an item's state here when it moves; details live in the linked plan or st
 Not in any order (the user's numbering kept). The performance items below stay open alongside. Also: the user will run
 the build on a second PC (5800X3D + RX 6900 XT), the first test on other hardware and on AMD.
 
+**Order (the user, 2026-11-03):** quick wins first (11 cursor, 3/13 mouse, 6 debug menu); then **10/9 Linux and the Steam Deck** (moved up: lower-spec data for every fix, and unified-memory fixes that may help handhelds in general); the second PC and 8 (Anti-Lag 2) when that PC is available; then 1/2 DLSS/FSR; then 4, 12; then 7, 5. Bug reports from players (the build is being shared online) come in alongside. Research running 2026-11-03: `plan-linux-deck.md`, `study-mgs2-temporal-for-ue4.md`, `study-mouse-input.md`, `study-glyphs.md`.
+
 | # | Item | What is known (2026-11-03) | State |
 |---|---|---|---|
 | 1 | DLSS / FSR upscaling | Needs the UE4 frame map and motion vectors first ([plan-ue4-motion-vectors.md](plan-ue4-motion-vectors.md) M0-M2). UE4 already runs TAA with a velocity buffer (movable objects only, the rest from depth + camera) and its own jitter; the dormant path is Bloodborne's and must not be reused as is. DLSS SR bridge exists ([plan-dlss.md](plan-dlss.md)) | open |
