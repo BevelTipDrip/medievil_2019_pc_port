@@ -219,5 +219,5 @@ pixel data of the same format and size; no mips to generate (all have one).
   author after a trademark dispute, which does not matter here: the game's own PS4 prompts stay.
 - **Static choice at launch (a) is the plan.** Live switching by last-used device (b) is a nice-to-have, lower
   priority: the user usually overrides an automatic setting anyway.
-- Open: how the pack's flat style sits next to the game's metal HUD (use as is, or the pack's symbols on the game's
-  steel button base); which keyboard/mouse style.
+- **Styles:** the pack's "Default" set for Xbox (and Switch, if offered) and its "vintage" (retro) set for keyboard /
+  mouse (slight metallic outline, closest to the game's HUD). Used as they are; textures can be replaced later.

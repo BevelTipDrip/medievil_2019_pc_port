@@ -205,6 +205,7 @@ cheapest hook that proves the inputs.
 
 ## Decisions (the user, 2026-11-03)
 
+- **DLSS first, then FSR** (the work is shared; DLSS is easier to set up and check).
 - **Upscaling (SR) before frame generation**, not FG first as section 5 proposes: on the user's PC the GPU is now at
   full use most of the time, and rendering below native should cut the costly passes (the fight effects, N-18/N-19).
 - **DLSS-G pacing:** keep the port's improvements up to and including the hand-off to DLSS-G (Reflex, the frame

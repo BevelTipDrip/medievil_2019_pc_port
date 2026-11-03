@@ -217,10 +217,13 @@ bool WindowSDL::PollEvents() {
 
 // The OS cursor over the game (from the Bloodborne port, 4d4d208): hidden in borderless and
 // fullscreen, and in a window after 3 s without moving the mouse; always shown while the menu,
-// the save list or a text entry is open.
+// the save list or a text entry is open. Without input focus (alt-tab, another window clicked)
+// the cursor is left shown; it hides again once the player is back in the game window.
 void WindowSDL::UpdateCursor() {
-    const bool fullscreen = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0;
-    const bool hide = !Gow3Overlay::CapturesInput() &&
+    const SDL_WindowFlags flags = SDL_GetWindowFlags(window);
+    const bool focused = (flags & SDL_WINDOW_INPUT_FOCUS) != 0;
+    const bool fullscreen = (flags & SDL_WINDOW_FULLSCREEN) != 0;
+    const bool hide = focused && !Gow3Overlay::CapturesInput() &&
                       (fullscreen || SDL_GetTicks() - last_mouse_motion_ms > 3000);
     if (hide != cursor_hidden) {
         cursor_hidden = hide;

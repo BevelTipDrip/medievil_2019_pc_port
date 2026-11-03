@@ -20,7 +20,7 @@ the build on a second PC (5800X3D + RX 6900 XT), the first test on other hardwar
   ([study-mgs2-temporal-for-ue4.md](study-mgs2-temporal-for-ue4.md)).
 - 10/9 Linux / Deck: 01.02, OLED, build in WSL2 here, Proton baseline first, read the other Linux forks, PR #68
   checked against our movie fix before porting ([plan-linux-deck.md](plan-linux-deck.md)).
-- 11 cursor: built (`4bb5565`), in test.
+- 11 cursor: hides (`4bb5565`, the user: works); left shown without input focus, hidden again on return (next commit), to retest.
 - Working rule: one item at a time.
 
 | # | Item | What is known (2026-11-03) | State |
