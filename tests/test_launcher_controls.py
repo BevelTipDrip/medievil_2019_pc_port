@@ -131,6 +131,19 @@ class ControlMapTest(unittest.TestCase):
         self.assertNotIn('GOW3_FRAMES_AHEAD', launcher.game_environment({**launcher.APP_DEFAULTS, 'frames_ahead': '2'}))
 
 
+class ShortcutTest(unittest.TestCase):
+    def test_start_menu_shortcut_uses_the_game_icon(self):
+        icon = launcher.PORT_DIR / 'launcher' / 'medievil-game.ico'
+        self.assertTrue(icon.is_file())
+        script = launcher.shortcut_script('Programs', r'C:\MediEvil\MediEvil.exe', '', icon)
+        self.assertIn('[Environment]::GetFolderPath("Programs")+"\\MediEvil.lnk"', script)
+        self.assertIn(f'$s.IconLocation="{icon}"', script)
+        self.assertNotIn('$s.Arguments', script)
+        script = launcher.shortcut_script('Desktop', 'pythonw.exe', 'launcher.py', icon)
+        self.assertIn('GetFolderPath("Desktop")', script)
+        self.assertIn("$s.Arguments='\"launcher.py\"'", script)
+
+
 class ReleaseVersionTest(unittest.TestCase):
     def test_fork_release_is_newer_than_upstream_and_checks_the_fork(self):
         self.assertEqual(launcher.VERSION, '2.0.0')

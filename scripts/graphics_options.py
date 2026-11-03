@@ -138,9 +138,9 @@ def output_environment(env, width, height):
     if width * height > 1920 * 1080:
         # Above 1080p, whatever the launcher's Patches tab says: the 512 MB framebuffer pool (the
         # stock 128 MB ran out at 4K and crashed; its direct memory requirement follows from the
-        # patch notes), and 2 GiB more guest memory: the PS4's 400-800 MB texture streaming pool
-        # thrashed at 4K (with the GPU heap and pool sizes in ue4_override.apply, research: T-S2,
-        # 2026-10-19). GOW3_PS4_MEMORY=1: the PS4's sizes.
+        # patch notes), and 2 GiB more direct memory, which the game takes whole into its memory
+        # pool for GPU and CPU memory (T-S2, 2026-10-19; research/docs/fix-inventory.md, Caveats).
+        # GOW3_PS4_MEMORY=1: the PS4's size.
         selected.append(POOL_PATCH)
         if env.get('GOW3_PS4_MEMORY') != '1':
             env.setdefault('GOW3_DMEM_MB', '7104')

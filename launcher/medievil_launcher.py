@@ -286,8 +286,8 @@ PERF_PATCHES = [
      {'GOW3_READBACK_QUEUE': '0', 'GOW3_GPU_WRITE_TWINS': '0', 'GOW3_EOS_DEFERRED': '0',
       'GOW3_EOP_TARGETED': '0'}),
     ('perf_4k_memory', '4K memory sizes',
-     "At 4K native the game gets more graphics memory and a larger texture streaming pool than the "
-     "PS4's, so small camera moves stop re-loading textures (4K native output only).",
+     "Above 1080p the game gets 2 GB more memory than a PS4 (7,104 MB instead of 5,056), which it "
+     "pools for graphics and texture streaming (output sizes above 1080p only).",
      {'GOW3_PS4_MEMORY': '1'}),
     ('perf_lean_barriers', 'Fewer render pass breaks',
      'The depth buffer is no longer switched between layouts, with a barrier each time, for every '
@@ -1637,6 +1637,9 @@ class Launcher:
         holder = ttk.Frame(f)
         holder.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(10, 0))
         ttk.Button(holder, text=_('Desktop shortcut', 'Ярлык на рабочем столе'), command=self.shortcut).pack(side='left')
+        if WINDOWS:  # on Linux the desktop shortcut also adds the application menu entry
+            ttk.Button(holder, text=_('Start menu shortcut', 'Ярлык в меню «Пуск»'),
+                       command=lambda: self.shortcut('Programs')).pack(side='left', padx=(8, 0))
         ttk.Button(holder, text=_('Check for updates', 'Проверить обновления'),
                    command=lambda: threading.Thread(target=self.check_update, args=(True,), daemon=True).start()).pack(
             side='left', padx=(8, 0))
@@ -2128,24 +2131,26 @@ class Launcher:
             return
         self.messagebox.showinfo(APP_NAME, _('Shortcut created on the desktop.', 'Ярлык создан на рабочем столе.'))
 
-    def shortcut(self):
-        """MediEvil.lnk on the desktop."""
+    def shortcut(self, folder='Desktop'):
+        """MediEvil.lnk on the desktop, or in the Start menu (folder 'Programs': the user's
+        Start Menu\\Programs, where Windows search finds it), with the game icon."""
         if not WINDOWS:
             return self.linux_shortcut()
         if FROZEN:
-            target, arguments, icon = sys.executable, '', f'{sys.executable},0'
+            target, arguments = sys.executable, ''
         else:  # a source tree: the launcher script with the windowless Python
             pythonw = Path(sys.executable).with_name('pythonw.exe')
             target = str(pythonw if pythonw.exists() else sys.executable)
-            arguments, icon = Path(__file__).resolve(), PORT_DIR / 'launcher' / 'medievil.ico'
-        script = ('$s=(New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath("Desktop")'
-                  '+"\\MediEvil.lnk");'
-                  f'$s.TargetPath="{target}";$s.WorkingDirectory="{PORT_DIR}";$s.IconLocation="{icon}";'
-                  + (f"$s.Arguments='\"{arguments}\"';" if arguments else '') + '$s.Save()')
-        result = subprocess.run(['powershell', '-NoProfile', '-Command', script], capture_output=True,
-                                creationflags=NO_WINDOW)
+            arguments = Path(__file__).resolve()
+        icon = PORT_DIR / 'launcher' / 'medievil-game.ico'
+        if not icon.is_file():  # an older install without it: the launcher's own icon
+            icon = f'{sys.executable},0' if FROZEN else PORT_DIR / 'launcher' / 'medievil.ico'
+        result = subprocess.run(['powershell', '-NoProfile', '-Command', shortcut_script(folder, target, arguments, icon)],
+                                capture_output=True, creationflags=NO_WINDOW)
         if result.returncode == 0:
-            self.messagebox.showinfo(APP_NAME, _('Shortcut created on the desktop.', 'Ярлык создан на рабочем столе.'))
+            self.messagebox.showinfo(APP_NAME, _('Shortcut created in the Start menu.', 'Ярлык создан в меню «Пуск».')
+                                     if folder == 'Programs' else
+                                     _('Shortcut created on the desktop.', 'Ярлык создан на рабочем столе.'))
         else:
             self.messagebox.showerror(APP_NAME, result.stderr.decode(errors='replace')[:400])
 
@@ -2208,6 +2213,15 @@ def play_without_window(settings):
             except (OSError, ValueError):
                 pass
         return process.wait()
+
+
+def shortcut_script(folder, target, arguments, icon):
+    """PowerShell that saves MediEvil.lnk in a special folder ('Desktop', 'Programs' = Start menu)."""
+    return ('$s=(New-Object -ComObject WScript.Shell).CreateShortcut('
+            f'[Environment]::GetFolderPath("{folder}")+"\\MediEvil.lnk");'
+            f'$s.TargetPath="{target}";$s.WorkingDirectory="{PORT_DIR}";$s.IconLocation="{icon}";'
+            '$s.Description="MediEvil (PS4) for PC";'
+            + (f"$s.Arguments='\"{arguments}\"';" if arguments else '') + '$s.Save()')
 
 
 def version_tuple(text):

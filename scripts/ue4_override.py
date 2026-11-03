@@ -27,9 +27,6 @@ OLD_PAK_NAME = 'pakchunk99-ps4_P.pak'
 CONFIG = 'Engine/Config/PS4/PS4Engine.ini'
 # Render scales below 100% use UE4's temporal upsampling: its temporal AA rebuilds the full
 # output from the game's own motion vectors (as FSR 2 / DLSS do, without the AI).
-# Output sizes above 1080p use the larger GPU heap and texture streaming pool (with GOW3_DMEM_MB
-# in run.py).
-LARGE_OUTPUT = 1920 * 1080
 
 
 # r.SetRes (native output, runtime_extra.c): UE4's FSystemResolution::RequestResolutionChange loads
@@ -483,10 +480,10 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
     aa_quality = None if scale < 100 else ANTI_ALIASING.get(aa)
     if aa_quality is not None:
         values['r.PostProcessAAQuality'] = aa_quality
-    width, height = (int(v) for v in output.split('x'))
-    if width * height > LARGE_OUTPUT and os.environ.get('GOW3_PS4_MEMORY') != '1':
-        # The GPU heap and texture streaming pool above 1080p (with GOW3_DMEM_MB in run.py).
-        values.update({'r.GarlicHeapSizeMB': '4600', 'r.Streaming.PoolSize': '1600'})
+    # No memory cvars: this build has no r.GarlicHeapSizeMB, and the PS4 device profile's
+    # r.Streaming.PoolSize=2000 outranks [SystemSettings]. Above 1080p the game's graphics memory
+    # grows with GOW3_DMEM_MB (graphics_options.py), as it pools all of its direct memory
+    # (research/docs/fix-inventory.md, Caveats).
     # The port answers the game's occlusion queries "visible" (shadPS4's synthetic counters), so
     # they cull nothing and their bounding-box draws cost ~150 draws a frame in busy views
     # (+~5% FPS without them, research: T-O1). hzb (the runtime's HZB remap, GOW3_HZB_REMAP=1,
