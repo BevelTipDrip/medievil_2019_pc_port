@@ -241,7 +241,10 @@ including faults inside winpthreads (`b01661e`, `5247265`, `513ca7f`; `GOW3_CRAS
 - **4K memory (checked statically 2026-11-03):** the crash fix at 4K is upstream's "Native 4K framebuffer pool
   (512 MB)" eboot patch with `GOW3_DMEM_MB` (the PS4's 128 MB pool ran out); both stay. The two pak values were ours
   (S2, 2026-10-20) and do nothing useful: `r.GarlicHeapSizeMB` exists in neither eboot (01.00, 01.02; UTF-16 or ASCII,
-  while the same search finds `r.Streaming.PoolSize`); `OVERBITE/Config/PS4/PS4DeviceProfiles.ini` sets
+  while the same search finds `r.Streaming.PoolSize`; "Garlic" appears only in memory-report strings). This build has no
+  fixed Garlic heap: at boot it allocates the framebuffer pool (512 MiB, type 3) and then **all the remaining direct
+  memory as one memory pool** (6,592 MiB = 7,104 - 512 at 4K, `user/last_run.log`), committing Garlic or Onion pages
+  from it per `sceKernelMemoryPoolCommit` type, so `GOW3_DMEM_MB` is the GPU-memory knob; `OVERBITE/Config/PS4/PS4DeviceProfiles.ini` sets
   `r.Streaming.PoolSize=2000` for PS4, PS4_Neo and PS4_Neo_4k, and the eboot applies Engine.ini's `[ConsoleVariables]`
   with SetBy `0x04000000` (01.00 `0x837f61`, `ApplyCVarSettingsFromIni` at `0x837fb0`; UE 4.21: SetBySystemSettingsIni,
   below SetByDeviceProfile `0x05000000`), so the pak's `[SystemSettings]` 1600 loses to the profile's 2000 (had it won,
