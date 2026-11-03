@@ -582,3 +582,15 @@ Notes from the user:
   (allocations / frees mid-game are a known stutter source, START-HERE "Stage B's GPU memory allocations"), and
   (2) memory use at 1280x800, which should be far below 4K: retail direct memory (5,056 MB, not the 4K 7,104), smaller
   render targets, smaller port caches and ring buffers sized for the resolution (U1).
+
+## Proton run 1 (2026-11-03, v2.0.0 package, SteamOS 3.6.20 before the update; log `data/deck-proton-1.log`)
+
+- Black screen in both **fullscreen and borderless** (the user tried both): audio plays, the logo and intro movies
+  decode (149 / 159 frames), presents at a steady 60 FPS; skipping to the main menu: audio loops, no picture, then
+  "The game exited (code 1)" right after a 4096x4096 image create. Not the display mode.
+- `HLE thread: join failed (No such device or address)` is also in every PC run: harmless here.
+- Upstream 1.3.8 displayed under Proton (slowly, issue #21): suspect our presenter changes (precise vblank tick,
+  presents on the vblank thread, present-mode choice, Reflex path). Ranked suspects and tests:
+  `study-fork-spacepepperoni.md` section 2 (in progress).
+- Next run: `PROTON_LOG=1 %command%` in the Steam launch options (the exit reason).
+- The launcher offers no **1280x800** output: add 16:10 sizes for Deck mode, then check the game at 16:10.
