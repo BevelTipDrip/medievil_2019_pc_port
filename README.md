@@ -19,17 +19,16 @@ offers upstream's builds in place of this one.
 
 What it changes, in short:
 
-- **Fights**: kill effects ended and reopened the render pass about 100 times a frame; now they don't
-  (Performance patches > "Fewer render pass breaks"). A fight at a 120 FPS cap holds 1% / 0.1% lows of
-  119.7 / 117.4 FPS, with no frame over 10 ms.
+- **Fights**: kill effects nearly doubled the render passes in a frame (326 to 560–660), each break costing the
+  draw-translation thread time, so it saturated; most of those breaks are gone (Performance patches > "Fewer render
+  pass breaks"). A fight at a 120 FPS cap holds 1% / 0.1% lows of 119.7 / 117.4 FPS, with no frame over 10 ms.
 - **Culling**: Unreal's HZB occlusion culling works (its small mip levels were never rendered), through a runtime
   remap with no GPU wait. The decal depth prepass, about 600 draws a frame for decals nobody sees, is skipped.
 - **Memory sync**: CPU writes into memory the GPU wrote no longer force downloads (27 a second to 0); the 2–5 s
   stalls when Windows trimmed the game's memory are gone; lock and memory-pool lookups are cheaper (+17% median FPS
   in the heaviest view); small buffers live in VRAM.
-- **Draw translation**: less CPU work per draw (texture-set memo, word-wise register scans, deferred fences).
-- **GPU synchronisation**: image barriers wait only for the shader stages that read them (GPU frame 5.71 to
-  5.22 ms in a same-spot A/B).
+- **Draw translation**: less CPU work per draw (texture-set memo, word-wise register scans, deferred fences, bulk
+  descriptor copies, sampler memo).
 - **Correctness**: shadows drawn as black boxes (stencil writes by shaders) fixed; a crash and freeze in the
   draw pipe fixed; dust and other GPU particles no longer vanish with the camera angle ("GPU particle bounds"
   game patch).
