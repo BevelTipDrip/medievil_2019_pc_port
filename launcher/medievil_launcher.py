@@ -697,20 +697,26 @@ class Launcher:
         return self.photo(image)
 
     def set_icon(self):
-        """The port's icon (launcher/medievil.ico, every size Windows asks for; .png elsewhere)."""
-        if WINDOWS:
-            try:
-                self.root.iconbitmap(default=str(PORT_DIR / 'launcher' / 'medievil.ico'))
-                return
-            except self.tk.TclError:
-                pass
+        game_icon = Path(self.var('game_dir', 'app').get() or '.') / 'sce_sys' / 'icon0.png'
         try:
-            self.icon = self.tk.PhotoImage(file=str(PORT_DIR / 'launcher' / 'medievil.png'))
-            if self.icon.width() > 128:
-                self.icon = self.icon.subsample(self.icon.width() // 64)
-            self.root.iconphoto(True, self.icon)
-        except (self.tk.TclError, OSError):
+            from PIL import Image
+            ico = CONFIG_DIR / 'game_icon.ico'
+            CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+            with Image.open(game_icon) as image:
+                image.convert('RGBA').save(ico, sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (256, 256)])
+            self.root.iconbitmap(default=str(ico))
+            return
+        except (ImportError, OSError, self.tk.TclError):
             pass
+        for icon in (game_icon, PORT_DIR / 'launcher' / 'medievil.png'):
+            try:
+                self.icon = self.tk.PhotoImage(file=str(icon))
+                if self.icon.width() > 128:
+                    self.icon = self.icon.subsample(self.icon.width() // 64)
+                self.root.iconphoto(True, self.icon)
+                return
+            except (self.tk.TclError, OSError):
+                continue
 
     # ---- look --------------------------------------------------------------------------------
     def check_images(self):
