@@ -569,3 +569,16 @@ Notes from the user:
 - Copied: `~/MediEvil/medievil-windows` (the v2.0.0 package, `0d0097a`) with a copy of the user's saves in its
   `user/savedata`; `~/MediEvil/CUSA11227-0102` (01.02, 44 GB) on the internal drive.
 - WSL on the PC: Debian 13.5 (glibc 2.41), 16 threads, 31 GB, 956 GB free.
+
+## The user's direction on performance (2026-11-03)
+
+- **Linux + AMD slowness is treated as fixable**, not as a hardware limit: spacepepperoni's Deck build is shown near a
+  stable 30 FPS, against upstream's 7-18 FPS claims. Read that fork's changes first (branches `skinning-fix`,
+  `stencil-draw-clear`, `linux-steamdeck`, `steam-deck-wayland`) for what they fixed on RADV.
+- **Target: 60 FPS** on the OLED Deck (panel up to 90 Hz; gamescope can set the panel to 60 Hz, so tick = cap = 60, the
+  PC rule). The precise tick likely off and / or a lower tick rate; decide from measurements (spin CPU vs long frames).
+- **GPU memory:** on Linux the driver allocates from shared memory (GTT) on demand, so the BIOS UMA size matters most
+  on Windows. Two things to look at: (1) claiming the port's GPU memory up front at boot instead of during gameplay
+  (allocations / frees mid-game are a known stutter source, START-HERE "Stage B's GPU memory allocations"), and
+  (2) memory use at 1280x800, which should be far below 4K: retail direct memory (5,056 MB, not the 4K 7,104), smaller
+  render targets, smaller port caches and ring buffers sized for the resolution (U1).
