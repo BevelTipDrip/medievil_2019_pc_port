@@ -238,10 +238,16 @@ including faults inside winpthreads (`b01661e`, `5247265`, `513ca7f`; `GOW3_CRAS
 
 - **Narrow image stages:** N-4/N-5 reported ~9% shorter GPU frames; N-16 corrected it to -0.8% GPU active time (the
   rest was idle variance). Kept for correctness of the stored stages, not as a GPU win.
-- **4K memory:** `r.GarlicHeapSizeMB` has no string in the 01.00 eboot and the PS4 device profile sets
-  `r.Streaming.PoolSize=2000` at a higher priority than the pak's 1600, so both pak values are probably inert
-  (study-live-switches.md; unverified in game). The effective parts are `GOW3_DMEM_MB` and the pool patch. T-S2's
-  "400-800 MB PS4 pool thrashing" is contradicted by the same finding.
+- **4K memory (checked statically 2026-11-03):** the crash fix at 4K is upstream's "Native 4K framebuffer pool
+  (512 MB)" eboot patch with `GOW3_DMEM_MB` (the PS4's 128 MB pool ran out); both stay. The two pak values were ours
+  (S2, 2026-10-20) and do nothing useful: `r.GarlicHeapSizeMB` exists in neither eboot (01.00, 01.02; UTF-16 or ASCII,
+  while the same search finds `r.Streaming.PoolSize`); `OVERBITE/Config/PS4/PS4DeviceProfiles.ini` sets
+  `r.Streaming.PoolSize=2000` for PS4, PS4_Neo and PS4_Neo_4k, and the eboot applies Engine.ini's `[ConsoleVariables]`
+  with SetBy `0x04000000` (01.00 `0x837f61`, `ApplyCVarSettingsFromIni` at `0x837fb0`; UE 4.21: SetBySystemSettingsIni,
+  below SetByDeviceProfile `0x05000000`), so the pak's `[SystemSettings]` 1600 loses to the profile's 2000 (had it won,
+  it would have shrunk the pool). Not yet confirmed in game (the runtime's `GetFlags` on the cvar would show the
+  SetBy). T-S2's "400-800 MB PS4 pool thrashing" is wrong for the same reason; its gain, if it came from these settings, came
+  from `GOW3_DMEM_MB` (unverified).
 - **study-frame-cost §4** lists separate translucency at 50% and ring reuse as dropped; both were later reversed by
   measurements (N-20 / N-26: effects resolution, default 75%; N-32: ring reuse on).
 - **Occlusion queries:** the 2026-10-20 inventory listed "queries off" as the default; since `57dc5c4` the default is
