@@ -4,6 +4,27 @@ Status: started 2026-10-30 (the user's list after N-26). Parent: [START-HERE.md]
 update an item's state here when it moves; details live in the linked plan or study. States: `open` / `in progress` /
 `done` (with commit) / `dropped` (with why).
 
+## The user's quality-of-life list (2026-11-03, after the v2.0.0 release)
+
+Not in any order (the user's numbering kept). The performance items below stay open alongside. Also: the user will run
+the build on a second PC (5800X3D + RX 6900 XT), the first test on other hardware and on AMD.
+
+| # | Item | What is known (2026-11-03) | State |
+|---|---|---|---|
+| 1 | DLSS / FSR upscaling | Needs the UE4 frame map and motion vectors first ([plan-ue4-motion-vectors.md](plan-ue4-motion-vectors.md) M0-M2). UE4 already runs TAA with a velocity buffer (movable objects only, the rest from depth + camera) and its own jitter; the dormant path is Bloodborne's and must not be reused as is. DLSS SR bridge exists ([plan-dlss.md](plan-dlss.md)) | open |
+| 2 | DLSS / FSR frame generation | After 1's inputs. FSR FG API already linked with no caller ([plan-fsr-frame-generation.md](plan-fsr-frame-generation.md)); DLSS FG through NGX Vulkan ([plan-dlss.md](plan-dlss.md)) | open |
+| 3 | Mouse look | Lead: the eboot imports `libSceMouse` (`src/import_names.inc:253-257`); the runtime reports no mouse (`src/runtime_services.c:546-554`). If the game's input config binds MouseX / MouseY, feeding SDL relative motion through `sceMouseRead` may give mouse look without a camera hook. To check: DefaultInput.ini axis mappings | open |
+| 4 | Camera options: gentler / no automatic camera moves; free camera whenever Dan is controllable | Not researched. Find the camera class / Blueprint and its auto-rotate and fixed-camera volumes; options as cvars or pak edits | open |
+| 5 | Live settings in the game's own menu (low priority) | The ImGui overlay already has live settings ([plan-live-switches.md](plan-live-switches.md)). Idea: one item in the game's pause menu that opens it, overlay restyled to the game's look | open, low |
+| 6 | Debug menu on 01.02 | Pak config edits apply on 01.02; 01.02's DefaultInput.ini maps R3 to "RecenterCamera", the debug menu's button ([plan-0102.md](plan-0102.md)). First: check whether it is only the binding. Fallback: our own menu with 01.00's features, plus UE4 debug features | open |
+| 7 | Launcher redesign | Banner low resolution, grouping, scaling: follow the window size, or fixed size scaled by Windows DPI only | open |
+| 8 | AMD equivalent of Reflex | `VK_AMD_anti_lag` (Anti-Lag 2), same shape as the Reflex path ([study-vrr-present-pacing.md](study-vrr-present-pacing.md) l.108). Test on the RX 6900 XT | open |
+| 9 | Handheld fixes for shared memory (Steam Deck, the user owns one) | On UMA the GPU memory is host visible: memory sync copies between guest and GPU memory may become zero-copy | open, after 10 |
+| 10 | Linux builds, Steam Deck in mind | AppImage script exists (`packaging/linux/`, community build, not official) | open |
+| 11 | Hide the mouse cursor in borderless (and fullscreen) | Cursor always shown; overlay sets ImGui `MouseDrawCursor` only (`gpu/shim/gow3_overlay.cpp:102`) | open, small |
+| 12 | Controller glyphs: PlayStation, Xbox, keyboard / mouse | Not researched: prompt textures / UMG widgets in the paks | open |
+| 13 | Mouse navigation in the game's menus (nice to have) | Same lead as 3 (`sceMouse`) | open |
+
 ## The user's order (2026-10-30)
 
 | # | Item | State | Where |
