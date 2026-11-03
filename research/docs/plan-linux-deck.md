@@ -594,3 +594,19 @@ Notes from the user:
   `study-fork-spacepepperoni.md` section 2 (in progress).
 - Next run: `PROTON_LOG=1 %command%` in the Steam launch options (the exit reason).
 - The launcher offers no **1280x800** output: add 16:10 sizes for Deck mode, then check the game at 16:10.
+
+**Cause found (kernel log of that boot, read 2026-11-03):** a **GPU hang** in both launches. `ring gfx_0.0.0 timeout`
+(the Deck's `amdgpu.lockup_timeout` 5 s for gfx), blamed on `medievil-runtime`, thread `shadPS4:Present` (pids 6542 at
+18:25:46 and 6797 at 18:26:51, ~36 s after the second launch started), then a MODE2 GPU reset and `Skip scheduling IBs`
+for the guilty context: the game ran on without a GPU (audio, movie decoding, presents counted) and exited with
+code 1 later. The job named is the one on the hardware when the ring stopped, not necessarily the one that hung it.
+That run was on SteamOS 3.6.20 / RADV 24.0.99.
+
+**The Deck after the update (18:47):** SteamOS **3.9.5**, glibc **2.43**, Mesa / RADV **26.2.0-devel** (vulkan-radeon
+26.2.0_devel, SteamOS 26.05.19). A Debian 13 (glibc 2.41) build now runs on it; spacepepperoni's AppImage too.
+
+Next Deck launches, one change each:
+1. Same package and settings on the updated SteamOS, `PROTON_LOG=1 %command%` (does the new RADV still hang?).
+2. If it hangs: `RADV_DEBUG=hang` added (RADV writes a dump of the hung command buffer to `~/radv_dumps_*`; slow).
+3. Then the suspects from [study-fork-spacepepperoni.md](study-fork-spacepepperoni.md) section 2 (1080p output with
+   a 67% render scale; `GOW3_DEPTH_SAMPLE_IN_PLACE=0`; presenter timing switches).
