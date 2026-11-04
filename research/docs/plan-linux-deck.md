@@ -1048,3 +1048,13 @@ descriptor pushes 1,277 vs 1,362 a frame at 17.7 vs 15.1 writes (~22.6k writes a
 on the Deck as well as or better than on the PC**; the Deck's stage B does the same work, each piece 4-5x slower.
 Research running: `study-stage-b-per-draw.md` (ranked per-draw cuts, top one behind a toggle),
 `study-deck-other-threads.md` (Wwise 58%, the main thread, recorder churn).
+
+## Stage B per draw (2026-11-04, [study-stage-b-per-draw.md](study-stage-b-per-draw.md); C1 built in `f03ee52`, not run)
+
+Draw parts cost 4-5x the PC's, but each end-of-pipe / end-of-shader event (~200 a heavy frame) costs 17-26x:
+`ProcessDownloadImages` is 3.3 us there vs 0.13 us on the PC. Its readback retirement queries the timeline semaphore
+at every event, and on RADV that query is an ioctl. C1 polls at most every 100 us (second toggle word 16, default
+on). The study ranks the other cuts: C3 slow texture binds, C4 one recorded command per draw, C5 a lock-free
+readback pre-check, C6 descriptor set updates off stage B. New `GOW3_FRAME_STATS` lines: "Stage B syscalls per
+frame" (semaphore queries, recorder wakes) and "slow texture binds per 1000 draws". Deck test: study section 6 (one
+launch, `0 0` / `0 16` every ~30 s).
