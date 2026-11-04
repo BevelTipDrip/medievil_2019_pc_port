@@ -928,3 +928,15 @@ guest+0x69eb0c (~307/s, 3.2 ms) is the VideoOut flip + 240 Hz vblank waits. Wwis
 Reading: the "fake" CPU is mostly the port's (stage A's spin, recorder churn, four preempted prep workers). Next:
 port the stage A Drain sleep (spacepepperoni `6ef7566`, from the Uncharted Linux fork); prep workers 2; static analysis
 of what UE4 recycles after the EOP wait at guest+0x68af47 (hybrid U5).
+
+## Drain sleep (2026-11-04, AppImage `ea8f4c1`, fences off, auto clocks; log `data/deck-drain-sleep-1.log`)
+
+`GOW3_DRAIN_SLEEP` (stage A sleeps on stage B's progress after a short spin; spacepepperoni `6ef7566`). Graveyard:
+**60.7 FPS** vs run A 64.0, frame stddev 2.19 / p99 21.0 ms (A 2.25 / 20.8), stage A waited 22.7% (A 22.6%),
+stage B 78% (A 80%). The user: CPU clocks boost higher (less spin power), FPS the same or lower. **No gain**: stage A
+sleeps instead of spinning but waits as much, and the freed core does not become frames (the chain is stage B and the
+game's per-frame EOP wait). Made opt-in (`GOW3_DRAIN_SLEEP=1`) for later A/Bs.
+
+**The user's overlay: the ~62 FPS is 10 ms and 20 ms frames ping-ponging.** Our frame-generation stats are even
+(median 16.7 ms, stddev ~2.2 ms), so the alternation is in presentation (present thread, the 240 Hz vblank tick,
+gamescope). Next: a flip-trace run (`GOW3_FLIP_TRACE`) to find where it enters.

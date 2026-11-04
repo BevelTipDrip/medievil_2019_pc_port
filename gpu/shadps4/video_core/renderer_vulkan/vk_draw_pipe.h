@@ -245,15 +245,12 @@ private:
         }
     }
 
-    /// GOW3_DRAIN_SLEEP: Drain() sleeps after a short spin (default on Linux, off on Windows).
+    /// GOW3_DRAIN_SLEEP=1: Drain() sleeps after a short spin. Opt-in: on the Deck it freed stage
+    /// A's core but not a frame (60.7 vs 64.0 FPS, stage A waited the same, plan-linux-deck.md).
     static bool DrainSleeps() {
         static const bool on = [] {
             const char* env = std::getenv("GOW3_DRAIN_SLEEP");
-#ifdef _WIN32
             return env && env[0] == '1';
-#else
-            return !(env && env[0] == '0');
-#endif
         }();
         return on;
     }
