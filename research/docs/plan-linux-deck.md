@@ -908,3 +908,23 @@ differences from 0.7, risks and the A / B0 / B2 / soak test plan: [impl-gpu-orde
   `SubmitGPUCommandsAsyncTaskThread`) protects: a `GOW3_WAIT_SITES=1` run for the guest call site, then static
   analysis of what UE4's PS4 RHI recycles after it (command buffers only: early signal is safe as is, since stage A
   decodes them on the CPU; dynamic buffer rings: keep those copied, everything else in place: a hybrid U5).
+
+## Wait sites and per-thread CPU (2026-11-04, AppImage `0771a23`, fences off, auto clocks except the last ~30 s; log `data/deck-waitsites-1.log`)
+
+The user, heavy graveyard view: GPU 85-95% at ~900 MHz, CPU 70-80% on all threads, ~65 FPS: "the GPU is starved, the
+CPU usage is high, and that CPU work is likely fake". Per-thread CPU over 3 s (`/proc/<pid>/task`, sampled while the
+clock was already pinned): `gow3:DrawRec` (stage B) ~1 core, **`shadPS4:GpuComm` (stage A) ~1 core with 8.4k
+voluntary switches/s while it waits for stage B 53% of the time (yield-spin)**, the game's main thread ~1 core,
+`gow3:VkRecorder` 63% (7.3k switches/s), `AK::EventManager` (Wwise) 58%, `RHIThread` 42% (6.6k switches/s), four
+`gow3:DrawPrep` at ~19% each with ~1.7k involuntary switches/s each.
+
+Guest wait sites (20 windows at 63-67 FPS, auto clocks): the game's waits are blocking, not spinning (task workers'
+`cond_timedwait` guest+0x70df3a 5.2k/s and `cond_wait` guest+0x70e02c 6.5k/s; `usleep` 8 ms guest+0x8da727 356/s; three
+33 ms timers; mutexes ~70k/s uncontended at 1-3 us). **The per-frame EOP wait is guest+0x68af47** (`equeue_wait`,
+~68/s = the frame rate, 6.4 ms avg, 60 ms timeout: GraphicsCore ident 64 on SubmitGPUCommandsAsyncTaskThread);
+guest+0x69eb0c (~307/s, 3.2 ms) is the VideoOut flip + 240 Hz vblank waits. Wwise's wait is an event flag
+(guest+0x3517baf, 155/s, 4.8 ms): its CPU is likely real work.
+
+Reading: the "fake" CPU is mostly the port's (stage A's spin, recorder churn, four preempted prep workers). Next:
+port the stage A Drain sleep (spacepepperoni `6ef7566`, from the Uncharted Linux fork); prep workers 2; static analysis
+of what UE4 recycles after the EOP wait at guest+0x68af47 (hybrid U5).
