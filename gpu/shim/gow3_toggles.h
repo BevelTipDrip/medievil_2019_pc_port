@@ -115,6 +115,9 @@ enum : std::uint64_t {
     /// D4 (runtime_memory.c, Linux): pool commits / decommits make their host mmap outside the
     /// region table lock. Set: under the lock again. Read by the runtime, listed here.
     PoolMapsLocked = 256,
+    /// D5 (runtime_memory.c): the region table lock is tried for up to 1000 pauses before a
+    /// thread blocks (Linux), and an empty GPU hook queue is seen without it. Set: as before.
+    TableLockPlain = 512,
 };
 inline bool Disabled(std::uint64_t bit) {
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;

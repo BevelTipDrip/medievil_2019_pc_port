@@ -66,6 +66,13 @@ _Static_assert(sizeof(BatchEntry)==32,"PS4 batch map entry layout");
 static __thread unsigned exclusive_depth;
 /* Odd while a writer holds the lock; readers' region caches are valid for one even value. */
 static uint64_t table_generation;
+/* The toggle file's second word (Gow3Toggle2 in gpu/shim/gow3_toggles.h); 512: D5 off. */
+extern uint64_t runtime_disabled_optimizations2;
+int runtime_fault_stats_enabled(void);
+#define TOGGLE2_TABLE_LOCK_PLAIN UINT64_C(512)
+static int table_lock_plain(void) {
+    return (__atomic_load_n(&runtime_disabled_optimizations2,__ATOMIC_RELAXED) & TOGGLE2_TABLE_LOCK_PLAIN) != 0;
+}
 #ifdef _WIN32
 /* Windows: an SRW lock (no system call without contention; winpthreads' rwlock made one per
  * lookup, 8% of the draw recording thread). It is not reentrant and a queued writer blocks new
@@ -97,13 +104,47 @@ static void read_lock(void) { if (!exclusive_depth && !shared_depth++) AcquireSR
 static void read_unlock(void) { if (!exclusive_depth && !--shared_depth) ReleaseSRWLockShared(&lock); }
 #else
 static pthread_rwlock_t lock=PTHREAD_RWLOCK_INITIALIZER;
+/* gow3 D5 (impl-stage-b-bundle-2.md; study-deck-rescore-rejected.md D5; from
+ * spacepepperoni/medievil_ps4_Linux 95e295e, GPL-2.0): the lock is held for table edits (and,
+ * with D4 off, host map calls): microseconds to tens of microseconds. A blocked thread sleeps in
+ * the kernel and is woken by a futex wake, which on the Deck costs it more than that and drops
+ * its core's clock. Both sides try the lock for up to 1000 pauses before blocking. Second toggle
+ * word 512: block at once (live). The attempts and blocks are counted with GOW3_FRAME_STATS. */
+/* [0] reads, [1] writes: contended acquisitions, those the spin ended, blocked time (ns). */
+static uint64_t lock_contended[2], lock_spun[2], lock_blocked_ns[2]; /* atomic */
+static uint64_t lock_now_ns(void) {
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC,&t);
+    return (uint64_t)t.tv_sec*1000000000u+(uint64_t)t.tv_nsec;
+}
+static void lock_contended_path(int write) {
+    int (*try_lock)(pthread_rwlock_t *)=write ? pthread_rwlock_trywrlock : pthread_rwlock_tryrdlock;
+    int (*lock_fn)(pthread_rwlock_t *)=write ? pthread_rwlock_wrlock : pthread_rwlock_rdlock;
+    const int stats=runtime_fault_stats_enabled();
+    if (stats) __atomic_fetch_add(&lock_contended[write],1,__ATOMIC_RELAXED);
+    if (!table_lock_plain()) {
+        for (int i=0;i<1000;++i) {
+            __builtin_ia32_pause();
+            if (!try_lock(&lock)) {
+                if (stats) __atomic_fetch_add(&lock_spun[write],1,__ATOMIC_RELAXED);
+                return;
+            }
+        }
+    }
+    const uint64_t t0=stats ? lock_now_ns() : 0;
+    lock_fn(&lock);
+    if (stats) __atomic_fetch_add(&lock_blocked_ns[write],lock_now_ns()-t0,__ATOMIC_RELAXED);
+}
 static void write_lock(void) {
-    if (!exclusive_depth++) { pthread_rwlock_wrlock(&lock); __atomic_add_fetch(&table_generation,1,__ATOMIC_ACQ_REL); }
+    if (!exclusive_depth++) {
+        if (pthread_rwlock_trywrlock(&lock)) lock_contended_path(1);
+        __atomic_add_fetch(&table_generation,1,__ATOMIC_ACQ_REL);
+    }
 }
 static void write_unlock(void) {
     if (!--exclusive_depth) { __atomic_add_fetch(&table_generation,1,__ATOMIC_RELEASE); pthread_rwlock_unlock(&lock); }
 }
-static void read_lock(void) { if (!exclusive_depth) pthread_rwlock_rdlock(&lock); }
+static void read_lock(void) { if (!exclusive_depth && pthread_rwlock_tryrdlock(&lock)) lock_contended_path(0); }
 static void read_unlock(void) { if (!exclusive_depth) pthread_rwlock_unlock(&lock); }
 #endif
 static Block blocks[LIMIT];
@@ -469,15 +510,29 @@ static void queue_hook(int kind, uintptr_t address, uint64_t size) {
     GpuRange hook = kind==HOOK_MAP ? hook_map : kind==HOOK_UNMAP ? hook_unmap : hook_invalidate;
     if (!hook) return;
     if (pending_count==sizeof(pending)/sizeof(*pending)) { fputs("STOP: GPU hook queue overflow\n",stderr); exit(21); }
-    pending[pending_count++]=(PendingHook){kind,address,size};
+    pending[pending_count]=(PendingHook){kind,address,size};
+    /* pending and pending_count change only under the table lock held exclusively; the count
+     * is stored atomically for flush_hooks' unlocked look. */
+    __atomic_store_n(&pending_count,pending_count+1,__ATOMIC_RELEASE);
 }
+/* gow3 D5: flush_hooks' last pass (an empty queue) took the table lock exclusively only to find
+ * nothing, once per map / commit / decommit / protect. An empty queue now returns without it.
+ * Safe: every caller flushes after the operation that queued its hooks; if it then reads 0, its
+ * hooks were taken by other threads' flushes (each runs the hooks it takes). Second toggle
+ * word 512: always the lock, as before. */
+static uint64_t hook_flushes_unlocked; /* atomic; GOW3_FRAME_STATS */
 /* Runs queued GPU notifications; callers invoke it after dropping the lock. */
 static void flush_hooks(void) {
     for (;;) {
+        if (!__atomic_load_n(&pending_count,__ATOMIC_ACQUIRE) && !table_lock_plain()) {
+            if (runtime_fault_stats_enabled()) __atomic_fetch_add(&hook_flushes_unlocked,1,__ATOMIC_RELAXED);
+            return;
+        }
         write_lock();
         if (!pending_count) { write_unlock(); return; }
         PendingHook h=pending[0];
-        memmove(pending,pending+1,--pending_count*sizeof(*pending));
+        memmove(pending,pending+1,(pending_count-1)*sizeof(*pending));
+        __atomic_store_n(&pending_count,pending_count-1,__ATOMIC_RELAXED);
         GpuRange hook = h.kind==HOOK_MAP ? hook_map : h.kind==HOOK_UNMAP ? hook_unmap : hook_invalidate;
         write_unlock();
         if (hook) hook(h.address,h.size);
@@ -733,7 +788,7 @@ static ABI int32_t direct_unmap(void *address, uint64_t size) {
     write_lock();
     size_t before=pending_count;
     int32_t result=unmap_locked((uintptr_t)address,size);
-    pending_count=before; /* already notified above */
+    __atomic_store_n(&pending_count,before,__ATOMIC_RELAXED); /* already notified above */
     write_unlock();
     return result;
 }
@@ -1042,8 +1097,6 @@ static void pool_give_locked(uint64_t phys, uint64_t size, int state) {
  * lock did, so no commit can map a range a decommit is still unmapping. Windows keeps every
  * host call under the table lock (its host views table is shared). Second toggle word 256:
  * the host calls under the table lock again (live; each call picks one path). */
-extern uint64_t runtime_disabled_optimizations2;
-int runtime_fault_stats_enabled(void);
 #define TOGGLE2_POOL_MAPS_LOCKED UINT64_C(256)
 static uint64_t pool_unlocked_maps, pool_unlocked_map_ns; /* atomic; GOW3_FRAME_STATS */
 static int pool_maps_unlocked(void) {
@@ -1055,18 +1108,13 @@ static int pool_maps_unlocked(void) {
 }
 #ifndef _WIN32
 static pthread_mutex_t pool_map_mutex=PTHREAD_MUTEX_INITIALIZER;
-static uint64_t mono_ns(void) {
-    struct timespec t;
-    clock_gettime(CLOCK_MONOTONIC,&t);
-    return (uint64_t)t.tv_sec*1000000000u+(uint64_t)t.tv_nsec;
-}
 /* host_map without the table lock, timed for the frame stats. */
 static int host_map_unlocked(uintptr_t address, uint64_t size, int prot, int reserved, uint64_t phys) {
-    const uint64_t t0=runtime_fault_stats_enabled() ? mono_ns() : 0;
+    const uint64_t t0=runtime_fault_stats_enabled() ? lock_now_ns() : 0;
     const int r=host_map(address,size,prot,reserved,phys);
     if (t0) {
         __atomic_fetch_add(&pool_unlocked_maps,1,__ATOMIC_RELAXED);
-        __atomic_fetch_add(&pool_unlocked_map_ns,mono_ns()-t0,__ATOMIC_RELAXED);
+        __atomic_fetch_add(&pool_unlocked_map_ns,lock_now_ns()-t0,__ATOMIC_RELAXED);
     }
     return r;
 }
@@ -1286,7 +1334,8 @@ void *runtime_low_map(size_t size, int prot) {
  * semaphore query at every end-of-pipe readback poll again (no poll interval; Gow3Toggle2 in
  * gow3_toggles.h), 32 recorder lean mode off, 64 reserved, 128 the buffer cache's readback
  * checks always under the lock (C5), 256 (Linux) pool commit / decommit host maps under the
- * table lock again (D4). */
+ * table lock again (D4), 512 the table lock blocks at once (Linux) and flush_hooks always takes
+ * it (D5). */
 uint64_t runtime_disabled_optimizations, runtime_disabled_optimizations2;
 /* Speculative readers of guest memory (GPU draw-preparation workers) register a recovery
  * point: a fault on that thread jumps back to it instead of terminating (probe.c). */
@@ -1685,13 +1734,25 @@ void runtime_memory_lock_report(char *out, size_t size, unsigned frames) {
     const double f=frames ? (double)frames : 1.0;
     const uint64_t maps=__atomic_exchange_n(&pool_unlocked_maps,0,__ATOMIC_RELAXED),
                    map_ns=__atomic_exchange_n(&pool_unlocked_map_ns,0,__ATOMIC_RELAXED);
+    const uint64_t flushes=__atomic_exchange_n(&hook_flushes_unlocked,0,__ATOMIC_RELAXED);
+    const char *d5=table_lock_plain() ? "off" : "on";
 #ifdef _WIN32
     const char *d4="n/a";
+    uint64_t contended[2]={0,0}, spun[2]={0,0}, blocked_ns[2]={0,0};
 #else
     const char *d4=pool_maps_unlocked() ? "on" : "off";
+    uint64_t contended[2], spun[2], blocked_ns[2];
+    for (int k=0;k<2;++k) {
+        contended[k]=__atomic_exchange_n(&lock_contended[k],0,__ATOMIC_RELAXED);
+        spun[k]=__atomic_exchange_n(&lock_spun[k],0,__ATOMIC_RELAXED);
+        blocked_ns[k]=__atomic_exchange_n(&lock_blocked_ns[k],0,__ATOMIC_RELAXED);
+    }
 #endif
-    snprintf(out,size,"Region table per frame (D4 %s): pool maps outside the lock %.1f (%.3f ms)\n",
-             d4,maps/f,map_ns/1e6/f);
+    snprintf(out,size,"Region table per frame (D4 %s, D5 %s): pool maps outside the lock %.1f (%.3f ms); "
+             "lock busy (Linux): reads %.1f (spin got it %.1f, blocked %.3f ms), writes %.1f (spin got it %.1f, "
+             "blocked %.3f ms); hook flushes without the lock %.1f\n",
+             d4,d5,maps/f,map_ns/1e6/f,contended[0]/f,spun[0]/f,blocked_ns[0]/1e6/f,
+             contended[1]/f,spun[1]/f,blocked_ns[1]/1e6/f,flushes/f);
 }
 /* GPU page tracking: restrict host access, never beyond the guest's own protection. */
 void runtime_memory_gpu_protect(uintptr_t address, uint64_t size, int read, int write) {
