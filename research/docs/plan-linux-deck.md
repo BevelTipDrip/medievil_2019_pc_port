@@ -986,3 +986,31 @@ guard, memory types, risks and the one-launch Deck test: [impl-u2-direct-arena-w
   idle, which follows the drain. Next: `GOW3_DECODE_PACING` (impl-decode-pacing.md): idle deferred to stage B in
   stream order, Bloodborne 0.7's `decode` pacing adapted to the copy model (a frame retires when stage B and its label
   writes pass its end), frame lead cap 1-2 (label free list 3 frames, transient pool 4).
+
+## Decode pacing D0-D2 (2026-11-04, AppImage `fb62432`, 67%, auto clocks, helpers Auto, no dedicated core; logs `data/deck-decode-D{0,1,2}.log`)
+
+| Heavy view | D0: early frame EOP | D1: + decode pacing, lead 1 | D2: lead 2 |
+|---|---|---|---|
+| FPS | 64-65.5 | 63.5-64.8 | 64-65 |
+| frame stddev / p99 (ms) | 1.28 / 18.9 | 1.48 / 20.0 | 1.48 / 19.2 |
+| game's ident-64 wait | 5.9 ms | 6.1 ms | 6.6 ms |
+| submission lock / pacing waits | 83 ms/s / - | 0 / 78 ms/s | 0 / 0 |
+| stage A waits: submission end / OnSubmit / WAIT_REG_MEM (VO label) / compute | 8.4 / 1.5 / 10.1 / 4.6% | (idle drains avoided 571 / 5 s) | 0 / **12.2** / 8.2 / 3.9% |
+| max frame lead | - | 1 | 1 |
+
+No visual issues in D1 or D2 (the user). Decode pacing works (idle drains avoided, lock gone, no stalls), but the drain
+moved to `Rasterizer::OnSubmit` (once a frame at sceGnmSubmitDone), so stage A still reaches the frame label late and
+the game never gets 2 frames ahead. Next (agent): the VO-label-met fix (spacepepperoni `6ef7566`, second half) and
+OnSubmit's work in stream order on stage B (texture-cache GC vs prepared draws is the safety question).
+
+Earlier the same session: 2 helpers + dedicated stage B core in one run (`data/deck-helpers-run1.log`, by accident
+both at once): 63.2 FPS vs 64.4, stage B busy 79 -> 70%, game's wait 5.5 -> 4.6 ms: stage B did more per frame but
+the frame rate did not follow (the game's threads on 6 of 8 CPUs; and the OnSubmit / VO drains above). Linux pinning
+works ("Stage B: dedicated core 3 (CPU 6; sibling CPU 7 kept free), 23 other threads moved").
+
+**Occlusion on the Deck vs the PC** (the user: Deck draw counts look high): heavy view, Deck ~1,430-1,460 draws a
+frame vs PC `t-sampler-1` (4K, high settings) ~1,480; occlusion queries ~490 vs ~655 a frame; **objects hidden by
+the HZB ~56 a frame on the Deck vs ~171 on the PC.** Either expected (the HZB is built from a 858x482 depth at 67% of
+720p, much coarser than 4K; Low settings change the object set) or a Linux / Deck problem (cf. the one over-culling
+run). Decisive check: the PC with the Deck's exact settings in the same spot (back up medievil.ini first; a PC launch
+needs the user's go).
