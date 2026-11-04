@@ -873,3 +873,24 @@ AppImage still contains the inert switch (no effect without the variable).
 attempt above lacked (bounded signal-thread waits with flush requests, decoder idle flush, submission batching, GPU
 idle and frames retired after the labels, 0.7's `decode` pacing, WAIT_REG_MEM flush + yield, watchdogs). Design,
 differences from 0.7, risks and the A / B0 / B2 / soak test plan: [impl-gpu-ordered-fences.md](impl-gpu-ordered-fences.md).
+
+## U5-2 A/B on the Deck (2026-11-04, AppImage `0771a23`, 67%, GPU clock auto; logs `data/deck-u5-2-{A,B0,B2}.log`)
+
+| Graveyard (last windows) | A: fences off | B0: GPU fences, ahead 0 | B2: GPU fences, ahead 2 |
+|---|---|---|---|
+| FPS | **64.0** | 39.4 | **41.2** |
+| frame stddev / p99 (ms) | 2.25 / 20.8 | 2.52 / 29.2 | 2.49 / 29.2 |
+| game's EOP wait (ident 64) | 6.2 ms | 17.5 ms | 17.6 ms |
+| WAIT_REG_MEM wait / frame | ~0 | 6.2 ms | 5.9 ms |
+| stage B busy | 80% | 55% | 55% |
+| submits / frame | 2.0 | 10.8 | 10.8 |
+
+- Correct: boots, fence lag 15 ms -> 0.4 ms, no crash / watchdog, "labels to unmapped memory" 0, guest memory flat.
+- **Fails the pass rule** (-2%): -36% at ahead 2. The ahead-2 overlap is on ("decode, ahead 2") but barely used
+  (1-4 of ~850 submissions waited per 5 s): MediEvil's UE4 waits on the newest frame's EOP once a frame (and one
+  WAIT_REG_MEM), which now ends at GPU completion (~17.5 ms), so CPU and GPU alternate. The run-9 estimate held.
+- The user: frame generation steadier, CPU use about halved, VRAM ~1 GB lower with fences on (inferred: fewer frames
+  in flight, fewer staging copies alive).
+- **Open variable:** the GPU runs at ~800 MHz on auto (DPM levels 200 / 1100 / 1600; ~90% busy at 800 = ~50% at
+  1600, the user). The 17.5 ms wait is GPU time at that clock. Next: Manual GPU Clock 1600 (QAM), B2 then A; if B2
+  approaches A, U5 is viable with a pinned clock; if not, U5 closes and the Deck work goes to U2 + stage B per draw.
