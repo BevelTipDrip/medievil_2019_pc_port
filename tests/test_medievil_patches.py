@@ -1,12 +1,14 @@
 """MediEvil's built-in patch file: version selection and 01.02 addresses."""
+import struct
 import unittest
 
 from paths import ROOT
-from patches import compile_patches, game_profile, selected_patches
+from patches import compile_patches, game_profile, original_mismatches, selected_patches
 
 XML = ROOT / 'patches/MediEvil.xml'
 NAME = 'Native 4K framebuffer pool (512 MB)'
 BOUNDS = 'GPU particle bounds'
+HZB = 'Finer occlusion culling (low render resolutions, Steam Deck)'
 SEGMENTS = [(0, 0x6000000)]
 
 
@@ -55,6 +57,30 @@ class MedievilPatchTests(unittest.TestCase):
                          [(0x23828e1, bytes.fromhex('db669a01')), (0x23828e9, bytes.fromhex('d36f9a01'))])
         self.assertEqual(compile_patches(XML, [BOUNDS], '01.02', SEGMENTS),
                          [(0x23856b1, bytes.fromhex('0b6d9a01')), (0x23856b9, bytes.fromhex('03769a01'))])
+
+    def test_hzb_full_size(self):
+        # BuildHZB's two "dec" after ceil(log2) become nops (study-ue4-draw-reduction.md section 4).
+        self.assertEqual(compile_patches(XML, [HZB], '01.00', SEGMENTS),
+                         [(0x15357ba, bytes.fromhex('0f1f00')), (0x1535812, bytes.fromhex('6690'))])
+        self.assertEqual(compile_patches(XML, [HZB], '01.02', SEGMENTS),
+                         [(0x153843a, bytes.fromhex('0f1f00')), (0x1538492, bytes.fromhex('6690'))])
+
+    def test_original_bytes_checked(self):
+        # A one-segment ELF (file offset 0x1000, vaddr 0x1530000) holding the 01.02 BuildHZB bytes.
+        def elf(width, height):
+            data = bytearray(0x1000 + 0x10000)
+            data[:4] = bytes.fromhex('7f454c46')
+            struct.pack_into('<Q', data, 0x20, 0x40)
+            struct.pack_into('<HH', data, 0x36, 56, 1)
+            struct.pack_into('<IIQQQQQQ', data, 0x40, 1, 5, 0x1000, 0x1530000, 0, 0x10000, 0x10000, 0x1000)
+            data[0x1000 + 0x843a:0x1000 + 0x843d] = width
+            data[0x1000 + 0x8492:0x1000 + 0x8494] = height
+            return bytes(data)
+        dec_r14d, dec_eax = bytes.fromhex('41ffce'), bytes.fromhex('ffc8')
+        self.assertEqual(original_mismatches(XML, [HZB, BOUNDS], '01.02', elf(dec_r14d, dec_eax)), [])
+        self.assertEqual(original_mismatches(XML, [HZB], '01.02', elf(dec_r14d, bytes.fromhex('9090'))), [HZB])
+        # 01.00's addresses are elsewhere: not the expected bytes.
+        self.assertEqual(original_mismatches(XML, [HZB], '01.00', elf(dec_r14d, dec_eax)), [HZB])
 
     def test_default_patches(self):
         self.assertEqual(selected_patches(XML, '01.02', ''), [NAME, BOUNDS])

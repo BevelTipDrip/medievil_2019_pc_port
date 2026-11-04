@@ -197,6 +197,7 @@ def main():
         print(f'Output resolution: {output}' + (' (the display)' if graphics['output_resolution'] == 'display'
                                                  else ''), flush=True)
         graphics_options.output_environment(env, width, height)
+        graphics_options.hzb_full_size_environment(env)
         # HZB occlusion through the runtime's remap (research: T-HZ4, study-hzb-double-buffer.md):
         # its hooks fit the analysed eboot only. Small read-only buffers the CPU did not write are
         # bound from VRAM instead of copied every draw (S2, T-S2b). GOW3_HZB_REMAP=0 /

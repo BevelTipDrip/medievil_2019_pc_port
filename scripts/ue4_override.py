@@ -230,7 +230,8 @@ QUALITY = {
 # Point and spot light shadows at one fixed size per preset, with small lights unshadowed. UE4
 # sizes them by their size on screen, so walking re-creates them constantly; those re-created
 # maps flickered on the port (shadows blinking while moving, MediEvil's outdoor levels).
-# The second number is r.Shadow.RadiusThreshold: lights smaller than that on screen cast no shadow.
+# The second number is r.Shadow.RadiusThreshold: shadow casters (objects) smaller than that on
+# screen are left out of whole-scene (point, spot, cascade) shadow maps; it does not cull lights.
 # Every shadowed point light redraws its surroundings six times, and the port's GPU thread keeps
 # 60 FPS up to about 2000 draws a frame; busy outdoor scenes reached 4000 (30 FPS) before.
 LOCAL_SHADOWS = {'ultra': (1024, 0.06), 'high': (1024, 0.08), 'console': (512, 0.1),

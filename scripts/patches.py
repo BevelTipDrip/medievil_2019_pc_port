@@ -35,6 +35,33 @@ def eboot_segments(elf):
     return segments
 
 
+def eboot_bytes(elf, offset, length):
+    """length bytes of the eboot file at image offset `offset` (vaddr - EBOOT_BASE), None when they
+    are not all in one loaded segment's file data."""
+    phoff,=struct.unpack_from('<Q',elf,0x20)
+    phentsize,phnum=struct.unpack_from('<HH',elf,0x36)
+    for i in range(phnum):
+        kind,_,fileoff,vaddr,_,filesz,_,_=struct.unpack_from('<IIQQQQQQ',elf,phoff+i*phentsize)
+        if kind==1 and vaddr<=offset and offset+length<=vaddr+filesz:
+            return bytes(elf[fileoff+offset-vaddr:fileoff+offset-vaddr+length])
+    return None
+
+
+def original_mismatches(xml, names, app_version, elf):
+    """The selected patches with a line whose Original attribute (the bytes the line replaces,
+    optional, this port's addition to the format) differs from the eboot's bytes there."""
+    bad=[]
+    for meta in ET.parse(xml).getroot().iter('Metadata'):
+        if meta.get('AppVer')!=app_version or meta.get('Name') not in names: continue
+        for line in meta.iter('Line'):
+            if line.get('Original') is None: continue
+            original=bytes.fromhex(line.get('Original').replace(' ',''))
+            if eboot_bytes(elf,int(line.get('Address'),0)-EBOOT_BASE,len(original))!=original:
+                bad.append(meta.get('Name'))
+                break
+    return bad
+
+
 def encode(line):
     kind,value=line.get('Type'),line.get('Value')
     if kind=='bytes': return bytes.fromhex(value.replace(' ',''))
@@ -250,7 +277,11 @@ def main():
         print(f'Patches: eboot.bin is not the build {xml.name} was checked against: none applied')
         return
     names=selected_patches(xml,needed,a.extra,os.environ.get('GOW3_PATCHES_ONLY')=='1')
-    segments=eboot_segments((a.out/'eboot.elf').read_bytes())
+    elf=(a.out/'eboot.elf').read_bytes()
+    segments=eboot_segments(elf)
+    for name in original_mismatches(xml,names,needed,elf):
+        print(f'Patches: {name}: the eboot has other bytes at its addresses: not applied')
+        names.remove(name)
     writes=compile_patches(xml,names,needed,segments)
     if a.patches_dir:
         # After the built-in ones: an external patch of the same bytes wins.

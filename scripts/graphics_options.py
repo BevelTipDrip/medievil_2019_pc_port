@@ -163,6 +163,24 @@ def output_environment(env, width, height):
     return env
 
 
+HZB_FULL_SIZE_PATCH = 'Finer occlusion culling (low render resolutions, Steam Deck)'
+
+
+def hzb_full_size_environment(env):
+    """GOW3_HZB_FULL_SIZE=1 adds the "Finer occlusion culling" patch (HZB at the scene's size,
+    research/docs/study-ue4-draw-reduction.md section 4) to GOW3_PATCHES, =0 removes it; unset,
+    the launcher's Patches page (or the patch file's default, off) decides. For extra-env.txt
+    A/B tests on the Steam Deck."""
+    switch = env.get('GOW3_HZB_FULL_SIZE')
+    if switch not in ('0', '1'):
+        return env
+    selected = [n for n in env.get('GOW3_PATCHES', '').split(';') if n and n != HZB_FULL_SIZE_PATCH]
+    if switch == '1':
+        selected.append(HZB_FULL_SIZE_PATCH)
+    env['GOW3_PATCHES'] = ';'.join(selected)
+    return env
+
+
 # The single render_resolution of earlier versions: output size, scene scale.
 LEGACY_RESOLUTION = {'native': ('1920x1080', 100), '480p': ('1920x1080', 50), '720p': ('1920x1080', 67),
                      '1440p': ('1920x1080', 133), '1800p': ('1920x1080', 167), '4K': ('1920x1080', 200),

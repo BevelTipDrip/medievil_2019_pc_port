@@ -46,6 +46,16 @@ class GraphicsOptionsTest(unittest.TestCase):
         self.assertEqual((live['GOW3_UE4_SETRES'], live['GOW3_PATCHES'], 'GOW3_DMEM_MB' in live),
                          ('3200x1800', pool, False))
 
+    def test_hzb_full_size_environment(self):
+        # extra-env.txt GOW3_HZB_FULL_SIZE=1 / 0 adds / removes the launcher's "Finer occlusion culling".
+        hzb, size = g.HZB_FULL_SIZE_PATCH, 'Boot display size 1280x720'
+        self.assertEqual(g.hzb_full_size_environment({'GOW3_PATCHES': size}), {'GOW3_PATCHES': size})
+        self.assertEqual(g.hzb_full_size_environment({'GOW3_PATCHES': size, 'GOW3_HZB_FULL_SIZE': '1'})['GOW3_PATCHES'],
+                         f'{size};{hzb}')
+        self.assertEqual(g.hzb_full_size_environment({'GOW3_HZB_FULL_SIZE': '1'})['GOW3_PATCHES'], hzb)
+        self.assertEqual(g.hzb_full_size_environment({'GOW3_PATCHES': f'{hzb};{size}',
+                                                      'GOW3_HZB_FULL_SIZE': '0'})['GOW3_PATCHES'], size)
+
     def test_resolution_migration(self):
         # The single render_resolution / ue4_upscale of earlier versions become the two settings.
         self.assertEqual(g.migrate_resolution({'render_resolution': '4K_native', 'ue4_upscale': 'quality'}),
