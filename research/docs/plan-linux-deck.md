@@ -735,3 +735,11 @@ Suspect: write-fault cost on the game threads (~760 / frame; faultprobe 7 us alo
 mprotect takes the address-space lock for writing). Next: `GOW3_UFFD=1` (userfaultfd write-protect, the lock for
 reading); the Deck's kernel 7.2.7 has CONFIG_USERFAULTFD / UFFD_WP / PTE_MARKER_UFFD_WP; `vm.unprivileged_userfaultfd`
 is 0 but the port asks for UFFD_USER_MODE_ONLY, allowed unprivileged; falls back to signals if refused.
+
+## Test settings by file (2026-11-03, the user's request; `a15b5cb`)
+
+Steam launch options stay plain. Claude writes each run's settings over SSH to
+`~/.local/share/medievil-pc/extra-env.txt` (one `KEY=VALUE` a line, `#` comments; keys starting `GOW3_`, `RADV_`,
+`MESA_`, `AMD_`, `VK_`, `SDL_`); `run.py` applies them on every start (Steam, launcher, `--play`), overriding the
+environment, and logs `Extra environment (...): ...`. The same file works on Windows in the port's data folder.
+Deployed AppImage `e91d5b79` (`a15b5cb`); backups `.56e323b`, `.8072f54` beside it.
