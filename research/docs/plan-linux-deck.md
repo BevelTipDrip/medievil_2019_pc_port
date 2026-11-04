@@ -639,3 +639,18 @@ Next Deck launches, one change each:
   `~/.local/share/medievil-pc` with a copy of the saves and the Proton run's `medievil.ini` (same settings);
   `~/.config/medievil-launcher/settings.json` with the game folder. `--vulkan-info`: RADV VANGOGH, submission +
   readback PASS; note "lacks blit support for D32S8" (scene scaling).
+
+## Branch `deck-lab` (2026-11-03, the user)
+
+Deck / Linux work happens on `deck-lab`, branched from `lab` at `c863886` (Linux build fixes `8072f54` already on
+`lab`, Windows build verified). `lab` stays in its known good state; changes go back by merge or cherry-pick later.
+
+## Native run 1 (2026-11-03, AppImage of `8072f54`, `GOW3_FRAME_STATS=1`; log `data/deck-native-1.log`, partial)
+
+Same settings as Proton run 4 (720p borderless, VSync off, limit 0, precise tick off, stale readbacks). 56 windows:
+mostly **60 FPS, worst 21-25 ms** in the graveyard (Proton: 48-54, worst 34-35 ms); a stretch at 93-99 FPS (so 60
+is not a gamescope cap); heaviest windows 43-53 FPS with 0.6-1.1 s hitches (first visit: loads / shader builds).
+Frame stats: stage B busy median 61%, **max 92%** (the PC's bottleneck, per-draw recording); GPU thread idle median
+37%; draws median 1,192 / frame; **write faults 25-55k / s** (to compare with the PC); frame-time stddev median
+2.2 ms, p99 median 21 ms. **Native is clearly ahead of Proton**; Wine overhead was a large part of the Proton drop.
+Next: where 60 caps without a limit; stage B per-draw cost on Zen 2; write-fault cost; the Deck defaults.
