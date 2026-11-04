@@ -52,7 +52,8 @@ def parse(path):
                     current[key] = float(m.group(1))
         for prefix in ('Recorder per frame', 'Stage B syscalls', 'Decode pacing (', 'OnSubmit on stage B',
                        'Arena writes', 'Early frame EOP', 'Thread ids per frame', 'Draw classes per frame',
-                       'Readback pre-check per frame', 'Region table per frame', 'Stage B sleeps per frame'):
+                       'Readback pre-check per frame', 'Region table per frame', 'Stage B sleeps per frame',
+                       'Guest pool faults'):
             if line.startswith(prefix):
                 current['extra'][prefix] = line
     if current:
