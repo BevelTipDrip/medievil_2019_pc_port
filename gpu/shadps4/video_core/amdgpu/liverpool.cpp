@@ -9,6 +9,7 @@
 #include <time.h>
 #include "gow3_copy.h"
 #include "gow3_sampler.h"
+#include "gow3_fence_stats.h"
 #include "gow3_sections.h"
 #include "gow3_toggles.h"
 #include <cstdio>
@@ -1227,6 +1228,12 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             case PM4ItOpcode::EventWrite: {
                 const auto* event = reinterpret_cast<const PM4CmdEventWrite*>(header);
+                if (Gow3Stats::enabled) { // gow3 gate 2: the guest's cache actions
+                    ++Gow3FenceStats::event_write[u32(event->event_type.Value()) & 63];
+                    if (event->inv_l2) {
+                        ++Gow3FenceStats::event_write_inv_l2;
+                    }
+                }
                 LOG_DEBUG(Render, "Encountered EventWrite: event_type = {}, event_index = {}",
                           magic_enum::enum_name(event->event_type.Value()),
                           magic_enum::enum_name(event->event_index.Value()));
@@ -1254,6 +1261,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             case PM4ItOpcode::EventWriteEos: {
                 const auto* event_eos = reinterpret_cast<const PM4CmdEventWriteEos*>(header);
+                if (Gow3Stats::enabled) {
+                    ++Gow3FenceStats::eos_event[event_eos->event_type & 63];
+                }
                 if (rasterizer &&
                     rasterizer->RunInOrder(&RunEventWriteEos, event_eos, sizeof(*event_eos))) {
                     NotePendingFences(*event_eos);
@@ -1262,6 +1272,15 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             case PM4ItOpcode::EventWriteEop: {
                 const auto* event_eop = reinterpret_cast<const PM4CmdEventWriteEop*>(header);
+                if (Gow3Stats::enabled) {
+                    ++Gow3FenceStats::eop_event[event_eop->event_type & 63];
+                    if (event_eop->int_sel != InterruptSelect::None) {
+                        ++Gow3FenceStats::eop_int_irq;
+                    }
+                    if (event_eop->data_sel == DataSelect::None) {
+                        ++Gow3FenceStats::eop_data_none;
+                    }
+                }
                 if (rasterizer) {
                     if (rasterizer->RunInOrder(&RunEventWriteEop, event_eop, sizeof(*event_eop))) {
                         NotePendingFences(*event_eop);
@@ -1333,7 +1352,12 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 break;
             }
             case PM4ItOpcode::AcquireMem: {
-                // const auto* acquire_mem = reinterpret_cast<PM4CmdAcquireMem*>(header);
+                if (Gow3Stats::enabled) {
+                    const auto* acquire_mem = reinterpret_cast<const PM4CmdAcquireMem*>(header);
+                    Gow3FenceStats::NoteAcquireMem(
+                        acquire_mem->cp_coher_cntl,
+                        (u64(acquire_mem->cp_coher_size_hi) << 32) | acquire_mem->cp_coher_size_lo);
+                }
                 break;
             }
             case PM4ItOpcode::Rewind: {
@@ -1606,6 +1630,12 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             break;
         }
         case PM4ItOpcode::AcquireMem: {
+            if (Gow3Stats::enabled) {
+                const auto* acquire_mem = reinterpret_cast<const PM4CmdAcquireMem*>(header);
+                Gow3FenceStats::NoteAcquireMem(
+                    acquire_mem->cp_coher_cntl,
+                    (u64(acquire_mem->cp_coher_size_hi) << 32) | acquire_mem->cp_coher_size_lo);
+            }
             break;
         }
         case PM4ItOpcode::Rewind: {
@@ -1737,6 +1767,18 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
                 rasterizer->WaitDeferredSignals();
             }
             const auto* release_mem = reinterpret_cast<const PM4CmdReleaseMem*>(header);
+            if (Gow3Stats::enabled) { // gow3 gate 2: compute cache actions
+                ++Gow3FenceStats::release_count;
+                ++Gow3FenceStats::release_event[release_mem->event_type & 63];
+                const u32 bits[] = {release_mem->tcl1_vol_action_ena, release_mem->tc_vol_action_ena,
+                                    release_mem->tc_wb_action_ena, release_mem->tcl1__action_ena,
+                                    release_mem->tc_action_ena};
+                for (unsigned i = 0; i < 5; ++i) {
+                    if (bits[i]) {
+                        ++Gow3FenceStats::release_bit_counts[i];
+                    }
+                }
+            }
             if (rasterizer) {
                 rasterizer->ProcessDownloadImages();
             }

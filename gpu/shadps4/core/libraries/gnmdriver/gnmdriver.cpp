@@ -23,6 +23,7 @@
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pm4_cmds.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
+#include "gow3_fence_stats.h"
 
 extern Frontend::WindowSDL* g_window;
 std::unique_ptr<Vulkan::Presenter> presenter;
@@ -80,6 +81,13 @@ static constexpr u32 tessellation_offchip_buffer_size = 0x800000u;
 
 static void ResetSubmissionLock(Platform::InterruptId irq) {
     std::unique_lock lock{m_wait_idle};
+    if (const u64 armed = Gow3FenceStats::lock_armed_at.exchange(0); armed && submission_lock) {
+        // gow3 gate 2: how long the lock stayed armed (SubmitDone -> GPU idle IRQ).
+        const u64 held = Gow3FenceStats::NowNs() - armed;
+        Gow3FenceStats::lock_held_ns += held;
+        Gow3FenceStats::AtomicMax(Gow3FenceStats::lock_held_max_ns, held);
+        ++Gow3FenceStats::lock_releases;
+    }
     submission_lock = 0;
     cv_lock.notify_all();
 }
@@ -87,7 +95,15 @@ static void ResetSubmissionLock(Platform::InterruptId irq) {
 static void WaitGpuIdle() {
     HLE_TRACE;
     std::unique_lock lock{m_wait_idle};
+    const u64 start = Gow3Stats::enabled && submission_lock ? Gow3FenceStats::NowNs() : 0;
     cv_lock.wait(lock, [] { return submission_lock == 0; });
+    if (start) {
+        // gow3 gate 2: a submit that found the lock armed.
+        const u64 waited = Gow3FenceStats::NowNs() - start;
+        ++Gow3FenceStats::lock_waits;
+        Gow3FenceStats::lock_wait_ns += waited;
+        Gow3FenceStats::AtomicMax(Gow3FenceStats::lock_wait_max_ns, waited);
+    }
 }
 
 // Write a special ending NOP packet with N DWs data block
@@ -2357,8 +2373,15 @@ s32 PS4_SYSV_ABI sceGnmSubmitDone() {
     LOG_DEBUG(Lib_GnmDriver, "called");
     std::scoped_lock lk{m_submit_lock};
     WaitGpuIdle();
+    if (Gow3Stats::enabled) {
+        ++Gow3FenceStats::lock_done_calls;
+    }
     if (!liverpool->IsGpuIdle()) {
         submission_lock = true;
+        if (Gow3Stats::enabled) {
+            ++Gow3FenceStats::lock_armed;
+            Gow3FenceStats::lock_armed_at = Gow3FenceStats::NowNs();
+        }
     }
     liverpool->SubmitDone();
     send_init_packet = true;

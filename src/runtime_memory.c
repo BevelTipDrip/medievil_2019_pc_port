@@ -1409,6 +1409,118 @@ int runtime_memory_region(uintptr_t address, uintptr_t *start, uintptr_t *end, i
     read_unlock();
     return found;
 }
+/* gow3 gate 2 (research/docs/study-fence-waits.md 5.5), GOW3_FRAME_STATS=1: the GPU's write
+ * faults by the PS4 memory type of the page (0 WB Onion, 3 WC Garlic, 10 WB Garlic), how many
+ * distinct 16 KiB direct-memory pages fault in a window and how many fault in (nearly) every frame,
+ * the guest code that writes them, and the committed bytes per type. Called from the fault
+ * handlers (probe.c) after the GPU side resolved the fault; reported every 5 s by the GPU side. */
+enum { FT_ONION, FT_GARLIC_WC, FT_GARLIC_WB, FT_DIRECT_OTHER, FT_FLEXIBLE, FT_UNKNOWN, FT_COUNT };
+static const char *const fault_type_names[FT_COUNT]={"Onion","Garlic-WC","Garlic-WB","direct other","flexible","unknown"};
+static uint64_t fault_type_count[FT_COUNT]; /* atomic */
+static uint16_t *fault_page_hits;            /* per 16 KiB of direct memory (phys), atomic */
+static uint8_t *fault_page_bucket;
+static size_t fault_page_count;
+enum { FAULT_SITES=64 };
+static struct { uint64_t site, count; int bucket; } fault_sites[FAULT_SITES]; /* atomic site/count */
+int runtime_fault_stats_enabled(void) {
+    static int enabled=-1;
+    if (enabled<0) { const char *v=getenv("GOW3_FRAME_STATS"); enabled=v && v[0]=='1'; }
+    return enabled;
+}
+static int fault_bucket(int kind, int type) {
+    if (kind==KIND_FLEXIBLE) return FT_FLEXIBLE;
+    if (kind!=KIND_DIRECT) return FT_UNKNOWN;
+    return type==0 ? FT_ONION : type==3 ? FT_GARLIC_WC : type==10 ? FT_GARLIC_WB : FT_DIRECT_OTHER;
+}
+void runtime_memory_note_gpu_fault(uintptr_t address, uint64_t guest_site) {
+    if (!runtime_fault_stats_enabled()) return;
+    int kind=0, type=-1; uint64_t phys=0;
+    read_lock();
+    size_t i=vma_index(address);
+    if (i<vma_count && vmas[i].start<=address) {
+        kind=vmas[i].kind; type=vmas[i].type; phys=vmas[i].phys+(address-vmas[i].start);
+    }
+    read_unlock();
+    const int bucket=fault_bucket(kind,type);
+    __atomic_fetch_add(&fault_type_count[bucket],1,__ATOMIC_RELAXED);
+    if (kind==KIND_DIRECT) {
+        if (!fault_page_hits) {
+            static pthread_mutex_t init=PTHREAD_MUTEX_INITIALIZER;
+            pthread_mutex_lock(&init);
+            if (!fault_page_hits) {
+                const size_t n=(size_t)(POOL_SIZE>>14)+1;
+                uint8_t *buckets=calloc(n,1);
+                uint16_t *hits=calloc(n,sizeof(*hits));
+                if (buckets && hits) {
+                    fault_page_bucket=buckets; fault_page_count=n;
+                    __atomic_store_n(&fault_page_hits,hits,__ATOMIC_RELEASE);
+                } else { free(buckets); free(hits); }
+            }
+            pthread_mutex_unlock(&init);
+        }
+        uint16_t *hits=__atomic_load_n(&fault_page_hits,__ATOMIC_ACQUIRE);
+        const size_t page=(size_t)(phys>>14);
+        if (hits && page<fault_page_count) {
+            __atomic_fetch_add(&hits[page],1,__ATOMIC_RELAXED);
+            fault_page_bucket[page]=(uint8_t)bucket;
+        }
+    }
+    if (guest_site) {
+        const size_t start=(size_t)((guest_site*0x9E3779B97F4A7C15ull)>>58);
+        for (size_t k=0;k<FAULT_SITES;++k) {
+            size_t at=(start+k)%FAULT_SITES;
+            uint64_t expected=0;
+            if (__atomic_load_n(&fault_sites[at].site,__ATOMIC_RELAXED)==guest_site ||
+                __atomic_compare_exchange_n(&fault_sites[at].site,&expected,guest_site,0,__ATOMIC_RELAXED,__ATOMIC_RELAXED)) {
+                fault_sites[at].bucket=bucket;
+                __atomic_fetch_add(&fault_sites[at].count,1,__ATOMIC_RELAXED);
+                break;
+            }
+        }
+    }
+}
+/* One line for the 5 s report; frames = frames presented in the window. Resets the window. */
+void runtime_memory_fault_report(char *out, size_t size, unsigned frames, double window_s) {
+    if (!size) return;
+    out[0]=0;
+    if (!runtime_fault_stats_enabled()) return;
+    uint64_t distinct[FT_COUNT]={0}, every[FT_COUNT]={0}, committed[FT_COUNT]={0};
+    const unsigned every_min=frames>=10 ? frames*9/10 : 0;
+    uint16_t *hits=__atomic_load_n(&fault_page_hits,__ATOMIC_ACQUIRE);
+    if (hits) {
+        for (size_t page=0;page<fault_page_count;++page) {
+            const uint16_t n=__atomic_exchange_n(&hits[page],0,__ATOMIC_RELAXED);
+            if (!n) continue;
+            const int b=fault_page_bucket[page]<FT_COUNT ? fault_page_bucket[page] : FT_UNKNOWN;
+            ++distinct[b];
+            if (every_min && n>=every_min) ++every[b];
+        }
+    }
+    read_lock();
+    for (size_t i=0;i<vma_count;++i) committed[fault_bucket(vmas[i].kind,vmas[i].type)]+=vmas[i].end-vmas[i].start;
+    read_unlock();
+    size_t used=(size_t)snprintf(out,size,"Fault map by PS4 type (5 s, %u frames):",frames);
+    for (int b=0;b<FT_COUNT && used<size;++b) {
+        const uint64_t n=__atomic_exchange_n(&fault_type_count[b],0,__ATOMIC_RELAXED);
+        if (!n && !committed[b]) continue;
+        used+=(size_t)snprintf(out+used,size-used," %s %.0f/s (%.0f/frame, %" PRIu64 " distinct pages, %" PRIu64 " every frame; %.0f MiB mapped);",
+                               fault_type_names[b],n/window_s,frames ? (double)n/frames : 0.0,distinct[b],every[b],committed[b]/1048576.0);
+    }
+    /* The top 4 guest sites (offsets in the game image). */
+    for (int top=0;top<4 && used<size;++top) {
+        size_t best=FAULT_SITES; uint64_t best_count=0;
+        for (size_t k=0;k<FAULT_SITES;++k) {
+            const uint64_t c=__atomic_load_n(&fault_sites[k].count,__ATOMIC_RELAXED);
+            if (c>best_count) { best=k; best_count=c; }
+        }
+        if (best==FAULT_SITES) break;
+        used+=(size_t)snprintf(out+used,size-used,"%s guest+0x%" PRIx64 " %s %.0f/s",top ? "," : " sites:",
+                               fault_sites[best].site,fault_type_names[fault_sites[best].bucket],best_count/window_s);
+        __atomic_store_n(&fault_sites[best].count,0,__ATOMIC_RELAXED);
+    }
+    for (size_t k=0;k<FAULT_SITES;++k) { __atomic_store_n(&fault_sites[k].count,0,__ATOMIC_RELAXED); __atomic_store_n(&fault_sites[k].site,0,__ATOMIC_RELAXED); }
+    if (used<size) snprintf(out+used,size-used,"\n");
+}
 /* GPU page tracking: restrict host access, never beyond the guest's own protection. */
 void runtime_memory_gpu_protect(uintptr_t address, uint64_t size, int read, int write) {
     read_lock();

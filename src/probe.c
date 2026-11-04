@@ -40,6 +40,14 @@ static uint64_t import_count;
 static unsigned char *image;
 /* The loaded game image (eboot vaddr 0), for runtime code that reads the game's own data. */
 unsigned char *runtime_image_base(void) { return image; }
+/* gow3 gate 2: GPU write faults by PS4 memory type (runtime_memory.c), with the guest code offset. */
+int runtime_fault_stats_enabled(void);
+void runtime_memory_note_gpu_fault(uintptr_t address, uint64_t guest_site);
+static void note_gpu_fault(void *address, uintptr_t rip) {
+    if (!runtime_fault_stats_enabled()) return;
+    const uintptr_t offset=rip-(uintptr_t)image;
+    runtime_memory_note_gpu_fault((uintptr_t)address,offset<0x10000000 ? offset : 0);
+}
 static uint64_t image_size;
 uint64_t runtime_image_size(void) { return image_size; }
 static size_t page_size;
@@ -256,7 +264,10 @@ static LONG CALLBACK vectored_fault(EXCEPTION_POINTERS *info) {
     DWORD code=record->ExceptionCode;
     if (code==EXCEPTION_ACCESS_VIOLATION && record->NumberParameters>=2) {
         /* GPU page tracking (write-protected guest pages) is resolved first. */
-        if (gpu_enabled && gow3gpu_handle_fault(info,(void *)record->ExceptionInformation[1])) return EXCEPTION_CONTINUE_EXECUTION;
+        if (gpu_enabled && gow3gpu_handle_fault(info,(void *)record->ExceptionInformation[1])) {
+            note_gpu_fault((void *)record->ExceptionInformation[1],(uintptr_t)info->ContextRecord->Rip);
+            return EXCEPTION_CONTINUE_EXECUTION;
+        }
         if (runtime_fault_recover) {
             /* A speculative guest memory read (GPU draw preparation) faulted: the thread resumes
              * in gow3_longjmp, outside the exception dispatcher, back at its recovery point. */
@@ -313,7 +324,10 @@ static uint64_t patch_tcb_loads(const Segment *segments, uint64_t count) {
 #ifndef _WIN32
 static void fault(int sig, siginfo_t *info, void *context) {
     /* GPU page tracking (write-protected guest pages) is resolved first. */
-    if (gpu_enabled && sig == SIGSEGV && gow3gpu_handle_fault(context, info->si_addr)) return;
+    if (gpu_enabled && sig == SIGSEGV && gow3gpu_handle_fault(context, info->si_addr)) {
+        note_gpu_fault(info->si_addr, (uintptr_t)((ucontext_t *)context)->uc_mcontext.gregs[REG_RIP]);
+        return;
+    }
     /* A speculative guest memory read (runtime_memory.c) failed: resume its recovery point. */
     if ((sig == SIGSEGV || sig == SIGBUS) && runtime_fault_recover) {
         sigjmp_buf *recover = runtime_fault_recover;
