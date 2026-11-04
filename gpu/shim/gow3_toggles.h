@@ -112,6 +112,9 @@ enum : std::uint64_t {
     /// readback_mutex when the range is on no page of a pending copy (TextureCache::
     /// ReadbackSpansMiss). Set: the lock and the queue scan every time.
     ReadbackPrecheck = 128,
+    /// D4 (runtime_memory.c, Linux): pool commits / decommits make their host mmap outside the
+    /// region table lock. Set: under the lock again. Read by the runtime, listed here.
+    PoolMapsLocked = 256,
 };
 inline bool Disabled(std::uint64_t bit) {
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;

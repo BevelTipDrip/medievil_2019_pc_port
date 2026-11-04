@@ -614,6 +614,15 @@ static void drop_range(uintptr_t start, uintptr_t end) {
     }
     vma_erase(i,n);
 }
+/* Table side of place(), for a range whose host mapping is already made. */
+static int32_t record_mapped(uintptr_t address, uint64_t size, int prot, int kind, int type,
+                             uint64_t phys) {
+    drop_range(address,address+size);
+    if (vma_insert(vma_index(address),(Vma){address,address+size,kind,prot,type,phys})) return NO_MEMORY;
+    if (kind==KIND_FLEXIBLE) flexible_bytes+=size;
+    if (kind!=KIND_RESERVED) queue_hook(HOOK_MAP,address,size);
+    return 0;
+}
 /* Places a host mapping; with MAP_FIXED it replaces what the guest had there. */
 static int32_t place(void **inout, uint64_t size, int prot, int flags, uint64_t alignment,
                      int kind, int type, uint64_t phys) {
@@ -626,13 +635,9 @@ static int32_t place(void **inout, uint64_t size, int prot, int flags, uint64_t 
         if (!address) return NO_MEMORY;
     }
     if (host_map(address,size,host_prot(prot),kind==KIND_RESERVED,phys)) return NO_MEMORY;
-    void *mapped=(void *)address;
-    drop_range(address,address+size);
-    if (vma_insert(vma_index(address),(Vma){address,address+size,kind,prot,type,phys})) return NO_MEMORY;
-    if (kind==KIND_FLEXIBLE) flexible_bytes+=size;
-    if (kind!=KIND_RESERVED) queue_hook(HOOK_MAP,address,size);
-    *inout=mapped;
-    return 0;
+    const int32_t r=record_mapped(address,size,prot,kind,type,phys);
+    if (!r) *inout=(void *)address;
+    return r;
 }
 static int block_type(uint64_t phys) {
     for (int i=0;i<LIMIT;++i)
@@ -1017,6 +1022,121 @@ static void pool_give_locked(uint64_t phys, uint64_t size, int state) {
             return;
         }
 }
+/* gow3 D4 (impl-stage-b-bundle-2.md; study-deck-rescore-rejected.md D4; from
+ * spacepepperoni/medievil_ps4_Linux a3f4c1d, GPL-2.0): on Linux a pool commit or decommit made
+ * its mmap / munmap calls under the region table lock, held exclusively. Each takes the
+ * process's address-space lock and, for an unmap, shoots down the TLB on every core the process
+ * runs on: tens of microseconds on the Deck, ~6,000 times a second in MediEvil, and every
+ * locked table read (Linux: the GPU threads' backing-view copies, labels, page protection)
+ * waited behind it. Now the table lock covers only the table and pool page edits; the host
+ * mapping is made between them:
+ * - commit: pages taken (locked), mapped over the reserved range (unlocked), entered in the
+ *   table and the GPU's map hook queued (locked). Until then the table says reserved, which is
+ *   what the guest sees until the commit returns.
+ * - decommit: the range is entered as reserved and the GPU's unmap hook queued (locked: the
+ *   table edit bumps the range's region-cache buckets before the host mapping changes, as L2
+ *   requires), one mmap replaces the pages with a reservation (unlocked; munmap + mmap
+ *   before), and only then are the pages given back to the pool (locked), so no other commit
+ *   can map them while this view still exists.
+ * pool_map_mutex keeps pool commits and decommits serialized among themselves as the table
+ * lock did, so no commit can map a range a decommit is still unmapping. Windows keeps every
+ * host call under the table lock (its host views table is shared). Second toggle word 256:
+ * the host calls under the table lock again (live; each call picks one path). */
+extern uint64_t runtime_disabled_optimizations2;
+int runtime_fault_stats_enabled(void);
+#define TOGGLE2_POOL_MAPS_LOCKED UINT64_C(256)
+static uint64_t pool_unlocked_maps, pool_unlocked_map_ns; /* atomic; GOW3_FRAME_STATS */
+static int pool_maps_unlocked(void) {
+#ifdef _WIN32
+    return 0;
+#else
+    return !(__atomic_load_n(&runtime_disabled_optimizations2,__ATOMIC_RELAXED) & TOGGLE2_POOL_MAPS_LOCKED);
+#endif
+}
+#ifndef _WIN32
+static pthread_mutex_t pool_map_mutex=PTHREAD_MUTEX_INITIALIZER;
+static uint64_t mono_ns(void) {
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC,&t);
+    return (uint64_t)t.tv_sec*1000000000u+(uint64_t)t.tv_nsec;
+}
+/* host_map without the table lock, timed for the frame stats. */
+static int host_map_unlocked(uintptr_t address, uint64_t size, int prot, int reserved, uint64_t phys) {
+    const uint64_t t0=runtime_fault_stats_enabled() ? mono_ns() : 0;
+    const int r=host_map(address,size,prot,reserved,phys);
+    if (t0) {
+        __atomic_fetch_add(&pool_unlocked_maps,1,__ATOMIC_RELAXED);
+        __atomic_fetch_add(&pool_unlocked_map_ns,mono_ns()-t0,__ATOMIC_RELAXED);
+    }
+    return r;
+}
+static int32_t pool_commit_unlocked(void *address, uint64_t size, int type, int prot) {
+    for (uint64_t done=0; done<size;) {
+        uint64_t phys, pages;
+        pthread_mutex_lock(&pool_map_mutex);
+        write_lock();
+        const int taken=pool_take_locked((size-done)/PAGE,&phys,&pages);
+        write_unlock();
+        if (!taken) { pthread_mutex_unlock(&pool_map_mutex); return NO_MEMORY; }
+        const uintptr_t at=(uintptr_t)address+done;
+        const int mapped=!host_map_unlocked(at,pages*PAGE,host_prot(prot),0,phys);
+        write_lock();
+        const int32_t r=mapped ? record_mapped(at,pages*PAGE,prot,KIND_DIRECT,type,phys) : NO_MEMORY;
+        if (r) pool_give_locked(phys,pages*PAGE,POOL_FREE);
+        else pool_committed_bytes+=pages*PAGE;
+        write_unlock();
+        pthread_mutex_unlock(&pool_map_mutex);
+        flush_hooks();
+        if (r) return r;
+        done+=pages*PAGE;
+    }
+    return 0;
+}
+static int32_t pool_decommit_unlocked(uintptr_t start, uintptr_t end) {
+    for (uintptr_t at=start; at<end;) {
+        pthread_mutex_lock(&pool_map_mutex);
+        write_lock();
+        size_t i=vma_index(at);
+        while (i<vma_count && vmas[i].end<=at) ++i;
+        if (i>=vma_count || vmas[i].start>=end) { write_unlock(); pthread_mutex_unlock(&pool_map_mutex); break; }
+        const Vma v=vmas[i];
+        const uintptr_t a=v.start>at ? v.start : at, b=v.end<end ? v.end : end;
+        int32_t r=0;
+        if (v.kind==KIND_DIRECT) {
+            pool_committed_bytes-=pool_committed_bytes>b-a ? b-a : pool_committed_bytes;
+            queue_hook(HOOK_UNMAP,a,b-a);
+            const int32_t recorded=record_mapped(a,b-a,0,KIND_RESERVED,0,0);
+            write_unlock();
+            if (host_map_unlocked(a,b-a,0,1,0)) {
+                /* The view may still be there: its pages stay taken rather than be mapped twice. */
+                r=INVALID;
+            } else {
+                write_lock();
+                pool_give_locked(v.phys+(a-v.start),b-a,POOL_FREE);
+                write_unlock();
+                r=recorded;
+            }
+        } else {
+            if (v.kind!=KIND_RESERVED) { /* not pool memory: as before, all under the lock */
+                r=unmap_locked(a,b-a);
+                void *p=(void *)a;
+                if (!r) r=place(&p,b-a,0,MAP_FIXED_FLAG,PAGE,KIND_RESERVED,0,0);
+            }
+            write_unlock();
+        }
+        pthread_mutex_unlock(&pool_map_mutex);
+        flush_hooks();
+        if (r) return r;
+        at=b;
+    }
+    return 0;
+}
+#else
+static int32_t pool_commit_unlocked(void *address, uint64_t size, int type, int prot) {
+    (void)address; (void)size; (void)type; (void)prot; return INVALID;
+}
+static int32_t pool_decommit_unlocked(uintptr_t start, uintptr_t end) { (void)start; (void)end; return INVALID; }
+#endif
 static int32_t pool_commit_impl(void *address, uint64_t size, int type, int prot);
 static ABI int32_t pool_commit(void *address, uint64_t size, int type, int prot, int flags) {
     (void)flags;
@@ -1028,6 +1148,7 @@ static ABI int32_t pool_commit(void *address, uint64_t size, int type, int prot,
 }
 static int32_t pool_commit_impl(void *address, uint64_t size, int type, int prot) {
     if (!address || (uintptr_t)address%PAGE || !size || size%PAGE) return INVALID;
+    if (pool_maps_unlocked()) return pool_commit_unlocked(address,size,type,prot);
     /* One physical run per step; GPU notifications drain between steps (bounded queue). */
     for (uint64_t done=0; done<size;) {
         uint64_t phys, pages;
@@ -1062,6 +1183,7 @@ static ABI int32_t pool_decommit(void *address, uint64_t size, int flags) {
 static int32_t pool_decommit_impl(void *address, uint64_t size) {
     uintptr_t start=(uintptr_t)address, end=start+size;
     if (start%PAGE || !size || size%PAGE) return INVALID;
+    if (pool_maps_unlocked()) return pool_decommit_unlocked(start,end);
     /* One mapped region per step, returned to the pool and left reserved. */
     for (uintptr_t at=start; at<end;) {
         write_lock();
@@ -1163,7 +1285,8 @@ void *runtime_low_map(size_t size, int prot) {
  * 4 constant ring reuse, 8 direct arena writes (U2: staging copies again), 16 a timeline
  * semaphore query at every end-of-pipe readback poll again (no poll interval; Gow3Toggle2 in
  * gow3_toggles.h), 32 recorder lean mode off, 64 reserved, 128 the buffer cache's readback
- * checks always under the lock (C5). */
+ * checks always under the lock (C5), 256 (Linux) pool commit / decommit host maps under the
+ * table lock again (D4). */
 uint64_t runtime_disabled_optimizations, runtime_disabled_optimizations2;
 /* Speculative readers of guest memory (GPU draw-preparation workers) register a recovery
  * point: a fault on that thread jumps back to it instead of terminating (probe.c). */
@@ -1552,6 +1675,23 @@ void runtime_memory_fault_report(char *out, size_t size, unsigned frames, double
     }
     for (size_t k=0;k<FAULT_SITES;++k) { __atomic_store_n(&fault_sites[k].count,0,__ATOMIC_RELAXED); __atomic_store_n(&fault_sites[k].site,0,__ATOMIC_RELAXED); }
     if (used<size) snprintf(out+used,size-used,"\n");
+}
+/* gow3 D4 / D5 (impl-stage-b-bundle-2.md), GOW3_FRAME_STATS=1: one line for the 5 s report,
+ * per frame presented in the window. Resets the window. */
+void runtime_memory_lock_report(char *out, size_t size, unsigned frames) {
+    if (!size) return;
+    out[0]=0;
+    if (!runtime_fault_stats_enabled()) return;
+    const double f=frames ? (double)frames : 1.0;
+    const uint64_t maps=__atomic_exchange_n(&pool_unlocked_maps,0,__ATOMIC_RELAXED),
+                   map_ns=__atomic_exchange_n(&pool_unlocked_map_ns,0,__ATOMIC_RELAXED);
+#ifdef _WIN32
+    const char *d4="n/a";
+#else
+    const char *d4=pool_maps_unlocked() ? "on" : "off";
+#endif
+    snprintf(out,size,"Region table per frame (D4 %s): pool maps outside the lock %.1f (%.3f ms)\n",
+             d4,maps/f,map_ns/1e6/f);
 }
 /* GPU page tracking: restrict host access, never beyond the guest's own protection. */
 void runtime_memory_gpu_protect(uintptr_t address, uint64_t size, int read, int write) {

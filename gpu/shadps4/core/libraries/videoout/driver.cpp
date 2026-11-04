@@ -24,6 +24,7 @@
 #include "gow3_draw_classes.h"
 #include "gow3_gpu_fences.h"
 extern "C" void runtime_memory_fault_report(char* out, size_t size, unsigned frames, double window_s);
+extern "C" void runtime_memory_lock_report(char* out, size_t size, unsigned frames);
 #include "gow3_sections.h"
 #include "gow3_flip_trace.h"
 #include <x86intrin.h>
@@ -723,6 +724,9 @@ void VideoOutDriver::Flip(const Request& req) {
                     std::fputs(Gow3DecodePacing::Report(window, frames).c_str(), stdout);
                     char fault_map[1024];
                     runtime_memory_fault_report(fault_map, sizeof(fault_map), frames, window);
+                    std::fputs(fault_map, stdout);
+                    // gow3 D4 / D5 (impl-stage-b-bundle-2.md): the region table lock (Linux).
+                    runtime_memory_lock_report(fault_map, sizeof(fault_map), frames);
                     std::fputs(fault_map, stdout);
                 }
                 {
