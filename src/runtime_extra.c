@@ -174,11 +174,26 @@ static ABI int32_t is_neo_mode(void) {
     return neo;
 }
 static ABI int32_t get_cpumode(void) { return 0; }        /* SCE_KERNEL_CPUMODE_6CPU */
+/* gow3 GOW3_FRAME_STATS ("Thread ids" line, gpu driver.cpp): scePthreadGetthreadid calls and
+ * the ones that asked the kernel (atomic). */
+uint64_t runtime_thread_id_calls, runtime_thread_id_lookups;
+int runtime_fault_stats_enabled(void);
 static ABI int32_t thread_id(void) {
+    const int stats=runtime_fault_stats_enabled();
+    if (stats) __atomic_fetch_add(&runtime_thread_id_calls,1,__ATOMIC_RELAXED);
 #ifdef _WIN32
-    return (int32_t)GetCurrentThreadId();
+    (void)stats;
+    return (int32_t)GetCurrentThreadId(); /* a read of the thread block, no system call */
 #else
-    return (int32_t)syscall(SYS_gettid);
+    /* gow3 (spacepepperoni/medievil_ps4_Linux 1232650, impl-deck-cpu-bundle.md D2): UE4 asks
+     * for it on every IsInRenderingThread()-style check (~150,000 calls in 4 s on its render
+     * thread), and gettid is a system call each time. A thread's id never changes: cached. */
+    static __thread int32_t id;
+    if (!id) {
+        id=(int32_t)syscall(SYS_gettid);
+        if (stats) __atomic_fetch_add(&runtime_thread_id_lookups,1,__ATOMIC_RELAXED);
+    }
+    return id;
 #endif
 }
 static ABI int32_t thread_name(void *thread, char *name) {
