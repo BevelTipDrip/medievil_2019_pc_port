@@ -121,6 +121,14 @@ static void CopySparseSerial(VAddr source, u8* dest, u64 size) {
             end = source + size;
         }
         const u64 n = std::min<u64>(size, end - source);
+#ifndef _WIN32
+        // Linux: through the backing view, under the region lock. Linux unmaps a pool page on
+        // every decommit (Windows keeps the view), and UE4 recommits pool pages several times a
+        // frame: a copy thread reading the guest mapping crashed in CopySparseMemory (signal 11,
+        // Deck native run 7). From spacepepperoni/medievil_ps4_Linux 97f0ac9 (GPL-2.0).
+        if (mapped && runtime_memory_read_backing(source, dest, n)) {
+        } else
+#endif
         if (mapped) std::memcpy(dest, reinterpret_cast<const void*>(source), n);
         else std::memset(dest, 0, n);
         source += n; dest += n; size -= n;

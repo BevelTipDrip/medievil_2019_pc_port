@@ -791,3 +791,32 @@ HOST_CACHED) **backs the sparse arena** (128 MiB bound), CPU write -> GPU read -
 **Gate 1 passes.** The route is Bloodborne's AMD model: guest direct memory from Vulkan (type 5), exported as dma-buf,
 mapped by the runtime at guest addresses, bound in place into the arena. On the Deck no hot-block moves to device
 memory are needed (same bandwidth). The memfd cannot be imported. Next: gate 2, the fence cost.
+
+## Native run 7: gate 2 stats (2026-11-03, AppImage `3efee7a`, `GOW3_FRAME_STATS=1` by file; log `data/deck-native-7-crash.log`)
+
+**Crash** after the main menu: `Host fault (signal 11) in libc memcpy, address 0x2005500000` from
+`Core::MemoryManager::CopySparseMemory` on a copy thread: a pool page read through the guest mapping while unmapped
+(Linux unmaps a pool page on every decommit; Windows keeps the view). Same crash as spacepepperoni `97f0ac9`; fixed
+the same way (copies read through the backing view under the region lock, Linux only).
+
+**Correction: "write faults/s" in the frame stats counts pages, not faults.** `Gow3Stats::tracker_faults` is counted
+in `RegionManager::CountWriteFaults` for every protected page marked CPU-modified, from any source: a real fault
+marks a whole fault window (`BufferCache::ExtendWriteFault`), and the runtime's invalidation hooks (pool commits /
+decommits, file reads) and precise CPU writes mark pages too. The new fault map counts actual signals: 59-233/s
+(about **1 per frame**, all Garlic-WC pages) against 44-115k/s "write faults". So the "~760 faults a frame" were ~760
+pages, the signal cost is negligible, and runs 5-6's conclusion is wrong about the mechanism. What uffd did make worse
+is still unexplained. **New suspect:** every invalidation goes through `Rasterizer::InvalidateMemory`
+(`vk_rasterizer.cpp:3546`), which **drains the draw pipe first** on the calling thread; if UE4's pool recommits (5-6 a
+frame, study-bloodborne-07-memory.md) invalidate, game threads wait for stage B (93% busy) several times a frame. To
+measure: invalidations by source and the drain time they cost, on which thread.
+
+Other first readings (menu and early game, 92-235 FPS; not the graveyard):
+- Guest event waits: `RHIFrameOffsetThread` waits on VideoOut events (filter -13, idents 6 and 7) ~once a frame,
+  **~4.1-4.2 ms each**; `SubmitGPUCommandsAsyncTaskThread` waits on GraphicsCore (filter -14, ident 64, EOP)
+  ~once a frame, **2.2-2.5 ms avg**, max 8-35 ms; immediate returns there had 6-15 ms slack.
+- Submission lock: armed on ~99% of SubmitDone calls, held 0.3-0.6 ms avg (max 11.7); submits waited 0.3-0.6 ms
+  avg, 32-128 ms/s.
+- Cache actions per frame: EOP ~36 type 4 + 2 type 20 (flush+inv) + 62 type 40 (bottom of pipe), 1 with an IRQ;
+  EOS 8 (CS_DONE 47); EVENT_WRITE 5 type 44 + 15 type 46; compute RELEASE_MEM 2 (tc_wb / tcl1 / tc on half);
+  ACQUIRE_MEM ~150 a frame, 3 whole-space.
+- Mapped by type: Onion ~783 MiB, Garlic-WC ~940-1000 MiB, flexible 22 MiB; no Onion faults.
