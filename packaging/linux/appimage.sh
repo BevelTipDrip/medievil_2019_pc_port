@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-2.0-or-later
-# Builds dist/MediEvil-x86_64.AppImage from the Linux build (run build.sh first).
+# Builds dist/MediEvil-x86_64.AppImage from the Linux build (run build.sh first);
+# dist/MediEvil-x86_64-v3.AppImage from a GOW3_CPU_LEVEL=v3 build (its AppRun checks the CPU).
 #
 # What is inside: medievil-runtime (the GPU library linked in; or libgow3gpu.so beside it from a
 # GOW3_STATIC_GPU=OFF build), the libraries a desktop may not have
@@ -38,6 +39,9 @@ if objdump -p out/medievil-runtime | grep 'NEEDED *libgow3gpu\.so' >/dev/null; t
     shared_gpu=1
     [[ -f out/gpu/libgow3gpu.so ]] || { echo 'out/gpu/libgow3gpu.so missing: bash build.sh' >&2; exit 1; }
 fi
+# The CPU level build.sh built for (GOW3_CPU_LEVEL; out/cpu-level, absent for the default build).
+cpu_level=$(cat out/cpu-level 2>/dev/null || true)
+case $cpu_level in ''|x86-64-v3) ;; *) echo "Unknown CPU level in out/cpu-level: $cpu_level" >&2; exit 1 ;; esac
 if [[ -n ${MEDIEVIL_DEPS:-} ]]; then
     export LD_LIBRARY_PATH=$MEDIEVIL_DEPS/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
 fi
@@ -212,6 +216,8 @@ newest() { # PREFIX FILE...: the newest symbol version PREFIX_x.y the files impo
 native=("${elves[@]}" "$lib"/*.so*)
 need=$(newest GLIBCXX "${native[@]}")
 echo "${need:-GLIBCXX_3.4}" > "$lib/compat/needs"
+# AppRun refuses to start a GOW3_CPU_LEVEL=v3 build on a CPU without AVX2 / BMI2 / FMA.
+[[ -n $cpu_level ]] && echo "$cpu_level" > "$lib/compat/cpu-level"
 
 # Python (launcher, run.py and the preparation scripts).
 cp -a "$py" "$app/usr/python"
@@ -264,7 +270,7 @@ cat > "$app/usr/share/metainfo/medievil-pc.appdata.xml" <<'EOF'
 EOF
 
 mkdir -p dist
-out=dist/MediEvil-x86_64.AppImage
+out=dist/MediEvil-x86_64${cpu_level:+-${cpu_level#x86-64-}}.AppImage
 rm -f "$out"
 # No FUSE needed to build: the tool runs from its extracted copy.
 ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 "$tool" --no-appstream --runtime-file "$runtime" "$app" "$out" >out/appimagetool.log 2>&1 \

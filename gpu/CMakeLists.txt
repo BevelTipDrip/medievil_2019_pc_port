@@ -13,8 +13,8 @@ add_compile_options(-fno-omit-frame-pointer)
 
 # gow3: link-time optimization (GOW3_LTO, default on) and profile-guided optimization
 # (GOW3_PGO: off, generate = instrumented build writing into GOW3_PGO_DIR, use = build with that
-# profile). Covers gow3gpu and the static libraries linked into it. No -march: the same build
-# runs on the Steam Deck.
+# profile). Covers gow3gpu and the static libraries linked into it. No -march by default: the
+# same build runs on the Steam Deck (GOW3_CPU_LEVEL below: the opt-in x86-64-v3 flavour).
 option(GOW3_LTO "Link-time optimization of gow3gpu" ON)
 # gow3 #6 (gpu/shim/gow3_cacheline.h): OFF keeps the cross-thread scheduler / draw pipe fields
 # packed as before (no alignas(64) groups). Every target here sees the same value.
@@ -44,6 +44,25 @@ elseif (GOW3_PGO STREQUAL "use")
     # (or built differently for it, gow3gpu_init) are compiled without it.
     add_compile_options(-fprofile-use=${GOW3_PGO_DIR} -fprofile-partial-training
                         -fprofile-correction -Wno-missing-profile -Wno-coverage-mismatch)
+endif()
+# gow3 S1 (research/docs/study-deck-build-optimization.md sections 2 and 5;
+# impl-deck-build-sched-pool.md): GOW3_CPU_LEVEL=v3 builds every target here (the library, the
+# third-party libraries built with it, the runtime C, the tests) for x86-64-v3 CPUs (AVX2, BMI1/2,
+# FMA, MOVBE: Intel Haswell, AMD Zen and newer), tuned for Zen 2 (the Steam Deck), without errno
+# from math functions, and links them with lld. Its AppImage refuses to start on an older CPU
+# (packaging/linux/AppRun). -ffp-contract=off: no a*b+c becomes an FMA, so float results (the
+# shader recompiler's constant folding, pacing and scaling math) stay those of the default build;
+# only instruction selection and tuning change. Empty (default): x86-64 baseline, the default linker.
+set(GOW3_CPU_LEVEL "" CACHE STRING "Host CPU level: empty (x86-64 baseline) or v3 (Linux)")
+if (GOW3_CPU_LEVEL STREQUAL "v3")
+    if (WIN32)
+        message(FATAL_ERROR "GOW3_CPU_LEVEL=v3 is a Linux build flavour")
+    endif()
+    add_compile_options(-march=x86-64-v3 -mtune=znver2 -fno-math-errno -ffp-contract=off)
+    # The link sees -march too: the LTO code generator then targets the same CPU.
+    add_link_options(-fuse-ld=lld -march=x86-64-v3 -mtune=znver2)
+elseif (NOT GOW3_CPU_LEVEL STREQUAL "")
+    message(FATAL_ERROR "GOW3_CPU_LEVEL: empty or v3, not '${GOW3_CPU_LEVEL}'")
 endif()
 
 find_package(Vulkan REQUIRED)
