@@ -966,3 +966,23 @@ C1 uploads and C2 precise CPU writes into pages the GPU is done with (per-page u
 recorded-but-unsubmitted draws count; DMA blocks all) are copied straight into the mapping, else staged as before.
 Live A/B: toggle file second word bit 8 (`0 8` off, `0 0` on). Stats: the `Arena writes per frame` line. Design,
 guard, memory types, risks and the one-launch Deck test: [impl-u2-direct-arena-writes.md](impl-u2-direct-arena-writes.md).
+
+## U2 A/B, early frame EOP, and the submission gates (2026-11-04)
+
+- **U2 A/B** (`ab4861a`, one launch, toggle every 30 s; log `data/deck-u2-ab-1.log`): memory type 3
+  (DEVICE_LOCAL|HOST_VISIBLE|HOST_COHERENT, heap 1, 6144 MiB); 4.9 of 5 uploads a frame direct (~3.15 MB), 2 of ~92
+  pass ends saved; **FPS 62-63 both ways**, stage B ~80.7% both, host-copy waits unchanged: correct, no gain (uploads
+  are not where stage B's time goes). The user's culling report from the next run (objects missing at distance, FPS
+  unchanged) came with HZB "hidden" ~55-61k per 5 s vs ~20k in earlier runs, with no experimental switch on and the
+  view distance changed live to Console without effect; gone in the run after (14k hidden). Watch the HZB hidden count.
+- **Early frame EOP** (`8600b80`, `GOW3_EARLY_FRAME_EOP=1`; log `data/deck-early-eop-1.log`): every frame EOP
+  signalled at decode, 0 fallbacks, **max lead 1 frame**; FPS 63.7-64.4, flip-release pacing stddev 1.3-1.5 ms (was
+  ~2.2), p99 ~19 ms (was ~21); **the game's ident-64 wait still ~5.6 ms a frame**. The user: still unstable, a small
+  gain. The user's overlay (tearing allowed) shows uneven frame starts and presents, unlike our flip-release stat:
+  frame-time consistency is a separate, unexplained problem (not display cadence).
+- **Why the wait stays:** two gates serialise the game with stage B. (1) At the end of queued work stage A drains the
+  draw pipe before raising GPU idle, so it cannot decode the game's next submission (holding the next frame label)
+  until stage B catches up. (2) sceGnmSubmitDone arms the submission lock every frame, so the next submit waits for GPU
+  idle, which follows the drain. Next: `GOW3_DECODE_PACING` (impl-decode-pacing.md): idle deferred to stage B in
+  stream order, Bloodborne 0.7's `decode` pacing adapted to the copy model (a frame retires when stage B and its label
+  writes pass its end), frame lead cap 1-2 (label free list 3 frames, transient pool 4).
