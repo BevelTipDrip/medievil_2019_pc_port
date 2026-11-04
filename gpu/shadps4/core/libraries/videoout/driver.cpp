@@ -21,6 +21,7 @@
 #include "gow3_toggles.h"
 #include "gow3_fence_stats.h"
 #include "gow3_decode_pacing.h"
+#include "gow3_draw_classes.h"
 #include "gow3_gpu_fences.h"
 extern "C" void runtime_memory_fault_report(char* out, size_t size, unsigned frames, double window_s);
 #include "gow3_sections.h"
@@ -809,6 +810,9 @@ void VideoOutDriver::Flip(const Request& req) {
                                 tid_calls / frames_d,
                                 (tid_calls > tid_lookups ? tid_calls - tid_lookups : 0) / frames_d,
                                 tid_lookups / frames_d);
+                    // gow3 N0 (impl-draw-reduction.md): recorded draws per frame by class
+                    // (render targets) and stage B's us per draw of each class.
+                    std::fputs(Gow3DrawClasses::Report(frames).c_str(), stdout);
                     // gow3 U2 (impl-u2-direct-arena-writes.md): buffer uploads and precise CPU
                     // writes straight into the mapped arena vs through staging, why staging, what
                     // the direct writes saved; render pass ends and barrier batches of all causes.

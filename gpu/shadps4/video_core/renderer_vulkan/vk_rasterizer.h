@@ -19,6 +19,7 @@
 #include "video_core/renderer_vulkan/vk_draw_prep.h"
 #include "video_core/renderer_vulkan/vk_temporal_upscaler.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
+#include "gow3_draw_classes.h"
 #include "gow3_sections.h"
 #include "video_core/renderer_vulkan/vk_occlusion.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -231,6 +232,9 @@ private:
     /// OnSubmit without its drain: fault buffer, image downloads, collectors, staging trim.
     void OnSubmitWork();
     void PrepareRenderState(const GraphicsPipeline* pipeline);
+    /// gow3 N0 (GOW3_FRAME_STATS): the class and pixel shader of the draw whose targets
+    /// PrepareRenderState bound, into its scope (nothing when the scope is not timing).
+    void DrawClass(const GraphicsPipeline* pipeline, Gow3DrawClasses::Scope& scope);
     RenderState BeginRendering(const GraphicsPipeline* pipeline);
     RenderState BeginRenderingFull(const GraphicsPipeline* pipeline);
     /// gow3: a draw continuing the open render pass with the same inputs gets the same render

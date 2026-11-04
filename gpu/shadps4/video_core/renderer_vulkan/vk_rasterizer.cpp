@@ -346,6 +346,37 @@ static std::pair<u32, u32> GetDrawOffsets(
     return {vertex_offset, instance_offset};
 }
 
+void Rasterizer::DrawClass(const GraphicsPipeline* pipeline, Gow3DrawClasses::Scope& scope) {
+    if (!scope.start) {
+        return;
+    }
+    const auto& regs = Regs();
+    Gow3DrawClasses::Shape shape;
+    const u32 num_color = std::bit_width(pipeline->GetGraphicsKey().mrt_mask);
+    for (u32 cb = 0; cb < num_color && cb < AmdGpu::NUM_COLOR_BUFFERS; ++cb) {
+        if (!cb_descs[cb].first) {
+            continue;
+        }
+        if (shape.colors++ == 0) {
+            const auto format = texture_cache.GetImage(cb_descs[cb].first).info.pixel_format;
+            shape.color0_rgba32f = format == vk::Format::eR32G32B32A32Sfloat;
+            shape.color0_rgba16f = format == vk::Format::eR16G16B16A16Sfloat;
+            shape.color0_rg16 = format == vk::Format::eR16G16Unorm;
+            shape.display = regs.color_buffers[cb] &&
+                            FrameCapture::IsDisplayBuffer(regs.color_buffers[cb].Address());
+        }
+    }
+    if (db_desc.first) {
+        const auto format = texture_cache.GetImage(db_desc.first).info.pixel_format;
+        shape.depth = true;
+        shape.depth16 = format == vk::Format::eD16Unorm || format == vk::Format::eD16UnormS8Uint;
+        shape.depth_write = regs.depth_control.depth_write_enable;
+    }
+    scope.cls = Gow3DrawClasses::Classify(shape);
+    const auto* ps = pipeline->GetStages()[u32(Shader::SwStage::Fragment)];
+    scope.ps = ps ? ps->pgm_hash : 0;
+}
+
 void Rasterizer::EliminateFastClear() {
     auto& col_buf = Regs().color_buffers[0];
     if (!col_buf || !col_buf.info.fast_clear) {
@@ -1073,6 +1104,8 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset, const PreparedDraw* pre
 void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw* used_prepared,
                             bool is_indexed, u32 index_offset) {
     GOW3_SECTION(DrawRecord);
+    // gow3 N0: this draw's stage B time and class (GOW3_FRAME_STATS only).
+    Gow3DrawClasses::Scope draw_class{Gow3Stats::enabled};
     if (DrawPipe::OnStageB()) {
         FrameCapture::Poll();
         scheduler.PopPendingOperations();
@@ -1125,6 +1158,7 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
     motion_geometry = 0;
 
     PrepareRenderState(pipeline);
+    DrawClass(pipeline, draw_class);
     if (upscaler->Enabled() && std::popcount(pipeline->GetGraphicsKey().mrt_mask) == 1) {
         const auto& viewport = Regs().viewports[0];
         upscaler->OnDraw(pipeline->GetStage(Shader::SwStage::Vertex).pgm_hash,
@@ -1343,6 +1377,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
 
 void Rasterizer::DrawIndirectRecord(const GraphicsPipeline* pipeline, bool is_indexed,
                                     const IndirectDraw& indirect) {
+    Gow3DrawClasses::Scope draw_class{Gow3Stats::enabled};
     if (DrawPipe::OnStageB()) {
         FrameCapture::Poll();
         scheduler.PopPendingOperations();
@@ -1356,6 +1391,7 @@ void Rasterizer::DrawIndirectRecord(const GraphicsPipeline* pipeline, bool is_in
     motion_draw = false;
     motion_geometry = 0;
     PrepareRenderState(pipeline);
+    DrawClass(pipeline, draw_class);
     if (upscaler->Enabled() && std::popcount(pipeline->GetGraphicsKey().mrt_mask) == 1) {
         const auto& viewport = Regs().viewports[0];
         upscaler->OnDraw(pipeline->GetStage(Shader::SwStage::Vertex).pgm_hash,

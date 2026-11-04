@@ -51,7 +51,7 @@ def parse(path):
                 if m and key not in current:
                     current[key] = float(m.group(1))
         for prefix in ('Recorder per frame', 'Stage B syscalls', 'Decode pacing (', 'OnSubmit on stage B',
-                       'Arena writes', 'Early frame EOP', 'Thread ids per frame'):
+                       'Arena writes', 'Early frame EOP', 'Thread ids per frame', 'Draw classes per frame'):
             if line.startswith(prefix):
                 current['extra'][prefix] = line
     if current:
@@ -90,7 +90,8 @@ def main():
         print(f'{state:<12}{len(group):>3} ' + ' '.join(f'{v:11.2f}' for v in row) + f'   (mean FPS {mean_fps:.1f})')
         last = group[-1]['extra']
         for prefix, line in last.items():
-            print(f'    {line[:220]}')
+            # The class line is the per-class table itself: printed whole.
+            print(f'    {line if prefix == "Draw classes per frame" else line[:220]}')
 
 
 if __name__ == '__main__':
