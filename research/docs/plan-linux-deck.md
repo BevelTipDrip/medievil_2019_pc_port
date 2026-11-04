@@ -743,3 +743,17 @@ Steam launch options stay plain. Claude writes each run's settings over SSH to
 `MESA_`, `AMD_`, `VK_`, `SDL_`); `run.py` applies them on every start (Steam, launcher, `--play`), overriding the
 environment, and logs `Extra environment (...): ...`. The same file works on Windows in the port's data folder.
 Deployed AppImage `e91d5b79` (`a15b5cb`); backups `.56e323b`, `.8072f54` beside it.
+
+## Native run 6: `GOW3_UFFD=1` (2026-11-03, AppImage `a15b5cb`, settings by extra-env.txt; log `data/deck-native-6.log`, trace `research-data/flip/deck-native-6.csv`)
+
+userfaultfd took effect ("GPU: memory tracking with userfaultfd write-protection"). Graveyard, last ~60 s, vs run 5
+(signals, same 67%): avg 69.0 -> **62.4** FPS, 1% low 47.0 -> **38.0**, 0.1% low 43.2 -> **26.3**, frame stddev 2.46
+-> 2.84 ms; slow frames' game excess **+5.32 -> +8.93 ms** (A +1.85, recording +0.59). Faults unchanged (~47.5k/s);
+handler time 2.0-2.2 ms/s. **Worse:** a faulting thread sleeps until the handler thread wakes it. But changing only
+the fault path moved the game's share of the long frames: **the ~760 faults a frame are what stretch the game's
+frames.** Fix: fewer faults, not a cheaper fault. Reverted to signals (extra-env.txt).
+
+Existing opt-in `GOW3_HOT_PAGES=1` (region_manager.h:220-283; toggle bit 32768) was rejected on the PC: 2 faults made
+a page hot for 20 s, re-uploaded on every binding; the set grew to ~14k pages (56 MB), 33 FPS, a GPU ring timeout.
+Next: a fault map (which pages and guest sites fault, how many distinct pages a frame, how many every frame), then a
+targeted version (pages that fault every frame stay writable and are uploaded once a frame, not per binding).
