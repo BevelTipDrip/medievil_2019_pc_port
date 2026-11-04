@@ -837,3 +837,21 @@ No crash (copy-thread fix `8e7bb25`). Graveyard windows 64-67 FPS, frame median 
 - **U5 warning:** if ident 64's EOP is the newest frame's, GPU-ordered fences add ~the GPU lag (~15.6 ms) per frame
   unless Bloodborne 0.7's "first 2 submissions free" pacing applies. Which frame it belongs to is the open gate-2
   item: the fence-lag probe (study-fence-waits.md 5.1, part 2).
+
+## Native run 9: fence lag (2026-11-03, AppImage `579c9d2`, 67%; log `data/deck-native-9.log`)
+
+Graveyard windows 67-69 FPS (~14.6 ms frames). Lag = GPU done (the fence's timeline tick free) - our signal today,
+level 1 (upper bound, command-buffer granularity), p50 / p90 / max:
+- **EOP with IRQ** (wakes the game's GraphicsCore event, ident 64): **14.2-14.7 / 16.2-17.5 / ~20-25 ms**, ~343 per
+  5 s (once a frame). The game's `SubmitGPUCommandsAsyncTaskThread` waits on it ~5.6 ms a frame, never already
+  signalled (no slack).
+- EOP label only: 16.4-17.0 / 23.4-24.6 ms, ~61k per 5 s (~180 a frame). EOS: 16.3-16.9 / 21-22 ms, ~6.9k per 5 s.
+- "GPU done first": 0 of every kind (our signal always precedes GPU completion).
+
+**Gate 2 reading:** a guest wait on the newest frame's EOP, no slack, lag ~14 ms: GPU-ordered fences would add ~14 ms
+to that wait each frame; the game would stop overlapping its next frame with the GPU (estimate: ~11 ms recording +
+~15 ms GPU ~ 26 ms, high 30s FPS vs 68). By the decision rule (> +4 ms, newest frame, no slack): **NO-GO for U5 as
+designed**, pending a direct measurement (the rule's "measure directly" step): a switch that signals EOP / EOS only
+after the GPU finished, under today's copy model (safe), one Deck run. If it collapses as estimated: U5 needs another
+fence answer (early signal plus a snapshot of the per-frame ring the game rewrites), or the Deck work goes to U2 and
+stage B's per-draw cost.
