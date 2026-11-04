@@ -750,6 +750,32 @@ void VideoOutDriver::Flip(const Request& req) {
                                 set_updates / frames_d,
                                 set_updates ? set_update_ns / 1e3 / set_updates : 0.0,
                                 pushes / frames_d, pushes ? double(push_writes) / pushes : 0.0);
+                    // gow3 (study-stage-b-per-draw.md C1): stage B's system calls (on the Deck
+                    // its ordered tasks cost 7-9x the PC's, its draws 4-5x): timeline semaphore
+                    // queries and recorder wake-ups, there and elsewhere, and the queries the
+                    // end-of-pipe poll interval skipped (second toggle word 16; the saving is
+                    // those skips at stage B's own cost per query).
+                    u64 queries[2], query_ns[2], wakes[2], wake_ns[2];
+                    for (unsigned k = 0; k < 2; ++k) {
+                        queries[k] = Gow3Stats::semaphore_queries[k].exchange(0);
+                        query_ns[k] = Gow3Stats::semaphore_query_ns[k].exchange(0);
+                        wakes[k] = Gow3Stats::recorder_wakes[k].exchange(0);
+                        wake_ns[k] = Gow3Stats::recorder_wake_ns[k].exchange(0);
+                    }
+                    const u64 polls_skipped = Gow3Stats::semaphore_polls_skipped.exchange(0);
+                    const auto each_us = [](u64 ns, u64 n) { return n ? ns / 1e3 / n : 0.0; };
+                    std::printf("Stage B syscalls per frame: semaphore queries %.1f (%.2f us each; "
+                                "other threads %.1f, %.2f us each), skipped by the poll interval "
+                                "(%s) %.1f (~%.3f ms saved); recorder wakes %.1f (%.2f us each; "
+                                "other threads %.1f, %.2f us each)\n",
+                                queries[0] / frames_d, each_us(query_ns[0], queries[0]),
+                                queries[1] / frames_d, each_us(query_ns[1], queries[1]),
+                                Gow3Toggle2::Disabled(Gow3Toggle2::SemaphorePollInterval) ? "off"
+                                                                                          : "on",
+                                polls_skipped / frames_d,
+                                polls_skipped * each_us(query_ns[0], queries[0]) / 1e3 / frames_d,
+                                wakes[0] / frames_d, each_us(wake_ns[0], wakes[0]),
+                                wakes[1] / frames_d, each_us(wake_ns[1], wakes[1]));
                     // gow3 U2 (impl-u2-direct-arena-writes.md): buffer uploads and precise CPU
                     // writes straight into the mapped arena vs through staging, why staging, what
                     // the direct writes saved; render pass ends and barrier batches of all causes.

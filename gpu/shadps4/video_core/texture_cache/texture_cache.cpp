@@ -186,8 +186,11 @@ void TextureCache::WatchReadback(VAddr address, u64 size) {
     }
 }
 
-void TextureCache::RetireReadbacks() {
-    pending_readbacks.Retire([this](u64 tick) { return scheduler.IsFree(tick); },
+void TextureCache::RetireReadbacks(bool polled) {
+    // gow3 (study-stage-b-per-draw.md C1): `polled` (the end-of-pipe events): a copy the last
+    // known GPU tick does not cover yet retires at a later event (Scheduler::IsFreePolled).
+    pending_readbacks.Retire(
+        [this, polled](u64 tick) { return polled ? scheduler.IsFreePolled(tick) : scheduler.IsFree(tick); },
         [this](auto& entry) {
             if (entry.valid) {
                 entry.payload.Invalidate();
@@ -320,7 +323,7 @@ void TextureCache::ProcessDownloadImages() {
                 std::scoped_lock readback_lock{readback_mutex};
                 std::unique_lock lock{download_images_mutex};
                 idle = download_images.empty() &&
-                       !pending_readbacks.FrontReady([this](u64 tick) { return scheduler.IsFree(tick); });
+                       !pending_readbacks.FrontReady([this](u64 tick) { return scheduler.IsFreePolled(tick); });
             }
             if (idle) {
                 CACHE_STAT(eop_skips, 1);
@@ -358,7 +361,7 @@ void TextureCache::ProcessDownloadImages() {
             scheduler.WaitHostCopies();
         }
         std::scoped_lock readback_lock{readback_mutex};
-        RetireReadbacks();
+        RetireReadbacks(true); // the end-of-pipe poll (C1)
         std::unique_lock lock{download_images_mutex};
         for (const ImageId image_id : download_images) {
             const auto& image = slot_images[image_id];

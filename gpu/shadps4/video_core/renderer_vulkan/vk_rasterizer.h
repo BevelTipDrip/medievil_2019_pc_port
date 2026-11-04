@@ -352,6 +352,18 @@ private:
     /// Sets the slow path did not keep: storage, written, own colour / depth target, rebind,
     /// incomplete, registry changed; and stages that cannot use the memo (study 2026-10-29 item 4).
     std::array<u64, 8> texture_set_unkept{};
+    /// gow3 (study-stage-b-per-draw.md C3, GOW3_FRAME_STATS): BindTextures' slow path by cause
+    /// (TexslowCause) on the draw recording thread: calls and wall time (ns), bind helper apart.
+    enum TexslowCause : u32 {
+        TexslowCompute,     ///< a dispatch
+        TexslowUnprepared,  ///< a draw without a prepared draw (its sharps read at bind time)
+        TexslowWritten,     ///< a draw binding a written image or a mip-fallback binding
+        TexslowTooMany,     ///< more images than a memoized set holds
+        TexslowOther,       ///< memo off, frame capture, or no image
+        TexslowMemoMiss,    ///< memoizable, but no current set (first use, own target, changes)
+        TexslowCauses
+    };
+    std::array<u64, TexslowCauses> texslow_calls{}, texslow_ns{};
     /// Returns true when the stage's images were bound from the memo.
     bool BindTexturesFromSet(const Shader::Info& stage, const PreparedStage* prepared,
                              u32 first_image_idx, bool& barrier, TextureSet*& slot);

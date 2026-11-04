@@ -509,7 +509,16 @@ void Scheduler::KickRecording(bool force) {
     full_chunks.clear();
     // A busy recorder picks the new chunks up by itself: waking it is a syscall per draw.
     if (wake) {
+        // gow3 (study-stage-b-per-draw.md C1): wake-ups by thread kind, with their cost
+        // ("Stage B syscalls" line, GOW3_FRAME_STATS).
+        const u64 start_ns = Gow3Stats::enabled ? Semaphore::NowNs() : 0;
         recorder_cv.notify_one();
+        if (Gow3Stats::enabled) {
+            const unsigned kind = Gow3Sections::recording_thread ? 0 : 1;
+            Gow3Stats::recorder_wakes[kind].fetch_add(1, std::memory_order_relaxed);
+            Gow3Stats::recorder_wake_ns[kind].fetch_add(Semaphore::NowNs() - start_ns,
+                                                        std::memory_order_relaxed);
+        }
     }
     if (!record_chunk) {
         record_chunk = AcquireChunk();

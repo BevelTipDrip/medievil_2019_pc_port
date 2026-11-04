@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <limits>
+#include "gow3_sections.h"
+#include "gow3_toggles.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_semaphore.h"
 
@@ -29,6 +31,7 @@ Semaphore::Semaphore(const Instance& instance_) : instance{instance_} {
 Semaphore::~Semaphore() = default;
 
 void Semaphore::Refresh() {
+    const u64 start_ns = Gow3Stats::enabled ? NowNs() : 0;
     u64 this_tick{};
     u64 counter{};
     do {
@@ -38,10 +41,19 @@ void Semaphore::Refresh() {
                    "Failed to get master semaphore value: {}", vk::to_string(counter_result));
         counter = cntr;
         if (counter < this_tick) {
-            return;
+            break;
         }
     } while (!gpu_tick.compare_exchange_weak(this_tick, counter, std::memory_order_release,
                                              std::memory_order_relaxed));
+    // gow3 (study-stage-b-per-draw.md C1): when the GPU's tick was last asked, by any thread
+    // (RefreshedWithin), and the query's cost by thread kind (GOW3_FRAME_STATS).
+    const u64 end_ns = NowNs();
+    refreshed_ns.store(end_ns, std::memory_order_relaxed);
+    if (Gow3Stats::enabled) {
+        const unsigned kind = Gow3Sections::recording_thread ? 0 : 1;
+        Gow3Stats::semaphore_queries[kind].fetch_add(1, std::memory_order_relaxed);
+        Gow3Stats::semaphore_query_ns[kind].fetch_add(end_ns - start_ns, std::memory_order_relaxed);
+    }
 }
 
 void Semaphore::Wait(u64 tick) {

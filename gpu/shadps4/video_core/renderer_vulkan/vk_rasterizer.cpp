@@ -2526,6 +2526,39 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
     if (!on_helper && !set_slot && !stage.images.empty()) {
         ++texture_set_unkept[7]; // written images, mip fallback, too many, memo off
     }
+    // gow3 (study-stage-b-per-draw.md C3): why this bind took the slow path, and its time
+    // (samplers included), for the "slow texture binds" line. Statistics only.
+    struct TexslowTimer {
+        u64* calls = nullptr;
+        u64* ns = nullptr;
+        u64 start = 0;
+        ~TexslowTimer() {
+            if (ns) {
+                ++*calls;
+                *ns += Semaphore::NowNs() - start;
+            }
+        }
+    } texslow_timer;
+    if (Gow3Stats::enabled && !on_helper) {
+        u32 cause = TexslowOther;
+        if (stage.sw_stage == Shader::SwStage::Compute) {
+            cause = TexslowCompute;
+        } else if (set_slot) {
+            cause = TexslowMemoMiss;
+        } else if (!stage.images.empty() && !prepared) {
+            cause = TexslowUnprepared;
+        } else if (std::ranges::any_of(stage.images, [](const auto& image) {
+                       return image.is_written ||
+                              image.mip_fallback_mode != Shader::MipStorageFallbackMode::None;
+                   })) {
+            cause = TexslowWritten;
+        } else if (stage.images.size() > TextureSet::MaxImages) {
+            cause = TexslowTooMany;
+        }
+        texslow_timer.calls = &texslow_calls[cause];
+        texslow_timer.start = Semaphore::NowNs();
+        texslow_timer.ns = &texslow_ns[cause];
+    }
     const u64 bind_generation = texture_cache.RegistryGeneration();
     image_bindings.clear();
     image_binding_entries.clear();
@@ -3038,6 +3071,25 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
                     (unsigned long long)u[3], (unsigned long long)u[4], (unsigned long long)u[5],
                     (unsigned long long)u[6], (unsigned long long)u[7]);
         texture_set_unkept = {};
+        // gow3 (study-stage-b-per-draw.md C3): the slow binds by cause, per 1000 draws (this
+        // window is 262144 draws), and their time each (us; samplers included).
+        std::printf("  slow texture binds per 1000 draws (us each): dispatch %.1f (%.2f), "
+                    "unprepared draw %.1f (%.2f), written or mip image %.1f (%.2f), over %u "
+                    "images %.1f (%.2f), memo off or no image %.1f (%.2f), memo miss %.1f (%.2f)\n",
+                    texslow_calls[TexslowCompute] / 262.144,
+                    texslow_calls[TexslowCompute] ? texslow_ns[TexslowCompute] / 1e3 / texslow_calls[TexslowCompute] : 0.0,
+                    texslow_calls[TexslowUnprepared] / 262.144,
+                    texslow_calls[TexslowUnprepared] ? texslow_ns[TexslowUnprepared] / 1e3 / texslow_calls[TexslowUnprepared] : 0.0,
+                    texslow_calls[TexslowWritten] / 262.144,
+                    texslow_calls[TexslowWritten] ? texslow_ns[TexslowWritten] / 1e3 / texslow_calls[TexslowWritten] : 0.0,
+                    TextureSet::MaxImages, texslow_calls[TexslowTooMany] / 262.144,
+                    texslow_calls[TexslowTooMany] ? texslow_ns[TexslowTooMany] / 1e3 / texslow_calls[TexslowTooMany] : 0.0,
+                    texslow_calls[TexslowOther] / 262.144,
+                    texslow_calls[TexslowOther] ? texslow_ns[TexslowOther] / 1e3 / texslow_calls[TexslowOther] : 0.0,
+                    texslow_calls[TexslowMemoMiss] / 262.144,
+                    texslow_calls[TexslowMemoMiss] ? texslow_ns[TexslowMemoMiss] / 1e3 / texslow_calls[TexslowMemoMiss] : 0.0);
+        texslow_calls = {};
+        texslow_ns = {};
         std::printf("  scene proxies sampled directly: %llu bindings\n",
                     static_cast<unsigned long long>(proxy_samples));
         proxy_samples = 0;

@@ -97,6 +97,9 @@ enum : std::uint64_t {
     /// U2: buffer uploads and precise CPU writes go straight into the mapped arena when the GPU
     /// is done with the blocks (GOW3_ARENA_HOST_VISIBLE at start; set: staging copies again).
     ArenaDirectWrites = 8,
+    /// Stage B's end-of-pipe readback retirement asks the GPU's timeline semaphore at most once
+    /// per GOW3_SEMAPHORE_POLL_US (Scheduler::IsFreePolled; set: a query at every event again).
+    SemaphorePollInterval = 16,
 };
 inline bool Disabled(std::uint64_t bit) {
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;
@@ -150,6 +153,12 @@ inline std::atomic<std::uint64_t> pipeline_binds{0}, pipeline_bind_repeats{0},
 /// Descriptor pushes on the deferred path and their writes (study 2026-10-29 item 2: one
 /// RecordData() per write plus one for the writes).
 inline std::atomic<std::uint64_t> descriptor_pushes{0}, descriptor_writes{0};
+/// Stage B's system calls ("Stage B syscalls" line; study-stage-b-per-draw.md C1): timeline
+/// semaphore queries (Semaphore::Refresh: an ioctl on Linux) and recorder wake-ups
+/// (KickRecording: a futex wake), [0] on the draw recording thread, [1] on other threads, with
+/// their time (ns); the queries the poll interval skipped (Scheduler::IsFreePolled).
+inline std::atomic<std::uint64_t> semaphore_queries[2]{}, semaphore_query_ns[2]{},
+    semaphore_polls_skipped{0}, recorder_wakes[2]{}, recorder_wake_ns[2]{};
 inline std::atomic<int> gpu_thread_clock{-1}; ///< clockid_t of the GPU command thread
 inline std::atomic<unsigned long> gpu_thread_id{0}; ///< Windows thread id of the GPU command thread
 inline std::atomic<std::uint64_t> draws{0}, dispatches{0}, submissions{0};

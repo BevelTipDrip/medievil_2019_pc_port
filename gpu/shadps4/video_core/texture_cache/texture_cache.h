@@ -570,7 +570,7 @@ private:
     u64 readbacks_canceled = 0, readbacks_peak_bytes = 0;
     std::chrono::steady_clock::time_point readback_report = std::chrono::steady_clock::now();
     ReadbackSourceStats readback_sources;
-    void RetireReadbacks();
+    void RetireReadbacks(bool polled = false);
     PageTable page_table;
     /// gow3: std::mutex that knows its owner, so the scheduler does not wait for the draw
     /// recording thread while this thread holds the lock that thread may need.

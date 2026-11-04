@@ -937,6 +937,31 @@ public:
         return work_semaphore.IsFree(tick);
     }
 
+    /// gow3 (study-stage-b-per-draw.md C1): IsFree for polls that only decide whether finished
+    /// work is picked up now or at a later poll (stage B's end-of-pipe readback retirement, ~200
+    /// events a heavy frame). The GPU is asked at most once per GOW3_SEMAPHORE_POLL_US (default
+    /// 100; a query by any thread counts); in between the last known tick answers, and a tick it
+    /// does not cover reads as not finished yet: never early, at most that much late. The query
+    /// is an ioctl on Linux (RADV: DRM_IOCTL_SYNCOBJ_QUERY). Second toggle word bit 16: off, live.
+    [[nodiscard]] bool IsFreePolled(u64 tick) noexcept {
+        if (work_semaphore.IsFree(tick)) {
+            return true;
+        }
+        static const u64 interval_ns = [] {
+            const char* env = std::getenv("GOW3_SEMAPHORE_POLL_US");
+            return (env && *env ? std::strtoull(env, nullptr, 10) : u64{100}) * 1000;
+        }();
+        if (interval_ns && !Gow3Toggle2::Disabled(Gow3Toggle2::SemaphorePollInterval) &&
+            work_semaphore.RefreshedWithin(interval_ns)) {
+            if (Gow3Stats::enabled) {
+                Gow3Stats::semaphore_polls_skipped.fetch_add(1, std::memory_order_relaxed);
+            }
+            return false;
+        }
+        work_semaphore.Refresh();
+        return work_semaphore.IsFree(tick);
+    }
+
     /// gow3: told when a render pass begins and before it ends (vk_occlusion.h: queries live in
     /// render passes). Called on the recording thread.
     struct RenderPassHook {
