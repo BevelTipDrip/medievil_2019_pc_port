@@ -669,3 +669,39 @@ tick 240, no frame caps, VSync off, precise tick off, stale readbacks. `GOW3_SEC
   FPS (115k/s on the menu). Unknown: cost per fault on Linux / Zen 2 (SIGSEGV + mprotect) vs Windows. "0 hot pages".
 - **"Below 60 it locks to 30"**: not the game (frame times 17-21 ms, never 33); gamescope shows frames on the 60 Hz
   panel for one or two refreshes. Options: panel at 90 Hz (11.1 ms steps) or hold 60. Menu cap for the Deck preset.
+
+## Native run 3: stage B by part (2026-11-03, AppImage of `56e323b`; `GOW3_FRAME_STATS=1 GOW3_SECTIONS=1 GOW3_SLOW_FRAMES=1.4`; log `data/deck-native-3.log`)
+
+(The breakdown prints only with `GOW3_SLOW_FRAMES`: run 2 had `GOW3_SECTIONS=1` alone, so nothing printed.)
+117 heavy frame samples (>= 1,000 draws, graveyard): frame 16.70 ms, 1,414 draws, stage B busy 93%, packet 15.6 ms.
+Per draw, Deck vs the PC's `t-sampler-1` (4K heavy, ~1,466 draws), us:
+
+| Part | PC | Deck | x |
+|---|---|---|---|
+| packet | 2.35 | 11.04 | 4.7 |
+| draw | 1.90 | 7.96 | 4.2 |
+| bind | 0.65 | 3.05 | 4.7 |
+| textures | 0.43 | 2.02 | 4.7 |
+| ObtainBuffer | 0.33 | 1.41 | 4.3 |
+| vertex | 0.27 | 1.46 | 5.4 |
+| index | 0.12 | 0.44 | 3.7 |
+| descriptors | 0.23 | 0.86 | 3.7 |
+| texset | 0.19 | 0.94 | 4.9 |
+| texslow | 0.12 | 0.76 | 6.3 |
+| render state | 0.08 | 0.27 | 3.4 |
+| begin render | 0.15 | 0.45 | 3.0 |
+| obt_sync | 0.08 | 0.42 | 5.3 |
+| **tasks** | 0.31 | **2.36** | **7.6** |
+| **flip_present** | 0.19 | **1.24** | **6.5** |
+
+- Draw recording is uniformly 4-5x slower (Zen 2 3.5 GHz / 4 MB L3 vs 7800X3D 96 MB L3); memory-heavy lookups
+  (textures, vertex, texslow) worst. Per-draw cuts help both machines; the Deck magnifies them.
+- **Out of proportion: flip_present 1.75 ms / frame and the other stage B tasks ~1.6 ms / frame** (PC ~0.3 and ~0.2):
+  ~3.3 ms of 16.7 ms in the limiting stage. Suspect the X11 / XWayland present path under gamescope (spacepepperoni
+  has a `steam-deck-wayland` branch).
+- **Write faults:** our handler time 4.9-6.6 ms/s (~0.1 ms / frame), on game threads, none on stage B. The kernel's
+  signal delivery per fault (~3 us of faultprobe's 7.1 us, scratchpad `faultprobe.c`; 24 us with 4 threads, 57 us
+  with 8) is outside it: ~13% of a core of game-thread time at 45k/s. Lower priority than stage B.
+
+Order on `deck-lab`: (1) present / tasks in stage B (native Wayland first); (2) per-draw cost (the PC stage B queue
+items, measured here); (3) write faults (`GOW3_UFFD=1`, hot pages).
