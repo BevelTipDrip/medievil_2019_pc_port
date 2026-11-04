@@ -654,3 +654,18 @@ Frame stats: stage B busy median 61%, **max 92%** (the PC's bottleneck, per-draw
 37%; draws median 1,192 / frame; **write faults 25-55k / s** (to compare with the PC); frame-time stddev median
 2.2 ms, p99 median 21 ms. **Native is clearly ahead of Proton**; Wine overhead was a large part of the Proton drop.
 Next: where 60 caps without a limit; stage B per-draw cost on Zen 2; write-fault cost; the Deck defaults.
+
+## Native run 2 (2026-11-03, same AppImage; log `data/deck-native-2.log`)
+
+Settings (the user, toward a Deck preset): Low preset, effects 50, preshadows off, shadows 256 / short, view 0.7, LOD
+low, no fog / motion blur / DoF / lens flares, engine cap 240 (the earlier 60 cap was the **engine frame rate** setting),
+tick 240, no frame caps, VSync off, precise tick off, stale readbacks. `GOW3_SECTIONS=1` did not take effect (no
+"stage B ms" lines): repeat for the per-part breakdown.
+- Menu ~235 FPS (p99 4-8 ms, odd 16.7 ms frames: the "spikes on a static menu"); Dan's Crypt ~82 FPS at ~372 draws,
+  stage B 92%; **graveyard ~58 FPS steady at ~1,180 draws, stage B 94%**, pacing median 16.68 ms, p99 ~21 ms.
+  Stage B (draws x per-draw cost) is the limit.
+- **Write faults per frame equal the PC's:** Deck graveyard ~44k/s at 58 FPS = ~760 / frame; PC logs 530-760 / frame
+  (t-z5, wpr-graveyard, wait-sites ...). The game rewrites the same GPU-read pages every frame; the rate scales with
+  FPS (115k/s on the menu). Unknown: cost per fault on Linux / Zen 2 (SIGSEGV + mprotect) vs Windows. "0 hot pages".
+- **"Below 60 it locks to 30"**: not the game (frame times 17-21 ms, never 33); gamescope shows frames on the 60 Hz
+  panel for one or two refreshes. Options: panel at 90 Hz (11.1 ms steps) or hold 60. Menu cap for the Deck preset.
