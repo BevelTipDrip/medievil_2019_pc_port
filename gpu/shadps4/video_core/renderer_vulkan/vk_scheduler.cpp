@@ -33,6 +33,7 @@
 #endif
 #include <cstdio>
 #include "gow3_threads.h"
+#include "gow3_fence_stats.h"
 
 namespace Vulkan {
 
@@ -336,16 +337,27 @@ std::unique_ptr<RecordChunk> Scheduler::AcquireChunk() {
 }
 
 void Scheduler::SignalAfterHostCopies(std::function<void()> signal) {
+    // gow3 gate 2 (GOW3_FRAME_STATS): the fence's timeline tick and our signal time, for the lag.
+    const u64 fence = Gow3FenceStats::BeginFence();
+    if (fence != ~0ull) {
+        Gow3FenceStats::SetGpuWaiter(this, [](void* scheduler, u64 tick) {
+            static_cast<Scheduler*>(scheduler)->GetWorkSemaphore()->Wait(tick);
+        });
+    }
     if (!IsRecordingDeferred()) {
         WaitHostCopies();
+        Gow3FenceStats::FenceRecorded(fence, CurrentTick());
         signal();
+        Gow3FenceStats::FenceSignaled(fence);
         return;
     }
     Gow3Copy::FlushBatch();
     deferred_signals_issued.fetch_add(1, std::memory_order_relaxed);
-    Record([signal = std::move(signal), done = deferred_signals_done](vk::CommandBuffer) mutable {
-        Gow3Copy::AfterCopies([signal = std::move(signal), done = std::move(done)] {
+    Record([this, fence, signal = std::move(signal), done = deferred_signals_done](vk::CommandBuffer) mutable {
+        Gow3FenceStats::FenceRecorded(fence, CurrentTick());
+        Gow3Copy::AfterCopies([fence, signal = std::move(signal), done = std::move(done)] {
             signal();
+            Gow3FenceStats::FenceSignaled(fence);
             done->fetch_add(1, std::memory_order_release);
         });
     });

@@ -16,6 +16,8 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <utility>
+#include <vector>
 #ifndef _WIN32
 #include <pthread.h>
 #endif
@@ -131,6 +133,98 @@ inline void NoteInvalidate(std::uint64_t bytes, std::uint64_t drain_ns) {
     slot->drain_max_ns = std::max(slot->drain_max_ns, drain_ns);
 }
 
+// ---- Fence lag (section 5.1, level 1): for each end-of-pipe fence, when the port signals it today
+// and when the GPU has finished the work recorded before it (the command buffer's timeline tick
+// is free). Lag = GPU done - our signal: what GPU-ordered fences would add to a guest waiting on
+// it. The tick is taken where the fence sits in the recording stream (Scheduler::
+// SignalAfterHostCopies); a probe thread waits on the timeline for it. ----
+enum FenceKind : int { FenceEopIrq, FenceEop, FenceEos, FenceKindCount };
+struct FenceEntry {
+    std::atomic<std::uint64_t> tick{0}, t_sig{0};
+    std::atomic<int> kind{-1};
+};
+inline std::array<FenceEntry, 4096> fence_ring{};
+inline std::atomic<std::uint64_t> fence_next{0};
+/// Set by the fence's packet handler just before it hands the signal to the scheduler.
+inline thread_local int pending_fence_kind = -1;
+inline void (*wait_gpu_tick)(void* context, std::uint64_t tick) = nullptr;
+inline void* wait_gpu_context = nullptr;
+inline std::mutex fence_samples_mutex;
+inline std::array<std::vector<double>, FenceKindCount> fence_lag_ms{};
+inline std::array<std::uint64_t, FenceKindCount> fence_gpu_first{};
+
+inline void FenceProbeLoop() {
+    std::uint64_t at = 0;
+    for (;;) {
+        const std::uint64_t next = fence_next.load(std::memory_order_acquire);
+        if (at >= next) {
+            std::this_thread::sleep_for(std::chrono::microseconds(500));
+            continue;
+        }
+        if (next - at > fence_ring.size()) {
+            at = next - fence_ring.size() / 2; // fell behind: skip ahead
+        }
+        FenceEntry& e = fence_ring[at % fence_ring.size()];
+        std::uint64_t tick = 0;
+        for (int tries = 0; !(tick = e.tick.load(std::memory_order_acquire)) && tries < 200; ++tries) {
+            std::this_thread::sleep_for(std::chrono::microseconds(500)); // not recorded yet
+        }
+        const int kind = e.kind.load(std::memory_order_relaxed);
+        if (!tick || kind < 0 || !wait_gpu_tick) {
+            ++at;
+            continue;
+        }
+        wait_gpu_tick(wait_gpu_context, tick);
+        const std::uint64_t t_gpu = NowNs();
+        std::uint64_t t_sig = 0;
+        for (int tries = 0; !(t_sig = e.t_sig.load(std::memory_order_acquire)) && tries < 200; ++tries) {
+            std::this_thread::sleep_for(std::chrono::microseconds(500));
+        }
+        if (t_sig) {
+            std::scoped_lock lock{fence_samples_mutex};
+            fence_lag_ms[kind].push_back((double(t_gpu) - double(t_sig)) / 1e6);
+            if (t_gpu < t_sig) {
+                ++fence_gpu_first[kind];
+            }
+        }
+        ++at;
+    }
+}
+
+/// The scheduler registers how to wait for a timeline tick (any thread).
+inline void SetGpuWaiter(void* context, void (*wait)(void*, std::uint64_t)) {
+    if (!wait_gpu_tick) {
+        wait_gpu_context = context;
+        wait_gpu_tick = wait;
+        std::thread(FenceProbeLoop).detach();
+    }
+}
+
+/// A fence handed to the scheduler: returns its entry (or ~0 when none is pending).
+inline std::uint64_t BeginFence() {
+    const int kind = std::exchange(pending_fence_kind, -1);
+    if (kind < 0 || !Gow3Stats::enabled) {
+        return ~0ull;
+    }
+    const std::uint64_t index = fence_next.load(std::memory_order_relaxed);
+    FenceEntry& e = fence_ring[index % fence_ring.size()];
+    e.tick.store(0, std::memory_order_relaxed);
+    e.t_sig.store(0, std::memory_order_relaxed);
+    e.kind.store(kind, std::memory_order_relaxed);
+    fence_next.store(index + 1, std::memory_order_release);
+    return index;
+}
+inline void FenceRecorded(std::uint64_t index, std::uint64_t tick) {
+    if (index != ~0ull) {
+        fence_ring[index % fence_ring.size()].tick.store(tick, std::memory_order_release);
+    }
+}
+inline void FenceSignaled(std::uint64_t index) {
+    if (index != ~0ull) {
+        fence_ring[index % fence_ring.size()].t_sig.store(NowNs(), std::memory_order_release);
+    }
+}
+
 // ---- Submission lock (sceGnmSubmitDone arms it; submits wait for GPU idle) ----
 inline std::atomic<std::uint64_t> lock_done_calls{0}, lock_armed{0}, lock_waits{0},
     lock_wait_ns{0}, lock_wait_max_ns{0}, lock_held_ns{0}, lock_held_max_ns{0}, lock_releases{0};
@@ -221,6 +315,25 @@ inline std::string Report(double window_s) {
             s = {};
         }
         text += any ? "\n" : " none\n";
+    }
+    {
+        static const char* const kind_names[] = {"EOP irq", "EOP", "EOS"};
+        std::scoped_lock lock{fence_samples_mutex};
+        text += "Fence lag (5 s, our signal -> GPU done, ms p50/p90/max (n, GPU done first)):";
+        for (int k = 0; k < FenceKindCount; ++k) {
+            auto& v = fence_lag_ms[k];
+            if (v.empty()) {
+                continue;
+            }
+            std::sort(v.begin(), v.end());
+            std::snprintf(line, sizeof(line), " %s %.2f/%.2f/%.2f (%zu, %llu);", kind_names[k],
+                          v[v.size() / 2], v[v.size() * 9 / 10], v.back(), v.size(),
+                          static_cast<unsigned long long>(fence_gpu_first[k]));
+            text += line;
+            v.clear();
+            fence_gpu_first[k] = 0;
+        }
+        text += "\n";
     }
     const auto done = lock_done_calls.exchange(0), armed = lock_armed.exchange(0),
                waits = lock_waits.exchange(0), wait_ns = lock_wait_ns.exchange(0),

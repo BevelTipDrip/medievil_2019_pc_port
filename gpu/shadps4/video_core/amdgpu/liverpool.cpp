@@ -281,6 +281,9 @@ void RunEventWriteEop(Vulkan::Rasterizer& rasterizer, const u8* data) {
     } else if (Vulkan::DrawPipe::OnStageB() && !Gow3Toggle::Disabled(Gow3Toggle::RecorderFences)) {
         // The draw recording thread does not wait: the Vulkan recording thread signals the
         // fence after the copies queued before it.
+        Gow3FenceStats::pending_fence_kind = eop.int_sel != InterruptSelect::None
+                                                 ? Gow3FenceStats::FenceEopIrq
+                                                 : Gow3FenceStats::FenceEop; // gow3 gate 2: lag
         rasterizer.SignalAfterHostCopies([eop] { SignalEop(eop); });
     } else {
         // Labels are written in order: not before the ones deferred to the recording thread.
@@ -449,6 +452,7 @@ void RunEventWriteEos(Vulkan::Rasterizer& rasterizer, const u8* data) {
         Vulkan::DrawPipe::OnStageB() && !Gow3Toggle::Disabled(Gow3Toggle::RecorderFences)) {
         rasterizer.ProcessDownloadImages();
         const auto eos = event_eos;
+        Gow3FenceStats::pending_fence_kind = Gow3FenceStats::FenceEos; // gow3 gate 2: lag
         rasterizer.SignalAfterHostCopies([eos] { SignalEos(eos); });
         return;
     }
