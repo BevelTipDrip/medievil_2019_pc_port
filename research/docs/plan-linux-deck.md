@@ -1058,3 +1058,18 @@ on). The study ranks the other cuts: C3 slow texture binds, C4 one recorded comm
 readback pre-check, C6 descriptor set updates off stage B. New `GOW3_FRAME_STATS` lines: "Stage B syscalls per
 frame" (semaphore queries, recorder wakes) and "slow texture binds per 1000 draws". Deck test: study section 6 (one
 launch, `0 0` / `0 16` every ~30 s).
+
+## Deck test tooling (2026-11-04): `research/tools/deck.sh` + `deck_summary.py`
+
+From Git Bash on the PC (host `deck` in `~/.ssh/config`; never launches the game):
+`deck.sh status` (running?, deployed build from `~/MediEvil/DEPLOYED`, test settings, toggles, launcher and ini
+settings, GPU clock mode); `deck.sh deploy [wsl_tree]` (refuses while the game runs, keeps the previous AppImage as
+`.<commit>`, verifies the checksum); `deck.sh env "comment" K=V ...`; `deck.sh toggle "W1 W2"`;
+`deck.sh ab "A" "B" [period] [cycles]` (alternates the toggle file during a run); `deck.sh pull NAME`;
+`deck.sh summary NAME [--min-draws N] [--last N] [--windows]` (labels each 5 s window with the toggle state from the
+log's "disabled optimizations" lines, drops windows that straddle a switch, medians per state: FPS, worst, draws,
+pacing stddev / p99, stage B busy, stage A waited, the game's ident-64 wait, HZB hidden, plus the last
+Recorder / Stage B syscalls / Decode pacing / OnSubmit / Arena / Early EOP / Thread ids lines);
+`deck.sh threads [s]` (per-thread CPU and context switches from /proc during a run); `deck.sh checks` (the
+read-only platform facts of study-deck-platform-optimization.md section 0). Checked on `deck-u2-ab-1.log`: 62.5 vs
+62.7 FPS by state, 4 mixed windows dropped.
