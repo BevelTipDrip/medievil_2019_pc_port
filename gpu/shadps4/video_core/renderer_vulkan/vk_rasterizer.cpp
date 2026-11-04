@@ -3,6 +3,7 @@
 
 #include <xxhash.h>
 #include "video_core/renderer_vulkan/ui_composition.h"
+#include "gow3_fence_stats.h"
 #include "gow3_sections.h"
 #include "gow3_settings.h"
 #include "gow3_toggles.h"
@@ -3544,7 +3545,14 @@ u32 Rasterizer::ReadDataFromGds(u32 gds_offset) {
 }
 
 bool Rasterizer::InvalidateMemory(VAddr addr, u64 size, bool assume_locks) {
-    DrainDrawPipe();
+    if (Gow3Stats::enabled) {
+        // gow3 gate 2: who invalidates, and what the drain below costs that thread.
+        const u64 start = Gow3FenceStats::NowNs();
+        DrainDrawPipe();
+        Gow3FenceStats::NoteInvalidate(size, Gow3FenceStats::NowNs() - start);
+    } else {
+        DrainDrawPipe();
+    }
     if (!IsMapped(addr, size)) {
         // Not GPU mapped memory, can skip invalidation logic entirely.
         return false;

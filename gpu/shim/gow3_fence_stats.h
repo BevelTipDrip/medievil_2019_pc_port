@@ -93,6 +93,44 @@ inline void NoteEqueueWait(std::int16_t filter, std::uint64_t ident, std::uint64
     }
 }
 
+// ---- Invalidations (Rasterizer::InvalidateMemory: runtime hooks, faults): by thread, with the
+// draw-pipe drain each one starts with ----
+struct InvalidateSlot {
+    char thread[16]{};
+    std::uint64_t calls = 0, bytes = 0, drain_ns = 0, drain_max_ns = 0, drained = 0;
+};
+inline std::mutex invalidate_mutex;
+inline std::array<InvalidateSlot, 16> invalidate_slots{};
+
+inline void NoteInvalidate(std::uint64_t bytes, std::uint64_t drain_ns) {
+    char name[16];
+    ThreadName(name);
+    std::scoped_lock lock{invalidate_mutex};
+    InvalidateSlot* slot = nullptr;
+    for (auto& s : invalidate_slots) {
+        if (s.calls && !std::strcmp(s.thread, name)) {
+            slot = &s;
+            break;
+        }
+        if (!s.calls && !slot) {
+            slot = &s;
+        }
+    }
+    if (!slot) {
+        return;
+    }
+    if (!slot->calls) {
+        std::memcpy(slot->thread, name, sizeof(name));
+    }
+    ++slot->calls;
+    slot->bytes += bytes;
+    slot->drain_ns += drain_ns;
+    if (drain_ns > 20'000) {
+        ++slot->drained;
+    }
+    slot->drain_max_ns = std::max(slot->drain_max_ns, drain_ns);
+}
+
 // ---- Submission lock (sceGnmSubmitDone arms it; submits wait for GPU idle) ----
 inline std::atomic<std::uint64_t> lock_done_calls{0}, lock_armed{0}, lock_waits{0},
     lock_wait_ns{0}, lock_wait_max_ns{0}, lock_held_ns{0}, lock_held_max_ns{0}, lock_releases{0};
@@ -160,6 +198,25 @@ inline std::string Report(double window_s) {
                           static_cast<unsigned long long>(s.immediate),
                           s.immediate ? s.slack_ns / 1e6 / s.immediate : 0.0,
                           static_cast<unsigned long long>(s.timeouts));
+            text += line;
+            s = {};
+        }
+        text += any ? "\n" : " none\n";
+    }
+    {
+        std::scoped_lock lock{invalidate_mutex};
+        text += "Invalidations (5 s, by thread: calls, MB, draw-pipe drain):";
+        bool any = false;
+        for (auto& s : invalidate_slots) {
+            if (!s.calls) {
+                continue;
+            }
+            any = true;
+            std::snprintf(line, sizeof(line),
+                          " [%s: %llu, %.1f MB, drain %.1f ms/s, %llu over 20 us, max %.2f ms]",
+                          s.thread, static_cast<unsigned long long>(s.calls), s.bytes / 1e6,
+                          window_s > 0 ? s.drain_ns / 1e6 / window_s : 0.0,
+                          static_cast<unsigned long long>(s.drained), s.drain_max_ns / 1e6);
             text += line;
             s = {};
         }
