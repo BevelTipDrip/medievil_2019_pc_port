@@ -705,3 +705,21 @@ Per draw, Deck vs the PC's `t-sampler-1` (4K heavy, ~1,466 draws), us:
 
 Order on `deck-lab`: (1) present / tasks in stage B (native Wayland first); (2) per-draw cost (the PC stage B queue
 items, measured here); (3) write faults (`GOW3_UFFD=1`, hot pages).
+
+## Native run 4: flip trace (2026-11-03, `GOW3_FRAME_STATS=1 GOW3_FLIP_TRACE`; log `data/deck-native-4.log`, trace `research-data/flip/deck-native-4.csv`)
+
+Same settings as run 3. 13,621 frames, 175 s; graveyard windows 55-66 FPS. Frames of 14-40 ms (6,704), medians, vs
+the PC's `t-lab-flip-1` (same filter, 134 frames):
+
+| Stage | PC | Deck |
+|---|---|---|
+| frame | 16.88 | 16.69 |
+| submit -> irq (game submit to stage A) | 0.26 | **12.53** |
+| irq -> queued (recorded) | 0.06 | 1.79 |
+| queued -> gpu_ready | 0.44 | **15.62** |
+| present_start -> presented | 0.15 | 0.94 |
+
+The Deck's GPU finishes each frame ~15.6 ms after its recording ends (the PC's GPU: 0.4 ms): **the GPU is busy for
+almost the whole frame**, and submit -> irq is the backlog behind it. With run 3's ~11 ms of stage B recording CPU,
+both sides are near 16 ms in the graveyard (the user's overlay: CPU and GPU both ~80-90%). flip_present's 1.75 ms
+(run 3) is mostly waiting (present itself 0.94 ms). Next: render scale 75% with the trace on (GPU limit first?).
