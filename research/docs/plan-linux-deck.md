@@ -1073,3 +1073,35 @@ Recorder / Stage B syscalls / Decode pacing / OnSubmit / Arena / Early EOP / Thr
 `deck.sh threads [s]` (per-thread CPU and context switches from /proc during a run); `deck.sh checks` (the
 read-only platform facts of study-deck-platform-optimization.md section 0). Checked on `deck-u2-ab-1.log`: 62.5 vs
 62.7 FPS by state, 4 mixed windows dropped.
+
+## Built and researched while the Deck was away (2026-11-04; nothing run yet)
+
+**Built (deck-lab, not pushed):**
+- Static GPU library on Linux, `98dca62` ([impl-deck-cpu-bundle.md](impl-deck-cpu-bundle.md) G): default ON,
+  `GOW3_STATIC_GPU=OFF bash build.sh` for the old shared build. PLT calls 49,039 -> 4,055, `__tls_get_addr` 5 -> 0.
+  WSL `dist/` holds `MediEvil-x86_64-static.AppImage` and `-shared.AppImage` from the same commit for the A/B.
+- `deck.sh` gained `clocks [s] [names]` (the clock of the CPU stage B and other named threads run on, every 200 ms),
+  `mem [s]` (meminfo, TTM limit, VRAM / GTT used, RSS, faults, I/O, pressure every 5 s) and
+  `deploy [tree] [file]` (deploys a named `dist/` AppImage; DEPLOYED records `<commit>-<name>`).
+
+**Studies:** [study-deck-apu-deep-dive.md](study-deck-apu-deep-dive.md) (stage B likely at ~2.4 GHz: EPP's sticky
+plateau after sleeps over ~0.2 ms; the `performance` governor via `steamosctl` may give +25-30%),
+[study-deck-build-optimization.md](study-deck-build-optimization.md) (static link, x86-64-v3 + lld, IR PGO, BOLT),
+[study-native-render-paths.md](study-native-render-paths.md) (no separate renderer; particle-sim run replay after a
+per-class draw counter), [study-deck-memory-budget.md](study-deck-memory-budget.md) (4.5-7.5 GiB free; bigger caches
+gain nothing; pre-fill the guest pool for hitches; denser texture-set memo),
+[study-ue4-draw-reduction.md](study-ue4-draw-reduction.md) (UE 4.21's HZB is `2^(ceil(log2 W) - 1)`: a
+two-instruction patch gives 67% the 100% pyramid, ~120-145 fewer draws; no sun cascades in the heavy view; cvars
+ranked).
+
+**Deck test order when it is back** (one change per launch; each launch needs the user's go):
+1. `deck.sh deploy` the latest build; `deck.sh checks`. Baseline run in the heavy view with `deck.sh clocks 20`
+   (is stage B at ~2.4 GHz?) and `deck.sh mem 30`; in the same launch `deck.sh ab "0 0" "0 32"` (lean recorder),
+   then `"0 0" "0 16"` (C1).
+2. Static vs shared: `deck.sh deploy /root/src/medievil MediEvil-x86_64-shared.AppImage`, one run; then the static
+   one, one run (1-4% expected; repeat if within noise).
+3. Full-size HZB patch (being built: `impl-draw-reduction.md`), 67%: hidden ~63 -> ~120?, draws ~1,430 -> ~1,300?
+   Check for pop-in. No-code cross-check: 81% render scale already gets the 1024x512 pyramid.
+4. Governor `performance` via `steamosctl` (system change: the user's OK first), with `deck.sh clocks`.
+5. Then: particle-sim skip (if built; live toggle), `GOW3_UE4_CVARS` items 4-5 of the UE4 study one per launch,
+   `RADV_FORCE_VRS=2x2` at 100%, the render-scale curve 67 / 80 / 100.
