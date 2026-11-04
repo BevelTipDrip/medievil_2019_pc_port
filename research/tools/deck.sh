@@ -4,8 +4,9 @@
 # presses Play (every launch needs the user's go).
 #
 #   deck.sh status                         game running?, deployed build, test settings, toggles, clocks
-#   deck.sh deploy [wsl_tree]              copy the WSL AppImage to the Deck (game must be closed); the
-#                                          previous one is kept as MediEvil-x86_64.AppImage.<its commit>
+#   deck.sh deploy [wsl_tree] [file]       copy the WSL AppImage (dist/<file>, default MediEvil-x86_64.AppImage)
+#                                          to the Deck (game must be closed); the previous one is kept as
+#                                          MediEvil-x86_64.AppImage.<its label>
 #   deck.sh env "comment" KEY=VAL ...      write ~/.local/share/medievil-pc/extra-env.txt
 #   deck.sh toggle "W1 W2"                 write the toggle file (GOW3_TOGGLE_FILE) now
 #   deck.sh ab "A" "B" [period] [cycles]   alternate the toggle file B, A, B, A ... (default 30 s, 5 cycles;
@@ -14,6 +15,7 @@
 #   deck.sh summary NAME|PATH [args]       per-window and per-toggle-state summary (deck_summary.py)
 #   deck.sh threads [seconds]              per-thread CPU and context switches during a run (/proc)
 #   deck.sh clocks [seconds] [names]       the clock of the CPU each named thread runs on, every 200 ms
+#   deck.sh mem [seconds]                  memory reads (study-deck-memory-budget.md 5): once, then every 5 s
 #   deck.sh checks                         read-only platform facts (study-deck-platform-optimization.md §0)
 set -euo pipefail
 here=$(cd -- "$(dirname -- "$0")" && pwd)
@@ -37,16 +39,17 @@ status)
         echo \"--- GPU: \$(cat \$d/power_dpm_force_performance_level) \$(grep '\\*' \$d/pp_dpm_sclk)\""
     ;;
 deploy)
-    tree=${1:-/root/src/medievil}
+    tree=${1:-/root/src/medievil}; file=${2:-MediEvil-x86_64.AppImage}
     running && { echo 'The game is running on the Deck: not deploying.' >&2; exit 1; }
     commit=$(MSYS_NO_PATHCONV=1 wsl -d Debian -u root -- git -C "$tree" rev-parse --short HEAD | tr -d '\r\0')
+    [[ $file == MediEvil-x86_64.AppImage ]] || commit="$commit-$(basename "$file" .AppImage | sed 's/^MediEvil-x86_64-//')"
     old=$(remote 'cat ~/MediEvil/DEPLOYED 2>/dev/null || echo previous')
     remote "cp ~/MediEvil/MediEvil-x86_64.AppImage ~/MediEvil/MediEvil-x86_64.AppImage.$old"
-    MSYS_NO_PATHCONV=1 wsl -d Debian -u root -- cat "$tree/dist/MediEvil-x86_64.AppImage" |
+    MSYS_NO_PATHCONV=1 wsl -d Debian -u root -- cat "$tree/dist/$file" |
         remote "pgrep -x medievil-runtim >/dev/null && exit 1
             cat > ~/MediEvil/MediEvil-x86_64.AppImage.new && chmod +x ~/MediEvil/MediEvil-x86_64.AppImage.new &&
             mv ~/MediEvil/MediEvil-x86_64.AppImage.new ~/MediEvil/MediEvil-x86_64.AppImage && echo $commit > ~/MediEvil/DEPLOYED"
-    local_sum=$(MSYS_NO_PATHCONV=1 wsl -d Debian -u root -- sha256sum "$tree/dist/MediEvil-x86_64.AppImage" | cut -c1-16)
+    local_sum=$(MSYS_NO_PATHCONV=1 wsl -d Debian -u root -- sha256sum "$tree/dist/$file" | cut -c1-16)
     deck_sum=$(remote 'sha256sum ~/MediEvil/MediEvil-x86_64.AppImage' | cut -c1-16)
     [[ $local_sum == "$deck_sum" ]] || { echo "Checksum mismatch: $local_sum vs $deck_sum" >&2; exit 1; }
     echo "Deployed $commit ($deck_sum); previous kept as MediEvil-x86_64.AppImage.$old"
@@ -103,6 +106,24 @@ clocks)
         done | awk 'NR==1{print;next}{print} {for(i=1;i<=NF;i+=2){split(\$(i+1),a,\"MHz\"); s[i]+=a[1]; n[i]++}}
             END{printf \"mean MHz:         \"; for(i=1;i<=NF;i+=2) printf \"%-18d\", (n[i]?s[i]/n[i]:0); print \"\"}' | tail -6"
     ;;
+mem)
+    seconds=${1:-30}
+    remote "cat /proc/meminfo | grep -E 'MemTotal|MemAvailable|^Cached|Shmem:|AnonHugePages|SwapTotal|SwapFree'
+        swapon --show; echo \"swappiness \$(cat /proc/sys/vm/swappiness)  ttm pages_limit \$(cat /sys/module/ttm/parameters/pages_limit 2>/dev/null)\"
+        d=\$(ls -d /sys/class/drm/card*/device | head -1)
+        echo \"VRAM total \$(( \$(cat \$d/mem_info_vram_total) >> 20 )) MiB  GTT total \$(( \$(cat \$d/mem_info_gtt_total) >> 20 )) MiB\"
+        pid=\$(pgrep -o medievil-runti); [ -z \"\$pid\" ] && { echo 'game not running'; exit 0; }
+        for i in \$(seq \$(( $seconds / 5 ))); do
+            echo \"--- \$(date +%T)  VRAM used \$(( \$(cat \$d/mem_info_vram_used) >> 20 )) MiB  GTT used \$(( \$(cat \$d/mem_info_gtt_used) >> 20 )) MiB\"
+            grep -E 'VmRSS|RssAnon|RssFile|RssShmem' /proc/\$pid/status | tr -s ' 	' ' ' | tr '
+' ' '; echo
+            awk '{print \"minflt\",\$10,\"majflt\",\$12}' /proc/\$pid/stat
+            grep -E 'rchar|read_bytes|syscr' /proc/\$pid/io | tr '
+' ' '; echo
+            grep some /proc/pressure/memory /proc/pressure/io 2>/dev/null
+            sleep 5
+        done"
+    ;;
 checks)
     remote 'cd /sys/kernel/mm/transparent_hugepage 2>/dev/null && grep . enabled defrag shmem_enabled khugepaged/defrag 2>/dev/null
         echo "mTHP sizes: $(ls /sys/kernel/mm/transparent_hugepage/ 2>/dev/null | grep hugepages- | tr "\n" " ")"
@@ -124,6 +145,6 @@ checks)
         fi'
     ;;
 *)
-    sed -n 2,17p "$0"; exit 1
+    sed -n 2,19p "$0"; exit 1
     ;;
 esac
