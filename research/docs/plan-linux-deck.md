@@ -820,3 +820,20 @@ Other first readings (menu and early game, 92-235 FPS; not the graveyard):
   EOS 8 (CS_DONE 47); EVENT_WRITE 5 type 44 + 15 type 46; compute RELEASE_MEM 2 (tc_wb / tcl1 / tc on half);
   ACQUIRE_MEM ~150 a frame, 3 whole-space.
 - Mapped by type: Onion ~783 MiB, Garlic-WC ~940-1000 MiB, flexible 22 MiB; no Onion faults.
+
+## Native run 8: gate 2 in the graveyard (2026-11-03, AppImage `aec1592`, 67%; log `data/deck-native-8.log`)
+
+No crash (copy-thread fix `8e7bb25`). Graveyard windows 64-67 FPS, frame median ~16.5 ms, p99 ~21 ms (one window 29 ms):
+- **Real write faults ~1 a frame**, Garlic-WC only (25-81 distinct pages per 5 s, none every frame); **Onion 0** with
+  ~1.2 GB Onion and ~1.6 GB Garlic-WC mapped. Faults are not a Deck cost; the PS4 type does not matter for them.
+- **Invalidations ruled out:** ~80/s (RenderThread 1 mostly), ~0 MB, draw-pipe drain ~0 ms (max 0.06 ms).
+- Submission lock: submits waited ~330 times per 5 s (~once a frame), 0.8-1.2 ms avg, max ~10 ms, 52-75 ms/s.
+- **The game's critical wait:** `SubmitGPUCommandsAsyncTaskThread` waits on GraphicsCore EOP (filter -14, ident 64)
+  **once a frame, 5.8-6.8 ms avg, never already signalled**, max 28 ms in the window with long frames.
+  `RHIFrameOffsetThread`: VideoOut ident 6 once a frame 4.4 ms; ident 7 240/s (the vblank tick) ~4.0 ms.
+- Reading: the EOP fires when stage B reaches the frame's end, so the game's submit thread is paced by our draw
+  recording (stage B 93%); its long waits are stage B's slow frames. **The Deck lever is stage B's per-draw cost**,
+  and U5's value there is removing copy work inside stage B (host-copy waits 4-5%, WRITE_DATA 3.7%, uploads).
+- **U5 warning:** if ident 64's EOP is the newest frame's, GPU-ordered fences add ~the GPU lag (~15.6 ms) per frame
+  unless Bloodborne 0.7's "first 2 submissions free" pacing applies. Which frame it belongs to is the open gate-2
+  item: the fence-lag probe (study-fence-waits.md 5.1, part 2).
