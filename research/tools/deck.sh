@@ -13,6 +13,7 @@
 #   deck.sh pull NAME                      copy the game log to research/docs/data/NAME.log
 #   deck.sh summary NAME|PATH [args]       per-window and per-toggle-state summary (deck_summary.py)
 #   deck.sh threads [seconds]              per-thread CPU and context switches during a run (/proc)
+#   deck.sh clocks [seconds] [names]       the clock of the CPU each named thread runs on, every 200 ms
 #   deck.sh checks                         read-only platform facts (study-deck-platform-optimization.md §0)
 set -euo pipefail
 here=$(cd -- "$(dirname -- "$0")" && pwd)
@@ -85,6 +86,22 @@ threads)
         join <(sort /tmp/deck-s1) <(sort /tmp/deck-s2) | awk -v s=$seconds '{printf \"%5.0f%%  %7d %7d  %s\\n\", (\$7+\$8-\$2-\$3)/s, (\$9-\$4)/s, (\$10-\$5)/s, \$6}' | sort -rn | head -24
         rm -f /tmp/deck-s1 /tmp/deck-s2
         echo \"CPU MHz: \$(cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq | awk '{printf \"%d \", \$1/1000}')\""
+    ;;
+clocks)
+    # Stage B's clock (study-deck-apu-deep-dive.md: a thread that sleeps > ~0.2 ms may stay near 2.4 GHz):
+    # every 200 ms, the CPU each named thread last ran on and that CPU's current frequency.
+    seconds=${1:-10}; names=${2:-gow3:DrawRec shadPS4:GpuComm gow3:VkRecorder medievil-runtim}
+    remote "p=\$(pgrep -x medievil-runtim | head -1); [ -z \"\$p\" ] && { echo 'game not running'; exit 1; }
+        declare -A tid; for t in /proc/\$p/task/*; do n=\$(cat \$t/comm 2>/dev/null)
+            for want in $names; do [ \"\$n\" = \"\$want\" ] && [ -z \"\${tid[\$want]:-}\" ] && tid[\$want]=\${t##*/}; done; done
+        for want in $names; do printf '%-18s' \"\$want\"; done; echo
+        for i in \$(seq \$(( $seconds * 5 ))); do
+            for want in $names; do t=\${tid[\$want]:-}; if [ -n \"\$t\" ]; then
+                cpu=\$(awk '{print \$39}' /proc/\$p/task/\$t/stat 2>/dev/null)
+                mhz=\$(( \$(cat /sys/devices/system/cpu/cpu\$cpu/cpufreq/scaling_cur_freq) / 1000 ))
+                printf '%-18s' \"cpu\$cpu \${mhz}MHz\"; else printf '%-18s' '-'; fi; done; echo; sleep 0.2
+        done | awk 'NR==1{print;next}{print} {for(i=1;i<=NF;i+=2){split(\$(i+1),a,\"MHz\"); s[i]+=a[1]; n[i]++}}
+            END{printf \"mean MHz:         \"; for(i=1;i<=NF;i+=2) printf \"%-18d\", (n[i]?s[i]/n[i]:0); print \"\"}' | tail -6"
     ;;
 checks)
     remote 'cd /sys/kernel/mm/transparent_hugepage 2>/dev/null && grep . enabled defrag shmem_enabled khugepaged/defrag 2>/dev/null
