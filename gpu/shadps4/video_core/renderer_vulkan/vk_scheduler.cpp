@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <thread>
+#include <deque>
+#include <condition_variable>
 #include <mutex>
 #include <algorithm>
 #include <cstdio>
@@ -336,7 +338,58 @@ std::unique_ptr<RecordChunk> Scheduler::AcquireChunk() {
     return chunk;
 }
 
+namespace {
+// gow3 gate 2 A/B, GOW3_GPU_ORDERED_FENCES=1 (research/docs/plan-linux-deck.md run 9): end-of-pipe
+// and end-of-shader fences reach the guest (label write, interrupt) only once the GPU finished the
+// work recorded before them, as under U5. Still the copy model, so it is safe; the port's own
+// ordering waits (WaitDeferredSignals) do not wait for the GPU: U5 has the GPU write labels.
+// One thread, in submission order, so labels keep their order.
+bool GpuOrderedFences() {
+    static const bool on = [] {
+        const char* env = std::getenv("GOW3_GPU_ORDERED_FENCES");
+        return env && env[0] == '1';
+    }();
+    return on;
+}
+struct GpuOrderedQueue {
+    std::mutex mutex;
+    std::condition_variable cv;
+    std::deque<std::pair<u64, std::function<void()>>> items;
+    Semaphore* semaphore = nullptr;
+    void Push(Semaphore* sem, u64 tick, std::function<void()> fn) {
+        {
+            std::scoped_lock lock{mutex};
+            if (!semaphore) {
+                semaphore = sem;
+                std::thread([this] { Run(); }).detach();
+            }
+            items.emplace_back(tick, std::move(fn));
+        }
+        cv.notify_one();
+    }
+    void Run() {
+        for (;;) {
+            std::pair<u64, std::function<void()>> item;
+            {
+                std::unique_lock lock{mutex};
+                cv.wait(lock, [this] { return !items.empty(); });
+                item = std::move(items.front());
+                items.pop_front();
+            }
+            semaphore->Wait(item.first);
+            item.second();
+        }
+    }
+};
+GpuOrderedQueue& OrderedQueue() {
+    static GpuOrderedQueue queue;
+    return queue;
+}
+} // namespace
+
 void Scheduler::SignalAfterHostCopies(std::function<void()> signal) {
+    // gow3 gate 2: only EOP / EOS name a kind (liverpool.cpp); the A/B switch applies to those.
+    const bool gpu_ordered = GpuOrderedFences() && Gow3FenceStats::pending_fence_kind >= 0;
     // gow3 gate 2 (GOW3_FRAME_STATS): the fence's timeline tick and our signal time, for the lag.
     const u64 fence = Gow3FenceStats::BeginFence();
     if (fence != ~0ull) {
@@ -353,11 +406,21 @@ void Scheduler::SignalAfterHostCopies(std::function<void()> signal) {
     }
     Gow3Copy::FlushBatch();
     deferred_signals_issued.fetch_add(1, std::memory_order_relaxed);
-    Record([this, fence, signal = std::move(signal), done = deferred_signals_done](vk::CommandBuffer) mutable {
-        Gow3FenceStats::FenceRecorded(fence, CurrentTick());
-        Gow3Copy::AfterCopies([fence, signal = std::move(signal), done = std::move(done)] {
-            signal();
-            Gow3FenceStats::FenceSignaled(fence);
+    Record([this, fence, gpu_ordered, signal = std::move(signal),
+            done = deferred_signals_done](vk::CommandBuffer) mutable {
+        const u64 tick = CurrentTick();
+        Gow3FenceStats::FenceRecorded(fence, tick);
+        Gow3Copy::AfterCopies([this, fence, gpu_ordered, tick, signal = std::move(signal),
+                               done = std::move(done)]() mutable {
+            if (gpu_ordered) {
+                OrderedQueue().Push(&work_semaphore, tick, [fence, signal = std::move(signal)] {
+                    signal();
+                    Gow3FenceStats::FenceSignaled(fence);
+                });
+            } else {
+                signal();
+                Gow3FenceStats::FenceSignaled(fence);
+            }
             done->fetch_add(1, std::memory_order_release);
         });
     });
