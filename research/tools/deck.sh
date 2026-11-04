@@ -115,11 +115,9 @@ mem)
         pid=\$(pgrep -o medievil-runti); [ -z \"\$pid\" ] && { echo 'game not running'; exit 0; }
         for i in \$(seq \$(( $seconds / 5 ))); do
             echo \"--- \$(date +%T)  VRAM used \$(( \$(cat \$d/mem_info_vram_used) >> 20 )) MiB  GTT used \$(( \$(cat \$d/mem_info_gtt_used) >> 20 )) MiB\"
-            grep -E 'VmRSS|RssAnon|RssFile|RssShmem' /proc/\$pid/status | tr -s ' 	' ' ' | tr '
-' ' '; echo
+            grep -E 'VmRSS|RssAnon|RssFile|RssShmem' /proc/\$pid/status | tr -s ' \t' ' ' | tr '\n' ' '; echo
             awk '{print \"minflt\",\$10,\"majflt\",\$12}' /proc/\$pid/stat
-            grep -E 'rchar|read_bytes|syscr' /proc/\$pid/io | tr '
-' ' '; echo
+            grep -E 'rchar|read_bytes|syscr' /proc/\$pid/io | tr '\n' ' '; echo
             grep some /proc/pressure/memory /proc/pressure/io 2>/dev/null
             sleep 5
         done"
