@@ -940,3 +940,20 @@ game's per-frame EOP wait). Made opt-in (`GOW3_DRAIN_SLEEP=1`) for later A/Bs.
 **The user's overlay: the ~62 FPS is 10 ms and 20 ms frames ping-ponging.** Our frame-generation stats are even
 (median 16.7 ms, stddev ~2.2 ms), so the alternation is in presentation (present thread, the 240 Hz vblank tick,
 gamescope). Next: a flip-trace run (`GOW3_FLIP_TRACE`) to find where it enters.
+
+## What the per-frame EOP wait is (2026-11-04, [study-eop-wait-site.md](study-eop-wait-site.md), static, 01.02)
+
+guest+0x68af47 is in the work function of `SubmitGPUCommandsAsyncTaskThreadPS4` (0x68acc0), equeue "SubmitEndOfFrameQueue"
+(`sceGnmAddEqEvent(eq, 64, 0)`, string verified in `out/eboot.elf`). It holds the RHI manager mutex while it waits
+(EndFrame blocks on it: wait site guest+0x6795a1) until frame **N-1's** EOP label (64-bit frame number, two labels by
+parity) arrives, then calls `sceGnmSubmitDone` and submits frame N's command buffers: **it gates submission, it does
+not recycle memory.** Recycling is frame-counted: UE4's transient pool (guest 0x5805e70; per-draw constants, LCUE
+descriptor tables, texture staging; read by the GPU) has 4 frame slots, reused 4 frames later; labels reused 3 frames
+after release; two rare flush-and-rewind paths spin on an in-buffer label (0x679190, 0x68baf0).
+- Hybrid U5: early signalling is safe for most memory, **not for the transient pool** (and the rewind paths): keep the
+  pool copied (hook the allocator return at guest+0x697e54) or hold the label until stage B passes the next flip.
+- **New idea for the copy model (untested):** the game's ~6 ms a frame waits for our stage B to finish frame N-1. If
+  the label were signalled earlier, the game would submit sooner and overlap more with stage B, bounded by the 4-slot
+  pool (stage B must have copied a slot's data before the game reuses it). After U2; same safety checks.
+- Runtime checks (one stats run): pool chunks and memory types, GPU / stage B lag at each slot reuse, transient
+  allocations by thread, rewind-path calls, only the two parity labels on IRQ EOPs.
