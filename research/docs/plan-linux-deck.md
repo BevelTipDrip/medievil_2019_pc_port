@@ -623,3 +623,12 @@ Next Deck launches, one change each:
   a sample taken after the game exited.
 - Next (one change per launch, same route): Graphics quality Low; render scale 67%; preshadows off; then CPU
   switches (precise tick off, draw workers); then the native build.
+
+## Proton runs 3-4 (2026-11-03, settings changed by the user while exploring)
+
+- Run 3: "previous frame's copy" for readbacks on (`stale_readback=1`), VSync off (Mailbox), frame limit 0, VRR off:
+  the user, "seemed to help a lot" (several changes at once; not a clean A/B).
+- Run 4: **precise vblank tick off** (tick 120): the frame-time graph on the main menu becomes **completely flat at
+  60 FPS** (the user). Under Proton the high-resolution waitable timer + 700 us spin goes through Wine; likely the
+  Deck default regardless (to recheck natively).
+- Native build ready (`8072f54`): `dist/MediEvil-x86_64.AppImage` from WSL Debian 13, copied to the Deck after the run.
