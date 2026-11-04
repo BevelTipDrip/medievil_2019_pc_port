@@ -757,3 +757,17 @@ Existing opt-in `GOW3_HOT_PAGES=1` (region_manager.h:220-283; toggle bit 32768) 
 a page hot for 20 s, re-uploaded on every binding; the set grew to ~14k pages (56 MB), 33 FPS, a GPU ring timeout.
 Next: a fault map (which pages and guest sites fault, how many distinct pages a frame, how many every frame), then a
 targeted version (pages that fault every frame stay writable and are uploaded once a frame, not per binding).
+
+## Direction (the user, 2026-11-03): build for the Deck's architecture, not around the PC's
+
+- **Unified memory first.** The port's buffer copies, write tracking and faults exist for split pools. On the Deck
+  the target is U5 (guest memory as GPU-visible memory, buffers read in place), not patches on the copy model. The
+  fault fix ("hot pages once a frame") is a **PC** item (`plan-work-queue.md`, on `lab`), not needed on the Deck.
+- **Deck audit of the PC fixes.** Fixes that spend CPU to save PCIe traffic or GPU waits (worker threads, readback
+  copies, precise timing, memos) may cost more than they save on 4 Zen 2 cores with shared memory. A/B each switch
+  on the Deck (`GOW3_TOGGLE_FILE` switches many live within one launch; the rest by launch), turn off what does not
+  pay, and replace with what suits UMA. Result: the Deck preset's patch set.
+- U5 order: (1) probes on the Deck, no game launch (`bloodborne_pc/tools/sparse_host_probe.c`,
+  `host_import_probe.c`): cached host memory as sparse backing, GPU read bandwidth vs the carve-out; (2) the fence
+  precondition: how long the game waits on its fences, what GPU-ordered fences (`VK_AMD_buffer_marker`, on RADV) add;
+  (3) a design doc, then buffers-only U5 behind a switch.
