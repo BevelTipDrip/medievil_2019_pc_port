@@ -894,3 +894,17 @@ differences from 0.7, risks and the A / B0 / B2 / soak test plan: [impl-gpu-orde
 - **Open variable:** the GPU runs at ~800 MHz on auto (DPM levels 200 / 1100 / 1600; ~90% busy at 800 = ~50% at
   1600, the user). The 17.5 ms wait is GPU time at that clock. Next: Manual GPU Clock 1600 (QAM), B2 then A; if B2
   approaches A, U5 is viable with a pinned clock; if not, U5 closes and the Deck work goes to U2 + stage B per draw.
+
+## Pinned GPU clock (2026-11-04, the user; log `data/deck-u5-2-B2-1600.log`, partial)
+
+- B2 (GPU fences, ahead 2) at Manual GPU Clock 1600: ~+20 FPS over B2 at auto; the ~80 FPS windows were the main
+  menu; **the heavy graveyard view is still behind A** (the user). GPU utilisation ~40% at 1600 MHz: with GPU-ordered
+  fences the frame is a relay (CPU records, GPU runs, the game waits for that frame's EOP, then the next), so frame time
+  is CPU + GPU, not max(CPU, GPU); the clock only shortens the GPU leg.
+- A (copy model) with a pinned GPU clock (the user): the shared power budget caps the CPU at ~2 GHz instead of
+  boosting: worse for the CPU-bound copy model. **No pinned GPU clock in a Deck preset.**
+- **Direction (the user):** remove the wait and restore the asynchronous CPU / GPU overlap; then the fence model can
+  come out ahead (it also cut CPU use ~half and VRAM ~1 GB). Next: find what the per-frame EOP (GraphicsCore ident 64,
+  `SubmitGPUCommandsAsyncTaskThread`) protects: a `GOW3_WAIT_SITES=1` run for the guest call site, then static
+  analysis of what UE4's PS4 RHI recycles after it (command buffers only: early signal is safe as is, since stage A
+  decodes them on the CPU; dynamic buffer rings: keep those copied, everything else in place: a hybrid U5).
