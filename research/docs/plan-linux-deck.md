@@ -771,3 +771,23 @@ targeted version (pages that fault every frame stay writable and are uploaded on
   `host_import_probe.c`): cached host memory as sparse backing, GPU read bandwidth vs the carve-out; (2) the fence
   precondition: how long the game waits on its fences, what GPU-ordered fences (`VK_AMD_buffer_marker`, on RADV) add;
   (3) a design doc, then buffers-only U5 behind a switch.
+
+## U5 gate 1: probes on the Deck (2026-11-03, SteamOS 3.9.5, RADV 26.1.99; built from `bloodborne_pc/tools`, run over SSH, not the game)
+
+`sparse_host_probe 256`: arena block 4 KiB; guest memory type 5 (flags 0xe: HOST_VISIBLE | HOST_COHERENT |
+HOST_CACHED) **backs the sparse arena** (128 MiB bound), CPU write -> GPU read -> GPU write -> CPU read OK; **GPU reads
+128 MiB: guest memory 41.2 GB/s, device-local 40.8 GB/s** (gate: >= 70%: passes, no penalty).
+
+`host_import_probe 512`:
+1. import of the memfd backing view: **fails** (-1000072003, VK_ERROR_INVALID_EXTERNAL_HANDLE); anonymous memory
+   imports (type 5, 7.9 ms).
+2. 64 MiB: GPU reads imported memory 2.37 ms (28.3 GB/s); today's path CPU copy to staging 5.08 ms + GPU copy 2.84 ms.
+3. coherence CPU write -> GPU read: OK. 4. 2000 mprotect on the guest view 12.4 ms.
+5. **Vulkan-allocated guest memory exported as dma-buf** (type 5, 512 MiB, 57.5 ms): two CPU views, MAP_FIXED at an
+   offset, aliasing, coherence, write faults (256 / 256) and read() into the view all OK; GPU reads 22.6 GB/s.
+   CPU write bandwidth: ordinary 7.7 GB/s, **memfd (today's guest memory) 1.0 GB/s, dma-buf view 4.9 GB/s**; reads
+   ~14.5 GB/s for all three.
+
+**Gate 1 passes.** The route is Bloodborne's AMD model: guest direct memory from Vulkan (type 5), exported as dma-buf,
+mapped by the runtime at guest addresses, bound in place into the arena. On the Deck no hot-block moves to device
+memory are needed (same bandwidth). The memfd cannot be imported. Next: gate 2, the fence cost.
