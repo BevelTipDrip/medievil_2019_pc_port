@@ -866,3 +866,10 @@ idle still fired at the old time, and the guest frees the objects holding its fe
 class). A correct A/B is design-u5-deck-memory.md's step U5-2 / Bloodborne 0.7's model together: submit at the
 fence, GPU idle after the labels, and 0.7's pacing (the first submissions of a frame go ahead). The deployed
 AppImage still contains the inert switch (no effect without the variable).
+
+## U5-2 implemented (2026-11-03, `0771a23`; not run yet)
+
+`GOW3_GPU_FENCES=1` (`GOW3_SUBMIT_AHEAD`, default 2): Bloodborne 0.7's model under the copy model, with the pieces the
+attempt above lacked (bounded signal-thread waits with flush requests, decoder idle flush, submission batching, GPU
+idle and frames retired after the labels, 0.7's `decode` pacing, WAIT_REG_MEM flush + yield, watchdogs). Design,
+differences from 0.7, risks and the A / B0 / B2 / soak test plan: [impl-gpu-ordered-fences.md](impl-gpu-ordered-fences.md).
