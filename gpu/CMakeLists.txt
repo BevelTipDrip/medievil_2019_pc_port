@@ -143,8 +143,12 @@ file(GLOB AVPLAYER CONFIGURE_DEPENDS shadps4/core/libraries/avplayer/*.cpp)
 pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET libavformat libavcodec libavutil libswscale libswresample)
 file(GLOB SHIM_SOURCES CONFIGURE_DEPENDS shim/*.cpp shim/*/*.cpp)
 # Windows: a DLL cannot leave the runtime_* symbols for medievil-runtime.exe to resolve, so the
-# library is static there and linked into the executable.
-if (WIN32)
+# library is static there and linked into the executable. Linux: the same with GOW3_STATIC_GPU
+# (default; study-deck-platform-optimization.md B1): calls between the runtime and the library
+# and inside the library are direct instead of through the PLT, thread_locals are local-exec, and
+# the runtime C joins the library's ThinLTO unit. OFF: libgow3gpu.so, linked by build.sh.
+option(GOW3_STATIC_GPU "Link gow3gpu into medievil-runtime (Linux; always on Windows)" ON)
+if (WIN32 OR GOW3_STATIC_GPU)
     set(GOW3GPU_KIND STATIC)
 else()
     set(GOW3GPU_KIND SHARED)
@@ -170,12 +174,19 @@ target_compile_definitions(gow3gpu PRIVATE BOOST_ASIO_STANDALONE NDEBUG)
 target_compile_options(gow3gpu PRIVATE -Wno-deprecated-declarations -Wno-missing-field-initializers)
 # Runtime symbols (runtime_memory_*, runtime_process_*) resolve against medievil-runtime.
 if (NOT WIN32)
-    target_link_options(gow3gpu PRIVATE -Wl,--allow-shlib-undefined)
+    if (GOW3GPU_KIND STREQUAL "SHARED")
+        target_link_options(gow3gpu PRIVATE -Wl,--allow-shlib-undefined)
+    else()
+        # Calls into libc, libstdc++ and the other shared libraries through the GOT, without a
+        # PLT stub (impl-deck-cpu-bundle.md, static GPU library).
+        target_compile_options(gow3gpu PRIVATE -fno-plt)
+    endif()
     # gow3 (spacepepperoni/medievil_ps4_Linux 7800f32, impl-deck-cpu-bundle.md D1): the library's
     # thread_locals in the static TLS block, reached by a fixed offset from %fs instead of a
     # __tls_get_addr call per access (~3% of the draw recording thread on Linux). Valid because
     # medievil-runtime and the tests link the library at start (DT_NEEDED, never dlopen'd): its
-    # TLS is sized into the initial block, so glibc's dlopen surplus does not limit it.
+    # TLS is sized into the initial block, so glibc's dlopen surplus does not limit it. Linked
+    # statically (GOW3_STATIC_GPU), the accesses become local-exec.
     target_compile_options(gow3gpu PRIVATE -ftls-model=initial-exec)
 endif()
 target_link_libraries(gow3gpu PRIVATE ffx-vulkan::portable ffx-vulkan::fsr4-v07-vulkan)
@@ -198,15 +209,18 @@ else()
     target_link_libraries(gow3gpu PUBLIC PkgConfig::X11)
 endif()
 
-# gow3 (Windows): gow3gpu is a static library there, so the loader and the HLE runtime are
-# linked here, where CMake knows its dependencies (build.sh builds them with ninja).
-if (WIN32)
-    enable_language(RC)
+# gow3: when gow3gpu is a static library (Windows; Linux with GOW3_STATIC_GPU), the loader and
+# the HLE runtime are linked here, where CMake knows its dependencies (build.sh builds them with
+# ninja).
+if (GOW3GPU_KIND STREQUAL "STATIC")
     file(GLOB GOW3_RUNTIME CONFIGURE_DEPENDS ../src/runtime*.c)
     file(GLOB GOW3_ATRAC9 CONFIGURE_DEPENDS ../third_party/LibAtrac9/C/src/*.c)
     add_library(atrac9 STATIC ${GOW3_ATRAC9})
     target_compile_options(atrac9 PRIVATE -w)
     set_target_properties(atrac9 PROPERTIES C_STANDARD 99 INTERPROCEDURAL_OPTIMIZATION OFF)
+endif()
+if (WIN32)
+    enable_language(RC)
     add_executable(medievil-runtime ../src/probe.c ${GOW3_RUNTIME} ../src/compat_win.c ../src/vulkan_smoke.c
         ../packaging/windows/medievil-runtime.rc)
     set_target_properties(medievil-runtime PROPERTIES C_STANDARD 11 C_EXTENSIONS OFF)
@@ -237,6 +251,22 @@ if (WIN32)
     add_executable(medievil-play WIN32 ../packaging/windows/play.c ../packaging/windows/play.rc)
     target_compile_options(medievil-play PRIVATE -municode)
     target_link_options(medievil-play PRIVATE -municode)
+elseif (GOW3_STATIC_GPU)
+    # Linux: build.sh's runtime flags (C11, asserts on: no NDEBUG). -no-pie keeps the brk heap
+    # below 1 TiB (src/probe.c); -rdynamic keeps host function names in the fault and thread dumps
+    # (dladdr). runtime-test and sema-test (build.sh --test) are linked the same way.
+    function(gow3_runtime_executable name)
+        add_executable(${name} ${ARGN} ${GOW3_RUNTIME})
+        set_target_properties(${name} PROPERTIES C_STANDARD 11 C_EXTENSIONS OFF POSITION_INDEPENDENT_CODE OFF)
+        target_compile_options(${name} PRIVATE -UNDEBUG -fno-plt -pthread -Wall -Wextra -Werror)
+        target_include_directories(${name} PRIVATE .. ../src)
+        target_link_libraries(${name} PRIVATE gow3gpu atrac9 Vulkan::Vulkan m -pthread)
+        target_link_options(${name} PRIVATE -no-pie -rdynamic)
+    endfunction()
+    gow3_runtime_executable(medievil-runtime ../src/probe.c ../src/vulkan_smoke.c)
+    gow3_runtime_executable(runtime-test ../tests/test_runtime.c)
+    gow3_runtime_executable(sema-test ../tests/test_sema.c)
+    set_target_properties(runtime-test sema-test PROPERTIES EXCLUDE_FROM_ALL ON)
 endif()
 
 # Explicit test targets; neither launches the game nor needs a Vulkan device.
