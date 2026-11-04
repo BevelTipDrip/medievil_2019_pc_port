@@ -20,6 +20,7 @@
 #include "common/assert.h"
 #include "gow3_toggles.h"
 #include "gow3_fence_stats.h"
+#include "gow3_decode_pacing.h"
 #include "gow3_gpu_fences.h"
 extern "C" void runtime_memory_fault_report(char* out, size_t size, unsigned frames, double window_s);
 #include "gow3_sections.h"
@@ -716,6 +717,9 @@ void VideoOutDriver::Flip(const Request& req) {
                     // gow3 U5-2 (impl-gpu-ordered-fences.md): GOW3_GPU_FENCES' signals, flushes,
                     // pacing waits, and the runtime's guest memory (the leak view), both ways.
                     std::fputs(Gow3GpuFences::Report(window, frames).c_str(), stdout);
+                    // gow3 GOW3_DECODE_PACING (impl-decode-pacing.md): pacing waits, frame lead,
+                    // deferred GPU idle steps (nothing with the switch off).
+                    std::fputs(Gow3DecodePacing::Report(window, frames).c_str(), stdout);
                     char fault_map[1024];
                     runtime_memory_fault_report(fault_map, sizeof(fault_map), frames, window);
                     std::fputs(fault_map, stdout);

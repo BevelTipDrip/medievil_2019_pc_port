@@ -283,17 +283,22 @@ private:
     /// decrements num_submits once it has decoded a submission, before that). Under
     /// submit_mutex with num_submits.
     std::atomic<bool> work_retired{true};
-    /// gow3 GOW3_GPU_FENCES (Bloodborne 0.7, 0fc2921 gpu/cp/command_processor.cpp): submissions
-    /// so far (the generation GPU idle checks), and the frames sceGnmSubmitDone ended: (last
-    /// submission number, frame), under submit_mutex.
+    /// gow3 GOW3_GPU_FENCES (Bloodborne 0.7, 0fc2921 gpu/cp/command_processor.cpp) and
+    /// GOW3_DECODE_PACING: submissions so far (the generation GPU idle checks), and the frames
+    /// sceGnmSubmitDone ended: (last submission number, frame), under submit_mutex.
     std::atomic<u64> submit_counter{0};
     std::deque<std::pair<u64, u64>> frame_ends;
     /// The lowest number of a submission not decoded yet (~0: none).
     u64 OldestUndecoded();
-    /// Stage A: frames whose submissions are all decoded retire after them on the GPU.
+    /// Stage A: frames whose submissions are all decoded retire after them on the GPU
+    /// (GOW3_DECODE_PACING: after stage B and its deferred label writes).
     void SignalDecodedFrames();
-    /// The signal thread: GPU idle, if nothing was submitted since `generation`.
-    void SignalGpuIdle(u64 generation);
+    /// The signal thread (GOW3_DECODE_PACING: a deferred signal): GPU idle, if nothing was
+    /// submitted since `generation`. Returns whether it was raised.
+    bool SignalGpuIdle(u64 generation);
+    /// Stage A, GOW3_DECODE_PACING: hands GPU idle to stage B in stream order instead of
+    /// draining it (SignalGpuIdle once the labels before it are written).
+    void DeferGpuIdle();
     std::atomic<u32> num_commands{};
     std::atomic<bool> submit_done{};
     std::mutex submit_mutex;

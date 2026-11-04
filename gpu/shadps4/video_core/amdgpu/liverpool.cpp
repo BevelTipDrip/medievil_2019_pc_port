@@ -9,11 +9,13 @@
 #include <time.h>
 #include "gow3_copy.h"
 #include "gow3_sampler.h"
+#include "gow3_decode_pacing.h"
 #include "gow3_fence_stats.h"
 #include "gow3_gpu_fences.h"
 #include "gow3_sections.h"
 #include "gow3_toggles.h"
 #include <cstdio>
+#include <cstring>
 #include <boost/preprocessor/stringize.hpp>
 
 #include "common/assert.h"
@@ -81,6 +83,30 @@ static std::span<const u32> NextPacket(std::span<const u32> span, size_t offset)
 
 Liverpool::Liverpool() : guest_markers_enabled{EmulatorSettings.IsVkGuestMarkersEnabled()} {
     num_counter_pairs = Libraries::Kernel::sceKernelIsNeoMode() ? 16 : 8;
+    if (Gow3DecodePacing::Enabled()) {
+        // gow3 GOW3_DECODE_PACING: what this thread is at, for the pacing watchdog.
+        Gow3DecodePacing::describe_context = this;
+        Gow3DecodePacing::describe_gpu = [](void* context) {
+            auto& self = *static_cast<Liverpool*>(context);
+            std::size_t frame_ends;
+            {
+                std::scoped_lock lk{self.submit_mutex};
+                frame_ends = self.frame_ends.size();
+            }
+            char line[256];
+            std::snprintf(line, sizeof(line),
+                          "GPU command thread: %u submissions and %u commands queued, %zu frame "
+                          "ends not decoded, oldest undecoded submission %llu of %llu; draw pipe "
+                          "%s",
+                          self.num_submits.load(), self.num_commands.load(), frame_ends,
+                          static_cast<unsigned long long>(self.OldestUndecoded()),
+                          static_cast<unsigned long long>(self.submit_counter.load()),
+                          !self.rasterizer             ? "-"
+                          : self.rasterizer->DrawPipeIdle() ? "idle"
+                                                            : "busy");
+            return std::string{line};
+        };
+    }
     process_thread = std::jthread{std::bind_front(&Liverpool::Process, this)};
 }
 
@@ -128,6 +154,10 @@ void Liverpool::Process(std::stop_token stoken) {
 #endif
 
     const bool gpu_fences = Gow3GpuFences::Enabled();
+    // gow3 GOW3_DECODE_PACING (gow3_decode_pacing.h): submissions numbered and frames retired as
+    // under GOW3_GPU_FENCES, but in stream order on stage B instead of on the GPU.
+    const bool decode_pacing = Gow3DecodePacing::Enabled();
+    const bool track_frames = gpu_fences || decode_pacing;
     while (!stoken.stop_requested()) {
         // gow3 GOW3_GPU_FENCES (Bloodborne 0.7, 0fc2921 gpu/cp/command_processor.cpp WaitForWork):
         // fences wait for work not submitted yet; it goes out once this thread has had nothing
@@ -187,7 +217,7 @@ void Liverpool::Process(std::stop_token stoken) {
                 {
                     std::scoped_lock lock{queue.m_access};
                     queue.submits.pop();
-                    if (gpu_fences) {
+                    if (track_frames) {
                         queue.submit_index.pop();
                     }
 
@@ -198,7 +228,8 @@ void Liverpool::Process(std::stop_token stoken) {
                 }
                 // gow3 GOW3_GPU_FENCES: a frame's last submission decoded (the next frame's
                 // first ones may follow at once): it retires once the GPU has run it.
-                if (gpu_fences && frame_pending) {
+                // GOW3_DECODE_PACING: once stage B and its label writes have passed it.
+                if (track_frames && frame_pending) {
                     SignalDecodedFrames();
                 }
             }
@@ -227,6 +258,22 @@ void Liverpool::Process(std::stop_token stoken) {
             // not wait for it, so its submission is left to the next one.
             rasterizer->SignalAfterGpu([this, generation] { SignalGpuIdle(generation); }, 0, 0,
                                        Gow3GpuFences::LockOnGpu());
+            continue;
+        }
+        if (decode_pacing && !rasterizer) {
+            SignalDecodedFrames(); // nothing recorded: they retire now (below: GPU idle now)
+        } else if (decode_pacing) {
+            // gow3 GOW3_DECODE_PACING (impl-decode-pacing.md): no drain here, so this thread can
+            // decode the game's next submission (and signal its frame EOP early, with
+            // GOW3_EARLY_FRAME_EOP) while stage B still records this work. The rule below (the
+            // guest frees label objects once the GPU is idle, so every label is written first)
+            // still holds: GPU idle is a step stage B runs in stream order and defers after the
+            // host copies and the signals it deferred before (Scheduler::SignalAfterHostCopies,
+            // which runs them in order), i.e. after every label of the work before it. Raised
+            // only if nothing was submitted meanwhile (generation, as SignalGpuIdle under
+            // GOW3_GPU_FENCES); else the next idle raises it. Frames retire the same way.
+            SignalDecodedFrames();
+            DeferGpuIdle();
             continue;
         }
         // gow3: the guest takes GPU idle (sceGnmSubmitDone) as its work being done and frees
@@ -289,6 +336,28 @@ void Liverpool::SignalDecodedFrames() {
     if (frame == 0) {
         return;
     }
+    if (Gow3DecodePacing::Enabled()) {
+        // gow3 GOW3_DECODE_PACING: the frame retires once stage B has recorded it and the label
+        // writes it deferred ran (in order after the host copies); stage A does not wait.
+        struct RetireStep {
+            u64 frame, decoded_ns;
+        };
+        const RetireStep step{frame, Gow3DecodePacing::NowNs()};
+        if (!rasterizer) {
+            Gow3DecodePacing::NoteFramesRetired(step.frame, step.decoded_ns);
+            return;
+        }
+        rasterizer->RunInOrder(
+            [](Vulkan::Rasterizer& rasterizer, const u8* data) {
+                RetireStep step;
+                std::memcpy(&step, data, sizeof(step));
+                rasterizer.SignalAfterHostCopies([step] {
+                    Gow3DecodePacing::NoteFramesRetired(step.frame, step.decoded_ns);
+                });
+            },
+            &step, sizeof(step));
+        return;
+    }
     if (!rasterizer) {
         Gow3GpuFences::NoteFramesRetired(frame);
         return;
@@ -299,7 +368,7 @@ void Liverpool::SignalDecodedFrames() {
     rasterizer->Flush();
 }
 
-void Liverpool::SignalGpuIdle(u64 generation) {
+bool Liverpool::SignalGpuIdle(u64 generation) {
     bool idle;
     {
         std::scoped_lock lk{submit_mutex};
@@ -311,6 +380,30 @@ void Liverpool::SignalGpuIdle(u64 generation) {
     if (idle) {
         Platform::IrqC::Instance()->Signal(Platform::InterruptId::GpuIdle);
     }
+    return idle;
+}
+
+void Liverpool::DeferGpuIdle() {
+    // gow3 GOW3_DECODE_PACING: the end of queued work. Stage B reaches this step after every
+    // draw and fence handed to it before, then defers it after the host copies and the earlier
+    // deferred signals; only then is the work retired (work_retired, the GPU idle interrupt).
+    struct IdleStep {
+        Liverpool* self;
+        u64 generation, handed_ns;
+    };
+    const IdleStep step{this, submit_counter.load(std::memory_order_acquire),
+                        Gow3DecodePacing::NowNs()};
+    Gow3DecodePacing::NoteIdleDeferred();
+    rasterizer->RunInOrder(
+        [](Vulkan::Rasterizer& rasterizer, const u8* data) {
+            IdleStep step;
+            std::memcpy(&step, data, sizeof(step));
+            rasterizer.SignalAfterHostCopies([step] {
+                Gow3DecodePacing::NoteIdleRun(step.self->SignalGpuIdle(step.generation),
+                                              step.handed_ns);
+            });
+        },
+        &step, sizeof(step));
 }
 
 namespace {
@@ -2273,7 +2366,7 @@ void Liverpool::SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb) {
         }
         auto task = ProcessGraphics(dcb, ccb, seq);
         queue.submits.emplace(task.handle);
-        if (Gow3GpuFences::Enabled()) {
+        if (Gow3GpuFences::Enabled() || Gow3DecodePacing::Enabled()) {
             queue.submit_index.push(submit_counter.fetch_add(1, std::memory_order_acq_rel) + 1);
         }
     }
@@ -2293,7 +2386,7 @@ void Liverpool::SubmitAsc(u32 gnm_vqid, std::span<const u32> acb) {
     {
         std::scoped_lock lock{queue.m_access};
         queue.submits.emplace(task.handle);
-        if (Gow3GpuFences::Enabled()) {
+        if (Gow3GpuFences::Enabled() || Gow3DecodePacing::Enabled()) {
             queue.submit_index.push(submit_counter.fetch_add(1, std::memory_order_acq_rel) + 1);
         }
     }

@@ -24,6 +24,7 @@
 #include "video_core/amdgpu/pm4_cmds.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "gow3_fence_stats.h"
+#include "gow3_decode_pacing.h"
 #include "gow3_gpu_fences.h"
 
 extern Frontend::WindowSDL* g_window;
@@ -380,6 +381,8 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
     liverpool->SubmitAsc(gnm_vqid, acb_span);
     if (Gow3GpuFences::PacingOnDecode()) {
         Gow3GpuFences::AfterSubmit(); // handed over first, as the graphics submissions
+    } else if (Gow3DecodePacing::Enabled()) {
+        Gow3DecodePacing::AfterSubmit(false);
     }
 }
 
@@ -2329,6 +2332,8 @@ s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload(
                       const_cast<const u32**>(ccb_gpu_addrs), ccb_sizes_in_bytes);
     if (result == ORBIS_OK && Gow3GpuFences::PacingOnDecode()) {
         Gow3GpuFences::AfterSubmit();
+    } else if (result == ORBIS_OK && Gow3DecodePacing::Enabled()) {
+        Gow3DecodePacing::AfterSubmit(true); // the flip waits for the lead, always
     }
     return result;
 }
@@ -2371,6 +2376,8 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
                       const_cast<const u32**>(ccb_gpu_addrs), ccb_sizes_in_bytes);
     if (result == ORBIS_OK && Gow3GpuFences::PacingOnDecode()) {
         Gow3GpuFences::AfterSubmit();
+    } else if (result == ORBIS_OK && Gow3DecodePacing::Enabled()) {
+        Gow3DecodePacing::AfterSubmit(false);
     }
     return result;
 }
@@ -2397,6 +2404,22 @@ s32 PS4_SYSV_ABI sceGnmSubmitDone() {
             ++Gow3FenceStats::lock_done_calls;
         }
         liverpool->SubmitDone(Gow3GpuFences::BeginFrame());
+        send_init_packet = true;
+        ++frames_submitted;
+        DebugState.IncGnmFrameNum();
+        return ORBIS_OK;
+    }
+    if (Gow3DecodePacing::Enabled()) {
+        // gow3 GOW3_DECODE_PACING (impl-decode-pacing.md): the same `decode` pacing under the copy
+        // model, without arming the lock (which made the next submission wait for GPU idle,
+        // after stage B finished everything). This waits until the game is fewer than
+        // GOW3_DECODE_PACING_LEAD frames ahead of the newest frame stage B and its label writes
+        // retired; then the frame's first GOW3_SUBMIT_AHEAD submissions go straight through, later
+        // ones and the flip wait the same way (gow3_decode_pacing.cpp).
+        if (Gow3Stats::enabled) {
+            ++Gow3FenceStats::lock_done_calls;
+        }
+        liverpool->SubmitDone(Gow3DecodePacing::BeginFrame());
         send_init_packet = true;
         ++frames_submitted;
         DebugState.IncGnmFrameNum();
