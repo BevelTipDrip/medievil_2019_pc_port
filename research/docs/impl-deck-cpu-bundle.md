@@ -12,6 +12,7 @@ Inputs:
 | D2 | `scePthreadGetthreadid` caches the `gettid` result per thread (spacepepperoni `1232650`) | `src/runtime_extra.c` | none | on (Linux; Windows already reads the TEB) |
 | R | Recorder lean mode: no spin before sleeping; polled labels do not wake a sleeping recorder | `vk_scheduler.cpp/.h`, `vk_draw_pipe.h`, `vk_rasterizer.cpp/.h`, `liverpool.cpp` | **second toggle word bit 32** (set: off, live); `GOW3_RECORDER_LEAN=1/0` | on at <= 8 hardware threads (the Deck); off on the PC |
 | S | Counters: "Recorder per frame" and "Thread ids per frame" lines | `driver.cpp`, `gow3_toggles.h` | `GOW3_FRAME_STATS=1` | - |
+| G | GPU library linked statically into `medievil-runtime` (study-deck-platform-optimization.md B1), `98dca62`; section "G" below | `gpu/CMakeLists.txt`, `build.sh`, `packaging/linux/appimage.sh` | build: `GOW3_STATIC_GPU=OFF` | on (Linux; Windows always static) |
 
 ## D1: static TLS for the GPU library
 
@@ -126,3 +127,57 @@ effect shows against the previous AppImage's numbers in the same spot, not insid
 Pass: lean on gives stage B busy lower or FPS higher, recorder CPU lower, and no worse guest waits or fence lag. If
 FPS drops with lean on while the recorder CPU falls, try `GOW3_RECORDER_WAKE_US=50` (the latency side) before
 dropping the label part; `GOW3_RECORDER_WAKE_US=0` keeps only the no-spin part.
+
+## G: static GPU library on Linux (`GOW3_STATIC_GPU`, `98dca62`)
+
+Status: built (Windows and Linux), not run. What changed:
+- `gpu/CMakeLists.txt`: option `GOW3_STATIC_GPU` (default ON). ON on Linux does what Windows does: `gow3gpu` is a
+  static library and CMake links `medievil-runtime` (and `runtime-test` / `sema-test`) with it, so the runtime C
+  joins the ThinLTO unit (`GOW3_LTO`). Runtime flags as in `build.sh`: C11, `-O2 -g`, asserts on (`-UNDEBUG`),
+  `-no-pie` (brk heap below 1 TiB), `-rdynamic` (`dladdr` names in fault and thread dumps). `-fno-plt` on the library
+  and the runtime. D1's `-ftls-model=initial-exec` stays; the static link relaxes it to local-exec.
+- `build.sh`: passes `GOW3_STATIC_GPU` (env, default ON), builds `medievil-runtime` with ninja and copies it to
+  `out/`; removes a stale `out/gpu/libgow3gpu.so`. OFF: the previous path (`libgow3gpu.so` + `$CC` link).
+- `packaging/linux/appimage.sh`: installs `bin/gpu/libgow3gpu.so` and its rpaths only when the runtime has it as
+  DT_NEEDED; else RUNPATH `$ORIGIN/../../../lib` only. ldd collection and the GLIBCXX/GLIBC scan follow the same list.
+- `tests/test_gpu_runtime_stubs.cpp`: `runtime_disabled_optimizations2` (the statically linked CMake tests need it).
+
+Switch back: `GOW3_STATIC_GPU=OFF bash build.sh && bash packaging/linux/appimage.sh` (rebuilds the library). The OFF
+build is bit-identical to the previous one (`libgow3gpu.so`, `medievil-runtime` and the AppImage, checked).
+
+Counts (WSL Debian, clang 19, ThinLTO; `objdump -d` call/jmp lines to `@plt>`, `nm -D`, `size`, `ldd`):
+
+| | shared (OFF; = `ff54428`) | static (ON) |
+|---|---|---|
+| PLT call/jmp sites | 49,039 (runtime 1,626 + library 47,413) | 4,055 (`_Unwind_Resume` 1,971, `abort` 360, exception paths, backend `memcpy`/`memset`; 29,621 calls through the GOT) |
+| of those: into the library's own exports (interposable) | 16,000 | 0 |
+| library -> `runtime_*` / runtime -> `gow3gpu_*` through the PLT | 101 / 14 | 0 / 0 (`runtime_memory_clamp`: 6 PLT calls -> 6 direct) |
+| `__tls_get_addr` | 5 (FFX context creation) | 0; one TLS segment of 0x5518 bytes |
+| text / bss | 12.21 + 0.39 MB / 42.2 + 2.0 MB | 12.56 MB / 44.2 MB |
+| files (stripped) | 1.27 MB + 77.3 MB (0.45 + 12.5 MB) | 78.3 MB (12.7 MB) |
+| dynamic symbols | 434 + 7,595 | 7,833 (`-rdynamic`) |
+| `ldd medievil-runtime` | 165 libraries, `libgow3gpu.so` | 164, no `libgow3gpu` |
+| AppImage | 131,209,720 bytes | 131,152,376 bytes |
+
+Of the shared library's 7,055 exported symbols, 14 are absent from the static runtime: the unreferenced archive members
+`native_clock`, `spin_lock`, `string_util`, `rdtsc` (no static initializers; no member with an initializer was left out).
+
+Build and test: Windows `research/tools/build-clang64.sh` clean (no change there). WSL: `build.sh` +
+`appimage.sh` both ways; the AppImage's `--help` works and `--vulkan-info` reaches `vkCreateInstance` (-9, no GPU in
+WSL), the same as the shared one. CMake GPU tests (`pipeline-binary-*`, `motion-shader-`, `scene-resolution-`,
+`taa-shader-`, `camera-motion-test`) link statically; `pipeline-binary-cache-test` passes. Unit tests: 124 run, the 8
+known failures. Already broken before this change, either way: `build.sh --test` (`tests/test_pad.c` does not compile:
+`gamepad`), and `runtime-test` / `sema-test` do not link (`runtime_image_base` / `_size` live in `probe.c`).
+
+Risk: L. Things that differ at run time: the library's code and data now sit in the executable at low addresses
+(below 64 MiB, as on Windows), the executable exports the library's symbols ahead of `libm` (before, the `.so` did,
+right after `libm`), and fault dumps name the frames `medievil-runtime+0x...` instead of `libgow3gpu.so+0x...`.
+
+### The Deck test (one launch each, the user's go)
+
+Two AppImages from the same commit, in WSL `/root/src/medievil/dist/`: `MediEvil-x86_64-static.AppImage` (default)
+and `MediEvil-x86_64-shared.AppImage` (`GOW3_STATIC_GPU=OFF`). Same settings for both as the test above (67%, auto
+clocks, `GOW3_FRAME_STATS=1`, sections off, `toggles.txt` = `0 0`), Graveyard heavy view, stand still ~60 s; drop the
+first 5 s window. Compare FPS and "Draw pipe: ... stage B busy" (expect 1-4% lower busy or higher FPS static), and
+that nothing else got worse (guest event waits, fence lag, recorder line). One launch each is within run-to-run noise
+for 1-4%: if the difference is smaller than the spread of the 5 s windows, call it no difference or ask for an A-B-A.
