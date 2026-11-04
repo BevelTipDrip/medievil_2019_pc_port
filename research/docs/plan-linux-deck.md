@@ -1029,3 +1029,22 @@ resolution (power of two): a pyramid at the depth's full resolution would be 2x 
 rendering, by intercepting the game's HZB build / test passes (where the HZB remap and the small-mip fix already work).
 **Order (the user):** (1) finish the OnSubmit and VO-label drains; (2) re-test render scale 67 / 80 / 100% on top;
 (3) only if the curve shows culling pays: research the full-resolution HZB build.
+
+## E1 and the fix hit rates (2026-11-04)
+
+**E1** (`c4a0147`: D2 + OnSubmit on stage B + met display-label waits without a drain; log on the Deck): FPS
+64.5-64.9, stddev 1.42 / p99 18.9 ms, **stage B 91% busy** (D2 83%), stage A waits 30% all on the compute drain,
+OnSubmit drains avoided 320 per 5 s (294 ms/s of stage A waiting saved), 975 display-label waits met without a
+drain, game's ident-64 wait 6.5 ms, lead 1; no visual issues (the user). Stage B is now saturated: the stage A gates
+were real and are gone; the wall is stage B's per-draw cost. The user's list: cut stage B cost first; improve culling
+(native resolution: -3-4 FPS with the GPU at 1200 MHz, 90%, but more culled); fewer draws / heavy actions; CPU of other
+threads; what stage B is busy doing; idle elsewhere; whether earlier fixes work as intended (HZB occlusion exonerated:
+worse without it).
+
+**Earlier fixes on the Deck vs the PC** (heavy view, medians per 5 s; Deck D2 vs PC `t-sampler-1` 4K):
+texture-set memo hit 99.3% vs 92.1%; render-state memo 93.7% vs 81.5%; prepared draws used 97.8% vs 99.6%; small buffers
+from the arena 59% vs 51%; pipeline binds 1,399 vs 1,462 a frame (77% vs 71% the same pipeline as the previous draw);
+descriptor pushes 1,277 vs 1,362 a frame at 17.7 vs 15.1 writes (~22.6k writes a frame). **Every measured fix fires
+on the Deck as well as or better than on the PC**; the Deck's stage B does the same work, each piece 4-5x slower.
+Research running: `study-stage-b-per-draw.md` (ranked per-draw cuts, top one behind a toggle),
+`study-deck-other-threads.md` (Wwise 58%, the main thread, recorder churn).
