@@ -163,3 +163,12 @@ this size: call it no difference unless the 5 s windows separate, or ask for an 
 
 Pass: each default-on item (C5, D4, D5, #6) at least not worse in FPS / stage B busy / pacing; #4 kept off unless it
 wins clearly.
+
+## Review (2026-11-04)
+
+An independent read of C5, D4 and D5 found no real race (C5's seqlock and its callers, D4's lock order and backing
+views, D5's empty-queue check and spin all hold). Two low D4 edge cases were fixed in `1b3c28b`: the locked pool
+paths now take `pool_map_mutex` too (a flip of bit 256 between two calls could otherwise let a locked commit lose its
+mapping to an unlocked decommit's reservation), and a failed decommit table edit keeps the reservation mmap under the
+table lock. Older and unchanged by these commits: `flush_hooks` returns before hooks another thread dequeued have run,
+so a decommit-then-recommit of one range can run MAP while UNMAP is still running elsewhere.
