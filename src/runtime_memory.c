@@ -21,6 +21,7 @@
 #else
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <sys/resource.h>
 #include <unistd.h>
 #endif
 /* sceKernelGetDirectMemorySize on retail PS4: 5056 MiB. GOW3_DMEM_MB raises it (the resolution
@@ -981,6 +982,115 @@ static ABI int32_t direct_available(int64_t low, int64_t high, uint64_t alignmen
     *out_start=(int64_t)best_start; *out_size=best;
     return 0;
 }
+/* gow3 pool prefill (study-deck-memory-budget.md 2.5 (a) and (b), ranked item 1;
+ * impl-deck-build-sched-pool.md). On Linux each pool commit maps a new view of the memfd, so every
+ * 4 KiB page the game then touches faults once, and a page the memfd never held is allocated and
+ * zeroed in that fault: area loads on the Deck took 68-86k page faults in ~1 s. Opt-in, read at
+ * start, Linux only:
+ * - GOW3_POOL_PREFILL_MB=N: after a pool expand, a background thread allocates the first N MiB
+ *   (in total) of the pool's physical pages in the memfd, in 16 MiB steps (fallocate mode 0:
+ *   allocated and zeroed once, during the boot). Commits take the lowest free pages first, so
+ *   their first touches find the page already there. RAM: N MiB of shmem from boot.
+ * - GOW3_POOL_POPULATE=1: each pool commit's run enters its new view's page tables in one
+ *   madvise(MADV_POPULATE_WRITE; read-only: _READ; Linux 5.14+) after the commit leaves its locks
+ *   and before it runs the GPU hooks, instead of one fault per page later. Nothing the guest can
+ *   see changes: the populate follows the view's current protection (it fails, harmlessly, where
+ *   another thread's hook or decommit took access away first), and pages read as before.
+ * GOW3_FRAME_STATS=1: "Guest pool faults" line (runtime_memory_lock_report). */
+#ifndef _WIN32
+#ifndef MADV_POPULATE_READ
+#define MADV_POPULATE_READ 22
+#endif
+#ifndef MADV_POPULATE_WRITE
+#define MADV_POPULATE_WRITE 23
+#endif
+static uint64_t pool_prefill_left, pool_prefilled_bytes; /* atomic; bytes */
+static pthread_once_t pool_prefill_once=PTHREAD_ONCE_INIT;
+static void pool_prefill_init(void) {
+    const char *e=getenv("GOW3_POOL_PREFILL_MB");
+    uint64_t mb=e ? strtoull(e,NULL,10) : 0;
+    if (mb>16384) mb=16384;
+    pool_prefill_left=mb<<20;
+}
+typedef struct { uint64_t phys, size; } PoolPrefill;
+static void *pool_prefill_thread(void *arg) {
+    const PoolPrefill job=*(PoolPrefill *)arg;
+    free(arg);
+    pthread_setname_np(pthread_self(),"gow3:PoolFill");
+    const uint64_t t0=lock_now_ns(), step=UINT64_C(16)<<20; /* steps: a hole punch waits for one at most */
+    uint64_t done=0;
+    int error=0;
+    while (done<job.size) {
+        const uint64_t n=job.size-done<step ? job.size-done : step;
+        if (fallocate(pool_fd,0,(off_t)(job.phys+done),(off_t)n)) { error=errno; break; }
+        done+=n;
+    }
+    __atomic_fetch_add(&pool_prefilled_bytes,done,__ATOMIC_RELAXED);
+    if (error)
+        printf("Guest pool prefill (GOW3_POOL_PREFILL_MB): stopped after %" PRIu64 " of %" PRIu64 " MiB at 0x%" PRIx64 ": %s\n",
+               done>>20,job.size>>20,job.phys,strerror(error));
+    else
+        printf("Guest pool prefill (GOW3_POOL_PREFILL_MB): %" PRIu64 " MiB at 0x%" PRIx64 " allocated in %.0f ms\n",
+               done>>20,job.phys,(lock_now_ns()-t0)/1e6);
+    return NULL;
+}
+/* After pool_expand: the part of [phys, phys+size) the budget still covers, on its own thread. */
+static void pool_prefill_start(uint64_t phys, uint64_t size) {
+    pthread_once(&pool_prefill_once,pool_prefill_init);
+    uint64_t left=__atomic_load_n(&pool_prefill_left,__ATOMIC_RELAXED), take;
+    do {
+        if (!left) return;
+        take=left<size ? left : size;
+    } while (!__atomic_compare_exchange_n(&pool_prefill_left,&left,left-take,0,__ATOMIC_RELAXED,__ATOMIC_RELAXED));
+    PoolPrefill *job=malloc(sizeof(*job));
+    pthread_attr_t attr;
+    pthread_t thread;
+    int started=0;
+    if (job && !pthread_attr_init(&attr)) {
+        *job=(PoolPrefill){phys,take};
+        pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED);
+        started=!pthread_create(&thread,&attr,pool_prefill_thread,job);
+        pthread_attr_destroy(&attr);
+    }
+    if (!started) {
+        free(job);
+        printf("Guest pool prefill (GOW3_POOL_PREFILL_MB): no thread; %" PRIu64 " MiB not prefilled\n",take>>20);
+    }
+}
+static int pool_populate_on; /* set once by pool_populate_init */
+static pthread_once_t pool_populate_once=PTHREAD_ONCE_INIT;
+static uint64_t pool_populates, pool_populate_pages, pool_populate_ns, pool_populate_failed; /* atomic; GOW3_FRAME_STATS */
+static void pool_populate_init(void) {
+    const char *e=getenv("GOW3_POOL_POPULATE");
+    if (!(e && e[0]=='1')) return;
+    /* Kernels before 5.14 answer EINVAL: a probe on a page of our own. */
+    void *probe=mmap(NULL,4096,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANONYMOUS,-1,0);
+    const int ok=probe!=MAP_FAILED && !madvise(probe,4096,MADV_POPULATE_WRITE);
+    const int error=errno;
+    if (probe!=MAP_FAILED) munmap(probe,4096);
+    if (ok) printf("Guest pool populate (GOW3_POOL_POPULATE): on, one madvise per pool commit run\n");
+    else printf("Guest pool populate (GOW3_POOL_POPULATE): off, madvise(MADV_POPULATE_WRITE) failed: %s (Linux 5.14+ needed)\n",
+                strerror(error));
+    pool_populate_on=ok;
+}
+static void pool_populate(uintptr_t address, uint64_t size, int prot) {
+    pthread_once(&pool_populate_once,pool_populate_init);
+    const int hp=host_prot(prot);
+    if (!pool_populate_on || !(hp & PROT_READ)) return;
+    const int stats=runtime_fault_stats_enabled();
+    const uint64_t t0=stats ? lock_now_ns() : 0;
+    const int failed=madvise((void *)address,size,(hp & PROT_WRITE) ? MADV_POPULATE_WRITE : MADV_POPULATE_READ)!=0;
+    if (stats) {
+        __atomic_fetch_add(&pool_populates,1,__ATOMIC_RELAXED);
+        __atomic_fetch_add(&pool_populate_ns,lock_now_ns()-t0,__ATOMIC_RELAXED);
+        if (failed) __atomic_fetch_add(&pool_populate_failed,1,__ATOMIC_RELAXED);
+        else __atomic_fetch_add(&pool_populate_pages,size/4096,__ATOMIC_RELAXED);
+    }
+}
+#else
+static void pool_prefill_start(uint64_t phys, uint64_t size) { (void)phys; (void)size; }
+static void pool_populate(uintptr_t address, uint64_t size, int prot) { (void)address; (void)size; (void)prot; }
+#endif
 /* Memory pools: Expand adds direct memory to the pool, Reserve takes virtual space, Commit maps
  * free pool pages into it (possibly as several physical runs), Decommit gives them back. */
 extern uint64_t runtime_disabled_optimizations;
@@ -1001,6 +1111,7 @@ static ABI int32_t pool_expand(int64_t low, int64_t high, uint64_t size, uint64_
     write_unlock();
     if (!used) return NO_MEMORY;
     printf("Runtime: memory pool expanded by %" PRIu64 " bytes at 0x%" PRIx64 "\n",size,(uint64_t)*out);
+    pool_prefill_start((uint64_t)*out,size); /* GOW3_POOL_PREFILL_MB (Linux) */
     return 0;
 }
 static ABI int32_t pool_reserve(void *address, uint64_t size, uint64_t alignment, int flags, void **out) {
@@ -1138,6 +1249,7 @@ static int32_t pool_commit_unlocked(void *address, uint64_t size, int type, int 
         else pool_committed_bytes+=pages*PAGE;
         write_unlock();
         pthread_mutex_unlock(&pool_map_mutex);
+        if (!r) pool_populate(at,pages*PAGE,prot); /* GOW3_POOL_POPULATE, outside the locks */
         flush_hooks();
         if (r) return r;
         done+=pages*PAGE;
@@ -1224,6 +1336,7 @@ static int32_t pool_commit_impl(void *address, uint64_t size, int type, int prot
         else pool_committed_bytes+=pages*PAGE;
         write_unlock();
         pool_map_unlock();
+        if (!r) pool_populate((uintptr_t)at,pages*PAGE,prot); /* GOW3_POOL_POPULATE (Linux), outside the locks */
         flush_hooks();
         if (r) return r;
         done+=pages*PAGE;
@@ -1761,11 +1874,34 @@ void runtime_memory_lock_report(char *out, size_t size, unsigned frames) {
         blocked_ns[k]=__atomic_exchange_n(&lock_blocked_ns[k],0,__ATOMIC_RELAXED);
     }
 #endif
-    snprintf(out,size,"Region table per frame (D4 %s, D5 %s): pool maps outside the lock %.1f (%.3f ms); "
+    const int used=snprintf(out,size,"Region table per frame (D4 %s, D5 %s): pool maps outside the lock %.1f (%.3f ms); "
              "lock busy (Linux): reads %.1f (spin got it %.1f, blocked %.3f ms), writes %.1f (spin got it %.1f, "
              "blocked %.3f ms); hook flushes without the lock %.1f\n",
              d4,d5,maps/f,map_ns/1e6/f,contended[0]/f,spun[0]/f,blocked_ns[0]/1e6/f,
              contended[1]/f,spun[1]/f,blocked_ns[1]/1e6/f,flushes/f);
+#ifndef _WIN32
+    /* GOW3_POOL_PREFILL_MB / GOW3_POOL_POPULATE (study-deck-memory-budget.md 2.5): the process's
+     * page faults in the window (the first window: since the start), either way, and the populates.
+     * The kernel counts each 4 KiB page a populate enters as a minor fault too: the faults the
+     * game itself took are the minor faults less the pages populated. */
+    static uint64_t last_minor, last_major; /* the report's thread only */
+    struct rusage usage;
+    if (used>0 && (size_t)used<size && !getrusage(RUSAGE_SELF,&usage)) {
+        const uint64_t minor=(uint64_t)usage.ru_minflt, major=(uint64_t)usage.ru_majflt;
+        const uint64_t populates=__atomic_exchange_n(&pool_populates,0,__ATOMIC_RELAXED),
+                       populate_ns=__atomic_exchange_n(&pool_populate_ns,0,__ATOMIC_RELAXED),
+                       populate_failed=__atomic_exchange_n(&pool_populate_failed,0,__ATOMIC_RELAXED),
+                       populate_pages=__atomic_exchange_n(&pool_populate_pages,0,__ATOMIC_RELAXED);
+        snprintf(out+used,size-(size_t)used,"Guest pool faults (window): process page faults %" PRIu64 " minor, %" PRIu64
+                 " major; pool commit populates %" PRIu64 " (%" PRIu64 " pages, minor faults too; %.1f ms, %" PRIu64
+                 " failed); prefilled %" PRIu64 " MiB\n",
+                 minor-last_minor,major-last_major,populates,populate_pages,populate_ns/1e6,populate_failed,
+                 __atomic_load_n(&pool_prefilled_bytes,__ATOMIC_RELAXED)>>20);
+        last_minor=minor; last_major=major;
+    }
+#else
+    (void)used;
+#endif
 }
 /* GPU page tracking: restrict host access, never beyond the guest's own protection. */
 void runtime_memory_gpu_protect(uintptr_t address, uint64_t size, int read, int write) {
