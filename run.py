@@ -69,6 +69,34 @@ def run_script(name, *args, capture=False):
     return None
 
 
+# Prefixes extra-env.txt may set: the port's switches and the graphics stack's (driver, loader, SDL).
+EXTRA_ENV_PREFIXES = ('GOW3_', 'RADV_', 'MESA_', 'AMD_', 'VK_', 'SDL_')
+
+
+def load_extra_env(env, path):
+    """Test settings from <data>/extra-env.txt, one KEY=VALUE a line (# comments), applied on every
+    start however the game is launched (Steam, the launcher, --play); they override the environment.
+    Diagnostics without editing launch options; the log lists what was applied."""
+    try:
+        lines = path.read_text(encoding='utf-8').splitlines()
+    except OSError:
+        return
+    applied = []
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith('#'):
+            continue
+        key, sep, value = line.partition('=')
+        key = key.strip()
+        if not sep or not key.startswith(EXTRA_ENV_PREFIXES) or not key.replace('_', '').isalnum():
+            print(f'extra-env.txt: ignored "{line}" (KEY=VALUE, key starting with {", ".join(EXTRA_ENV_PREFIXES)})')
+            continue
+        env[key] = value.strip()
+        applied.append(f'{key}={env[key]}')
+    if applied:
+        print(f'Extra environment ({path}): {" ".join(applied)}')
+
+
 def find_executable(name):
     """bin/ (packaged), else out/ (built with build.sh)."""
     for candidate in (PORT / 'bin' / name, PORT / 'out' / name):
@@ -86,6 +114,7 @@ def main():
     os.chdir(PORT)
     env = os.environ
     data = Path(env.get('GOW3_DATA_DIR', PORT))
+    load_extra_env(env, data / 'extra-env.txt')
     out = data / 'out'
     out.mkdir(parents=True, exist_ok=True)
     if not (data / 'medievil.ini').exists() and (data / 'gow3.ini').exists():
