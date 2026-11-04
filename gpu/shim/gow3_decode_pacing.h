@@ -54,12 +54,28 @@ void NoteIdleRun(bool raised, std::uint64_t handed_ns);
 
 std::uint64_t NowNs();
 
+// ---- GOW3_ONSUBMIT_STAGE_B: sceGnmSubmitDone's frame-end work on stage B (vk_rasterizer.cpp) ----
+
+/// GOW3_ONSUBMIT_STAGE_B (`1` on, `0` off; unset: as GOW3_DECODE_PACING). Never with
+/// GOW3_GPU_FENCES=1. Read once.
+bool OnSubmitOnStageB();
+/// Stage B ran the frame-end step stage A handed over at `handed_ns` (instead of draining);
+/// its work started at `start_ns`.
+void NoteOnSubmitRun(std::uint64_t handed_ns, std::uint64_t start_ns);
+
+// ---- Display buffer label waits (liverpool.cpp WAIT_REG_MEM; spacepepperoni 6ef7566) ----
+
+enum class VoWait { MetNoDrain, StalePending, Drained };
+void NoteVoLabelWait(VoWait kind);
+
 /// What the GPU command thread is at (set by Liverpool; for the watchdog).
 inline std::string (*describe_gpu)(void* context) = nullptr;
 inline void* describe_context = nullptr;
 
-/// The report lines for the 5 s block (videoout/driver.cpp, GOW3_FRAME_STATS=1); empty with the
-/// switch off. Resets the counters. `frames`: frames presented in the window.
+/// The report lines for the 5 s block (videoout/driver.cpp, GOW3_FRAME_STATS=1): the pacing
+/// lines with GOW3_DECODE_PACING, the OnSubmit line with GOW3_ONSUBMIT_STAGE_B, the display
+/// buffer label line when such waits happened. Resets the counters. `frames`: frames presented
+/// in the window.
 std::string Report(double window_s, unsigned frames);
 
 } // namespace Gow3DecodePacing

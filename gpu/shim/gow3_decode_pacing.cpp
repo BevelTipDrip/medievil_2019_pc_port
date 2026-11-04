@@ -61,6 +61,9 @@ struct Counters {
     std::atomic<std::uint64_t> retired{0}, retire_ns{0}, retire_max_ns{0};
     std::atomic<std::uint64_t> idle_deferred{0}, idle_raised{0}, idle_skipped{0}, idle_lag_ns{0},
         idle_lag_max_ns{0};
+    std::atomic<std::uint64_t> onsubmit_runs{0}, onsubmit_lag_ns{0}, onsubmit_lag_max_ns{0},
+        onsubmit_work_ns{0}, onsubmit_work_max_ns{0};
+    std::atomic<std::uint64_t> vo_met{0}, vo_stale{0}, vo_drained{0};
 };
 Counters counters;
 
@@ -239,10 +242,53 @@ void NoteIdleRun(bool raised, std::uint64_t handed_ns) {
     AtomicMax(counters.idle_lag_max_ns, ns);
 }
 
-std::string Report(double window_s, unsigned frames) {
-    if (!Enabled()) {
-        return {};
+bool OnSubmitOnStageB() {
+    static const bool on = [] {
+        const char* env = std::getenv("GOW3_ONSUBMIT_STAGE_B");
+        const bool wanted = env && *env ? env[0] == '1' : Enabled();
+        if (!wanted) {
+            return false;
+        }
+        if (Gow3GpuFences::Enabled()) {
+            std::printf(
+                "OnSubmit on stage B: GOW3_ONSUBMIT_STAGE_B ignored (GOW3_GPU_FENCES=1)\n");
+            std::fflush(stdout);
+            return false;
+        }
+        std::printf("OnSubmit on stage B: on (GOW3_ONSUBMIT_STAGE_B%s): fault buffer, image "
+                    "downloads, collectors, staging trim and the frame's Flush in stream order\n",
+                    env && *env ? "=1" : " unset, with GOW3_DECODE_PACING");
+        std::fflush(stdout);
+        return true;
+    }();
+    return on;
+}
+
+void NoteOnSubmitRun(std::uint64_t handed_ns, std::uint64_t start_ns) {
+    if (!Gow3Stats::enabled) {
+        return;
     }
+    const std::uint64_t now = NowNs();
+    counters.onsubmit_runs.fetch_add(1, std::memory_order_relaxed);
+    counters.onsubmit_lag_ns.fetch_add(start_ns - handed_ns, std::memory_order_relaxed);
+    AtomicMax(counters.onsubmit_lag_max_ns, start_ns - handed_ns);
+    counters.onsubmit_work_ns.fetch_add(now - start_ns, std::memory_order_relaxed);
+    AtomicMax(counters.onsubmit_work_max_ns, now - start_ns);
+}
+
+void NoteVoLabelWait(VoWait kind) {
+    if (!Gow3Stats::enabled) {
+        return;
+    }
+    (kind == VoWait::MetNoDrain     ? counters.vo_met
+     : kind == VoWait::StalePending ? counters.vo_stale
+                                    : counters.vo_drained)
+        .fetch_add(1, std::memory_order_relaxed);
+}
+
+std::string Report(double window_s, unsigned frames) {
+    std::string text;
+    char line[768];
     const auto take = [](std::atomic<std::uint64_t>& a) {
         return a.exchange(0, std::memory_order_relaxed);
     };
@@ -251,6 +297,37 @@ std::string Report(double window_s, unsigned frames) {
     const auto per_s = [&](std::uint64_t ns) { return window_s > 0 ? ms(ns) / window_s : 0.0; };
     const auto ull = [](std::uint64_t v) { return static_cast<unsigned long long>(v); };
 
+    if (OnSubmitOnStageB()) {
+        const std::uint64_t runs = take(counters.onsubmit_runs),
+                            lag = take(counters.onsubmit_lag_ns),
+                            lag_max = take(counters.onsubmit_lag_max_ns),
+                            work = take(counters.onsubmit_work_ns),
+                            work_max = take(counters.onsubmit_work_max_ns);
+        std::snprintf(line, sizeof(line),
+                      "OnSubmit on stage B (5 s): %llu frame-end steps handed over (drains "
+                      "avoided): stage B reached them %.2f ms avg %.2f max after the hand-off (%.1f "
+                      "ms/s stage A no longer waits); work and Flush %.2f ms avg %.2f max on stage "
+                      "B\n",
+                      ull(runs), avg(lag, runs), ms(lag_max), per_s(lag), avg(work, runs),
+                      ms(work_max));
+        text += line;
+    }
+    if (const std::uint64_t met = take(counters.vo_met), stale = take(counters.vo_stale),
+        drained = take(counters.vo_drained);
+        met || stale || drained) {
+        std::snprintf(line, sizeof(line),
+                      "Display buffer label waits (5 s): %llu met without a drain, %llu met in "
+                      "memory but a flip's write pending (drained), %llu drained (not met%s)\n",
+                      ull(met), ull(stale), ull(drained),
+                      [] {
+                          const char* env = std::getenv("GOW3_VO_LABEL_DRAIN");
+                          return env && env[0] == '1' ? ", or GOW3_VO_LABEL_DRAIN=1" : "";
+                      }());
+        text += line;
+    }
+    if (!Enabled()) {
+        return text;
+    }
     const std::uint64_t done_calls = take(counters.done_calls), done_waits = take(counters.done_waits),
                         done_ns = take(counters.done_wait_ns),
                         done_max = take(counters.done_wait_max_ns), submits = take(counters.submits),
@@ -262,8 +339,6 @@ std::string Report(double window_s, unsigned frames) {
     const std::uint64_t deferred = take(counters.idle_deferred), raised = take(counters.idle_raised),
                         skipped = take(counters.idle_skipped), lag_ns = take(counters.idle_lag_ns),
                         lag_max = take(counters.idle_lag_max_ns);
-    std::string text;
-    char line[768];
     std::snprintf(line, sizeof(line),
                   "Decode pacing (5 s, lead %u, ahead %u): SubmitDone %llu, waited %llu (%.2f ms avg "
                   "%.2f max, %.1f ms/s); later submissions: %llu submissions (%.1f/frame), waited "

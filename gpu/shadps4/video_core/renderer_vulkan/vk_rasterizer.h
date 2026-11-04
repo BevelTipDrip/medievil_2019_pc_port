@@ -199,6 +199,11 @@ public:
     u64 Flush();
     void Finish();
     void OnSubmit();
+    /// gow3 GOW3_ONSUBMIT_STAGE_B (impl-decode-pacing.md; default with GOW3_DECODE_PACING), stage
+    /// A at sceGnmSubmitDone: OnSubmit's work and the Flush after it run on stage B in stream
+    /// order instead of after a drain. False when the switch is off (the caller drains as
+    /// before); true when handed over or (no draw pipe) done here.
+    bool OnSubmitInOrder();
     /// gow3 (stage A): ring copies of guest constants are not reused past this point (a new
     /// guest command buffer, or a wait the CPU may write memory during).
     void CloseRingReuse();
@@ -222,6 +227,8 @@ public:
 #endif
 
 private:
+    /// OnSubmit without its drain: fault buffer, image downloads, collectors, staging trim.
+    void OnSubmitWork();
     void PrepareRenderState(const GraphicsPipeline* pipeline);
     RenderState BeginRendering(const GraphicsPipeline* pipeline);
     RenderState BeginRenderingFull(const GraphicsPipeline* pipeline);

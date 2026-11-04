@@ -3,6 +3,7 @@
 
 #include <xxhash.h>
 #include "video_core/renderer_vulkan/ui_composition.h"
+#include "gow3_decode_pacing.h"
 #include "gow3_fence_stats.h"
 #include "gow3_sections.h"
 #include "gow3_settings.h"
@@ -1590,6 +1591,10 @@ void Rasterizer::CloseRingReuse() {
 
 void Rasterizer::OnSubmit() {
     DrainDrawPipe();
+    OnSubmitWork();
+}
+
+void Rasterizer::OnSubmitWork() {
     if (fault_process_pending) {
         fault_process_pending = false;
         buffer_cache.ProcessFaultBuffer();
@@ -1597,6 +1602,32 @@ void Rasterizer::OnSubmit() {
     texture_cache.ProcessDownloadImages();
     texture_cache.RunGarbageCollector();
     runtime.TickFrame();
+}
+
+bool Rasterizer::OnSubmitInOrder() {
+    // gow3 GOW3_ONSUBMIT_STAGE_B (impl-decode-pacing.md, "OnSubmit on stage B"): the frame-end
+    // work owns the caches, which stage B owns whenever the draw pipe has work, so it runs there
+    // at the same stream position the drain gave it (after everything handed over before, before
+    // anything decoded after); the Flush after it too (it drained as well). Stage A goes on
+    // decoding the next frame. Prepared draws ahead of it hold guest descriptors (sharps, hashes)
+    // and pipelines, not cache objects; every image and buffer is resolved on stage B when it
+    // binds, after this step, through memos checked against the registry generation and region
+    // stamps the collector bumps.
+    if (!Gow3DecodePacing::OnSubmitOnStageB()) {
+        return false;
+    }
+    const u64 handed_ns = Gow3DecodePacing::NowNs();
+    RunInOrder(
+        [](Rasterizer& self, const u8* data) {
+            u64 handed;
+            std::memcpy(&handed, data, sizeof(handed));
+            const u64 start = Gow3DecodePacing::NowNs();
+            self.OnSubmitWork();
+            self.Flush();
+            Gow3DecodePacing::NoteOnSubmitRun(handed, start);
+        },
+        &handed_ns, sizeof(handed_ns));
+    return true;
 }
 
 const PreparedStage* Rasterizer::FindPreparedStage(const Shader::Info& stage) const {

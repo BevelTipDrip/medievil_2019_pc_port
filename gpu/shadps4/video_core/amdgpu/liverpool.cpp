@@ -237,7 +237,9 @@ void Liverpool::Process(std::stop_token stoken) {
 
         if (submit_done) {
             VideoCore::EndCapture();
-            if (rasterizer) {
+            // gow3 GOW3_ONSUBMIT_STAGE_B (impl-decode-pacing.md): on stage B in stream order
+            // instead of a drain here, when on.
+            if (rasterizer && !rasterizer->OnSubmitInOrder()) {
                 rasterizer->OnSubmit();
                 rasterizer->Flush();
             }
@@ -1815,6 +1817,30 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 }
                 if (vo_port->IsVoLabel(wait_addr) &&
                     num_submits == mapped_queues[GfxQueueId].submits.size()) {
+                    // gow3 (spacepepperoni/medievil_ps4_Linux 6ef7566, from the Uncharted Linux
+                    // fork): a display buffer the presenter has released already needs no drain;
+                    // stage B goes on with the previous frame while this one is decoded. Ours
+                    // adds one check: the value in memory is the one this point of the stream
+                    // sees only if no write to the label is still queued for stage B (the flip's
+                    // WRITE_DATA that marks the buffer in use: NotePendingWrite); with one queued
+                    // the wait drains as before. An unmet wait drains and sleeps as before.
+                    // GOW3_VO_LABEL_DRAIN=1: always drain.
+                    static const bool always_drain = [] {
+                        const char* env = std::getenv("GOW3_VO_LABEL_DRAIN");
+                        return env && env[0] == '1';
+                    }();
+                    if (!always_drain && wait_reg_mem->Test(regs.reg_array)) {
+                        u32 pending;
+                        if (!rasterizer ||
+                            !PendingFenceValue(wait_reg_mem->Address<VAddr>(), pending) ||
+                            wait_reg_mem->TestValue(pending)) {
+                            Gow3DecodePacing::NoteVoLabelWait(Gow3DecodePacing::VoWait::MetNoDrain);
+                            break;
+                        }
+                        Gow3DecodePacing::NoteVoLabelWait(Gow3DecodePacing::VoWait::StalePending);
+                    } else {
+                        Gow3DecodePacing::NoteVoLabelWait(Gow3DecodePacing::VoWait::Drained);
+                    }
                     if (rasterizer) {
                         rasterizer->DrainDrawPipe(static_cast<u32>(opcode));
                     }
