@@ -385,9 +385,44 @@ void SignalEopAfterGpu(const PM4CmdEventWriteEop& eop) {
 
 // gow3: end-of-pipe/-shader events run in order with the draws (Rasterizer::RunInOrder: on
 // the draw recording thread when the draw pipeline is in use).
+// gow3 GOW3_EARLY_FRAME_EOP=1 (plan-linux-deck.md, study-eop-wait-site.md): UE4's submit thread
+// waits each frame for the previous frame's end-of-pipe label (interrupt + 64-bit frame number)
+// before it submits the next frame; signalled when the draw recording reaches it, that wait is
+// the game waiting for our stage B. The label only gates submission (UE4 recycles its transient
+// pool by frame count, 4 slots), so it is signalled at decode instead while stage B is fewer than
+// GOW3_EARLY_FRAME_EOP_LEAD (default 2) such frames behind; else at stage B as before.
+bool EarlyFrameEop() {
+    static const bool on = [] {
+        const char* env = std::getenv("GOW3_EARLY_FRAME_EOP");
+        return env && env[0] == '1';
+    }();
+    return on;
+}
+u64 EarlyFrameEopLead() {
+    static const u64 lead = [] {
+        const char* env = std::getenv("GOW3_EARLY_FRAME_EOP_LEAD");
+        return env && *env ? std::max<u64>(1, std::strtoull(env, nullptr, 10)) : u64{2};
+    }();
+    return lead;
+}
+bool IsFrameEop(const PM4CmdEventWriteEop& eop) {
+    return eop.int_sel != InterruptSelect::None && eop.data_sel == DataSelect::Data64;
+}
+/// Frame EOPs decoded (stage A only) and reached by the draw recording (stage B only).
+std::atomic<u64> frame_eops_decoded{0}, frame_eops_recorded{0};
+
+/// Stage B: the rest of a frame EOP signalled at decode (its place in the stream).
+void RunEarlyEopTail(Vulkan::Rasterizer& rasterizer, const u8*) {
+    rasterizer.ProcessDownloadImages();
+    frame_eops_recorded.fetch_add(1, std::memory_order_release);
+}
+
 void RunEventWriteEop(Vulkan::Rasterizer& rasterizer, const u8* data) {
     const auto eop = *reinterpret_cast<const PM4CmdEventWriteEop*>(data);
     rasterizer.ProcessDownloadImages();
+    if (EarlyFrameEop() && IsFrameEop(eop)) {
+        frame_eops_recorded.fetch_add(1, std::memory_order_release); // signalled below, as before
+    }
     if (Gow3GpuFences::Enabled()) {
         // gow3 GOW3_GPU_FENCES (Bloodborne 0.7, 0fc2921 cp_tasks.cpp EventWriteEopTask): written
         // once the GPU has finished the work before it, as the hardware does, by the signal
@@ -1566,6 +1601,25 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     }
                 }
                 if (rasterizer) {
+                    if (EarlyFrameEop() && !Gow3GpuFences::Enabled() && IsFrameEop(*event_eop)) {
+                        const u64 decoded = frame_eops_decoded.load(std::memory_order_relaxed);
+                        const u64 lead =
+                            decoded - frame_eops_recorded.load(std::memory_order_acquire);
+                        frame_eops_decoded.store(decoded + 1, std::memory_order_relaxed);
+                        if (lead < EarlyFrameEopLead()) {
+                            SignalEop(*event_eop); // the label and the interrupt, now
+                            rasterizer->RunInOrder(&RunEarlyEopTail, event_eop,
+                                                   sizeof(*event_eop));
+                            if (Gow3Stats::enabled) {
+                                ++Gow3FenceStats::early_eops;
+                                Gow3FenceStats::AtomicMax(Gow3FenceStats::early_max_lead, lead + 1);
+                            }
+                            break;
+                        }
+                        if (Gow3Stats::enabled) {
+                            ++Gow3FenceStats::early_fallbacks;
+                        }
+                    }
                     if (rasterizer->RunInOrder(&RunEventWriteEop, event_eop, sizeof(*event_eop))) {
                         NotePendingFences(*event_eop);
                     }

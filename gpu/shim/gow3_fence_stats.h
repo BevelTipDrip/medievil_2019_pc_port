@@ -225,6 +225,10 @@ inline void FenceSignaled(std::uint64_t index) {
     }
 }
 
+// ---- GOW3_EARLY_FRAME_EOP: the per-frame EOP (interrupt + 64-bit frame label) signalled at
+// decode; the lead is frames signalled at decode minus frames the draw recording reached ----
+inline std::atomic<std::uint64_t> early_eops{0}, early_fallbacks{0}, early_max_lead{0};
+
 // ---- Submission lock (sceGnmSubmitDone arms it; submits wait for GPU idle) ----
 inline std::atomic<std::uint64_t> lock_done_calls{0}, lock_armed{0}, lock_waits{0},
     lock_wait_ns{0}, lock_wait_max_ns{0}, lock_held_ns{0}, lock_held_max_ns{0}, lock_releases{0};
@@ -334,6 +338,16 @@ inline std::string Report(double window_s) {
             fence_gpu_first[k] = 0;
         }
         text += "\n";
+    }
+    if (const auto early = early_eops.exchange(0), fallback = early_fallbacks.exchange(0);
+        early || fallback) {
+        std::snprintf(line, sizeof(line),
+                      "Early frame EOP (5 s): %llu signalled at decode, %llu at stage B (lead cap), "
+                      "max lead %llu frames\n",
+                      static_cast<unsigned long long>(early),
+                      static_cast<unsigned long long>(fallback),
+                      static_cast<unsigned long long>(early_max_lead.exchange(0)));
+        text += line;
     }
     const auto done = lock_done_calls.exchange(0), armed = lock_armed.exchange(0),
                waits = lock_waits.exchange(0), wait_ns = lock_wait_ns.exchange(0),
