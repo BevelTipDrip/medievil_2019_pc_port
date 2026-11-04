@@ -1080,6 +1080,10 @@ read-only platform facts of study-deck-platform-optimization.md section 0). Chec
 - Static GPU library on Linux, `98dca62` ([impl-deck-cpu-bundle.md](impl-deck-cpu-bundle.md) G): default ON,
   `GOW3_STATIC_GPU=OFF bash build.sh` for the old shared build. PLT calls 49,039 -> 4,055, `__tls_get_addr` 5 -> 0.
   WSL `dist/` holds `MediEvil-x86_64-static.AppImage` and `-shared.AppImage` from the same commit for the A/B.
+- Stage B bundle 2 ([impl-stage-b-bundle-2.md](impl-stage-b-bundle-2.md), `50b965d`..`8dd5881`): C5 readback
+  pre-check (2nd word 128), D4 Linux pool maps outside the table lock (256), D5 table lock spin + empty hook flush
+  (512), #4 stage B spin before blocking (opt-in `GOW3_STAGE_B_SPIN=1`, 1024 off) with a "Stage B sleeps per frame"
+  counter, #6 cache-line groups (build: `GOW3_CACHELINE_PADDING=OFF`; WSL `dist/MediEvil-x86_64-nopad.AppImage`).
 - `deck.sh` gained `clocks [s] [names]` (the clock of the CPU stage B and other named threads run on, every 200 ms),
   `mem [s]` (meminfo, TTM limit, VRAM / GTT used, RSS, faults, I/O, pressure every 5 s) and
   `deploy [tree] [file]` (deploys a named `dist/` AppImage; DEPLOYED records `<commit>-<name>`).
@@ -1104,5 +1108,7 @@ ranked).
    `GOW3_HZB_FULL_SIZE=1`, restart-only), 67%: hidden ~63 -> ~120?, draws ~1,430 -> ~1,300?
    Check for pop-in. No-code cross-check: 81% render scale already gets the 1024x512 pyramid.
 4. Governor `performance` via `steamosctl` (system change: the user's OK first), with `deck.sh clocks`.
+4b. Stage B bundle 2 toggle A/Bs in one launch ([impl-stage-b-bundle-2.md](impl-stage-b-bundle-2.md), "The Deck
+   test"): #4 spin, C5, D4, D5; then the no-padding AppImage for #6.
 5. Then: particle-sim skip (if built; live toggle), `GOW3_UE4_CVARS` items 4-5 of the UE4 study one per launch,
    `RADV_FORCE_VRS=2x2` at 100%, the render-scale curve 67 / 80 / 100.
