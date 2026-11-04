@@ -1095,12 +1095,13 @@ two-instruction patch gives 67% the 100% pyramid, ~120-145 fewer draws; no sun c
 ranked).
 
 **Deck test order when it is back** (one change per launch; each launch needs the user's go):
-1. `deck.sh deploy` the latest build; `deck.sh checks`. Baseline run in the heavy view with `deck.sh clocks 20`
+1. `deck.sh deploy` the latest build; `deck.sh checks`. Baseline run (now with the "Draw classes per frame" line, `853877d`) in the heavy view with `deck.sh clocks 20`
    (is stage B at ~2.4 GHz?) and `deck.sh mem 30`; in the same launch `deck.sh ab "0 0" "0 32"` (lean recorder),
    then `"0 0" "0 16"` (C1).
 2. Static vs shared: `deck.sh deploy /root/src/medievil MediEvil-x86_64-shared.AppImage`, one run; then the static
    one, one run (1-4% expected; repeat if within noise).
-3. Full-size HZB patch (being built: `impl-draw-reduction.md`), 67%: hidden ~63 -> ~120?, draws ~1,430 -> ~1,300?
+3. Full-size HZB patch (`93d1a58`, [impl-draw-reduction.md](impl-draw-reduction.md); `deck.sh env` with
+   `GOW3_HZB_FULL_SIZE=1`, restart-only), 67%: hidden ~63 -> ~120?, draws ~1,430 -> ~1,300?
    Check for pop-in. No-code cross-check: 81% render scale already gets the 1024x512 pyramid.
 4. Governor `performance` via `steamosctl` (system change: the user's OK first), with `deck.sh clocks`.
 5. Then: particle-sim skip (if built; live toggle), `GOW3_UE4_CVARS` items 4-5 of the UE4 study one per launch,
