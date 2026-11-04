@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cassert>
 #include <deque>
@@ -90,6 +92,52 @@ public:
         return !entries.empty() && ready(entries.front().tick);
     }
     std::uint64_t Bytes() const { return bytes; }
+    std::size_t Size() const { return entries.size(); }
+
+    /// gow3 (impl-stage-b-bundle-2.md C5): the pages of the copies RequiredTick can still match
+    /// (valid and watched) as at most N sorted ranges [first, second); the closest neighbours
+    /// are merged first. Any range RequiredTick finds a copy for overlaps one of them (a
+    /// superset: merging only adds pages). Returns the count.
+    template <std::size_t N>
+    std::size_t Spans(std::array<std::pair<std::uint64_t, std::uint64_t>, N>& out) const {
+        static_assert(N > 0);
+        std::array<std::pair<std::uint64_t, std::uint64_t>, 64> spans;
+        std::size_t count = 0;
+        for (const auto& entry : entries) {
+            if (!entry.valid || !entry.watched) continue;
+            if (count == spans.size()) {
+                out[0] = {0, ~std::uint64_t{0}}; // more copies than expected: everything
+                return 1;
+            }
+            const auto begin = entry.address & ~std::uint64_t{4095};
+            const auto end = (entry.address + entry.size + 4095) & ~std::uint64_t{4095};
+            spans[count++] = {begin, std::max(end, begin + 1)}; // an empty copy still matches
+        }
+        std::sort(spans.begin(), spans.begin() + count);
+        std::size_t merged = 0;
+        for (std::size_t i = 0; i < count; ++i) {
+            if (merged && spans[i].first <= spans[merged - 1].second) {
+                spans[merged - 1].second = std::max(spans[merged - 1].second, spans[i].second);
+            } else {
+                spans[merged++] = spans[i];
+            }
+        }
+        while (merged > N) {
+            std::size_t closest = 0;
+            for (std::size_t i = 1; i + 1 < merged; ++i) {
+                if (spans[i + 1].first - spans[i].second <
+                    spans[closest + 1].first - spans[closest].second) {
+                    closest = i;
+                }
+            }
+            spans[closest].second = spans[closest + 1].second;
+            std::copy(spans.begin() + closest + 2, spans.begin() + merged,
+                      spans.begin() + closest + 1);
+            --merged;
+        }
+        std::copy(spans.begin(), spans.begin() + merged, out.begin());
+        return merged;
+    }
 
 private:
     static bool OverlapsPage(const Entry& entry, std::uint64_t address, std::uint64_t size) {

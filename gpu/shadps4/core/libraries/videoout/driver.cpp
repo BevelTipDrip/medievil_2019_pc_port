@@ -777,6 +777,15 @@ void VideoOutDriver::Flip(const Request& req) {
                                 polls_skipped * each_us(query_ns[0], queries[0]) / 1e3 / frames_d,
                                 wakes[0] / frames_d, each_us(wake_ns[0], wakes[0]),
                                 wakes[1] / frames_d, each_us(wake_ns[1], wakes[1]));
+                    // gow3 C5 (impl-stage-b-bundle-2.md): the buffer cache's readback checks
+                    // while copies were pending: answered without readback_mutex (no pending
+                    // copy on the range's pages) or under it.
+                    const u64 prechecks_free = Gow3Stats::readback_prechecks[0].exchange(0);
+                    const u64 prechecks_locked = Gow3Stats::readback_prechecks[1].exchange(0);
+                    std::printf("Readback pre-check per frame (C5 %s): without the lock %.1f, "
+                                "locked %.1f\n",
+                                Gow3Toggle2::Disabled(Gow3Toggle2::ReadbackPrecheck) ? "off" : "on",
+                                prechecks_free / frames_d, prechecks_locked / frames_d);
                     // gow3 (impl-deck-cpu-bundle.md): the Vulkan recorder's hand-offs, sleeps
                     // and spin; in lean mode (second toggle word 32 clear, <= 8 threads) the
                     // label kicks that left it asleep and how the owed wakes were made.

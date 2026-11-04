@@ -566,6 +566,17 @@ private:
     u64 NoteTrackedPush(VAddr address, u64 size);
     void NoteTrackedPublish(VAddr address, u64 size, u64 seq);
     std::atomic<bool> has_pending_readbacks{false};
+    /// gow3 (impl-stage-b-bundle-2.md C5): the pages of the pending copies (ReadbackQueue::
+    /// Spans), written under readback_mutex after every change that can add pages, read without
+    /// it by the buffer cache's ResolveReadbacks calls (seq odd while it is written).
+    static constexpr std::size_t ReadbackSpanCount = 4;
+    struct ReadbackSpans {
+        std::atomic<u32> seq{0}, count{0};
+        std::array<std::atomic<u64>, ReadbackSpanCount> begin{}, end{};
+    };
+    ReadbackSpans readback_spans;
+    void PublishReadbackSpans();
+    [[nodiscard]] bool ReadbackSpansMiss(VAddr address, u64 size) const;
     u64 readbacks_queued = 0, readbacks_completed = 0, readbacks_waited = 0;
     u64 readbacks_canceled = 0, readbacks_peak_bytes = 0;
     std::chrono::steady_clock::time_point readback_report = std::chrono::steady_clock::now();

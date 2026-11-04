@@ -1162,7 +1162,8 @@ void *runtime_low_map(size_t size, int prot) {
  * taken): 1 bulk descriptor copy per push, 2 sampler handles reused within a GC period,
  * 4 constant ring reuse, 8 direct arena writes (U2: staging copies again), 16 a timeline
  * semaphore query at every end-of-pipe readback poll again (no poll interval; Gow3Toggle2 in
- * gow3_toggles.h). */
+ * gow3_toggles.h), 32 recorder lean mode off, 64 reserved, 128 the buffer cache's readback
+ * checks always under the lock (C5). */
 uint64_t runtime_disabled_optimizations, runtime_disabled_optimizations2;
 /* Speculative readers of guest memory (GPU draw-preparation workers) register a recovery
  * point: a fault on that thread jumps back to it instead of terminating (probe.c). */

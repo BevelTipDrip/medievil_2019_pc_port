@@ -186,7 +186,40 @@ void TextureCache::WatchReadback(VAddr address, u64 size) {
     }
 }
 
+void TextureCache::PublishReadbackSpans() {
+    std::array<std::pair<u64, u64>, ReadbackSpanCount> spans{};
+    const std::size_t count = pending_readbacks.Spans(spans);
+    auto& p = readback_spans;
+    const u32 seq = p.seq.load(std::memory_order_relaxed);
+    p.seq.store(seq + 1, std::memory_order_relaxed);
+    std::atomic_thread_fence(std::memory_order_release);
+    for (std::size_t i = 0; i < count; ++i) {
+        p.begin[i].store(spans[i].first, std::memory_order_relaxed);
+        p.end[i].store(spans[i].second, std::memory_order_relaxed);
+    }
+    p.count.store(u32(count), std::memory_order_relaxed);
+    p.seq.store(seq + 2, std::memory_order_release);
+}
+
+bool TextureCache::ReadbackSpansMiss(VAddr address, u64 size) const {
+    // A seqlock read: a writer in progress or a changed seq sends the caller to the lock.
+    const auto& p = readback_spans;
+    const u32 seq = p.seq.load(std::memory_order_acquire);
+    if (seq & 1) {
+        return false;
+    }
+    const u32 count = std::min<u32>(p.count.load(std::memory_order_relaxed), ReadbackSpanCount);
+    bool overlap = false;
+    for (u32 i = 0; i < count; ++i) {
+        overlap |= address < p.end[i].load(std::memory_order_relaxed) &&
+                   p.begin[i].load(std::memory_order_relaxed) < address + size;
+    }
+    std::atomic_thread_fence(std::memory_order_acquire);
+    return !overlap && p.seq.load(std::memory_order_relaxed) == seq;
+}
+
 void TextureCache::RetireReadbacks(bool polled) {
+    const std::size_t queued = pending_readbacks.Size();
     // gow3 (study-stage-b-per-draw.md C1): `polled` (the end-of-pipe events): a copy the last
     // known GPU tick does not cover yet retires at a later event (Scheduler::IsFreePolled).
     pending_readbacks.Retire(
@@ -202,12 +235,36 @@ void TextureCache::RetireReadbacks(bool polled) {
             }
             runtime.GetStagingPool().FreeDeferred(entry.payload);
         });
+    if (pending_readbacks.Size() != queued) {
+        PublishReadbackSpans(); // fewer pages: tighter spans (optional, never required)
+    }
     has_pending_readbacks.store(pending_readbacks.Bytes() != 0, std::memory_order_release);
 }
 
 bool TextureCache::ResolveReadbacks(VAddr address, u64 size, bool assume_locks,
                                     ReadbackSource source) {
     if (!deferred_readbacks || !has_pending_readbacks.load(std::memory_order_acquire)) return false;
+    // gow3 C5 (impl-stage-b-bundle-2.md; study-stage-b-per-draw.md): the buffer cache asks 3-4
+    // times a draw, and with copies always queued each ask took readback_mutex and scanned the
+    // queue. A range on no page of a pending copy needs no lock: the answer would be "nothing
+    // to wait for". Only the buffer cache's calls (the thread that owns the caches, the same
+    // one that queues the copies, or one ordered after it by the draw-pipe drain) skip the
+    // lock; the CPU fault paths keep it: a page is watched before its copy is queued, so a
+    // fault may come before the spans include the copy (the lock waits for that).
+    // Second toggle word 128: always the lock.
+    if (source == ReadbackSource::BufferObtain || source == ReadbackSource::BufferForImage ||
+        source == ReadbackSource::BufferUpload) {
+        if (!Gow3Toggle2::Disabled(Gow3Toggle2::ReadbackPrecheck) &&
+            ReadbackSpansMiss(address, size)) {
+            if (Gow3Stats::enabled) {
+                Gow3Stats::readback_prechecks[0].fetch_add(1, std::memory_order_relaxed);
+            }
+            return false;
+        }
+        if (Gow3Stats::enabled) {
+            Gow3Stats::readback_prechecks[1].fetch_add(1, std::memory_order_relaxed);
+        }
+    }
     {
         std::scoped_lock lock{readback_mutex};
         // Stale mode, byte rule: God of War III writes every frame to the page that holds a
@@ -295,10 +352,14 @@ TextureCache::ReadbackSnapshot TextureCache::SnapshotReadback(VAddr address, u64
 void TextureCache::CancelReadbacks(VAddr address, u64 size) {
     if (!deferred_readbacks) return;
     std::scoped_lock lock{readback_mutex};
+    const u64 canceled_before = readbacks_canceled;
     pending_readbacks.Cancel(address, size, [this](auto& entry) {
         if (entry.watched) WatchReadback<false>(entry.address, entry.size);
         ++readbacks_canceled;
     });
+    if (readbacks_canceled != canceled_before) {
+        PublishReadbackSpans(); // C5: tighter spans (optional)
+    }
 }
 
 // gow3: every copy is recorded first and the GPU is waited for once. A wait per image (as
@@ -401,6 +462,7 @@ void TextureCache::ProcessDownloadImages() {
                     pending_readbacks.Push(copy->guest_address, copy->size,
                         scheduler.CurrentTick(), copy->staging,
                         NoteTrackedPush(copy->guest_address, copy->size));
+                    PublishReadbackSpans(); // C5: before any pre-check may skip the lock
                     has_pending_readbacks.store(true, std::memory_order_release);
                     ++readbacks_queued;
                     readback_submit_wanted = !stale_readbacks;

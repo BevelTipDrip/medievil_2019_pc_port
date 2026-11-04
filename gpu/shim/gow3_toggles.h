@@ -107,6 +107,11 @@ enum : std::uint64_t {
     /// interrupt) / end-of-shader labels hand their chunk over without waking a sleeping
     /// recorder, which is woken within GOW3_RECORDER_WAKE_US. Set: 20 us spin, a wake per label.
     RecorderLean = 32,
+    // 64: reserved (particle-sim skip, impl-draw-reduction.md).
+    /// C5 (impl-stage-b-bundle-2.md): the buffer cache's ResolveReadbacks calls skip
+    /// readback_mutex when the range is on no page of a pending copy (TextureCache::
+    /// ReadbackSpansMiss). Set: the lock and the queue scan every time.
+    ReadbackPrecheck = 128,
 };
 inline bool Disabled(std::uint64_t bit) {
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;
@@ -174,6 +179,9 @@ inline std::atomic<std::uint64_t> semaphore_queries[2]{}, semaphore_query_ns[2]{
 inline std::atomic<std::uint64_t> recorder_handoffs{0}, recorder_lazy_kicks{0},
     recorder_late_wakes[2]{}, recorder_backstop_wakes{0}, recorder_sleeps{0}, recorder_spin_ns{0},
     recorder_spins{0}, recorder_spin_catches{0};
+/// C5 ("Readback pre-check" line): the buffer cache's ResolveReadbacks calls while copies were
+/// pending, [0] answered without the lock (no pending copy on the range's pages), [1] locked.
+inline std::atomic<std::uint64_t> readback_prechecks[2]{};
 /// Whether the recorder runs in lean mode (-1: not started).
 inline std::atomic<int> recorder_lean{-1};
 inline std::atomic<int> gpu_thread_clock{-1}; ///< clockid_t of the GPU command thread
