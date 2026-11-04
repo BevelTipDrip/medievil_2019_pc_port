@@ -854,7 +854,18 @@ public:
 
     /// Hands recorded commands to the recording thread. Called at points where no caller holds
     /// the raw command buffer (end of draws and dispatches); small batches are kept.
-    void KickRecording(bool force = false);
+    void KickRecording(bool force = false) {
+        Kick(force ? KickKind::Now : KickKind::Batched);
+    }
+
+    /// gow3 (impl-deck-cpu-bundle.md): makes now a recorder wake that a lean-mode label kick
+    /// left owed. Stage B calls it when it runs out of packets, Wait() before it blocks; it
+    /// touches no recording state, so any thread may.
+    void WakeDeferredRecorder() {
+        if (wake_deadline_ns.load(std::memory_order_relaxed)) {
+            WakeDeferredRecorderSlow();
+        }
+    }
 
     /// gow3: whether this thread is the one recording into the current chunk (the last to kick
     /// recording). Other threads (draw preparation workers) must not Record(): KickRecording
@@ -897,7 +908,10 @@ public:
     /// gow3: runs `signal` once the guest memory copies issued so far are done, without
     /// waiting here: the recording thread reaches it after the copies queued before it and hands
     /// it to the copy threads' completion (Gow3Copy::AfterCopies).
-    void SignalAfterHostCopies(std::function<void()> signal);
+    /// `urgent` false: a label the guest only polls (no interrupt, no idle or frame step). In
+    /// the recorder's lean mode its chunk is still handed over at once, but a sleeping recorder
+    /// is left asleep until the next wake that is due anyway (Kick, KickKind::Label).
+    void SignalAfterHostCopies(std::function<void()> signal, bool urgent = true);
 
     /// gow3: before a guest-visible write that is not deferred (WriteData, end-of-shader
     /// fences, flip): waits until every signal handed to SignalAfterHostCopies ran, so that
@@ -1136,6 +1150,16 @@ private:
         }
     };
     std::atomic<std::thread::id> recording_owner{}; // see OwnsRecording()
+    /// gow3 (impl-deck-cpu-bundle.md): Batched hands chunks over once 32 KiB are recorded (end
+    /// of draws and dispatches); Now always, and wakes a sleeping recorder (waits, fences,
+    /// submissions); Label as Now, except that in lean mode a sleeping recorder is left asleep
+    /// until wake_deadline_ns (checked at every later kick), stage B's next idle or Wait().
+    enum class KickKind { Batched, Now, Label };
+    void Kick(KickKind kind);
+    void WakeDeferredRecorderSlow();
+    /// Lean mode: when (Semaphore::NowNs) a sleeping recorder with chunks queued must be woken;
+    /// 0 when no wake is owed. Written under recorder_mutex, read anywhere.
+    std::atomic<u64> wake_deadline_ns{0};
     std::vector<std::unique_ptr<RecordChunk>> full_chunks;
     std::mutex recorder_mutex;
     std::condition_variable_any recorder_cv;

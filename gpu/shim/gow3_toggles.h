@@ -17,6 +17,8 @@ extern "C" __attribute__((returns_twice)) int gow3_setjmp(sigjmp_buf buffer);
 extern "C" std::uint64_t runtime_disabled_optimizations;
 /// The toggle file's optional second number (Gow3Toggle2).
 extern "C" std::uint64_t runtime_disabled_optimizations2;
+/// scePthreadGetthreadid calls and kernel lookups, with GOW3_FRAME_STATS (runtime_extra.c).
+extern "C" std::uint64_t runtime_thread_id_calls, runtime_thread_id_lookups;
 /// Recovery point for speculative guest memory reads on this thread (runtime_memory.c).
 extern "C" __thread sigjmp_buf* runtime_fault_recover;
 
@@ -100,6 +102,11 @@ enum : std::uint64_t {
     /// Stage B's end-of-pipe readback retirement asks the GPU's timeline semaphore at most once
     /// per GOW3_SEMAPHORE_POLL_US (Scheduler::IsFreePolled; set: a query at every event again).
     SemaphorePollInterval = 16,
+    /// The Vulkan recorder's lean mode on small machines (impl-deck-cpu-bundle.md; <= 8 hardware
+    /// threads or GOW3_RECORDER_LEAN=1): it sleeps without spinning, and end-of-pipe (no
+    /// interrupt) / end-of-shader labels hand their chunk over without waking a sleeping
+    /// recorder, which is woken within GOW3_RECORDER_WAKE_US. Set: 20 us spin, a wake per label.
+    RecorderLean = 32,
 };
 inline bool Disabled(std::uint64_t bit) {
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;
@@ -159,6 +166,16 @@ inline std::atomic<std::uint64_t> descriptor_pushes{0}, descriptor_writes{0};
 /// their time (ns); the queries the poll interval skipped (Scheduler::IsFreePolled).
 inline std::atomic<std::uint64_t> semaphore_queries[2]{}, semaphore_query_ns[2]{},
     semaphore_polls_skipped{0}, recorder_wakes[2]{}, recorder_wake_ns[2]{};
+/// The Vulkan recorder ("Recorder" line; impl-deck-cpu-bundle.md): chunks handed over; label
+/// kicks that left a sleeping recorder asleep (lean mode) and the wakes made for them later:
+/// [0] a kick after the deadline, [1] stage B ran dry, a GPU wait or a forced kick; timed
+/// sleeps that ended with work queued (the backstop); sleeps; spin time (ns), spins, and the
+/// spins that found work.
+inline std::atomic<std::uint64_t> recorder_handoffs{0}, recorder_lazy_kicks{0},
+    recorder_late_wakes[2]{}, recorder_backstop_wakes{0}, recorder_sleeps{0}, recorder_spin_ns{0},
+    recorder_spins{0}, recorder_spin_catches{0};
+/// Whether the recorder runs in lean mode (-1: not started).
+inline std::atomic<int> recorder_lean{-1};
 inline std::atomic<int> gpu_thread_clock{-1}; ///< clockid_t of the GPU command thread
 inline std::atomic<unsigned long> gpu_thread_id{0}; ///< Windows thread id of the GPU command thread
 inline std::atomic<std::uint64_t> draws{0}, dispatches{0}, submissions{0};

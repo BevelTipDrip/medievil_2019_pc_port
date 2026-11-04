@@ -776,6 +776,39 @@ void VideoOutDriver::Flip(const Request& req) {
                                 polls_skipped * each_us(query_ns[0], queries[0]) / 1e3 / frames_d,
                                 wakes[0] / frames_d, each_us(wake_ns[0], wakes[0]),
                                 wakes[1] / frames_d, each_us(wake_ns[1], wakes[1]));
+                    // gow3 (impl-deck-cpu-bundle.md): the Vulkan recorder's hand-offs, sleeps
+                    // and spin; in lean mode (second toggle word 32 clear, <= 8 threads) the
+                    // label kicks that left it asleep and how the owed wakes were made.
+                    const u64 spins = Gow3Stats::recorder_spins.exchange(0);
+                    const u64 spin_ns = Gow3Stats::recorder_spin_ns.exchange(0);
+                    std::printf(
+                        "Recorder per frame (lean %s): hand-offs %.1f, sleeps %.1f, wakes %.1f; "
+                        "label kicks left asleep %.1f, owed wakes made at the deadline %.1f, at "
+                        "stage B idle / a wait / a forced kick %.1f, by the backstop %.1f; spin "
+                        "%.3f ms (%.1f spins, %.1f found work)\n",
+                        Gow3Stats::recorder_lean.load(std::memory_order_relaxed) == 1 ? "on"
+                        : Gow3Toggle2::Disabled(Gow3Toggle2::RecorderLean)          ? "toggled off"
+                                                                                    : "off",
+                        Gow3Stats::recorder_handoffs.exchange(0) / frames_d,
+                        Gow3Stats::recorder_sleeps.exchange(0) / frames_d,
+                        (wakes[0] + wakes[1]) / frames_d,
+                        Gow3Stats::recorder_lazy_kicks.exchange(0) / frames_d,
+                        Gow3Stats::recorder_late_wakes[0].exchange(0) / frames_d,
+                        Gow3Stats::recorder_late_wakes[1].exchange(0) / frames_d,
+                        Gow3Stats::recorder_backstop_wakes.exchange(0) / frames_d,
+                        spin_ns / 1e6 / frames_d, spins / frames_d,
+                        Gow3Stats::recorder_spin_catches.exchange(0) / frames_d);
+                    // gow3 D2 (impl-deck-cpu-bundle.md): scePthreadGetthreadid calls and the ones
+                    // that asked the kernel (Linux: once per thread, cached after).
+                    const u64 tid_calls =
+                        __atomic_exchange_n(&runtime_thread_id_calls, 0, __ATOMIC_RELAXED);
+                    const u64 tid_lookups =
+                        __atomic_exchange_n(&runtime_thread_id_lookups, 0, __ATOMIC_RELAXED);
+                    std::printf("Thread ids per frame: scePthreadGetthreadid %.0f, cache hits "
+                                "%.0f, kernel lookups %.2f\n",
+                                tid_calls / frames_d,
+                                (tid_calls > tid_lookups ? tid_calls - tid_lookups : 0) / frames_d,
+                                tid_lookups / frames_d);
                     // gow3 U2 (impl-u2-direct-arena-writes.md): buffer uploads and precise CPU
                     // writes straight into the mapped arena vs through staging, why staging, what
                     // the direct writes saved; render pass ends and barrier batches of all causes.

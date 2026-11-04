@@ -157,8 +157,9 @@ public:
         scheduler.WaitDeferredSignals();
     }
     /// Runs `signal` after the guest memory copies issued so far, without waiting here.
-    void SignalAfterHostCopies(std::function<void()> signal) {
-        scheduler.SignalAfterHostCopies(std::move(signal));
+    /// `urgent` false: a polled label (Scheduler::SignalAfterHostCopies).
+    void SignalAfterHostCopies(std::function<void()> signal, bool urgent = true) {
+        scheduler.SignalAfterHostCopies(std::move(signal), urgent);
     }
     /// gow3 GOW3_GPU_FENCES (vk_gpu_signals.cpp; Bloodborne 0.7's SignalAfterGpu, 0fc2921
     /// gpu/render/raster_signals.cpp): runs `signal` on the gow3:GpuSignals thread once the GPU

@@ -35,8 +35,12 @@ class DrawPipe {
 public:
     /// Runs a packet on stage B.
     using Handler = void (*)(void* context, const u8* packet, u32 size);
+    /// gow3 (impl-deck-cpu-bundle.md): runs on stage B each time it finds no packet queued,
+    /// before it spins or sleeps.
+    using IdleHook = void (*)(void* context);
 
-    DrawPipe(Handler handler_, void* context_) : handler{handler_}, context{context_} {
+    DrawPipe(Handler handler_, void* context_, IdleHook idle_ = nullptr)
+        : handler{handler_}, idle{idle_}, context{context_} {
         ring = std::make_unique<u8[]>(Capacity);
         thread = std::jthread([this](std::stop_token stop) { Run(stop); });
     }
@@ -195,6 +199,9 @@ private:
             // and sleep only after a longer pause (between frames).
             u64 available = published.load(std::memory_order_acquire);
             if (available == at) {
+                if (idle) {
+                    idle(context);
+                }
                 // With few hardware threads (Steam Deck: 8) a long spin takes time from the
                 // game's own threads. GOW3_PIPE_SPIN_US overrides.
                 static const auto spin_time = std::chrono::microseconds([] {
@@ -257,6 +264,7 @@ private:
 
     static inline thread_local bool on_stage_b = false;
     Handler handler;
+    IdleHook idle;
     void* context;
     std::unique_ptr<u8[]> ring;
     u64 head = 0; ///< stage A's write position

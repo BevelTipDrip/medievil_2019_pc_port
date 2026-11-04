@@ -550,7 +550,11 @@ void RunEventWriteEop(Vulkan::Rasterizer& rasterizer, const u8* data) {
         Gow3FenceStats::pending_fence_kind = eop.int_sel != InterruptSelect::None
                                                  ? Gow3FenceStats::FenceEopIrq
                                                  : Gow3FenceStats::FenceEop; // gow3 gate 2: lag
-        rasterizer.SignalAfterHostCopies([eop] { SignalEop(eop); });
+        // gow3 (impl-deck-cpu-bundle.md): a label with no interrupt is only polled by the guest
+        // (UE4's frame wait is the one with an interrupt): in the recorder's lean mode it does
+        // not wake a sleeping recorder by itself (bounded by GOW3_RECORDER_WAKE_US).
+        rasterizer.SignalAfterHostCopies([eop] { SignalEop(eop); },
+                                         eop.int_sel != InterruptSelect::None);
     } else {
         // Labels are written in order: not before the ones deferred to the recording thread.
         rasterizer.WaitHostCopies();
@@ -760,7 +764,8 @@ void RunEventWriteEos(Vulkan::Rasterizer& rasterizer, const u8* data) {
         rasterizer.ProcessDownloadImages();
         const auto eos = event_eos;
         Gow3FenceStats::pending_fence_kind = Gow3FenceStats::FenceEos; // gow3 gate 2: lag
-        rasterizer.SignalAfterHostCopies([eos] { SignalEos(eos); });
+        // A polled label (no interrupt): not urgent, as the end-of-pipe ones without one.
+        rasterizer.SignalAfterHostCopies([eos] { SignalEos(eos); }, false);
         return;
     }
     // Copies deferred to the recording thread precede writes the guest sees.

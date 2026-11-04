@@ -70,7 +70,11 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
     GpuProfiler::Init(instance, scheduler);
     if (DrawPipeWanted()) {
         constant_ring = std::make_unique<ConstantRing>(instance, scheduler);
-        draw_pipe = std::make_unique<DrawPipe>(&RunDrawPacket, this);
+        // gow3 (impl-deck-cpu-bundle.md): stage B out of packets wakes a recorder that polled
+        // labels left asleep (lean mode), so they are never held back by an idle stage B.
+        draw_pipe = std::make_unique<DrawPipe>(&RunDrawPacket, this, [](void* self) {
+            static_cast<Rasterizer*>(self)->scheduler.WakeDeferredRecorder();
+        });
         // gow3: commands recorded on stage A while stage B still has queued draws land between
         // them: an EndRendering from a buffer copy closed the render pass stage B was drawing
         // in (NVIDIA driver crash in level 3, issue #2/#12). Stage A first waits for stage B,

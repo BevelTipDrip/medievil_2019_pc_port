@@ -337,7 +337,7 @@ std::unique_ptr<RecordChunk> Scheduler::AcquireChunk() {
     return chunk;
 }
 
-void Scheduler::SignalAfterHostCopies(std::function<void()> signal) {
+void Scheduler::SignalAfterHostCopies(std::function<void()> signal, bool urgent) {
     // gow3 gate 2 (GOW3_FRAME_STATS): the fence's timeline tick and our signal time, for the lag.
     const u64 fence = Gow3FenceStats::BeginFence();
     if (fence != ~0ull) {
@@ -362,7 +362,10 @@ void Scheduler::SignalAfterHostCopies(std::function<void()> signal) {
             done->fetch_add(1, std::memory_order_release);
         });
     });
-    KickRecording(true);
+    // gow3 (impl-deck-cpu-bundle.md): a polled label recorded on stage B may leave a sleeping
+    // recorder asleep (lean mode); the order of the signals does not change, only when the
+    // recorder starts on them. Stage B is the only thread whose idle Kick() can count on.
+    Kick(!urgent && Gow3Sections::recording_thread ? KickKind::Label : KickKind::Now);
 }
 
 void Scheduler::WaitDeferredSignals() {
@@ -479,7 +482,71 @@ void Scheduler::WaitHostCopies(std::source_location caller) {
     }
 }
 
-void Scheduler::KickRecording(bool force) {
+namespace {
+// gow3 (impl-deck-cpu-bundle.md; study-deck-other-threads.md 3.1, study-stage-b-per-draw.md C2):
+// the recorder's lean mode, for machines with <= 8 hardware threads (the Steam Deck) or
+// GOW3_RECORDER_LEAN=1 (0: never). Second toggle word 32 switches it off live.
+// - No spin before sleeping (GOW3_RECORDER_SPIN_US overrides). On the Deck the recorder runs a
+//   chunk faster than stage B fills the next (>= 100 us for 32 KiB at ~8.5 us a draw), so the
+//   20 us spin almost never caught one: ~7.3k spins/s, ~15% of a CPU, and the pauses took issue
+//   slots from the sibling hyperthread (often stage B's). The wake it would save stage B was
+//   paid anyway.
+// - Labels the guest polls (end-of-pipe without interrupt, end-of-shader: ~200 a frame) do not
+//   wake a sleeping recorder; their chunk is queued at once and the wake comes with the next one
+//   that is due anyway (32 KiB hand-off, a wait, a fence with an interrupt, a submission), at
+//   the latest GOW3_RECORDER_WAKE_US (default 200; 0: every label wakes as before) after the
+//   first deferred label, checked at every kick stage B makes, or when stage B runs dry.
+// - GOW3_RECORDER_HANDOFF_KB: the hand-off size in lean mode (default 32, as without it).
+bool RecorderLeanWanted() {
+    static const bool wanted = [] {
+        if (const char* env = std::getenv("GOW3_RECORDER_LEAN"); env && *env) {
+            return env[0] == '1';
+        }
+        return Gow3Threads::Available() <= 8;
+    }();
+    return wanted;
+}
+bool RecorderLean() {
+    return RecorderLeanWanted() && !Gow3Toggle2::Disabled(Gow3Toggle2::RecorderLean);
+}
+u64 EnvU64(const char* name, u64 fallback) {
+    const char* env = std::getenv(name);
+    return env && *env ? std::strtoull(env, nullptr, 10) : fallback;
+}
+u64 RecorderWakeDelayNs() {
+    static const u64 ns = EnvU64("GOW3_RECORDER_WAKE_US", 200) * 1000;
+    return ns;
+}
+u64 HandoffBytes(bool lean) {
+    static const u64 lean_bytes =
+        std::clamp<u64>(EnvU64("GOW3_RECORDER_HANDOFF_KB", 32), 4, 96) * 1024;
+    return lean ? lean_bytes : 32 * 1024;
+}
+std::chrono::microseconds RecorderSpin(bool lean) {
+    // Spin briefly before sleeping: the next chunk usually follows within microseconds, and a
+    // sleeping recorder costs the GPU thread a wake-up syscall per kick. With few hardware
+    // threads (Steam Deck: 8) the spin would take time from guest threads.
+    static const auto normal =
+        std::chrono::microseconds(Gow3Threads::Available() >= 12 ? 200 : 20);
+    static const auto lean_spin = std::chrono::microseconds(EnvU64("GOW3_RECORDER_SPIN_US", 0));
+    return lean ? lean_spin : normal;
+}
+/// Lean mode: a sleeping recorder still wakes this often, so a deferred wake nobody made (stage
+/// B blocked somewhere that neither kicks nor goes through Wait()) is bounded too.
+std::chrono::microseconds RecorderBackstop() {
+    return std::chrono::microseconds(std::max<u64>(1000, 2 * RecorderWakeDelayNs() / 1000));
+}
+void CountRecorderWake(u64 start_ns) {
+    // gow3 (study-stage-b-per-draw.md C1): wake-ups by thread kind, with their cost
+    // ("Stage B syscalls" line, GOW3_FRAME_STATS).
+    const unsigned kind = Gow3Sections::recording_thread ? 0 : 1;
+    Gow3Stats::recorder_wakes[kind].fetch_add(1, std::memory_order_relaxed);
+    Gow3Stats::recorder_wake_ns[kind].fetch_add(Semaphore::NowNs() - start_ns,
+                                                std::memory_order_relaxed);
+}
+} // namespace
+
+void Scheduler::Kick(KickKind kind) {
     if (!recording_threaded) {
         return;
     }
@@ -487,41 +554,85 @@ void Scheduler::KickRecording(bool force) {
     // Callers kick where nobody holds the raw command buffer: deferral resumes.
     direct_mode = false;
     ChunkGuard guard{chunk_lock};
+    const bool lean = RecorderLean();
+    // gow3 (impl-deck-cpu-bundle.md): a wake a label kick left owed is due at its deadline, at
+    // any Now kick, and as soon as lean mode is off. The clock is read only while one is owed.
+    const u64 owed = wake_deadline_ns.load(std::memory_order_relaxed);
+    const bool due = owed && (kind == KickKind::Now || !lean || Semaphore::NowNs() >= owed);
     // Batches of tens of KiB keep the queue handoff cheap relative to the work it carries.
-    if (!force && full_chunks.empty() && record_chunk->Size() < 32 * 1024) {
+    if (kind == KickKind::Batched && !due && full_chunks.empty() &&
+        record_chunk->Size() < HandoffBytes(lean)) {
         return;
     }
-    if (full_chunks.empty() && record_chunk->Empty()) {
+    if (!due && full_chunks.empty() && record_chunk->Empty()) {
         return;
     }
-    bool wake;
+    const bool lazy = kind == KickKind::Label && lean && RecorderWakeDelayNs() != 0;
+    bool wake = false;
     {
         std::scoped_lock lk{recorder_mutex};
+        u64 handed = full_chunks.size();
         for (auto& chunk : full_chunks) {
             recorder_queue.push_back(std::move(chunk));
         }
         if (!record_chunk->Empty()) {
             recorder_queue.push_back(std::move(record_chunk));
+            ++handed;
         }
-        wake = recorder_sleeping;
+        if (!recorder_sleeping || recorder_queue.empty()) {
+            // An awake recorder runs everything queued before it sleeps: nothing is owed.
+            wake_deadline_ns.store(0, std::memory_order_relaxed);
+        } else if (lazy && !due) {
+            if (!owed) {
+                wake_deadline_ns.store(Semaphore::NowNs() + RecorderWakeDelayNs(),
+                                       std::memory_order_relaxed);
+            }
+            if (Gow3Stats::enabled) {
+                Gow3Stats::recorder_lazy_kicks.fetch_add(1, std::memory_order_relaxed);
+            }
+        } else {
+            wake = true;
+            wake_deadline_ns.store(0, std::memory_order_relaxed);
+        }
         queued_chunks.store(recorder_queue.size(), std::memory_order_release);
+        if (Gow3Stats::enabled && handed) {
+            Gow3Stats::recorder_handoffs.fetch_add(handed, std::memory_order_relaxed);
+        }
     }
     full_chunks.clear();
     // A busy recorder picks the new chunks up by itself: waking it is a syscall per draw.
     if (wake) {
-        // gow3 (study-stage-b-per-draw.md C1): wake-ups by thread kind, with their cost
-        // ("Stage B syscalls" line, GOW3_FRAME_STATS).
         const u64 start_ns = Gow3Stats::enabled ? Semaphore::NowNs() : 0;
         recorder_cv.notify_one();
         if (Gow3Stats::enabled) {
-            const unsigned kind = Gow3Sections::recording_thread ? 0 : 1;
-            Gow3Stats::recorder_wakes[kind].fetch_add(1, std::memory_order_relaxed);
-            Gow3Stats::recorder_wake_ns[kind].fetch_add(Semaphore::NowNs() - start_ns,
-                                                        std::memory_order_relaxed);
+            CountRecorderWake(start_ns);
+            if (due) {
+                // [0] made by a kick after the deadline, [1] by a Now kick or lean mode off.
+                const unsigned why = kind == KickKind::Now || !lean ? 1 : 0;
+                Gow3Stats::recorder_late_wakes[why].fetch_add(1, std::memory_order_relaxed);
+            }
         }
     }
     if (!record_chunk) {
         record_chunk = AcquireChunk();
+    }
+}
+
+void Scheduler::WakeDeferredRecorderSlow() {
+    bool wake;
+    {
+        std::scoped_lock lk{recorder_mutex};
+        wake = recorder_sleeping && !recorder_queue.empty() &&
+               wake_deadline_ns.load(std::memory_order_relaxed);
+        wake_deadline_ns.store(0, std::memory_order_relaxed);
+    }
+    if (wake) {
+        const u64 start_ns = Gow3Stats::enabled ? Semaphore::NowNs() : 0;
+        recorder_cv.notify_one();
+        if (Gow3Stats::enabled) {
+            CountRecorderWake(start_ns);
+            Gow3Stats::recorder_late_wakes[1].fetch_add(1, std::memory_order_relaxed);
+        }
     }
 }
 
@@ -539,26 +650,60 @@ void Scheduler::RecorderThread(std::stop_token stoken) {
     Common::SetCurrentThreadName("gow3:VkRecorder");
     Gow3Sampler::SampleCurrentThread("VkRecorder");
     while (true) {
-        // Spin briefly before sleeping: the next chunk usually follows within microseconds,
-        // and a sleeping recorder costs the GPU thread a wake-up syscall per kick. With few
-        // hardware threads (Steam Deck: 8) the spin would take time from guest threads.
-        static const auto spin_time = std::chrono::microseconds(
-            Gow3Threads::Available() >= 12 ? 200 : 20);
-        const auto spin_until = std::chrono::steady_clock::now() + spin_time;
-        for (u32 spins = 1; queued_chunks.load(std::memory_order_acquire) == 0; ++spins) {
-            __builtin_ia32_pause();
-            // The clock is read every 256 pauses, not per iteration.
-            if (!(spins & 255) &&
-                (stoken.stop_requested() || std::chrono::steady_clock::now() >= spin_until)) {
-                break;
+        const bool lean = RecorderLean();
+        if (Gow3Stats::recorder_lean.load(std::memory_order_relaxed) != int(lean)) {
+            Gow3Stats::recorder_lean.store(int(lean), std::memory_order_relaxed);
+        }
+        const auto spin_time = RecorderSpin(lean);
+        if (spin_time.count() > 0 && queued_chunks.load(std::memory_order_acquire) == 0) {
+            const auto spin_start = std::chrono::steady_clock::now();
+            const auto spin_until = spin_start + spin_time;
+            for (u32 spins = 1; queued_chunks.load(std::memory_order_acquire) == 0; ++spins) {
+                __builtin_ia32_pause();
+                // The clock is read every 256 pauses, not per iteration.
+                if (!(spins & 255) &&
+                    (stoken.stop_requested() || std::chrono::steady_clock::now() >= spin_until)) {
+                    break;
+                }
+            }
+            if (Gow3Stats::enabled) {
+                // gow3 (impl-deck-cpu-bundle.md): spin time and catches ("Recorder" line).
+                Gow3Stats::recorder_spins.fetch_add(1, std::memory_order_relaxed);
+                Gow3Stats::recorder_spin_ns.fetch_add(
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(
+                        std::chrono::steady_clock::now() - spin_start)
+                        .count(),
+                    std::memory_order_relaxed);
+                if (queued_chunks.load(std::memory_order_relaxed) != 0) {
+                    Gow3Stats::recorder_spin_catches.fetch_add(1, std::memory_order_relaxed);
+                }
             }
         }
         std::unique_ptr<RecordChunk> chunk;
         {
             std::unique_lock lk{recorder_mutex};
+            const auto ready = [this] { return !recorder_queue.empty(); };
+            if (Gow3Stats::enabled && recorder_queue.empty()) {
+                Gow3Stats::recorder_sleeps.fetch_add(1, std::memory_order_relaxed);
+            }
             recorder_sleeping = true;
-            recorder_cv.wait(lk, stoken, [this] { return !recorder_queue.empty(); });
+            if (lean) {
+                // gow3 (impl-deck-cpu-bundle.md): timed, so a wake a label kick left owed is
+                // made here at the latest. Work found while one was still owed: the backstop
+                // made it.
+                while (!recorder_cv.wait_for(lk, stoken, RecorderBackstop(), ready) &&
+                       !stoken.stop_requested()) {
+                }
+                if (Gow3Stats::enabled && !recorder_queue.empty() &&
+                    wake_deadline_ns.load(std::memory_order_relaxed)) {
+                    Gow3Stats::recorder_backstop_wakes.fetch_add(1, std::memory_order_relaxed);
+                }
+            } else {
+                recorder_cv.wait(lk, stoken, ready);
+            }
             recorder_sleeping = false;
+            // Awake: everything queued runs before this thread sleeps again.
+            wake_deadline_ns.store(0, std::memory_order_relaxed);
             if (recorder_queue.empty()) {
                 return; // stop requested
             }
@@ -660,6 +805,9 @@ struct LongWaits {
 void Scheduler::Wait(u64 tick, std::source_location caller, u64 submit_ns) {
     const bool diagnose = WaitDiagnostics::Enabled();
     auto start = diagnose ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
+    // gow3 (impl-deck-cpu-bundle.md): labels queued for a sleeping recorder are not left
+    // waiting behind a GPU wait.
+    WakeDeferredRecorder();
     if (tick >= work_semaphore.CurrentTick()) {
         // Make sure we are not waiting for the current tick without signalling
         SubmitInfo info{};
