@@ -855,3 +855,14 @@ designed**, pending a direct measurement (the rule's "measure directly" step): a
 after the GPU finished, under today's copy model (safe), one Deck run. If it collapses as estimated: U5 needs another
 fence answer (early signal plus a snapshot of the per-frame ring the game rewrites), or the Deck work goes to U2 and
 stage B's per-draw cost.
+
+## Gate 2 A/B attempt (2026-11-03, `f97479f`, reverted in `ba95907`)
+
+`GOW3_GPU_ORDERED_FENCES=1` delayed EOP / EOS label writes and interrupts until the GPU finished the fence's command
+buffer. **Black screen at boot** (log stops after RHIThread creation, no GPU error): it waited for a command buffer
+only submitted at the end of the guest's submission, while the guest waited on the fence first. Also **unsafe**: GPU
+idle still fired at the old time, and the guest frees the objects holding its fence labels at GPU idle
+(`liverpool.cpp` submission-end comment), so labels would have landed in freed memory (Bloodborne's heap-corruption
+class). A correct A/B is design-u5-deck-memory.md's step U5-2 / Bloodborne 0.7's model together: submit at the
+fence, GPU idle after the labels, and 0.7's pacing (the first submissions of a frame go ahead). The deployed
+AppImage still contains the inert switch (no effect without the variable).
