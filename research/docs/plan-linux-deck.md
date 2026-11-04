@@ -1098,17 +1098,21 @@ gain nothing; pre-fill the guest pool for hitches; denser texture-set memo),
 two-instruction patch gives 67% the 100% pyramid, ~120-145 fewer draws; no sun cascades in the heavy view; cvars
 ranked).
 
-**Deck test order when it is back** (one change per launch; each launch needs the user's go):
-1. `deck.sh deploy` the latest build; `deck.sh checks`. Baseline run (now with the "Draw classes per frame" line, `853877d`) in the heavy view with `deck.sh clocks 20`
-   (is stage B at ~2.4 GHz?) and `deck.sh mem 30`; in the same launch `deck.sh ab "0 0" "0 32"` (lean recorder),
-   then `"0 0" "0 16"` (C1).
-2. Static vs shared: `deck.sh deploy /root/src/medievil MediEvil-x86_64-shared.AppImage`, one run; then the static
-   one, one run (1-4% expected; repeat if within noise).
-3. Full-size HZB patch (`93d1a58`, [impl-draw-reduction.md](impl-draw-reduction.md); `deck.sh env` with
-   `GOW3_HZB_FULL_SIZE=1`, restart-only), 67%: hidden ~63 -> ~120?, draws ~1,430 -> ~1,300?
-   Check for pop-in. No-code cross-check: 81% render scale already gets the 1024x512 pyramid.
+**Deck test order when it is back** (one change per launch; each launch needs the user's go; updated after every
+build of the day, deck-lab `671a81a`):
+1. `deck.sh deploy` (default AppImage, `a863482`); `deck.sh checks`. Baseline in the heavy view, 67%,
+   `GOW3_FRAME_STATS=1`, with `deck.sh clocks 20` (is stage B at ~2.4 GHz?) and `deck.sh mem 30`. Same launch, live:
+   `deck.sh ab "0 0" "0 32"` (lean recorder), `"0 0" "0 16"` (C1), then the bundle 2 pairs C5 / D4 / D5
+   ([impl-stage-b-bundle-2.md](impl-stage-b-bundle-2.md); bits 128 / 256 / 512 off-switches).
+2. Full-size HZB patch (`93d1a58`, [impl-draw-reduction.md](impl-draw-reduction.md)): `GOW3_HZB_FULL_SIZE=1`,
+   restart-only. Hidden ~63 -> ~120?, draws ~1,430 -> ~1,300? Check for pop-in. Cross-check without the patch: 81%.
+3. Stage B spin #4: `GOW3_STAGE_B_SPIN=1`, live `deck.sh ab "0 1024" "0 0"`, with `deck.sh clocks`.
 4. Governor `performance` via `steamosctl` (system change: the user's OK first), with `deck.sh clocks`.
-4b. Stage B bundle 2 toggle A/Bs in one launch ([impl-stage-b-bundle-2.md](impl-stage-b-bundle-2.md), "The Deck
-   test"): #4 spin, C5, D4, D5; then the no-padding AppImage for #6.
-5. Then: particle-sim skip (if built; live toggle), `GOW3_UE4_CVARS` items 4-5 of the UE4 study one per launch,
-   `RADV_FORCE_VRS=2x2` at 100%, the render-scale curve 67 / 80 / 100.
+5. Builds, one launch each against step 1: the v3 AppImage (`deck.sh deploy /root/src/medievil
+   MediEvil-x86_64-v3.AppImage`); static vs shared and padding vs none (the `-shared` / `-nopad` images in WSL `dist/`
+   are from older commits `98dca62` / `0c57f23`: rebuild them from the current commit first for a clean A/B).
+6. Restart-only switches ([impl-deck-build-sched-pool.md](impl-deck-build-sched-pool.md)), one per launch:
+   `GOW3_STAGE_B_CORE_SCHED=1`, `GOW3_THREAD_NICE=1`, `GOW3_POOL_PREFILL_MB=2560`, then `GOW3_POOL_POPULATE=1` on top
+   (judge the pool by hitch frames and the "Guest pool faults" line).
+7. Then: `GOW3_UE4_CVARS` items 4-5 of the UE4 study one per launch, `RADV_FORCE_VRS=2x2` at 100%, the render-scale
+   curve 67 / 80 / 100; the particle-sim skip after the N0 line gives its shader hashes (impl-draw-reduction.md).
