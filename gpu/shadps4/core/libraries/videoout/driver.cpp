@@ -20,6 +20,7 @@
 #include "common/assert.h"
 #include "gow3_toggles.h"
 #include "gow3_fence_stats.h"
+#include "gow3_gpu_fences.h"
 extern "C" void runtime_memory_fault_report(char* out, size_t size, unsigned frames, double window_s);
 #include "gow3_sections.h"
 #include "gow3_flip_trace.h"
@@ -712,6 +713,9 @@ void VideoOutDriver::Flip(const Request& req) {
                     // gow3 gate 2 (study-fence-waits.md 5): guest fence waits, the submission lock,
                     // cache actions, and the GPU write faults by PS4 memory type (runtime).
                     std::fputs(Gow3FenceStats::Report(window).c_str(), stdout);
+                    // gow3 U5-2 (impl-gpu-ordered-fences.md): GOW3_GPU_FENCES' signals, flushes,
+                    // pacing waits, and the runtime's guest memory (the leak view), both ways.
+                    std::fputs(Gow3GpuFences::Report(window, frames).c_str(), stdout);
                     char fault_map[1024];
                     runtime_memory_fault_report(fault_map, sizeof(fault_map), frames, window);
                     std::fputs(fault_map, stdout);

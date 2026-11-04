@@ -10,6 +10,7 @@
 #include "gow3_copy.h"
 #include "gow3_sampler.h"
 #include "gow3_fence_stats.h"
+#include "gow3_gpu_fences.h"
 #include "gow3_sections.h"
 #include "gow3_toggles.h"
 #include <cstdio>
@@ -126,7 +127,24 @@ void Liverpool::Process(std::stop_token stoken) {
     gpu_tid = gettid();
 #endif
 
+    const bool gpu_fences = Gow3GpuFences::Enabled();
     while (!stoken.stop_requested()) {
+        // gow3 GOW3_GPU_FENCES (Bloodborne 0.7, 0fc2921 gpu/cp/command_processor.cpp WaitForWork):
+        // fences wait for work not submitted yet; it goes out once this thread has had nothing
+        // to do for GOW3_SIGNAL_IDLE_US (0.2 ms): the guest may be waiting for one.
+        if (gpu_fences && rasterizer && rasterizer->HasUnsubmittedSignals()) {
+            static const auto idle_wait = std::chrono::microseconds([] {
+                const char* env = std::getenv("GOW3_SIGNAL_IDLE_US");
+                return env && *env ? std::strtoll(env, nullptr, 10) : 200ll;
+            }());
+            std::unique_lock lk{submit_mutex};
+            if (!submit_cv.wait_for(lk, idle_wait,
+                                    [this] { return num_commands || num_submits || submit_done; })) {
+                lk.unlock();
+                Gow3GpuFences::counters.flush_decoder_idle.fetch_add(1, std::memory_order_relaxed);
+                rasterizer->Flush();
+            }
+        }
         {
             const auto idle_start = std::chrono::steady_clock::now();
             std::unique_lock lk{submit_mutex};
@@ -165,12 +183,24 @@ void Liverpool::Process(std::stop_token stoken) {
             if (task.done()) {
                 task.destroy();
 
-                std::scoped_lock lock{queue.m_access};
-                queue.submits.pop();
+                bool frame_pending = false;
+                {
+                    std::scoped_lock lock{queue.m_access};
+                    queue.submits.pop();
+                    if (gpu_fences) {
+                        queue.submit_index.pop();
+                    }
 
-                --num_submits;
-                std::scoped_lock lock2{submit_mutex};
-                submit_cv.notify_all();
+                    --num_submits;
+                    std::scoped_lock lock2{submit_mutex};
+                    frame_pending = !frame_ends.empty();
+                    submit_cv.notify_all();
+                }
+                // gow3 GOW3_GPU_FENCES: a frame's last submission decoded (the next frame's
+                // first ones may follow at once): it retires once the GPU has run it.
+                if (gpu_fences && frame_pending) {
+                    SignalDecodedFrames();
+                }
             }
         }
 
@@ -183,6 +213,22 @@ void Liverpool::Process(std::stop_token stoken) {
             submit_done = false;
         }
 
+        if (gpu_fences && rasterizer) {
+            // gow3 GOW3_GPU_FENCES (Bloodborne 0.7, 0fc2921 command_processor.cpp AfterBatch):
+            // GPU idle once the GPU has run this work and the labels before it are written (the
+            // signal thread runs them in order), and only if nothing was submitted meanwhile:
+            // a submission plus sceGnmSubmitDone in that time would otherwise release the lock
+            // for work not even decoded. Frames retire the same way (the pacing waits for them).
+            SignalDecodedFrames();
+            rasterizer->DrainDrawPipe(Vulkan::DrawPipe::ReasonSubmissionEnd);
+            rasterizer->WaitDeferredSignals(); // copy-ordered ones (opt-in W3 / W3b only)
+            const u64 generation = submit_counter.load(std::memory_order_acquire);
+            // Urgent only under the console lock (GOW3_SUBMIT_LOCK=gpu): the decode pacing does
+            // not wait for it, so its submission is left to the next one.
+            rasterizer->SignalAfterGpu([this, generation] { SignalGpuIdle(generation); }, 0, 0,
+                                       Gow3GpuFences::LockOnGpu());
+            continue;
+        }
         // gow3: the guest takes GPU idle (sceGnmSubmitDone) as its work being done and frees
         // the objects that hold its fence labels. The labels must be written before: the draw
         // recording thread and the fences it deferred to the Vulkan recording thread
@@ -200,6 +246,69 @@ void Liverpool::Process(std::stop_token stoken) {
                 work_retired = true;
             }
         }
+        Platform::IrqC::Instance()->Signal(Platform::InterruptId::GpuIdle);
+    }
+}
+
+u64 Liverpool::OldestUndecoded() {
+    u64 oldest = ~0ull;
+    for (u32 q = 0; q < NumTotalQueues; ++q) {
+        std::scoped_lock lock{mapped_queues[q].m_access};
+        if (!mapped_queues[q].submit_index.empty()) {
+            oldest = std::min(oldest, mapped_queues[q].submit_index.front());
+        }
+    }
+    return oldest;
+}
+
+void Liverpool::SignalDecodedFrames() {
+    // gow3 GOW3_GPU_FENCES (Bloodborne 0.7, 0fc2921 command_processor.cpp SignalDecodedFrames):
+    // a frame whose submissions are all decoded (on every queue: they interleave) is recorded
+    // once stage B drains, then submitted; it retires when the GPU has executed it.
+    // The frame ends are read before the queues: a frame's submissions were all queued before
+    // sceGnmSubmitDone noted its end, so the scan sees every one of them still undecoded (read
+    // the other way round, a submission queued between the two looked decoded). Only this
+    // thread removes ends.
+    size_t known;
+    {
+        std::scoped_lock lk{submit_mutex};
+        known = frame_ends.size();
+    }
+    if (known == 0) {
+        return;
+    }
+    const u64 oldest = OldestUndecoded();
+    u64 frame = 0;
+    {
+        std::scoped_lock lk{submit_mutex};
+        for (; known && frame_ends.front().first < oldest; --known) {
+            frame = frame_ends.front().second;
+            frame_ends.pop_front();
+        }
+    }
+    if (frame == 0) {
+        return;
+    }
+    if (!rasterizer) {
+        Gow3GpuFences::NoteFramesRetired(frame);
+        return;
+    }
+    rasterizer->DrainDrawPipe(Vulkan::DrawPipe::ReasonSubmissionEnd);
+    rasterizer->SignalAfterGpu([frame] { Gow3GpuFences::NoteFramesRetired(frame); });
+    Gow3GpuFences::counters.flush_frame_end.fetch_add(1, std::memory_order_relaxed);
+    rasterizer->Flush();
+}
+
+void Liverpool::SignalGpuIdle(u64 generation) {
+    bool idle;
+    {
+        std::scoped_lock lk{submit_mutex};
+        idle = num_submits == 0 && submit_counter.load(std::memory_order_relaxed) == generation;
+        if (idle) {
+            work_retired = true;
+        }
+    }
+    if (idle) {
         Platform::IrqC::Instance()->Signal(Platform::InterruptId::GpuIdle);
     }
 }
@@ -263,11 +372,38 @@ void SignalEop(const PM4CmdEventWriteEop& eop) {
         [] { Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxEop); });
 }
 
+/// gow3 GOW3_GPU_FENCES: the end-of-pipe fence on the signal thread, after the GPU: its label as
+/// one store (Bloodborne 0.7's StoreLabel, 0fc2921 gpu/cp/cp_tasks.cpp), then the interrupt.
+void SignalEopAfterGpu(const PM4CmdEventWriteEop& eop) {
+    eop.SignalFence(
+        [](void* address, u64 data, u32 num_bytes) {
+            Gow3WriteLog::Note(reinterpret_cast<u64>(address), &data, num_bytes, Gow3WriteLog::Fence);
+            Core::Memory::Instance()->StoreLabel(address, data, num_bytes, true);
+        },
+        [] { Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxEop); });
+}
+
 // gow3: end-of-pipe/-shader events run in order with the draws (Rasterizer::RunInOrder: on
 // the draw recording thread when the draw pipeline is in use).
 void RunEventWriteEop(Vulkan::Rasterizer& rasterizer, const u8* data) {
     const auto eop = *reinterpret_cast<const PM4CmdEventWriteEop*>(data);
     rasterizer.ProcessDownloadImages();
+    if (Gow3GpuFences::Enabled()) {
+        // gow3 GOW3_GPU_FENCES (Bloodborne 0.7, 0fc2921 cp_tasks.cpp EventWriteEopTask): written
+        // once the GPU has finished the work before it, as the hardware does, by the signal
+        // thread (labels by the GPU itself need U5's guest memory chunks). No wait for the host
+        // copies: the submission holding this tick waits for them before it is handed over.
+        Gow3FenceStats::pending_fence_kind = eop.int_sel != InterruptSelect::None
+                                                 ? Gow3FenceStats::FenceEopIrq
+                                                 : Gow3FenceStats::FenceEop; // gate 2: lag ~0
+        const bool label =
+            eop.data_sel == DataSelect::Data32Low || eop.data_sel == DataSelect::Data64;
+        rasterizer.SignalAfterGpu(
+            [eop] { SignalEopAfterGpu(eop); },
+            label ? reinterpret_cast<VAddr>(eop.Address<u8>()) : 0,
+            eop.data_sel == DataSelect::Data64 ? eop.DataQWord() : eop.DataDWord());
+        return;
+    }
     // Guest memory copies on the copy threads precede the fence the guest sees.
     // GOW3_ASYNC_FENCES=1 writes it once they are done instead of waiting for them; measured
     // slower (79 vs 83 FPS): the guest waits on these fences, and later fences stall it more
@@ -328,6 +464,11 @@ void RunDmaData(Vulkan::Rasterizer& rasterizer, const u8* data) {
 }
 
 void SignalFlip(Vulkan::Rasterizer& rasterizer, const u8*) {
+    // gow3 GOW3_GPU_FENCES: the flip stays at recording time (as in Bloodborne 0.7); counted when
+    // GPU-ordered labels before it are still pending (it reaches the guest first).
+    if (Gow3GpuFences::Enabled() && rasterizer.HasPendingSignals()) {
+        Gow3GpuFences::counters.overtake_flip.fetch_add(1, std::memory_order_relaxed);
+    }
     // gow3 W3b (T-W3b): with the WRITE_DATA flags deferred (W3), the flip waited for the whole
     // backlog of fences the Vulkan recording thread writes (~1 ms a frame). That thread raises
     // the flip interrupt after them instead: when the wait would have ended, without holding
@@ -410,6 +551,12 @@ void RunWriteData(Vulkan::Rasterizer& rasterizer, const u8* data) {
     }
     // Copies deferred to the recording thread that read this range precede the write, and
     // fences deferred to it (RecorderFences) precede writes the guest sees.
+    // gow3 GOW3_GPU_FENCES: not the GPU-ordered ones: waiting for the GPU here would stall stage
+    // B twice a frame (Bloodborne 0.7's CPU WRITE_DATA does not wait either). Counted when such
+    // labels are still pending: this write reaches the guest before them.
+    if (Gow3GpuFences::Enabled() && rasterizer.HasPendingSignals()) {
+        Gow3GpuFences::counters.overtake_write_data.fetch_add(1, std::memory_order_relaxed);
+    }
     const auto wait_start = Gow3Stats::enabled ? std::chrono::steady_clock::now()
                                                : std::chrono::steady_clock::time_point{};
     rasterizer.WaitHostCopiesFor(write_data->Address<VAddr>(),
@@ -439,6 +586,36 @@ void SignalEos(const PM4CmdEventWriteEos& event_eos) {
 
 void RunEventWriteEos(Vulkan::Rasterizer& rasterizer, const u8* data) {
     const auto& event_eos = *reinterpret_cast<const PM4CmdEventWriteEos*>(data);
+    if (Gow3GpuFences::Enabled()) {
+        // gow3 GOW3_GPU_FENCES (Bloodborne 0.7, 0fc2921 cp_tasks.cpp EventWriteEosTask): the end
+        // of the shader work is written once the GPU has finished it.
+        const auto eos = event_eos;
+        rasterizer.ProcessDownloadImages();
+        if (eos.command != PM4CmdEventWriteEos::Command::GdsStore) {
+            Gow3FenceStats::pending_fence_kind = Gow3FenceStats::FenceEos; // gate 2: lag ~0
+            rasterizer.SignalAfterGpu(
+                [eos] {
+                    eos.SignalFence([](void* address, u64 value, u32 num_bytes) {
+                        Gow3WriteLog::Note(reinterpret_cast<u64>(address), &value, num_bytes,
+                                           Gow3WriteLog::Fence);
+                        Core::Memory::Instance()->StoreLabel(address, value, num_bytes, true);
+                    });
+                },
+                reinterpret_cast<VAddr>(eos.Address()), eos.DataDWord());
+            return;
+        }
+        // A GDS store reads the GPU's data: after a GPU wait as before, then written in order
+        // with the signals before it (its tick is done, so at once).
+        ASSERT(eos.size == 1);
+        rasterizer.Finish();
+        const u32 value = rasterizer.ReadDataFromGds(eos.gds_index);
+        rasterizer.SignalAfterGpu(
+            [address = eos.Address(), value] {
+                Core::Memory::Instance()->StoreLabel(address, value, sizeof(u32), false);
+            },
+            reinterpret_cast<VAddr>(eos.Address()), value);
+        return;
+    }
     // gow3 E1: like the end-of-pipe fence, the draw recording thread does not wait for the host
     // copies: the Vulkan recording thread writes the label after the copies queued before it.
     // T-W2 / T-S3: with the end-of-pipe readback check targeted (W2), this synchronous wait took
@@ -468,6 +645,95 @@ void RunEventWriteEos(Vulkan::Rasterizer& rasterizer, const u8* data) {
         *event_eos.Address() = value;
     }
 }
+/// gow3 GOW3_GPU_FENCES: a compute RELEASE_MEM on the signal thread, after the GPU: the label at
+/// its address (as before, not through the backing view) as one store, then the interrupt.
+void SignalReleaseAfterGpu(const PM4CmdReleaseMem& release, u32 pipe_id) {
+    void* address = release.Address<void*>();
+    switch (release.data_sel.Value()) {
+    case DataSelect::Data32Low:
+        Core::Memory::Instance()->StoreLabel(address, release.DataDWord(), sizeof(u32), false);
+        break;
+    case DataSelect::Data64:
+        Core::Memory::Instance()->StoreLabel(address, release.DataQWord(), sizeof(u64), false);
+        break;
+    case DataSelect::GpuClock64:
+        Core::Memory::Instance()->StoreLabel(address, GetGpuClock64(), sizeof(u64), false);
+        break;
+    case DataSelect::PerfCounter:
+        Core::Memory::Instance()->StoreLabel(address, GetGpuPerfCounter(), sizeof(u64), false);
+        break;
+    default:
+        break; // none, or a GDS store (recorded as a GPU copy)
+    }
+    if (release.int_sel.Value() != InterruptSelect::None) {
+        Platform::IrqC::Instance()->Signal(static_cast<Platform::InterruptId>(pipe_id));
+    }
+}
+
+/// gow3 GOW3_GPU_FENCES: a WAIT_REG_MEM not met (yet) on stage A. Per step: submits unsubmitted
+/// signals (the value may come from a fence waiting for that work), counts, and after 256 steps
+/// also yields the core (the GPU's lag is milliseconds; the Deck has 4 cores). Reports a wait of
+/// 500 ms and of 10 s once. Bloodborne 0.7 gives up only in repaired command buffers or after a
+/// corrupt end-of-pipe packet (neither exists here): GOW3_WAIT_REG_MEM_GIVEUP_MS (0: never)
+/// passes any wait after that long; Step() then returns true.
+struct GpuOrderedWait {
+    VAddr address;
+    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+    u32 steps = 0;
+    bool told_short = false, told_long = false;
+
+    ~GpuOrderedWait() {
+        if (!steps || !Gow3Stats::enabled) {
+            return;
+        }
+        const u64 ns = u64(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                               std::chrono::steady_clock::now() - start)
+                               .count());
+        Gow3GpuFences::counters.wrm_waits.fetch_add(1, std::memory_order_relaxed);
+        Gow3GpuFences::counters.wrm_wait_ns.fetch_add(ns, std::memory_order_relaxed);
+        Gow3GpuFences::AtomicMax(Gow3GpuFences::counters.wrm_wait_max_ns, ns);
+    }
+
+    bool Step(Vulkan::Rasterizer& rasterizer) {
+        static const u64 give_up_ms = [] {
+            const char* env = std::getenv("GOW3_WAIT_REG_MEM_GIVEUP_MS");
+            return env && *env ? std::strtoull(env, nullptr, 10) : 0ull;
+        }();
+        if (rasterizer.HasUnsubmittedSignals()) {
+            Gow3GpuFences::counters.wrm_flushes.fetch_add(1, std::memory_order_relaxed);
+            Gow3GpuFences::counters.flush_wait_reg_mem.fetch_add(1, std::memory_order_relaxed);
+            rasterizer.Flush();
+        }
+        Gow3GpuFences::counters.wrm_yields.fetch_add(1, std::memory_order_relaxed);
+        if (++steps > 256) {
+            std::this_thread::yield();
+        }
+        if ((steps & 255) != 0) {
+            return false;
+        }
+        const auto waited = std::chrono::steady_clock::now() - start;
+        const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(waited).count();
+        if ((!told_short && ms >= 500) || (!told_long && ms >= 10000)) {
+            told_short = true;
+            told_long = ms >= 10000;
+            char line[128];
+            std::snprintf(line, sizeof(line), "GPU fences: WAIT_REG_MEM on %#llx not met after %lld ms\n",
+                          static_cast<unsigned long long>(address), static_cast<long long>(ms));
+            const std::string out = line + rasterizer.DescribeSignals() + "  " +
+                                    Gow3GpuFences::DescribePacing() + "\n";
+            std::fputs(out.c_str(), stdout);
+            std::fflush(stdout);
+        }
+        if (give_up_ms && u64(ms) >= give_up_ms) {
+            std::printf("GPU fences: WAIT_REG_MEM on %#llx passed after %lld ms "
+                        "(GOW3_WAIT_REG_MEM_GIVEUP_MS)\n",
+                        static_cast<unsigned long long>(address), static_cast<long long>(ms));
+            std::fflush(stdout);
+            return true;
+        }
+        return false;
+    }
+};
 } // namespace
 
 void Liverpool::NotePendingFences(const auto& event) {
@@ -507,6 +773,20 @@ bool Liverpool::PendingFenceValue(VAddr address, u32& value) {
         if (address >= it->address && address + sizeof(u32) <= it->address + it->num_bytes) {
             u64 data = it->data;
             value = static_cast<u32>(data >> ((address - it->address) * 8));
+            return true;
+        }
+    }
+    // gow3 GOW3_GPU_FENCES (Bloodborne 0.7, 0fc2921 cp_graphics.cpp PendingFenceValue): past the
+    // draw recording thread a fence waits for the GPU to finish the work before it; in stream
+    // order it is met already.
+    if (Gow3GpuFences::Enabled() && rasterizer) {
+        u64 data = 0;
+        if (rasterizer->PendingSignalValue(address, data)) {
+            value = static_cast<u32>(data);
+            return true;
+        }
+        if ((address & 7) == 4 && rasterizer->PendingSignalValue(address - 4, data)) {
+            value = static_cast<u32>(data >> 32); // the high half of a 64-bit fence
             return true;
         }
     }
@@ -1401,6 +1681,27 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                                !Gow3Toggle::Disabled(Gow3Toggle::PendingFenceWaits) &&
                                PendingFenceValue(wait_reg_mem->Address<VAddr>(), value) &&
                                wait_reg_mem->TestValue(value)) {
+                    if (Gow3GpuFences::Enabled()) {
+                        Gow3GpuFences::counters.wrm_pending_met.fetch_add(
+                            1, std::memory_order_relaxed);
+                    }
+                    break;
+                }
+                if (Gow3GpuFences::Enabled() && rasterizer) {
+                    // gow3 GOW3_GPU_FENCES (Bloodborne 0.7, 0fc2921 cp_graphics.cpp
+                    // WaitRegMemGraphics): the value may come from a fence waiting for work not
+                    // submitted yet (another queue's): submitted, then yielded.
+                    GpuOrderedWait wait{wait_reg_mem->Address<VAddr>()};
+                    while (!wait_reg_mem->Test(regs.reg_array)) {
+                        if (!rasterizer->DrawPipeIdle()) {
+                            rasterizer->DrainDrawPipe(static_cast<u32>(opcode));
+                            continue;
+                        }
+                        if (wait.Step(*rasterizer)) {
+                            break; // GOW3_WAIT_REG_MEM_GIVEUP_MS
+                        }
+                        YIELD_GFX();
+                    }
                     break;
                 }
                 // Else the value may come from a fence that thread has yet to write: let it
@@ -1490,6 +1791,11 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
     }
     if (draw_prep) {
         draw_prep->EndSubmission();
+    }
+    if (rasterizer && seq != NoSeq && Gow3GpuFences::Enabled()) {
+        // gow3 GOW3_GPU_FENCES (Bloodborne 0.7, 0fc2921 cp_graphics.cpp EndGraphics): its
+        // signals go to the GPU now if it has run dry, else batched.
+        rasterizer->SubmitForSignals();
     }
     if (seq != NoSeq && Gow3Stats::enabled) {
         Gow3Stats::submissions.fetch_add(1, std::memory_order_relaxed);
@@ -1758,6 +2064,31 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         case PM4ItOpcode::WaitRegMem: {
             const auto* wait_reg_mem = reinterpret_cast<const PM4CmdWaitRegMem*>(header);
             ASSERT(wait_reg_mem->engine.Value() == PM4CmdWaitRegMem::Engine::Me);
+            if (Gow3GpuFences::Enabled() && rasterizer) {
+                // gow3 GOW3_GPU_FENCES (Bloodborne 0.7, 0fc2921 cp_compute.cpp): a fence handed
+                // to the recording thread or the signal thread counts as written (stream order);
+                // else the value may come from a fence waiting for work not submitted yet.
+                if (u32 value; wait_reg_mem->mem_space.Value() ==
+                                   PM4CmdWaitRegMem::MemSpace::Memory &&
+                               !Gow3Toggle::Disabled(Gow3Toggle::PendingFenceWaits) &&
+                               PendingFenceValue(wait_reg_mem->Address<VAddr>(), value) &&
+                               wait_reg_mem->TestValue(value)) {
+                    Gow3GpuFences::counters.wrm_pending_met.fetch_add(1, std::memory_order_relaxed);
+                    break;
+                }
+                GpuOrderedWait wait{wait_reg_mem->Address<VAddr>()};
+                while (!wait_reg_mem->Test(regs.reg_array)) {
+                    if (!rasterizer->DrawPipeIdle()) {
+                        rasterizer->DrainDrawPipe(Vulkan::DrawPipe::ReasonCompute);
+                        continue;
+                    }
+                    if (wait.Step(*rasterizer)) {
+                        break; // GOW3_WAIT_REG_MEM_GIVEUP_MS
+                    }
+                    YIELD_ASC(vqid);
+                }
+                break;
+            }
             while (!wait_reg_mem->Test(regs.reg_array)) {
                 YIELD_ASC(vqid);
             }
@@ -1766,7 +2097,8 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         case PM4ItOpcode::ReleaseMem: {
             // gow3: copies deferred to the recording thread precede writes the guest sees, and
             // so do graphics fences deferred to it (the pipe was drained before this packet).
-            if (rasterizer) {
+            // GOW3_GPU_FENCES: the GPU's order covers both (below).
+            if (rasterizer && !Gow3GpuFences::Enabled()) {
                 rasterizer->WaitHostCopies();
                 rasterizer->WaitDeferredSignals();
             }
@@ -1785,6 +2117,24 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             }
             if (rasterizer) {
                 rasterizer->ProcessDownloadImages();
+            }
+            if (Gow3GpuFences::Enabled() && rasterizer) {
+                // gow3 GOW3_GPU_FENCES (Bloodborne 0.7, 0fc2921 cp_compute.cpp ReleaseMemory):
+                // the label and the interrupt once the GPU has finished the work before them; a
+                // GDS store as a GPU copy recorded here, in stream order.
+                const auto release = *release_mem;
+                if (release.data_sel == DataSelect::GdsMemStore) {
+                    rasterizer->CopyBuffer(release.Address<VAddr>(), release.gds_index,
+                                           release.num_dw * sizeof(u32), false, true);
+                }
+                const bool label = release.data_sel == DataSelect::Data32Low ||
+                                   release.data_sel == DataSelect::Data64;
+                rasterizer->SignalAfterGpu(
+                    [release, pipe_id = queue.pipe_id] { SignalReleaseAfterGpu(release, pipe_id); },
+                    label ? release.Address<VAddr>() : 0,
+                    release.data_sel == DataSelect::Data64 ? release.DataQWord()
+                                                           : release.DataDWord());
+                break;
             }
             release_mem->SignalFence(
                 [pipe_id = queue.pipe_id] {
@@ -1869,6 +2219,9 @@ void Liverpool::SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb) {
         }
         auto task = ProcessGraphics(dcb, ccb, seq);
         queue.submits.emplace(task.handle);
+        if (Gow3GpuFences::Enabled()) {
+            queue.submit_index.push(submit_counter.fetch_add(1, std::memory_order_acq_rel) + 1);
+        }
     }
 
     std::scoped_lock lk{submit_mutex};
@@ -1886,6 +2239,9 @@ void Liverpool::SubmitAsc(u32 gnm_vqid, std::span<const u32> acb) {
     {
         std::scoped_lock lock{queue.m_access};
         queue.submits.emplace(task.handle);
+        if (Gow3GpuFences::Enabled()) {
+            queue.submit_index.push(submit_counter.fetch_add(1, std::memory_order_acq_rel) + 1);
+        }
     }
 
     std::scoped_lock lk{submit_mutex};

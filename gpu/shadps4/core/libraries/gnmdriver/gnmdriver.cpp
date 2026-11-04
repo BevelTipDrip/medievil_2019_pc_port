@@ -24,6 +24,7 @@
 #include "video_core/amdgpu/pm4_cmds.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "gow3_fence_stats.h"
+#include "gow3_gpu_fences.h"
 
 extern Frontend::WindowSDL* g_window;
 std::unique_ptr<Vulkan::Presenter> presenter;
@@ -377,6 +378,9 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
         });
     }
     liverpool->SubmitAsc(gnm_vqid, acb_span);
+    if (Gow3GpuFences::PacingOnDecode()) {
+        Gow3GpuFences::AfterSubmit(); // handed over first, as the graphics submissions
+    }
 }
 
 void PS4_SYSV_ABI sceGnmDingDongForWorkload(u32 gnm_vqid, u32 next_offs_dw, u64 workload_id) {
@@ -2320,8 +2324,13 @@ s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload(
         return patch_result;
     }
 
-    return PerformSubmit(count, const_cast<const u32**>(dcb_gpu_addrs), dcb_sizes_in_bytes,
-                         const_cast<const u32**>(ccb_gpu_addrs), ccb_sizes_in_bytes);
+    const s32 result =
+        PerformSubmit(count, const_cast<const u32**>(dcb_gpu_addrs), dcb_sizes_in_bytes,
+                      const_cast<const u32**>(ccb_gpu_addrs), ccb_sizes_in_bytes);
+    if (result == ORBIS_OK && Gow3GpuFences::PacingOnDecode()) {
+        Gow3GpuFences::AfterSubmit();
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
@@ -2357,8 +2366,13 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
     std::scoped_lock lk{m_submit_lock};
     WaitGpuIdle();
 
-    return PerformSubmit(count, const_cast<const u32**>(dcb_gpu_addrs), dcb_sizes_in_bytes,
-                         const_cast<const u32**>(ccb_gpu_addrs), ccb_sizes_in_bytes);
+    const s32 result =
+        PerformSubmit(count, const_cast<const u32**>(dcb_gpu_addrs), dcb_sizes_in_bytes,
+                      const_cast<const u32**>(ccb_gpu_addrs), ccb_sizes_in_bytes);
+    if (result == ORBIS_OK && Gow3GpuFences::PacingOnDecode()) {
+        Gow3GpuFences::AfterSubmit();
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[],
@@ -2372,6 +2386,22 @@ s32 PS4_SYSV_ABI sceGnmSubmitDone() {
     HLE_TRACE;
     LOG_DEBUG(Lib_GnmDriver, "called");
     std::scoped_lock lk{m_submit_lock};
+    if (Gow3GpuFences::PacingOnDecode()) {
+        // gow3 GOW3_GPU_FENCES (Bloodborne 0.7, 0fc2921 gpu/platform/gnm/gnm_driver.cpp, the
+        // `decode` lock): no lock to arm. This waits until the GPU has finished the frames before
+        // (as the console's lock would make it wait), then this frame's submissions are counted
+        // from 0: the first GOW3_SUBMIT_AHEAD go straight through (gow3_gpu_fences.cpp). A frame
+        // is one sceGnmSubmitDone to the next: MediEvil calls it once per flip (Deck run 9:
+        // 343 calls in a 5 s window of 68.6 FPS).
+        if (Gow3Stats::enabled) {
+            ++Gow3FenceStats::lock_done_calls;
+        }
+        liverpool->SubmitDone(Gow3GpuFences::BeginFrame());
+        send_init_packet = true;
+        ++frames_submitted;
+        DebugState.IncGnmFrameNum();
+        return ORBIS_OK;
+    }
     WaitGpuIdle();
     if (Gow3Stats::enabled) {
         ++Gow3FenceStats::lock_done_calls;

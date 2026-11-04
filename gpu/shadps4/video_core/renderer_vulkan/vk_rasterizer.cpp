@@ -95,6 +95,7 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
         runtime.FlushBarriers();
         buffer_cache.SubmitPendingArenaBinds(info);
     });
+    scheduler.CountSubmits(); // gow3 GOW3_FRAME_STATS: submits per frame (gow3_gpu_fences.h)
 }
 
 Rasterizer::~Rasterizer() = default;

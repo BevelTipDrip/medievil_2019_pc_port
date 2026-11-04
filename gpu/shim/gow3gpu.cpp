@@ -30,6 +30,7 @@
 #include "core/emulator_settings.h"
 #include "core/memory.h"
 #include "core/signals.h"
+#include "gow3_gpu_fences.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 
@@ -37,6 +38,7 @@ extern "C" {
 // runtime_memory.c
 int runtime_memory_is_mapped(uintptr_t address, uint64_t size);
 int runtime_memory_write_backing(uintptr_t address, const void* data, uint64_t size);
+int runtime_memory_store_label(uintptr_t address, uint64_t value, uint32_t size);
 int runtime_memory_read_backing(uintptr_t address, void* data, uint64_t size);
 uint64_t runtime_memory_clamp(uintptr_t address, uint64_t size);
 int runtime_memory_region(uintptr_t address, uintptr_t* start, uintptr_t* end, int* mapped);
@@ -151,6 +153,33 @@ bool MemoryManager::ReadBacking(VAddr address, void* data, u64 size) {
 bool MemoryManager::TryWriteBacking(void* address, const void* data, u64 size) {
     Gow3WriteLog::Note(reinterpret_cast<uintptr_t>(address), data, size, Gow3WriteLog::Backing);
     return runtime_memory_write_backing(reinterpret_cast<uintptr_t>(address), data, size) != 0;
+}
+bool MemoryManager::StoreLabel(void* address, u64 value, u32 size, bool backing) {
+    // gow3 GOW3_GPU_FENCES: Bloodborne 0.7's StoreLabel (0fc2921, gpu/cp/cp_tasks.cpp): one store,
+    // not memcpy's two overlapping ones (a label rewritten after the guest freed its block).
+    const auto at = reinterpret_cast<uintptr_t>(address);
+    if (backing) {
+        Gow3WriteLog::Note(at, &value, size, Gow3WriteLog::Backing);
+        if (runtime_memory_store_label(at, value, size)) {
+            return true;
+        }
+    }
+    // Written once the GPU is done, which may be after the guest unmapped the memory.
+    if (!runtime_memory_is_mapped(at, size)) {
+        Gow3GpuFences::counters.labels_unmapped.fetch_add(1, std::memory_order_relaxed);
+        return false;
+    }
+    if (size == 8 && !(at & 7)) {
+        __atomic_store_n(static_cast<u64*>(address), value, __ATOMIC_RELEASE);
+    } else if (size == 4 && !(at & 3)) {
+        __atomic_store_n(static_cast<u32*>(address), u32(value), __ATOMIC_RELEASE);
+    } else {
+        auto* bytes = static_cast<u8*>(address);
+        for (u32 i = 0; i < size; ++i) {
+            __atomic_store_n(bytes + i, u8(value >> (8 * i)), __ATOMIC_RELEASE);
+        }
+    }
+    return true;
 }
 void AddressSpace::Protect(VAddr virtual_addr, u64 size, MemoryPermission perms) {
     Gow3Stats::Timer timer{Gow3Stats::t_protect};

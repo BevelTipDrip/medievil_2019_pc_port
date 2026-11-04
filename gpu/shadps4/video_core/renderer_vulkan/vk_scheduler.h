@@ -967,6 +967,12 @@ public:
         return &work_semaphore;
     }
 
+    /// gow3 GOW3_GPU_FENCES: this scheduler's submissions count in the report's submits per frame
+    /// (the rasterizer's, with GOW3_FRAME_STATS=1).
+    void CountSubmits() noexcept {
+        count_submits = true;
+    }
+
     /// Defers an operation until the gpu has reached the current cpu tick.
     /// Will be run when submitting or calling PopPendingOperations.
     void DeferOperation(Common::UniqueFunction<void>&& func) {
@@ -1120,6 +1126,7 @@ private:
     // gow3: whether recorder_thread runs, read on every Record(). std::jthread::joinable()
     // compares thread ids, which on Windows (libc++ over winpthreads) costs two system calls.
     bool recording_threaded{false};
+    bool count_submits{false}; ///< see CountSubmits()
     std::jthread recorder_thread;
     tracy::VkCtxScope* profiler_scope{};
 };

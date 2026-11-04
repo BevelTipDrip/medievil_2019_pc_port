@@ -34,6 +34,7 @@
 #include <cstdio>
 #include "gow3_threads.h"
 #include "gow3_fence_stats.h"
+#include "gow3_gpu_fences.h"
 
 namespace Vulkan {
 
@@ -779,6 +780,9 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
         entry.tick.store(signal_value, std::memory_order_release);
     }
     ASSERT_MSG(submit_result != vk::Result::eErrorDeviceLost, "Device lost during submit");
+    if (count_submits && Gow3Stats::enabled) {
+        Gow3GpuFences::counters.submits.fetch_add(1, std::memory_order_relaxed);
+    }
 
     work_semaphore.Refresh();
     AllocateWorkerCommandBuffers();

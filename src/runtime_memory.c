@@ -153,6 +153,8 @@ typedef struct { int kind; uintptr_t address; uint64_t size; } PendingHook;
 static PendingHook pending[64]; static size_t pending_count;
 static size_t allocations, maps, flexible_maps, protects, queries;
 static uint64_t live_bytes, flexible_bytes;
+/* gow3 GOW3_GPU_FENCES leak view (runtime_memory_usage): pool pages committed, under the lock. */
+static uint64_t pool_committed_bytes;
 
 static int valid_alignment(uint64_t a) { return a >= PAGE && a <= POOL_SIZE && !(a & (a-1)); }
 static uint64_t align_up(uint64_t n, uint64_t a) { return (n+a-1) & ~(a-1); }
@@ -1040,6 +1042,7 @@ static int32_t pool_commit_impl(void *address, uint64_t size, int type, int prot
         if (!got && !pool_take_locked((size-done)/PAGE,&phys,&pages)) { write_unlock(); return NO_MEMORY; }
         int32_t r=place(&at,pages*PAGE,prot,MAP_FIXED_FLAG,PAGE,KIND_DIRECT,type,phys);
         if (r) pool_give_locked(phys,pages*PAGE,POOL_FREE);
+        else pool_committed_bytes+=pages*PAGE;
         write_unlock();
         flush_hooks();
         if (r) return r;
@@ -1067,6 +1070,7 @@ static int32_t pool_decommit_impl(void *address, uint64_t size) {
         if (i>=vma_count || vmas[i].start>=end) { write_unlock(); break; }
         uintptr_t a=vmas[i].start>at ? vmas[i].start : at, b=vmas[i].end<end ? vmas[i].end : end;
         int32_t r=0;
+        if (vmas[i].kind==KIND_DIRECT) pool_committed_bytes-=pool_committed_bytes>b-a ? b-a : pool_committed_bytes;
         if (vmas[i].kind==KIND_DIRECT && pool_keep_views()) {
             pool_give_locked(vmas[i].phys+(a-vmas[i].start),b-a,POOL_KEPT);
             queue_hook(HOOK_UNMAP,a,b-a);
@@ -1256,6 +1260,31 @@ int runtime_memory_write_backing(uintptr_t address, const void *data, uint64_t s
     }
     read_unlock();
     return ok;
+}
+/* gow3 GOW3_GPU_FENCES: a fence label through the backing view as one store, adapted from
+ * Bloodborne 0.7's StoreLabel (bloodborne_pc 0fc2921, gpu/cp/cp_tasks.cpp). memcpy writes 4 or 8
+ * bytes as two overlapping stores: a thread preempted between them wrote the label again after
+ * the guest had freed its block (a corrupted guest heap). 0 when the label has no backing. */
+int runtime_memory_store_label(uintptr_t address, uint64_t value, uint32_t size) {
+    read_lock();
+    size_t i=vma_index(address);
+    const int ok=size<=8 && i<vma_count && vmas[i].start<=address && address+size<=vmas[i].end &&
+                 vmas[i].kind!=KIND_RESERVED;
+    if (ok) {
+        unsigned char *at=backing_base+vmas[i].phys+(address-vmas[i].start);
+        if (size==8 && !((uintptr_t)at&7)) __atomic_store_n((uint64_t *)(void *)at,value,__ATOMIC_RELEASE);
+        else if (size==4 && !((uintptr_t)at&3)) __atomic_store_n((uint32_t *)(void *)at,(uint32_t)value,__ATOMIC_RELEASE);
+        else for (uint32_t k=0;k<size;++k) __atomic_store_n(at+k,(unsigned char)(value>>(8*k)),__ATOMIC_RELEASE);
+    }
+    read_unlock();
+    return ok;
+}
+/* gow3 GOW3_GPU_FENCES leak view: the guest memory in use (direct memory allocated, flexible
+ * memory mapped, pool pages committed), read without the lock (statistics). */
+void runtime_memory_usage(uint64_t *direct_live, uint64_t *flexible, uint64_t *pool_committed) {
+    if (direct_live) *direct_live=__atomic_load_n(&live_bytes,__ATOMIC_RELAXED);
+    if (flexible) *flexible=__atomic_load_n(&flexible_bytes,__ATOMIC_RELAXED);
+    if (pool_committed) *pool_committed=__atomic_load_n(&pool_committed_bytes,__ATOMIC_RELAXED);
 }
 /* gow3: reads through the backing view (past the page protection the GPU side keeps);
  * 0 when part of the range has no backing. */

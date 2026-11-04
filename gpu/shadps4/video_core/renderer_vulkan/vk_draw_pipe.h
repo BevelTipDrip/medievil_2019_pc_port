@@ -139,6 +139,13 @@ public:
         return consumed.load(std::memory_order_acquire) == head;
     }
 
+    /// gow3 GOW3_GPU_FENCES (any thread): bytes of packets handed to stage B and not run yet.
+    [[nodiscard]] u64 Backlog() const noexcept {
+        const u64 done = consumed.load(std::memory_order_acquire);
+        const u64 handed = published.load(std::memory_order_acquire);
+        return handed > done ? handed - done : 0;
+    }
+
     /// Statistics (stage A): packets, drains that had to wait, cycles waited, cycles stage B
     /// spent running packets.
     u64 packets = 0, drains = 0, drain_cycles = 0;

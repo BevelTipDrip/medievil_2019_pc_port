@@ -160,6 +160,30 @@ public:
     void SignalAfterHostCopies(std::function<void()> signal) {
         scheduler.SignalAfterHostCopies(std::move(signal));
     }
+    /// gow3 GOW3_GPU_FENCES (vk_gpu_signals.cpp; Bloodborne 0.7's SignalAfterGpu, 0fc2921
+    /// gpu/render/raster_signals.cpp): runs `signal` on the gow3:GpuSignals thread once the GPU
+    /// has executed the work recorded before this call, in call order. Called by the thread
+    /// recording: stage B, or stage A (which drains stage B first). `label`/`value`: the label it
+    /// writes (0: none), met in stream order for WAIT_REG_MEM (PendingSignalValue). `urgent`: the
+    /// guest may wait for it, so its submission is not left for later (HasUnsubmittedSignals).
+    void SignalAfterGpu(std::function<void()> signal, VAddr label = 0, u64 value = 0,
+                        bool urgent = true);
+    /// The newest label value handed to the signal thread and not written yet for `address`.
+    bool PendingSignalValue(VAddr address, u64& value);
+    /// An urgent signal waits for work not handed to the GPU yet (a Flush() would submit it).
+    [[nodiscard]] bool HasUnsubmittedSignals() const {
+        return newest_urgent_tick.load(std::memory_order_acquire) >= scheduler.CurrentTick();
+    }
+    /// Signals handed to the signal thread and not run yet.
+    [[nodiscard]] bool HasPendingSignals() const {
+        return pending_signals.load(std::memory_order_acquire) != 0;
+    }
+    /// Stage A, the end of a guest submission: submits for its signals when the GPU has run dry
+    /// or is on its last submission, else at most once per GOW3_SIGNAL_FLUSH_US (on stage B, in
+    /// order, when the draw pipe is in use).
+    void SubmitForSignals();
+    /// What the signal thread, the GPU and the draw pipe are at (watchdogs).
+    std::string DescribeSignals();
     /// The GPU command thread or the draw recording thread (fault handling runs inline there).
     bool IsGpuSideThread() const;
     bool IsGpuSideThreadId(u32 tid) const;
@@ -586,6 +610,24 @@ private:
     std::deque<std::pair<u64, std::shared_ptr<const void>>> pipe_keepalive;
     std::unique_ptr<DrawPipe> draw_pipe;
     std::unique_ptr<OcclusionQueries> occlusion; ///< GOW3_OCCLUSION=1 (vk_occlusion.h)
+
+    /// gow3 GOW3_GPU_FENCES (vk_gpu_signals.cpp): signals waiting for the GPU, in tick order.
+    struct GpuSignal {
+        u64 tick;
+        std::function<void()> signal;
+        VAddr label;
+        u64 value;
+        u64 fence; ///< the fence lag probe's entry (Gow3FenceStats), ~0 if none
+    };
+    void GpuSignalLoop(std::stop_token token);
+    void GpuWatchdog(u64 tick);
+    void SubmitForSignalsNow();
+    std::mutex gpu_signals_mutex;
+    std::condition_variable_any gpu_signals_cv;
+    std::deque<GpuSignal> gpu_signals;
+    std::atomic<u64> newest_urgent_tick{0};
+    std::atomic<u64> pending_signals{0};
+    std::jthread gpu_signal_thread; ///< last: stopped first
 };
 
 } // namespace Vulkan
