@@ -178,7 +178,7 @@ APP_DEFAULTS = {'ui_language': 'en', 'game_dir': os.environ.get('GOW3_GAME_DIR',
                 'mods_dir': '', 'mods_enabled': True, 'patches_dir': '', 'language': '1',
                 'player_name': '', 'hdr': False, 'draw_pipe': '', 'readbacks': '', 'vulkan_compat': False,
                 'background_warmup': True, 'parallel_warmup': True, 'pipeline_binary_cache': True, 'perf_diag': False, 'frame_capture_key': False, 'frame_stats': False, 'gpu_profile': False,
-                'vk_validation': False, 'close_on_play': False,
+                'vk_validation': False, 'close_on_play': False, 'prep_workers': '', 'stage_b_core': False,
                 'update_check': True, 'game_patches': {}, 'game_patches_seen': {}, 'controls': {}, 'pad_style': 'playstation', 'stick_range': '',
                 'last_pkg': ''}
 
@@ -242,6 +242,9 @@ DRAW_PIPE = [('', ('Auto (8+ threads)', 'Авто (8+ потоков)')), ('1', 
 # "Precise" (GOW3_READBACKS=2) left MediEvil on a black screen (issue #15): not offered, and a
 # saved choice of it starts with the default.
 READBACKS = [('', ('Relaxed (default)', 'Relaxed (по умолчанию)')), ('0', ('Off', 'Выключены'))]
+# Draw preparation helper threads (GOW3_PREP_WORKERS); '' = the runtime's default (half the CPU threads).
+PREP_WORKERS = [('', ('Auto (half the CPU threads)',)), ('0', ('0 (none)',)), ('1', ('1',)), ('2', ('2',)),
+                ('3', ('3',)), ('4', ('4',)), ('6', ('6',)), ('8', ('8',))]
 FRAMES_QUEUED = [('1', ('1 (lowest latency)',)), ('2', ('2',)), ('0', ('Unlimited',))]
 # Performance patches (research/docs/plan-stage-b-split.md, plan-frame-pacing.md): each is on by
 # default except graphics_options.PERF_DEFAULT_OFF; switched off, its environment variables restore the earlier behaviour (A/B tests,
@@ -480,6 +483,10 @@ def game_environment(s):
         env['GOW3_VULKAN_COMPAT'] = '1'
     env['GOW3_BACKGROUND_WARMUP'] = '1' if s.get('background_warmup', True) else '0'
     env['GOW3_PARALLEL_WARMUP'] = '1' if s.get('parallel_warmup', True) else '0'
+    if s.get('prep_workers', '') != '':
+        env['GOW3_PREP_WORKERS'] = str(s['prep_workers'])
+    if s.get('stage_b_core', False):
+        env['GOW3_STAGE_B_CORE'] = '1'
     env['GOW3_PIPELINE_BINARIES'] = '1' if s.get('pipeline_binary_cache', True) else '0'
     env.setdefault('GOW3_PERF_DIAG', '1' if s.get('perf_diag', False) else '0')
     for key, name in (('frame_stats', 'GOW3_FRAME_STATS'), ('gpu_profile', 'GOW3_GPU_PROFILE'),
@@ -1310,6 +1317,12 @@ class Launcher:
                    _('Fewer waits for the GPU. Switch it off if textures or shadows look wrong.'), restart=True)
         self.row(f, _('Two-stage GPU pipeline', 'Двухстадийный конвейер GPU'), self.choice(f, 'draw_pipe', 'app', DRAW_PIPE),
                  _('20–30% faster; switch it off if the game is unstable.', 'Быстрее на 20–30%; при нестабильности выключите.'))
+        self.row(f, _('Draw preparation helpers'), self.choice(f, 'prep_workers', 'app', PREP_WORKERS),
+                 _('Threads that prepare draws ahead of the GPU thread. Fewer can help on CPUs with few cores '
+                   '(Steam Deck: 4). Applied at start.'))
+        self.check(f, 'stage_b_core', 'app', _('Dedicated core for the GPU thread'),
+                   _('Gives the thread that records draws a CPU core of its own; every other thread uses the '
+                     'remaining cores. Experimental. Applied at start.'))
         self.row(f, _('GPU readbacks', 'Чтение данных GPU'), self.choice(f, 'readbacks', 'app', READBACKS),
                  _('How exactly data the GPU writes is copied back for the game.',
                    'Насколько точно данные, записанные GPU, возвращаются игре.'))

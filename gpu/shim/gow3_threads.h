@@ -15,9 +15,12 @@
 #include <windows.h>
 #else
 #include <sched.h>
+#include <dirent.h>
 #include <sys/resource.h>
 #include <unistd.h>
 #endif
+
+#include <cstdlib>
 
 namespace Gow3Threads {
 #ifdef _WIN32
@@ -109,8 +112,66 @@ inline void MakeBackground() {
     }
 }
 
-inline bool DedicateCore(const char*) {
-    return false;
+/// gow3 GOW3_STAGE_B_CORE=1 on Linux (the Deck: 4 cores, 8 threads, small caches; stage B
+/// migrates between cores): the calling thread runs alone on one logical CPU of the highest
+/// physical core; its sibling stays free, and every other thread of the process (those running
+/// now; later ones inherit it from their creators) moves to the remaining cores.
+inline bool DedicateCore(const char* name) {
+    cpu_set_t all;
+    CPU_ZERO(&all);
+    if (sched_getaffinity(0, sizeof(all), &all) != 0 || CPU_COUNT(&all) < 4) {
+        return false;
+    }
+    auto core_of = [](int cpu) {
+        char path[96];
+        std::snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/topology/core_id", cpu);
+        int core = -1;
+        if (FILE* file = std::fopen(path, "r")) {
+            if (std::fscanf(file, "%d", &core) != 1) core = -1;
+            std::fclose(file);
+        }
+        return core;
+    };
+    int last_core = -1;
+    for (int cpu = 0; cpu < CPU_SETSIZE; ++cpu) {
+        if (CPU_ISSET(cpu, &all)) last_core = std::max(last_core, core_of(cpu));
+    }
+    cpu_set_t own, others;
+    CPU_ZERO(&own);
+    CPU_ZERO(&others);
+    int own_cpu = -1, sibling = -1;
+    for (int cpu = 0; cpu < CPU_SETSIZE; ++cpu) {
+        if (!CPU_ISSET(cpu, &all)) continue;
+        if (core_of(cpu) != last_core) {
+            CPU_SET(cpu, &others);
+        } else if (own_cpu < 0) {
+            own_cpu = cpu;
+        } else {
+            sibling = cpu;
+        }
+    }
+    if (last_core < 0 || own_cpu < 0 || CPU_COUNT(&others) == 0) {
+        return false;
+    }
+    const pid_t self = gettid();
+    unsigned moved = 0;
+    if (DIR* tasks = opendir("/proc/self/task")) {
+        while (const dirent* entry = readdir(tasks)) {
+            const pid_t tid = static_cast<pid_t>(std::atoi(entry->d_name));
+            if (tid > 0 && tid != self && sched_setaffinity(tid, sizeof(others), &others) == 0) {
+                ++moved;
+            }
+        }
+        closedir(tasks);
+    }
+    CPU_SET(own_cpu, &own);
+    if (sched_setaffinity(0, sizeof(own), &own) != 0) {
+        return false;
+    }
+    std::printf("%s: dedicated core %d (CPU %d; %s kept free), %u other threads moved\n", name,
+                last_core, own_cpu,
+                sibling < 0 ? "no sibling" : ("sibling CPU " + std::to_string(sibling)).c_str(), moved);
+    return true;
 }
 #endif
 
