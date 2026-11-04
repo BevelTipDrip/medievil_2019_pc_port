@@ -117,8 +117,19 @@ public:
         for (u32 spins = 0; consumed.load(std::memory_order_acquire) != head; ++spins) {
             if (spins < 4096) {
                 __builtin_ia32_pause();
-            } else {
+            } else if (spins < 4096 + 32 || !DrainSleeps()) {
                 std::this_thread::yield();
+            } else {
+                // gow3 GOW3_DRAIN_SLEEP: sleep until stage B moves on. Yield-spinning here kept a
+                // core busy while stage A waited for stage B half the time (Deck: shadPS4:GpuComm
+                // ~1 core, 8.4k switches/s); on 4 cores that time belongs to the game and stage B.
+                // From spacepepperoni/medievil_ps4_Linux 6ef7566 (the Uncharted Linux fork).
+                drainer_waiting.store(true, std::memory_order_seq_cst);
+                const u64 seen = consumed.load(std::memory_order_seq_cst);
+                if (seen != head) {
+                    consumed.wait(seen, std::memory_order_seq_cst);
+                }
+                drainer_waiting.store(false, std::memory_order_relaxed);
             }
         }
         const u64 waited = __rdtsc() - start;
@@ -213,7 +224,7 @@ private:
             const auto* header = reinterpret_cast<const Header*>(ring.get() + at % Capacity);
             if (header->size == 0) {
                 at += Capacity - at % Capacity;
-                consumed.store(at, std::memory_order_release);
+                Consumed(at);
                 continue;
             }
             const u64 start = __rdtsc();
@@ -222,8 +233,29 @@ private:
             busy_cycles.fetch_add(busy, std::memory_order_relaxed);
             Gow3Stats::stage_b_busy_cycles.fetch_add(busy, std::memory_order_relaxed);
             at += header->size;
-            consumed.store(at, std::memory_order_release);
+            Consumed(at);
         }
+    }
+
+    /// Stage B: progress, and a wake-up for a sleeping Drain() (seq_cst against its flag).
+    void Consumed(u64 at) {
+        consumed.store(at, std::memory_order_seq_cst);
+        if (drainer_waiting.load(std::memory_order_seq_cst)) {
+            consumed.notify_one();
+        }
+    }
+
+    /// GOW3_DRAIN_SLEEP: Drain() sleeps after a short spin (default on Linux, off on Windows).
+    static bool DrainSleeps() {
+        static const bool on = [] {
+            const char* env = std::getenv("GOW3_DRAIN_SLEEP");
+#ifdef _WIN32
+            return env && env[0] == '1';
+#else
+            return !(env && env[0] == '0');
+#endif
+        }();
+        return on;
     }
 
     static inline thread_local bool on_stage_b = false;
@@ -234,6 +266,7 @@ private:
     u32 pending_size = 0;
     alignas(64) std::atomic<u64> published{0};
     alignas(64) std::atomic<u64> consumed{0};
+    std::atomic<bool> drainer_waiting{false}; ///< Drain() sleeps on `consumed` (GOW3_DRAIN_SLEEP)
     alignas(64) std::atomic<u32> wake{0};
     std::atomic<bool> sleeping{false};
     std::atomic<u32> stage_b_tid{0};
