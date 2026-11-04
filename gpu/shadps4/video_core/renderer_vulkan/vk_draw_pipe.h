@@ -26,6 +26,7 @@
 #include "common/thread.h"
 #include "common/types.h"
 #include "gow3_cacheline.h"
+#include "gow3_linux_sched.h"
 #include "gow3_sampler.h"
 #include "gow3_sections.h"
 #include "gow3_stage_b_wait.h"
@@ -195,6 +196,8 @@ private:
         }
         on_stage_b = true;
         stage_b_tid.store(static_cast<u32>(gettid()), std::memory_order_release);
+        // gow3 #7 / #8 (Linux, opt-in): GOW3_STAGE_B_CORE_SCHED, GOW3_THREAD_NICE.
+        Gow3LinuxSched::StageBThread();
         Gow3Sampler::SampleCurrentThread("DrawRec");
         Gow3Sections::recording_thread = true;
         u64 at = 0;

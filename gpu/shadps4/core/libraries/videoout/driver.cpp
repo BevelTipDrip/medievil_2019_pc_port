@@ -31,6 +31,7 @@ extern "C" void runtime_memory_lock_report(char* out, size_t size, unsigned fram
 #include <x86intrin.h>
 #include "gow3_settings.h"
 #include "gow3_graphics.h"
+#include "gow3_linux_sched.h"
 #include "gow3_overlay.h"
 #include "video_core/renderer_vulkan/vk_frame_capture.h"
 #include "common/debug.h"
@@ -1278,6 +1279,8 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     Common::SetCurrentThreadName("shadPS4:PresentThread");
     BoostPresentingThread("vblank");
     Common::SetCurrentThreadRealtime(vblank_period);
+    // gow3 #8 (Linux, opt-in): GOW3_THREAD_NICE (nice, 1 ns timer slack).
+    Gow3LinuxSched::VBlankThread();
 
     Common::AccurateTimer timer{vblank_period};
 
