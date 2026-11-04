@@ -632,3 +632,10 @@ Next Deck launches, one change each:
   60 FPS** (the user). Under Proton the high-resolution waitable timer + 700 us spin goes through Wine; likely the
   Deck default regardless (to recheck natively).
 - Native build ready (`8072f54`): `dist/MediEvil-x86_64.AppImage` from WSL Debian 13, copied to the Deck after the run.
+- Run 4 log (`data/deck-proton-4.log`): mostly 60 FPS (worst 17-20 ms), graveyard 48-54 FPS with 34-35 ms worst
+  frames and 0.5-1 s hitches (first visit); the user: performance "falls apart" in heavy graveyard views with the GPU
+  at ~80%: CPU / sync bound.
+- **Native deployed** (2026-11-03): `~/MediEvil/MediEvil-x86_64.AppImage` (WSL build of `8072f54`); data
+  `~/.local/share/medievil-pc` with a copy of the saves and the Proton run's `medievil.ini` (same settings);
+  `~/.config/medievil-launcher/settings.json` with the game folder. `--vulkan-info`: RADV VANGOGH, submission +
+  readback PASS; note "lacks blit support for D32S8" (scene scaling).
