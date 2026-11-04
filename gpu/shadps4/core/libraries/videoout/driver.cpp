@@ -693,6 +693,20 @@ void VideoOutDriver::Flip(const Request& req) {
                             (image_bytes - window_image_bytes) / 1e6 / window,
                             (buffer_bytes - window_buffer_bytes) / 1e6 / window);
                 {
+                    // gow3: time inside the port's protection fault handlers (not the OS's signal or
+                    // exception delivery around them), per second, summed over the faulting threads.
+                    static u64 window_rf = 0, window_trf = 0, window_twf = 0;
+                    const u64 rf_now = Gow3Stats::read_faults.load(),
+                              trf_now = Gow3Stats::t_read_faults.load(),
+                              twf_now = Gow3Stats::t_write_faults.load();
+                    std::printf("Fault handlers: read faults %.0f/s %.2f ms/s, write faults %.2f ms/s\n",
+                                (rf_now - window_rf) / window, (trf_now - window_trf) / 1e6 / window,
+                                (twf_now - window_twf) / 1e6 / window);
+                    window_rf = rf_now;
+                    window_trf = trf_now;
+                    window_twf = twf_now;
+                }
+                {
                     // gow3: CPU writes into GPU-visible mapped memory, per frame (the PCIe traffic
                     // GPU Trace showed: VRAM through the BAR, and staging in system memory).
                     const double per_frame = frames ? 1e6 * frames : 1e6;
