@@ -1100,6 +1100,10 @@ ranked).
 
 **Deck test order when it is back** (one change per launch; each launch needs the user's go; updated after every
 build of the day, deck-lab `671a81a`):
+0. Baseline trap ([study-deck-patch-audit.md](study-deck-patch-audit.md)): every Deck run since U2 had
+   `GOW3_ARENA_HOST_VISIBLE=0` in extra-env.txt; keep it in every `deck.sh env` until U2 itself is tested, or the
+   baseline changes silently. Steps 1-7 below are followed by the audit's own order (its section 3): word-1 screening
+   pairs, then `GOW3_PREP_WORKERS=3`, U2 at its default, `GOW3_FORCE_ANISO=0`, `GOW3_ONSUBMIT_STAGE_B=0`.
 1. `deck.sh deploy` (default AppImage, `a863482`); `deck.sh checks`. Baseline in the heavy view, 67%,
    `GOW3_FRAME_STATS=1`, with `deck.sh clocks 20` (is stage B at ~2.4 GHz?) and `deck.sh mem 30`. Same launch, live:
    `deck.sh ab "0 0" "0 32"` (lean recorder), `"0 0" "0 16"` (C1), then the bundle 2 pairs C5 / D4 / D5
