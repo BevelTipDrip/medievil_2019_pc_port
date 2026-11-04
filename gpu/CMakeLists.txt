@@ -171,6 +171,12 @@ target_compile_options(gow3gpu PRIVATE -Wno-deprecated-declarations -Wno-missing
 # Runtime symbols (runtime_memory_*, runtime_process_*) resolve against medievil-runtime.
 if (NOT WIN32)
     target_link_options(gow3gpu PRIVATE -Wl,--allow-shlib-undefined)
+    # gow3 (spacepepperoni/medievil_ps4_Linux 7800f32, impl-deck-cpu-bundle.md D1): the library's
+    # thread_locals in the static TLS block, reached by a fixed offset from %fs instead of a
+    # __tls_get_addr call per access (~3% of the draw recording thread on Linux). Valid because
+    # medievil-runtime and the tests link the library at start (DT_NEEDED, never dlopen'd): its
+    # TLS is sized into the initial block, so glibc's dlopen surplus does not limit it.
+    target_compile_options(gow3gpu PRIVATE -ftls-model=initial-exec)
 endif()
 target_link_libraries(gow3gpu PRIVATE ffx-vulkan::portable ffx-vulkan::fsr4-v07-vulkan)
 target_link_libraries(gow3gpu PUBLIC Vulkan::Headers fmt::fmt Boost::headers magic_enum::magic_enum
