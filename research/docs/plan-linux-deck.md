@@ -723,3 +723,15 @@ The Deck's GPU finishes each frame ~15.6 ms after its recording ends (the PC's G
 almost the whole frame**, and submit -> irq is the backlog behind it. With run 3's ~11 ms of stage B recording CPU,
 both sides are near 16 ms in the graveyard (the user's overlay: CPU and GPU both ~80-90%). flip_present's 1.75 ms
 (run 3) is mostly waiting (present itself 0.94 ms). Next: render scale 75% with the trace on (GPU limit first?).
+
+## Native run 5: render scale 67% (2026-11-03; log `data/deck-native-5.log`, trace `research-data/flip/deck-native-5.csv`)
+
+Graveyard, last ~60 s, vs run 4 (100%): avg 64.4 -> **69.0** FPS, 1% low 44.5 -> **47.0**, 0.1% low 35.9 -> **43.2**,
+median frame 16.1 -> 14.2 ms. The user: the frame-time graph still oscillates, many long frames, GPU use ~90% with
+dips during them; the problem is the lows, as on the PC. **Long frames come from the game's own frame**
+(`flip_slow_stages.py`, 1,064 frames over 1.4x the local median: mean excess game +5.32 ms, stage A +1.23, recording
++0.41, GPU +0.30, present +0.23; largest stage: A 307, game 299, recording 268).
+Suspect: write-fault cost on the game threads (~760 / frame; faultprobe 7 us alone, 24-57 us with 4-8 threads, each
+mprotect takes the address-space lock for writing). Next: `GOW3_UFFD=1` (userfaultfd write-protect, the lock for
+reading); the Deck's kernel 7.2.7 has CONFIG_USERFAULTFD / UFFD_WP / PTE_MARKER_UFFD_WP; `vm.unprivileged_userfaultfd`
+is 0 but the port asks for UFFD_USER_MODE_ONLY, allowed unprivileged; falls back to signals if refused.
