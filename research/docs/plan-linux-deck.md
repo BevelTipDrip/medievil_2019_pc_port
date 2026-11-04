@@ -1014,3 +1014,18 @@ the HZB ~56 a frame on the Deck vs ~171 on the PC.** Either expected (the HZB is
 720p, much coarser than 4K; Low settings change the object set) or a Linux / Deck problem (cf. the one over-culling
 run). Decisive check: the PC with the Deck's exact settings in the same spot (back up medievil.ini first; a PC launch
 needs the user's go).
+
+## HZB resolution and culling (2026-11-04; runs 4 and 5, same spot and settings but render scale)
+
+| Graveyard heavy view | 100% (run 4) | 67% (run 5) |
+|---|---|---|
+| HZB hidden / frame | ~122 | ~63 |
+| draws / frame | ~1,290 | ~1,430 |
+| FPS (auto clocks) | 64.3 | 69.0 |
+
+Resolution doubles culling (~145 fewer draws, ~10%), but at auto clocks the GPU cost outweighed stage B's saving. The
+user's hunch confirmed: the Deck culls less because its HZB is coarse. UE4 builds the HZB at half the depth buffer's
+resolution (power of two): a pyramid at the depth's full resolution would be 2x finer per axis with no extra scene
+rendering, by intercepting the game's HZB build / test passes (where the HZB remap and the small-mip fix already work).
+**Order (the user):** (1) finish the OnSubmit and VO-label drains; (2) re-test render scale 67 / 80 / 100% on top;
+(3) only if the curve shows culling pays: research the full-resolution HZB build.
