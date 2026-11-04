@@ -9,6 +9,7 @@
 #include "common/debug.h"
 #include "common/thread.h"
 #include "gow3_flip_trace.h"
+#include "gow3_stage_b_wait.h"
 #include "common/elf_info.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
@@ -1137,11 +1138,20 @@ void Presenter::DiscardFrame(Frame* frame) {
 }
 
 Frame* Presenter::GetRenderFrame() {
+    // gow3 #4 (gow3_stage_b_wait.h): on stage B with GOW3_STAGE_B_SPIN=1 both waits below spin
+    // first (the fence is asked every 20 us: an ioctl on RADV); their sleeps are timed.
+    Gow3StageBWait::Spin([this] {
+        std::scoped_lock lock{free_mutex};
+        return !free_queue.empty();
+    }, 2'000);
     // Wait for free presentation frames
     Frame* frame;
     {
         std::unique_lock lock{free_mutex};
-        free_cv.wait(lock, [this] { return !free_queue.empty(); });
+        if (free_queue.empty()) {
+            Gow3StageBWait::SleepTimer sleep{Gow3StageBWait::Present};
+            free_cv.wait(lock, [this] { return !free_queue.empty(); });
+        }
         LOG_DEBUG(Render_Vulkan, "Got render frame, remaining {}", free_queue.size() - 1);
 
         // Take the frame from the queue
@@ -1157,13 +1167,18 @@ Frame* Presenter::GetRenderFrame() {
         return result;
     };
 
+    Gow3StageBWait::Spin(
+        [&] { return device.getFenceStatus(frame->present_done) == vk::Result::eSuccess; }, 20'000);
     // Wait for the presentation to be finished so all frame resources are free
-    while (wait() != vk::Result::eSuccess) {
-        ASSERT_MSG(result != vk::Result::eErrorDeviceLost,
-                   "Device lost during waiting for a frame");
-        // Retry if the waiting times out
-        if (result == vk::Result::eTimeout) {
-            continue;
+    {
+        Gow3StageBWait::SleepTimer sleep{Gow3StageBWait::Present};
+        while (wait() != vk::Result::eSuccess) {
+            ASSERT_MSG(result != vk::Result::eErrorDeviceLost,
+                       "Device lost during waiting for a frame");
+            // Retry if the waiting times out
+            if (result == vk::Result::eTimeout) {
+                continue;
+            }
         }
     }
 

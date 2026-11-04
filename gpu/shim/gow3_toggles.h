@@ -118,6 +118,9 @@ enum : std::uint64_t {
     /// D5 (runtime_memory.c): the region table lock is tried for up to 1000 pauses before a
     /// thread blocks (Linux), and an empty GPU hook queue is seen without it. Set: as before.
     TableLockPlain = 512,
+    /// #4 (gow3_stage_b_wait.h): with GOW3_STAGE_B_SPIN=1 stage B spins up to
+    /// GOW3_STAGE_B_SPIN_US before it blocks. Set: blocks as before.
+    StageBSpin = 1024,
 };
 inline bool Disabled(std::uint64_t bit) {
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;

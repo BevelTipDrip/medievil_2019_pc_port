@@ -3,6 +3,7 @@
 
 #include <limits>
 #include "gow3_sections.h"
+#include "gow3_stage_b_wait.h"
 #include "gow3_toggles.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_semaphore.h"
@@ -67,6 +68,17 @@ void Semaphore::Wait(u64 tick) {
         return;
     }
 
+    // gow3 #4 (gow3_stage_b_wait.h): stage B with GOW3_STAGE_B_SPIN=1 asks again every 20 us
+    // (a query is an ioctl on RADV, ~5 us on the Deck) before it sleeps.
+    if (Gow3StageBWait::Spin(
+            [this, tick] {
+                Refresh();
+                return IsFree(tick);
+            },
+            20'000)) {
+        return;
+    }
+
     // If none of the above is hit, fallback to a regular wait
     const vk::SemaphoreWaitInfo wait_info = {
         .semaphoreCount = 1,
@@ -74,7 +86,11 @@ void Semaphore::Wait(u64 tick) {
         .pValues = &tick,
     };
 
-    while (instance.GetDevice().waitSemaphores(&wait_info, WAIT_TIMEOUT) != vk::Result::eSuccess) {
+    {
+        Gow3StageBWait::SleepTimer sleep{Gow3StageBWait::GpuTick};
+        while (instance.GetDevice().waitSemaphores(&wait_info, WAIT_TIMEOUT) !=
+               vk::Result::eSuccess) {
+        }
     }
     Refresh();
 }

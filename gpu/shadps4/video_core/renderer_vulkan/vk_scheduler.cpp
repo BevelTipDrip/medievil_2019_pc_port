@@ -19,6 +19,7 @@
 
 #include "gow3_copy.h"
 #include "gow3_sampler.h"
+#include "gow3_stage_b_wait.h"
 #include "video_core/renderer_vulkan/vk_gpu_profiler.h"
 #include "gow3_toggles.h"
 #include "video_core/renderer_vulkan/vk_wait_diagnostics.h"
@@ -642,7 +643,17 @@ void Scheduler::SyncRecording() {
     }
     KickRecording(true);
     Gow3Stats::WaitTimer timer{Gow3Stats::sync_recording_ns};
+    // gow3 #4 (gow3_stage_b_wait.h): stage B with GOW3_STAGE_B_SPIN=1 watches the recorder
+    // (lock-free hints) before it takes the lock; the check under the lock decides as before.
+    Gow3StageBWait::Spin([this] {
+        return queued_chunks.load(std::memory_order_acquire) == 0 &&
+               !recorder_running.load(std::memory_order_acquire);
+    });
     std::unique_lock lk{recorder_mutex};
+    if (recorder_queue.empty() && !recorder_busy) {
+        return;
+    }
+    Gow3StageBWait::SleepTimer sleep{Gow3StageBWait::Recorder};
     recorder_idle_cv.wait(lk, [this] { return recorder_queue.empty() && !recorder_busy; });
 }
 
@@ -709,6 +720,7 @@ void Scheduler::RecorderThread(std::stop_token stoken) {
             }
             chunk = std::move(recorder_queue.front());
             recorder_queue.pop_front();
+            recorder_running.store(true, std::memory_order_relaxed);
             queued_chunks.store(recorder_queue.size(), std::memory_order_release);
             recorder_busy = true;
         }
@@ -718,6 +730,7 @@ void Scheduler::RecorderThread(std::stop_token stoken) {
             std::scoped_lock lk{recorder_mutex};
             free_chunks.push_back(std::move(chunk));
             recorder_busy = false;
+            recorder_running.store(false, std::memory_order_release);
             if (recorder_queue.empty()) {
                 recorder_idle_cv.notify_all();
             }

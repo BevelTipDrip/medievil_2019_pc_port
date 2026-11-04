@@ -1168,6 +1168,8 @@ private:
     std::vector<std::unique_ptr<RecordChunk>> free_chunks;
     bool recorder_busy = false;
     std::atomic<size_t> queued_chunks{0}; ///< recorder_queue.size() for lock-free polling
+    /// recorder_busy for lock-free polling (a hint: SyncRecording's spin, gow3 #4)
+    std::atomic<bool> recorder_running{false};
     bool recorder_sleeping = false; ///< waiting on recorder_cv (guarded by recorder_mutex)
     bool direct_mode = false; ///< the command buffer is recorded on the caller's thread
     u64 host_copies_issued = 0;

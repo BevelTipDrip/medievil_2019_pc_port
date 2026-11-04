@@ -22,6 +22,7 @@
 #include "gow3_fence_stats.h"
 #include "gow3_decode_pacing.h"
 #include "gow3_draw_classes.h"
+#include "gow3_stage_b_wait.h"
 #include "gow3_gpu_fences.h"
 extern "C" void runtime_memory_fault_report(char* out, size_t size, unsigned frames, double window_s);
 extern "C" void runtime_memory_lock_report(char* out, size_t size, unsigned frames);
@@ -812,6 +813,39 @@ void VideoOutDriver::Flip(const Request& req) {
                         Gow3Stats::recorder_backstop_wakes.exchange(0) / frames_d,
                         spin_ns / 1e6 / frames_d, spins / frames_d,
                         Gow3Stats::recorder_spin_catches.exchange(0) / frames_d);
+                    // gow3 #4 (impl-stage-b-bundle-2.md, gow3_stage_b_wait.h): stage B's blocking
+                    // waits by site, the ones over 0.2 ms (the Deck's clock-plateau trigger), and
+                    // the bounded spin before them (GOW3_STAGE_B_SPIN=1, second word 1024 off).
+                    {
+                        namespace SB = Gow3StageBWait;
+                        u64 sleeps = 0, sleep_ns = 0, longs[SB::Sites];
+                        for (unsigned k = 0; k < SB::Sites; ++k) {
+                            sleeps += SB::sleeps[k].exchange(0);
+                            sleep_ns += SB::sleep_ns[k].exchange(0);
+                            longs[k] = SB::long_sleeps[k].exchange(0);
+                        }
+                        char spin_state[32];
+                        if (!SB::Wanted()) {
+                            std::snprintf(spin_state, sizeof(spin_state), "off");
+                        } else if (!SB::Enabled()) {
+                            std::snprintf(spin_state, sizeof(spin_state), "toggled off");
+                        } else {
+                            std::snprintf(spin_state, sizeof(spin_state), "on %llu us",
+                                          static_cast<unsigned long long>(SB::SpinNs() / 1000));
+                        }
+                        std::printf(
+                            "Stage B sleeps per frame (spin %s): over 0.2 ms %.2f (packet ring "
+                            "%.2f, recorder %.2f, GPU waits %.2f, present %.2f); all %.1f (%.3f "
+                            "ms); spins %.1f (%.3f ms, %.1f ended the wait)\n",
+                            spin_state,
+                            (longs[SB::PacketRing] + longs[SB::Recorder] + longs[SB::GpuTick] +
+                             longs[SB::Present]) / frames_d,
+                            longs[SB::PacketRing] / frames_d, longs[SB::Recorder] / frames_d,
+                            longs[SB::GpuTick] / frames_d, longs[SB::Present] / frames_d,
+                            sleeps / frames_d, sleep_ns / 1e6 / frames_d,
+                            SB::spins.exchange(0) / frames_d, SB::spin_ns.exchange(0) / 1e6 / frames_d,
+                            SB::spin_catches.exchange(0) / frames_d);
+                    }
                     // gow3 D2 (impl-deck-cpu-bundle.md): scePthreadGetthreadid calls and the ones
                     // that asked the kernel (Linux: once per thread, cached after).
                     const u64 tid_calls =

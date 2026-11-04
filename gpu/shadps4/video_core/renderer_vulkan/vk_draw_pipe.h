@@ -27,6 +27,7 @@
 #include "common/types.h"
 #include "gow3_sampler.h"
 #include "gow3_sections.h"
+#include "gow3_stage_b_wait.h"
 #include "gow3_toggles.h"
 
 namespace Vulkan {
@@ -210,7 +211,14 @@ private:
                     }
                     return Gow3Threads::Available() >= 12 ? 200 : 50;
                 }());
-                const auto spin_until = std::chrono::steady_clock::now() + spin_time;
+                // gow3 #4 (gow3_stage_b_wait.h): GOW3_STAGE_B_SPIN=1 spins up to
+                // GOW3_STAGE_B_SPIN_US (default 200) before sleeping, if that is longer.
+                const auto spin_for =
+                    Gow3StageBWait::Enabled()
+                        ? std::max<std::chrono::nanoseconds>(
+                              spin_time, std::chrono::nanoseconds(Gow3StageBWait::SpinNs()))
+                        : std::chrono::nanoseconds(spin_time);
+                const auto spin_until = std::chrono::steady_clock::now() + spin_for;
                 for (u32 spins = 1; available == at; ++spins) {
                     if (stop.stop_requested()) {
                         return;
@@ -221,6 +229,7 @@ private:
                         sleeping.store(true, std::memory_order_seq_cst);
                         if (published.load(std::memory_order_seq_cst) == at &&
                             !stop.stop_requested()) {
+                            Gow3StageBWait::SleepTimer timer{Gow3StageBWait::PacketRing};
                             wake.wait(seen, std::memory_order_seq_cst);
                         }
                         sleeping.store(false, std::memory_order_relaxed);
