@@ -130,7 +130,7 @@ static int pool_fd=-1;
 static unsigned char *backing_base; /* second view of the pool: host writes bypass guest/GPU page protection */
 /* Live performance switches (in-game menu > Performance patches; their environment at start). */
 static int perf_keep_access=-1, perf_optimistic=-1; /* atomic; -1: not read yet */
-static int decommit_keep_access(void) {
+static __attribute__((unused)) int decommit_keep_access(void) { /* Windows host views only */
     int v=__atomic_load_n(&perf_keep_access,__ATOMIC_RELAXED);
     if (v<0) {
         const char *e=getenv("GOW3_DECOMMIT_KEEP_ACCESS");
@@ -433,6 +433,10 @@ static int pool(void) {
     return backing_base ? 0 : -1;
 }
 #else
+/* GOW3_HOST_MAP_STATS is Windows-only (host views); the shared code's counters compile away. */
+static int host_stats_enabled(void) { return 0; }
+static uint64_t host_now_ns(void) { return 0; }
+#define HOST_STAT_ADD(field,n) ((void)(n))
 /* Direct memory occupies [0,POOL_SIZE) of the memfd, flexible memory [POOL_SIZE,+FLEX_SPAN). */
 static int pool(void) {
     if (pool_fd>=0) return 0;
@@ -1196,7 +1200,12 @@ static uint64_t *gpu_written; /* atomic words */
 static PreciseWrite hook_precise_write;
 void runtime_memory_set_precise_write_hook(PreciseWrite hook) {
     if (!gpu_written) {
+#ifdef _WIN32
         gpu_written=VirtualAlloc(NULL,GPU_WRITTEN_LIMIT>>15,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE);
+#else
+        void *bits=mmap(NULL,GPU_WRITTEN_LIMIT>>15,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE,-1,0);
+        gpu_written=bits==MAP_FAILED ? NULL : bits;
+#endif
         if (!gpu_written) return;
     }
     __atomic_store_n(&hook_precise_write,hook,__ATOMIC_RELEASE);
