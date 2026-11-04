@@ -19,6 +19,7 @@
 #include <thread>
 #include <queue>
 
+#include "gow3_cacheline.h"
 #include "gow3_sections.h"
 #include "gow3_toggles.h"
 #include "common/assert.h"
@@ -1066,9 +1067,12 @@ private:
     };
     std::queue<PendingOp> pending_ops;
     std::recursive_mutex pending_ops_mutex;
-    u32 pending_polls = 0; // gow3
+    // gow3 #6 (gow3_cacheline.h): GOW3_CACHE_LINE starts a group of fields written by one thread
+    // and read by another: here what every draw reads (PopPendingOperations), apart from the
+    // mutexes other threads take.
+    GOW3_CACHE_LINE u32 pending_polls = 0; // gow3
     std::atomic<u32> num_pending_ops{0}; ///< gow3: pending_ops.size(), checked without the lock
-    std::queue<PendingOp> priority_pending_ops;
+    GOW3_CACHE_LINE std::queue<PendingOp> priority_pending_ops;
     std::mutex priority_pending_ops_mutex;
     std::condition_variable_any priority_pending_ops_cv;
     std::jthread priority_pending_ops_thread;
@@ -1080,8 +1084,10 @@ private:
         std::atomic<s64> ns{0};
     };
     std::array<SubmitTimeEntry, 4096> submit_times{};
-    // gow3: threaded recording
-    std::unique_ptr<RecordChunk> record_chunk;
+    // gow3: threaded recording. #6: from here to wake_deadline_ns, the recording thread's fields
+    // (every Record and Kick); then the recorder's (recorder_mutex group), then direct_mode and
+    // host_copies_issued (the recording thread again), then host_copies_done (the recorder).
+    GOW3_CACHE_LINE std::unique_ptr<RecordChunk> record_chunk;
     // gow3: record_chunk and full_chunks are used by one producer at a time, but a second thread
     // recording while KickRecording() had handed the chunk to the recorder (record_chunk briefly
     // null) wrote into a null chunk: EndRendering crash in a MediEvil level (issue #2). A spin
@@ -1159,9 +1165,9 @@ private:
     void WakeDeferredRecorderSlow();
     /// Lean mode: when (Semaphore::NowNs) a sleeping recorder with chunks queued must be woken;
     /// 0 when no wake is owed. Written under recorder_mutex, read anywhere.
-    std::atomic<u64> wake_deadline_ns{0};
+    GOW3_CACHE_LINE std::atomic<u64> wake_deadline_ns{0};
     std::vector<std::unique_ptr<RecordChunk>> full_chunks;
-    std::mutex recorder_mutex;
+    GOW3_CACHE_LINE std::mutex recorder_mutex;
     std::condition_variable_any recorder_cv;
     std::condition_variable_any recorder_idle_cv;
     std::deque<std::unique_ptr<RecordChunk>> recorder_queue;
@@ -1171,9 +1177,9 @@ private:
     /// recorder_busy for lock-free polling (a hint: SyncRecording's spin, gow3 #4)
     std::atomic<bool> recorder_running{false};
     bool recorder_sleeping = false; ///< waiting on recorder_cv (guarded by recorder_mutex)
-    bool direct_mode = false; ///< the command buffer is recorded on the caller's thread
+    GOW3_CACHE_LINE bool direct_mode = false; ///< the command buffer is recorded on the caller's thread
     u64 host_copies_issued = 0;
-    std::atomic<u64> host_copies_done{0};
+    GOW3_CACHE_LINE std::atomic<u64> host_copies_done{0};
     /// gow3: the sources of the pending host copies (NoteHostCopySource), by 64 KiB granule in a
     /// direct-mapped table; a slot two pending granules share matches any. A note is pending
     /// while its seq is above host_copy_sources_done (WaitHostCopies raises it).
@@ -1183,7 +1189,7 @@ private:
     };
     static constexpr u32 HostCopySlots = 4096;
     static constexpr u64 HostCopyWildcard = ~0ull;
-    std::mutex host_copy_sources_mutex;
+    GOW3_CACHE_LINE std::mutex host_copy_sources_mutex;
     std::array<HostCopySlot, HostCopySlots> host_copy_slots{};
     u64 host_copy_source_seq = 0;
     u64 host_copy_sources_done = 0;

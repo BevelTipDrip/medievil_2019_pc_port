@@ -25,6 +25,7 @@
 #include "common/assert.h"
 #include "common/thread.h"
 #include "common/types.h"
+#include "gow3_cacheline.h"
 #include "gow3_sampler.h"
 #include "gow3_sections.h"
 #include "gow3_stage_b_wait.h"
@@ -165,7 +166,9 @@ public:
     /// Statistics (stage A): packets, drains that had to wait, cycles waited, cycles stage B
     /// spent running packets.
     u64 packets = 0, drains = 0, drain_cycles = 0;
-    std::atomic<u64> busy_cycles{0};
+    // gow3 #6 (gow3_cacheline.h): stage B adds to busy_cycles after every packet; stage A
+    // writes `packets` and `head` per packet and reads `ring`: three lines.
+    GOW3_CACHE_LINE std::atomic<u64> busy_cycles{0};
 
 private:
     struct Header {
@@ -272,11 +275,11 @@ private:
     }
 
     static inline thread_local bool on_stage_b = false;
-    Handler handler;
+    GOW3_CACHE_LINE Handler handler;
     IdleHook idle;
     void* context;
     std::unique_ptr<u8[]> ring;
-    u64 head = 0; ///< stage A's write position
+    GOW3_CACHE_LINE u64 head = 0; ///< stage A's write position
     u32 pending_size = 0;
     alignas(64) std::atomic<u64> published{0};
     alignas(64) std::atomic<u64> consumed{0};

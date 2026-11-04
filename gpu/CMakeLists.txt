@@ -16,6 +16,12 @@ add_compile_options(-fno-omit-frame-pointer)
 # profile). Covers gow3gpu and the static libraries linked into it. No -march: the same build
 # runs on the Steam Deck.
 option(GOW3_LTO "Link-time optimization of gow3gpu" ON)
+# gow3 #6 (gpu/shim/gow3_cacheline.h): OFF keeps the cross-thread scheduler / draw pipe fields
+# packed as before (no alignas(64) groups). Every target here sees the same value.
+option(GOW3_CACHELINE_PADDING "Cache-line aligned cross-thread fields" ON)
+if (NOT GOW3_CACHELINE_PADDING)
+    add_compile_definitions(GOW3_CACHELINE_PADDING=0)
+endif()
 set(GOW3_PGO "off" CACHE STRING "Profile-guided optimization: off, generate, use")
 set(GOW3_PGO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../pgo" CACHE PATH "Profile directory")
 if (GOW3_LTO)

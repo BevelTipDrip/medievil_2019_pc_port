@@ -22,7 +22,8 @@ MINGW*|MSYS*)
         fi
     done
     cmake -S gpu -B out/gpu -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DGOW3_PGO=off \
-        -DGOW3_LTO="${GOW3_LTO:-ON}" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ >/dev/null
+        -DGOW3_LTO="${GOW3_LTO:-ON}" -DGOW3_CACHELINE_PADDING="${GOW3_CACHELINE_PADDING:-ON}" \
+        -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ >/dev/null
     echo "GPU library and loader: LTO ${GOW3_LTO:-ON}"
     if ! ninja -C out/gpu medievil-runtime medievil-gpu-check medievil-play > out/gpu-build.log 2>&1; then
         grep -v '^\[' out/gpu-build.log | tail -40 >&2
@@ -75,7 +76,8 @@ for patch in gpu/patches/fsr-vulkan/*.patch; do
     fi
 done
 cmake -S gpu -B out/gpu -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DGOW3_PGO="$pgo" \
-    -DGOW3_LTO="${GOW3_LTO:-ON}" -DGOW3_STATIC_GPU="$static" -DGOW3_PGO_DIR="$PWD/pgo" >/dev/null
+    -DGOW3_LTO="${GOW3_LTO:-ON}" -DGOW3_STATIC_GPU="$static" -DGOW3_PGO_DIR="$PWD/pgo" \
+    -DGOW3_CACHELINE_PADDING="${GOW3_CACHELINE_PADDING:-ON}" >/dev/null
 echo "GPU library: PGO $pgo, LTO ${GOW3_LTO:-ON}, static $static"
 targets=(gow3gpu)
 if [[ $static == ON ]]; then
