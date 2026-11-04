@@ -40,7 +40,8 @@ user in game. Numbers are the docs' own; a value marked (unverified) was not mea
 - The live toggle file (`GOW3_TOGGLE_FILE=<path>`, re-read every 250 ms, `src/runtime_memory.c`): a decimal mask, a
   set bit switches that fix **off**; bits 32+ are `Gow3Toggle` in `gpu/shim/gow3_toggles.h`. An optional second number
   is `Gow3Toggle2` (bulk descriptor copy 1, sampler memo 2, ring reuse 4, U2 direct arena writes 8, end-of-pipe
-  semaphore poll interval 16: study-stage-b-per-draw.md C1). Bit 31 has two meanings (narrow image
+  semaphore poll interval 16: study-stage-b-per-draw.md C1; recorder lean mode 32, on at <= 8 threads:
+  impl-deck-cpu-bundle.md). Bit 31 has two meanings (narrow image
   stages and the M1 pool views): writing 2147483648 switches both off.
 - `research/tools/toggle-ab.ps1` flips a bit every 20 s in one launch; `toggle_ab_sections.py` /
   `flip_toggle_ab.py` split the frames by state. Same-launch A/B is how N-30 to N-32 were measured.

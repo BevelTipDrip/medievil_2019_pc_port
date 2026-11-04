@@ -20,7 +20,7 @@ Ranked cuts (Deck us per draw; at ~1,400 draws, 1 us/draw = 1.4 ms/frame):
 | # | Cut | Deck saving (us/draw) | Effort | Risk | State |
 |---|---|---|---|---|---|
 | C1 | Throttle the GPU-tick query in the end-of-pipe readback retirement (once per 100 us) | 0.15-0.3 | small | low | **done, `f03ee52`, toggle 2nd word 16, default on** |
-| C2 | Recorder wake-ups forced by every event (futex wake, recorder spins only 20 us on 8 threads) | 0.1-0.15 | small-medium | medium (fence latency) | counters in `f03ee52` |
+| C2 | Recorder wake-ups forced by every event (futex wake, recorder spins only 20 us on 8 threads) | 0.1-0.15 | small-medium | medium (fence latency) | **built, `ff54428`: recorder lean mode, toggle 2nd word 32, on at <= 8 threads** ([impl-deck-cpu-bundle.md](impl-deck-cpu-bundle.md)) |
 | C3 | Slow texture binds (~70 a frame at ~15 us each on the Deck): memoize the dominant cause | 0.3-0.5 (cause-dependent) | medium | medium | cause counters in `f03ee52` |
 | C4 | One recorded command per draw (push constants, descriptors, vertex input/buffers, index, pipeline, draw) | 0.2-0.4 | medium-high | medium | open |
 | C5 | Lock-free pre-check of pending readbacks in `ObtainBuffer` (3-4 calls a draw) | 0.08-0.1 | small | low | open, next low-risk |
