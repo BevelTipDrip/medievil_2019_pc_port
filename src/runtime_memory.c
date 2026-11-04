@@ -1108,6 +1108,10 @@ static int pool_maps_unlocked(void) {
 }
 #ifndef _WIN32
 static pthread_mutex_t pool_map_mutex=PTHREAD_MUTEX_INITIALIZER;
+/* The locked paths take it too, so a toggle flip between two calls cannot let a locked commit
+ * map a range an unlocked decommit is still unmapping. */
+static void pool_map_lock(void) { pthread_mutex_lock(&pool_map_mutex); }
+static void pool_map_unlock(void) { pthread_mutex_unlock(&pool_map_mutex); }
 /* host_map without the table lock, timed for the frame stats. */
 static int host_map_unlocked(uintptr_t address, uint64_t size, int prot, int reserved, uint64_t phys) {
     const uint64_t t0=runtime_fault_stats_enabled() ? lock_now_ns() : 0;
@@ -1154,12 +1158,15 @@ static int32_t pool_decommit_unlocked(uintptr_t start, uintptr_t end) {
             pool_committed_bytes-=pool_committed_bytes>b-a ? b-a : pool_committed_bytes;
             queue_hook(HOOK_UNMAP,a,b-a);
             const int32_t recorded=record_mapped(a,b-a,0,KIND_RESERVED,0,0);
-            write_unlock();
+            /* A failed table edit leaves [a,b) free in the table: the host call stays under the
+             * lock then, or another thread's map could take the range before it is reserved. */
+            if (!recorded) write_unlock();
             if (host_map_unlocked(a,b-a,0,1,0)) {
                 /* The view may still be there: its pages stay taken rather than be mapped twice. */
                 r=INVALID;
+                if (recorded) write_unlock();
             } else {
-                write_lock();
+                if (!recorded) write_lock();
                 pool_give_locked(v.phys+(a-v.start),b-a,POOL_FREE);
                 write_unlock();
                 r=recorded;
@@ -1184,6 +1191,8 @@ static int32_t pool_commit_unlocked(void *address, uint64_t size, int type, int 
     (void)address; (void)size; (void)type; (void)prot; return INVALID;
 }
 static int32_t pool_decommit_unlocked(uintptr_t start, uintptr_t end) { (void)start; (void)end; return INVALID; }
+static void pool_map_lock(void) {}
+static void pool_map_unlock(void) {}
 #endif
 static int32_t pool_commit_impl(void *address, uint64_t size, int type, int prot);
 static ABI int32_t pool_commit(void *address, uint64_t size, int type, int prot, int flags) {
@@ -1200,6 +1209,7 @@ static int32_t pool_commit_impl(void *address, uint64_t size, int type, int prot
     /* One physical run per step; GPU notifications drain between steps (bounded queue). */
     for (uint64_t done=0; done<size;) {
         uint64_t phys, pages;
+        pool_map_lock();
         write_lock();
         void *at=(char *)address+done;
         uint64_t kept_bytes;
@@ -1208,11 +1218,12 @@ static int32_t pool_commit_impl(void *address, uint64_t size, int type, int prot
             const uint64_t want=size-done<kept_bytes ? size-done : kept_bytes;
             got=pool_take_at_locked(phys,want/PAGE,&pages);
         }
-        if (!got && !pool_take_locked((size-done)/PAGE,&phys,&pages)) { write_unlock(); return NO_MEMORY; }
+        if (!got && !pool_take_locked((size-done)/PAGE,&phys,&pages)) { write_unlock(); pool_map_unlock(); return NO_MEMORY; }
         int32_t r=place(&at,pages*PAGE,prot,MAP_FIXED_FLAG,PAGE,KIND_DIRECT,type,phys);
         if (r) pool_give_locked(phys,pages*PAGE,POOL_FREE);
         else pool_committed_bytes+=pages*PAGE;
         write_unlock();
+        pool_map_unlock();
         flush_hooks();
         if (r) return r;
         done+=pages*PAGE;
@@ -1234,10 +1245,11 @@ static int32_t pool_decommit_impl(void *address, uint64_t size) {
     if (pool_maps_unlocked()) return pool_decommit_unlocked(start,end);
     /* One mapped region per step, returned to the pool and left reserved. */
     for (uintptr_t at=start; at<end;) {
+        pool_map_lock();
         write_lock();
         size_t i=vma_index(at);
         while (i<vma_count && vmas[i].end<=at) ++i;
-        if (i>=vma_count || vmas[i].start>=end) { write_unlock(); break; }
+        if (i>=vma_count || vmas[i].start>=end) { write_unlock(); pool_map_unlock(); break; }
         uintptr_t a=vmas[i].start>at ? vmas[i].start : at, b=vmas[i].end<end ? vmas[i].end : end;
         int32_t r=0;
         if (vmas[i].kind==KIND_DIRECT) pool_committed_bytes-=pool_committed_bytes>b-a ? b-a : pool_committed_bytes;
@@ -1254,6 +1266,7 @@ static int32_t pool_decommit_impl(void *address, uint64_t size) {
             if (!r) r=place(&p,b-a,0,MAP_FIXED_FLAG,PAGE,KIND_RESERVED,0,0);
         }
         write_unlock();
+        pool_map_unlock();
         flush_hooks();
         if (r) return r;
         at=b;
