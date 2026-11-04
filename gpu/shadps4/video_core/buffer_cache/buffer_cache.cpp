@@ -14,6 +14,9 @@
 #include <algorithm>
 #include <bit>
 #include <cstdlib>
+#include <cstring>
+#include <optional>
+#include <string>
 #include <magic_enum/magic_enum.hpp>
 #include "gow3_copy.h"
 #include "gow3_sections.h"
@@ -99,6 +102,85 @@ struct GpuWriteTicks {
 GpuWriteTicks& WriteTicks() {
     static GpuWriteTicks write_ticks;
     return write_ticks;
+}
+
+// gow3 U2: the newest tick at which the GPU uses each arena page: draws and dispatches binding it
+// (reads and writes), copies and fills into it, all noted when recorded (ObtainBuffer), so work
+// recorded but not yet submitted counts (its tick is the current one, never free). A direct arena
+// write needs every page of its range free. Pages are 4 KiB for uses up to 64 KiB (the game
+// sub-allocates per-frame data within 64 KiB pages: a coarser page would refuse the next
+// upload beside a range a draw just read), 64 KiB up to 16 MiB, 1 MiB above; a query reads all
+// three. A tick is only ever raised: two threads may note the same page.
+struct GpuUseTicks {
+    static constexpr u64 AddressBits = 40, LeafBits = 12, LeafMask = (1ull << LeafBits) - 1;
+    struct Table {
+        Table(u64 shift_, u64 limit_)
+            : shift{shift_}, limit{limit_}, leaves((1ull << (AddressBits - shift_)) >> LeafBits) {}
+        u64 shift, limit;
+        std::vector<std::atomic<std::atomic<u64>*>> leaves;
+    };
+    std::array<Table, 3> tables{Table{12, 64_KB}, Table{16, 16_MB}, Table{20, ~0ull}};
+    std::mutex mutex; ///< leaf creation
+    ~GpuUseTicks() {
+        for (auto& table : tables) {
+            for (auto& leaf : table.leaves) {
+                delete[] leaf.load(std::memory_order_relaxed);
+            }
+        }
+    }
+    void Note(u64 address, u64 size, u64 tick) {
+        if (size == 0 || (address + size - 1) >> AddressBits) {
+            return;
+        }
+        auto& table = *std::ranges::find_if(tables, [size](const Table& t) { return size <= t.limit; });
+        for (u64 page = address >> table.shift; page <= (address + size - 1) >> table.shift;
+             ++page) {
+            std::atomic<u64>* leaf = table.leaves[page >> LeafBits].load(std::memory_order_acquire);
+            if (!leaf) {
+                std::scoped_lock lk{mutex};
+                leaf = table.leaves[page >> LeafBits].load(std::memory_order_acquire);
+                if (!leaf) {
+                    leaf = new std::atomic<u64>[1ull << LeafBits]{};
+                    table.leaves[page >> LeafBits].store(leaf, std::memory_order_release);
+                }
+            }
+            auto& entry = leaf[page & LeafMask];
+            u64 current = entry.load(std::memory_order_relaxed);
+            while (current < tick &&
+                   !entry.compare_exchange_weak(current, tick, std::memory_order_release,
+                                                std::memory_order_relaxed)) {
+            }
+        }
+    }
+    /// The newest use tick in the range, 0 when none is known.
+    u64 Newest(u64 address, u64 size) const {
+        if (size == 0 || (address + size - 1) >> AddressBits) {
+            return size == 0 ? 0 : ~0ull; // outside the tables: treated as in use
+        }
+        u64 newest = 0;
+        for (const Table& table : tables) {
+            const u64 last = (address + size - 1) >> table.shift;
+            for (u64 page = address >> table.shift; page <= last; ++page) {
+                if (const std::atomic<u64>* leaf =
+                        table.leaves[page >> LeafBits].load(std::memory_order_acquire)) {
+                    newest = std::max(newest, leaf[page & LeafMask].load(std::memory_order_acquire));
+                } else {
+                    page |= LeafMask;
+                }
+            }
+        }
+        return newest;
+    }
+};
+GpuUseTicks& UseTicks() {
+    static GpuUseTicks use_ticks;
+    return use_ticks;
+}
+/// The staged copies into the arena alone (stats only: tells "a staged copy is still queued"
+/// apart from other GPU use when a direct write falls back).
+GpuUseTicks& StagedTicks() {
+    static GpuUseTicks staged_ticks;
+    return staged_ticks;
 }
 
 /// Copies finished GPU data out of an arena on the readback queue, waiting only for the
@@ -368,10 +450,16 @@ public:
         vk::DeviceMemory memory;
         u64 offset;
         u64 blocks;
+        u8* host = nullptr; ///< gow3 U2: the piece's first byte in the mapping (null: unmapped)
+    };
+    struct Chunk {
+        vk::DeviceMemory memory{};
+        u8* host = nullptr;
     };
 
-    ResidencyPool(vk::Device device_, u32 memory_type_, u32 block_shift_)
-        : device{device_}, memory_type{memory_type_}, block_shift{block_shift_} {
+    /// gow3 U2: `map_`: the memory type is host-visible; chunks are mapped persistently.
+    ResidencyPool(vk::Device device_, u32 memory_type_, u32 block_shift_, bool map_)
+        : device{device_}, memory_type{memory_type_}, block_shift{block_shift_}, map{map_} {
         const char* env = std::getenv("GOW3_RESIDENCY_CHUNK_MB");
         const u64 mb = env ? std::strtoull(env, nullptr, 10) : 32;
         chunk_blocks = (mb << 20) >> block_shift;
@@ -386,38 +474,59 @@ public:
         return chunk_blocks != 0;
     }
 
+    /// gow3 U2: whether the first chunk could be mapped (false: direct writes stay off).
+    bool FirstChunkMapped() const {
+        return current.host != nullptr;
+    }
+
     /// Up to `blocks` blocks from the current chunk (at least one); the next chunk when it is full.
     Piece Take(u64 blocks) {
         std::unique_lock lock{mutex};
         if (used == chunk_blocks) {
-            if (!next && requested) {
-                ready_cv.wait(lock, [this] { return next || !requested; });
+            if (!next.memory && requested) {
+                ready_cv.wait(lock, [this] { return next.memory || !requested; });
             }
-            if (next) {
-                current = std::exchange(next, vk::DeviceMemory{});
+            if (next.memory) {
+                current = std::exchange(next, Chunk{});
             } else {
                 current = Allocate("on demand");
             }
             used = 0;
         }
         const u64 count = std::min(blocks, chunk_blocks - used);
-        const Piece piece{current, used << block_shift, count};
+        const u64 offset = used << block_shift;
+        const Piece piece{current.memory, offset, count,
+                          current.host ? current.host + offset : nullptr};
         used += count;
-        if (!next && !requested && used * 2 >= chunk_blocks) {
+        if (!next.memory && !requested && used * 2 >= chunk_blocks) {
             requested = true;
             request_cv.notify_one();
         }
         return piece;
     }
 
+    /// gow3 U2: maps `memory` whole and persistently; null when mapping fails (the blocks then
+    /// take the staging path).
+    static u8* Map(vk::Device device, vk::DeviceMemory memory) {
+        const auto mapped = device.mapMemory(memory, 0, VK_WHOLE_SIZE);
+        if (mapped.result != vk::Result::eSuccess) {
+            std::printf("Buffer residency: mapping arena memory failed (%s): staging uploads\n",
+                        vk::to_string(mapped.result).c_str());
+            return nullptr;
+        }
+        return static_cast<u8*>(mapped.value);
+    }
+
 private:
-    vk::DeviceMemory Allocate(const char* when) {
+    Chunk Allocate(const char* when) {
         const vk::MemoryAllocateInfo info{.allocationSize = chunk_blocks << block_shift,
                                           .memoryTypeIndex = memory_type};
         const auto memory = Vulkan::Check(device.allocateMemory(info));
-        std::printf("Buffer residency: %llu MB chunk %u allocated %s\n",
-                    (unsigned long long)((chunk_blocks << block_shift) >> 20), ++chunks, when);
-        return memory;
+        u8* host = map ? Map(device, memory) : nullptr;
+        std::printf("Buffer residency: %llu MB chunk %u allocated %s%s\n",
+                    (unsigned long long)((chunk_blocks << block_shift) >> 20), ++chunks, when,
+                    host ? ", mapped" : "");
+        return {memory, host};
     }
 
     void Run(std::stop_token stop) {
@@ -429,9 +538,9 @@ private:
                 return; // stop requested
             }
             lock.unlock();
-            const auto memory = Allocate("ahead");
+            const auto chunk = Allocate("ahead");
             lock.lock();
-            next = memory;
+            next = chunk;
             requested = false;
             ready_cv.notify_all();
         }
@@ -440,17 +549,130 @@ private:
     vk::Device device;
     u32 memory_type;
     u32 block_shift;
+    bool map;
     u64 chunk_blocks = 0;
     std::atomic<u32> chunks = 0;
     std::mutex mutex;
     std::condition_variable_any request_cv;
     std::condition_variable_any ready_cv;
-    vk::DeviceMemory current{};
-    vk::DeviceMemory next{};
+    Chunk current{};
+    Chunk next{};
     u64 used = 0;
     bool requested = false;
     std::jthread worker;
 };
+
+// gow3 U2: the host address of each resident arena block whose memory is mapped, in a lock-free
+// two-level table by block number (guest addresses below 2^40). Resident blocks are never
+// released, so an entry once set stays valid.
+struct ArenaMappings {
+    static constexpr u64 LeafBits = 12, LeafMask = (1ull << LeafBits) - 1;
+    explicit ArenaMappings(u32 block_shift)
+        : leaves(((1ull << 40) >> block_shift) >> LeafBits) {}
+    ~ArenaMappings() {
+        for (auto& leaf : leaves) {
+            delete[] leaf.load(std::memory_order_relaxed);
+        }
+    }
+    void Set(u64 block, u8* host) {
+        if ((block >> LeafBits) >= leaves.size()) {
+            return;
+        }
+        std::atomic<u8*>* leaf = leaves[block >> LeafBits].load(std::memory_order_acquire);
+        if (!leaf) {
+            std::scoped_lock lk{mutex};
+            leaf = leaves[block >> LeafBits].load(std::memory_order_acquire);
+            if (!leaf) {
+                leaf = new std::atomic<u8*>[1ull << LeafBits]{};
+                leaves[block >> LeafBits].store(leaf, std::memory_order_release);
+            }
+        }
+        leaf[block & LeafMask].store(host, std::memory_order_release);
+    }
+    u8* Get(u64 block) const {
+        if ((block >> LeafBits) >= leaves.size()) {
+            return nullptr;
+        }
+        const std::atomic<u8*>* leaf = leaves[block >> LeafBits].load(std::memory_order_acquire);
+        return leaf ? leaf[block & LeafMask].load(std::memory_order_acquire) : nullptr;
+    }
+    std::vector<std::atomic<std::atomic<u8*>*>> leaves;
+    std::mutex mutex; ///< leaf creation
+};
+
+namespace {
+std::string MemoryFlagNames(vk::MemoryPropertyFlags flags) {
+    std::string names;
+    const std::pair<vk::MemoryPropertyFlagBits, const char*> bits[] = {
+        {vk::MemoryPropertyFlagBits::eDeviceLocal, "DEVICE_LOCAL"},
+        {vk::MemoryPropertyFlagBits::eHostVisible, "HOST_VISIBLE"},
+        {vk::MemoryPropertyFlagBits::eHostCoherent, "HOST_COHERENT"},
+        {vk::MemoryPropertyFlagBits::eHostCached, "HOST_CACHED"},
+        {vk::MemoryPropertyFlagBits::eLazilyAllocated, "LAZY"},
+        {vk::MemoryPropertyFlagBits::eProtected, "PROTECTED"},
+        {vk::MemoryPropertyFlagBits::eDeviceCoherentAMD, "DEVICE_COHERENT_AMD"},
+        {vk::MemoryPropertyFlagBits::eDeviceUncachedAMD, "DEVICE_UNCACHED_AMD"},
+    };
+    for (const auto& [bit, name] : bits) {
+        if (flags & bit) {
+            names += names.empty() ? "" : "|";
+            names += name;
+        }
+    }
+    return names.empty() ? "0" : names;
+}
+
+// gow3 U2: GOW3_ARENA_HOST_VISIBLE (read at start; the memory type cannot change live): 1 takes
+// the arena's residency chunks from a DEVICE_LOCAL|HOST_VISIBLE|HOST_COHERENT type, HOST_CACHED
+// preferred (CPU reads for U3), and maps them; 2 the same with an uncached type preferred; 0 off.
+// Default 1 on Linux integrated GPUs (Steam Deck: one LPDDR5 for CPU and GPU), 0 elsewhere (on a
+// discrete card the writes cross PCIe; ReBAR desktops can try 1). The type must be one the
+// sparse arena accepts, in the heap the arena uses today or in one of 4 GiB or more (a 256 MiB
+// BAR window without ReBAR would run full). Without one, U2 stays off: today's type, staging.
+std::optional<u32> HostVisibleArenaType(const Vulkan::Instance& instance, u32 memory_type_bits,
+                                        u32 device_local_type) {
+    int mode = 0;
+    if (const char* env = std::getenv("GOW3_ARENA_HOST_VISIBLE"); env && env[0]) {
+        mode = std::atoi(env);
+    } else {
+#ifdef __linux__
+        mode = instance.IsIntegrated() ? 1 : 0;
+#endif
+    }
+    if (mode <= 0) {
+        return std::nullopt;
+    }
+    const auto& props = instance.GetMemoryProperties();
+    const u32 arena_heap = props.memoryTypes[device_local_type].heapIndex;
+    const auto wanted = vk::MemoryPropertyFlagBits::eDeviceLocal |
+                        vk::MemoryPropertyFlagBits::eHostVisible |
+                        vk::MemoryPropertyFlagBits::eHostCoherent;
+    const auto unwanted = vk::MemoryPropertyFlagBits::eLazilyAllocated |
+                          vk::MemoryPropertyFlagBits::eProtected |
+                          vk::MemoryPropertyFlagBits::eDeviceCoherentAMD |
+                          vk::MemoryPropertyFlagBits::eDeviceUncachedAMD;
+    std::optional<u32> best;
+    bool best_cached = false;
+    for (u32 i = 0; i < props.memoryTypeCount; ++i) {
+        const auto flags = props.memoryTypes[i].propertyFlags;
+        const u32 heap = props.memoryTypes[i].heapIndex;
+        if (((memory_type_bits >> i) & 1) == 0 || (flags & wanted) != wanted ||
+            (flags & unwanted)) {
+            continue;
+        }
+        if (heap != arena_heap && props.memoryHeaps[heap].size < 4_GB) {
+            continue;
+        }
+        const bool cached = bool(flags & vk::MemoryPropertyFlagBits::eHostCached);
+        if (!best || (mode == 1 && cached && !best_cached) ||
+            (mode != 1 && !cached && best_cached)) {
+            best = i;
+            best_cached = cached;
+        }
+    }
+    return best;
+}
+} // namespace
 
 BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                          Vulkan::Runtime& runtime_, AmdGpu::Liverpool* liverpool_,
@@ -500,7 +722,50 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
         FindMemoryType(instance.GetMemoryProperties(), vk::MemoryPropertyFlagBits::eDeviceLocal,
                        reqs.memoryTypeBits)
             .value();
-    residency_pool = std::make_unique<ResidencyPool>(device, arena_memory_type_index, block_shift);
+    {
+        // gow3 U1 / U2: the memory types (which heap is which on an integrated GPU) and the
+        // arena's choice, in every log.
+        const auto& props = instance.GetMemoryProperties();
+        std::string types;
+        for (u32 i = 0; i < props.memoryTypeCount; ++i) {
+            const u32 heap = props.memoryTypes[i].heapIndex;
+            char text[192];
+            std::snprintf(text, sizeof(text), "%s%u: %s heap %u (%llu MiB)%s", i ? "; " : "", i,
+                          MemoryFlagNames(props.memoryTypes[i].propertyFlags).c_str(), heap,
+                          (unsigned long long)(props.memoryHeaps[heap].size >> 20),
+                          ((reqs.memoryTypeBits >> i) & 1) ? "" : " (not for the arena)");
+            types += text;
+        }
+        std::printf("GPU memory types: %s\n", types.c_str());
+    }
+    const u32 device_local_type = arena_memory_type_index;
+    if (const auto host_visible = HostVisibleArenaType(instance, reqs.memoryTypeBits,
+                                                       arena_memory_type_index)) {
+        arena_memory_type_index = *host_visible;
+        arena_mappings = std::make_unique<ArenaMappings>(block_shift);
+    }
+    residency_pool = std::make_unique<ResidencyPool>(device, arena_memory_type_index, block_shift,
+                                                     arena_mappings != nullptr);
+    if (arena_mappings && residency_pool->Enabled() && !residency_pool->FirstChunkMapped()) {
+        arena_mappings.reset(); // later chunks would map no better
+    }
+    {
+        const auto& type = instance.GetMemoryProperties().memoryTypes[arena_memory_type_index];
+        std::printf("Buffer arena: memory type %u (%s, heap %u), %u KiB blocks; direct arena writes "
+                    "(U2) %s\n",
+                    arena_memory_type_index, MemoryFlagNames(type.propertyFlags).c_str(),
+                    type.heapIndex, block_size >> 10,
+                    arena_mappings ? "available (toggle file second word 8: off)"
+                    : arena_memory_type_index != device_local_type
+                        ? "unavailable: the arena memory could not be mapped"
+                        : "off (GOW3_ARENA_HOST_VISIBLE=0 or no suitable memory type)");
+    }
+    if (arena_mappings) {
+        // Device writes made available to the host at the end of every submission: a direct write
+        // after a GPU write to the same bytes must not be overwritten by it later (WAW).
+        scheduler.SetHostAccessBarrier(true);
+        Gow3Stats::arena_mapped.store(true, std::memory_order_relaxed);
+    }
 
     const u64 bda_pagetable_size =
         (blocks_per_arena_page * num_arena_pages) * sizeof(vk::DeviceAddress);
@@ -1054,6 +1319,11 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
         GOW3_SECTION(ObtSync);
         SynchronizeMemory(arena, device_addr, size, is_written, is_texel_buffer);
     }
+    if (arena_mappings) {
+        // gow3 U2: whatever the caller records with this binding uses the range at the current
+        // tick (also after a direct write: the next one waits for the GPU to be past it).
+        NoteArenaUse(device_addr, size);
+    }
     if (stats) {
         auto& region = Stats().regions[RegionKey(device_addr)];
         ++region.arena_count;
@@ -1110,6 +1380,192 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBufferForImage(VAddr device_add
     return {staging.buffer, staging.offset};
 }
 
+// gow3 U2: direct arena writes (research/docs/impl-u2-direct-arena-writes.md). With the arena's
+// memory host-visible and mapped (GOW3_ARENA_HOST_VISIBLE), uploads (C1) and precise CPU writes
+// (C2) into blocks the GPU is done with are copied by the CPU straight into the arena: no staging,
+// no vkCmdCopyBuffer, no barrier after it, no render pass end. The guard: every use of the range
+// by the GPU (UseTicks: draws and dispatches binding it, staged copies and fills into it, direct
+// writes into it; DMA work for all ranges) was recorded at a tick the GPU has finished. Work
+// recorded into the command buffer still open has the current tick, never finished: an earlier
+// draw reading the range in it keeps the write on the staging path, whose copy the command
+// buffer orders after that draw, and a staged copy still queued keeps a later write behind it.
+// Visibility: the mapping is HOST_COHERENT and every direct write ends before the submission that
+// may read it (the copy threads like the staging copies: SubmitExecution waits for them), so
+// vkQueueSubmit's implicit host write domain operation makes it visible. Device writes are made
+// available to the host at the end of each submission (Scheduler::SetHostAccessBarrier), so a
+// GPU write the guard saw finished cannot land over a later direct write.
+void BufferCache::NoteArenaUse(VAddr addr, u64 size, bool staged) {
+    const u64 tick = scheduler.CurrentTick();
+    UseTicks().Note(addr, size, tick);
+    if (staged && Gow3Stats::enabled) {
+        StagedTicks().Note(addr, size, tick);
+    }
+}
+
+void BufferCache::NoteDmaUse() {
+    if (!arena_mappings) {
+        return;
+    }
+    const u64 tick = scheduler.CurrentTick();
+    u64 current = dma_use_tick.load(std::memory_order_relaxed);
+    while (current < tick && !dma_use_tick.compare_exchange_weak(current, tick,
+                                                                 std::memory_order_release,
+                                                                 std::memory_order_relaxed)) {
+    }
+}
+
+unsigned BufferCache::DirectWriteBlocked(VAddr addr, u64 size) {
+    if (size == 0) {
+        return DirectWriteOk;
+    }
+    const auto in_flight = [this](u64 tick) {
+        // The open command buffer's tick is never finished: no semaphore query for it.
+        return tick != 0 && (tick >= scheduler.CurrentTick() || !scheduler.IsFree(tick));
+    };
+    if (in_flight(std::max(UseTicks().Newest(addr, size),
+                           dma_use_tick.load(std::memory_order_acquire)))) {
+        if (Gow3Stats::enabled && in_flight(StagedTicks().Newest(addr, size))) {
+            return Gow3Stats::ArenaStagedPending;
+        }
+        return Gow3Stats::ArenaGpuBusy;
+    }
+    for (u64 block = addr >> block_shift; block <= (addr + size - 1) >> block_shift; ++block) {
+        if (!arena_mappings->Get(block)) {
+            return Gow3Stats::ArenaNotMapped;
+        }
+    }
+    return DirectWriteOk;
+}
+
+template <typename Func>
+void BufferCache::ForEachDirectPiece(VAddr addr, u64 size, Func&& func) {
+    const VAddr end = addr + size;
+    const u64 block_mask = u64{block_size} - 1;
+    for (VAddr at = addr; at < end;) {
+        u8* host = arena_mappings->Get(at >> block_shift) + (at & block_mask);
+        u64 bytes = std::min<u64>(block_size - (at & block_mask), end - at);
+        // Blocks taken in order from one chunk are contiguous in its mapping too.
+        while (at + bytes < end && arena_mappings->Get((at + bytes) >> block_shift) == host + bytes) {
+            bytes += std::min<u64>(block_size, end - (at + bytes));
+        }
+        func(at, host, bytes);
+        at += bytes;
+    }
+}
+
+void BufferCache::RunDirectCopy(const Gow3Copy::Item& item) {
+    auto* cache = static_cast<BufferCache*>(item.context);
+    cache->memory->CopySparseMemory(item.source, reinterpret_cast<u8*>(item.destination),
+                                    item.size);
+}
+
+size_t BufferCache::UploadDirect(boost::container::small_vector<vk::BufferCopy, 4>& copies,
+                                 size_t total_size_bytes) {
+    // Toggled off, or not in order with the queued draws (Scheduler::DrawRecorderQuiet): every
+    // copy takes the staging path, whose Record() waits for them.
+    const unsigned all_blocked = Gow3Toggle2::Disabled(Gow3Toggle2::ArenaDirectWrites)
+                                     ? unsigned(Gow3Stats::ArenaToggledOff)
+                                 : !scheduler.DrawRecorderQuiet() ? unsigned(Gow3Stats::ArenaOffThread)
+                                                                  : DirectWriteOk;
+    // All decided before any is noted: the copies of one upload never overlap, but may share a
+    // page, and a noted direct write would hold back the next copy in it.
+    boost::container::small_vector<vk::BufferCopy, 4> direct, staged;
+    u64 direct_bytes = 0, staged_bytes = 0;
+    for (const auto& copy : copies) {
+        const unsigned blocked = all_blocked != DirectWriteOk
+                                     ? all_blocked
+                                     : DirectWriteBlocked(copy.dstOffset, copy.size);
+        if (blocked == DirectWriteOk) {
+            direct.push_back(copy);
+            direct_bytes += copy.size;
+            continue;
+        }
+        if (Gow3Stats::enabled) {
+            Gow3Stats::arena_fallbacks[blocked].fetch_add(1, std::memory_order_relaxed);
+        }
+        staged.push_back({staged_bytes, copy.dstOffset, copy.size});
+        staged_bytes += copy.size;
+    }
+    if (direct.empty()) {
+        return total_size_bytes;
+    }
+    // Resolve before launching host copies: a copy-thread fault could deadlock submission.
+    for (const auto& copy : direct) {
+        texture_cache.ResolveReadbacks(copy.dstOffset, copy.size, true, ReadbackSource::BufferUpload);
+    }
+    Gow3Stats::buffer_upload_bytes.fetch_add(direct_bytes, std::memory_order_relaxed);
+    // The guest bytes are copied as the staging path copies them (UploadCopies): on the copy
+    // threads in groups of about 1 MiB, small uploads in the calling thread's batch; submission
+    // and guest-visible fences wait for them (Scheduler::WaitHostCopies).
+    if (Gow3Toggle::Disabled(Gow3Toggle::DeferredUploads)) {
+        for (const auto& copy : direct) {
+            ForEachDirectPiece(copy.dstOffset, copy.size, [&](VAddr at, u8* host, u64 bytes) {
+                memory->CopySparseMemory(at, host, bytes);
+            });
+        }
+    } else if (direct_bytes < 1_MB) {
+        for (const auto& copy : direct) {
+            ForEachDirectPiece(copy.dstOffset, copy.size, [&](VAddr at, u8* host, u64 bytes) {
+                SmallGuestCopy({
+                    .run = &RunDirectCopy,
+                    .context = this,
+                    .source = at,
+                    .destination = reinterpret_cast<u64>(host),
+                    .size = bytes,
+                    .extra = 0,
+                });
+            });
+        }
+    } else {
+        struct HostCopy {
+            VAddr source;
+            u8* destination;
+            u64 size;
+        };
+        using Group = boost::container::small_vector<HostCopy, 8>;
+        auto group = std::make_shared<Group>();
+        u64 group_bytes = 0;
+        const auto launch = [&] {
+            Gow3Copy::Async([group, memory = memory] {
+                for (const auto& copy : *group) {
+                    memory->CopySparseMemory(copy.source, copy.destination, copy.size);
+                }
+            });
+        };
+        for (const auto& copy : direct) {
+            scheduler.NoteHostCopySource(copy.dstOffset, copy.size);
+            ForEachDirectPiece(copy.dstOffset, copy.size, [&](VAddr at, u8* host, u64 bytes) {
+                group->push_back({at, host, bytes});
+                group_bytes += bytes;
+                if (group_bytes >= 1_MB) {
+                    launch();
+                    group = std::make_shared<Group>();
+                    group_bytes = 0;
+                }
+            });
+        }
+        if (!group->empty()) {
+            launch();
+        }
+    }
+    for (const auto& copy : direct) {
+        NoteArenaUse(copy.dstOffset, copy.size);
+    }
+    if (Gow3Stats::enabled) {
+        Gow3Stats::arena_direct_calls.fetch_add(1, std::memory_order_relaxed);
+        Gow3Stats::arena_direct_bytes.fetch_add(direct_bytes, std::memory_order_relaxed);
+        if (staged.empty()) {
+            // The staging path's whole copy command, and the pass it would have ended.
+            Gow3Stats::arena_copies_saved.fetch_add(1, std::memory_order_relaxed);
+            if (scheduler.IsRendering()) {
+                Gow3Stats::arena_pass_ends_saved.fetch_add(1, std::memory_order_relaxed);
+            }
+        }
+    }
+    copies.assign(staged.begin(), staged.end());
+    return staged_bytes;
+}
+
 bool BufferCache::PreciseCpuWrite(VAddr addr, const void* src, int value, u64 size) {
     std::vector<u8> data(size);
     if (src) {
@@ -1153,11 +1609,47 @@ void BufferCache::ProcessCpuWritesLocked() {
         const u64 last_block = (addr + size - 1) >> block_shift;
         const auto* arena = GetArena(first_block, last_block);
         EnsureResident(arena, first_block, last_block);
-        const auto staging = staging_pool.Request(size, MemoryType::HostUncached);
-        std::memcpy(staging.mapped, data.data(), size);
-        staging.Flush();
-        const vk::BufferCopy copy{staging.offset, arena->Offset(addr), size};
-        runtime.CopyBuffer(staging.buffer, arena, std::span{&copy, 1});
+        // gow3 U2: the bytes go straight into the arena mapping when the GPU is done with the
+        // blocks (DirectWriteBlocked), else through staging and a GPU copy as before.
+        const unsigned blocked =
+            !arena_mappings ? DirectWriteOk
+            : Gow3Toggle2::Disabled(Gow3Toggle2::ArenaDirectWrites)
+                ? unsigned(Gow3Stats::ArenaToggledOff)
+            : !scheduler.DrawRecorderQuiet() ? unsigned(Gow3Stats::ArenaOffThread)
+                                             : DirectWriteBlocked(addr, size);
+        if (arena_mappings && blocked == DirectWriteOk) {
+            ForEachDirectPiece(addr, size, [&](VAddr at, u8* host, u64 bytes) {
+                std::memcpy(host, data.data() + (at - addr), bytes);
+            });
+            NoteArenaUse(addr, size);
+            if (Gow3Stats::enabled) {
+                Gow3Stats::arena_direct_calls.fetch_add(1, std::memory_order_relaxed);
+                Gow3Stats::arena_direct_bytes.fetch_add(size, std::memory_order_relaxed);
+                Gow3Stats::arena_copies_saved.fetch_add(1, std::memory_order_relaxed);
+                if (scheduler.IsRendering()) {
+                    Gow3Stats::arena_pass_ends_saved.fetch_add(1, std::memory_order_relaxed);
+                }
+            }
+        } else {
+            if (Gow3Stats::enabled) {
+                Gow3Stats::arena_staged_calls.fetch_add(1, std::memory_order_relaxed);
+                Gow3Stats::arena_staged_bytes.fetch_add(size, std::memory_order_relaxed);
+                if (arena_mappings) {
+                    Gow3Stats::arena_fallbacks[blocked].fetch_add(1, std::memory_order_relaxed);
+                }
+                if (scheduler.IsRendering()) {
+                    Gow3Stats::arena_staged_pass_ends.fetch_add(1, std::memory_order_relaxed);
+                }
+            }
+            const auto staging = staging_pool.Request(size, MemoryType::HostUncached);
+            std::memcpy(staging.mapped, data.data(), size);
+            staging.Flush();
+            const vk::BufferCopy copy{staging.offset, arena->Offset(addr), size};
+            runtime.CopyBuffer(staging.buffer, arena, std::span{&copy, 1});
+            if (arena_mappings) {
+                NoteArenaUse(addr, size, true);
+            }
+        }
         WriteTicks().Note(addr, size, scheduler.CurrentTick()); // a download must see it (D3)
         // D2b: the arena and guest memory now agree on these bytes, so they are no longer the
         // GPU's alone. Kept GPU-modified, later direct guest writes there (not libc) faulted
@@ -1275,12 +1767,16 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
     // gow3: memory from the residency pool (allocated ahead, off this thread); without it, one
     // allocation for all the ranges, as before.
     vk::DeviceMemory device_memory{};
+    u8* device_memory_host = nullptr;
     if (!residency_pool->Enabled()) {
         const vk::MemoryAllocateInfo alloc_info = {
             .allocationSize = resident_blocks << block_shift,
             .memoryTypeIndex = arena_memory_type_index,
         };
         device_memory = Vulkan::Check(instance.GetDevice().allocateMemory(alloc_info));
+        if (arena_mappings) {
+            device_memory_host = ResidencyPool::Map(instance.GetDevice(), device_memory);
+        }
     }
 
     boost::container::small_vector<vk::BufferCopy, 8> copies;
@@ -1294,11 +1790,18 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
     for (const auto& range : bind_ranges) {
         // A range may span two pool chunks: one backing and one bind per piece.
         for (u64 block = range.start; block < range.end;) {
-            ResidencyPool::Piece piece{device_memory, memory_offset, range.end - block};
+            ResidencyPool::Piece piece{device_memory, memory_offset, range.end - block,
+                                       device_memory_host ? device_memory_host + memory_offset
+                                                          : nullptr};
             if (residency_pool->Enabled()) {
                 piece = residency_pool->Take(range.end - block);
             } else {
                 memory_offset += piece.blocks << block_shift;
+            }
+            if (arena_mappings && piece.host) {
+                for (u64 i = 0; i < piece.blocks; ++i) {
+                    arena_mappings->Set(block + i, piece.host + (i << block_shift));
+                }
             }
             Backing backing;
             backing.start = block;
@@ -1373,11 +1876,31 @@ bool BufferCache::SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 
                     total_size_bytes = offset;
                 }
             }
+            // gow3 U2: copies into blocks the GPU is done with go straight into the arena.
+            if (arena_mappings && !copies.empty()) {
+                total_size_bytes = UploadDirect(copies, total_size_bytes);
+            }
             src_buffer = UploadCopies(arena, copies, total_size_bytes);
         });
 
     if (src_buffer) {
+        if (Gow3Stats::enabled) {
+            u64 bytes = 0;
+            for (const auto& copy : copies) {
+                bytes += copy.size;
+            }
+            Gow3Stats::arena_staged_calls.fetch_add(1, std::memory_order_relaxed);
+            Gow3Stats::arena_staged_bytes.fetch_add(bytes, std::memory_order_relaxed);
+            if (scheduler.IsRendering()) {
+                Gow3Stats::arena_staged_pass_ends.fetch_add(1, std::memory_order_relaxed);
+            }
+        }
         runtime.CopyBuffer(src_buffer, arena, copies);
+        if (arena_mappings) {
+            for (const auto& copy : copies) {
+                NoteArenaUse(arena->cpu_addr + copy.dstOffset, copy.size, true);
+            }
+        }
     }
     if (is_texel_buffer && !is_written) {
         return SynchronizeMemoryFromImage(arena, device_addr, size);

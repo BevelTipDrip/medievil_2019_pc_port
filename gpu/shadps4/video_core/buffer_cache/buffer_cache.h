@@ -38,6 +38,7 @@ class TextureCache;
 class MemoryTracker;
 class ResidencyPool;
 class PageManager;
+struct ArenaMappings;
 
 class BufferCache {
     static constexpr u64 ADDRESS_SPACE_BITS = 40;
@@ -139,6 +140,10 @@ public:
     /// Commits pending sparse buffer memory binds. Must be called before every scheduler submit.
     void SubmitPendingArenaBinds(Vulkan::SubmitInfo& info);
 
+    /// gow3 U2: a draw or dispatch reading memory through the page table (DMA) was recorded: it
+    /// may read any resident block, so no direct arena write until the GPU is past it.
+    void NoteDmaUse();
+
 private:
     struct ArenaBinds {
         const Buffer* arena;
@@ -168,6 +173,25 @@ private:
 
     const Buffer* UploadCopies(const Buffer* arena, std::span<vk::BufferCopy> copies,
                                size_t total_size_bytes);
+
+    /// gow3 U2 (GOW3_ARENA_HOST_VISIBLE): direct arena writes. The reason [addr, addr + size)
+    /// cannot be written through the arena mapping now (Gow3Stats::ArenaFallback), or
+    /// DirectWriteOk.
+    static constexpr unsigned DirectWriteOk = ~0u;
+    unsigned DirectWriteBlocked(VAddr addr, u64 size);
+    /// Calls func(guest address, host address, size) over [addr, addr + size) in pieces
+    /// contiguous in the mapping (DirectWriteBlocked returned DirectWriteOk).
+    template <typename Func>
+    void ForEachDirectPiece(VAddr addr, u64 size, Func&& func);
+    /// Takes the upload copies (UploadCopies' input: srcOffset into the staging, dstOffset the
+    /// guest address) that can be written directly out of `copies`, starts their guest copies
+    /// into the arena mapping, and repacks the rest for the staging path; returns its size.
+    size_t UploadDirect(boost::container::small_vector<vk::BufferCopy, 4>& copies,
+                        size_t total_size_bytes);
+    static void RunDirectCopy(const Gow3Copy::Item& item);
+    /// The GPU uses [addr, addr + size) in the command buffer being recorded (`staged`: a copy
+    /// from staging writes it).
+    void NoteArenaUse(VAddr addr, u64 size, bool staged = false);
 
     bool SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_addr, u32 size);
 
@@ -236,6 +260,11 @@ private:
     IntervalList<Backing> resident_ranges;
     /// gow3: device memory for resident blocks, allocated ahead in chunks (buffer_cache.cpp).
     std::unique_ptr<ResidencyPool> residency_pool;
+    /// gow3 U2: host addresses of the resident blocks when the arena memory is mapped (null:
+    /// GOW3_ARENA_HOST_VISIBLE off or no suitable memory type; direct writes unavailable).
+    std::unique_ptr<ArenaMappings> arena_mappings;
+    /// gow3 U2: the newest tick a DMA draw or dispatch was recorded at (NoteDmaUse).
+    std::atomic<u64> dma_use_tick{0};
 
     u32 arena_memory_type_index{};
     u32 block_size{};

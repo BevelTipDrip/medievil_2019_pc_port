@@ -76,8 +76,14 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
         // except under the texture cache lock (stage B may need it): those callers drain
         // before taking the lock (TextureCache::UpdateImage / FindImage).
         scheduler.SetDrawPipeSync(
-            [](void* self) {
+            [](void* self, bool drain) {
                 auto* rasterizer = static_cast<Rasterizer*>(self);
+                if (!drain) {
+                    // gow3 U2 (Scheduler::DrawRecorderQuiet): stage B, or stage A with nothing
+                    // queued (only stage A reads its own queue position reliably).
+                    return !(DrawPipe::OnStageB() || !rasterizer->draw_pipe ||
+                             (rasterizer->OnStageA() && rasterizer->draw_pipe->Idle()));
+                }
                 if (DrawPipe::OnStageB() || !rasterizer->draw_pipe || rasterizer->draw_pipe->Idle()) {
                     return false;
                 }
@@ -1834,6 +1840,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
 
     if (uses_dma) {
         buffer_cache.SynchronizeDmaBuffers();
+        buffer_cache.NoteDmaUse(); // gow3 U2: it may read any resident block
         fault_process_pending = true;
     }
 

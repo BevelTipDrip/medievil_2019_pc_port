@@ -94,6 +94,9 @@ enum : std::uint64_t {
     BulkDescriptorCopy = 1, ///< a descriptor push copies its writes and info arrays in one piece each
     SamplerMemo = 2,        ///< sampler handles reused within a GC period (Rasterizer::BindSamplers)
     RingReuse = 4,          ///< constant ring copies reused (perf_ring_reuse; switch off live)
+    /// U2: buffer uploads and precise CPU writes go straight into the mapped arena when the GPU
+    /// is done with the blocks (GOW3_ARENA_HOST_VISIBLE at start; set: staging copies again).
+    ArenaDirectWrites = 8,
 };
 inline bool Disabled(std::uint64_t bit) {
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;
@@ -120,6 +123,24 @@ inline std::atomic<std::uint64_t> stream_buffer_bytes{0}, constant_ring_bytes{0}
     staging_upload_bytes{0}, staging_download_bytes{0};
 /// Constant bytes bound from an earlier ring copy instead of copied again (GOW3_RING_REUSE).
 inline std::atomic<std::uint64_t> constant_ring_reused_bytes{0};
+/// U2 ("Arena writes" line; buffer_cache.cpp): buffer uploads (C1) and precise CPU writes (C2)
+/// written straight into the mapped arena (calls, bytes) or through staging and a GPU copy; why
+/// a write took the staging path; copy commands and render pass ends the direct writes avoided;
+/// render pass ends the staged buffer copies caused; barrier batches recorded (all causes).
+/// arena_mapped: the arena memory is host-visible and mapped (GOW3_ARENA_HOST_VISIBLE).
+inline std::atomic<bool> arena_mapped{false};
+enum ArenaFallback : unsigned {
+    ArenaToggledOff,    ///< toggle second word 8 set
+    ArenaGpuBusy,       ///< work the GPU has not finished (draws, dispatches, DMA) uses the blocks
+    ArenaStagedPending, ///< a staged copy into the blocks is still queued (ordering; stats only)
+    ArenaNotMapped,     ///< a block's memory is not mapped
+    ArenaOffThread,     ///< asked off the draw recording thread while it has draws queued
+    ArenaFallbacks
+};
+inline std::atomic<std::uint64_t> arena_direct_calls{0}, arena_direct_bytes{0},
+    arena_staged_calls{0}, arena_staged_bytes{0}, arena_copies_saved{0}, arena_pass_ends_saved{0},
+    arena_staged_pass_ends{0}, barrier_flushes{0};
+inline std::atomic<std::uint64_t> arena_fallbacks[ArenaFallbacks]{};
 /// Stage B binds ("Binds per frame" line, GOW3_FRAME_STATS): guest-draw pipeline binds and the
 /// ones with the previous guest draw's handle; descriptor set updates (updateDescriptorSets, a
 /// device call: more bindings than push descriptors allow) and their time (ns). Identical

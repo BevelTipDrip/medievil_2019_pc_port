@@ -1042,6 +1042,9 @@ void Runtime::FlushBarriers(std::source_location caller) {
     if (!dep_info.memoryBarrierCount && !dep_info.imageMemoryBarrierCount) {
         return;
     }
+    if (Gow3Stats::enabled) {
+        Gow3Stats::barrier_flushes.fetch_add(1, std::memory_order_relaxed); // "Arena writes" line
+    }
 
     // Every barrier is counted (each can drain the GPU); those recorded between passes are marked.
     if (WaitDiagnostics::Enabled()) {

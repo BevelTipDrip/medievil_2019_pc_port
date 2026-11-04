@@ -739,6 +739,18 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
         profiler->Mark(0x5B317ull, [] { return std::string{"(between submissions: GPU idle)"}; });
     }
     SyncRecording();
+    if (host_access_barrier) {
+        // gow3 U2: see SetHostAccessBarrier. Recorded here, after every recorded command and
+        // outside any render pass (ended above), while the recording thread is idle.
+        const vk::MemoryBarrier2 to_host{
+            .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+            .srcAccessMask = vk::AccessFlagBits2::eMemoryWrite,
+            .dstStageMask = vk::PipelineStageFlagBits2::eHost,
+            .dstAccessMask = vk::AccessFlagBits2::eHostRead | vk::AccessFlagBits2::eHostWrite,
+        };
+        current_cmdbuf.pipelineBarrier2(
+            vk::DependencyInfo{.memoryBarrierCount = 1, .pMemoryBarriers = &to_host});
+    }
     // Guest memory copies into staging read by this submission (copy threads).
     WaitHostCopies();
     Check(current_cmdbuf.end());

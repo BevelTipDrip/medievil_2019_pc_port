@@ -973,6 +973,15 @@ public:
         count_submits = true;
     }
 
+    /// gow3 U2 (direct arena writes, buffer_cache.cpp): every submission ends with a barrier that
+    /// makes the device's memory writes available to the host. A semaphore signal seen by the
+    /// host is only an execution dependency; without the barrier a GPU write the buffer cache saw
+    /// finished could still be written back from a GPU cache over a later CPU write to the same
+    /// bytes. Set once at start, before the first submission.
+    void SetHostAccessBarrier(bool enabled) noexcept {
+        host_access_barrier = enabled;
+    }
+
     /// Defers an operation until the gpu has reached the current cpu tick.
     /// Will be run when submitting or calling PopPendingOperations.
     void DeferOperation(Common::UniqueFunction<void>&& func) {
@@ -1062,7 +1071,8 @@ public:
     /// gow3: `sync` runs before a thread records or touches the render pass: on the GPU command
     /// thread it waits until the draw recording thread has recorded its queued draws, which
     /// keeps commands in order (issue #2/#12). Returns true when it could not (then logged).
-    void SetDrawPipeSync(bool (*sync)(void*), void* context) {
+    /// `drain` false: never waits, true when a wait would be needed (DrawRecorderQuiet).
+    void SetDrawPipeSync(bool (*sync)(void*, bool drain), void* context) {
         draw_pipe_sync_context = context;
         draw_pipe_sync = sync;
     }
@@ -1070,9 +1080,16 @@ public:
     /// Waits for the draw recording thread as above; callers that take a lock the draw
     /// recording thread also takes call this first.
     void SyncWithDrawRecorder(void* caller = __builtin_return_address(0)) {
-        if (draw_pipe_sync && draw_pipe_sync(draw_pipe_sync_context)) {
+        if (draw_pipe_sync && draw_pipe_sync(draw_pipe_sync_context, true)) {
             ReportInterleave(caller);
         }
+    }
+
+    /// gow3 U2: true when this thread may act now as if it came after every queued draw: it is
+    /// the draw recording thread, or that thread has nothing queued. Does not wait. A direct
+    /// arena write records no command, so it gets no SyncWithDrawRecorder from Record().
+    [[nodiscard]] bool DrawRecorderQuiet() const {
+        return !draw_pipe_sync || !draw_pipe_sync(draw_pipe_sync_context, false);
     }
 
 private:
@@ -1080,7 +1097,7 @@ private:
     void ReportStaleRecordData(void* caller);
     /// The chunk holding this thread's last RecordData() for the command that follows.
     static inline thread_local const RecordChunk* record_data_chunk = nullptr;
-    bool (*draw_pipe_sync)(void*){};
+    bool (*draw_pipe_sync)(void*, bool){};
     void* draw_pipe_sync_context{};
     struct ChunkGuard {
         std::atomic_flag& flag;
@@ -1127,6 +1144,7 @@ private:
     // compares thread ids, which on Windows (libc++ over winpthreads) costs two system calls.
     bool recording_threaded{false};
     bool count_submits{false}; ///< see CountSubmits()
+    bool host_access_barrier{false}; ///< see SetHostAccessBarrier()
     std::jthread recorder_thread;
     tracy::VkCtxScope* profiler_scope{};
 };

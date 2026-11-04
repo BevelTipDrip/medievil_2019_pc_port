@@ -957,3 +957,12 @@ after release; two rare flush-and-rewind paths spin on an in-buffer label (0x679
   pool (stage B must have copied a slot's data before the game reuses it). After U2; same safety checks.
 - Runtime checks (one stats run): pool chunks and memory types, GPU / stage B lag at each slot reuse, transient
   allocations by thread, rewind-path calls, only the two parity labels on IRQ EOPs.
+
+## U2 implemented (2026-11-04; not run yet)
+
+Direct arena writes (section 5.3 U2): with `GOW3_ARENA_HOST_VISIBLE` (start; default 1 on Linux integrated GPUs,
+0 elsewhere) the arena's residency chunks come from a `DEVICE_LOCAL|HOST_VISIBLE|HOST_COHERENT` type and are mapped;
+C1 uploads and C2 precise CPU writes into pages the GPU is done with (per-page use ticks noted at recording, so
+recorded-but-unsubmitted draws count; DMA blocks all) are copied straight into the mapping, else staged as before.
+Live A/B: toggle file second word bit 8 (`0 8` off, `0 0` on). Stats: the `Arena writes per frame` line. Design,
+guard, memory types, risks and the one-launch Deck test: [impl-u2-direct-arena-writes.md](impl-u2-direct-arena-writes.md).

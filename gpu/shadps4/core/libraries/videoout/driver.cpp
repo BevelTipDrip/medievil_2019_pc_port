@@ -746,6 +746,36 @@ void VideoOutDriver::Flip(const Request& req) {
                                 set_updates / frames_d,
                                 set_updates ? set_update_ns / 1e3 / set_updates : 0.0,
                                 pushes / frames_d, pushes ? double(push_writes) / pushes : 0.0);
+                    // gow3 U2 (impl-u2-direct-arena-writes.md): buffer uploads and precise CPU
+                    // writes straight into the mapped arena vs through staging, why staging, what
+                    // the direct writes saved; render pass ends and barrier batches of all causes.
+                    static u64 window_pass_ends = 0;
+                    const u64 pass_ends = Gow3Stats::render_pass_ends.load();
+                    const char* u2_state =
+                        !Gow3Stats::arena_mapped.load(std::memory_order_relaxed) ? "unavailable"
+                        : Gow3Toggle2::Disabled(Gow3Toggle2::ArenaDirectWrites)  ? "off"
+                                                                                 : "on";
+                    std::printf(
+                        "Arena writes per frame (U2 %s): direct %.1f (%.3f MB), staged %.1f (%.3f "
+                        "MB); staged because: toggled off %.1f, GPU busy %.1f, staged copy queued "
+                        "%.1f, not mapped %.1f, off the recording thread %.1f; saved %.1f copy commands, %.1f pass ends; pass ends "
+                        "by staged copies %.1f; all pass ends %.1f, barrier batches %.1f\n",
+                        u2_state, Gow3Stats::arena_direct_calls.exchange(0) / frames_d,
+                        Gow3Stats::arena_direct_bytes.exchange(0) / 1e6 / frames_d,
+                        Gow3Stats::arena_staged_calls.exchange(0) / frames_d,
+                        Gow3Stats::arena_staged_bytes.exchange(0) / 1e6 / frames_d,
+                        Gow3Stats::arena_fallbacks[Gow3Stats::ArenaToggledOff].exchange(0) / frames_d,
+                        Gow3Stats::arena_fallbacks[Gow3Stats::ArenaGpuBusy].exchange(0) / frames_d,
+                        Gow3Stats::arena_fallbacks[Gow3Stats::ArenaStagedPending].exchange(0) /
+                            frames_d,
+                        Gow3Stats::arena_fallbacks[Gow3Stats::ArenaNotMapped].exchange(0) / frames_d,
+                        Gow3Stats::arena_fallbacks[Gow3Stats::ArenaOffThread].exchange(0) / frames_d,
+                        Gow3Stats::arena_copies_saved.exchange(0) / frames_d,
+                        Gow3Stats::arena_pass_ends_saved.exchange(0) / frames_d,
+                        Gow3Stats::arena_staged_pass_ends.exchange(0) / frames_d,
+                        (pass_ends - window_pass_ends) / frames_d,
+                        Gow3Stats::barrier_flushes.exchange(0) / frames_d);
+                    window_pass_ends = pass_ends;
                 }
                 if (std::getenv("GOW3_STREAM_CLEAN")) {
                     std::printf("Small read-only buffers/s: %.0f bound from the arena, %.0f uploaded "
