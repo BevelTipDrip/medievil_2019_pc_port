@@ -1307,3 +1307,66 @@ in the Quick Access Menu. Now a launcher preset: Graphics quality > **Deck Optim
   run, existing setup no / yes, leaving the preset, reopening.
 - Deck check when it is back: the preset on a fresh data folder reproduces the flat 60 (`deck.sh status` shows the
   ini); the switches' log lines ("Decode pacing: on", "Early frame EOP", "Stage A drain waits") without extra-env.txt.
+
+## Single GPU particle pass, live (2026-11-05, `d20f010`; built, not run)
+
+The patch (`perf_particle_single_pass`, `r.GPUParticle.FixDeltaSeconds=0`; on in the user's Deck ini and in Deck
+Optimized) is now switched live, so one session can A/B its cost at one camera spot and flip it while the user watches
+a torch. Background: with the default fixed 1/30 s step UE 4.21 adds a second, empty GPU particle run of ~190 draws in
+some frames ([study-heavy-frame-map.md](study-heavy-frame-map.md) H3); with `0` lone torches crawl and an ember /
+golden stream shows in Dan's crypt, seen on the PC at 120-240 FPS ([plan-0102.md](plan-0102.md) T-0102-4), **not
+known at 60**.
+
+- **Switches.** In-game menu > Performance patches > "Single GPU particle pass" is in the live group now (saved to the
+  ini as before; the launcher's checkbox still sets the start). **Toggle file second word 8192**: set = the game's
+  fixed 1/30 s step whatever the menu says (the menu shows "held off by the toggle file" and keeps its own choice);
+  clear = the menu's / ini's choice again. So `"0 0"` vs `"0 8192"` compares single pass vs fixed step **only if the
+  ini (menu) has the patch on**; with it off both states are the fixed step. The runtime sets the cvar only when the
+  effective value changes, from the main menu on, and logs `Particle single pass: off (live, toggle file second word
+  8192)` / `Particle single pass: on (live)`; `deck_summary.py` labels windows by the toggle lines as usual. Off
+  restores exactly the game's default (`0.033333335` = float `0x3d088889`). Both game builds (01.00, 01.02; addresses
+  in [study-live-switches.md](study-live-switches.md)).
+- **Build:** WSL `/root/src/medievil` at `d20f010`, `CC=clang CXX=clang++ GOW3_CPU_LEVEL= bash build.sh` (LTO, static,
+  baseline CPU level, no warnings) + `packaging/linux/appimage.sh`: **`dist/MediEvil-x86_64.AppImage`** (131,357,176
+  bytes, sha256 `d06c34f6465d58e192e09aebd881fc3b50bde21f2716aa673ba402f7ab3a770f`), `--help` runs. Windows build
+  clean; `graphics-settings-test` passes; Python tests: the 8 known failures, 4 new pass. The poll's decision logic
+  was also compiled alone with stubs (scratch harness, gcc `-Wall -Wextra -Werror`): start on / off, toggle set and
+  cleared with the menu never opened, menu flips while the bit holds; one cvar write per change. Not deployed.
+
+### Deck test (one launch, the user's go; the user presses Play)
+
+Before (game closed):
+1. `deck.sh deploy` (the AppImage above), `deck.sh status`.
+2. The user's 60 FPS settings: `deck.sh ini deck60` if `medievil.ini.deck60` was saved, else Graphics quality > Deck
+   Optimized in the launcher; GPU clock fixed at 1,200 MHz in the Quick Access Menu as for the flat 60. Check the patch
+   is on: `ssh deck 'grep ^perf_particle_single_pass ~/.local/share/medievil-pc/medievil.ini'` gives `=1`.
+3. `deck.sh env "particle pass live A/B" GOW3_FRAME_STATS=1` (plus any test keys the current runs keep), then
+   `deck.sh toggle "0 0"`.
+4. The user starts the game, loads the save, stands still in the heavy graveyard view. The switches apply from the
+   main menu on (the log shows the first `Particle single pass` line only at a change).
+
+**(a) Performance A/B.** No SSH sampling (`deck.sh threads`, `clocks`, `mem`, power reads) while `ab` runs: the
+comparison windows must carry no extra load; power gets its own windows afterwards.
+5. 60 cap: `deck.sh ab "0 0" "0 8192" 30 4` (fixed step first, ends on single pass), then at once
+   `deck.sh pull deck-particle-1-cap60` and `deck.sh summary deck-particle-1-cap60 --min-draws 1000`.
+6. Power at 60, in its own windows: `deck.sh toggle "0 8192"`, wait ~10 s, `ssh deck python3 ~/MediEvil/apu_power.py`
+   (5 s), `deck.sh toggle "0 0"`, wait ~10 s, the same read; twice each.
+7. Uncapped: in-game menu > Performance > Frame rate limit "Unlimited" (live), wait ~10 s, `deck.sh ab "0 0" "0 8192"
+   30 4`, then at once `deck.sh pull deck-particle-1-uncapped` and `deck.sh summary deck-particle-1-uncapped --last
+   48 --min-draws 1000` (about the 48 five-second windows of this `ab`), then the power reads of step 6 again. Set the limit back to 60.
+8. Record per state (single pass `0 0` / fixed step `0 8192`), at 60 and uncapped: stage B busy, draws/frame, FPS
+   (uncapped), socket / CPU / GPU W. Expected [I]: the fixed step adds the empty run's ~190 draws in some frames, so
+   more draws/frame and stage B busy; at 60 the FPS stays at the cap and the gain shows as stage B busy and CPU watts
+   (GPU headroom under the 15 W cap). How often the extra run happens at 60 FPS (1/30 s step, 1/60 s frames) is not
+   known: the draws/frame difference answers it.
+
+**(b) Visual check** (the user watches; flip with `deck.sh toggle` or the menu checkbox, toggle at `"0 0"`):
+9. 60 cap: a lone torch (one torch in view, as in plan-0102.md shots 1-3): `deck.sh toggle "0 0"` (single pass), ~20
+   s: slow or normal? `deck.sh toggle "0 8192"` (fixed step), ~20 s; once more each way. Then Dan's crypt: the ember on
+   the floor / golden stream, in both states. Particles already alive may outlast a switch: turn away and back (or
+   leave and re-enter the view) after each flip before judging.
+10. Uncapped (Unlimited): the same torch and crypt, both states.
+11. The user's words per state and cap go here with the log lines' times. Decision: no glitch at 60 and a measurable
+    stage B / power gain: Deck Optimized keeps the patch; a glitch at 60: Deck Optimized turns it off
+    (`DECK_PRESET['perf_particle_single_pass']='0'`); the PC default stays off either way unless the glitch is gone at
+    the PC's rates too.

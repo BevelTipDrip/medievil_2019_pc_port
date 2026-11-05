@@ -41,9 +41,9 @@ inferred (UE 4.21 source knowledge or reasoning), **[?]** guess. Nothing here wa
 ## How "live" works today (three mechanisms)
 
 **A. UE4 console variable** (`src/runtime_extra.c:572-664`) **[V]**: the menu calls `runtime_ue4_request_cvar(name,
-value)` (value <= 7 chars, `ue4_cvar_values[][8]`); the game thread's `scePadReadState` poll (`src/runtime_pad.c:420`)
-sets it through `IConsoleVariable::Set` (vtable +0x68) with `GetFlags()` (+0x20) & 0xff000000 as SetBy, after checking 7
-bytes at the registration site, and only after 600 polls (the main menu). Adding a cvar = one `ue4_cvars[]` row.
+value)` (value <= 15 chars, `ue4_cvar_values[][16]`; 7 before 2026-11-05); the game thread's `scePadReadState`
+poll (`src/runtime_pad.c:420`) sets it through `IConsoleVariable::Set` (vtable +0x68) with `GetFlags()` (+0x20) &
+0xff000000 as SetBy, after checking 7 bytes at the registration site, and only after 600 polls (the main menu). Adding a cvar = one `ue4_cvars[]` row.
 UE4 side **[I]**: for `ECVF_RenderThreadSafe` (0x20) cvars `Set` on the game thread propagates the value to the render
 thread at the next render command (consistent at a frame boundary); cvars without it are read racily (one aligned
 int/float: benign, as UE4's own console). `OnChanged` callbacks and the console-variable sinks run (sinks next game
@@ -96,7 +96,7 @@ reallocation), **hard**, **restart**.
 | Game reads GPU data without waiting | `GOW3_STALE_READBACK` (`texture_cache.h:521`) | **medium-hard** | drain pending readbacks, then flip (watch mode per entry) | unbalanced page watchers |
 | perf_hzb_occlusion | hooks at load (`probe.c:549`) + pak `r.AllowOcclusionQueries`/`r.HZBOcclusion`/`r.NumBufferedOcclusionQueries` | **medium** | always install hooks (analysed eboot), switch `r.AllowOcclusionQueries` live | first frames all-visible (no pop-in) **[I]** |
 | perf_no_decal_prepass | pak `r.DBuffer=0`, `r.EarlyZPass=1` | **easy-medium** | A (`0x581a438` ReadOnly, `0x5b59770`) | DBuffer targets allocated on first use; prepass doubles draws (the point) |
-| perf_particle_single_pass | pak `r.GPUParticle.FixDeltaSeconds=0` | **easy** | A (`0x5c14d18`) | none expected **[I]** |
+| perf_particle_single_pass | pak `r.GPUParticle.FixDeltaSeconds=0` | **done** (2026-11-05, menu + toggle file 2nd word 8192) | A (`0x5c14d18`; 01.02 `0x5c14d58`) | none expected **[I]**; not run yet |
 | perf_small_buffers | `perf[PerfSmallBuffers]` | done | B | - |
 | perf_texture_memo | `GOW3_TEXSET_REGIONS`, `GOW3_TEXSET_TWO_WAY` (statics, `vk_rasterizer.cpp:2770/2809`) | **easy-medium** | atomics + clear `texture_sets` on stage B | stamps of the other mode: clear first |
 | perf_lockfree_memory | `GOW3_OPTIMISTIC_CLAMP` (live), `GOW3_REGION_BUCKETS` (static) | done (half) | B; buckets still static (`runtime_memory.c:1259`) | buckets: per-thread caches hold stamps of one mode |
@@ -157,7 +157,7 @@ global). Default = the constructor argument.
 | r.NumBufferedOcclusionQueries | 0x581a0f0 | 0x7323f2 | 48 8d 35 23 5f 53 03 | int 1, 0x20 | yes; keep fixed (ring index) |
 | r.DBuffer | 0x581a438 | 0x733255 | 48 8d 35 28 85 53 03 | int 1, **0x24 ReadOnly** | yes (cached lookup at 0xfb204d) |
 | r.EarlyZPass | 0x5b59770 | 0x119a778 | 48 8d 35 75 9e b6 02 | int 3, 0x40 | yes |
-| r.GPUParticle.FixDeltaSeconds | 0x5c14d18 | 0x23933b3 | 48 8d 35 c0 16 a9 01 | float, 0 | yes |
+| r.GPUParticle.FixDeltaSeconds | 0x5c14d18 | 0x23933b3 | 48 8d 35 c0 16 a9 01 | float 1/30 (0x3d088889), 0 | yes |
 | r.Streaming.PoolSize | 0x5c27590 | 0x272128e | 48 8d 35 19 3b 73 01 | int -1, 0x40 | budget per update; pool memory fixed at boot |
 | t.MaxFPS | 0x5c285a0 | 0x278ee1f | 48 8d 35 0a fd 6c 01 | float, 0 | does not cap here (START-HERE) |
 | sg.ResolutionQuality / ViewDistance / AntiAliasing / Shadow / PostProcess / Texture / Effects / Foliage | 0x5c198c8 / 0x5c198e0 / 0x5c198f8 / 0x5c19910 / 0x5c19928 / 0x5c19940 / 0x5c19958 / 0x5c19970 | 0x2564d57 ... 0x2565055 | | float / int 3, 0x80 | see sg.* below |
@@ -285,10 +285,32 @@ invalid → primitives read visible (study-hzb-double-buffer: `IsValidFrame` fal
 `r.DBuffer=0` already works, T-Z2-T-Z5), so the switch only changes passes and targets **[I]**. Risk: DBuffer A/B/C
 targets (render size) allocated on the first frame with DBuffer=1; the full prepass doubles draws (the measured cost).
 
-### perf_particle_single_pass (restart → easy)
+### perf_particle_single_pass (restart → easy; done 2026-11-05)
 
 `r.GPUParticle.FixDeltaSeconds` 0x5c14d18 (float, flags 0): read every frame by the GPU particle simulation **[I]**.
 One row. Risk: none expected; the fixed-step accumulator restarts **[?]**.
+
+**Built** (`deck-lab`, not run yet): the `ue4_cvars[]` row for both builds, the in-game menu's "Single GPU particle
+pass" in the live group, and the toggle file's second word **8192** (set: the fixed step whatever the menu says;
+clear: the menu's / ini's choice). `src/runtime_extra.c` `ue4_particle_pass_poll` decides at the game-thread poll
+(from the main menu on, as the other cvars) and sets the cvar only when the effective value changes, logging
+`Particle single pass: on|off (live[, toggle file second word 8192])`. On = `0`, off = `0.033333335`, the game's own
+default exactly (float `0x3d088889`; `0.0333333` would be 9 ulps off; the cvar value buffer grew from 8 to 16 chars
+for it). The start is unchanged: the override pak writes `0` unless `GOW3_PARTICLE_FIXED_STEP=1` (ini off).
+
+Registration, both builds **[V]** (disassembly of the session's `eboot-0100.elf` / `eboot-0102.elf`, the latter
+ELF sha256 `31074869…a69b` = plan-0102.md's 01.02 eboot; script `fixdelta/find_fixdelta.py` in the scratchpad named at the top): one UTF-16
+name each (01.00 `0x3e24a7a`, 01.02 `0x3e27b3a`), one `lea rsi` loading it each, and the same sequence around it:
+`vmovss xmm0, [1/30 = 0x3d088889]`, `lea rsi, [name]`, `lea rdx, ["GPU particle fix delta seconds."]`, `xor ecx, ecx`
+(flags 0), `call [rax+8]`, `mov [object+8], rax`, `mov [object], vtable 0x4e81f58+0x10`.
+
+| Build | Object | IConsoleVariable* at | Site | Site bytes |
+|---|---|---|---|---|
+| 01.00 | 0x5c14d18 | 0x5c14d20 | 0x23933b3 | 48 8d 35 c0 16 a9 01 |
+| 01.02 | 0x5c14d58 | 0x5c14d60 | 0x2396183 | 48 8d 35 b0 19 a9 01 |
+
+The 01.02 shifts match the neighbouring rows: object +0x40 (as `r.TemporalAA.Upsampling` 0x5c1a120 -> 0x5c1a160,
+`foliage.LODDistanceScale` 0x5c0a180 -> 0x5c0a1c0), site +0x2dd0 (as `r.TemporalAA.Upsampling` 0x25662e6 -> 0x25690b6).
 
 ### perf_texture_memo (restart → easy-medium)
 
@@ -366,7 +388,8 @@ read **[I]**. A diagnostic fallback, so a live A/B is useful.
    `r.MaterialQualityLevel` from Ultra; label foliage/grass density "next level"; keep `r.DetailMode` out of the live
    batch (or accept the hitch). One launch: switch presets in the heavy Graveyard view, watch the overlay.
 2. **Particle single pass and decal prepass live** (3 rows: `r.GPUParticle.FixDeltaSeconds`, `r.DBuffer`,
-   `r.EarlyZPass`). Tiny effort; makes two A/B patches instant (the decal prepass is ~600 draws).
+   `r.EarlyZPass`). Tiny effort; makes two A/B patches instant (the decal prepass is ~600 draws). **Particle pass
+   done 2026-11-05** (above); the decal prepass is still a restart.
 3. **Lean barriers live** (three statics → one atomic). Small; turns the fights' fallback switch into a live A/B.
 4. **Render scale live within the boot budget** (2 rows + a menu rule). Medium; high value for finding a scale, with
    the memory rule.
