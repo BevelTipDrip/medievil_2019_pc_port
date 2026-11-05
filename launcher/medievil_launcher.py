@@ -592,7 +592,16 @@ RENDER_SCALE_CHOICES = [('200', ('200%: supersampled (sharpest, slowest)',)), ('
 RENDER_SCALE_HINT = ('How large the 3D scene is drawn, per side, compared with the output. Above 100%: drawn '
                      'larger and scaled down (sharper edges, slower). Below 100%: drawn smaller and rebuilt at '
                      "full size by the game's own temporal upscaler from its motion vectors (faster). The menus "
-                     'and HUD always draw at the output size. Applied at start.')
+                     'and HUD always draw at the output size. Pick a preset or type any value from 50 to 200%. '
+                     'Applied at start; the in-game menu (Performance > Applied now) also switches it while '
+                     'playing, from 50% up to the value the game started at (at least 100%).')
+
+
+def render_scale_scene(output, scale):
+    """The scene size a render scale gives at an output_resolution value, for the launcher's row."""
+    width, height = graphics_options.output_size(output)
+    return _('scene {}x{}').format(*graphics_options.scene_size(width, height,
+                                                                graphics_options.parse_render_scale(scale)))
 AA_CHOICES = [('taa', ('Temporal (default, smooth)',)), ('fxaa', ('FXAA (sharper)',)),
               ('off', ('Off (sharpest, jagged edges)',))]
 QUALITY_CHOICES = [('ultra', ('Ultra',)), ('high', ('High',)), ('console', ('Console (PS4)',)),
@@ -879,11 +888,50 @@ class Launcher:
 
         def show(*_args):
             current = var.get()
-            box.current(values.index(current) if current in values else 0)
+            if current in values:
+                box.current(values.index(current))
+            elif custom:  # set elsewhere (the render scale's percent box): shown, not reset
+                box.set(custom(current))
+            else:
+                box.current(0)
         show()
         box.bind('<<ComboboxSelected>>', lambda _e: var.set(values[box.current()]))
         var.trace_add('write', show)
         return box
+
+    def render_scale_control(self, parent):
+        """Render scale: the presets, or any whole percent in RENDER_SCALE_RANGE typed or stepped in the
+        box beside them (as the in-game menu's slider), and the scene size it gives at the output."""
+        ttk = self.ttk
+        holder = ttk.Frame(parent)
+        var, output = self.var('render_scale', 'ini'), self.var('output_resolution', 'ini')
+        self.choice(holder, 'render_scale', 'ini', RENDER_SCALE_CHOICES, width=26,
+                    custom=self.custom_label('render_scale')).pack(side='left')
+        low, high = graphics_options.RENDER_SCALE_RANGE
+        text = self.tk.StringVar(value=var.get())
+        ttk.Spinbox(holder, from_=low, to=high, increment=1, width=5, textvariable=text,
+                    font=self.f('body', 10)).pack(side='left', padx=(8, 0))
+        ttk.Label(holder, text='%').pack(side='left', padx=(2, 0))
+        size = ttk.Label(holder, style='Muted.TLabel')
+        size.pack(side='left', padx=(10, 0))
+
+        def from_text(*_args):  # only whole percents in the range reach medievil.ini
+            try:
+                value = int(text.get().strip())
+            except ValueError:
+                return
+            if low <= value <= high and str(value) != var.get():
+                var.set(str(value))
+
+        def from_setting(*_args):
+            if text.get().strip() != var.get():
+                text.set(var.get())
+            size.configure(text=render_scale_scene(output.get(), var.get()))
+        text.trace_add('write', from_text)
+        var.trace_add('write', from_setting)
+        output.trace_add('write', from_setting)
+        from_setting()
+        return holder
 
     @staticmethod
     def custom_label(key):
@@ -1290,9 +1338,7 @@ class Launcher:
         self.row(f, _('Output resolution'), self.choice(f, 'output_resolution', 'ini', OUTPUT_CHOICES,
                                                         custom=self.custom_label('output_resolution')),
                  _(OUTPUT_HINT), restart=True)
-        self.row(f, _('Render scale'), self.choice(f, 'render_scale', 'ini', RENDER_SCALE_CHOICES,
-                                                   custom=self.custom_label('render_scale')),
-                 _(RENDER_SCALE_HINT), restart=True)
+        self.row(f, _('Render scale'), self.render_scale_control(f), _(RENDER_SCALE_HINT), restart=True)
         self.row(f, _('Anti-aliasing'), self.choice(f, 'ue4_aa', 'ini', AA_CHOICES),
                  _("The game's temporal AA smooths edges but blurs a little in motion. FXAA is sharper, Off "
                    'shows raw pixels (best with a render scale above 100%). A render scale below 100% always '

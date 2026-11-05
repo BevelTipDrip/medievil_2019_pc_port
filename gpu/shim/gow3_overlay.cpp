@@ -95,12 +95,30 @@ float base_scale = 1.0f;
 std::chrono::steady_clock::time_point last_present{};
 float frame_ms_avg = 0.0f;
 
+// MediEvil render scale (Performance > Applied now): each change reallocates every scene target
+// in the game, so a new value is applied once the slider is let go and no step came for 0.3 s
+// (or when the menu closes), not at every step of a drag.
+bool render_scale_pending = false;
+std::chrono::steady_clock::time_point render_scale_edit{};
+
+void ApplyRenderScale(bool now) {
+    if (!render_scale_pending ||
+        (!now && std::chrono::steady_clock::now() - render_scale_edit < std::chrono::milliseconds(300))) {
+        return;
+    }
+    render_scale_pending = false;
+    Gow3Settings::RequestRenderScale(Gow3Settings::Get().render_scale);
+}
+
 void SetOpen(bool value) {
     if (menu_open.exchange(value) == value) {
         return;
     }
     if (value) {
         requested_tab = Gow3Settings::Get().menu_tab;
+    }
+    if (!value) {
+        ApplyRenderScale(true);
     }
     if (!value && dirty) {
         dirty = false;
@@ -446,6 +464,76 @@ void IndexChoiceRow(const char* label, int& value, const char* const* labels, in
     ImGui::PopID();
 }
 
+// MediEvil: the 3D scene's size per side compared with the output, in 1% steps, switched live
+// (Gow3Settings::RequestRenderScale, applied by ApplyRenderScale) and kept in medievil.ini.
+void RenderScaleSection() {
+    namespace S = Gow3Settings;
+    auto& s = S::Get();
+    const int lo = S::LiveRenderScaleMin(), live_max = S::LiveRenderScaleMax();
+    static char help[512];
+    std::snprintf(help, sizeof(help),
+                  "The 3D scene's size per side compared with the output, in 1%% steps. Below 100%%: drawn "
+                  "smaller and rebuilt at full size by the game's temporal upscaler (faster). Above: drawn "
+                  "larger and scaled down (sharper, slower). The HUD stays at the output size. Switched now "
+                  "(each change re-makes the scene's buffers: one short hitch) from %d%% to %d%%; larger "
+                  "values on the next start, as the game's memory is set up for the scene it starts with.",
+                  lo, live_max);
+    if (!BeginRows("##render_scale")) {
+        return;
+    }
+    Row("Render scale");
+    const ImGuiStyle& style = ImGui::GetStyle();
+    const float button = ImGui::GetFrameHeight();
+    ImGui::SetNextItemWidth(-(2.0f * (button + style.ItemSpacing.x)));
+    int v = s.render_scale;
+    bool changed = ImGui::SliderInt("##value", &v, lo, S::RenderScaleMax, "%d%%", ImGuiSliderFlags_AlwaysClamp);
+    const bool active = ImGui::IsItemActive();
+    Help(help);
+    ImGui::SameLine();
+    if (ImGui::Button("-", ImVec2(button, 0.0f))) {
+        v = std::max(lo, s.render_scale - 1);
+        changed = true;
+    }
+    Help(help);
+    ImGui::SameLine();
+    if (ImGui::Button("+", ImVec2(button, 0.0f))) {
+        v = std::min(int(S::RenderScaleMax), s.render_scale + 1);
+        changed = true;
+    }
+    Help(help);
+    ImGui::PopID();
+    v = std::clamp(v, lo, int(S::RenderScaleMax));
+    if (changed && v != s.render_scale) {
+        s.render_scale = v;
+        dirty = true;
+        render_scale_pending = true;
+        render_scale_edit = std::chrono::steady_clock::now();
+    }
+    if (active) {
+        render_scale_edit = std::chrono::steady_clock::now(); // applied once let go
+    }
+    const int iw = s.image_width, ih = s.image_height;
+    char text[96];
+    if (iw > 0 && ih > 0) {
+        std::snprintf(text, sizeof(text), "%d x %d at %d%% of %d x %d", S::ScaledSize(iw, s.live_render_scale),
+                      S::ScaledSize(ih, s.live_render_scale), s.live_render_scale, iw, ih);
+    } else {
+        std::snprintf(text, sizeof(text), "%d%%", s.live_render_scale);
+    }
+    InfoRow("Scene now", text);
+    ImGui::EndTable();
+    if (s.render_scale > live_max) {
+        ImGui::TextWrapped("%d%% applies at the next start (Apply and restart). Until then the scene stays at "
+                           "%d%%: live changes go up to %d%%, the scene size the game's memory was set up for "
+                           "when it started.",
+                           s.render_scale, s.live_render_scale, live_max);
+    } else if (S::RenderScaleNeedsRestart()) {
+        ImGui::TextWrapped("Anti-aliasing is not temporal (launcher > Performance): applied now, but the "
+                           "anti-aliasing stays as the game started until the next start (below 100%% a start "
+                           "always uses temporal AA for its upsampling).");
+    }
+}
+
 extern "C" void runtime_memory_set_perf(int optimistic, int keep_access);
 
 // MediEvil: the launcher's performance patches. Live ones apply at once.
@@ -529,9 +617,8 @@ void PerformanceTab() {
         // Render scales above 100% supersample (r.ScreenPercentage up to 200): a larger output on
         // top of that ran out of the PS4 memory budget (1800p at 200% needs 6400x3600 targets:
         // crash). Those keep 1080p here.
-        namespace S = Gow3Settings;
-        const bool supersampling = std::atoi(s.startup_render_scale >= 0 ? S::UE4ScaleKeys[s.startup_render_scale]
-                                                                          : s.render_scale_raw.c_str()) > 100;
+        // A live render scale stays at or below the start's when that is above 100% (RequestRenderScale).
+        const bool supersampling = s.startup_render_scale > 100;
         for (int i = 0; i < 4; ++i) {
             if (i) {
                 ImGui::SameLine();
@@ -542,15 +629,16 @@ void PerformanceTab() {
             }
             ImGui::EndDisabled();
         }
-        ImGui::TextWrapped(supersampling
-                               ? "Unavailable with a render scale above 100% (the scene is already drawn "
-                                 "larger; more would run out of game memory). Set Render scale 100% or lower "
-                                 "to switch the output size here."
-                               : "Switches the game's output now, until the next start (Output resolution "
-                                 "below is the size it starts at). Use 1080p for the debug menu (R3), then "
-                                 "switch back.");
+        ImGui::TextWrapped("%s", supersampling
+                                     ? "Unavailable when the game started with a render scale above 100% (the "
+                                       "scene is already drawn larger; more would run out of game memory). Start "
+                                       "with Render scale 100% or lower to switch the output size here."
+                                     : "Switches the game's output now, until the next start (Output resolution "
+                                       "below is the size it starts at). Use 1080p for the debug menu (R3), then "
+                                       "switch back.");
         // UE4 console variables switched live (src/runtime_extra.c), kept in medievil.ini.
         ImGui::SeparatorText("Applied now");
+        RenderScaleSection();
         if (BeginRows("##live")) {
             const bool preshadows = s.preshadows;
             CheckRow("Preshadows", s.preshadows,
@@ -591,21 +679,13 @@ void PerformanceTab() {
             ChoiceRow("Render resolution", s.render_resolution, resolution_labels, nullptr,
                       int(G::Resolutions.size()), "The resolution the game draws at. Higher is sharper and slower.");
         } else {
-            // MediEvil: the size the game starts at, and the 3D scene's scale of it (launcher >
-            // Performance; run.py: the boot display size patch, ue4_override's r.ScreenPercentage).
+            // MediEvil: the size the game starts at (launcher > Performance; run.py: the boot display
+            // size patch). Its render scale is live, above (RenderScaleSection).
             static const char* const output_labels[] = {"Match display", "4K (3840x2160)", "1800p (3200x1800)",
                                                         "1440p (2560x1440)", "1080p (original)", "720p (1280x720)"};
             IndexChoiceRow("Output resolution", s.output_resolution, output_labels, 6,
                            "The size of the game's picture; it starts at this size. Match the display for a "
                            "sharp 1:1 image. Custom sizes: output_resolution=WxH in medievil.ini.");
-            static const char* const scale_labels[] = {"200%: supersampled", "167%: supersampled",
-                                                       "133%: supersampled", "100%: native",
-                                                       "67%: upscaled, Quality", "58%: upscaled, Balanced",
-                                                       "50%: upscaled, Performance"};
-            IndexChoiceRow("Render scale", s.render_scale, scale_labels, 7,
-                           "The 3D scene's size per side compared with the output. Above 100%: drawn larger "
-                           "and scaled down (sharper). Below: drawn smaller and rebuilt by the game's "
-                           "temporal upscaler (faster). The HUD stays at the output size.");
         }
         // The highest frame rate the game runs at (Unreal Engine 4: run.py's override pak).
         static const char* const engine_labels[] = {"60 (original)", "120 (experimental)", "240 (experimental)"};
@@ -708,6 +788,7 @@ int RestartChanges() {
 
 void Menu() {
     auto& s = Gow3Settings::Get();
+    ApplyRenderScale(false);
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x + viewport->WorkSize.x * 0.5f,
                                    viewport->WorkPos.y + viewport->WorkSize.y * 0.5f),

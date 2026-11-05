@@ -47,6 +47,22 @@ class ControlMapTest(unittest.TestCase):
             self.assertEqual(re.findall(r'"([^"]*)"', tokens), [value for value, _l in choices])
             self.assertEqual(launcher.INI_DEFAULTS[key], 'preset')
 
+    def test_render_scale_range_matches_the_game(self):
+        # gpu/shim/gow3_settings.h RenderScaleMin / RenderScaleMax: the launcher's box and the in-game
+        # slider take the same whole percents; every preset is one of them.
+        import re
+        import graphics_options
+        header = (ROOT / 'gpu' / 'shim' / 'gow3_settings.h').read_text(encoding='utf-8')
+        low, high, ini_low = map(int, re.search(
+            r'RenderScaleMin = (\d+), RenderScaleMax = (\d+), RenderScaleIniMin = (\d+);', header).groups())
+        self.assertEqual(graphics_options.RENDER_SCALE_RANGE, (low, high))
+        self.assertEqual((graphics_options.parse_render_scale(ini_low), graphics_options.parse_render_scale(ini_low - 1)),
+                         (ini_low, 100))
+        self.assertEqual({int(v) for v, _t in launcher.RENDER_SCALE_CHOICES}, set(graphics_options.RENDER_SCALES))
+        self.assertEqual(launcher.render_scale_scene('1280x720', '72'), 'scene 921x518')
+        self.assertEqual(launcher.render_scale_scene('2560x1440', 'x'), 'scene 2560x1440')
+        self.assertEqual(launcher.Launcher.custom_label('render_scale')('72'), 'Custom (72%)')
+
     def test_changed_buttons_in_table_order(self):
         controls = {'key': {'circle': ' Left Shift ', 'cross': 'Q', 'square': ''}, 'pad': {'cross': 'b'}}
         self.assertEqual(launcher.control_map(controls, 'key'), 'cross=Q,circle=Left Shift')

@@ -68,8 +68,11 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         return;
     }
     if (key == "render_scale") {
-        v.render_scale = index_of(UE4ScaleKeys);
-        v.render_scale_raw = value;
+        v.render_scale = ParseRenderScale(value);
+        return;
+    }
+    if (key == "ue4_aa") {
+        v.ue4_aa_temporal = value == "taa" || value.empty();
         return;
     }
     static const char* const overlay_keys[] = {"overlay_fps", "overlay_frametime", "overlay_upscaler",
@@ -233,6 +236,61 @@ Values& Get() {
     return values;
 }
 
+int ParseRenderScale(const std::string& value) {
+    // As graphics_options.parse_render_scale: int(float(value)), 25 to 200, else 100.
+    const char* text = value.c_str();
+    char* end = nullptr;
+    const double percent = std::strtod(text, &end);
+    if (end == text || *end != '\0' || !(percent > -1e9 && percent < 1e9)) {
+        return 100;
+    }
+    const int whole = int(percent);
+    return whole >= RenderScaleIniMin && whole <= RenderScaleMax ? whole : 100;
+}
+
+int LiveRenderScaleMax() {
+    return std::max(Get().startup_render_scale, 100);
+}
+
+int LiveRenderScaleMin() {
+    return std::min(Get().startup_render_scale, RenderScaleMin);
+}
+
+bool RenderScaleNeedsRestart() {
+    const auto& v = Get();
+    if (v.render_scale == v.startup_render_scale) {
+        return false;
+    }
+    if (v.render_scale > LiveRenderScaleMax() || v.render_scale < LiveRenderScaleMin()) {
+        return true;
+    }
+    // ue4_aa FXAA or off: a start below 100% uses temporal AA (ue4_override.apply), one at or above
+    // 100% does not; live, the anti-aliasing stays as the game started.
+    return !v.ue4_aa_temporal && (v.render_scale < 100) != (v.startup_render_scale < 100);
+}
+
+int RequestRenderScale(int percent) {
+    auto& v = Get();
+    const int target = std::clamp(percent, LiveRenderScaleMin(), LiveRenderScaleMax());
+    const int before = v.live_render_scale;
+    if (target != before) {
+        // Below 100% UE4's temporal upsampling rebuilds the output, as a start at that scale does.
+        if ((target < 100) != (before < 100)) {
+            runtime_ue4_request_cvar("r.TemporalAA.Upsampling", target < 100 ? "1" : "0");
+        }
+        char text[8];
+        std::snprintf(text, sizeof(text), "%d", target);
+        runtime_ue4_request_cvar("r.ScreenPercentage", text);
+        v.live_render_scale = target;
+        std::printf("Render scale: %d%% -> %d%% (live)\n", before, target);
+    }
+    if (percent > target) {
+        std::printf("Render scale: %d%% applies at the next start (live at most %d%%: the game's memory "
+                    "was sized at start)\n", percent, target);
+    }
+    return target;
+}
+
 void Load() {
     auto& v = Get();
     if (FILE* file = std::fopen(Path(), "r")) {
@@ -314,6 +372,7 @@ void Load() {
     v.startup_ue4_quality = v.ue4_quality;
     v.startup_output_resolution = v.output_resolution;
     v.startup_render_scale = v.render_scale;
+    v.live_render_scale = v.render_scale; // the override pak's r.ScreenPercentage (run.py)
     v.startup_effects_resolution = v.effects_resolution;
     TakeBaseline();
 }
@@ -323,8 +382,7 @@ int RestartChanges() {
     int changes = (v.render_resolution != v.startup_render_resolution) + (v.engine_fps != v.startup_engine_fps) +
                   (v.deferred_readback != v.startup_deferred_readback) +
                   (v.stale_readback != v.startup_stale_readback) + (v.ue4_quality != v.startup_ue4_quality) +
-                  (v.output_resolution != v.startup_output_resolution) +
-                  (v.render_scale != v.startup_render_scale);
+                  (v.output_resolution != v.startup_output_resolution) + RenderScaleNeedsRestart();
     for (int p = 0; p < PerfCount; ++p) {
         changes += !PerfLive[p] && v.perf[p] != v.startup_perf[p];
     }
@@ -476,7 +534,7 @@ std::map<std::string, std::string> Serialize(const Values& v) {
     Append(out, "ue4_quality=%s\n", v.ue4_quality >= 0 ? UE4QualityKeys[v.ue4_quality] : v.ue4_quality_raw.c_str());
     Append(out, "output_resolution=%s\n",
            v.output_resolution >= 0 ? UE4OutputKeys[v.output_resolution] : v.output_resolution_raw.c_str());
-    Append(out, "render_scale=%s\n", v.render_scale >= 0 ? UE4ScaleKeys[v.render_scale] : v.render_scale_raw.c_str());
+    Append(out, "render_scale=%d\n", v.render_scale);
     Append(out, "effects_resolution=%s\n", v.effects_resolution >= 0 ? UE4EffectsKeys[v.effects_resolution]
                                                                     : v.effects_resolution_raw.c_str());
     Append(out, "preshadows=%d\n", int(v.preshadows.load()));

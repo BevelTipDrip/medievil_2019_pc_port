@@ -30,6 +30,24 @@ class GraphicsOptionsTest(unittest.TestCase):
         self.assertEqual([g.parse_render_scale(v) for v in ('67', '200', '201', 'x')], [67, 200, 100, 100])
         self.assertEqual(g.output_size('1280x720'), (1280, 720))
 
+    def test_render_scale_any_percent(self):
+        # Any whole percent (launcher box, in-game slider); the presets and ini values from 25 still start.
+        self.assertEqual([g.parse_render_scale(v) for v in ('72', '58', '66.7', '25', '24', '133', ' 81 ')],
+                         [72, 58, 66, 25, 100, 133, 81])
+        self.assertEqual(g.RENDER_SCALE_RANGE, (50, 200))
+        self.assertTrue(all(g.RENDER_SCALE_RANGE[0] <= s <= g.RENDER_SCALE_RANGE[1] for s in g.RENDER_SCALES))
+        self.ini.write_text('render_scale=72\n', encoding='utf-8')
+        self.assertEqual(g.prepare(self.ini, self.state)[0]['render_scale'], '72')
+        self.assertEqual(g.scene_size(1280, 720, 67), (857, 482))
+        self.assertEqual(g.scene_size(1920, 1080, 72), (1382, 777))
+        # Live in the game: down to 50% (or a lower start), up to the start or 100%.
+        self.assertEqual([g.live_render_scale_range(s) for s in (67, 100, 133, 200, 30)],
+                         [(50, 100), (50, 100), (50, 133), (50, 200), (30, 100)])
+        # The startup HZB choice uses the same scene size.
+        hzb = g.HZB_FULL_SIZE_PATCH
+        self.assertEqual(g.hzb_full_size_environment({}, 1280, 800, 100)['GOW3_PATCHES'], hzb)
+        self.assertNotIn('GOW3_PATCHES', g.hzb_full_size_environment({}, 1280, 800, 101))
+
     def test_output_environment(self):
         pool, boot4k = g.POOL_PATCH, g.BOOT_4K_PATCH
         self.assertEqual(g.output_environment({}, 1920, 1080), {'GOW3_PATCHES': ''})

@@ -20,7 +20,12 @@ ENGINE_FPS = (60, 120, 240)
 OUTPUT_PRESETS = ('1280x720', '1920x1080', '2560x1440', '3200x1800', '3840x2160', 'display')
 # render_scale: percent of the output per axis. Below 100 UE4's temporal upsampling rebuilds the
 # output from its motion vectors; above 100 the scene is drawn larger and scaled down (supersampling).
+# RENDER_SCALES: the presets; the launcher and the in-game menu take any whole percent in
+# RENDER_SCALE_RANGE (UE4 4.21's temporal upsampling range; gpu/shim/gow3_settings.h RenderScaleMin /
+# RenderScaleMax). The ini still starts 25-49 (parse_render_scale). In the game the scale switches live
+# within live_render_scale_range (research/docs/impl-live-render-scale.md).
 RENDER_SCALES = (50, 58, 67, 100, 133, 167, 200)
+RENDER_SCALE_RANGE = (50, 200)
 DEFAULTS = {'render_resolution': 'native', 'engine_fps': '60', 'deferred_readback': '1',
             'stale_readback': '1', 'async_shaders': '1', 'output_resolution': '1920x1080',
             'render_scale': '100'}
@@ -83,6 +88,19 @@ def parse_render_scale(value):
     except (TypeError, ValueError):
         return 100
     return scale if 25 <= scale <= 200 else 100
+
+
+def scene_size(width, height, scale):
+    """(width, height) of the 3D scene of a WxH output at `scale` percent."""
+    return width * scale // 100, height * scale // 100
+
+
+def live_render_scale_range(startup):
+    """(lowest, highest) render scale the game can switch to live after starting at `startup`: down to
+    50% (or the start value if lower), up to the start value or 100% if that is lower. A larger scene
+    needs more memory than the start set up (framebuffer pool and GOW3_DMEM_MB follow the output
+    size, output_environment); it applies at the next start (gow3_settings.cpp RequestRenderScale)."""
+    return min(startup, RENDER_SCALE_RANGE[0]), max(startup, 100)
 
 
 def display_size():
@@ -182,7 +200,7 @@ def hzb_full_size_environment(env, width=0, height=0, render_scale=100):
     switch = env.get('GOW3_HZB_FULL_SIZE')
     selected = [n for n in env.get('GOW3_PATCHES', '').split(';') if n and n != HZB_FULL_SIZE_PATCH]
     if switch not in ('0', '1'):
-        scene = (width * render_scale // 100, height * render_scale // 100)
+        scene = scene_size(width, height, render_scale)
         if not width or scene[0] > HZB_FULL_SIZE_AUTO_MAX[0] or scene[1] > HZB_FULL_SIZE_AUTO_MAX[1] or                 HZB_FULL_SIZE_PATCH in env.get('GOW3_PATCHES', '').split(';'):
             return env
         print(f'Finer occlusion culling: on (scene {scene[0]}x{scene[1]}, at most '

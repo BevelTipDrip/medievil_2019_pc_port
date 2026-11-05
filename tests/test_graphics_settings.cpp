@@ -10,6 +10,12 @@
 
 namespace G = Gow3Graphics;
 
+// src/runtime_extra.c: the live console variables the settings request, as "name=value;".
+static std::string requested;
+extern "C" void runtime_ue4_request_cvar(const char* name, const char* value) {
+    requested += std::string(name) + "=" + value + ";";
+}
+
 static std::string Read(const char* path) {
     std::ifstream in(path);
     std::stringstream s;
@@ -97,6 +103,55 @@ int main() {
     Gow3Settings::Save();  // nothing changed since: the file stays as it is
     assert(Read(path) == partial);
     _putenv_s("GOW3_FRAMES_AHEAD", "");
+
+    // Render scale: any whole percent (graphics_options.parse_render_scale), live from 50% up to the
+    // start value or 100%, with the upsampling switch when it crosses 100%; written back as a number.
+    namespace S = Gow3Settings;
+    assert(S::ParseRenderScale("72") == 72 && S::ParseRenderScale("66.7") == 66 && S::ParseRenderScale("25") == 25);
+    assert(S::ParseRenderScale("24") == 100 && S::ParseRenderScale("201") == 100 && S::ParseRenderScale("x") == 100);
+    assert(S::ParseRenderScale("67%") == 100 && S::ParseRenderScale("") == 100 && S::ParseRenderScale(" 58") == 58);
+    {
+        std::ofstream out(path);
+        out << "render_scale=67\nue4_quality=console\n";
+    }
+    Gow3Settings::Load();
+    assert(v.render_scale == 67 && v.startup_render_scale == 67 && v.live_render_scale == 67);
+    assert(S::LiveRenderScaleMin() == 50 && S::LiveRenderScaleMax() == 100 && !Gow3Settings::GraphicsNeedRestart());
+    requested.clear();
+    v.render_scale = 72;
+    assert(S::RequestRenderScale(v.render_scale) == 72 && requested == "r.ScreenPercentage=72;");
+    assert(!Gow3Settings::GraphicsNeedRestart()); // live: no restart
+    requested.clear();
+    assert(S::RequestRenderScale(72) == 72 && requested.empty()); // unchanged: nothing requested
+    v.render_scale = 100;
+    assert(S::RequestRenderScale(100) == 100 && requested == "r.TemporalAA.Upsampling=0;r.ScreenPercentage=100;");
+    requested.clear();
+    v.render_scale = 150; // above what this start's memory was sized for: 100% now, 150% on restart
+    assert(S::RequestRenderScale(150) == 100 && requested.empty() && Gow3Settings::GraphicsNeedRestart());
+    v.render_scale = 51;
+    assert(S::RequestRenderScale(51) == 51 && requested == "r.TemporalAA.Upsampling=1;r.ScreenPercentage=51;");
+    assert(!Gow3Settings::GraphicsNeedRestart() && S::RequestRenderScale(20) == 50);
+    v.render_scale = 51;
+    Gow3Settings::Save();
+    assert(Read(path) == "render_scale=51\nue4_quality=console\n");
+    {
+        std::ofstream out(path);
+        out << "render_scale=133\nue4_aa=fxaa\n";
+    }
+    Gow3Settings::Load();
+    assert(S::LiveRenderScaleMax() == 133 && !v.ue4_aa_temporal);
+    v.render_scale = 120;
+    assert(!Gow3Settings::GraphicsNeedRestart() && S::RequestRenderScale(120) == 120);
+    v.render_scale = 90; // FXAA start: live without temporal AA, which a start below 100% would use
+    assert(Gow3Settings::GraphicsNeedRestart());
+    {
+        std::ofstream out(path);
+        out << "render_scale=bogus\n";
+    }
+    Gow3Settings::Load();
+    assert(v.render_scale == 100 && v.startup_render_scale == 100);
+    Gow3Settings::Save();
+    assert(Read(path) == "render_scale=bogus\n"); // unchanged in the menu: kept as written
     std::remove(path);
     std::puts("PASS: graphics settings");
 }

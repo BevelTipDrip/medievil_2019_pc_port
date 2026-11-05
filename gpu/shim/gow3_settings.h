@@ -91,12 +91,20 @@ struct Values {
     /// "Apply and restart" (run.py: graphics_options.PERF_SWITCHES).
     std::atomic<bool> perf[12] = {true, true, true, true, true, true, true, true, true, true, true, true};
     bool startup_perf[12] = {true, true, true, true, true, true, true, true, true, true, true, true};
-    /// MediEvil graphics quality, output resolution and render scale (UE4QualityKeys /
-    /// UE4OutputKeys / UE4ScaleKeys; -1: a value the menu does not list, such as a custom WxH,
-    /// kept as written). On restart (run.py: graphics_options, ue4_override).
-    int ue4_quality = 2, output_resolution = 4, render_scale = 3;
-    int startup_ue4_quality = 2, startup_output_resolution = 4, startup_render_scale = 3;
-    std::string ue4_quality_raw = "console", output_resolution_raw = "1920x1080", render_scale_raw = "100";
+    /// MediEvil graphics quality and output resolution (UE4QualityKeys / UE4OutputKeys; -1: a
+    /// value the menu does not list, such as a custom WxH, kept as written). On restart (run.py:
+    /// graphics_options, ue4_override).
+    int ue4_quality = 2, output_resolution = 4;
+    int startup_ue4_quality = 2, startup_output_resolution = 4;
+    std::string ue4_quality_raw = "console", output_resolution_raw = "1920x1080";
+    /// MediEvil render scale in percent of the output per side (medievil.ini render_scale,
+    /// ParseRenderScale): the value chosen, the one this launch started at (run.py:
+    /// ue4_override's r.ScreenPercentage) and the one the game draws at now. Live up to
+    /// LiveRenderScaleMax (RequestRenderScale); a larger value applies at the next start.
+    int render_scale = 100, startup_render_scale = 100, live_render_scale = 100;
+    /// medievil.ini ue4_aa is "taa" (the default). Not written by the menu: only its notes and
+    /// RestartChanges read it (FXAA / off: a start below 100% still uses temporal AA).
+    bool ue4_aa_temporal = true;
     /// MediEvil effects resolution (UE4EffectsKeys): UE4's separate translucency (enemy death
     /// effects, smoke, fire) at 100 / 75 / 50% of the render size. Live (in-game menu,
     /// runtime_ue4_request_cvar) and at boot (run.py: ue4_override). The death effects of several
@@ -165,7 +173,29 @@ inline bool PerfOn(PerfPatch patch) {
 inline constexpr const char* UE4QualityKeys[] = {"ultra", "high", "console", "medium", "low"};
 inline constexpr const char* UE4OutputKeys[] = {"display", "3840x2160", "3200x1800", "2560x1440", "1920x1080",
                                                 "1280x720"};
-inline constexpr const char* UE4ScaleKeys[] = {"200", "167", "133", "100", "67", "58", "50"};
+/// MediEvil render scale (medievil.ini render_scale; launcher > Performance, in-game menu > Applied
+/// now): any whole percent from RenderScaleMin to RenderScaleMax, the range of UE4 4.21's temporal
+/// upsampling (resolution fraction 0.5-2). The ini still starts 25-49 (graphics_options.py
+/// parse_render_scale); anything else is 100.
+inline constexpr int RenderScaleMin = 50, RenderScaleMax = 200, RenderScaleIniMin = 25;
+int ParseRenderScale(const std::string& value);
+/// The highest render scale the game can switch to live: the one it started at, or 100% if that was
+/// lower. Larger scenes need more memory than the start sized (framebuffer pool, GOW3_DMEM_MB, by the
+/// output size; research/docs/impl-live-render-scale.md).
+int LiveRenderScaleMax();
+/// The lowest one: RenderScaleMin, or the start value if an ini value below it started.
+int LiveRenderScaleMin();
+/// The chosen render scale needs a new start: above the live range, or (ue4_aa FXAA / off) on the
+/// other side of 100% than the start, whose anti-aliasing a start would change.
+bool RenderScaleNeedsRestart();
+/// Switches the scene to `percent` (clamped to the live range) through r.TemporalAA.Upsampling and
+/// r.ScreenPercentage (src/runtime_extra.c), logs "Render scale: A% -> B% (live)"; returns the
+/// scale the game draws at now.
+int RequestRenderScale(int percent);
+/// One side of the scene at `percent` of an output side (as graphics_options.scene_size).
+inline int ScaledSize(int size, int percent) {
+    return size * percent / 100;
+}
 inline constexpr const char* UE4EffectsKeys[] = {"100", "75", "50"};
 /// MediEvil graphics options switched live through UE4 console variables (in-game menu "Applied
 /// now", src/runtime_extra.c ue4_cvars[]). Choice 0, "Preset", follows the quality preset: picking
