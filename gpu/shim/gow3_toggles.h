@@ -137,6 +137,11 @@ enum : std::uint64_t {
     /// texture-set memo also keeps sets of 17-32 images (a table of their own) and the sets of
     /// stages without a prepared draw (their T# hashes computed at the bind). Set: off, live.
     TextureSetWide = 262144,
+    /// R1 (impl-stage-b-per-draw-2.md; src/runtime_memory.c), with GOW3_REGION_INDEX=1 at start
+    /// (opt-in): the region cache in front of runtime_memory_clamp / _region also has an index
+    /// of 1,024 entries by address page per thread, filled by the lock-free searches too. Set:
+    /// the 8 entries filled on the locked path only, as before (live). Read by the runtime.
+    RegionIndex = 524288,
 };
 inline bool Disabled(std::uint64_t bit) {
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;

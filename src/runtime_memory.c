@@ -1466,7 +1466,8 @@ void *runtime_low_map(size_t size, int prot) {
  * 65536 the buffer cache's residency check by the interval search again (R2, stage B per draw),
  * 131072 texture binds of stages without images through the slow path again (T1),
  * 262144 with GOW3_TEXSET_WIDE=1: the texture-set memo for 16 images or fewer and prepared
- * draws only again (T2). */
+ * draws only again (T2), 524288 with GOW3_REGION_INDEX=1: the region cache without its index
+ * by address (R1). */
 uint64_t runtime_disabled_optimizations, runtime_disabled_optimizations2;
 /* Speculative readers of guest memory (GPU draw-preparation workers) register a recovery
  * point: a fault on that thread jumps back to it instead of terminating (probe.c). */
@@ -1618,6 +1619,68 @@ static int region_buckets_on(void) {
     if (on<0) { const char *env=getenv("GOW3_REGION_BUCKETS"); on=!(env && env[0]=='0'); }
     return on;
 }
+/* gow3 R1 (research/docs/impl-stage-b-per-draw-2.md): the cache above is filled only on the
+ * locked path, and since the lock-free searches (T-P2) almost every lookup takes one of those,
+ * so it stays nearly empty: each vertex range and buffer of a draw binary-searches ~13,000
+ * regions. With GOW3_REGION_INDEX=1 (opt-in; second toggle word 524288 off, live) a lookup also
+ * tries one of REGION_SLOTS entries picked by the address's 64 KiB page, filled by the lock-free
+ * searches too. A fill keeps the region the search found with its bucket stamp read in the
+ * search, only when the table generation was the same even value before and after it: no
+ * writer held the lock meanwhile, so the entry is one cache_region could have made under the
+ * read lock (every table edit happens under the lock and bumps the edited range's buckets
+ * first), and it is checked by its stamp exactly as those are. Per thread, made on first use. */
+#define REGION_SLOTS 1024u
+#define TOGGLE2_REGION_INDEX_OFF UINT64_C(524288)
+static __thread CachedRegion *region_slots;
+static int region_index_wanted(void) {
+    static int wanted=-1; /* atomic: any thread may read the environment first, same answer */
+    int v=__atomic_load_n(&wanted,__ATOMIC_RELAXED);
+    if (v<0) {
+        const char *env=getenv("GOW3_REGION_INDEX");
+        v=env && env[0]=='1' && region_buckets_on();
+        __atomic_store_n(&wanted,v,__ATOMIC_RELAXED);
+    }
+    return v;
+}
+static int region_index_on(void) { /* first word 1: no region cache at all */
+    return region_index_wanted() && !(__atomic_load_n(&runtime_disabled_optimizations,__ATOMIC_RELAXED) & 1) &&
+           !(__atomic_load_n(&runtime_disabled_optimizations2,__ATOMIC_RELAXED) & TOGGLE2_REGION_INDEX_OFF);
+}
+static unsigned region_slot(uintptr_t address) {
+    return (unsigned)(((uint64_t)(address>>16)*UINT64_C(0x9E3779B97F4A7C15))>>54);
+}
+/* GOW3_FRAME_STATS=1 ("Region cache per frame" line): per thread, one writer each (no locked
+ * add on the lookup path), summed by the report. [0] index hits, [1] hits in the 8 entries,
+ * [2] lock-free searches, [3] locked searches, [4] index fills. */
+enum { RC_INDEX_HIT, RC_RING_HIT, RC_SEARCH, RC_LOCKED, RC_FILL, RC_COUNTS };
+typedef struct { uint64_t n[RC_COUNTS]; } RegionCounts;
+#define REGION_COUNT_THREADS 64u
+static __thread RegionCounts *region_counts;
+static __thread int region_counts_full;
+/* Never freed: the report may read a thread's counts after it exits (64 x 40 bytes at most). */
+static RegionCounts *region_count_list[REGION_COUNT_THREADS]; /* atomic pointers */
+static unsigned region_count_threads; /* atomic */
+static void region_cache_count(int what) {
+    if (!runtime_fault_stats_enabled()) return;
+    RegionCounts *counts=region_counts;
+    if (!counts) {
+        if (region_counts_full) return;
+        const unsigned at=__atomic_fetch_add(&region_count_threads,1,__ATOMIC_RELAXED);
+        /* Not counted past 64 threads (the report says so). */
+        if (at>=REGION_COUNT_THREADS || !(counts=calloc(1,sizeof(*counts)))) { region_counts_full=1; return; }
+        __atomic_store_n(&region_count_list[at],counts,__ATOMIC_RELEASE);
+        region_counts=counts;
+    }
+    __atomic_store_n(&counts->n[what],__atomic_load_n(&counts->n[what],__ATOMIC_RELAXED)+1,__ATOMIC_RELAXED);
+}
+/* The index of a thread is freed when the thread exits. */
+static pthread_key_t region_slots_key;
+static pthread_once_t region_slots_once=PTHREAD_ONCE_INIT;
+static void region_slots_free(void *slots) { /* on the exiting thread */
+    if (region_slots==slots) region_slots=NULL;
+    free(slots);
+}
+static void region_slots_key_make(void) { pthread_key_create(&region_slots_key,region_slots_free); }
 static const CachedRegion *cached_region(uintptr_t address) {
     const int buckets=region_buckets_on();
     uint64_t generation=__atomic_load_n(&table_generation,__ATOMIC_ACQUIRE);
@@ -1625,12 +1688,39 @@ static const CachedRegion *cached_region(uintptr_t address) {
      * range's buckets before its host mapping changes); without them it changes host mappings
      * before the table, so no cached answers. */
     if (!buckets && (generation & 1)) return NULL;
+    if (region_slots && region_index_on()) {
+        const CachedRegion *c=&region_slots[region_slot(address)];
+        if (c->end && c->start<=address && address<c->end && c->stamp &&
+            c->stamp==region_stamp(c->start,c->end)) {
+            region_cache_count(RC_INDEX_HIT);
+            return c;
+        }
+    }
     for (unsigned i=0;i<8;++i) {
         const CachedRegion *c=&region_cache[i];
         if (!c->end || c->start>address || address>=c->end) continue;
-        if (buckets ? c->stamp && c->stamp==region_stamp(c->start,c->end) : c->generation==generation) return c;
+        if (buckets ? c->stamp && c->stamp==region_stamp(c->start,c->end) : c->generation==generation) {
+            region_cache_count(RC_RING_HIT);
+            return c;
+        }
     }
     return NULL;
+}
+/* R1: a lock-free search's region into the index (see region_slots). `generation`: the table
+ * generation read before the search; `stamp`: the region's buckets, read in the search. */
+static void region_slot_fill(uintptr_t address, uint64_t generation, uintptr_t start, uintptr_t end,
+                             int kind, uint64_t stamp) {
+    if ((generation & 1) || !stamp || !end) return;
+    if (__atomic_load_n(&table_generation,__ATOMIC_ACQUIRE)!=generation) return;
+    if (!region_slots) {
+        CachedRegion *slots=calloc(REGION_SLOTS,sizeof(*slots));
+        if (!slots) return;
+        pthread_once(&region_slots_once,region_slots_key_make);
+        pthread_setspecific(region_slots_key,slots);
+        region_slots=slots;
+    }
+    region_slots[region_slot(address)]=(CachedRegion){generation,stamp,start,end,kind};
+    region_cache_count(RC_FILL);
 }
 /* Called under the read lock after a lookup of address. */
 static void cache_region(size_t i) {
@@ -1656,9 +1746,12 @@ static int optimistic_enabled(void) {
 }
 static int clamp_optimistic(uintptr_t address, uint64_t size, uint64_t *out) {
     if (!optimistic_enabled()) return 0;
+    const int index=region_index_on();
     const uint64_t deadline=__builtin_ia32_rdtsc()+OPTIMISTIC_SPIN_CYCLES;
     for (;;) {
         if (!__atomic_load_n(&vma_optimistic,__ATOMIC_ACQUIRE)) return 0;
+        /* R1: the table generation before the search (odd: no fill). */
+        const uint64_t generation=index ? __atomic_load_n(&table_generation,__ATOMIC_ACQUIRE) : 1;
         const uint64_t s1=__atomic_load_n(&vma_seq,__ATOMIC_ACQUIRE);
         if (s1 & 1) {
             if (__builtin_ia32_rdtsc()>deadline) return 0;
@@ -1676,8 +1769,19 @@ static int clamp_optimistic(uintptr_t address, uint64_t size, uint64_t *out) {
             if (v[i].start>address+length || v[i].kind==KIND_RESERVED) break;
             length=v[i].end-address;
         }
+        /* R1: the region holding address and its stamp, read inside the checked window (a torn
+         * read gives a stamp of nothing, or the check below fails). */
+        uintptr_t cs=0, ce=0; int ck=0; uint64_t stamp=0;
+        if (!(generation & 1) && lo<n && v[lo].start<=address) {
+            cs=v[lo].start; ce=v[lo].end; ck=v[lo].kind;
+            if (ce>cs) stamp=region_stamp(cs,ce);
+        }
         __atomic_thread_fence(__ATOMIC_ACQUIRE);
-        if (__atomic_load_n(&vma_seq,__ATOMIC_RELAXED)==s1) { *out=length<size ? length : size; return 1; }
+        if (__atomic_load_n(&vma_seq,__ATOMIC_RELAXED)==s1) {
+            *out=length<size ? length : size;
+            if (stamp) region_slot_fill(address,generation,cs,ce,ck,stamp);
+            return 1;
+        }
         if (__builtin_ia32_rdtsc()>deadline) return 0;
     }
 }
@@ -1685,7 +1789,8 @@ static int clamp_optimistic(uintptr_t address, uint64_t size, uint64_t *out) {
 uint64_t runtime_memory_clamp(uintptr_t address, uint64_t size) {
     const CachedRegion *c=(runtime_disabled_optimizations & 1) ? NULL : cached_region(address);
     if (c && c->kind!=KIND_RESERVED && size<=c->end-address) return size;
-    { uint64_t length; if (clamp_optimistic(address,size,&length)) return length; }
+    { uint64_t length; if (clamp_optimistic(address,size,&length)) { region_cache_count(RC_SEARCH); return length; } }
+    region_cache_count(RC_LOCKED);
     read_lock();
     { size_t i=vma_index(address); if (i<vma_count && vmas[i].start<=address) cache_region(i); }
     uint64_t length=0;
@@ -1701,9 +1806,12 @@ uint64_t runtime_memory_clamp(uintptr_t address, uint64_t size) {
  * over from the clamp): 1 when no table entry changed during the search, *found as below. */
 static int region_optimistic(uintptr_t address, uintptr_t *start, uintptr_t *end, int *mapped, int *found) {
     if (!optimistic_enabled()) return 0;
+    const int index=region_index_on();
     const uint64_t deadline=__builtin_ia32_rdtsc()+OPTIMISTIC_SPIN_CYCLES;
     for (;;) {
         if (!__atomic_load_n(&vma_optimistic,__ATOMIC_ACQUIRE)) return 0;
+        /* R1: the table generation before the search (odd: no fill). */
+        const uint64_t generation=index ? __atomic_load_n(&table_generation,__ATOMIC_ACQUIRE) : 1;
         const uint64_t s1=__atomic_load_n(&vma_seq,__ATOMIC_ACQUIRE);
         if (s1 & 1) {
             if (__builtin_ia32_rdtsc()>deadline) return 0;
@@ -1717,12 +1825,17 @@ static int region_optimistic(uintptr_t address, uintptr_t *start, uintptr_t *end
         size_t lo=0, hi=n;
         while (lo<hi) { size_t mid=(lo+hi)/2; if (v[mid].end<=address) lo=mid+1; else hi=mid; }
         uintptr_t s=0, e=0; int m=0; const int f=lo<n;
-        if (f && v[lo].start<=address) { s=v[lo].start; e=v[lo].end; m=v[lo].kind!=KIND_RESERVED; }
+        int k=0; uint64_t stamp=0; /* R1: the region's kind and stamp when address is inside one */
+        if (f && v[lo].start<=address) {
+            s=v[lo].start; e=v[lo].end; k=v[lo].kind; m=k!=KIND_RESERVED;
+            if (!(generation & 1) && e>s) stamp=region_stamp(s,e);
+        }
         else if (f) { s=lo ? v[lo-1].end : 0; e=v[lo].start; m=0; }
         __atomic_thread_fence(__ATOMIC_ACQUIRE);
         if (__atomic_load_n(&vma_seq,__ATOMIC_RELAXED)==s1) {
             if (f) { *start=s; *end=e; *mapped=m; }
             *found=f;
+            if (stamp) region_slot_fill(address,generation,s,e,k,stamp);
             return 1;
         }
         if (__builtin_ia32_rdtsc()>deadline) return 0;
@@ -1731,7 +1844,8 @@ static int region_optimistic(uintptr_t address, uintptr_t *start, uintptr_t *end
 int runtime_memory_region(uintptr_t address, uintptr_t *start, uintptr_t *end, int *mapped) {
     const CachedRegion *c=(runtime_disabled_optimizations & 1) ? NULL : cached_region(address);
     if (c) { *start=c->start; *end=c->end; *mapped=c->kind!=KIND_RESERVED; return 1; }
-    { int found; if (region_optimistic(address,start,end,mapped,&found)) return found; }
+    { int found; if (region_optimistic(address,start,end,mapped,&found)) { region_cache_count(RC_SEARCH); return found; } }
+    region_cache_count(RC_LOCKED);
     read_lock();
     size_t i=vma_index(address);
     int found=i<vma_count;
@@ -1907,6 +2021,30 @@ void runtime_memory_lock_report(char *out, size_t size, unsigned frames) {
 #else
     (void)used;
 #endif
+    /* gow3 R1 (impl-stage-b-per-draw-2.md): the region cache's answers on every thread that asks
+     * (clamp, region, is_mapped; counted per thread, summed here): from the index, from the 8
+     * entries, or by a search; and the index fills. */
+    {
+        static uint64_t last[RC_COUNTS]; /* the report's thread only */
+        uint64_t now[RC_COUNTS]={0};
+        const unsigned threads=__atomic_load_n(&region_count_threads,__ATOMIC_RELAXED);
+        const unsigned listed=threads<REGION_COUNT_THREADS ? threads : REGION_COUNT_THREADS;
+        for (unsigned t=0;t<listed;++t) {
+            const RegionCounts *counts=__atomic_load_n(&region_count_list[t],__ATOMIC_ACQUIRE);
+            if (!counts) continue;
+            for (int k=0;k<RC_COUNTS;++k) now[k]+=__atomic_load_n(&counts->n[k],__ATOMIC_RELAXED);
+        }
+        double d[RC_COUNTS];
+        for (int k=0;k<RC_COUNTS;++k) { d[k]=(now[k]-last[k])/f; last[k]=now[k]; }
+        const char *state=!region_index_wanted() ? "off" : region_index_on() ? "on" : "toggled off";
+        const size_t at=strlen(out);
+        if (at<size) {
+            snprintf(out+at,size-at,"Region cache per frame (R1 %s): index hits %.1f, ring hits %.1f, "
+                     "searched lock-free %.1f, locked %.1f; index fills %.1f (%u threads%s)\n",
+                     state,d[RC_INDEX_HIT],d[RC_RING_HIT],d[RC_SEARCH],d[RC_LOCKED],d[RC_FILL],listed,
+                     threads>REGION_COUNT_THREADS ? ", more not counted" : "");
+        }
+    }
 }
 /* GPU page tracking: restrict host access, never beyond the guest's own protection. */
 void runtime_memory_gpu_protect(uintptr_t address, uint64_t size, int read, int write) {
@@ -1925,6 +2063,7 @@ void runtime_memory_gpu_protect(uintptr_t address, uint64_t size, int read, int 
 int runtime_memory_is_mapped(uintptr_t address, uint64_t size) {
     const CachedRegion *c=(runtime_disabled_optimizations & 1) ? NULL : cached_region(address);
     if (c && c->kind!=KIND_RESERVED && size<=c->end-address) return 1;
+    region_cache_count(RC_LOCKED);
     read_lock();
     int result=covered(address,address+size,0);
     read_unlock();
