@@ -3241,9 +3241,10 @@ bool Rasterizer::BindTexturesFromSet(const Shader::Info& stage, const PreparedSt
                                      u32 first_image_idx, bool& barrier, TextureSetSlot& slot) {
     GOW3_SECTION(TexSetHit);
     const u32 count = static_cast<u32>(stage.images.size());
-    // T2: sets of 17-32 images and stages without a prepared draw too.
+    // T2: sets of 17-32 images and stages of draws without a prepared draw too (graphics only:
+    // dispatches never have one and keep the slow path, ~34 a heavy frame).
     const bool wide = TextureSetWide();
-    if (count == 0 || (!prepared && !wide) ||
+    if (count == 0 || (!prepared && (!wide || stage.sw_stage == Shader::SwStage::Compute)) ||
         count > (wide ? WideTextureSet::MaxImages : TextureSet::MaxImages) ||
         Gow3Toggle::Disabled(Gow3Toggle::TextureSetMemo) || FrameCapture::Active()) {
         return false;
