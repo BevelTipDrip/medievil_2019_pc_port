@@ -363,7 +363,18 @@ int VideoOutDriver::ChangeBufferAttribute(VideoOutPort* port, s32 attributeIndex
     return 0;
 }
 
+// gow3: when the game last flipped. The menu's idle redraws count from it, so they only fill gaps
+// of 16 ms without a game frame (else a game running under the open menu got ~60 extra
+// presents a second on top of its own, and its frame pacing suffered).
+static std::atomic<std::chrono::steady_clock::rep> last_game_flip{0};
+static std::chrono::steady_clock::time_point LastGameFlip() {
+    return std::chrono::steady_clock::time_point{
+        std::chrono::steady_clock::duration{last_game_flip.load(std::memory_order_relaxed)}};
+}
+
 void VideoOutDriver::Flip(const Request& req) {
+    last_game_flip.store(std::chrono::steady_clock::now().time_since_epoch().count(),
+                         std::memory_order_relaxed);
     Gow3FlipTrace::Note("release", req.flip_arg);
     // Update HDR status before presenting, then present the frame (gow3: on the swap thread).
     const auto deadline = std::exchange(flip_deadline, {});
@@ -1488,7 +1499,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
             // gow3: the save list / menu / text entry stay live while the game draws nothing.
             static auto last_redraw = std::chrono::steady_clock::now();
             if (main_port.is_open && Gow3Overlay::CapturesInput() &&
-                now - last_redraw >= std::chrono::milliseconds(16)) {
+                now - std::max(last_redraw, LastGameFlip()) >= std::chrono::milliseconds(16)) {
                 last_redraw = now;
                 DrawLastFrame();
             } else if (timer.GetTotalWait().count() < 0) { // Dont draw too fast
@@ -1529,7 +1540,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
                 // gow3: the save list / menu / text entry stay live while the game draws nothing.
                 static auto last_redraw = std::chrono::steady_clock::now();
                 if (main_port.is_open && Gow3Overlay::CapturesInput() &&
-                    now - last_redraw >= std::chrono::milliseconds(16)) {
+                    now - std::max(last_redraw, LastGameFlip()) >= std::chrono::milliseconds(16)) {
                     last_redraw = now;
                     DrawLastFrame();
                 } else if (timer.GetTotalWait().count() < 0) { // Dont draw too fast
