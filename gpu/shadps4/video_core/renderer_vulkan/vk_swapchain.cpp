@@ -326,9 +326,14 @@ void Swapchain::FindPresentMode() {
                           : name == "mailbox"    ? vk::PresentModeKHR::eMailbox
                           : name == "immediate"  ? vk::PresentModeKHR::eImmediate
                                                  : vk::PresentModeKHR::eFifo;
-        present_mode = has(mode) ? mode : vk::PresentModeKHR::eFifo;
-        std::printf("Swapchain: present mode %s (GOW3_PRESENT_MODE=%s)\n", vk::to_string(present_mode).c_str(),
-                    forced);
+        // Immediate asks for no wait on the display: without it (gamescope offers no Immediate),
+        // Mailbox keeps that, where Fifo would cap the frame rate at the refresh.
+        present_mode = has(mode) ? mode
+                       : mode == vk::PresentModeKHR::eImmediate && has(vk::PresentModeKHR::eMailbox)
+                           ? vk::PresentModeKHR::eMailbox
+                           : vk::PresentModeKHR::eFifo;
+        std::printf("Swapchain: present mode %s (GOW3_PRESENT_MODE=%s%s)\n", vk::to_string(present_mode).c_str(),
+                    forced, present_mode == mode ? "" : ", not offered by the surface");
         return;
     }
     present_mode = vsync ? vk::PresentModeKHR::eFifo
