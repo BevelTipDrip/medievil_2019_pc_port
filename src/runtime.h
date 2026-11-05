@@ -125,6 +125,9 @@ void runtime_wait_site(void *return_address, unsigned kind, uint64_t requested_n
 void runtime_ue4_setres_poll(void);
 void runtime_ue4_request_setres(const char *text);
 void runtime_ue4_request_cvar(const char *name, const char *value);
+/* The in-game menu's "Single GPU particle pass" (1 on, 0 off), applied live unless the toggle file's
+ * second word 8192 forces the fixed step (runtime_extra.c). */
+void runtime_ue4_particle_single_pass(int on);
 void runtime_sse4a_install(unsigned char *image, size_t image_size, unsigned char *stubs, size_t stubs_size);
 int runtime_sse4a_emulate(void *context_record);
 #endif

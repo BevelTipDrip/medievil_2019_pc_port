@@ -28,6 +28,7 @@ extern std::atomic<bool> screenshot_requested;
 extern "C" void runtime_restart(void); // src/probe.c: starts run.py again, ends this process
 extern "C" void runtime_ue4_request_setres(const char* text); // src/runtime_extra.c: live r.SetRes
 extern "C" void runtime_ue4_request_cvar(const char* name, const char* value); // live console variables
+extern "C" void runtime_ue4_particle_single_pass(int on); // src/runtime_extra.c: r.GPUParticle.FixDeltaSeconds
 u32 Gow3DisplayRefreshHz(); // gow3gpu.cpp: the display refresh rate
 #include "common/elf_info.h"
 #include "imgui.h"
@@ -548,7 +549,8 @@ void PerfPatchesSection() {
     static const char* const hints[S::PerfCount] = {
         "Skips objects hidden behind others, without waiting for the GPU. Heavy areas ~130 -> ~165 FPS.",
         "No second depth-only drawing of the scene for nearly invisible decals: ~600 fewer draws, ~10%.",
-        "One particle simulation pass a frame instead of an extra empty one: up to ~190 fewer draws.",
+        "One particle simulation pass a frame instead of an extra empty one: up to ~190 fewer draws. Off by "
+        "default: some lone torches burn very slowly and an ember stream can show in Dan's crypt with it.",
         "Unchanged small buffers are read from video memory instead of copied every draw: ~5%.",
         "Remembered texture bindings survive other textures streaming in: binding ~7% cheaper.",
         "The GPU threads read the memory map without waiting for the game: fewer panning spikes.",
@@ -567,6 +569,12 @@ void PerfPatchesSection() {
     }
     // The live ones in the memory runtime (src/runtime_memory.c); the buffer cache reads its own.
     runtime_memory_set_perf(s.perf[S::PerfLockfreeMemory] ? 1 : 0, s.perf[S::PerfCheapFrees] ? 1 : 0);
+    // The particle pass through its console variable at the next game-thread poll (once per change).
+    runtime_ue4_particle_single_pass(s.perf[S::PerfParticleSinglePass] ? 1 : 0);
+    if (Gow3Toggle2::Disabled(Gow3Toggle2::ParticleFixedStep)) {
+        ImGui::TextDisabled("Single GPU particle pass: held off by the toggle file (second word 8192); this "
+                            "choice applies when that bit clears.");
+    }
     ImGui::TextDisabled("Applied on restart:");
     if (BeginRows("##perf_restart")) {
         for (int p = 0; p < S::PerfCount; ++p) {

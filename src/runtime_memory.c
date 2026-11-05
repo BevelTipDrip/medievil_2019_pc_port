@@ -1463,6 +1463,8 @@ void *runtime_low_map(size_t size, int prot) {
  * table lock again (D4), 512 the table lock blocks at once (Linux) and flush_hooks always takes
  * it (D5), 1024 with GOW3_STAGE_B_SPIN=1: stage B blocks without the bounded spin (#4),
  * 2048 the texture-set memo's table as before instead of its compact layout,
+ * 8192 the GPU particles' fixed 1/30 s step (r.GPUParticle.FixDeltaSeconds) whatever the menu's
+ * single particle pass says (runtime_extra.c),
  * 65536 the buffer cache's residency check by the interval search again (R2, stage B per draw),
  * 131072 texture binds of stages without images through the slow path again (T1),
  * 262144 with GOW3_TEXSET_WIDE=1: the texture-set memo for 16 images or fewer and prepared

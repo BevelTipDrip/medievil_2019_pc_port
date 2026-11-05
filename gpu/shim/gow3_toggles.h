@@ -129,6 +129,12 @@ enum : std::uint64_t {
     /// GOW3_DRAIN_HYBRID=1 DrawPipe::Drain pauses up to GOW3_DRAIN_SPIN_US, then sleeps on a
     /// futex that stage B signals near the end. Set: today's pauses and sched_yield again.
     DrainHybridOff = 4096,
+    /// The single GPU particle pass (perf_particle_single_pass, src/runtime_extra.c
+    /// ue4_particle_pass_poll): set, r.GPUParticle.FixDeltaSeconds goes back to the game's fixed
+    /// 1/30 s step live, whatever the in-game menu says (the menu shows it as forced and keeps
+    /// its choice); clear, the menu's / ini's choice again. Only a change of the effective value
+    /// sets the cvar ("Particle single pass: on|off (live...)" in the log). Read by the runtime.
+    ParticleFixedStep = 8192,
     /// R2 (impl-stage-b-per-draw-2.md): the buffer cache's residency check (EnsureResident,
     /// every ObtainBuffer outside the stream buffer) answers from a bitmap of resident blocks
     /// (gow3_resident_blocks.h; kept either way). Set: the interval search every time.

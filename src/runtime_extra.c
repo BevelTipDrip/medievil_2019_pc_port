@@ -666,9 +666,13 @@ static const struct { const char *name; Ue4CvarSite at[2]; } ue4_cvars[]={
     {"r.BloomQuality",{{0x5819f28,0x731c33,{0x48,0x8d,0x35,0x18,0x42,0x53,0x03}},{0x5819f48,0x7347f3,{0x48,0x8d,0x35,0xb8,0x4b,0x53,0x03}}}},
     {"r.LensFlareQuality",{{0x5819f10,0x731bca,{0x48,0x8d,0x35,0x43,0x41,0x53,0x03}},{0x5819f30,0x73478a,{0x48,0x8d,0x35,0xe3,0x4a,0x53,0x03}}}},
     {"r.SceneColorFringeQuality",{{0x5819f40,0x731c9c,{0x48,0x8d,0x35,0x3d,0x44,0x53,0x03}},{0x5819f60,0x73485c,{0x48,0x8d,0x35,0xdd,0x4d,0x53,0x03}}}},
+    /* Single GPU particle pass (ue4_particle_pass_poll). TAutoConsoleVariable<float>, flags 0, default
+     * 1/30 (vmovss of 0x3d088889 just before the site); the registration stores its result at
+     * object+8 (01.00 0x5c14d20, 01.02 0x5c14d60). */
+    {"r.GPUParticle.FixDeltaSeconds",{{0x5c14d18,0x23933b3,{0x48,0x8d,0x35,0xc0,0x16,0xa9,0x01}},{0x5c14d58,0x2396183,{0x48,0x8d,0x35,0xb0,0x19,0xa9,0x01}}}},
 };
 #define UE4_CVARS (sizeof(ue4_cvars)/sizeof(ue4_cvars[0]))
-static char ue4_cvar_values[UE4_CVARS][8];
+static char ue4_cvar_values[UE4_CVARS][16];
 static int ue4_cvar_pending[UE4_CVARS];
 void runtime_ue4_request_cvar(const char *name, const char *value) {
     if (!name || !value || strlen(value)>=sizeof(ue4_cvar_values[0])) return;
@@ -677,6 +681,39 @@ void runtime_ue4_request_cvar(const char *name, const char *value) {
         strcpy(ue4_cvar_values[i],value);
         __atomic_store_n(&ue4_cvar_pending[i],1,__ATOMIC_RELEASE);
     }
+}
+
+/* The single GPU particle pass (perf_particle_single_pass): r.GPUParticle.FixDeltaSeconds 0, one
+ * simulation pass a frame with the real frame time, or the game's fixed 1/30 s step, which adds a
+ * second, empty pass in some frames (~190 draws; research/docs/study-heavy-frame-map.md H3) but
+ * keeps lone torches and the crypt ember right (plan-0102.md T-0102-4). The override pak sets the
+ * start value (run.py: 0 unless GOW3_PARTICLE_FIXED_STEP=1); after that two switches decide it
+ * live, at the game-thread poll: the toggle file's second word bit 8192 (Gow3Toggle2::
+ * ParticleFixedStep) forces the fixed step whatever the menu says, and with the bit clear the
+ * menu's choice (runtime_ue4_particle_single_pass) holds. The menu keeps its own choice while the
+ * bit is set and gets it back when the bit clears. */
+#define TOGGLE2_PARTICLE_FIXED_STEP UINT64_C(8192)
+/* 1/30 as the game registers it (float 0x3d088889 in 01.00 and 01.02): 0.0333333 would be 9 ulps off. */
+#define PARTICLE_FIXED_STEP "0.033333335"
+extern uint64_t runtime_disabled_optimizations2; /* runtime_memory.c: the toggle file's second word */
+static int particle_wanted=-1; /* the menu's choice: 1 single pass, 0 fixed step, -1 not drawn yet */
+void runtime_ue4_particle_single_pass(int on) {
+    __atomic_store_n(&particle_wanted,on ? 1 : 0,__ATOMIC_RELEASE);
+}
+static void ue4_particle_pass_poll(void) {
+    static int start=-1, applied; /* the override pak's value; what the cvar holds now */
+    if (start<0) {
+        const char *fixed=getenv("GOW3_PARTICLE_FIXED_STEP");
+        applied=start=!(fixed && !strcmp(fixed,"1"));
+    }
+    int wanted=__atomic_load_n(&particle_wanted,__ATOMIC_ACQUIRE);
+    if (wanted<0) wanted=start; /* menu not opened yet: the ini's choice, as the game started */
+    const int forced=(__atomic_load_n(&runtime_disabled_optimizations2,__ATOMIC_RELAXED)&TOGGLE2_PARTICLE_FIXED_STEP)!=0;
+    const int on=forced ? 0 : wanted;
+    if (on==applied) return;
+    applied=on; /* once per switch, also when this eboot has no known address (logged once) */
+    printf("Particle single pass: %s (live%s)\n",on ? "on" : "off",forced ? ", toggle file second word 8192" : "");
+    runtime_ue4_request_cvar("r.GPUParticle.FixDeltaSeconds",on ? "0" : PARTICLE_FIXED_STEP);
 }
 
 /* A switch asked for by the in-game menu (window thread), done on the next game-thread poll. */
@@ -704,6 +741,7 @@ void runtime_ue4_setres_poll(void) {
     /* Menu switches, and the ini's at start: kept until the main menu (after the engine has read
      * its own settings, which would otherwise win). */
     if (reads>=600) {
+        ue4_particle_pass_poll(); /* requests its cvar for the loop below */
         for (size_t i=0;i<UE4_CVARS;++i) {
             if (!__atomic_exchange_n(&ue4_cvar_pending[i],0,__ATOMIC_ACQ_REL)) continue;
             char text[sizeof(ue4_cvar_values[0])];

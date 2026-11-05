@@ -164,8 +164,9 @@ inline constexpr const char* PerfKeys[PerfCount] = {
     "perf_hzb_occlusion", "perf_no_decal_prepass", "perf_particle_single_pass", "perf_small_buffers",
     "perf_texture_memo", "perf_lockfree_memory", "perf_cheap_frees", "perf_gpu_data_no_waits",
     "perf_4k_memory", "perf_lean_barriers", "perf_lean_binding", "perf_ring_reuse"};
-/// Switched while the game runs (the others need a restart).
-inline constexpr bool PerfLive[PerfCount] = {false, false, false, true, false, true, true, false, false, false, true, true};
+/// Switched while the game runs (the others need a restart). The single particle pass through its
+/// console variable (src/runtime_extra.c: runtime_ue4_particle_single_pass, 01.00 and 01.02).
+inline constexpr bool PerfLive[PerfCount] = {false, false, true, true, false, true, true, false, false, false, true, true};
 /// Whether a live patch is on now (read by the draw thread for every draw).
 inline bool PerfOn(PerfPatch patch) {
     return Get().perf[patch].load(std::memory_order_relaxed);

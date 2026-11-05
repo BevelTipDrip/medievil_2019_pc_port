@@ -56,6 +56,14 @@ int main() {
     v.fps_limit = 60;  // live: no restart because of it
     v.engine_fps = 240;
     assert(!Gow3Settings::GraphicsNeedRestart());
+    // The single particle pass is live (r.GPUParticle.FixDeltaSeconds, runtime_extra.c); the decal
+    // prepass still needs a start.
+    v.perf[Gow3Settings::PerfParticleSinglePass] = !v.perf[Gow3Settings::PerfParticleSinglePass];
+    assert(!Gow3Settings::GraphicsNeedRestart());
+    v.perf[Gow3Settings::PerfParticleSinglePass] = !v.perf[Gow3Settings::PerfParticleSinglePass];
+    v.perf[Gow3Settings::PerfNoDecalPrepass] = !v.perf[Gow3Settings::PerfNoDecalPrepass];
+    assert(Gow3Settings::GraphicsNeedRestart());
+    v.perf[Gow3Settings::PerfNoDecalPrepass] = !v.perf[Gow3Settings::PerfNoDecalPrepass];
 
     Gow3Settings::Save();
     const std::string saved = Read(path);
