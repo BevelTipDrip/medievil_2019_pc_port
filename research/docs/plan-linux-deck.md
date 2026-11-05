@@ -1213,3 +1213,16 @@ the graph"), no glitches seen in the heavy view. Pending: walking and fast turns
 - **The user:** the GPU can already get more power with a fixed GPU clock (+1-2 FPS at a cost in frame stability); not
   worth chasing clocks further unless CPU use drops seriously. **Direction: cut total CPU work on every thread** (less
   CPU power = GPU headroom), measured per thread first (`deck.sh threads`).
+
+## Stage B per draw, round 2 (2026-11-05, branch `stage-b-per-draw-2`; [impl-stage-b-per-draw-2.md](impl-stage-b-per-draw-2.md); not run)
+
+Read from the code against `data/deck-texset-1.log`: `obt_resident` (0.32 ms) is a sorted-vector search for residency
+that only ever grows; the clamp's region cache is filled only on the locked path, so since the lock-free search it is
+nearly empty and every vertex range / buffer binary-searches ~13,000 regions; `obt_sync`'s 0.67 ms is mostly ~4
+uploads a frame (~3 MB, the pages of ~750 write faults, re-protected each time); texslow is over-16-image sets (0.38
+ms), unprepared draws (0.28) and stages without images (0.17); the ~16 texture-set misses a frame are all own-target
+sets (C10). Built, each its own commit and live switch (second word): **R2** residency bitmap 65536 (on), **T1**
+no-image texture binds 131072 (on), **T2** wide texture-set memo 262144 (`GOW3_TEXSET_WIDE=1`), **R1** region cache
+index 524288 (`GOW3_REGION_INDEX=1`); new sections `obt_upload`, `clamp`; new lines "Stage B cuts per frame",
+"Region cache per frame". All removed work, none moved to another thread. Expected -0.6 to -1.3 ms of stage B a heavy
+frame. Deck test: one launch, `deck.sh ab "0 0" "0 983040"`, then one pair per bit (impl doc section 3).
