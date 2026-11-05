@@ -22,6 +22,7 @@
 #include "gow3_fence_stats.h"
 #include "gow3_decode_pacing.h"
 #include "gow3_draw_classes.h"
+#include "gow3_drain_wait.h"
 #include "gow3_stage_b_wait.h"
 #include "gow3_texset_table.h"
 #include "gow3_gpu_fences.h"
@@ -864,6 +865,46 @@ void VideoOutDriver::Flip(const Request& req) {
                             site_ns[SB::Present] / 1e6 / frames_d,
                             SB::spins.exchange(0) / frames_d, SB::spin_ns.exchange(0) / 1e6 / frames_d,
                             SB::spin_catches.exchange(0) / frames_d);
+                    }
+                    // gow3 (impl-cpu-waste.md, gow3_drain_wait.h): stage A's drains that waited
+                    // for stage B, on today's path (pauses, then sched_yield) or the hybrid one
+                    // (GOW3_DRAIN_HYBRID=1: pauses, then a futex sleep; second word 4096 off).
+                    {
+                        namespace DW = Gow3DrainWait;
+                        char state[48];
+                        if (!DW::Wanted()) {
+                            std::snprintf(state, sizeof(state), "off");
+                        } else if (!DW::Enabled()) {
+                            std::snprintf(state, sizeof(state), "toggled off");
+                        } else {
+                            std::snprintf(state, sizeof(state), "on, spin %llu us, wake %u ahead",
+                                          static_cast<unsigned long long>(DW::SpinNs() / 1000),
+                                          DW::WakeAhead());
+                        }
+                        const u64 latency_n = DW::wake_latency_n.exchange(0);
+                        const u64 latency_ns = DW::wake_latency_ns.exchange(0);
+                        const u64 wakes = DW::wakes.exchange(0);
+                        const u64 wake_call_ns = DW::wake_call_ns.exchange(0);
+                        std::printf(
+                            "Stage A drain waits per frame (hybrid %s): %.2f (%.3f ms); today's "
+                            "wait: within the pauses %.2f, sched_yield calls %.0f; hybrid: %.2f, "
+                            "ended in the spin %.2f, slept %.2f (sleeps %.2f, woken ahead %.2f, then "
+                            "ended by the spin %.2f), spin %.3f ms, sleep %.3f ms, wake latency "
+                            "%.1f us avg %.1f max, stage B wakes %.2f (%.2f us each)\n",
+                            state, DW::waits.exchange(0) / frames_d,
+                            DW::wait_ns.exchange(0) / 1e6 / frames_d,
+                            DW::pause_only.exchange(0) / frames_d,
+                            DW::yields.exchange(0) / frames_d,
+                            DW::hybrid_waits.exchange(0) / frames_d,
+                            DW::spin_ends.exchange(0) / frames_d, DW::slept.exchange(0) / frames_d,
+                            DW::sleeps.exchange(0) / frames_d,
+                            DW::woken_ahead.exchange(0) / frames_d,
+                            DW::ahead_caught.exchange(0) / frames_d,
+                            DW::spin_ns.exchange(0) / 1e6 / frames_d,
+                            DW::sleep_ns.exchange(0) / 1e6 / frames_d,
+                            latency_n ? latency_ns / 1e3 / latency_n : 0.0,
+                            DW::wake_latency_max_ns.exchange(0) / 1e3, wakes / frames_d,
+                            wakes ? wake_call_ns / 1e3 / wakes : 0.0);
                     }
                     // gow3 (impl-texset-index.md): the texture-set memo's lookups by layout
                     // (compact, or the table as before with second word 2048), hits, misses by

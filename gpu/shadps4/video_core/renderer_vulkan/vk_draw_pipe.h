@@ -26,6 +26,7 @@
 #include "common/thread.h"
 #include "common/types.h"
 #include "gow3_cacheline.h"
+#include "gow3_drain_wait.h"
 #include "gow3_linux_sched.h"
 #include "gow3_sampler.h"
 #include "gow3_sections.h"
@@ -92,6 +93,7 @@ public:
         head += pending_size;
         published.store(head, std::memory_order_seq_cst);
         ++packets;
+        commit_ends[packets % CommitEnds] = head; // for the hybrid drain's early wake
         if (sleeping.load(std::memory_order_seq_cst)) {
             wake.fetch_add(1, std::memory_order_seq_cst);
             wake.notify_one();
@@ -121,28 +123,21 @@ public:
         const u32 slot = reason < NumReasons ? reason : ReasonRasterizer;
         ++drains_by_reason[slot];
         const u64 start = __rdtsc();
-        for (u32 spins = 0; consumed.load(std::memory_order_acquire) != head; ++spins) {
-            if (spins < 4096) {
-                __builtin_ia32_pause();
-            } else if (spins < 4096 + 32 || !DrainSleeps()) {
-                std::this_thread::yield();
-            } else {
-                // gow3 GOW3_DRAIN_SLEEP: sleep until stage B moves on. Yield-spinning here kept a
-                // core busy while stage A waited for stage B half the time (Deck: shadPS4:GpuComm
-                // ~1 core, 8.4k switches/s); on 4 cores that time belongs to the game and stage B.
-                // From spacepepperoni/medievil_ps4_Linux 6ef7566 (the Uncharted Linux fork).
-                drainer_waiting.store(true, std::memory_order_seq_cst);
-                const u64 seen = consumed.load(std::memory_order_seq_cst);
-                if (seen != head) {
-                    consumed.wait(seen, std::memory_order_seq_cst);
-                }
-                drainer_waiting.store(false, std::memory_order_relaxed);
-            }
+        const u64 start_ns = Gow3Stats::enabled ? Gow3DrainWait::NowNs() : 0;
+        if (Gow3DrainWait::Enabled()) {
+            HybridWait();
+        } else {
+            YieldWait();
         }
         const u64 waited = __rdtsc() - start;
         drain_cycles += waited;
         cycles_by_reason[slot] += waited;
         Gow3Stats::stage_a_drain_cycles.fetch_add(waited, std::memory_order_relaxed);
+        if (Gow3Stats::enabled) {
+            Gow3DrainWait::waits.fetch_add(1, std::memory_order_relaxed);
+            Gow3DrainWait::wait_ns.fetch_add(Gow3DrainWait::NowNs() - start_ns,
+                                             std::memory_order_relaxed);
+        }
     }
 
     /// Stage A: position after the last committed packet; Reached(position) once B ran it.
@@ -177,6 +172,123 @@ private:
         u32 payload; ///< bytes written by the producer
     };
     static constexpr u64 Capacity = 16ull << 20;
+    /// Commit positions kept for the hybrid drain's early wake (the last CommitEnds packets).
+    static constexpr u64 CommitEnds = 16;
+    /// drain_target with no sleeping drain.
+    static constexpr u64 NoDrainTarget = ~0ull;
+
+    /// Drain(): today's wait (4096 pauses, then sched_yield; GOW3_DRAIN_SLEEP sleeps instead).
+    void YieldWait() {
+        u32 spins = 0;
+        for (; consumed.load(std::memory_order_acquire) != head; ++spins) {
+            if (spins < 4096) {
+                __builtin_ia32_pause();
+            } else if (spins < 4096 + 32 || !DrainSleeps()) {
+                std::this_thread::yield();
+            } else {
+                // gow3 GOW3_DRAIN_SLEEP: sleep until stage B moves on. Yield-spinning here kept a
+                // core busy while stage A waited for stage B half the time (Deck: shadPS4:GpuComm
+                // ~1 core, 8.4k switches/s); on 4 cores that time belongs to the game and stage B.
+                // From spacepepperoni/medievil_ps4_Linux 6ef7566 (the Uncharted Linux fork).
+                drainer_waiting.store(true, std::memory_order_seq_cst);
+                const u64 seen = consumed.load(std::memory_order_seq_cst);
+                if (seen != head) {
+                    consumed.wait(seen, std::memory_order_seq_cst);
+                }
+                drainer_waiting.store(false, std::memory_order_relaxed);
+            }
+        }
+        if (Gow3Stats::enabled) {
+            if (spins <= 4096) {
+                Gow3DrainWait::pause_only.fetch_add(1, std::memory_order_relaxed);
+            } else {
+                Gow3DrainWait::yields.fetch_add(spins - 4096, std::memory_order_relaxed);
+            }
+        }
+    }
+
+    /// Drain() with GOW3_DRAIN_HYBRID (gow3_drain_wait.h): pauses for up to SpinNs(), then sleeps
+    /// until stage B reaches the wake position (WakeAhead() packets before the end the first
+    /// time, the end after that), then pauses again; no sched_yield.
+    void HybridWait() {
+        namespace DW = Gow3DrainWait;
+        const bool stats = Gow3Stats::enabled;
+        const u64 target = head;
+        const u32 ahead_packets = DW::WakeAhead();
+        u64 spin_total = 0, sleep_total = 0, num_sleeps = 0, num_ahead = 0;
+        bool woken_ahead = false; // the last sleep ended at the early wake position
+        for (u32 round = 0;; ++round) {
+            const u64 spin_start = DW::NowNs();
+            const bool done = SpinUntil(target, spin_start + DW::SpinNs());
+            const u64 spin_end = stats ? DW::NowNs() : 0;
+            if (stats) {
+                spin_total += spin_end - spin_start;
+            }
+            if (done) {
+                if (stats) {
+                    if (round == 0) {
+                        DW::spin_ends.fetch_add(1, std::memory_order_relaxed);
+                    } else if (woken_ahead) {
+                        DW::ahead_caught.fetch_add(1, std::memory_order_relaxed);
+                    }
+                }
+                break;
+            }
+            u64 wake_at = target;
+            if (round == 0 && ahead_packets && packets > ahead_packets) {
+                const u64 at = commit_ends[(packets - ahead_packets) % CommitEnds];
+                if (at < target && at > consumed.load(std::memory_order_acquire)) {
+                    wake_at = at;
+                }
+            }
+            // Registered before stage B's progress is checked, against Consumed()'s store and
+            // load (seq_cst both sides): either this sees the position or stage B sees the
+            // target and wakes. `seen` is read first, so a wake after it is not lost.
+            const u32 seen = drain_wake.load(std::memory_order_seq_cst);
+            drain_target.store(wake_at, std::memory_order_seq_cst);
+            woken_ahead = false;
+            if (consumed.load(std::memory_order_seq_cst) < wake_at) {
+                DW::FutexWait(drain_wake, seen);
+                ++num_sleeps;
+                woken_ahead = wake_at != target;
+                num_ahead += woken_ahead;
+                if (stats) {
+                    const u64 now = DW::NowNs();
+                    sleep_total += now - spin_end;
+                    const u64 woke = DW::last_wake_ns.load(std::memory_order_relaxed);
+                    if (drain_wake.load(std::memory_order_relaxed) != seen && woke && woke <= now) {
+                        DW::wake_latency_ns.fetch_add(now - woke, std::memory_order_relaxed);
+                        DW::wake_latency_n.fetch_add(1, std::memory_order_relaxed);
+                        DW::AtomicMax(DW::wake_latency_max_ns, now - woke);
+                    }
+                }
+            }
+            drain_target.store(NoDrainTarget, std::memory_order_seq_cst);
+        }
+        if (stats) {
+            DW::hybrid_waits.fetch_add(1, std::memory_order_relaxed);
+            DW::spin_ns.fetch_add(spin_total, std::memory_order_relaxed);
+            if (num_sleeps) {
+                DW::slept.fetch_add(1, std::memory_order_relaxed);
+                DW::sleeps.fetch_add(num_sleeps, std::memory_order_relaxed);
+                DW::woken_ahead.fetch_add(num_ahead, std::memory_order_relaxed);
+                DW::sleep_ns.fetch_add(sleep_total, std::memory_order_relaxed);
+            }
+        }
+    }
+
+    /// Pauses (no system call) until stage B has reached `target` or the clock `deadline_ns`.
+    bool SpinUntil(u64 target, u64 deadline_ns) const {
+        for (u32 spins = 1;; ++spins) {
+            if (consumed.load(std::memory_order_acquire) >= target) {
+                return true;
+            }
+            __builtin_ia32_pause();
+            if (!(spins & 63) && Gow3DrainWait::NowNs() >= deadline_ns) {
+                return consumed.load(std::memory_order_acquire) >= target;
+            }
+        }
+    }
 
     static constexpr u32 Align(u32 size) {
         return (size + 63) & ~63u;
@@ -265,6 +377,31 @@ private:
         if (drainer_waiting.load(std::memory_order_seq_cst)) {
             consumed.notify_one();
         }
+        // gow3 GOW3_DRAIN_HYBRID: one load a packet (the same line as `consumed`); a system call
+        // only for a drain asleep until this position (NoDrainTarget: none).
+        if (const u64 target = drain_target.load(std::memory_order_seq_cst); target <= at) {
+            WakeDrainer(target);
+        }
+    }
+
+    /// Stage B: wakes the hybrid drain sleeping until `target` (once: the target is taken).
+    void WakeDrainer(u64 target) {
+        if (!drain_target.compare_exchange_strong(target, NoDrainTarget,
+                                                  std::memory_order_seq_cst)) {
+            return;
+        }
+        const bool stats = Gow3Stats::enabled;
+        const u64 start = stats ? Gow3DrainWait::NowNs() : 0;
+        if (stats) {
+            Gow3DrainWait::last_wake_ns.store(start, std::memory_order_relaxed);
+        }
+        drain_wake.fetch_add(1, std::memory_order_seq_cst);
+        Gow3DrainWait::FutexWake(drain_wake);
+        if (stats) {
+            Gow3DrainWait::wakes.fetch_add(1, std::memory_order_relaxed);
+            Gow3DrainWait::wake_call_ns.fetch_add(Gow3DrainWait::NowNs() - start,
+                                                  std::memory_order_relaxed);
+        }
     }
 
     /// GOW3_DRAIN_SLEEP=1: Drain() sleeps after a short spin. Opt-in: on the Deck it freed stage
@@ -284,9 +421,14 @@ private:
     std::unique_ptr<u8[]> ring;
     GOW3_CACHE_LINE u64 head = 0; ///< stage A's write position
     u32 pending_size = 0;
+    u64 commit_ends[CommitEnds]{}; ///< stage A: head after packet n at [n % CommitEnds]
     alignas(64) std::atomic<u64> published{0};
     alignas(64) std::atomic<u64> consumed{0};
     std::atomic<bool> drainer_waiting{false}; ///< Drain() sleeps on `consumed` (GOW3_DRAIN_SLEEP)
+    /// GOW3_DRAIN_HYBRID: the position a sleeping Drain() waits for (NoDrainTarget: none), and
+    /// the futex word stage B bumps to wake it.
+    std::atomic<u64> drain_target{NoDrainTarget};
+    std::atomic<u32> drain_wake{0};
     alignas(64) std::atomic<u32> wake{0};
     std::atomic<bool> sleeping{false};
     std::atomic<u32> stage_b_tid{0};

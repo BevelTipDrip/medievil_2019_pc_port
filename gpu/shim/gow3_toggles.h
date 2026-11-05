@@ -125,6 +125,10 @@ enum : std::uint64_t {
     /// the same slots and decisions, a 64-byte index entry per slot and the images apart.
     /// Set: the table as before (32,768 slots of ~1.55 KiB, made on its first use).
     TextureSetLegacy = 2048,
+    /// Stage A's hybrid drain wait (gow3_drain_wait.h, impl-cpu-waste.md): with
+    /// GOW3_DRAIN_HYBRID=1 DrawPipe::Drain pauses up to GOW3_DRAIN_SPIN_US, then sleeps on a
+    /// futex that stage B signals near the end. Set: today's pauses and sched_yield again.
+    DrainHybridOff = 4096,
 };
 inline bool Disabled(std::uint64_t bit) {
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;
