@@ -1246,3 +1246,15 @@ no-image texture binds 131072 (on), **T2** wide texture-set memo 262144 (`GOW3_T
 index 524288 (`GOW3_REGION_INDEX=1`); new sections `obt_upload`, `clamp`; new lines "Stage B cuts per frame",
 "Region cache per frame". All removed work, none moved to another thread. Expected -0.6 to -1.3 ms of stage B a heavy
 frame. Deck test: one launch, `deck.sh ab "0 0" "0 983040"`, then one pair per bit (impl doc section 3).
+
+## Per-draw cuts R1 / R2 / T1 / T2 on the Deck (2026-11-05, AppImage `c71e87c`, drain hybrid on, `GOW3_TEXSET_WIDE=1 GOW3_REGION_INDEX=1`, frame stats without sections; log `data/deck-perdraw-1.log`)
+
+All four on (`0 0`) vs off (`0 983040`), 30 s x 4: **78.8 vs 78.2 FPS**, p99 16.4 vs 16.5 ms, **stage B busy 86.7 vs
+92.6%** (~0.75 ms a frame freed, inside the -0.6 to -1.3 ms estimate), but stage B now waits on stage A's packets
+(1.02 vs 0.52 ms a frame) and on the GPU (1.58 vs 0.96 ms); stage A waited 17.4 vs 26.9%. Single bits off (20 s x 3):
+78.7-79.0, within noise. Counters: R1 14.3k index hits a frame (vs 13.6k lock-free searches off), R2 2,150 bitmap
+answers, T1 ~920 binds, T2 46 + 175 sets at 100% hits. APU: socket 13.6 W, CPU 6.3 W, GPU 3.9 W. **The limit has
+moved: stage A and the power-capped GPU now gate stage B about as much as its own work.** The user (same session):
+capping the GPU at 1,000 MHz flattens the frame-time "waves" (spikes to ~20 ms with the GPU uncapped; 1,200 MHz
+reduced, 1,100 more, 1,000 flat +-1 ms at ~76 FPS): the power controller shifting the 15 W between GPU and CPU.
+Next: stage A's per-packet cost; total CPU watts.
