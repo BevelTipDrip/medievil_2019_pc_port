@@ -121,6 +121,10 @@ enum : std::uint64_t {
     /// #4 (gow3_stage_b_wait.h): with GOW3_STAGE_B_SPIN=1 stage B spins up to
     /// GOW3_STAGE_B_SPIN_US before it blocks. Set: blocks as before.
     StageBSpin = 1024,
+    /// The texture-set memo in its compact layout (impl-texset-index.md, gow3_texset_table.h):
+    /// the same slots and decisions, a 64-byte index entry per slot and the images apart.
+    /// Set: the table as before (32,768 slots of ~1.55 KiB, made on its first use).
+    TextureSetLegacy = 2048,
 };
 inline bool Disabled(std::uint64_t bit) {
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;

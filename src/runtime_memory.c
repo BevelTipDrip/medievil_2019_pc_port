@@ -1461,7 +1461,8 @@ void *runtime_low_map(size_t size, int prot) {
  * gow3_toggles.h), 32 recorder lean mode off, 64 reserved, 128 the buffer cache's readback
  * checks always under the lock (C5), 256 (Linux) pool commit / decommit host maps under the
  * table lock again (D4), 512 the table lock blocks at once (Linux) and flush_hooks always takes
- * it (D5), 1024 with GOW3_STAGE_B_SPIN=1: stage B blocks without the bounded spin (#4). */
+ * it (D5), 1024 with GOW3_STAGE_B_SPIN=1: stage B blocks without the bounded spin (#4),
+ * 2048 the texture-set memo's table as before instead of its compact layout. */
 uint64_t runtime_disabled_optimizations, runtime_disabled_optimizations2;
 /* Speculative readers of guest memory (GPU draw-preparation workers) register a recovery
  * point: a fault on that thread jumps back to it instead of terminating (probe.c). */

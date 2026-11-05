@@ -21,6 +21,7 @@
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "gow3_draw_classes.h"
 #include "gow3_sections.h"
+#include "gow3_texset_table.h"
 #include "video_core/renderer_vulkan/vk_occlusion.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
@@ -350,7 +351,62 @@ private:
         std::array<u64, MaxImages> hashes{};
         std::array<TextureSetEntry, MaxImages> entries{};
     };
-    std::array<TextureSet, 32768> texture_sets{};
+    /// The table as before (second toggle word 2048): made on its first use.
+    std::unique_ptr<std::array<TextureSet, Gow3TexSet::Slots>> texture_sets;
+    /// gow3 (impl-texset-index.md): the same memo in a compact layout (default). The same slots,
+    /// keys and replacement (Gow3TexSet::Choose); per slot a 64-byte index entry (the two ways
+    /// of a key share 128 aligned bytes), the images a hit reads (48 bytes each), and apart what
+    /// only the region stamps read (32 bytes each): ~44 MB instead of ~52, a hit reading ~4
+    /// cache lines instead of ~9, in transparent huge pages where Linux allows them.
+    struct alignas(64) TextureSetHead {
+        u64 key = 0;
+        u64 last_use = 0;
+        u64 generation = ~0ull;
+        u64 stamp = 0;
+        u64 scene_generation = 0;
+        const Shader::Info* stage = nullptr;
+        u32 count = 0;
+    };
+    struct TextureSetHot {
+        u64 hash = 0; ///< the prepared T# hash (TextureSet::hashes)
+        vk::ImageView view;
+        const void* backing = nullptr;
+        VideoCore::SubresourceRange range;
+        VideoCore::ImageId id{};
+        bool proxy = false;
+        bool depth_aspect = false;
+    };
+    struct TextureSetCold {
+        VAddr address = 0, sharp_address = 0;
+        u64 size = 0, sharp_size = 0;
+    };
+    using TextureSetHotRow = std::array<TextureSetHot, TextureSet::MaxImages>;
+    using TextureSetColdRow = std::array<TextureSetCold, TextureSet::MaxImages>;
+    /// Heads, hot rows, cold rows (MakeCompactTextureSets, in the constructor).
+    std::unique_ptr<Gow3TexSet::TableMemory> texture_set_memory;
+    TextureSetHead* texture_set_heads = nullptr;
+    TextureSetHotRow* texture_set_hot = nullptr;
+    TextureSetColdRow* texture_set_cold = nullptr;
+    /// The slot BindTexturesFromSet chose for the slow path to fill, in either layout.
+    struct TextureSetSlot {
+        TextureSet* legacy = nullptr;
+        u32 compact = ~0u;
+        explicit operator bool() const {
+            return legacy || compact != ~0u;
+        }
+    };
+    struct LegacyTextureSets;
+    struct CompactTextureSets;
+    void MakeCompactTextureSets();
+    template <class Table>
+    bool BindTexturesFromSetIn(const Table& table, const Shader::Info& stage,
+                               const PreparedStage* prepared, u32 count, u64 key, bool& barrier,
+                               TextureSetSlot& slot);
+    /// The slow path's resolved images into the slot (the set is kept), or the slot emptied.
+    void KeepTextureSet(const TextureSetSlot& slot,
+                        const std::array<TextureSetEntry, TextureSet::MaxImages>& resolved,
+                        u32 count);
+    void DropTextureSet(const TextureSetSlot& slot);
     u64 texture_set_hits = 0, texture_set_misses = 0;
     u64 texture_set_tick = 0;
     std::array<u64, 4> texture_set_why{}; ///< misses: other key, generation, image check, new
@@ -371,8 +427,9 @@ private:
     std::array<u64, TexslowCauses> texslow_calls{}, texslow_ns{};
     /// Returns true when the stage's images were bound from the memo.
     bool BindTexturesFromSet(const Shader::Info& stage, const PreparedStage* prepared,
-                             u32 first_image_idx, bool& barrier, TextureSet*& slot);
+                             u32 first_image_idx, bool& barrier, TextureSetSlot& slot);
     u64 TextureSetStamp(const TextureSet& set) const;
+    u64 TextureSetStamp(u32 compact_slot) const;
     /// The prepared sharps of `stage` in the current prepared draw, if they fit it.
     const PreparedStage* FindPreparedStage(const Shader::Info& stage) const;
     /// Whether the helper may bind textures for this pipeline at all (fixed descriptor layout,

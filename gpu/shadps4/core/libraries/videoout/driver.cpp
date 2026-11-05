@@ -23,6 +23,7 @@
 #include "gow3_decode_pacing.h"
 #include "gow3_draw_classes.h"
 #include "gow3_stage_b_wait.h"
+#include "gow3_texset_table.h"
 #include "gow3_gpu_fences.h"
 extern "C" void runtime_memory_fault_report(char* out, size_t size, unsigned frames, double window_s);
 extern "C" void runtime_memory_lock_report(char* out, size_t size, unsigned frames);
@@ -863,6 +864,41 @@ void VideoOutDriver::Flip(const Request& req) {
                             site_ns[SB::Present] / 1e6 / frames_d,
                             SB::spins.exchange(0) / frames_d, SB::spin_ns.exchange(0) / 1e6 / frames_d,
                             SB::spin_catches.exchange(0) / frames_d);
+                    }
+                    // gow3 (impl-texset-index.md): the texture-set memo's lookups by layout
+                    // (compact, or the table as before with second word 2048), hits, misses by
+                    // cause, sets the slow path kept or not, and the tables' memory.
+                    {
+                        namespace TS = Gow3TexSet;
+                        static u64 last[9]{};
+                        const u64 now[9] = {TS::lookups[0].load(),  TS::lookups[1].load(),
+                                            TS::hits.load(),        TS::misses[0].load(),
+                                            TS::misses[1].load(),   TS::misses[2].load(),
+                                            TS::misses[3].load(),   TS::kept.load(),
+                                            TS::dropped.load()};
+                        double d[9];
+                        for (unsigned k = 0; k < 9; ++k) {
+                            d[k] = (now[k] - last[k]) / frames_d;
+                            last[k] = now[k];
+                        }
+                        const double lookups = d[0] + d[1];
+                        const int huge = TS::compact_huge.load(std::memory_order_relaxed);
+                        std::printf(
+                            "Texture-set memo per frame (compact layout %s): lookups %.1f "
+                            "(compact %.1f, legacy table %.1f), hits %.1f (%.2f%%), misses: "
+                            "other key %.1f, generation %.1f, image check %.1f, other %.1f; sets "
+                            "kept %.1f, not kept %.1f; memory: compact %.1f MB (huge pages %s), "
+                            "legacy table %.1f MB\n",
+                            Gow3Toggle2::Disabled(Gow3Toggle2::TextureSetLegacy) ? "toggled off"
+                                                                                 : "on",
+                            lookups, d[0], d[1], d[2], lookups ? 100.0 * d[2] / lookups : 0.0,
+                            d[3], d[4], d[5], d[6], d[7], d[8],
+                            TS::compact_bytes.load(std::memory_order_relaxed) / 1e6,
+                            huge == 1    ? "yes"
+                            : huge == 0  ? "no"
+                            : huge == -1 ? "unknown"
+                                         : "n/a",
+                            TS::legacy_bytes.load(std::memory_order_relaxed) / 1e6);
                     }
                     // gow3 D2 (impl-deck-cpu-bundle.md): scePthreadGetthreadid calls and the ones
                     // that asked the kernel (Linux: once per thread, cached after).
