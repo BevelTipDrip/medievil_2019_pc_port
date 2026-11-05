@@ -1,8 +1,10 @@
 """Per-window and per-toggle-state summary of a game log with GOW3_FRAME_STATS=1 (deck.sh summary).
 
 Each "Frame stats" line closes a window (~5 s). Windows are labelled with the toggle file's state
-("Runtime: disabled optimizations mask=N" / "second word=N"); a window in which the state changed is
-marked and left out of the per-state medians (it mixes both). Heavy-view windows: --min-draws.
+("Runtime: disabled optimizations mask=N" / "second word=N") and the render scale (run.py's "Render
+resolution: ... render scale N%", the in-game menu's "Render scale: A% -> B% (live)"); a window in
+which the state changed is marked and left out of the per-state medians (it mixes both). Heavy-view
+windows: --min-draws.
 
     py -3.14 deck_summary.py <log> [--min-draws 1000] [--last N] [--windows]
 """
@@ -25,7 +27,7 @@ FIELDS = [
 
 def parse(path):
     lines = open(path, encoding='utf-8', errors='replace').read().splitlines()
-    mask, word2, changed = 0, 0, False
+    mask, word2, changed, scale = 0, 0, False, ''
     windows, current = [], None
     for line in lines:
         m = re.match(r'Runtime: disabled optimizations mask=(\d+)', line)
@@ -38,10 +40,15 @@ def parse(path):
             changed |= windows != [] or current is not None
             word2 = int(m.group(1))
             continue
+        m = re.match(r'Render resolution: .*render scale (\d+)%|Render scale: \d+% -> (\d+)% \(live\)', line)
+        if m:
+            changed |= windows != [] or current is not None
+            scale = f' {m.group(1) or m.group(2)}%'
+            continue
         if line.startswith('Frame stats:'):
             if current:
                 windows.append(current)
-            current = {'state': f'{mask} {word2}', 'mixed': changed, 'extra': {}}
+            current = {'state': f'{mask} {word2}{scale}', 'mixed': changed, 'extra': {}}
             changed = False
         if current is None:
             continue
@@ -74,14 +81,14 @@ def main():
     print(f'{len(windows)} windows; FPS: ' + ' '.join(str(round(w.get("fps", 0))) for w in windows))
     keys = [k for k, _p, _x in FIELDS]
     if args.windows:
-        print('state       ' + ' '.join(f'{k:>11}' for k in keys))
+        print('state            ' + ' '.join(f'{k:>11}' for k in keys))
         for w in windows:
-            print(f'{w["state"]:<11}' + ('*' if w['mixed'] else ' ') +
+            print(f'{w["state"]:<16}' + ('*' if w['mixed'] else ' ') +
                   ' '.join(f'{w.get(k, float("nan")):11.2f}' for k in keys))
     heavy = [w for w in windows if not w['mixed'] and w.get('draws', 0) >= args.min_draws]
     states = sorted({w['state'] for w in heavy})
     print(f'\nHeavy windows (>= {args.min_draws} draws, switch windows left out), medians by toggle state:')
-    print(f'{"state":<12}{"n":>3} ' + ' '.join(f'{k:>11}' for k in keys))
+    print(f'{"state":<17}{"n":>3} ' + ' '.join(f'{k:>11}' for k in keys))
     for state in states:
         group = [w for w in heavy if w['state'] == state]
         row = []
@@ -89,7 +96,7 @@ def main():
             values = [w[k] for w in group if k in w]
             row.append(statistics.median(values) if values else float('nan'))
         mean_fps = statistics.mean(w['fps'] for w in group if 'fps' in w)
-        print(f'{state:<12}{len(group):>3} ' + ' '.join(f'{v:11.2f}' for v in row) + f'   (mean FPS {mean_fps:.1f})')
+        print(f'{state:<17}{len(group):>3} ' + ' '.join(f'{v:11.2f}' for v in row) + f'   (mean FPS {mean_fps:.1f})')
         last = group[-1]['extra']
         for prefix, line in last.items():
             # The class line is the per-class table itself: printed whole.
