@@ -129,6 +129,10 @@ enum : std::uint64_t {
     /// every ObtainBuffer outside the stream buffer) answers from a bitmap of resident blocks
     /// (gow3_resident_blocks.h; kept either way). Set: the interval search every time.
     ResidencyBitmap = 65536,
+    /// T1 (impl-stage-b-per-draw-2.md): BindTextures for a stage without images resets its
+    /// per-call state and binds the samplers, without the slow path's set-up (the same effects).
+    /// Set: through the slow path again.
+    NoImageFastPath = 131072,
 };
 inline bool Disabled(std::uint64_t bit) {
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;
@@ -203,6 +207,8 @@ inline std::atomic<std::uint64_t> readback_prechecks[2]{};
 /// the thread that owns the caches (one writer: Bump, no locked add). R2: residency checks
 /// answered by the bitmap [0] or by the interval search [1].
 inline std::atomic<std::uint64_t> residency_checks[2]{};
+/// T1: texture binds of stages without images that took the short path.
+inline std::atomic<std::uint64_t> no_image_binds{0};
 inline void Bump(std::atomic<std::uint64_t>& counter) {
     counter.store(counter.load(std::memory_order_relaxed) + 1, std::memory_order_relaxed);
 }

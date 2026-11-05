@@ -2569,6 +2569,22 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
         BindSamplers(stage, prepared, binding, write_index);
         return;
     }
+    // gow3 T1 (impl-stage-b-per-draw-2.md): a stage without images (most vertex shaders: ~970
+    // binds a heavy Deck frame, "memo off or no image" at ~0.18 us each) leaves the slow path
+    // nothing to do but reset its per-call state and bind the samplers; this is that, without
+    // the set-up of the image loops. Second toggle word 131072: through the slow path again.
+    if (stage.images.empty() && !Gow3Toggle2::Disabled(Gow3Toggle2::NoImageFastPath)) {
+        image_bindings.clear();
+        image_binding_entries.clear();
+        image_desc_overflow.clear();
+        image_desc_storage.clear();
+        ++bind_epoch;
+        if (Gow3Stats::enabled && !on_helper) {
+            Gow3Stats::Bump(Gow3Stats::no_image_binds);
+        }
+        BindSamplers(stage, prepared, binding, write_index);
+        return;
+    }
     GOW3_SECTION(TexSlow);
     if (!on_helper && !set_slot && !stage.images.empty()) {
         ++texture_set_unkept[7]; // written images, mip fallback, too many, memo off
