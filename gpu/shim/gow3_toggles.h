@@ -125,6 +125,10 @@ enum : std::uint64_t {
     /// the same slots and decisions, a 64-byte index entry per slot and the images apart.
     /// Set: the table as before (32,768 slots of ~1.55 KiB, made on its first use).
     TextureSetLegacy = 2048,
+    /// R2 (impl-stage-b-per-draw-2.md): the buffer cache's residency check (EnsureResident,
+    /// every ObtainBuffer outside the stream buffer) answers from a bitmap of resident blocks
+    /// (gow3_resident_blocks.h; kept either way). Set: the interval search every time.
+    ResidencyBitmap = 65536,
 };
 inline bool Disabled(std::uint64_t bit) {
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;
@@ -195,6 +199,13 @@ inline std::atomic<std::uint64_t> recorder_handoffs{0}, recorder_lazy_kicks{0},
 /// C5 ("Readback pre-check" line): the buffer cache's ResolveReadbacks calls while copies were
 /// pending, [0] answered without the lock (no pending copy on the range's pages), [1] locked.
 inline std::atomic<std::uint64_t> readback_prechecks[2]{};
+/// Stage B per-draw cuts ("Stage B cuts per frame" line; impl-stage-b-per-draw-2.md), written by
+/// the thread that owns the caches (one writer: Bump, no locked add). R2: residency checks
+/// answered by the bitmap [0] or by the interval search [1].
+inline std::atomic<std::uint64_t> residency_checks[2]{};
+inline void Bump(std::atomic<std::uint64_t>& counter) {
+    counter.store(counter.load(std::memory_order_relaxed) + 1, std::memory_order_relaxed);
+}
 /// Whether the recorder runs in lean mode (-1: not started).
 inline std::atomic<int> recorder_lean{-1};
 inline std::atomic<int> gpu_thread_clock{-1}; ///< clockid_t of the GPU command thread

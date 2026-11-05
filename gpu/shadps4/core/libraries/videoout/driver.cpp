@@ -804,6 +804,13 @@ void VideoOutDriver::Flip(const Request& req) {
                                 "locked %.1f\n",
                                 Gow3Toggle2::Disabled(Gow3Toggle2::ReadbackPrecheck) ? "off" : "on",
                                 prechecks_free / frames_d, prechecks_locked / frames_d);
+                    // gow3 (impl-stage-b-per-draw-2.md): how often each per-draw cut applied.
+                    // R2: residency checks answered by the bitmap or by the interval search.
+                    std::printf("Stage B cuts per frame: residency bitmap (R2 %s) %.1f, searched "
+                                "%.1f\n",
+                                Gow3Toggle2::Disabled(Gow3Toggle2::ResidencyBitmap) ? "off" : "on",
+                                Gow3Stats::residency_checks[0].exchange(0) / frames_d,
+                                Gow3Stats::residency_checks[1].exchange(0) / frames_d);
                     // gow3 (impl-deck-cpu-bundle.md): the Vulkan recorder's hand-offs, sleeps
                     // and spin; in lean mode (second toggle word 32 clear, <= 8 threads) the
                     // label kicks that left it asleep and how the owed wakes were made.

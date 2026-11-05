@@ -4,6 +4,7 @@
 #pragma once
 
 #include "gow3_copy.h"
+#include "gow3_resident_blocks.h"
 
 #include <array>
 #include <deque>
@@ -258,6 +259,9 @@ private:
         }
     };
     IntervalList<Backing> resident_ranges;
+    /// gow3 R2 (impl-stage-b-per-draw-2.md): the blocks of resident_ranges as a bitmap, set with
+    /// every range added (whatever the toggle), for EnsureResident's "already resident" answer.
+    Gow3Resident::Blocks resident_bitmap;
     /// gow3: device memory for resident blocks, allocated ahead in chunks (buffer_cache.cpp).
     std::unique_ptr<ResidencyPool> residency_pool;
     /// gow3 U2: host addresses of the resident blocks when the arena memory is mapped (null:
