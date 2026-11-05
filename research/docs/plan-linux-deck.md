@@ -1166,3 +1166,17 @@ Patch applied (17 writes). Same heavy view, medians of the steady windows vs bas
 Fewer draws than the study's 120-145 estimate (two hidden objects save about one and a half draws), but the gain is clean:
 throughput unchanged (~89k draws/s), the heaviest frames shrink most (the user: "the spikes are lower amplitude on
 the graph"), no glitches seen in the heavy view. Pending: walking and fast turns for late pop-in; then a Deck default.
+
+## Decisions after the culling run (the user, 2026-11-04)
+
+- Finer occlusion culling: no pop-in over most of the graveyard level, GPU use visibly higher; **default on for scenes up
+  to 1280x800** (`8131ecb`). A finer-still HZB may be tried much later.
+- "A locked 60 is on the table now" (the other Deck fork shows a locked 30).
+- Test **every built-but-untested item** (menu redraw fix, stage B spin, static vs shared, v3 build, padding, core
+  scheduling, nice, pool prefill / populate). The **performance governor stays on the list** despite stage B's ~2.98
+  GHz; **present work comes back once the frame rate is good enough for a lock**.
+- Logging runs use a fixed ini: `deck.sh ini logging` (fog off, sharpening off, frames queued 1); the user's own is
+  `medievil.ini.play` (`deck.sh ini play`).
+- Running in parallel: live render scale with 1% steps (impl agent, `impl-live-render-scale.md`); which restart-only
+  settings could go live by a renderer restart that keeps the game state (`study-live-settings.md`).
+- Next run: sections (`GOW3_SECTIONS=1 GOW3_SLOW_FRAMES=1.4`) to break down stage B's ~4-6 ms outside draws.
