@@ -150,8 +150,12 @@ AppImage: `[E] pw.loop ... can't make support.system handle`, then "audio backen
   On PS4 that is the same code. Zen 2 at 2-3.5 GHz is roughly 2x+ a 1.6 GHz Jaguar per thread [inferred].
 - The **ATRAC9 decode** is the console's ACP hardware work that the port moves onto the CPU. It is the only
   port-side term [inferred, see 1.3].
-- Wwise mixes 7.1 because the guest opens an 8-channel port. Making it mix stereo would require refusing that
-  format, which is guest behaviour of unknown outcome. Not proposed.
+- ~~Wwise mixes 7.1 because the guest opens an 8-channel port. Making it mix stereo would require refusing that
+  format, which is guest behaviour of unknown outcome. Not proposed.~~ **Corrected (2026-11-05,
+  [study-wwise-stereo-mix.md](study-wwise-stereo-mix.md)):** Wwise already mixes **stereo**. Its PS4 sink takes
+  the layout from `sceAudioOutGetPortState`'s `channel`, which the port reports as 2 for the 8-channel port; the
+  frames arrive as `L R 0 0 0 0 0 0`. The mix term above is a stereo mix; there is no layout saving to take.
+  The 7.1-to-stereo downmix in 1.3 runs over zeros in channels 2-7.
 
 ## 2. The main thread and RHIThread
 
