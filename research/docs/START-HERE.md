@@ -76,6 +76,7 @@ Environment variables and settings already in the port that this work uses (full
 |---|---|
 | [plan-work-queue.md](plan-work-queue.md) | **The to-do list (2026-10-30):** the user's order, pending fixes from the 2026-10-29 research, small items found on the way |
 | [plan-live-switches.md](plan-live-switches.md) | Graphics settings switched live in the in-game menu: mechanism, done, next |
+| [impl-live-render-scale.md](impl-live-render-scale.md) | Render scale live in 1% steps (menu slider, launcher box): mechanism, live range, what stays restart-only, Deck test |
 | [study-live-switches.md](study-live-switches.md) | What can be switched live and what needs a restart; cvar objects in the 01.00 eboot |
 | [plan-roadmap.md](plan-roadmap.md) | Working plan: rule, order, Progress table (2026-10-18; superseded by the work queue for order) |
 | [plan-baseline-issues.md](plan-baseline-issues.md) | Run 1 findings: menu navigation, frame pacing; tests |

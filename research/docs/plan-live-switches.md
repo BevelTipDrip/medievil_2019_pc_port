@@ -28,6 +28,7 @@ scratchpad, see the study) or `cvar_find2.py`.
 | Preshadows | `r.Shadow.Preshadows` | 0x5bcff28 | N-25, `fdd12e8`; default on; ~12% fewer draws off |
 | (Game resolution now) | `r.SetRes` | 0x5c28320 | the output size buttons (native output) |
 | 13 graphics options (2026-10-30) | 16 cvars, `ue4_cvars[]` | study table | `gow3_settings.h` `UE4LiveOptions`: shadow resolution, shadow distance (+ cascades), shadow filtering, view distance, level of detail (static mesh + foliage), ambient occlusion, reflections, volumetric fog, motion blur, depth of field, bloom, lens flares, chromatic aberration. Choice 0 "Preset" restores the boot preset's values (`run.py` -> `GOW3_UE4_PRESET_CVARS`, `ue4_override.preset_cvars`: pak preset > PS4Engine.ini > BaseScalability@3 > engine default). Sites checked against the eboot (lea loads the name). Not yet verified in game: the user tests them one by one |
+| Render scale (2026-11-04) | `r.TemporalAA.Upsampling` + `r.ScreenPercentage` | 0x5c1a120, 0x581a048 (01.02: 0x5c1a160, 0x581a068) | `7ab4310`: slider in 1% steps, 50% up to the start value or 100%; larger values on restart. Launcher: presets + percent box. [impl-live-render-scale.md](impl-live-render-scale.md). Not yet verified in game |
 | Anisotropic filtering | port side, not a cvar | `sampler.cpp` | 16x for every filtered, linearly mipmapped, non-depth sampler (`GOW3_FORCE_ANISO=0`: the game's S#). No setting: the user wants 16x always |
 
 ## Next, in order
@@ -44,8 +45,9 @@ scratchpad, see the study) or `cvar_find2.py`.
 3. **Individual options for min-maxing** (item 4's second half): the preset's components as their own live rows
    (shadows, AO, SSR, volumetric fog incl. the PS4 fog grid density, motion blur, view distance / LOD...). Which ones,
    and their visible effect against cost on this machine: to measure, one at a time.
-4. **Render scale live** (`r.ScreenPercentage`, 0x581a048, read every frame): re-allocates every scene target, so live
-   values must stay at or below the boot scale (framebuffer pool); needs a check in game.
+4. **Done (2026-11-04, built, not run): render scale live** (`r.ScreenPercentage`, 0x581a048, read every frame):
+   re-allocates every scene target, so live values stay at or below the boot scale or 100%
+   ([impl-live-render-scale.md](impl-live-render-scale.md), Deck test there); needs a check in game.
 5. Presentation: the launcher's special VSync modes and the precise vblank tick (the swapchain re-reads its mode when
    it is re-made).
 

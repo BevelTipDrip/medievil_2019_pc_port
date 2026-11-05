@@ -222,6 +222,9 @@ are not the port's presets (fixed local shadow sizes against flicker, sun cascad
 
 ### Render scale (render_scale; `ue4_override.py:308-311`)
 
+Built 2026-11-04 on this rule: [impl-live-render-scale.md](impl-live-render-scale.md) (the `r.TemporalAA.Upsampling`
+object is 0x5c1a120 as below; 01.02 addresses there).
+
 `r.ScreenPercentage` (flags 0x40, game thread) and `r.TemporalAA.Upsampling=1` below 100 **[V]**. UE4 4.21 reads the
 screen percentage every frame (`FLegacyScreenPercentageDriver`) **[I]**; with `r.SceneRenderTargetResizeMethod=0`
 (registration default **[V]**, not set by the game's configs) the scene targets are reallocated to the new size on the
