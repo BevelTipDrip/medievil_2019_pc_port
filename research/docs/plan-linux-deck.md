@@ -1120,3 +1120,29 @@ build of the day, deck-lab `671a81a`):
    (judge the pool by hitch frames and the "Guest pool faults" line).
 7. Then: `GOW3_UE4_CVARS` items 4-5 of the UE4 study one per launch, `RADV_FORCE_VRS=2x2` at 100%, the render-scale
    curve 67 / 80 / 100; the particle-sim skip after the N0 line gives its shader hashes (impl-draw-reduction.md).
+
+## Baseline 1 and live A/Bs (2026-11-04, AppImage `a863482`, 67%, helpers Auto, no dedicated core, auto clocks, Mailbox; log `data/deck-baseline-1-ab.log`)
+
+Heavy view: **74.2 FPS at ~1,241 draws** (D2: 65.3 at 1,415). Draws x FPS is unchanged (~92k draws/s), and stage B is
+busier (94% vs 83%) at ~10.2 vs 9.0 us per draw: the FPS gain lines up with ~170 fewer draws, not with a faster stage B.
+The user could not find an angle with more draws; the old build in the same spot would tell view from build (open).
+`deck.sh clocks`: stage B at **~2.98 GHz** mean (2.88-2.97), not ~2.4 (the APU study's guess); it migrates between CPUs
+every sample. The governor's headroom is therefore ~15% at most.
+
+Live pairs, 20 s x 3 cycles each, medians of 9 clean windows vs 284 baseline windows (each B switches a fix **off**):
+
+| B | Fix off | FPS (base 74.2) | Stage B busy | Read |
+|---|---|---|---|---|
+| `0 32` | recorder lean mode | 74.3 | 93.4% | neutral |
+| `0 16` | C1 semaphore poll interval | 73.7 | 94.1% | +0.5 for C1 (noise level) |
+| `0 128` | C5 readback pre-check | 73.7 | 94.1% | +0.5 for C5 (noise level) |
+| `0 256` | D4 pool maps outside the lock | 73.5 | 92.8% | +0.7 for D4 (noise level) |
+| `0 512` | D5 table lock spin / empty hook queue | 72.9 | 92.0% | **+1.3 for D5** |
+| `2147485696 0` | narrow image stages + coarse read tracking | 74.4 | 91.8% | neutral |
+| `4295098368 0` | record prefetch + parallel copies | 74.0 | 94.4% | neutral |
+| `5764607523034234880 0` | both targeted waits (W2 / B1) | 70.2 | 96.5% (stage A waited 42%) | **+4.0 for the targeted waits** |
+
+The patch audit's suspects among these are cleared: the targeted waits are the largest single gain measured live on
+the Deck, and the barrier / prefetch pairs cost nothing. No visual issues reported. Present mode: the game used Mailbox
+(VSync off); the frame rate is stage-B-bound and not vblank-quantized, so the A/B holds; Immediate (the mode gamescope's
+"allow tearing" acts on) is a separate launch (`GOW3_PRESENT_MODE=immediate` or the launcher's Present mode).
