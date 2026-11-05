@@ -77,6 +77,7 @@ Environment variables and settings already in the port that this work uses (full
 | [plan-work-queue.md](plan-work-queue.md) | **The to-do list (2026-10-30):** the user's order, pending fixes from the 2026-10-29 research, small items found on the way |
 | [plan-live-switches.md](plan-live-switches.md) | Graphics settings switched live in the in-game menu: mechanism, done, next |
 | [impl-live-render-scale.md](impl-live-render-scale.md) | Render scale live in 1% steps (menu slider, launcher box): mechanism, live range, what stays restart-only, Deck test |
+| [impl-cpu-waste.md](impl-cpu-waste.md) | Deck CPU waste: stage A's hybrid drain wait (`GOW3_DRAIN_HYBRID=1`, second word 4096 off), the game thread's nav-path purge without fences (`GOW3_NAV_PURGE_NOFENCE=1`), every spin site, other waste; Deck A/B |
 | [impl-texset-index.md](impl-texset-index.md) | Texture-set memo in a compact layout (second word 2048: as before), stage B task sections and sleep ms by site; Deck A/B |
 | [study-live-switches.md](study-live-switches.md) | What can be switched live and what needs a restart; cvar objects in the 01.00 eboot |
 | [plan-roadmap.md](plan-roadmap.md) | Working plan: rule, order, Progress table (2026-10-18; superseded by the work queue for order) |

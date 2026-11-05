@@ -1213,3 +1213,15 @@ the graph"), no glitches seen in the heavy view. Pending: walking and fast turns
 - **The user:** the GPU can already get more power with a fixed GPU clock (+1-2 FPS at a cost in frame stability); not
   worth chasing clocks further unless CPU use drops seriously. **Direction: cut total CPU work on every thread** (less
   CPU power = GPU headroom), measured per thread first (`deck.sh threads`).
+
+## Cutting CPU work: stage A's wait and the game thread's top samples (2026-11-05, built, not run; [impl-cpu-waste.md](impl-cpu-waste.md))
+
+- **Stage A's drain wait** (`6f4be46`): `GOW3_DRAIN_HYBRID=1` pauses up to 30 us, then sleeps on a futex that stage B
+  ends two packets before the last one (one wake per sleep; `GOW3_DRAIN_SLEEP` woke stage A at every packet, likely
+  why it lost 60.7 vs 64.0). Live A/B: `deck.sh ab "0 0" "0 4096" 20 4` with `deck.sh threads 5` and the APU power read;
+  "Stage A drain waits per frame" line.
+- **The game thread's "tight loop" at guest+0x2c94ba2-ba8 is not a wait:** UE 4.21's `ANavigationData::TickActor`
+  purging `ActivePaths` every frame, with an `mfence` before and after each refcount read. Patch (`b98df73`, opt-in,
+  restart-only): `GOW3_NAV_PURGE_NOFENCE=1` drops the two fences (the read stays).
+- Recommendations without code: recorder wake batching, a lock-free label write path, `GOW3_PREP_WORKERS=3`, a lower
+  vblank tick than 900 Hz on the Deck.
