@@ -6,6 +6,11 @@ Inputs:
 [study-deck-other-threads.md](study-deck-other-threads.md) (3.1 and cut B: the recorder),
 [study-stage-b-per-draw.md](study-stage-b-per-draw.md) (C2: recorder wakes forced by every label).
 
+**Credit (2026-11-05, [study-forks-survey.md](study-forks-survey.md)):** D1, D2, D4 and D5 (`02c15bf`, `471913a`,
+`b7e947d`, `0b32271`) are by **Porticus** (upstream PR #57: `92b4d51` static TLS model, `25e312c` thread id cache,
+`a61aab3` pool pages outside the lock, `ef597f0` lock spin). The spacepepperoni hashes cited below (`7800f32`,
+`1232650`, `a3f4c1d`, `95e295e`) are that fork's "Reapply" commits of Porticus's work, with the same titles.
+
 | # | Change | Where | Switch | Default |
 |---|---|---|---|---|
 | D1 | `-ftls-model=initial-exec` for `libgow3gpu.so` (spacepepperoni/medievil_ps4_Linux `7800f32`) | `gpu/CMakeLists.txt` | build only (Linux) | on |
