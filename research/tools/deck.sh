@@ -35,7 +35,7 @@ status)
         echo \"--- toggles: \$(cat $toggle_file 2>/dev/null)\"
         echo \"--- launcher: \$(grep -o '\"prep_workers\": \"[0-9]*\"\|\"stage_b_core\": [a-z]*' ~/.config/medievil-launcher/settings.json | tr '\n' ' ')\"
         echo \"--- ini: \$(grep -E '^(render_scale|vsync|fps_limit|ue4_quality|frames_queued)=' ~/$data_dir/medievil.ini | tr '\n' ' ')\"
-        d=\$(ls -d /sys/class/drm/card*/device | head -1)
+        d=\$(ls -d /sys/class/drm/card[0-9]/device | head -1)
         echo \"--- GPU: \$(cat \$d/power_dpm_force_performance_level) \$(grep '\\*' \$d/pp_dpm_sclk)\""
     ;;
 deploy)
@@ -110,7 +110,7 @@ mem)
     seconds=${1:-30}
     remote "cat /proc/meminfo | grep -E 'MemTotal|MemAvailable|^Cached|Shmem:|AnonHugePages|SwapTotal|SwapFree'
         swapon --show; echo \"swappiness \$(cat /proc/sys/vm/swappiness)  ttm pages_limit \$(cat /sys/module/ttm/parameters/pages_limit 2>/dev/null)\"
-        d=\$(ls -d /sys/class/drm/card*/device | head -1)
+        d=\$(ls -d /sys/class/drm/card[0-9]/device | head -1)
         echo \"VRAM total \$(( \$(cat \$d/mem_info_vram_total) >> 20 )) MiB  GTT total \$(( \$(cat \$d/mem_info_gtt_total) >> 20 )) MiB\"
         pid=\$(pgrep -o medievil-runti); [ -z \"\$pid\" ] && { echo 'game not running'; exit 0; }
         for i in \$(seq \$(( $seconds / 5 ))); do
@@ -133,7 +133,7 @@ checks)
         echo "SMT: $(cat /sys/devices/system/cpu/smt/control)"
         echo "tools: $(which gamemoderun gamemoded scx_lavd perf 2>/dev/null | tr "\n" " ")"
         pacman -Q gamemode scx-scheds 2>/dev/null
-        d=$(ls -d /sys/class/drm/card*/device | head -1); echo "fclk:"; cat $d/pp_dpm_fclk; echo "sclk:"; cat $d/pp_dpm_sclk; cat $d/power_dpm_force_performance_level
+        d=$(ls -d /sys/class/drm/card[0-9]/device | head -1); echo "fclk:"; cat $d/pp_dpm_fclk; echo "sclk:"; cat $d/pp_dpm_sclk; cat $d/power_dpm_force_performance_level
         pid=$(pgrep -o medievil-runti)
         if [ -n "$pid" ]; then
             echo "--- running game $pid"
