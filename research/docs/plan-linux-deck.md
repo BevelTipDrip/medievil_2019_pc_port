@@ -1133,13 +1133,13 @@ Live pairs, 20 s x 3 cycles each, medians of 9 clean windows vs 284 baseline win
 
 | B | Fix off | FPS (base 74.2) | Stage B busy | Read |
 |---|---|---|---|---|
-| `0 32` | recorder lean mode | 74.3 | 93.4% | neutral |
+| `0 32` | recorder lean mode | 74.3 | 93.4% | neutral in the heavy view |
 | `0 16` | C1 semaphore poll interval | 73.7 | 94.1% | +0.5 for C1 (noise level) |
 | `0 128` | C5 readback pre-check | 73.7 | 94.1% | +0.5 for C5 (noise level) |
 | `0 256` | D4 pool maps outside the lock | 73.5 | 92.8% | +0.7 for D4 (noise level) |
 | `0 512` | D5 table lock spin / empty hook queue | 72.9 | 92.0% | **+1.3 for D5** |
-| `2147485696 0` | narrow image stages + coarse read tracking | 74.4 | 91.8% | neutral |
-| `4295098368 0` | record prefetch + parallel copies | 74.0 | 94.4% | neutral |
+| `2147485696 0` | narrow image stages + coarse read tracking | 74.4 | 91.8% | neutral in the heavy view |
+| `4295098368 0` | record prefetch + parallel copies | 74.0 | 94.4% | neutral in the heavy view (may help loads / transitions) |
 | `5764607523034234880 0` | both targeted waits (W2 / B1) | 70.2 | 96.5% (stage A waited 42%) | **+4.0 for the targeted waits** |
 
 The patch audit's suspects among these are cleared: the targeted waits are the largest single gain measured live on
