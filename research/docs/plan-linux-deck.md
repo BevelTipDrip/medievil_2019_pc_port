@@ -1225,3 +1225,11 @@ the graph"), no glitches seen in the heavy view. Pending: walking and fast turns
   restart-only): `GOW3_NAV_PURGE_NOFENCE=1` drops the two fences (the read stays).
 - Recommendations without code: recorder wake batching, a lock-free label write path, `GOW3_PREP_WORKERS=3`, a lower
   vblank tick than 900 Hz on the Deck.
+
+## Stage A hybrid drain wait (2026-11-05, AppImage `d6029de`, `GOW3_DRAIN_HYBRID=1`, frame stats without sections; log `data/deck-drain-hybrid-1.log`)
+
+`deck.sh ab "0 2048" "0 6144" 20 4` (bit 4096 = today's wait): **78.7 vs 77.9 FPS**, stddev 1.32 vs 1.44 ms, p99 16.4 vs
+16.6 ms, stage B busy 91.8 vs 93.7%. Stage A CPU **76% vs 112%** (`deck.sh threads`), sched_yield calls **0 vs 4,540 a
+frame**, drain wait 3.26 vs 4.16 ms a frame; 1.04 of 2.89 drains a frame ended in the 30 us spin. Power samples too
+noisy to separate (CPU 6.6 vs 6.2 W, socket 14.9 vs 13.3 W, GPU 4.5 vs 3.7 W). Verdict: keep; candidate default.
+Next: the nav purge patch (`GOW3_NAV_PURGE_NOFENCE=1`, restart-only) on top.
