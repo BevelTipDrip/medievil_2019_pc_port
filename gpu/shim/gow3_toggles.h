@@ -133,6 +133,10 @@ enum : std::uint64_t {
     /// per-call state and binds the samplers, without the slow path's set-up (the same effects).
     /// Set: through the slow path again.
     NoImageFastPath = 131072,
+    /// T2 (impl-stage-b-per-draw-2.md), with GOW3_TEXSET_WIDE=1 at start (opt-in): the
+    /// texture-set memo also keeps sets of 17-32 images (a table of their own) and the sets of
+    /// stages without a prepared draw (their T# hashes computed at the bind). Set: off, live.
+    TextureSetWide = 262144,
 };
 inline bool Disabled(std::uint64_t bit) {
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;

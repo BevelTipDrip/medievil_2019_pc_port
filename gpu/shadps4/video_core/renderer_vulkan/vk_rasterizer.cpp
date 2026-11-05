@@ -2630,8 +2630,14 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
     ++bind_epoch;
     // To emulate storing to explicit mip levels, build a descriptor array with each mip level.
     boost::container::small_vector<u32, 8> image_descriptor_array_sizes;
-    // TextureSetMemo: what this call resolves, to remember when the set qualifies.
-    std::array<TextureSetEntry, TextureSet::MaxImages> resolved{};
+    // TextureSetMemo: what this call resolves, to remember when the set qualifies. Only a call
+    // with a set slot reads or writes it (a slot means one binding per image, up to the slot's
+    // size): its images' entries start empty, as the zeroed local array this was gave them.
+    auto& resolved = texture_set_resolved;
+    if (set_slot) {
+        std::fill_n(resolved.begin(), std::min<size_t>(stage.images.size(), resolved.size()),
+                    TextureSetEntry{});
+    }
     bool set_ok = static_cast<bool>(set_slot);
     u32 unkept = ~0u; // why the set is not kept (texture_set_unkept), the first reason found
     // SampleSceneProxies: bindings that may read a reduced scene proxy instead of the native
@@ -2871,7 +2877,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
         (!TextureSetRegions() || texture_cache.RegistryGeneration() == bind_generation)) {
         // Remember the set: the same T#s resolve the same way while no image is (un)registered
         // (over their own ranges with region stamps; none was during this bind).
-        KeepTextureSet(set_slot, resolved, static_cast<u32>(stage.images.size()));
+        KeepTextureSet(set_slot, {resolved.data(), stage.images.size()});
     } else if (set_slot) {
         ++texture_set_unkept[unkept != ~0u ? unkept : image_bindings.size() != stage.images.size() ? 5 : 6];
         DropTextureSet(set_slot);
@@ -2986,7 +2992,8 @@ static bool TextureSetRegions() {
     return on;
 }
 
-u64 Rasterizer::TextureSetStamp(const TextureSet& set) const {
+template <class Set>
+u64 Rasterizer::TextureSetStamp(const Set& set) const {
     u64 stamp = 0;
     for (u32 i = 0; i < set.count; ++i) {
         const auto& entry = set.entries[i];
@@ -3025,6 +3032,8 @@ static bool TextureSetTwoWay() {
 /// hashes and the images (the fields a hit reads have the same names in both).
 struct Rasterizer::LegacyTextureSets {
     static constexpr bool compact = false;
+    static constexpr u32 slots = Gow3TexSet::Slots;
+    static constexpr int stat = 1; ///< Gow3TexSet::lookups index (the memo line's counters)
     TextureSet* heads;
     TextureSetSlot Slot(u32 index) const {
         return {&heads[index], ~0u};
@@ -3041,6 +3050,8 @@ struct Rasterizer::LegacyTextureSets {
 };
 struct Rasterizer::CompactTextureSets {
     static constexpr bool compact = true;
+    static constexpr u32 slots = Gow3TexSet::Slots;
+    static constexpr int stat = 0;
     TextureSetHead* heads;
     TextureSetHotRow* hot;
     TextureSetSlot Slot(u32 index) const {
@@ -3056,6 +3067,39 @@ struct Rasterizer::CompactTextureSets {
         return rasterizer.TextureSetStamp(index);
     }
 };
+/// T2: sets of 17-32 images, laid out as the table as before; their own lookup counters.
+struct Rasterizer::WideTextureSets {
+    static constexpr bool compact = false;
+    static constexpr u32 slots = WideTextureSet::Slots;
+    static constexpr int stat = -1;
+    WideTextureSet* heads;
+    TextureSetSlot Slot(u32 index) const {
+        return {nullptr, ~0u, &heads[index]};
+    }
+    u64& Hash(u32 index, u32 i) const {
+        return heads[index].hashes[i];
+    }
+    const TextureSetEntry& Entry(u32 index, u32 i) const {
+        return heads[index].entries[i];
+    }
+    u64 Stamp(const Rasterizer& rasterizer, u32 index) const {
+        return rasterizer.TextureSetStamp(heads[index]);
+    }
+};
+
+/// gow3 T2 (impl-stage-b-per-draw-2.md): the memo also takes sets of 17-32 images and stages
+/// without a prepared draw. Opt-in at start (GOW3_TEXSET_WIDE=1); second toggle word 262144
+/// switches it off live.
+static bool TextureSetWideWanted() {
+    static const bool wanted = [] {
+        const char* env = std::getenv("GOW3_TEXSET_WIDE");
+        return env && env[0] == '1';
+    }();
+    return wanted;
+}
+static bool TextureSetWide() {
+    return TextureSetWideWanted() && !Gow3Toggle2::Disabled(Gow3Toggle2::TextureSetWide);
+}
 
 void Rasterizer::MakeCompactTextureSets() {
     static_assert(sizeof(TextureSetHead) == 64 && sizeof(TextureSetHot) == 48 &&
@@ -3089,14 +3133,16 @@ void Rasterizer::MakeCompactTextureSets() {
 
 template <class Table>
 bool Rasterizer::BindTexturesFromSetIn(const Table& table, const Shader::Info& stage,
-                                       const PreparedStage* prepared, u32 count, u64 key,
-                                       bool& barrier, TextureSetSlot& slot) {
+                                       const u64* hashes, u32 count, u64 key, bool& barrier,
+                                       TextureSetSlot& slot) {
     const u64 generation = texture_cache.RegistryGeneration();
     const bool regions = TextureSetRegions();
-    if (Gow3Stats::enabled) Gow3TexSet::Bump(Gow3TexSet::lookups[Table::compact ? 0 : 1]);
+    // The memo line's counters are the compact and legacy tables' (T2's wide table apart).
+    const bool counted = Gow3Stats::enabled && Table::stat >= 0;
+    if (counted) Gow3TexSet::Bump(Gow3TexSet::lookups[Table::stat < 0 ? 0 : Table::stat]);
     bool found = false;
-    const u32 index = Gow3TexSet::Choose(table.heads, Gow3TexSet::WaysOf(key, TextureSetTwoWay()),
-                                         key, found);
+    const u32 index = Gow3TexSet::Choose(
+        table.heads, Gow3TexSet::WaysOf(key, TextureSetTwoWay(), Table::slots), key, found);
     auto& set = table.heads[index];
     slot = table.Slot(index);
     set.last_use = ++texture_set_tick;
@@ -3112,7 +3158,7 @@ bool Rasterizer::BindTexturesFromSetIn(const Table& table, const Shader::Info& s
     bool match = found && set.stage == &stage && set.count == count && current &&
                  set.scene_generation == scene_targets->Generation();
     for (u32 i = 0; match && i < count; ++i) {
-        match = table.Hash(index, i) == prepared->image_hashes[i];
+        match = table.Hash(index, i) == hashes[i];
     }
     if (!match) {
         const u32 why = !found ? 0 : !current ? 1 : 3;
@@ -3120,14 +3166,14 @@ bool Rasterizer::BindTexturesFromSetIn(const Table& table, const Shader::Info& s
         ++texture_set_misses;
         if (Gow3Stats::enabled) {
             Gow3Stats::texset_misses.fetch_add(1, std::memory_order_relaxed);
-            Gow3TexSet::Bump(Gow3TexSet::misses[why]);
+            if (counted) Gow3TexSet::Bump(Gow3TexSet::misses[why]);
         }
         set.key = key;
         set.stage = &stage;
         set.count = 0;
         set.generation = ~0ull;
         for (u32 i = 0; i < count; ++i) {
-            table.Hash(index, i) = prepared->image_hashes[i];
+            table.Hash(index, i) = hashes[i];
         }
         return false;
     }
@@ -3152,14 +3198,14 @@ bool Rasterizer::BindTexturesFromSetIn(const Table& table, const Shader::Info& s
             ++texture_set_misses;
             if (Gow3Stats::enabled) {
                 Gow3Stats::texset_misses.fetch_add(1, std::memory_order_relaxed);
-                Gow3TexSet::Bump(Gow3TexSet::misses[2]);
+                if (counted) Gow3TexSet::Bump(Gow3TexSet::misses[2]);
             }
             set.generation = ~0ull;
             return false;
         }
     }
     ++texture_set_hits;
-    if (Gow3Stats::enabled) Gow3TexSet::Bump(Gow3TexSet::hits);
+    if (counted) Gow3TexSet::Bump(Gow3TexSet::hits);
     slot = {};
     GOW3_SECTION(TexSetEmit);
     for (u32 i = 0; i < count; ++i) {
@@ -3195,7 +3241,10 @@ bool Rasterizer::BindTexturesFromSet(const Shader::Info& stage, const PreparedSt
                                      u32 first_image_idx, bool& barrier, TextureSetSlot& slot) {
     GOW3_SECTION(TexSetHit);
     const u32 count = static_cast<u32>(stage.images.size());
-    if (!prepared || count == 0 || count > TextureSet::MaxImages ||
+    // T2: sets of 17-32 images and stages without a prepared draw too.
+    const bool wide = TextureSetWide();
+    if (count == 0 || (!prepared && !wide) ||
+        count > (wide ? WideTextureSet::MaxImages : TextureSet::MaxImages) ||
         Gow3Toggle::Disabled(Gow3Toggle::TextureSetMemo) || FrameCapture::Active()) {
         return false;
     }
@@ -3204,27 +3253,64 @@ bool Rasterizer::BindTexturesFromSet(const Shader::Info& stage, const PreparedSt
             return false;
         }
     }
-    u64 key = XXH3_64bits_withSeed(prepared->image_hashes, count * sizeof(u64),
-                                   reinterpret_cast<u64>(&stage));
+    // The T# hashes a draw-preparation worker computed, or (T2, no prepared draw) the same
+    // hashes of the sharps the slow path would read.
+    std::array<u64, WideTextureSet::MaxImages> bind_hashes;
+    const u64* hashes = prepared ? prepared->image_hashes : bind_hashes.data();
+    if (!prepared) {
+        for (u32 i = 0; i < count; ++i) {
+            const auto& image = stage.images[i];
+            bind_hashes[i] = ImageDescHash(image.GetSharp(stage), image);
+        }
+    }
+    u64 key = XXH3_64bits_withSeed(hashes, count * sizeof(u64), reinterpret_cast<u64>(&stage));
     key |= 1; // 0 marks an empty slot
     (void)first_image_idx;
-    // gow3 (impl-texset-index.md): the compact layout, or with second toggle word 2048 the table
-    // as before (made on its first use); each keeps its sets while the other is in use.
-    if (Gow3Toggle2::Disabled(Gow3Toggle2::TextureSetLegacy)) {
+    bool hit;
+    if (count > TextureSet::MaxImages) {
+        if (!wide_texture_sets) {
+            wide_texture_sets =
+                std::make_unique<std::array<WideTextureSet, WideTextureSet::Slots>>();
+            Gow3TexSet::wide_bytes.store(sizeof(*wide_texture_sets), std::memory_order_relaxed);
+        }
+        hit = BindTexturesFromSetIn(WideTextureSets{wide_texture_sets->data()}, stage, hashes,
+                                    count, key, barrier, slot);
+        if (Gow3Stats::enabled) {
+            Gow3TexSet::Bump(Gow3TexSet::wide_lookups);
+            if (hit) Gow3TexSet::Bump(Gow3TexSet::wide_hits);
+        }
+    } else if (Gow3Toggle2::Disabled(Gow3Toggle2::TextureSetLegacy)) {
+        // gow3 (impl-texset-index.md): the compact layout, or with second toggle word 2048 the
+        // table as before (made on its first use); each keeps its sets while the other is in use.
         if (!texture_sets) {
             texture_sets = std::make_unique<std::array<TextureSet, Gow3TexSet::Slots>>();
             Gow3TexSet::legacy_bytes.store(sizeof(*texture_sets), std::memory_order_relaxed);
         }
-        return BindTexturesFromSetIn(LegacyTextureSets{texture_sets->data()}, stage, prepared,
-                                     count, key, barrier, slot);
+        hit = BindTexturesFromSetIn(LegacyTextureSets{texture_sets->data()}, stage, hashes, count,
+                                    key, barrier, slot);
+    } else {
+        hit = BindTexturesFromSetIn(CompactTextureSets{texture_set_heads, texture_set_hot}, stage,
+                                    hashes, count, key, barrier, slot);
     }
-    return BindTexturesFromSetIn(CompactTextureSets{texture_set_heads, texture_set_hot}, stage,
-                                 prepared, count, key, barrier, slot);
+    if (!prepared && Gow3Stats::enabled) {
+        Gow3TexSet::Bump(Gow3TexSet::unprepared_lookups);
+        if (hit) Gow3TexSet::Bump(Gow3TexSet::unprepared_hits);
+    }
+    return hit;
 }
 
 void Rasterizer::KeepTextureSet(const TextureSetSlot& slot,
-                                const std::array<TextureSetEntry, TextureSet::MaxImages>& resolved,
-                                u32 count) {
+                                std::span<const TextureSetEntry> resolved) {
+    const u32 count = static_cast<u32>(resolved.size());
+    if (slot.wide) {
+        WideTextureSet* set_slot = slot.wide;
+        set_slot->generation = texture_cache.RegistryGeneration();
+        set_slot->scene_generation = scene_targets->Generation();
+        set_slot->count = count;
+        std::copy_n(resolved.begin(), count, set_slot->entries.begin());
+        if (TextureSetRegions()) set_slot->stamp = TextureSetStamp(*set_slot);
+        return;
+    }
     if (Gow3Stats::enabled) Gow3TexSet::Bump(Gow3TexSet::kept);
     if (slot.legacy) {
         TextureSet* set_slot = slot.legacy;
@@ -3256,6 +3342,10 @@ void Rasterizer::KeepTextureSet(const TextureSetSlot& slot,
 }
 
 void Rasterizer::DropTextureSet(const TextureSetSlot& slot) {
+    if (slot.wide) {
+        slot.wide->key = 0;
+        return;
+    }
     if (Gow3Stats::enabled) Gow3TexSet::Bump(Gow3TexSet::dropped);
     if (slot.legacy) {
         slot.legacy->key = 0;

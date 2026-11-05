@@ -1464,7 +1464,9 @@ void *runtime_low_map(size_t size, int prot) {
  * it (D5), 1024 with GOW3_STAGE_B_SPIN=1: stage B blocks without the bounded spin (#4),
  * 2048 the texture-set memo's table as before instead of its compact layout,
  * 65536 the buffer cache's residency check by the interval search again (R2, stage B per draw),
- * 131072 texture binds of stages without images through the slow path again (T1). */
+ * 131072 texture binds of stages without images through the slow path again (T1),
+ * 262144 with GOW3_TEXSET_WIDE=1: the texture-set memo for 16 images or fewer and prepared
+ * draws only again (T2). */
 uint64_t runtime_disabled_optimizations, runtime_disabled_optimizations2;
 /* Speculative readers of guest memory (GPU draw-preparation workers) register a recovery
  * point: a fault on that thread jumps back to it instead of terminating (probe.c). */

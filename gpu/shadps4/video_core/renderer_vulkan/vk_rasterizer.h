@@ -353,6 +353,26 @@ private:
     };
     /// The table as before (second toggle word 2048): made on its first use.
     std::unique_ptr<std::array<TextureSet, Gow3TexSet::Slots>> texture_sets;
+    /// gow3 T2 (impl-stage-b-per-draw-2.md; GOW3_TEXSET_WIDE=1, second toggle word 262144 off):
+    /// sets of 17-32 images ("over 16 images": ~54 binds a heavy Deck frame at ~7 us each), kept
+    /// as the table above keeps its sets, in slots of their own (two-way; made on first use).
+    struct WideTextureSet {
+        u64 key = 0;
+        const Shader::Info* stage = nullptr;
+        u64 generation = ~0ull;
+        u64 stamp = 0;
+        u64 last_use = 0;
+        u64 scene_generation = 0;
+        u32 count = 0;
+        static constexpr u32 MaxImages = 32;
+        static constexpr u32 Slots = 1024;
+        std::array<u64, MaxImages> hashes{};
+        std::array<TextureSetEntry, MaxImages> entries{};
+    };
+    std::unique_ptr<std::array<WideTextureSet, WideTextureSet::Slots>> wide_texture_sets;
+    /// The slow path's resolved images for the slot it fills (the first `count` are reset when
+    /// it has one; the others are never read).
+    std::array<TextureSetEntry, WideTextureSet::MaxImages> texture_set_resolved{};
     /// gow3 (impl-texset-index.md): the same memo in a compact layout (default). The same slots,
     /// keys and replacement (Gow3TexSet::Choose); per slot a 64-byte index entry (the two ways
     /// of a key share 128 aligned bytes), the images a hit reads (48 bytes each), and apart what
@@ -391,21 +411,21 @@ private:
     struct TextureSetSlot {
         TextureSet* legacy = nullptr;
         u32 compact = ~0u;
+        WideTextureSet* wide = nullptr; ///< T2: a set of 17-32 images
         explicit operator bool() const {
-            return legacy || compact != ~0u;
+            return legacy || compact != ~0u || wide;
         }
     };
     struct LegacyTextureSets;
     struct CompactTextureSets;
+    struct WideTextureSets;
     void MakeCompactTextureSets();
+    /// `hashes`: the stage's T# hashes (ImageDescHash), `count` of them.
     template <class Table>
-    bool BindTexturesFromSetIn(const Table& table, const Shader::Info& stage,
-                               const PreparedStage* prepared, u32 count, u64 key, bool& barrier,
-                               TextureSetSlot& slot);
+    bool BindTexturesFromSetIn(const Table& table, const Shader::Info& stage, const u64* hashes,
+                               u32 count, u64 key, bool& barrier, TextureSetSlot& slot);
     /// The slow path's resolved images into the slot (the set is kept), or the slot emptied.
-    void KeepTextureSet(const TextureSetSlot& slot,
-                        const std::array<TextureSetEntry, TextureSet::MaxImages>& resolved,
-                        u32 count);
+    void KeepTextureSet(const TextureSetSlot& slot, std::span<const TextureSetEntry> resolved);
     void DropTextureSet(const TextureSetSlot& slot);
     u64 texture_set_hits = 0, texture_set_misses = 0;
     u64 texture_set_tick = 0;
@@ -428,7 +448,8 @@ private:
     /// Returns true when the stage's images were bound from the memo.
     bool BindTexturesFromSet(const Shader::Info& stage, const PreparedStage* prepared,
                              u32 first_image_idx, bool& barrier, TextureSetSlot& slot);
-    u64 TextureSetStamp(const TextureSet& set) const;
+    template <class Set>
+    u64 TextureSetStamp(const Set& set) const; ///< TextureSet or WideTextureSet
     u64 TextureSetStamp(u32 compact_slot) const;
     /// The prepared sharps of `stage` in the current prepared draw, if they fit it.
     const PreparedStage* FindPreparedStage(const Shader::Info& stage) const;
