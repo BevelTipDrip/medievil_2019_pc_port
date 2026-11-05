@@ -15,6 +15,7 @@
 #   deck.sh summary NAME|PATH [args]       per-window and per-toggle-state summary (deck_summary.py)
 #   deck.sh threads [seconds]              per-thread CPU and context switches during a run (/proc)
 #   deck.sh clocks [seconds] [names]       the clock of the CPU each named thread runs on, every 200 ms
+#   deck.sh ini logging|play|save N|diff  switch the ini between the fixed logging copy and the user's own (game closed)
 #   deck.sh mem [seconds]                  memory reads (study-deck-memory-budget.md 5): once, then every 5 s
 #   deck.sh checks                         read-only platform facts (study-deck-platform-optimization.md §0)
 set -euo pipefail
@@ -106,6 +107,18 @@ clocks)
         done | awk 'NR==1{print;next}{print} {for(i=1;i<=NF;i+=2){split(\$(i+1),a,\"MHz\"); s[i]+=a[1]; n[i]++}}
             END{printf \"mean MHz:         \"; for(i=1;i<=NF;i+=2) printf \"%-18d\", (n[i]?s[i]/n[i]:0); print \"\"}' | tail -6"
     ;;
+ini)
+    # Logging runs use one fixed ini (medievil.ini.logging); the user's own settings are kept as
+    # medievil.ini.play. `ini logging|play` switches (game closed); `ini save NAME` copies the
+    # current ini to medievil.ini.NAME; `ini diff` compares the current ini with both.
+    which=${1:?logging, play, save NAME or diff}
+    case $which in
+    save) remote "cp -p ~/$data_dir/medievil.ini ~/$data_dir/medievil.ini.${2:?NAME} && echo saved medievil.ini.$2" ;;
+    diff) remote "cd ~/$data_dir; for n in logging play; do echo \"--- current vs \$n\"; diff medievil.ini.\$n medievil.ini; done; true" ;;
+    *)  running && { echo 'The game is running on the Deck: not switching the ini.' >&2; exit 1; }
+        remote "cd ~/$data_dir && [ -f medievil.ini.$which ] && cp medievil.ini.$which medievil.ini && echo \"medievil.ini <- medievil.ini.$which\"" ;;
+    esac
+    ;;
 mem)
     seconds=${1:-30}
     remote "cat /proc/meminfo | grep -E 'MemTotal|MemAvailable|^Cached|Shmem:|AnonHugePages|SwapTotal|SwapFree'
@@ -143,6 +156,6 @@ checks)
         fi'
     ;;
 *)
-    sed -n 2,19p "$0"; exit 1
+    sed -n 2,20p "$0"; exit 1
     ;;
 esac

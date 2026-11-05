@@ -55,6 +55,15 @@ class GraphicsOptionsTest(unittest.TestCase):
         self.assertEqual(g.hzb_full_size_environment({'GOW3_HZB_FULL_SIZE': '1'})['GOW3_PATCHES'], hzb)
         self.assertEqual(g.hzb_full_size_environment({'GOW3_PATCHES': f'{hzb};{size}',
                                                       'GOW3_HZB_FULL_SIZE': '0'})['GOW3_PATCHES'], size)
+        # Unset: on for scenes up to 1280x800 (the Deck's 720p at 67% or 100%), not above.
+        self.assertEqual(g.hzb_full_size_environment({'GOW3_PATCHES': size}, 1280, 720, 67)['GOW3_PATCHES'],
+                         f'{size};{hzb}')
+        self.assertEqual(g.hzb_full_size_environment({'GOW3_PATCHES': size}, 1280, 800, 100)['GOW3_PATCHES'],
+                         f'{size};{hzb}')
+        self.assertEqual(g.hzb_full_size_environment({'GOW3_PATCHES': size}, 1920, 1080, 100)['GOW3_PATCHES'], size)
+        self.assertEqual(g.hzb_full_size_environment({'GOW3_PATCHES': size}, 3840, 2160, 50)['GOW3_PATCHES'], size)
+        self.assertEqual(g.hzb_full_size_environment({'GOW3_PATCHES': size, 'GOW3_HZB_FULL_SIZE': '0'},
+                                                     1280, 720, 67)['GOW3_PATCHES'], size)
 
     def test_resolution_migration(self):
         # The single render_resolution / ue4_upscale of earlier versions become the two settings.

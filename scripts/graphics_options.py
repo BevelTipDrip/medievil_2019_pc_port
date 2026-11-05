@@ -166,15 +166,28 @@ def output_environment(env, width, height):
 HZB_FULL_SIZE_PATCH = 'Finer occlusion culling (low render resolutions, Steam Deck)'
 
 
-def hzb_full_size_environment(env):
+# Scenes up to this size get the "Finer occlusion culling" patch by default: their stock HZB is at
+# most 1024x512 and culls about half of what the full-size one does (Steam Deck, 1280x720 at 67%:
+# twice the objects hidden, -7% draws, +4.6% FPS, no pop-in; plan-linux-deck.md). Larger scenes
+# already get a fine HZB, and at 4K the patch would build a 4096x4096 pyramid for nothing.
+HZB_FULL_SIZE_AUTO_MAX = (1280, 800)
+
+
+def hzb_full_size_environment(env, width=0, height=0, render_scale=100):
     """GOW3_HZB_FULL_SIZE=1 adds the "Finer occlusion culling" patch (HZB at the scene's size,
     research/docs/study-ue4-draw-reduction.md section 4) to GOW3_PATCHES, =0 removes it; unset,
-    the launcher's Patches page (or the patch file's default, off) decides. For extra-env.txt
-    A/B tests on the Steam Deck."""
+    it is added when the startup scene (output size x render scale) is at most
+    HZB_FULL_SIZE_AUTO_MAX, else the launcher's Patches page decides. A binary patch: a render
+    scale changed in the game keeps the startup choice until the next start."""
     switch = env.get('GOW3_HZB_FULL_SIZE')
-    if switch not in ('0', '1'):
-        return env
     selected = [n for n in env.get('GOW3_PATCHES', '').split(';') if n and n != HZB_FULL_SIZE_PATCH]
+    if switch not in ('0', '1'):
+        scene = (width * render_scale // 100, height * render_scale // 100)
+        if not width or scene[0] > HZB_FULL_SIZE_AUTO_MAX[0] or scene[1] > HZB_FULL_SIZE_AUTO_MAX[1] or                 HZB_FULL_SIZE_PATCH in env.get('GOW3_PATCHES', '').split(';'):
+            return env
+        print(f'Finer occlusion culling: on (scene {scene[0]}x{scene[1]}, at most '
+              f'{HZB_FULL_SIZE_AUTO_MAX[0]}x{HZB_FULL_SIZE_AUTO_MAX[1]}; GOW3_HZB_FULL_SIZE=0: off)', flush=True)
+        switch = '1'
     if switch == '1':
         selected.append(HZB_FULL_SIZE_PATCH)
     env['GOW3_PATCHES'] = ';'.join(selected)
