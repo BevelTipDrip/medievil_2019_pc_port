@@ -91,7 +91,8 @@ const char* HugePageMode() {
             std::fclose(file);
         }
         // The selected mode is in brackets: "always [madvise] never".
-        for (const char* name : {"always", "madvise", "never"}) {
+        static constexpr const char* names[] = {"always", "madvise", "never"};
+        for (const char* name : names) {
             char selected[16];
             std::snprintf(selected, sizeof(selected), "[%s]", name);
             if (std::strstr(text, selected)) {
