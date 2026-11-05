@@ -1151,3 +1151,18 @@ the Deck, and the barrier / prefetch pairs cost nothing. No visual issues report
 Fifo (GOW3_PRESENT_MODE=immediate)": the gamescope surface did not offer Immediate (with "allow tearing" on), so the
 port fell back to Fifo and the frame rate was capped (the user saw it capped). Mailbox stays the uncapped mode under
 gamescope; true tearing would need gamescope to expose Immediate. Removed from extra-env.txt.
+
+## Finer occlusion culling on the Deck (2026-11-04, AppImage `a4250a2`, baseline settings + `GOW3_HZB_FULL_SIZE=1`, Mailbox; log `data/deck-hzb-1.log`)
+
+Patch applied (17 writes). Same heavy view, medians of the steady windows vs baseline 1:
+
+| | Baseline 1 | Full-size HZB |
+|---|---|---|
+| HZB hidden / frame | ~60 | **~119** (the 100% run's rate) |
+| draws / frame | 1,241 | **~1,151** (base pass 523 -> 460, velocity 74 -> 57, depth prepass 232 -> 222) |
+| FPS | 74.2 | **~77.6** (+4.6%) |
+| pacing stddev / p99 / worst | 1.54 / 17.6 / 18.9 ms | **1.42 / 16.4 / 17.3 ms** |
+
+Fewer draws than the study's 120-145 estimate (two hidden objects save about one and a half draws), but the gain is clean:
+throughput unchanged (~89k draws/s), the heaviest frames shrink most (the user: "the spikes are lower amplitude on
+the graph"), no glitches seen in the heavy view. Pending: walking and fast turns for late pop-in; then a Deck default.
