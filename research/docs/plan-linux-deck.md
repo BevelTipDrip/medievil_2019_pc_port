@@ -1180,3 +1180,20 @@ the graph"), no glitches seen in the heavy view. Pending: walking and fast turns
 - Running in parallel: live render scale with 1% steps (impl agent, `impl-live-render-scale.md`); which restart-only
   settings could go live by a renderer restart that keeps the game state (`study-live-settings.md`).
 - Next run: sections (`GOW3_SECTIONS=1 GOW3_SLOW_FRAMES=1.4`) to break down stage B's ~4-6 ms outside draws.
+
+## Spin, compact texture memo and the task split (2026-11-04)
+
+- **Stage B spin #4** (`cd1b1a8`, log `data/deck-spin-1.log`, `deck.sh ab "0 1024" "0 0" 20 4`): 77.1 vs 77.1 FPS.
+  Sleeps 4.2 -> 1.7 a frame, 4.8 waits a frame ended by the spin, GPU waits (0.7 a frame) unchanged: neutral. The user
+  keeps it on (`GOW3_STAGE_B_SPIN=1` stays in extra-env.txt). Live render scale and the menu redraw fix: verified by
+  the user (works; pacing with the menu up normal).
+- **Compact texture-set memo** (`1e4ca3d`, log `data/deck-texset-1.log`, `ab "0 0" "0 2048" 30 5`): 76.6 vs 76.5 FPS,
+  texset 1.051 vs 1.046 ms, hit rates identical (98.25 / 98.26%), 44 MB in 21 huge pages. Neutral: the texset cost
+  is not memory-bound. Kept on (8 MB less).
+- **Task split** (heavy frame samples, 13.6 ms, 1,213 draws): tasks 3.09 ms = flip 1.30 (GPU wait 0.69, the rest the
+  present work), **WRITE_DATA 0.85, all waiting** (`wdata_wait`: the two "done" flags a frame wait for the fences
+  deferred to the Vulkan recorder, T-W3), EOP 0.50, submit 0.23 (flush 0.13), EOS 0.09. Stage B sleeps 0.87 ms a frame
+  in all with the spin on (GPU waits 0.69). Next design item: WRITE_DATA without stage B waiting (W3 alone moved the
+  wait to the flip; W3b deadlocked at boot).
+- CPU clocks next (the user: boosting stage B's core and capping the others leaves power to the GPU; higher clocks
+  move the bottleneck to the GPU): `research/tools/deck-cpu-clocks.sh` (`deck.sh cpu-script`), the user runs it with sudo.
