@@ -1197,3 +1197,19 @@ the graph"), no glitches seen in the heavy view. Pending: walking and fast turns
   wait to the flip; W3b deadlocked at boot).
 - CPU clocks next (the user: boosting stage B's core and capping the others leaves power to the GPU; higher clocks
   move the bottleneck to the GPU): `research/tools/deck-cpu-clocks.sh` (`deck.sh cpu-script`), the user runs it with sudo.
+
+## CPU clocks and the power cap (2026-11-04/05; log `data/deck-epp-perf-1.log`, `data/deck-dedicated-1.log`)
+
+- **EPP performance on every CPU:** stage B 2,963 MHz (2,976 before), FPS 74-76 vs 76.5: no gain. Spin off/on under
+  it: 75.6 / 75.9 (neutral; spin left off).
+- **The APU is at its power cap:** `power1_cap` 15 W (default; max 29 W), 14-15 W used, GPU 860-1,090 MHz at ~100% busy.
+  `gpu_metrics` (v2.4, offset 40: socket / cpu / soc / gfx mW, then core[4]; `~/MediEvil/apu_power.py`): **CPU 7.9 W,
+  GPU 3.2 W** of 14.9 W.
+- **Dedicated core alone:** 74.1 FPS at 1,155 draws (same draws/s), stage B busy 96 -> 89%, GPU 98% busy at 1,024 MHz.
+- **Split** (stage B's CPU 6 at EPP performance / 3.5 GHz, the rest capped at 2.0 GHz): **~66 FPS**. Stage B 3,344 MHz,
+  but stage A at ~1.9 GHz starves it (packet-ring waits 0.2 -> 1.8 ms a frame), and the GPU fell to 863 MHz (GPU waits
+  0.7 -> 1.7 ms a frame): capped cores still drew ~1.7 W each, like stage B's core (inferred: one shared CPU voltage
+  set by the fastest core, so capping frequency saves little). Boost-one / slow-the-rest does not work on this APU.
+- **The user:** the GPU can already get more power with a fixed GPU clock (+1-2 FPS at a cost in frame stability); not
+  worth chasing clocks further unless CPU use drops seriously. **Direction: cut total CPU work on every thread** (less
+  CPU power = GPU headroom), measured per thread first (`deck.sh threads`).
