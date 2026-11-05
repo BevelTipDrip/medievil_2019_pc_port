@@ -1267,3 +1267,43 @@ measured performance switches, graphics settings, the GPU / FPS recommendation; 
 usage is still the big win here, because there's a lot of GPU headroom, we just can't use it" (the 15 W cap).
 On the Deck's next start: the active medievil.ini holds these settings (written by the in-game menu into the logging
 copy): save it as medievil.ini.deck60, restore medievil.ini.logging for test runs; extra-env.txt still has test keys.
+
+## Deck Optimized preset (2026-11-05, launcher; built, not run)
+
+The user's result (Deck OLED, SteamOS, AppImage): **a flat 60 FPS in the heaviest graveyard view** with the logging
+ini plus render scale 80%, volumetric fog on and `fps_limit=60`, VSync off (Mailbox), the GPU clock fixed at 1,200 MHz
+in the Quick Access Menu. Now a launcher preset: Graphics quality > **Deck Optimized** (Home and Performance).
+
+- **Values** (`DECK_PRESET`, `launcher/medievil_launcher.py`): the logging ini as `deck.sh ini logging` writes it,
+  with `render_scale=80`, `volumetric_fog=1`, `fps_limit=60` (720p borderless, Low with effects 50%, AO 2, reflections
+  1, bloom 2, shadows 256 / short / 1, view 0.7, LOD low, `preshadows=0`, every performance patch on but 4K memory,
+  `perf_particle_single_pass=1` as in the user's ini, engine 240 + no built-in caps, tick 900 not precise, Standard
+  limiter, inline present, `display_vrr=0`). `ue4_quality` stays `low` for the game; "deck" exists only in the
+  launcher (`graphics_preset` in settings.json).
+- **The 60 cap:** with `present_no_frame_caps=1` run.py gives the engine a 1000 FPS bound and `GOW3_NO_FRAME_CAP=1`;
+  the tick is 900 Hz (`GOW3_VBLANK_HZ`), not 480, so the present thread has no fixed limit of its own and `fps_limit`
+  is the only clock (`driver.cpp` `current_limit`: kept because 60 < the tick; not zeroed because VSync is off; no
+  Reflex with the Standard limiter). One flip per 1/60 s slot; the game waits on its flips (1 frame queued). Not used:
+  `engine_fps=60` (UE4's own tick bound, `SmoothedFrameRateRange` below 62, would be a second clock beside the
+  present limit: two limiters at one rate fight, T-F13), a 60 Hz tick (tick = cap holds on a fast PC, but a frame
+  that misses a tick waits for the next: 33 ms on a Deck whose heavy frames are near 16 ms), Reflex / Precise (not
+  what was measured; Reflex falls back to Precise on AMD).
+- **Switches** (`DECK_SWITCHES`, launcher setting `deck_switches`, the checkbox "Steam Deck performance switches"
+  under Graphics quality): `GOW3_EARLY_FRAME_EOP=1`, `GOW3_DECODE_PACING=1` + `GOW3_DECODE_PACING_LEAD=2`,
+  `GOW3_ARENA_HOST_VISIBLE=0`, `GOW3_DRAIN_HYBRID=1`, `GOW3_TEXSET_WIDE=1`, `GOW3_REGION_INDEX=1`, set by
+  `game_environment` with `setdefault` (an environment variable already set wins; extra-env.txt still overrides).
+  Preset-driven, not Linux defaults: measured on the Deck only; the PC / Windows defaults are unchanged. Left out
+  (not measured): `GOW3_NAV_PURGE_NOFENCE`, `GOW3_STAGE_B_SPIN`, the v3 build, core scheduling / nice, pool prefill.
+  Picking another Graphics quality ends the preset and turns the switches off; the other values stay.
+- **Recommendation**, shown under Graphics quality (Home and Performance) while Deck Optimized is chosen and in the
+  first-run message: set a manual GPU clock of about 1,200 MHz in the Quick Access Menu (Performance) and keep the
+  frame limit at 60; an uncapped GPU takes power from the CPU and frame times swing.
+- **Detection** (`steam_deck`): `SteamDeck=1` (Steam), or DMI `board_vendor` (or `sys_vendor`) `Valve` with
+  `product_name` (or `board_name`) `Jupiter` / `Galileo`. On a Deck, once (`deck_offered`): the first run (no
+  settings.json, no medievil.ini) selects the preset and says so; an existing setup is asked yes / no. Never changed
+  silently; `--play` never offers (it needs a game folder, so the window ran first).
+- Tests: `tests/test_deck_preset.py` (exact values, every value valid, the single 60 clock, switches only with the
+  preset, detection with mocked DMI files, the offer rule). Smoke-tested off-screen (Tk, scratch data and ini): first
+  run, existing setup no / yes, leaving the preset, reopening.
+- Deck check when it is back: the preset on a fresh data folder reproduces the flat 60 (`deck.sh status` shows the
+  ini); the switches' log lines ("Decode pacing: on", "Early frame EOP", "Stage A drain waits") without extra-env.txt.

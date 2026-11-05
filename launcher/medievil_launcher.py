@@ -180,7 +180,7 @@ APP_DEFAULTS = {'ui_language': 'en', 'game_dir': os.environ.get('GOW3_GAME_DIR',
                 'background_warmup': True, 'parallel_warmup': True, 'pipeline_binary_cache': True, 'perf_diag': False, 'frame_capture_key': False, 'frame_stats': False, 'gpu_profile': False,
                 'vk_validation': False, 'close_on_play': False, 'prep_workers': '', 'stage_b_core': False,
                 'update_check': True, 'game_patches': {}, 'game_patches_seen': {}, 'controls': {}, 'pad_style': 'playstation', 'stick_range': '',
-                'last_pkg': ''}
+                'last_pkg': '', 'graphics_preset': '', 'deck_switches': False, 'deck_offered': False}
 
 # PS4 button, default key, default gamepad button (SDL names; src/runtime_pad.c). L2/R2 come
 # from the analog triggers and are not remapped on the gamepad.
@@ -487,6 +487,9 @@ def game_environment(s):
         env['GOW3_PREP_WORKERS'] = str(s['prep_workers'])
     if s.get('stage_b_core', False):
         env['GOW3_STAGE_B_CORE'] = '1'
+    if s.get('deck_switches', False):  # Deck Optimized (DECK_SWITCHES); a variable already set wins
+        for name, value in DECK_SWITCHES.items():
+            env.setdefault(name, value)
     env['GOW3_PIPELINE_BINARIES'] = '1' if s.get('pipeline_binary_cache', True) else '0'
     env.setdefault('GOW3_PERF_DIAG', '1' if s.get('perf_diag', False) else '0')
     for key, name in (('frame_stats', 'GOW3_FRAME_STATS'), ('gpu_profile', 'GOW3_GPU_PROFILE'),
@@ -649,11 +652,79 @@ GRAPHICS_OPTIONS = [
 INI_DEFAULTS.update({key: 'preset' for key, *_rest in GRAPHICS_OPTIONS})
 ENGINE_FPS_CHOICES = [('60', ('60 (original)',)), ('120', ('120',)), ('240', ('240',))]
 
+# Steam Deck (research/docs/plan-linux-deck.md, "Deck Optimized preset"): the user's flat 60 FPS in
+# the heaviest graveyard view (Deck OLED, SteamOS, AppImage, GPU clock fixed at 1,200 MHz): the Low
+# logging settings with an 80% render scale, volumetric fog and a 60 FPS limit. "Deck Optimized" in
+# Graphics quality writes these to medievil.ini (ue4_quality stays low for the game) and turns on
+# DECK_SWITCHES. The 60 cap: the engine is unbounded (present_no_frame_caps, engine_fps 240) and the
+# vblank tick runs at 900 Hz, far above the cap, so fps_limit is the only clock: the present thread
+# releases one flip per 1/60 s slot (Standard limiter: no Reflex, no second limiter at the same rate;
+# VSync off = Mailbox under gamescope, which offers no Immediate).
+DECK_PRESET = {
+    'show_fps': '0', 'display_mode': 'borderless', 'vsync': '0', 'fps_limit': '60', 'async_shaders': '1',
+    'deferred_readback': '1', 'stale_readback': '1', 'output_resolution': '1280x720', 'render_scale': '80',
+    'engine_fps': '240', 'fsr1': '0', 'rcas': '0', 'rcas_strength': '29', 'frames_queued': '1',
+    'ue4_quality': 'low', 'effects_resolution': '50', 'ue4_aa': 'taa',
+    'perf_hzb_occlusion': '1', 'perf_no_decal_prepass': '1', 'perf_particle_single_pass': '1',
+    'perf_small_buffers': '1', 'perf_texture_memo': '1', 'perf_lockfree_memory': '1', 'perf_cheap_frees': '1',
+    'perf_gpu_data_no_waits': '1', 'perf_4k_memory': '0', 'perf_lean_barriers': '1', 'perf_lean_binding': '1',
+    'perf_ring_reuse': '1',
+    'present_inline': '1', 'present_precise_tick': '0', 'present_frame_trace': '0', 'present_no_frame_caps': '1',
+    'present_tick_hz': '900', 'present_mode': 'auto', 'present_limiter': 'standard', 'display_vrr': '0',
+    'shadow_resolution': '256', 'shadow_distance': 'short', 'shadow_quality': '1', 'view_distance': '0.7',
+    'lod_distance': 'low', 'ambient_occlusion': '2', 'reflections': '1', 'volumetric_fog': '1', 'motion_blur': '0',
+    'depth_of_field': '0', 'bloom': '2', 'lens_flares': '0', 'chromatic_aberration': 'preset', 'preshadows': '0'}
+# medievil.ini keys the launcher writes only when they are set (the in-game menu's own switches).
+INI_OPTIONAL_KEYS = ('preshadows',)
+# The Deck's measured wins that are still opt-in start switches (plan-linux-deck.md): early frame EOP,
+# decode pacing with a 2-frame lead, U2 off (no gain on the Deck, its tracking costs stage B), stage A's
+# hybrid drain wait (-1/3 of its CPU), the wide texture-set memo (T2) and the region cache index (R1).
+# Measured on the Deck only, so they come with the preset (launcher setting deck_switches), not as
+# Linux defaults; an environment variable already set wins, and run.py applies extra-env.txt last.
+DECK_SWITCHES = {'GOW3_EARLY_FRAME_EOP': '1', 'GOW3_DECODE_PACING': '1', 'GOW3_DECODE_PACING_LEAD': '2',
+                 'GOW3_ARENA_HOST_VISIBLE': '0', 'GOW3_DRAIN_HYBRID': '1', 'GOW3_TEXSET_WIDE': '1',
+                 'GOW3_REGION_INDEX': '1'}
+DECK_QUALITY = 'deck'
+QUALITY_PRESETS = [*QUALITY_CHOICES, (DECK_QUALITY, ('Deck Optimized',))]
+DECK_HINT = ('Steam Deck: in the Quick Access Menu (Performance) set a manual GPU clock of about 1,200 MHz and '
+             'keep the frame limit at 60 for a flat 60 FPS; an uncapped GPU takes power from the CPU and frame '
+             'times swing.')
+# Valve's boards in /sys/devices/virtual/dmi/id: Jupiter (Steam Deck LCD), Galileo (Steam Deck OLED).
+DECK_DMI = Path('/sys/devices/virtual/dmi/id')
+DECK_PRODUCTS = ('Jupiter', 'Galileo')
+
+
+def steam_deck(env=None, dmi=DECK_DMI):
+    """True on a Steam Deck: SteamDeck=1 (Steam sets it for what it starts) or the board's DMI
+    (vendor Valve, product Jupiter or Galileo)."""
+    env = os.environ if env is None else env
+    if env.get('SteamDeck') == '1':
+        return True
+
+    def read(name):
+        try:
+            return (Path(dmi) / name).read_text(encoding='utf-8', errors='replace').strip()
+        except OSError:
+            return ''
+    vendor = read('board_vendor') or read('sys_vendor')
+    product = read('product_name') or read('board_name')
+    return vendor == 'Valve' and product in DECK_PRODUCTS
+
+
+def deck_preset_offer(app, first_run, on_deck):
+    """What the launcher does about the Deck Optimized preset when it opens: 'select' on the first run
+    on a Deck (no settings.json and no medievil.ini yet), 'ask' once for an existing setup on a Deck,
+    else None (asked or chosen before, or not a Deck). Existing settings never change unasked."""
+    if not on_deck or app.get('deck_offered') or app.get('graphics_preset') == DECK_QUALITY:
+        return None
+    return 'select' if first_run else 'ask'
+
 
 class Launcher:
     def __init__(self, root, tk, ttk, filedialog, messagebox):
         self.tk, self.ttk, self.filedialog, self.messagebox = tk, ttk, filedialog, messagebox
         self.root = root
+        self.first_run = not CONFIG_FILE.exists() and not ini_path().exists()
         self.app = {**APP_DEFAULTS, **load_json(CONFIG_FILE, {})}
         if self.app.get('readbacks') == '2':  # "Precise" is no longer offered (issue #15)
             self.app['readbacks'] = ''
@@ -683,6 +754,7 @@ class Launcher:
         self.show('home')
         root.protocol('WM_DELETE_WINDOW', self.close)
         root.after(100, self.drain_output)
+        root.after(400, self.offer_deck_preset)
         if self.app.get('update_check', True):
             root.after(1500, lambda: threading.Thread(target=self.check_update, daemon=True).start())
 
@@ -873,6 +945,83 @@ class Launcher:
             cap.store = 'derived'  # saved through engine_fps and present_no_frame_caps
             self.vars['engine_cap'] = cap
         return self.vars['engine_cap']
+
+    def quality_choice_var(self):
+        """Graphics quality with "Deck Optimized" (graphics_preset): the game's ue4_quality, or the Deck
+        preset, which writes DECK_PRESET (ue4_quality low) and turns on the Deck switches. Another
+        quality picked after it ends the preset and its switches; the other settings stay as they are."""
+        if 'quality_choice' not in self.vars:
+            quality, preset = self.var('ue4_quality', 'ini'), self.var('graphics_preset', 'app')
+            deck = preset.get() == DECK_QUALITY and quality.get() == DECK_PRESET['ue4_quality']
+            if not deck:  # another quality chosen in the game's menu since: the preset is over
+                preset.set('')
+            choice = self.tk.StringVar(value=DECK_QUALITY if deck else quality.get())
+            last = [choice.get()]
+
+            def write(*_args):
+                value, previous = choice.get(), last[0]
+                last[0] = value
+                if value == previous:
+                    return
+                if value == DECK_QUALITY:
+                    self.apply_deck_preset()
+                else:
+                    if previous == DECK_QUALITY:
+                        preset.set('')
+                        self.var('deck_switches', 'app').set(False)
+                    quality.set(value)
+            choice.trace_add('write', write)
+            choice.store = 'derived'  # saved through ue4_quality and graphics_preset
+            self.vars['quality_choice'] = choice
+        return self.vars['quality_choice']
+
+    def apply_deck_preset(self):
+        """Deck Optimized: DECK_PRESET into the settings (saved to medievil.ini like any change) and the
+        Deck switches on; the VSync and engine frame rate lists follow their keys."""
+        for key, value in DECK_PRESET.items():
+            if key not in INI_DEFAULTS:  # the in-game menu's own keys (INI_OPTIONAL_KEYS)
+                self.ini[key] = value
+            elif key in INI_FLAGS:
+                self.var(key, 'ini').set(value == '1')
+            else:
+                self.var(key, 'ini').set(value)
+        mode = DECK_PRESET['present_mode']
+        self.vsync_choice_var().set(mode if mode in ('immediate', 'fifo_relaxed')
+                                    else 'on' if DECK_PRESET['vsync'] == '1' else 'off')
+        self.engine_cap_var().set('unlimited' if DECK_PRESET['present_no_frame_caps'] == '1'
+                                  else DECK_PRESET['engine_fps'])
+        self.var('graphics_preset', 'app').set(DECK_QUALITY)
+        self.var('deck_switches', 'app').set(True)
+
+    def offer_deck_preset(self):
+        """On a Steam Deck, once (deck_offered, saved with the other settings): the first run selects Deck
+        Optimized and says so, an existing setup is asked (deck_preset_offer)."""
+        action = deck_preset_offer(self.app, self.first_run, steam_deck())
+        if not action:
+            return
+        self.app['deck_offered'] = True
+        if action == 'select':
+            self.quality_choice_var().set(DECK_QUALITY)  # applies the preset (quality_choice_var)
+            self.messagebox.showinfo(APP_NAME, _('Steam Deck detected: the Deck Optimized graphics preset is '
+                                                 'selected (Graphics quality).') + '\n\n' + _(DECK_HINT))
+        elif self.messagebox.askyesno(APP_NAME, _('Steam Deck detected. Use the Deck Optimized graphics preset? '
+                                                  'It replaces your graphics settings; you can pick another '
+                                                  'Graphics quality later.') + '\n\n' + _(DECK_HINT)):
+            self.quality_choice_var().set(DECK_QUALITY)
+
+    def deck_note(self, parent):
+        """The Deck recommendation (DECK_HINT), shown while Deck Optimized is the graphics quality."""
+        label = self.ttk.Label(parent, text=_(DECK_HINT), style='Warning.TLabel', wraplength=self.px(640),
+                               justify='left')
+        choice = self.quality_choice_var()
+
+        def show(*_args):
+            if choice.get() == DECK_QUALITY:
+                label.grid()
+            else:
+                label.grid_remove()
+        choice.trace_add('write', show)
+        return label, show
 
     def choice(self, parent, key, store, options, width=30, custom=None):
         """A combobox over (value, (english, russian)) pairs, kept in sync with its variable (a key, or
@@ -1171,7 +1320,7 @@ class Launcher:
                  (_('Frame rate limit'), 'fps_limit', 'ini', FPS_LIMITS),
                  (_('Output resolution'), 'output_resolution', 'ini', OUTPUT_CHOICES),
                  (_('Render scale'), 'render_scale', 'ini', RENDER_SCALE_CHOICES),
-                 (_('Graphics quality'), 'ue4_quality', 'ini', QUALITY_CHOICES),
+                 (_('Graphics quality'), self.quality_choice_var(), None, QUALITY_PRESETS),
                  (_('VSync'), self.vsync_choice_var(), None, VSYNC_CHOICES))
         for index, (title, key, store, options) in enumerate(items):
             r, c = 2 + index // 2, (index % 2) * 2
@@ -1185,6 +1334,9 @@ class Launcher:
         for key, title in (('show_fps', _('Show performance overlay')),):
             ttk.Checkbutton(flags, text=title, variable=self.var(key, 'ini')).pack(side='left', padx=(0, 28))
         self.link_buttons(quick).grid(row=5, column=0, columnspan=4, sticky='w', pady=(14, 0))
+        note, show = self.deck_note(quick)
+        note.grid(row=6, column=0, columnspan=4, sticky='w', pady=(12, 0))
+        show()
 
     def link_buttons(self, parent):
         """GitHub, YouTube and Patreon buttons that open the port's pages in the browser."""
@@ -1326,10 +1478,20 @@ class Launcher:
         for key, title, hint, _off in PERF_PATCHES:
             self.check(f, key, 'ini', _(title), _(hint), restart=True)
         self.section(f, _('Resolution and quality'))
-        self.row(f, _('Graphics quality'), self.choice(f, 'ue4_quality', 'ini', QUALITY_CHOICES),
+        self.row(f, _('Graphics quality'), self.choice(f, self.quality_choice_var(), None, QUALITY_PRESETS),
                  _('High and Ultra go beyond the PS4: sharper, longer-range shadows, better reflections and more distant detail, for strong graphics cards. Console keeps the PS4 look. Low turns off volumetric fog, reflections and ambient occlusion '
                    'and lowers shadows and view distance: for integrated graphics (Radeon 780M, Intel Arc) and '
-                   'older cards. Applied at start.'), restart=True)
+                   'older cards. Applied at start.') + ' ' +
+                 _('Deck Optimized: the Steam Deck settings of a flat 60 FPS (720p, 80% render scale, Low with '
+                   'volumetric fog, a 60 FPS limit, VSync off) and the Steam Deck performance switches below.'),
+                 restart=True)
+        note, show = self.deck_note(f)
+        note.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(4, 2))
+        show()
+        self.check(f, 'deck_switches', 'app', _('Steam Deck performance switches'),
+                   _('Measured on the Steam Deck: early frame end signals, decode pacing (2 frames), stage A\'s '
+                     'hybrid wait, the wide texture-set memo and the region cache index on; direct arena writes '
+                     'off. On with Deck Optimized. Applied at start.'), restart=True)
         self.row(f, _('Effects resolution'), self.choice(f, 'effects_resolution', 'ini', EFFECTS_CHOICES),
                  _('Smoke, fire and enemy death effects drawn at a lower resolution and blended in. At 4K '
                    'several enemy deaths at once cost 2-3 ms a frame at 100%; 50% matches the effect detail '
@@ -1935,7 +2097,8 @@ class Launcher:
         self.app['pad_style'] = self.pad_style.get()
         CONFIG_DIR.mkdir(parents=True, exist_ok=True)
         CONFIG_FILE.write_text(json.dumps(self.app, indent=2, ensure_ascii=False), encoding='utf-8')
-        save_ini({key: self.ini[key] for key in INI_DEFAULTS}, self.ini_lines)
+        save_ini({key: self.ini[key] for key in (*INI_DEFAULTS, *INI_OPTIONAL_KEYS) if key in self.ini},
+                 self.ini_lines)
         self.ini, self.ini_lines = load_ini()
         if self.mod_order:
             (DATA_DIR / 'mods.json').write_text(json.dumps(
