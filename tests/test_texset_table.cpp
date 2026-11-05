@@ -41,13 +41,14 @@ OldSet* OldChoose(std::vector<OldSet>& texture_sets, std::uint64_t key, bool two
     return &set;
 }
 
-void SameDecisions(bool two_way, std::uint32_t seed) {
-    std::vector<OldSet> old_sets(Slots);
-    std::vector<Head> heads(Slots);
+/// `slots`: the table size (Slots, or T2's wide table of 1,024: WaysOf with a size).
+void SameDecisions(bool two_way, std::uint32_t seed, std::uint32_t slots = Slots) {
+    std::vector<OldSet> old_sets(slots);
+    std::vector<Head> heads(slots);
     std::uint64_t old_tick = 0, tick = 0;
     std::mt19937_64 rng{seed};
     // A hot working set (the Deck: 99.3% hits), new keys, and keys that collide in a slot pair.
-    std::vector<std::uint64_t> hot(3000);
+    std::vector<std::uint64_t> hot(slots < Slots ? slots / 4 : 3000);
     for (auto& key : hot) key = rng() | 1;
     std::uint64_t hits = 0, misses = 0;
     for (int n = 0; n < 2'000'000; ++n) {
@@ -59,11 +60,13 @@ void SameDecisions(bool two_way, std::uint32_t seed) {
             key = rng() | 1;
         } else {
             // Same pair of slots as a hot key: the replacement order decides.
-            key = (hot[rng() % hot.size()] + Slots * (1 + rng() % 7)) | 1;
+            key = (hot[rng() % hot.size()] + slots * (1 + rng() % 7)) | 1;
         }
         bool old_found = false, found = false;
         OldSet* old_set = OldChoose(old_sets, key, two_way, old_found);
-        const std::uint32_t index = Choose(heads.data(), WaysOf(key, two_way), key, found);
+        const std::uint32_t index =
+            slots == Slots ? Choose(heads.data(), WaysOf(key, two_way), key, found)
+                           : Choose(heads.data(), WaysOf(key, two_way, slots), key, found);
         assert(old_found == found);
         assert(old_set == &old_sets[index]);
         old_set->last_use = ++old_tick;
@@ -81,11 +84,12 @@ void SameDecisions(bool two_way, std::uint32_t seed) {
             heads[index].key = 0;
         }
     }
-    for (std::uint32_t i = 0; i < Slots; ++i) {
+    for (std::uint32_t i = 0; i < slots; ++i) {
         assert(old_sets[i].key == heads[i].key && old_sets[i].last_use == heads[i].last_use);
     }
-    std::printf("two-way %d: %llu hits, %llu misses, same slots and decisions\n", int(two_way),
-                static_cast<unsigned long long>(hits), static_cast<unsigned long long>(misses));
+    std::printf("%u slots, two-way %d: %llu hits, %llu misses, same slots and decisions\n",
+                slots, int(two_way), static_cast<unsigned long long>(hits),
+                static_cast<unsigned long long>(misses));
     assert(hits > misses);
 }
 } // namespace
@@ -110,6 +114,11 @@ int main() {
 
     SameDecisions(true, 1);
     SameDecisions(false, 2);
+    // T2's wide table: the same choice over 1,024 slots; WaysOf with the default size as before.
+    assert(WaysOf(Slots + 6, true, Slots).first == WaysOf(Slots + 6, true).first);
+    assert(WaysOf(1024 + 6, true, 1024).first == 6 && WaysOf(1024 + 6, true, 1024).second == 7);
+    SameDecisions(true, 3, 1024);
+    SameDecisions(false, 4, 1024);
 
     // Table memory: zeroed, writable, rounded up to 2 MiB (aligned to it on Linux).
     {

@@ -19,9 +19,12 @@ inline constexpr std::uint32_t Slots = 32768;
 struct Ways {
     std::uint32_t first, second;
 };
-constexpr Ways WaysOf(std::uint64_t key, bool two_way) {
-    const auto index = static_cast<std::uint32_t>(key % Slots);
+constexpr Ways WaysOf(std::uint64_t key, bool two_way, std::uint32_t slots) {
+    const auto index = static_cast<std::uint32_t>(key % slots);
     return {index, two_way ? index ^ 1u : index};
+}
+constexpr Ways WaysOf(std::uint64_t key, bool two_way) {
+    return WaysOf(key, two_way, Slots);
 }
 
 /// The slot of the two to use: the one holding `key` (found), else the less recently used one
@@ -77,6 +80,12 @@ inline std::atomic<std::uint64_t> lookups[2]{}; ///< compact, legacy
 inline std::atomic<std::uint64_t> hits{0};
 inline std::atomic<std::uint64_t> misses[4]{}; ///< other key, generation, image check, other
 inline std::atomic<std::uint64_t> kept{0}, dropped{0};
+/// T2 (impl-stage-b-per-draw-2.md; "Stage B cuts per frame" line): lookups and hits of sets of
+/// 17-32 images (their own table; not in the counters above), and of stages without a prepared
+/// draw (T# hashes computed at the bind; in the counters above too when 16 images or fewer).
+inline std::atomic<std::uint64_t> wide_lookups{0}, wide_hits{0}, unprepared_lookups{0},
+    unprepared_hits{0};
+inline std::atomic<std::uint64_t> wide_bytes{0}; ///< the wide table, once made
 /// The tables made so far (bytes) and whether huge pages back the compact one (TableMemory::Huge).
 inline std::atomic<std::uint64_t> compact_bytes{0}, legacy_bytes{0};
 inline std::atomic<int> compact_huge{-2};

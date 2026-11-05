@@ -805,6 +805,39 @@ void VideoOutDriver::Flip(const Request& req) {
                                 "locked %.1f\n",
                                 Gow3Toggle2::Disabled(Gow3Toggle2::ReadbackPrecheck) ? "off" : "on",
                                 prechecks_free / frames_d, prechecks_locked / frames_d);
+                    // gow3 (impl-stage-b-per-draw-2.md): how often each per-draw cut applied.
+                    // R2: residency checks answered by the bitmap or by the interval search.
+                    // T1: texture binds of stages without images on the short path.
+                    // T2 (GOW3_TEXSET_WIDE=1): memo lookups and hits of sets of 17-32 images
+                    // and of stages without a prepared draw.
+                    {
+                        namespace TS = Gow3TexSet;
+                        static u64 last[4]{};
+                        const u64 now[4] = {TS::wide_lookups.load(), TS::wide_hits.load(),
+                                            TS::unprepared_lookups.load(),
+                                            TS::unprepared_hits.load()};
+                        double d[4];
+                        for (unsigned k = 0; k < 4; ++k) {
+                            d[k] = (now[k] - last[k]) / frames_d;
+                            last[k] = now[k];
+                        }
+                        const char* wide_state = std::getenv("GOW3_TEXSET_WIDE");
+                        const bool wide_wanted = wide_state && wide_state[0] == '1';
+                        std::printf(
+                            "Stage B cuts per frame: residency bitmap (R2 %s) %.1f, searched "
+                            "%.1f; no-image texture binds (T1 %s) %.1f; wide texture-set memo "
+                            "(T2 %s): over 16 images %.1f lookups, %.1f hits; no prepared draw "
+                            "%.1f lookups, %.1f hits; table %.1f MB\n",
+                            Gow3Toggle2::Disabled(Gow3Toggle2::ResidencyBitmap) ? "off" : "on",
+                            Gow3Stats::residency_checks[0].exchange(0) / frames_d,
+                            Gow3Stats::residency_checks[1].exchange(0) / frames_d,
+                            Gow3Toggle2::Disabled(Gow3Toggle2::NoImageFastPath) ? "off" : "on",
+                            Gow3Stats::no_image_binds.exchange(0) / frames_d,
+                            !wide_wanted ? "off"
+                            : Gow3Toggle2::Disabled(Gow3Toggle2::TextureSetWide) ? "toggled off"
+                                                                                 : "on",
+                            d[0], d[1], d[2], d[3], TS::wide_bytes.load() / 1e6);
+                    }
                     // gow3 (impl-deck-cpu-bundle.md): the Vulkan recorder's hand-offs, sleeps
                     // and spin; in lean mode (second toggle word 32 clear, <= 8 threads) the
                     // label kicks that left it asleep and how the owed wakes were made.

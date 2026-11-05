@@ -1752,6 +1752,15 @@ const Buffer* BufferCache::GetArena(u64 first_block, u64 last_block) {
 }
 
 void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_block) {
+    // gow3 R2 (impl-stage-b-per-draw-2.md): residency only grows and every range added below is
+    // also set in the bitmap, so all bits set is exactly "no gap": the search below would return
+    // with nothing to bind. Second toggle word 65536: the search every time.
+    if (!Gow3Toggle2::Disabled(Gow3Toggle2::ResidencyBitmap) &&
+        resident_bitmap.All(first_block, last_block + 1)) {
+        if (Gow3Stats::enabled) Gow3Stats::Bump(Gow3Stats::residency_checks[0]);
+        return;
+    }
+    if (Gow3Stats::enabled) Gow3Stats::Bump(Gow3Stats::residency_checks[1]);
     u32 resident_blocks{};
     IntervalList bind_ranges;
     resident_ranges.ForEachGap(first_block, last_block + 1, [&](u64 start, u64 end) {
@@ -1809,6 +1818,7 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
             backing.memory = piece.memory;
             backing.offset = piece.offset;
             resident_ranges.Add(backing);
+            resident_bitmap.Set(backing.start, backing.end);
 
             LOG_INFO(Render, "Making range start={}, end={} resident", backing.start, backing.end);
 
@@ -1847,6 +1857,10 @@ bool BufferCache::SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 
             total_size_bytes += size;
         },
         [&] {
+            if (copies.empty()) {
+                return; // nothing CPU-written in the range (UploadCopies would return null)
+            }
+            GOW3_SECTION(ObtUpload);
             // Twins: bytes whose guest copy still matches its twin keep the GPU's data in the
             // arena; twin bytes the guest wrote since are uploaded and no longer GPU-modified.
             if (TwinsEnabled() && !copies.empty()) {
@@ -1884,6 +1898,7 @@ bool BufferCache::SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 
         });
 
     if (src_buffer) {
+        GOW3_SECTION(ObtUpload);
         if (Gow3Stats::enabled) {
             u64 bytes = 0;
             for (const auto& copy : copies) {

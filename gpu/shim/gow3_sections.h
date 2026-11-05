@@ -62,6 +62,10 @@ enum Id : std::uint32_t {
     TaskRetire,      ///< decode pacing: frame retirement and GPU idle steps
     TaskSignals,     ///< GPU-ordered fences: the submission for pending signals
     TaskOcclusion,   ///< occlusion query events (ZPASS_DONE)
+    // Per-draw parts (impl-stage-b-per-draw-2.md): what obt_sync and vertex are made of.
+    ObtUpload,       ///< within obt_sync: the tracker's locked scan of CPU-written pages, their
+                     ///< re-protection, staging and the recorded copy (calls with work to do)
+    Clamp,           ///< MemoryManager::ClampRangeSize (the region table lookup; vertex, buffers)
     Count,
 };
 inline constexpr const char* Names[Count] = {
@@ -73,6 +77,7 @@ inline constexpr const char* Names[Count] = {
     "flip_signals", "flip_present", "rs_target", "find_image", "cache_lock",
     "task_eop", "task_eos", "task_wdata", "wdata_wait", "task_dma", "task_flip",
     "task_submit", "submit_flush", "task_retire", "task_signals", "task_occl",
+    "obt_upload", "clamp",
 };
 static_assert(Names[Count - 1] != nullptr, "a section without a name");
 inline std::array<std::atomic<std::uint64_t>, Count> cycles{};

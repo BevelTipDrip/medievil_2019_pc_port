@@ -70,13 +70,14 @@ for f in sorted(spikes, key=lambda f: -f['sec']['render state'])[:12]:
           f"lookups {f['lookups']} ({f['gen']} gen only), render-state misses {f['rstate']}")
 states = sorted({f['state'] for f in heavy})
 if len(states) > 1:
-    cols = ('packet', 'draw', 'textures', 'texset', 'texset emit', 'texslow', 'tasks')
+    cols = ('packet', 'draw', 'textures', 'texset', 'texset emit', 'texslow', 'vertex', 'ObtainBuffer',
+            'obt_resident', 'obt_sync', 'obt_upload', 'clamp', 'tasks')
     print('\nFrame samples by toggle state (heavy, switch windows left out), mean ms:')
-    print(f'{"state":<14}{"n":>4}{"frame":>8}{"draws":>7}' + ''.join(f'{c:>12}' for c in cols))
+    print(f'{"state":<14}{"n":>4}{"frame":>8}{"draws":>7}' + ''.join(f' {c:>12}' for c in cols))
     for state in states:
         grp = [f for f in heavy if f['state'] == state and not f['mixed'] and f['kind'] == 'Frame sample']
         if not grp:
             continue
         print(f'{state:<14}{len(grp):>4}{statistics.mean(f["ms"] for f in grp):8.2f}'
               f'{statistics.mean(f["draws"] for f in grp):7.0f}' +
-              ''.join(f'{statistics.mean(f["sec"].get(c, 0) for f in grp):12.3f}' for c in cols))
+              ''.join(f' {statistics.mean(f["sec"].get(c, 0) for f in grp):12.3f}' for c in cols))

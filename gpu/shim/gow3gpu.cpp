@@ -7,6 +7,7 @@
 #ifndef _WIN32
 #include <sys/resource.h>
 #endif
+#include "gow3_sections.h"
 #include "gow3_toggles.h"
 #include <algorithm>
 #include <atomic>
@@ -113,6 +114,7 @@ void MemoryManager::InvalidateMemory(VAddr address, u64 size) {
     if (rasterizer) rasterizer->InvalidateMemory(address, size);
 }
 u64 MemoryManager::ClampRangeSize(VAddr virtual_addr, u64 size) {
+    GOW3_SECTION(Clamp);
     return runtime_memory_clamp(virtual_addr, size);
 }
 static void CopySparseSerial(VAddr source, u8* dest, u64 size) {

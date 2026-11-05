@@ -129,6 +129,23 @@ enum : std::uint64_t {
     /// GOW3_DRAIN_HYBRID=1 DrawPipe::Drain pauses up to GOW3_DRAIN_SPIN_US, then sleeps on a
     /// futex that stage B signals near the end. Set: today's pauses and sched_yield again.
     DrainHybridOff = 4096,
+    /// R2 (impl-stage-b-per-draw-2.md): the buffer cache's residency check (EnsureResident,
+    /// every ObtainBuffer outside the stream buffer) answers from a bitmap of resident blocks
+    /// (gow3_resident_blocks.h; kept either way). Set: the interval search every time.
+    ResidencyBitmap = 65536,
+    /// T1 (impl-stage-b-per-draw-2.md): BindTextures for a stage without images resets its
+    /// per-call state and binds the samplers, without the slow path's set-up (the same effects).
+    /// Set: through the slow path again.
+    NoImageFastPath = 131072,
+    /// T2 (impl-stage-b-per-draw-2.md), with GOW3_TEXSET_WIDE=1 at start (opt-in): the
+    /// texture-set memo also keeps sets of 17-32 images (a table of their own) and the sets of
+    /// stages without a prepared draw (their T# hashes computed at the bind). Set: off, live.
+    TextureSetWide = 262144,
+    /// R1 (impl-stage-b-per-draw-2.md; src/runtime_memory.c), with GOW3_REGION_INDEX=1 at start
+    /// (opt-in): the region cache in front of runtime_memory_clamp / _region also has an index
+    /// of 1,024 entries by address page per thread, filled by the lock-free searches too. Set:
+    /// the 8 entries filled on the locked path only, as before (live). Read by the runtime.
+    RegionIndex = 524288,
 };
 inline bool Disabled(std::uint64_t bit) {
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;
@@ -199,6 +216,15 @@ inline std::atomic<std::uint64_t> recorder_handoffs{0}, recorder_lazy_kicks{0},
 /// C5 ("Readback pre-check" line): the buffer cache's ResolveReadbacks calls while copies were
 /// pending, [0] answered without the lock (no pending copy on the range's pages), [1] locked.
 inline std::atomic<std::uint64_t> readback_prechecks[2]{};
+/// Stage B per-draw cuts ("Stage B cuts per frame" line; impl-stage-b-per-draw-2.md), written by
+/// the thread that owns the caches (one writer: Bump, no locked add). R2: residency checks
+/// answered by the bitmap [0] or by the interval search [1].
+inline std::atomic<std::uint64_t> residency_checks[2]{};
+/// T1: texture binds of stages without images that took the short path.
+inline std::atomic<std::uint64_t> no_image_binds{0};
+inline void Bump(std::atomic<std::uint64_t>& counter) {
+    counter.store(counter.load(std::memory_order_relaxed) + 1, std::memory_order_relaxed);
+}
 /// Whether the recorder runs in lean mode (-1: not started).
 inline std::atomic<int> recorder_lean{-1};
 inline std::atomic<int> gpu_thread_clock{-1}; ///< clockid_t of the GPU command thread

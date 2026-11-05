@@ -21,7 +21,7 @@ Ranked cuts (Deck us per draw; at ~1,400 draws, 1 us/draw = 1.4 ms/frame):
 |---|---|---|---|---|---|
 | C1 | Throttle the GPU-tick query in the end-of-pipe readback retirement (once per 100 us) | 0.15-0.3 | small | low | **done, `f03ee52`, toggle 2nd word 16, default on** |
 | C2 | Recorder wake-ups forced by every event (futex wake, recorder spins only 20 us on 8 threads) | 0.1-0.15 | small-medium | medium (fence latency) | **built, `ff54428`: recorder lean mode, toggle 2nd word 32, on at <= 8 threads** ([impl-deck-cpu-bundle.md](impl-deck-cpu-bundle.md)) |
-| C3 | Slow texture binds (~70 a frame at ~15 us each on the Deck): memoize the dominant cause | 0.3-0.5 (cause-dependent) | medium | medium | cause counters in `f03ee52` |
+| C3 | Slow texture binds (~70 a frame at ~15 us each on the Deck): memoize the dominant cause | 0.3-0.5 (cause-dependent) | medium | medium | cause counters in `f03ee52`; **built: T1 (no-image binds, 2nd word 131072, on) and T2 (sets over 16 images and unprepared draws, `GOW3_TEXSET_WIDE=1`, 262144), [impl-stage-b-per-draw-2.md](impl-stage-b-per-draw-2.md)** |
 | C4 | One recorded command per draw (push constants, descriptors, vertex input/buffers, index, pipeline, draw) | 0.2-0.4 | medium-high | medium | open |
 | C5 | Lock-free pre-check of pending readbacks in `ObtainBuffer` (3-4 calls a draw) | 0.08-0.1 | small | low | open, next low-risk |
 | C6 | Descriptor *set* updates (pipelines over 32 bindings: 163 a frame, 1.2 us each, device call on stage B) moved into the recorded command | ~0.1 | small-medium | low-medium | open |
