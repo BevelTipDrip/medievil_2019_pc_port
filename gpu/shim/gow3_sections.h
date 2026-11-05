@@ -49,6 +49,19 @@ enum Id : std::uint32_t {
     RsTarget,        ///< FindTargetMemoized past both memos: the descriptor and FindImage
     FindImage,       ///< TextureCache::FindImage, from any caller on stage B
     CacheLock,       ///< waiting for the texture cache mutex in FindImage
+    // Ordered tasks by kind (within tasks; Deck 2026-11-04: ~1.3 ms a heavy frame of tasks was
+    // neither flip_present nor end of pipe). Nested sections count in these too.
+    TaskEop,         ///< end-of-pipe fence (EVENT_WRITE_EOP), or its tail when signalled early
+    TaskEos,         ///< end-of-shader fence (EVENT_WRITE_EOS)
+    TaskWriteData,   ///< WRITE_DATA
+    WriteDataWait,   ///< its wait for the host copies and the deferred fences (within task_wdata)
+    TaskDma,         ///< DMA_DATA (fills and copies)
+    TaskFlip,        ///< the flip (flip_signals and flip_present within)
+    TaskSubmit,      ///< the frame-end step (OnSubmit on stage B) with its Flush
+    SubmitFlush,     ///< that Flush (within task_submit)
+    TaskRetire,      ///< decode pacing: frame retirement and GPU idle steps
+    TaskSignals,     ///< GPU-ordered fences: the submission for pending signals
+    TaskOcclusion,   ///< occlusion query events (ZPASS_DONE)
     Count,
 };
 inline constexpr const char* Names[Count] = {
@@ -58,7 +71,10 @@ inline constexpr const char* Names[Count] = {
     "dispatch", "Record calls", "texset", "texset emit", "samplers", "texslow",
     "obt_readbacks", "obt_regions", "obt_stream", "obt_resident", "obt_sync",
     "flip_signals", "flip_present", "rs_target", "find_image", "cache_lock",
+    "task_eop", "task_eos", "task_wdata", "wdata_wait", "task_dma", "task_flip",
+    "task_submit", "submit_flush", "task_retire", "task_signals", "task_occl",
 };
+static_assert(Names[Count - 1] != nullptr, "a section without a name");
 inline std::array<std::atomic<std::uint64_t>, Count> cycles{};
 /// Scheduler::Record calls on the draw recording thread.
 inline std::atomic<std::uint64_t> record_calls{0};

@@ -25,7 +25,7 @@ New `GOW3_FRAME_STATS=1` lines (5 s block; added to `research/tools/deck_summary
 - `Region table per frame (D4 on|off|n/a, D5 on|off): pool maps outside the lock N (ms); lock busy (Linux): reads N
   (spin got it N, blocked ms), writes N (spin got it N, blocked ms); hook flushes without the lock N`
 - `Stage B sleeps per frame (spin on 200 us|off|toggled off): over 0.2 ms N (packet ring, recorder, GPU waits,
-  present); all N (ms); spins N (ms, N ended the wait)`
+  present); all N (ms: packet ring, recorder, GPU waits, present); spins N (ms, N ended the wait)`
 
 ## C5: lock-free readback pre-check
 

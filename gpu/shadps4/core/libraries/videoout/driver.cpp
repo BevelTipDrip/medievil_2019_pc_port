@@ -830,10 +830,11 @@ void VideoOutDriver::Flip(const Request& req) {
                     // the bounded spin before them (GOW3_STAGE_B_SPIN=1, second word 1024 off).
                     {
                         namespace SB = Gow3StageBWait;
-                        u64 sleeps = 0, sleep_ns = 0, longs[SB::Sites];
+                        u64 sleeps = 0, sleep_ns = 0, longs[SB::Sites], site_ns[SB::Sites];
                         for (unsigned k = 0; k < SB::Sites; ++k) {
                             sleeps += SB::sleeps[k].exchange(0);
-                            sleep_ns += SB::sleep_ns[k].exchange(0);
+                            site_ns[k] = SB::sleep_ns[k].exchange(0);
+                            sleep_ns += site_ns[k];
                             longs[k] = SB::long_sleeps[k].exchange(0);
                         }
                         char spin_state[32];
@@ -848,13 +849,18 @@ void VideoOutDriver::Flip(const Request& req) {
                         std::printf(
                             "Stage B sleeps per frame (spin %s): over 0.2 ms %.2f (packet ring "
                             "%.2f, recorder %.2f, GPU waits %.2f, present %.2f); all %.1f (%.3f "
-                            "ms); spins %.1f (%.3f ms, %.1f ended the wait)\n",
+                            "ms: packet ring %.3f, recorder %.3f, GPU waits %.3f, present %.3f); "
+                            "spins %.1f (%.3f ms, %.1f ended the wait)\n",
                             spin_state,
                             (longs[SB::PacketRing] + longs[SB::Recorder] + longs[SB::GpuTick] +
                              longs[SB::Present]) / frames_d,
                             longs[SB::PacketRing] / frames_d, longs[SB::Recorder] / frames_d,
                             longs[SB::GpuTick] / frames_d, longs[SB::Present] / frames_d,
                             sleeps / frames_d, sleep_ns / 1e6 / frames_d,
+                            site_ns[SB::PacketRing] / 1e6 / frames_d,
+                            site_ns[SB::Recorder] / 1e6 / frames_d,
+                            site_ns[SB::GpuTick] / 1e6 / frames_d,
+                            site_ns[SB::Present] / 1e6 / frames_d,
                             SB::spins.exchange(0) / frames_d, SB::spin_ns.exchange(0) / 1e6 / frames_d,
                             SB::spin_catches.exchange(0) / frames_d);
                     }

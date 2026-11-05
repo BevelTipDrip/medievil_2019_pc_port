@@ -15,6 +15,7 @@
 #include "common/thread.h"
 #include "gow3_fence_stats.h"
 #include "gow3_gpu_fences.h"
+#include "gow3_sections.h"
 #include "gow3_toggles.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -106,7 +107,12 @@ void Rasterizer::SubmitForSignals() {
     // stage A they may not even be recorded yet. Bloodborne 0.7: SubmitForSignals with
     // BB_PIPE_SIGNALS.
     static constexpr u8 none = 0;
-    RunInOrder([](Rasterizer& self, const u8*) { self.SubmitForSignalsNow(); }, &none, 0);
+    RunInOrder(
+        [](Rasterizer& self, const u8*) {
+            GOW3_SECTION(TaskSignals);
+            self.SubmitForSignalsNow();
+        },
+        &none, 0);
 }
 
 void Rasterizer::SubmitForSignalsNow() {

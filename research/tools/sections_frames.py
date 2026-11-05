@@ -1,5 +1,6 @@
 """Per-frame stage B sections (GOW3_SECTIONS=1 with GOW3_SLOW_FRAMES) from a run log: for heavy frames, the
-mean of every section and the frames where "render state" is a spike, with what grew in them.
+mean of every section and the frames where "render state" is a spike, with what grew in them; with the task_*
+sections, "tasks" split by kind.
 
     py -3.14 sections_frames.py <log> [min_draws 900] [spike_ms 0.5]
 """
@@ -7,6 +8,9 @@ import re
 import statistics
 import sys
 
+# Top-level ordered-task sections (they do not nest in each other); "tasks" minus their sum is the rest.
+TASK_KINDS = ('task_eop', 'task_eos', 'task_wdata', 'task_dma', 'task_flip', 'task_submit', 'task_retire',
+              'task_signals', 'task_occl')
 log = sys.argv[1]
 min_draws = int(sys.argv[2]) if len(sys.argv) > 2 else 900
 spike_ms = float(sys.argv[3]) if len(sys.argv) > 3 else 0.5
@@ -39,6 +43,12 @@ for kind in ('Frame sample', 'Slow frame'):
           f'image lookups {statistics.mean(f["lookups"] for f in grp):.0f} '
           f'({statistics.mean(f["gen"] for f in grp):.0f} generation only)')
     print('  mean ms: ' + ', '.join(f'{k} {statistics.mean(f["sec"].get(k, 0) for f in grp):.3f}' for k in keys))
+    if TASK_KINDS[0] in keys:
+        # The ordered tasks by kind (builds with the task_* sections): what "tasks" is made of.
+        part = {k: statistics.mean(f['sec'].get(k, 0) for f in grp) for k in TASK_KINDS}
+        tasks = statistics.mean(f['sec'].get('tasks', 0) for f in grp)
+        print(f'  tasks {tasks:.3f} ms: ' + ', '.join(f'{k[5:]} {v:.3f}' for k, v in part.items()) +
+              f', not attributed {tasks - sum(part.values()):.3f}')
 spikes = [f for f in heavy if f['sec'].get('render state', 0) >= spike_ms]
 print(f'\nrender state >= {spike_ms} ms: {len(spikes)} of {len(heavy)} heavy frames')
 for f in sorted(spikes, key=lambda f: -f['sec']['render state'])[:12]:

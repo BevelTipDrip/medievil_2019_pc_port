@@ -1659,11 +1659,15 @@ bool Rasterizer::OnSubmitInOrder() {
     const u64 handed_ns = Gow3DecodePacing::NowNs();
     RunInOrder(
         [](Rasterizer& self, const u8* data) {
+            GOW3_SECTION(TaskSubmit);
             u64 handed;
             std::memcpy(&handed, data, sizeof(handed));
             const u64 start = Gow3DecodePacing::NowNs();
             self.OnSubmitWork();
-            self.Flush();
+            {
+                GOW3_SECTION(SubmitFlush);
+                self.Flush();
+            }
             Gow3DecodePacing::NoteOnSubmitRun(handed, start);
         },
         &handed_ns, sizeof(handed_ns));
@@ -3711,6 +3715,7 @@ bool Rasterizer::OcclusionEvent(VAddr address, u32 pairs) {
     const ZpassEvent event{address, pairs};
     RunInOrder(
         [](Rasterizer& self, const u8* data) {
+            GOW3_SECTION(TaskOcclusion);
             const auto& e = *reinterpret_cast<const ZpassEvent*>(data);
             self.occlusion->Event(e.address, e.pairs);
         },

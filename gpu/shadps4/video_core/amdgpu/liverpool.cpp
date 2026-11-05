@@ -351,6 +351,7 @@ void Liverpool::SignalDecodedFrames() {
         }
         rasterizer->RunInOrder(
             [](Vulkan::Rasterizer& rasterizer, const u8* data) {
+                GOW3_SECTION(TaskRetire);
                 RetireStep step;
                 std::memcpy(&step, data, sizeof(step));
                 rasterizer.SignalAfterHostCopies([step] {
@@ -398,6 +399,7 @@ void Liverpool::DeferGpuIdle() {
     Gow3DecodePacing::NoteIdleDeferred();
     rasterizer->RunInOrder(
         [](Vulkan::Rasterizer& rasterizer, const u8* data) {
+            GOW3_SECTION(TaskRetire);
             IdleStep step;
             std::memcpy(&step, data, sizeof(step));
             rasterizer.SignalAfterHostCopies([step] {
@@ -508,11 +510,13 @@ std::atomic<u64> frame_eops_decoded{0}, frame_eops_recorded{0};
 
 /// Stage B: the rest of a frame EOP signalled at decode (its place in the stream).
 void RunEarlyEopTail(Vulkan::Rasterizer& rasterizer, const u8*) {
+    GOW3_SECTION(TaskEop);
     rasterizer.ProcessDownloadImages();
     frame_eops_recorded.fetch_add(1, std::memory_order_release);
 }
 
 void RunEventWriteEop(Vulkan::Rasterizer& rasterizer, const u8* data) {
+    GOW3_SECTION(TaskEop);
     const auto eop = *reinterpret_cast<const PM4CmdEventWriteEop*>(data);
     rasterizer.ProcessDownloadImages();
     if (EarlyFrameEop() && IsFrameEop(eop)) {
@@ -564,6 +568,7 @@ void RunEventWriteEop(Vulkan::Rasterizer& rasterizer, const u8* data) {
 }
 
 void RunDmaData(Vulkan::Rasterizer& rasterizer, const u8* data) {
+    GOW3_SECTION(TaskDma);
     const auto* dma_data = reinterpret_cast<const PM4DmaData*>(data);
     ASSERT(dma_data->command.das == 0);
     if (dma_data->src_sel == DmaDataSrc::Data && dma_data->dst_sel == DmaDataDst::Gds) {
@@ -598,6 +603,7 @@ void RunDmaData(Vulkan::Rasterizer& rasterizer, const u8* data) {
 }
 
 void SignalFlip(Vulkan::Rasterizer& rasterizer, const u8*) {
+    GOW3_SECTION(TaskFlip);
     // gow3 GOW3_GPU_FENCES: the flip stays at recording time (as in Bloodborne 0.7); counted when
     // GPU-ordered labels before it are still pending (it reaches the guest first).
     if (Gow3GpuFences::Enabled() && rasterizer.HasPendingSignals()) {
@@ -657,6 +663,7 @@ static void NoteWriteData(VAddr address, u32 bytes, const u32* data, u64 wait_ns
 }
 
 void RunWriteData(Vulkan::Rasterizer& rasterizer, const u8* data) {
+    GOW3_SECTION(TaskWriteData);
     const auto* header = reinterpret_cast<const PM4Header*>(data);
     const auto* write_data = reinterpret_cast<const PM4CmdWriteData*>(data);
     // gow3 W3 (T-W3): MediEvil writes two "done" flags a frame (value 1, 4 bytes, user memory at
@@ -693,9 +700,12 @@ void RunWriteData(Vulkan::Rasterizer& rasterizer, const u8* data) {
     }
     const auto wait_start = Gow3Stats::enabled ? std::chrono::steady_clock::now()
                                                : std::chrono::steady_clock::time_point{};
-    rasterizer.WaitHostCopiesFor(write_data->Address<VAddr>(),
-                                 (header->type3.count.Value() - 2) * sizeof(u32));
-    rasterizer.WaitDeferredSignals();
+    {
+        GOW3_SECTION(WriteDataWait);
+        rasterizer.WaitHostCopiesFor(write_data->Address<VAddr>(),
+                                     (header->type3.count.Value() - 2) * sizeof(u32));
+        rasterizer.WaitDeferredSignals();
+    }
     if (Gow3Stats::enabled) {
         NoteWriteData(write_data->Address<VAddr>(), (header->type3.count.Value() - 2) * sizeof(u32),
                       write_data->data,
@@ -719,6 +729,7 @@ void SignalEos(const PM4CmdEventWriteEos& event_eos) {
 }
 
 void RunEventWriteEos(Vulkan::Rasterizer& rasterizer, const u8* data) {
+    GOW3_SECTION(TaskEos);
     const auto& event_eos = *reinterpret_cast<const PM4CmdEventWriteEos*>(data);
     if (Gow3GpuFences::Enabled()) {
         // gow3 GOW3_GPU_FENCES (Bloodborne 0.7, 0fc2921 cp_tasks.cpp EventWriteEosTask): the end
