@@ -16,6 +16,7 @@
 #   deck.sh threads [seconds]              per-thread CPU and context switches during a run (/proc)
 #   deck.sh clocks [seconds] [names]       the clock of the CPU each named thread runs on, every 200 ms
 #   deck.sh ini logging|play|save N|diff  switch the ini between the fixed logging copy and the user's own (game closed)
+#   deck.sh cpu-script                     copy deck-cpu-clocks.sh (per-core clocks; the user runs it with sudo)
 #   deck.sh mem [seconds]                  memory reads (study-deck-memory-budget.md 5): once, then every 5 s
 #   deck.sh checks                         read-only platform facts (study-deck-platform-optimization.md §0)
 set -euo pipefail
@@ -119,6 +120,11 @@ ini)
         remote "cd ~/$data_dir && [ -f medievil.ini.$which ] && cp medievil.ini.$which medievil.ini && echo \"medievil.ini <- medievil.ini.$which\"" ;;
     esac
     ;;
+cpu-script)
+    # Copies deck-cpu-clocks.sh to the Deck; the user runs it with sudo (root; Claude never does).
+    remote 'cat > ~/MediEvil/deck-cpu-clocks.sh && chmod +x ~/MediEvil/deck-cpu-clocks.sh && ~/MediEvil/deck-cpu-clocks.sh show' \
+        < "$here/deck-cpu-clocks.sh"
+    ;;
 mem)
     seconds=${1:-30}
     remote "cat /proc/meminfo | grep -E 'MemTotal|MemAvailable|^Cached|Shmem:|AnonHugePages|SwapTotal|SwapFree'
@@ -156,6 +162,6 @@ checks)
         fi'
     ;;
 *)
-    sed -n 2,20p "$0"; exit 1
+    sed -n 2,21p "$0"; exit 1
     ;;
 esac
