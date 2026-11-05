@@ -1146,3 +1146,8 @@ The patch audit's suspects among these are cleared: the targeted waits are the l
 the Deck, and the barrier / prefetch pairs cost nothing. No visual issues reported. Present mode: the game used Mailbox
 (VSync off); the frame rate is stage-B-bound and not vblank-quantized, so the A/B holds; Immediate (the mode gamescope's
 "allow tearing" acts on) is a separate launch (`GOW3_PRESENT_MODE=immediate` or the launcher's Present mode).
+
+**Immediate present mode (2026-11-04, one launch):** `GOW3_PRESENT_MODE=immediate` logged "Swapchain: present mode
+Fifo (GOW3_PRESENT_MODE=immediate)": the gamescope surface did not offer Immediate (with "allow tearing" on), so the
+port fell back to Fifo and the frame rate was capped (the user saw it capped). Mailbox stays the uncapped mode under
+gamescope; true tearing would need gamescope to expose Immediate. Removed from extra-env.txt.
