@@ -9,6 +9,7 @@ XML = ROOT / 'patches/MediEvil.xml'
 NAME = 'Native 4K framebuffer pool (512 MB)'
 BOUNDS = 'GPU particle bounds'
 HZB = 'Finer occlusion culling (low render resolutions, Steam Deck)'
+NAV = 'Navigation path purge without fences (CPU)'
 SEGMENTS = [(0, 0x6000000)]
 
 
@@ -64,6 +65,13 @@ class MedievilPatchTests(unittest.TestCase):
                          [(0x15357ba, bytes.fromhex('0f1f00')), (0x1535812, bytes.fromhex('6690'))])
         self.assertEqual(compile_patches(XML, [HZB], '01.02', SEGMENTS),
                          [(0x153843a, bytes.fromhex('0f1f00')), (0x1538492, bytes.fromhex('6690'))])
+
+    def test_nav_purge_without_fences(self):
+        # ANavigationData::TickActor's purge: mfence; mov eax, [rax+8]; mfence -> the load and a nop.
+        value = bytes.fromhex('8b4008660f1f440000')
+        self.assertEqual(compile_patches(XML, [NAV], '01.00', SEGMENTS), [(0x2c91ddf, value)])
+        self.assertEqual(compile_patches(XML, [NAV], '01.02', SEGMENTS), [(0x2c94b9f, value)])
+        self.assertNotIn(NAV, selected_patches(XML, '01.02', ''))
 
     def test_original_bytes_checked(self):
         # A one-segment ELF (file offset 0x1000, vaddr 0x1530000) holding the 01.02 BuildHZB bytes.

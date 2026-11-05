@@ -64,6 +64,15 @@ class GraphicsOptionsTest(unittest.TestCase):
         self.assertEqual((live['GOW3_UE4_SETRES'], live['GOW3_PATCHES'], 'GOW3_DMEM_MB' in live),
                          ('3200x1800', pool, False))
 
+    def test_nav_purge_environment(self):
+        # extra-env.txt GOW3_NAV_PURGE_NOFENCE=1 / 0 adds / removes the patch; unset: unchanged.
+        nav, size = g.NAV_PURGE_PATCH, 'Boot display size 1280x720'
+        self.assertEqual(g.nav_purge_environment({'GOW3_PATCHES': size}), {'GOW3_PATCHES': size})
+        self.assertEqual(g.nav_purge_environment({'GOW3_PATCHES': size, 'GOW3_NAV_PURGE_NOFENCE': '1'})['GOW3_PATCHES'],
+                         f'{size};{nav}')
+        self.assertEqual(g.nav_purge_environment({'GOW3_PATCHES': f'{nav};{size}',
+                                                  'GOW3_NAV_PURGE_NOFENCE': '0'})['GOW3_PATCHES'], size)
+
     def test_hzb_full_size_environment(self):
         # extra-env.txt GOW3_HZB_FULL_SIZE=1 / 0 adds / removes the launcher's "Finer occlusion culling".
         hzb, size = g.HZB_FULL_SIZE_PATCH, 'Boot display size 1280x720'

@@ -236,4 +236,41 @@
             <Line Type="bytes" Address="0x01938492" Value="6690" Original="ffc8"/>
         </PatchList>
     </Metadata>
+    <!-- UE 4.21's ANavigationData::TickActor (01.02 0x2c94b30, 01.00 0x2c91d70; four nav-data
+         vtables) purges ActivePaths every frame: from the end, an entry whose TWeakPtr's shared
+         reference count is 0 is removed. The PS4 build's AtomicRead puts an mfence before and
+         after each count load (mfence; mov eax, [rax+8]; mfence), so the game thread's misses on
+         the scattered reference controllers cannot overlap: the Deck's top main-thread samples
+         (perf: guest+0x2c94ba2/ba5/ba8, ~6% of the thread). An aligned 32-bit load is atomic on
+         x86 and the loop stores nothing the fences would order against; the count never rises
+         from 0 and the weak reference keeps the controller allocated, so the purge decides the
+         same (a path that dies during the read is dropped a frame later, as before). The load
+         stays, the fences become one nop (research/docs/impl-cpu-waste.md). Off by default:
+         run.py GOW3_NAV_PURGE_NOFENCE=1 / 0 switches it on / off (extra-env.txt). -->
+    <Metadata Title="MediEvil"
+              Name="Navigation path purge without fences (CPU)"
+              Note="The game thread checks its navigation paths every frame with a full memory fence around each check. This drops the fences (the check itself is unchanged): less game-thread CPU time, for CPU-limited PCs such as the Steam Deck."
+              Author="medievil_pc"
+              PatchVer="1.0"
+              AppVer="01.00"
+              AppElf="eboot.bin"
+              isEnabled="false">
+        <PatchList>
+            <!-- mfence; mov eax, [rax+8]; mfence -> mov eax, [rax+8]; nop word [rax+rax] -->
+            <Line Type="bytes" Address="0x03091ddf" Value="8b4008660f1f440000" Original="0faef08b40080faef0"/>
+        </PatchList>
+    </Metadata>
+    <Metadata Title="MediEvil"
+              Name="Navigation path purge without fences (CPU)"
+              Note="The game thread checks its navigation paths every frame with a full memory fence around each check. This drops the fences (the check itself is unchanged): less game-thread CPU time, for CPU-limited PCs such as the Steam Deck."
+              Author="medievil_pc"
+              PatchVer="1.0"
+              AppVer="01.02"
+              AppElf="eboot.bin"
+              isEnabled="false">
+        <PatchList>
+            <!-- mfence; mov eax, [rax+8]; mfence -> mov eax, [rax+8]; nop word [rax+rax] -->
+            <Line Type="bytes" Address="0x03094b9f" Value="8b4008660f1f440000" Original="0faef08b40080faef0"/>
+        </PatchList>
+    </Metadata>
 </Patch>

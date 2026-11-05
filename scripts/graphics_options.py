@@ -212,6 +212,24 @@ def hzb_full_size_environment(env, width=0, height=0, render_scale=100):
     return env
 
 
+NAV_PURGE_PATCH = 'Navigation path purge without fences (CPU)'
+
+
+def nav_purge_environment(env):
+    """GOW3_NAV_PURGE_NOFENCE=1 adds the "Navigation path purge without fences" patch (the game
+    thread's per-frame ActivePaths purge without its two mfences per entry,
+    research/docs/impl-cpu-waste.md) to GOW3_PATCHES, =0 removes it; unset, the launcher's
+    Patches page decides (off by default)."""
+    switch = env.get('GOW3_NAV_PURGE_NOFENCE')
+    if switch not in ('0', '1'):
+        return env
+    selected = [n for n in env.get('GOW3_PATCHES', '').split(';') if n and n != NAV_PURGE_PATCH]
+    if switch == '1':
+        selected.append(NAV_PURGE_PATCH)
+    env['GOW3_PATCHES'] = ';'.join(selected)
+    return env
+
+
 # The single render_resolution of earlier versions: output size, scene scale.
 LEGACY_RESOLUTION = {'native': ('1920x1080', 100), '480p': ('1920x1080', 50), '720p': ('1920x1080', 67),
                      '1440p': ('1920x1080', 133), '1800p': ('1920x1080', 167), '4K': ('1920x1080', 200),
