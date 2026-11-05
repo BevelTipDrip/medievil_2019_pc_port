@@ -1258,3 +1258,12 @@ moved: stage A and the power-capped GPU now gate stage B about as much as its ow
 capping the GPU at 1,000 MHz flattens the frame-time "waves" (spikes to ~20 ms with the GPU uncapped; 1,200 MHz
 reduced, 1,100 more, 1,000 flat +-1 ms at ~76 FPS): the power controller shifting the 15 W between GPU and CPU.
 Next: stage A's per-packet cost; total CPU watts.
+
+## A flat 60 on the Deck (the user, 2026-11-05)
+
+Render scale **80%**, **volumetric fog on**, **60 FPS cap**, GPU clock **1,200 MHz** (Quick Access Menu): a flat 60 FPS
+in the heavy graveyard view (the other Deck fork shows a locked 30). Next: a "Deck Optimized" preset (patches, the
+measured performance switches, graphics settings, the GPU / FPS recommendation; being built). The user: "cutting CPU
+usage is still the big win here, because there's a lot of GPU headroom, we just can't use it" (the 15 W cap).
+On the Deck's next start: the active medievil.ini holds these settings (written by the in-game menu into the logging
+copy): save it as medievil.ini.deck60, restore medievil.ini.logging for test runs; extra-env.txt still has test keys.
