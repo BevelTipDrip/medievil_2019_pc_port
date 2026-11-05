@@ -1847,6 +1847,10 @@ bool BufferCache::SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 
             total_size_bytes += size;
         },
         [&] {
+            if (copies.empty()) {
+                return; // nothing CPU-written in the range (UploadCopies would return null)
+            }
+            GOW3_SECTION(ObtUpload);
             // Twins: bytes whose guest copy still matches its twin keep the GPU's data in the
             // arena; twin bytes the guest wrote since are uploaded and no longer GPU-modified.
             if (TwinsEnabled() && !copies.empty()) {
@@ -1884,6 +1888,7 @@ bool BufferCache::SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 
         });
 
     if (src_buffer) {
+        GOW3_SECTION(ObtUpload);
         if (Gow3Stats::enabled) {
             u64 bytes = 0;
             for (const auto& copy : copies) {
