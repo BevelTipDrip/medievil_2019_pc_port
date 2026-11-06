@@ -1384,6 +1384,7 @@ Launched by the user. ini: logging (67%, fog off, uncapped), GPU clock auto, the
 - **+2.3 FPS (+3%), -193 draws a frame, stage B -2.8 points.** The second run fires on nearly every frame at ~78 FPS
   (1.98 runs/frame), so the "fires less near 60 FPS" guess (study-deck-rescore-rejected.md A6) is wrong.
 - **Visual (the user, uncapped ~79 FPS): "the torch and the small glitch on the floor do return with it on."** The
-  bug of T-0102-4 reproduces on the Deck. Not yet checked at the 60 cap.
+  bug of T-0102-4 reproduces on the Deck. **At a 60 FPS lock: "made no difference"** (the user): the glitch is there
+  at 60 too, so it does not scale with the frame rate. The preset cannot dodge it by capping.
 - Next: a fix that keeps one run with correct torches (study-particle-fixed-step.md, in progress). Until then the
   Deck Optimized preset's `perf_particle_single_pass` is the user's call.
