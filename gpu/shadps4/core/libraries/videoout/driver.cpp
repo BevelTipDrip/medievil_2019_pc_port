@@ -854,14 +854,19 @@ void VideoOutDriver::Flip(const Request& req) {
                         std::printf(
                             "Stage A cuts per frame: ring buffers %.1f (reused %.1f, copied %.1f); "
                             "pending-write checks %.1f (bounds %.1f, filter (A2 %s) %.1f, scans "
-                            "%.1f of %.1f entries each)\n",
+                            "%.1f of %.1f entries each); register words hashed %.1f (A3 %s)\n",
                             n[SA::ring_bindings], n[SA::ring_reused], n[SA::ring_copied],
                             n[SA::pending_checks], n[SA::pending_bounds],
                             !filter_wanted ? "off"
                             : Gow3Toggle2::Disabled(Gow3Toggle2::PendingWriteFilter) ? "toggled off"
                                                                                      : "on",
                             n[SA::pending_filtered], scans,
-                            scans > 0 ? n[SA::pending_scanned] / scans : 0.0);
+                            scans > 0 ? n[SA::pending_scanned] / scans : 0.0, n[SA::reg_words],
+                            AmdGpu::Liverpool::PairedRegisterHash()           ? "on"
+                            : Gow3Toggle2::Disabled(Gow3Toggle2::PairedRegisterHash) &&
+                                    std::getenv("GOW3_REG_HASH_PAIRED")
+                                ? "toggled off"
+                                : "off");
                     }
                     // gow3 (impl-deck-cpu-bundle.md): the Vulkan recorder's hand-offs, sleeps
                     // and spin; in lean mode (second toggle word 32 clear, <= 8 threads) the

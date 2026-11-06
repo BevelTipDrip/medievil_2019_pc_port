@@ -161,6 +161,10 @@ enum : std::uint64_t {
     /// at start (opt-in): stage A's pending-write check answers "no overlap" from a page filter
     /// of the pending writes before scanning them (the same answers). Set: the scan every time.
     PendingWriteFilter = 2097152,
+    /// A3 (impl-stage-a-decode.md; liverpool.cpp HashRegisterPacket), with GOW3_REG_HASH_PAIRED=1
+    /// at start (opt-in): the register-packet checksum of stage A, the scanner and the
+    /// draw-preparation workers takes two words per step. Set: one word per step, as before.
+    PairedRegisterHash = 4194304,
 };
 inline bool Disabled(std::uint64_t bit) {
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;

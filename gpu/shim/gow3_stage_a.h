@@ -62,6 +62,31 @@ struct PendingPages {
     }
 };
 
+/// The register-packet checksum (Liverpool::HashRegisterPacket): one word per step, as before.
+inline std::uint64_t HashWords(std::uint64_t checksum, const std::uint32_t* words,
+                               std::uint32_t count) noexcept {
+    for (std::uint32_t i = 0; i < count; ++i) {
+        checksum = (checksum ^ words[i]) * 0x9E3779B97F4A7C15ull;
+        checksum ^= checksum >> 29;
+    }
+    return checksum;
+}
+/// A3: two words per step (a last odd word as above).
+inline std::uint64_t HashWordsPaired(std::uint64_t checksum, const std::uint32_t* words,
+                                     std::uint32_t count) noexcept {
+    std::uint32_t i = 0;
+    for (; i + 1 < count; i += 2) {
+        const std::uint64_t pair = words[i] | (std::uint64_t{words[i + 1]} << 32);
+        checksum = (checksum ^ pair) * 0x9E3779B97F4A7C15ull;
+        checksum ^= checksum >> 32;
+    }
+    if (i < count) {
+        checksum = (checksum ^ words[i]) * 0x9E3779B97F4A7C15ull;
+        checksum ^= checksum >> 29;
+    }
+    return checksum;
+}
+
 /// GOW3_FRAME_STATS: "Stage A cuts per frame" line (driver.cpp). Written by stage A only (a
 /// relaxed load and store, no locked add), read and cleared by the report.
 enum Counter : unsigned {
@@ -72,6 +97,7 @@ enum Counter : unsigned {
     pending_bounds,   ///< answered by the bounds (or no entry)
     pending_filtered, ///< answered by the A2 filter
     pending_scanned,  ///< entries scanned
+    reg_words,        ///< words of SET_*_REG packets stage A applied and hashed (A3)
     NumCounters
 };
 inline std::array<std::atomic<std::uint64_t>, NumCounters> counters{};
