@@ -1370,3 +1370,20 @@ comparison windows must carry no extra load; power gets its own windows afterwar
     stage B / power gain: Deck Optimized keeps the patch; a glitch at 60: Deck Optimized turns it off
     (`DECK_PRESET['perf_particle_single_pass']='0'`); the PC default stays off either way unless the glitch is gone at
     the PC's rates too.
+
+### Particle 1 results (2026-11-05 ~19:46, build `d20f010-test1105`, log `data/deck-particle-1.log`)
+
+Launched by the user. ini: logging (67%, fog off, uncapped), GPU clock auto, the Deck switches as per-draw 1. Live A/B
+`ab "0 0" "0 8192" 30 4` in the heavy graveyard view; all 8 switches logged (`Particle single pass: off/on (live)`).
+
+| state | n | FPS (median) | draws | particle sim runs | stage B | p99 ms |
+|---|---|---|---|---|---|---|
+| `0 0` single pass | 33 | **79.4** | 1,122 | 1.00 (193 draws) | 86.3% | 16.30 |
+| `0 8192` fixed 1/30 step | 20 | 77.1 | 1,316 | 1.98 (386 draws) | 89.1% | 16.74 |
+
+- **+2.3 FPS (+3%), -193 draws a frame, stage B -2.8 points.** The second run fires on nearly every frame at ~78 FPS
+  (1.98 runs/frame), so the "fires less near 60 FPS" guess (study-deck-rescore-rejected.md A6) is wrong.
+- **Visual (the user, uncapped ~79 FPS): "the torch and the small glitch on the floor do return with it on."** The
+  bug of T-0102-4 reproduces on the Deck. Not yet checked at the 60 cap.
+- Next: a fix that keeps one run with correct torches (study-particle-fixed-step.md, in progress). Until then the
+  Deck Optimized preset's `perf_particle_single_pass` is the user's call.
