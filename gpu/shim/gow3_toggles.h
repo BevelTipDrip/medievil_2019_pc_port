@@ -174,6 +174,10 @@ enum : std::uint64_t {
     /// at start (opt-in): the register-packet checksum of stage A, the scanner and the
     /// draw-preparation workers takes two words per step. Set: one word per step, as before.
     PairedRegisterHash = 4194304,
+    /// With GOW3_DRAIN_HYBRID=1 and GOW3_DRAIN_WAKE_AHEAD at start (gow3_drain_wait.h): stage B
+    /// wakes a sleeping stage A the default 2 packets before the end again, not the start's count
+    /// (a same-launch A/B of the count). Set: 2 (live).
+    DrainWakeAheadDefault = 8388608,
 };
 inline bool Disabled(std::uint64_t bit) {
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;

@@ -52,14 +52,15 @@ inline std::uint64_t SpinNs() {
 }
 
 /// Packets before the last one at which stage B wakes a sleeping stage A (GOW3_DRAIN_WAKE_AHEAD,
-/// default 2, 0-15; the commit positions are kept for the last 16 packets).
+/// default 2, 0-15; the commit positions are kept for the last 16 packets). Second toggle word
+/// 8388608: the default 2 again, live (a same-launch A/B of the start's count).
 inline unsigned WakeAhead() {
     static const unsigned ahead = [] {
         const char* env = std::getenv("GOW3_DRAIN_WAKE_AHEAD");
         const long n = env && *env ? std::strtol(env, nullptr, 10) : 2;
         return unsigned(std::clamp<long>(n, 0, 15));
     }();
-    return ahead;
+    return Gow3Toggle2::Disabled(Gow3Toggle2::DrainWakeAheadDefault) ? 2u : ahead;
 }
 
 inline std::uint64_t NowNs() {
