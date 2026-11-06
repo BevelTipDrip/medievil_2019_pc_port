@@ -229,8 +229,12 @@ static void *map_flipper(void *arg) { /* maps and unmaps one 2-page range over a
     Unmap unmap=GET(Unmap,"cQke9UuBQOk#libkernel");
     while (!atomic_load(&f->stop)) {
         void *at=f->address;
+        /* Pauses between the edits: copies land in both states and across edits. */
+        const struct timespec pause={0,(long)(50000+atomic_load(&f->cycles)%7*20000)};
         assert(map(&at,2*16384,3,0x10,f->phys,0)==0 && at==f->address); /* MAP_FIXED */
+        nanosleep(&pause,NULL);
         assert(unmap(f->address,2*16384)==0);
+        nanosleep(&pause,NULL);
         atomic_fetch_add(&f->cycles,1);
     }
     return NULL;
@@ -297,7 +301,14 @@ static void backing_copies(void) {
     assert(pthread_join(flipper,NULL)==0);
     printf("backing copies: %ld without the lock (%ld mapped, %ld unmapped), %ld the locked way, %ld map cycles\n",
            copied,mapped,empty,locked,(long)atomic_load(&f.cycles));
-    assert(copied>0 && atomic_load(&f.cycles)>0);
+    assert(mapped>0 && empty>0 && atomic_load(&f.cycles)>0); /* both states seen without the lock */
+    /* No writer now: every copy goes without the lock (a failed copy returns at once, so the
+     * counts above are mostly fast retries while the other thread held the lock). */
+    for (int i=0;i<1000;++i) {
+        assert(runtime_memory_copy_backing((uintptr_t)y,got,2*page)==1);
+        for (uint64_t k=0;k<2*page;++k) assert(got[k]==0); /* left unmapped */
+        assert(runtime_memory_copy_backing((uintptr_t)p,got,4*page)==1 && !memcmp(got,stable,4*page));
+    }
     assert(unmap(p,4*page)==0);
     assert(release(a,4*page)==0 && release(b,2*page)==0);
 }
@@ -455,6 +466,8 @@ int main(int argc,char **argv) {
     if (argc>1 && !strcmp(argv[1],"--rwlock-lifecycle")) { rw_lifecycle(); return 0; }
     if (argc>1 && !strcmp(argv[1],"--rwlock-concurrency")) { rw_concurrency(); return 0; }
     if (argc>1 && !strcmp(argv[1],"--rwlock-timeouts")) { rw_timeouts(); return 0; }
+    /* A1 alone (the full run stops earlier today: posix_mutexes' destroy-while-locked check). */
+    if (argc>1 && !strcmp(argv[1],"--backing-copies")) { direct_memory(); backing_copies(); return 0; }
     libc_support(); posix_mutexes(); wall_time(); exit_handlers(); guards(); mutexes(); direct_memory(); memory_primitives(); backing_copies();
     rw_lifecycle(); rw_concurrency(); rw_timeouts();
     puts("PASS: callback lifecycle, guard ABI, mutex errors, shared direct memory, memory primitives, resolver scope");
