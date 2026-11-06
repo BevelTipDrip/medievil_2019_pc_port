@@ -104,8 +104,8 @@ causes, none of them the 30 FPS rate itself:
 - **Their own experiments.** Frame-wait serving and mapped arenas broke lighting until later PRs undid them.
 
 The 30 FPS target explains only pacing workarounds: the fixed game clock, movies stepped to 60, physics substeps.
-Our docs have no test record for Pumpkin Gorge, the Mausoleum, the Asylum, the Hall of Heroes or the Enchanted Earth.
-So three symptoms are unverified on ours: the stencil-clear edges, the shield spike, the firefly jitter.
+The user's PC playthroughs (several 3-4 hour sessions through those levels, the items acquired) show none of the
+fork's effect glitches on our build (the user, 2026-11-05); see the caveat in 8.2.
 
 **Conflicts with our findings:**
 - **Audio.** No fork other than spacepepperoni touches audio. spacepepperoni reports 8 channels
@@ -513,6 +513,12 @@ and the Enchanted Earth have no test record.**
 - Their issue #7's "purple reflections in the Hall of Heroes" is still open on their side.
 - One PC pass through those five levels with screenshots would settle it. Each check is a game launch and needs the
   user's go.
+
+**Answered (the user, 2026-11-05):** "I have played through a lot of the game on PC, and I am fairly confident those
+glitches do not exist. I have played a few 3-4 hour sessions, including those levels, and acquiring those items."
+So on the PC (`lab`, 4090) none of the three shows; the docs simply never recorded those sessions. Still open: the
+Deck at the Deck preset's view distance 0.7 and Low sun shadows (the vanishing props and jumping shadows), which is
+a settings question, not a renderer bug.
 
 ## 9. Worth porting: shortlist
 
