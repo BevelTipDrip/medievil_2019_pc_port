@@ -1612,7 +1612,8 @@ int runtime_memory_read_backing(uintptr_t address, void *data, uint64_t size) {
 }
 /* Per-thread cache of recently found regions for the GPU's per-draw queries:
  * entries hold for as long as the table generation they were read at. */
-typedef struct { uint64_t generation, stamp; uintptr_t start, end; int kind; } CachedRegion;
+/* phys: the region's offset in the backing view (A1, runtime_memory_copy_backing). */
+typedef struct { uint64_t generation, stamp; uintptr_t start, end; int kind; uint64_t phys; } CachedRegion;
 static __thread CachedRegion region_cache[8];
 static __thread unsigned region_cache_next;
 /* GOW3_REGION_BUCKETS=0: the table-wide generation, as before L1. */
@@ -1711,7 +1712,7 @@ static const CachedRegion *cached_region(uintptr_t address) {
 /* R1: a lock-free search's region into the index (see region_slots). `generation`: the table
  * generation read before the search; `stamp`: the region's buckets, read in the search. */
 static void region_slot_fill(uintptr_t address, uint64_t generation, uintptr_t start, uintptr_t end,
-                             int kind, uint64_t stamp) {
+                             int kind, uint64_t stamp, uint64_t phys) {
     if ((generation & 1) || !stamp || !end) return;
     if (__atomic_load_n(&table_generation,__ATOMIC_ACQUIRE)!=generation) return;
     if (!region_slots) {
@@ -1721,7 +1722,7 @@ static void region_slot_fill(uintptr_t address, uint64_t generation, uintptr_t s
         pthread_setspecific(region_slots_key,slots);
         region_slots=slots;
     }
-    region_slots[region_slot(address)]=(CachedRegion){generation,stamp,start,end,kind};
+    region_slots[region_slot(address)]=(CachedRegion){generation,stamp,start,end,kind,phys};
     region_cache_count(RC_FILL);
 }
 /* Called under the read lock after a lookup of address. */
@@ -1730,7 +1731,7 @@ static void cache_region(size_t i) {
     if (i==vma_count) return;
     if (generation & 1) return;
     region_cache[region_cache_next++ % 8]=(CachedRegion){generation,
-        region_stamp(vmas[i].start,vmas[i].end),vmas[i].start,vmas[i].end,vmas[i].kind};
+        region_stamp(vmas[i].start,vmas[i].end),vmas[i].start,vmas[i].end,vmas[i].kind,vmas[i].phys};
 }
 /* Lock-free runtime_memory_clamp (see vma_seq): 1 with the length in *out when no table entry
  * changed during the search. */
@@ -1773,15 +1774,15 @@ static int clamp_optimistic(uintptr_t address, uint64_t size, uint64_t *out) {
         }
         /* R1: the region holding address and its stamp, read inside the checked window (a torn
          * read gives a stamp of nothing, or the check below fails). */
-        uintptr_t cs=0, ce=0; int ck=0; uint64_t stamp=0;
+        uintptr_t cs=0, ce=0; int ck=0; uint64_t stamp=0, cp=0;
         if (!(generation & 1) && lo<n && v[lo].start<=address) {
-            cs=v[lo].start; ce=v[lo].end; ck=v[lo].kind;
+            cs=v[lo].start; ce=v[lo].end; ck=v[lo].kind; cp=v[lo].phys;
             if (ce>cs) stamp=region_stamp(cs,ce);
         }
         __atomic_thread_fence(__ATOMIC_ACQUIRE);
         if (__atomic_load_n(&vma_seq,__ATOMIC_RELAXED)==s1) {
             *out=length<size ? length : size;
-            if (stamp) region_slot_fill(address,generation,cs,ce,ck,stamp);
+            if (stamp) region_slot_fill(address,generation,cs,ce,ck,stamp,cp);
             return 1;
         }
         if (__builtin_ia32_rdtsc()>deadline) return 0;
@@ -1827,9 +1828,9 @@ static int region_optimistic(uintptr_t address, uintptr_t *start, uintptr_t *end
         size_t lo=0, hi=n;
         while (lo<hi) { size_t mid=(lo+hi)/2; if (v[mid].end<=address) lo=mid+1; else hi=mid; }
         uintptr_t s=0, e=0; int m=0; const int f=lo<n;
-        int k=0; uint64_t stamp=0; /* R1: the region's kind and stamp when address is inside one */
+        int k=0; uint64_t stamp=0, ph=0; /* R1: the region's kind and stamp when address is inside one */
         if (f && v[lo].start<=address) {
-            s=v[lo].start; e=v[lo].end; k=v[lo].kind; m=k!=KIND_RESERVED;
+            s=v[lo].start; e=v[lo].end; k=v[lo].kind; m=k!=KIND_RESERVED; ph=v[lo].phys;
             if (!(generation & 1) && e>s) stamp=region_stamp(s,e);
         }
         else if (f) { s=lo ? v[lo-1].end : 0; e=v[lo].start; m=0; }
@@ -1837,7 +1838,7 @@ static int region_optimistic(uintptr_t address, uintptr_t *start, uintptr_t *end
         if (__atomic_load_n(&vma_seq,__ATOMIC_RELAXED)==s1) {
             if (f) { *start=s; *end=e; *mapped=m; }
             *found=f;
-            if (stamp) region_slot_fill(address,generation,s,e,k,stamp);
+            if (stamp) region_slot_fill(address,generation,s,e,k,stamp,ph);
             return 1;
         }
         if (__builtin_ia32_rdtsc()>deadline) return 0;
@@ -1860,6 +1861,114 @@ int runtime_memory_region(uintptr_t address, uintptr_t *start, uintptr_t *end, i
     read_unlock();
     return found;
 }
+/* gow3 A1 (research/docs/impl-stage-a-decode.md), Linux, GOW3_BACKING_COPY=1 (opt-in; second
+ * toggle word 1048576 off, live): the GPU side's guest-memory copies (CopySparseMemory: stage A's
+ * constant ring copies, the stream copies and uploads) through the backing view without the table
+ * lock. The locked path per copy: a region lookup, then runtime_memory_read_backing (the read
+ * lock: two atomic read-modify-writes on the table lock's line, which every GPU thread's label
+ * writes and lookups also write, plus a search of ~13,000 regions under it). Here: the region's
+ * backing offset from the R1 index (or one lock-free search), the copy, and a check that no
+ * writer held the table lock meanwhile: table_generation is odd while a writer holds the lock
+ * and changes at its lock and unlock, and every edit that can change what a backing offset holds
+ * (table entries, pool pages given back or taken, released memory's holes punched) is made under
+ * it. Same generation, even, before and after the copy: the copy saw the same table and the same
+ * backing pages as a copy under the read lock taken at the first read; anything else returns 0
+ * and the caller copies the locked way, as before. Bytes outside every mapping (gaps, reserved
+ * ranges) read as zero, as in CopySparseSerial. The backing view is mapped whole for the
+ * process's life (MAP_NORESERVE over the memfd, holes read as zero), so a stale offset cannot
+ * fault; offsets are checked against its size anyway. */
+#define TOGGLE2_BACKING_COPY_OFF UINT64_C(1048576)
+#ifdef _WIN32
+int runtime_memory_copy_backing(uintptr_t address, void *data, uint64_t size) {
+    (void)address; (void)data; (void)size;
+    return 0; /* Windows copies from the guest mapping without a lock (kept views) */
+}
+#else
+static uint64_t backing_copy_counts[3]; /* atomic, GOW3_FRAME_STATS: from the index, searched, locked */
+static int backing_copy_wanted(void) {
+    static int wanted=-1; /* atomic: any thread may read the environment first, same answer */
+    int v=__atomic_load_n(&wanted,__ATOMIC_RELAXED);
+    if (v<0) {
+        const char *env=getenv("GOW3_BACKING_COPY");
+        v=env && env[0]=='1';
+        __atomic_store_n(&wanted,v,__ATOMIC_RELAXED);
+    }
+    return v;
+}
+static int backing_copy_on(void) {
+    return backing_copy_wanted() &&
+           !(__atomic_load_n(&runtime_disabled_optimizations2,__ATOMIC_RELAXED) & TOGGLE2_BACKING_COPY_OFF);
+}
+static void backing_copy_count(int what) {
+    if (runtime_fault_stats_enabled()) __atomic_fetch_add(&backing_copy_counts[what],1,__ATOMIC_RELAXED);
+}
+int runtime_memory_copy_backing(uintptr_t address, void *data, uint64_t size) {
+    if (!size || !backing_base || !backing_copy_on() || !optimistic_enabled()) return 0;
+    const uint64_t view=POOL_SIZE+FLEX_SPAN;
+    unsigned char *out=data;
+    const uint64_t generation=__atomic_load_n(&table_generation,__ATOMIC_ACQUIRE);
+    if (generation & 1) { backing_copy_count(2); return 0; }
+    /* One region holding the whole range, from the R1 index (its stamp: unchanged since filled). */
+    if (region_slots && region_index_on() && !(runtime_disabled_optimizations & 1)) {
+        const CachedRegion *c=&region_slots[region_slot(address)];
+        if (c->end && c->start<=address && address<c->end && size<=c->end-address && c->stamp &&
+            c->stamp==region_stamp(c->start,c->end) &&
+            (c->kind==KIND_RESERVED || (c->phys<=view && address-c->start+size<=view-c->phys))) {
+            if (c->kind==KIND_RESERVED) memset(out,0,size);
+            else memcpy(out,backing_base+c->phys+(address-c->start),size);
+            __atomic_thread_fence(__ATOMIC_ACQUIRE);
+            if (__atomic_load_n(&table_generation,__ATOMIC_RELAXED)==generation) { backing_copy_count(0); return 1; }
+            backing_copy_count(2);
+            return 0;
+        }
+    }
+    /* One lock-free search (vma_seq), the pieces read first and checked, then copied. */
+    enum { MAX_PIECES=8 };
+    typedef struct { uintptr_t start, end; uint64_t phys; int mapped; } Piece;
+    Piece pieces[MAX_PIECES];
+    unsigned count=0;
+    const uintptr_t end=address+size;
+    if (end<address) return 0;
+    {
+        if (!__atomic_load_n(&vma_optimistic,__ATOMIC_ACQUIRE)) { backing_copy_count(2); return 0; }
+        const uint64_t s1=__atomic_load_n(&vma_seq,__ATOMIC_ACQUIRE);
+        if (s1 & 1) { backing_copy_count(2); return 0; }
+        const Vma *v=__atomic_load_n(&vmas,__ATOMIC_ACQUIRE);
+        size_t n=__atomic_load_n(&vma_count,__ATOMIC_ACQUIRE);
+        if (!v) return 0;
+        if (n>VMA_FIXED_CAPACITY) n=VMA_FIXED_CAPACITY;
+        size_t lo=0, hi=n;
+        while (lo<hi) { size_t mid=(lo+hi)/2; if (v[mid].end<=address) lo=mid+1; else hi=mid; }
+        for (uintptr_t at=address; at<end;) {
+            if (count==MAX_PIECES) { backing_copy_count(2); return 0; }
+            if (lo>=n || v[lo].start>=end) { pieces[count++]=(Piece){at,end,0,0}; break; }
+            const uintptr_t vs=v[lo].start, ve=v[lo].end;
+            if (ve<=at) { backing_copy_count(2); return 0; } /* torn read: the check below would fail */
+            if (vs>at) { pieces[count++]=(Piece){at,vs,0,0}; at=vs; continue; }
+            const uintptr_t pe=ve<end ? ve : end;
+            const int mapped=v[lo].kind!=KIND_RESERVED;
+            pieces[count++]=(Piece){at,pe,mapped ? v[lo].phys+(at-vs) : 0,mapped};
+            at=pe; ++lo;
+        }
+        __atomic_thread_fence(__ATOMIC_ACQUIRE);
+        if (__atomic_load_n(&vma_seq,__ATOMIC_RELAXED)!=s1) { backing_copy_count(2); return 0; }
+    }
+    for (unsigned k=0;k<count;++k) {
+        const uint64_t n=pieces[k].end-pieces[k].start;
+        if (pieces[k].mapped && (pieces[k].phys>view || n>view-pieces[k].phys)) { backing_copy_count(2); return 0; }
+    }
+    for (unsigned k=0;k<count;++k) {
+        unsigned char *to=out+(pieces[k].start-address);
+        const uint64_t n=pieces[k].end-pieces[k].start;
+        if (pieces[k].mapped) memcpy(to,backing_base+pieces[k].phys,n);
+        else memset(to,0,n);
+    }
+    __atomic_thread_fence(__ATOMIC_ACQUIRE);
+    if (__atomic_load_n(&table_generation,__ATOMIC_RELAXED)!=generation) { backing_copy_count(2); return 0; }
+    backing_copy_count(1);
+    return 1;
+}
+#endif
 /* gow3 gate 2 (research/docs/study-fence-waits.md 5.5), GOW3_FRAME_STATS=1: the GPU's write
  * faults by the PS4 memory type of the page (0 WB Onion, 3 WC Garlic, 10 WB Garlic), how many
  * distinct 16 KiB direct-memory pages fault in a window and how many fault in (nearly) every frame,
@@ -2047,6 +2156,20 @@ void runtime_memory_lock_report(char *out, size_t size, unsigned frames) {
                      threads>REGION_COUNT_THREADS ? ", more not counted" : "");
         }
     }
+#ifndef _WIN32
+    /* gow3 A1 (impl-stage-a-decode.md): CopySparseMemory's copies without the table lock. */
+    {
+        double d[3];
+        for (int k=0;k<3;++k) d[k]=__atomic_exchange_n(&backing_copy_counts[k],0,__ATOMIC_RELAXED)/f;
+        const char *state=!backing_copy_wanted() ? "off" : backing_copy_on() ? "on" : "toggled off";
+        const size_t at=strlen(out);
+        if (at<size) {
+            snprintf(out+at,size-at,"Backing copies per frame (A1 %s): without the lock %.1f (from the index "
+                     "%.1f, searched %.1f), the locked way %.1f\n",
+                     state,d[0]+d[1],d[0],d[1],d[2]);
+        }
+    }
+#endif
 }
 /* GPU page tracking: restrict host access, never beyond the guest's own protection. */
 void runtime_memory_gpu_protect(uintptr_t address, uint64_t size, int read, int write) {

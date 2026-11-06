@@ -152,6 +152,11 @@ enum : std::uint64_t {
     /// of 1,024 entries by address page per thread, filled by the lock-free searches too. Set:
     /// the 8 entries filled on the locked path only, as before (live). Read by the runtime.
     RegionIndex = 524288,
+    /// A1 (impl-stage-a-decode.md; src/runtime_memory.c, Linux), with GOW3_BACKING_COPY=1 at
+    /// start (opt-in): CopySparseMemory (stage A's constant ring copies, stream copies, uploads)
+    /// reads the backing view without the region table lock, checked by the table generation.
+    /// Set: the region lookup and the locked read, as before (live). Read by the runtime.
+    BackingCopy = 1048576,
 };
 inline bool Disabled(std::uint64_t bit) {
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;
