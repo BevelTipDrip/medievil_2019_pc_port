@@ -1601,7 +1601,10 @@ recording or GPU time at steady clocks; what is left at a fixed clock is the CPU
 4. `deck.sh pull-trace deck-pushpull-1`, `deck.sh frames deck-pushpull-1 --skip S --seconds 60` per part.
 
 **Fixes, if it is push-pull (cheapest first):** a cap just under the auto average (step 3); `frames_queued=2` (the
-CPU builds frame N+1 while the GPU draws N, so neither side idles; one frame of latency; ini, restart-only); a GPU
+GPU command thread waits for the frame two flips back instead of one, `vk_presenter.cpp` PrepareFrame: a second
+frame of slack, so a slow CPU frame does not leave the GPU without work; up to one more frame of latency; the in-game
+menu's "Frames queued" switches it live, so it fits launch 14. Its comment: unbounded, the command thread ran ahead
+and blocked in bursts, 12.5/25 ms alternation at 80 FPS, the reason the default is 1: 2 may bring some of it back); a GPU
 clock range instead of a fixed clock (`power_dpm_force_performance_level` manual + `pp_od_clk_voltage` "s 0 <floor>",
 "s 1 <1,200-1,300>", "c": a system change the user makes with sudo, lost at reboot; does Steam's QAM reset it?). If
 it is uneven work: which frames cost more and on which stage, from the same per-frame table.
