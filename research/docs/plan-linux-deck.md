@@ -1415,3 +1415,13 @@ per frame", "Backing copies per frame". Tests: `runtime-test --backing-copies`, 
   MediEvil-x86_64-stagea.AppImage`, the three variables in extra-env.txt beside the current keys, `deck.sh toggle "0
   0"`, `deck.sh ab "0 0" "0 7340032" 30 5`, then one pair per bit; `deck.sh threads` and power in their own windows;
   look at the picture while toggling 1048576 (A1 carries the constants).
+
+### Round 2 method: a fixed GPU clock for CPU-efficiency A/Bs (the user, 2026-11-05)
+
+With the GPU clock on auto the 15 W controller moves power between GPU and CPU frame to frame: a CPU cut can boost the
+cores on one frame and starve the next, and part of the saving becomes GPU clock instead of FPS. The user: test this
+round unlocked (raw numbers), then **re-take the candidates with the GPU fixed a little above what the frame needs
+(1,200-1,300 MHz, not 1,000)**, so the GPU's share is fixed and CPU savings stay on the CPU as boost. Round 2: a new
+baseline at the fixed clock, then thread nice, pool populate, the stage A cuts (A1-A3, live bits) and the particle
+single pass. For live-bit tests one launch can cover both clocks: the user changes the clock in the Quick Access Menu
+between two `ab` runs and the log is split at that time. Note the clock with every result.
