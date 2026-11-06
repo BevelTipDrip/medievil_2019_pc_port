@@ -1118,10 +1118,18 @@ void VideoOutDriver::Flip(const Request& req) {
                 }
                 const double mean = sum / intervals.size();
                 std::printf("Frame pacing: median %.2f ms, stddev %.2f ms, p99 %.2f ms, "
-                            "%u frames over 1.5x median, longest run %u frames (%.1f ms)\n",
+                            "%u frames over 1.5x median, longest run %u frames (%.1f ms)",
                             median, std::sqrt(std::max(0.0, sq / intervals.size() - mean * mean)),
                             sorted[std::min(sorted.size() - 1, sorted.size() * 99 / 100)], spikes,
                             longest_run, longest_run_ms);
+                // The window's slowest 2% (at least one): pooled over windows, a log reader gets the
+                // 1% and 0.1% lows of a whole state (deck_summary.py), not one window's few frames.
+                const std::size_t slowest = std::min(sorted.size(), sorted.size() / 50 + 1);
+                std::printf("; %zu frames, slowest", sorted.size());
+                for (std::size_t i = 0; i < slowest; ++i) {
+                    std::printf(" %.2f", sorted[sorted.size() - 1 - i]);
+                }
+                std::printf(" ms\n");
             }
             intervals.clear();
             window_reset = true;

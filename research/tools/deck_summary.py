@@ -4,11 +4,14 @@ Each "Frame stats" line closes a window (~5 s). Windows are labelled with the to
 ("Runtime: disabled optimizations mask=N" / "second word=N") and the render scale (run.py's "Render
 resolution: ... render scale N%", the in-game menu's "Render scale: A% -> B% (live)"); a window in
 which the state changed is marked and left out of the per-state medians (it mixes both). Heavy-view
-windows: --min-draws.
+windows: --min-draws. The 1% and 0.1% lows are pooled over a state's windows: each "Frame pacing" line
+ends with the window's frame count and its slowest 2% of frames (builds from 2026-11-06 on; older logs
+give nan); the low is the frame time at that point of all the state's frames, shown as FPS.
 
     py -3.14 deck_summary.py <log> [--min-draws 1000] [--last N] [--windows]
 """
 import argparse
+import math
 import re
 import statistics
 
@@ -57,6 +60,11 @@ def parse(path):
                 m = re.search(pattern, line)
                 if m and key not in current:
                     current[key] = float(m.group(1))
+        if line.startswith('Frame pacing:') and 'frames' not in current:
+            m = re.search(r'; (\d+) frames, slowest ([\d. ]+) ms', line)
+            if m:
+                current['frames'] = int(m.group(1))
+                current['slowest'] = [float(x) for x in m.group(2).split()]
         for prefix in ('Recorder per frame', 'Stage B syscalls', 'Decode pacing (', 'OnSubmit on stage B',
                        'Arena writes', 'Early frame EOP', 'Thread ids per frame', 'Draw classes per frame',
                        'Readback pre-check per frame', 'Region table per frame', 'Stage B sleeps per frame',
@@ -68,6 +76,17 @@ def parse(path):
     if current:
         windows.append(current)
     return windows
+
+
+def lows(group):
+    """The 1% and 0.1% lows (FPS) of the windows' pooled frames: nan without the slowest lists."""
+    total = sum(w.get('frames', 0) for w in group)
+    pooled = sorted((ms for w in group for ms in w.get('slowest', [])), reverse=True)
+    result = []
+    for share in (0.01, 0.001):
+        k = math.ceil(total * share)
+        result.append(1000.0 / pooled[k - 1] if total and 0 < k <= len(pooled) else float('nan'))
+    return result
 
 
 def main():
@@ -90,7 +109,7 @@ def main():
     heavy = [w for w in windows if not w['mixed'] and w.get('draws', 0) >= args.min_draws]
     states = sorted({w['state'] for w in heavy})
     print(f'\nHeavy windows (>= {args.min_draws} draws, switch windows left out), medians by toggle state:')
-    print(f'{"state":<17}{"n":>3} ' + ' '.join(f'{k:>11}' for k in keys))
+    print(f'{"state":<17}{"n":>3} ' + ' '.join(f'{k:>11}' for k in keys) + f'{"low1%":>9}{"low0.1%":>9}')
     for state in states:
         group = [w for w in heavy if w['state'] == state]
         row = []
@@ -98,7 +117,9 @@ def main():
             values = [w[k] for w in group if k in w]
             row.append(statistics.median(values) if values else float('nan'))
         mean_fps = statistics.mean(w['fps'] for w in group if 'fps' in w)
-        print(f'{state:<17}{len(group):>3} ' + ' '.join(f'{v:11.2f}' for v in row) + f'   (mean FPS {mean_fps:.1f})')
+        low1, low01 = lows(group)
+        print(f'{state:<17}{len(group):>3} ' + ' '.join(f'{v:11.2f}' for v in row) +
+              f'{low1:9.1f}{low01:9.1f}   (mean FPS {mean_fps:.1f})')
         last = group[-1]['extra']
         for prefix, line in last.items():
             # The class line is the per-class table itself: printed whole.
