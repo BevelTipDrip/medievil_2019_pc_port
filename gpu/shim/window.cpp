@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <unistd.h>
 #include <SDL3/SDL.h>
 #include "common/assert.h"
 #include "common/logging/log.h"
@@ -22,6 +23,20 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, const char* title)
     // They keep working while another window has the focus (the launcher, a second screen):
     // without this a pad stayed silent until the game window was clicked (issue #25).
     SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
+    // Pads plugged in after start (Porticus, upstream PR #64; also in runtime_pad.c, whichever
+    // starts the gamepad subsystem first). On Windows SDL hears of them through a message window
+    // on the thread that started the gamepad subsystem, which can be the game thread
+    // (runtime_pad.c) that never pumps messages; its own thread hears them whichever thread that
+    // was. In a container (distrobox, toolbox) udev's hotplug events do not arrive: SDL watches
+    // /dev/input. GOW3_PAD_HOTPLUG=0 leaves SDL's defaults.
+    if (const char* hotplug = std::getenv("GOW3_PAD_HOTPLUG"); !hotplug || hotplug[0] != '0') {
+        SDL_SetHint(SDL_HINT_JOYSTICK_THREAD, "1");
+        if (access("/run/.containerenv", F_OK) == 0 || access("/.dockerenv", F_OK) == 0) {
+            SDL_SetHint("SDL_JOYSTICK_DISABLE_UDEV", "1");
+            SDL_SetHint(SDL_HINT_HIDAPI_UDEV, "0");
+            std::printf("Window: container: SDL watches /dev/input for pads (no udev)\n");
+        }
+    }
     if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) {
         UNREACHABLE_MSG("Failed to initialize SDL video: {}", SDL_GetError());
     }
