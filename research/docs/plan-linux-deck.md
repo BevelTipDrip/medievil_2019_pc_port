@@ -1425,3 +1425,19 @@ round unlocked (raw numbers), then **re-take the candidates with the GPU fixed a
 baseline at the fixed clock, then thread nice, pool populate, the stage A cuts (A1-A3, live bits) and the particle
 single pass. For live-bit tests one launch can cover both clocks: the user changes the clock in the Quick Access Menu
 between two `ab` runs and the log is split at that time. Note the clock with every result.
+
+### Round 1 results, GPU clock auto (2026-11-05, ini logging 67% uncapped; launched by the user)
+
+| launch | log | change | FPS median | worst (median of 5 s) | p99 ms | verdict |
+|---|---|---|---|---|---|---|
+| 1 | deck-particle-1 | particle single pass (live, vs `0 8192`) | 79.4 vs 77.1 | 17.4 / 18.1 | 16.30 / 16.74 | +2.3 FPS, but the torch / floor glitch (also at 60) |
+| 2 | deck-nav-1 | `GOW3_NAV_PURGE_NOFENCE=1` | 79.4 | 17.3 | 16.14 | neutral in FPS (main thread; power not measured) |
+| 3 | deck-aniso-1 | `GOW3_FORCE_ANISO=0` | 79.3 | 17.1 | 15.98 | neutral (CPU-gated view); 16x stays (the user's choice) |
+| 4 | deck-coresched-1 | `GOW3_STAGE_B_CORE_SCHED=1` | **66.4** | **35.4** | 22.79 | **rejected**: the sibling idles, stage A drain waits 2.1 -> 6.9 ms/frame |
+| 5 | deck-nice-1 | `GOW3_THREAD_NICE=1` (rtkit: both threads nice -10) | **80.15** | 17.0 | **15.82** | small win (+0.8, sd 1.21): preset candidate |
+| 6 | deck-populate-1 | `GOW3_POOL_POPULATE=1` | 78.4 | 17.95 | 16.54 | rejected in the static view: faults 9k -> 437k per 5 s, 537 ms per 5 s populating; motion-test candidate (streaming) |
+| 7 | deck-stagea-1 | A1-A3 on vs off (live, `0 7340032`), build `d4145b5-stagea` | 78.1 vs 77.5 | 17.6 / 17.5 | 16.34 / 16.19 | +0.6 FPS (+0.8%), lows equal; A1 4,350 copies/frame without the lock, A2 filter answers 1,400 checks (scans 1,225 -> 0.4) |
+
+Pool prefill dropped: demand faults are only ~1.8k/s. The user (2026-11-05): judge by the 0.1% lows and by pacing in
+motion too; still-camera rejects may help in panning / combat. Round 2 (fixed GPU clock) re-takes nice, the stage A
+cuts and the particle pass.
