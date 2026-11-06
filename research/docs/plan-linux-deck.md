@@ -1513,3 +1513,20 @@ both switches. Heavy view, `ab "0 0" "0 32768" 30 5`; medians of each block's no
   -0.7 ms, sd 1.82 vs 1.98 (lower in every block), p99 -0.26 ms. The gain is mostly in frame pacing.
 - Kept for the Deck preset (with the 1,400 MHz result); a motion test is still worth doing. It is Linux-only: nothing
   changes on Windows.
+
+### Drain wake-ahead 6 vs 2, live (2026-11-06, build `d2f145f-lows`, log `data/deck-wakeahead-1.log`)
+
+Launched by the user. The Deck preset's switches (stage A cuts, flip guard, thread nice) plus
+`GOW3_DRAIN_WAKE_AHEAD=6`; the logging ini; GPU fixed at 1,400 MHz. New in this build: second toggle word 8388608 puts
+the count back at the default 2 live ("wake N ahead" in the drain line follows it), and each "Frame pacing" line
+ends with the window's frame count and slowest 2%, which `deck_summary.py` pools into a state's 1% and 0.1% lows.
+Heavy view, `ab "0 0" "0 8388608" 30 5`.
+
+| state | windows | FPS (block medians) | FPS median | low 1% / 0.1% FPS | worst ms | p99 ms | drain wait ms/frame | sleeps/frame |
+|---|---|---|---|---|---|---|---|---|
+| 6 ahead | 27 | 76.1, 77.0, 76.8, 76.8, 76.8 | 76.8 | 56.5 / 51.8 | 18.7 | 17.74 | 0.63 | 1.66 |
+| 2 ahead | 25 | 76.2, 76.2, 76.8, 76.6, 76.4 | 76.5 | 56.6 / 51.0 | 19.1 | 17.64 | 0.62 | 1.50 |
+
+- **Neutral; the default 2 stays.** +0.3 FPS is inside the noise, the lows and p99 match, and stage A's drain wait is
+  the same over all windows. The earlier wake does not shorten the wait: stage A wakes before the end more often and
+  sleeps again (1.66 vs 1.50 sleeps a frame). The 51 us wake latency is not what stage A waits on.
