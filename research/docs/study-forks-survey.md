@@ -518,7 +518,7 @@ and the Enchanted Earth have no test record.**
 glitches do not exist. I have played a few 3-4 hour sessions, including those levels, and acquiring those items."
 So on the PC (`lab`, 4090) none of the three shows; the docs simply never recorded those sessions. Still open: the
 Deck at the Deck preset's view distance 0.7 and Low sun shadows (the vanishing props and jumping shadows), which is
-a settings question, not a renderer bug.
+a settings question, not a renderer bug. The Deck's manual settings do apply (log `data/deck-perdraw-1.log`: `r.ViewDistanceScale 0.7`, `r.Shadow.Min/MaxResolution 256`, `r.Shadow.DistanceScale 0.6`, `CSM.MaxCascades 2`, set live at the menu), and the user has seen no pop-in or sun-shadow jumps on the Deck (2026-11-05; play so far mostly the graveyard). Not a planned check: if it shows, view distance 1 is a live change.
 
 ## 9. Worth porting: shortlist
 
