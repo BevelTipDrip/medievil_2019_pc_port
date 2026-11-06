@@ -9,6 +9,7 @@
 #include "orb_hook.h"
 #include "hzb_hook.h"
 #include "level_hook.h"
+#include "particle_hook.h"
 #include "cheat_hook.h"
 #include "actor_hook.h"
 #include "damage_hook.h"
@@ -447,6 +448,8 @@ extern ABI float gow3_orbs_gain(void *player, float requested);
 extern ABI void medievil_hzb_map(void *tester, void *command_list);
 extern ABI void medievil_hzb_submit(void *tester);
 extern ABI void medievil_level_change(void);
+extern ABI int medievil_particle_advance(uintptr_t fx);
+extern ABI int medievil_particle_pre_render(uintptr_t fx);
 extern void medievil_hzb_init(uintptr_t map_results, uintptr_t first_frame_buffer);
 extern void gow3_orbs_status(int supported);
 extern uintptr_t gow3_cheat_flag(unsigned id);
@@ -627,6 +630,38 @@ static void install_level_hook(Segment *segments, uint64_t count, uint64_t size)
     memcpy(image + sites->call + 1, &rel, 4);
     printf("Movies: playing movies are suspended at each level change (OpenLevel hook, game build %s)\n",
            sites == medievil_level_builds ? "01.00" : "01.02");
+}
+
+/* MediEvil GPU particle flip guard (src/particle_hook.h, runtime_extra.c): opt-in,
+ * GOW3_PARTICLE_FLIP_GUARD=1; the toggle file's second word 16384 turns the guard off live. */
+static void install_particle_flip_guard(Segment *segments, uint64_t count, uint64_t size) {
+    const char *env = getenv("GOW3_PARTICLE_FLIP_GUARD");
+    if (!env || env[0] != '1') return;
+    const MedievilParticleSites *sites = medievil_particle_find(image, size);
+    if (!sites || !mapped(segments, count, sites->pre_init_jump, 5) ||
+        !mapped(segments, count, sites->pre_render_call, 5)) {
+        printf("GPU particle flip guard: unavailable (not an analysed MediEvil eboot: 01.00 or 01.02)\n");
+        return;
+    }
+    unsigned char *stubs = allocate(page_size);
+    unsigned char *advance_stub = stubs, *pre_render_stub = stubs + 64;
+    int32_t advance_rel, pre_render_rel;
+    if (!rel32_to(sites->pre_init_jump, advance_stub, &advance_rel) ||
+        !rel32_to(sites->pre_render_call, pre_render_stub, &pre_render_rel)) {
+        printf("GPU particle flip guard: unavailable (stub outside relative-jump range)\n");
+        return;
+    }
+    medievil_particle_build_advance_stub(advance_stub, (uintptr_t)medievil_particle_advance,
+                                         (uintptr_t)(image + sites->advance));
+    medievil_particle_build_pre_render_stub(pre_render_stub, (uintptr_t)medievil_particle_pre_render,
+                                            (uintptr_t)(image + sites->advance),
+                                            (uintptr_t)(image + sites->multi_gpu));
+    protect(stubs, page_size, 5);
+    memcpy(image + sites->pre_init_jump + 1, &advance_rel, 4);
+    memcpy(image + sites->pre_render_call + 1, &pre_render_rel, 4);
+    printf("GPU particle flip guard: PreInitViews and PreRender hooks ready (game build %s; one state flip per "
+           "simulation; toggle file second word 16384: guard off)\n",
+           sites == medievil_particle_builds ? "01.00" : "01.02");
 }
 
 /* Writes a jump from image+at to `stub`; the rest of the replaced bytes become nops (the stub
@@ -1017,6 +1052,7 @@ int main(int argc, char **argv) {
     if (game_hooks) install_stat_multipliers(app0, segments, ns, size);
     if (gpu_enabled) install_hzb_remap(segments, ns, size);
     if (gpu_enabled) install_level_hook(segments, ns, size);
+    if (gpu_enabled) install_particle_flip_guard(segments, ns, size);
 #ifdef _WIN32
     printf("Guest TCB loads redirected to the TEB TLS slot: %" PRIu64 "\n", patch_tcb_loads(segments, ns));
 #endif

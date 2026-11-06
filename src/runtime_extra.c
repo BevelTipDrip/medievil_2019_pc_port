@@ -716,6 +716,69 @@ static void ue4_particle_pass_poll(void) {
     runtime_ue4_request_cvar("r.GPUParticle.FixDeltaSeconds",on ? "0" : PARTICLE_FIXED_STEP);
 }
 
+/* GPU particle flip guard (src/particle_hook.h, installed by probe.c with
+ * GOW3_PARTICLE_FLIP_GUARD=1): one state flip per main-phase simulation, so the single pass
+ * never reads a pair older than the last simulation's output (research/docs/
+ * study-particle-fixed-step.md). Both helpers run on the render thread (FSceneRenderer). The
+ * toggle file's second word bit 16384 (Gow3Toggle2::ParticleFlipGuardOff) turns the guard off
+ * live: the hooks then only count. Every 1,200 simulations a line gives the flips and
+ * simulations since the previous line and the unpaired ones: a flip with no simulation since the
+ * previous flip, a simulation with no flip since the previous simulation. */
+#define TOGGLE2_PARTICLE_FLIP_GUARD_OFF UINT64_C(16384)
+#define PARTICLE_FX_SLOTS 8
+static struct { uintptr_t fx; int simulated; } particle_fx[PARTICLE_FX_SLOTS];
+static uint64_t particle_flips, particle_sims, particle_lone_flips, particle_lone_sims;
+static int particle_slot(uintptr_t fx) {
+    for (int i=0;i<PARTICLE_FX_SLOTS;++i) {
+        if (particle_fx[i].fx==fx) return i;
+        if (!particle_fx[i].fx) { particle_fx[i].fx=fx; return i; }
+    }
+    return -1; /* more FX systems than slots: no guard for this one */
+}
+static int particle_guard_on(void) {
+    return !(__atomic_load_n(&runtime_disabled_optimizations2,__ATOMIC_RELAXED)&TOGGLE2_PARTICLE_FLIP_GUARD_OFF);
+}
+static void particle_guard_report(void) {
+    static int last_on=-1;
+    const int on=particle_guard_on();
+    if (particle_sims<1200 && on==last_on) return;
+    printf("GPU particle flips: %llu flips, %llu simulations; %llu flips without a simulation (%s), "
+           "%llu simulations without a flip (%s); guard %s\n",
+           (unsigned long long)particle_flips,(unsigned long long)particle_sims,
+           (unsigned long long)particle_lone_flips,on ? "skipped" : "kept",
+           (unsigned long long)particle_lone_sims,on ? "flip added" : "none added",
+           on ? "on" : "off (toggle file second word 16384)");
+    last_on=on;
+    particle_flips=particle_sims=particle_lone_flips=particle_lone_sims=0;
+}
+/* AdvanceGPUParticleFrame from PreInitViews: 1 flips (the original runs), 0 skips the flip. */
+ABI int medievil_particle_advance(uintptr_t fx) {
+    const int slot=particle_slot(fx);
+    if (slot<0) return 1;
+    int flip=1;
+    if (!particle_fx[slot].simulated) {
+        ++particle_lone_flips;
+        flip=!particle_guard_on();
+    }
+    if (flip) { ++particle_flips; particle_fx[slot].simulated=0; }
+    return flip;
+}
+/* PreRender, before the main-phase simulation: 1 flips first (AdvanceGPUParticleFrame). */
+ABI int medievil_particle_pre_render(uintptr_t fx) {
+    const int slot=particle_slot(fx);
+    if (slot<0) return 0;
+    int flip=0;
+    if (particle_fx[slot].simulated) {
+        ++particle_lone_sims;
+        flip=particle_guard_on();
+        if (flip) ++particle_flips;
+    }
+    particle_fx[slot].simulated=1;
+    ++particle_sims;
+    particle_guard_report();
+    return flip;
+}
+
 /* A switch asked for by the in-game menu (window thread), done on the next game-thread poll. */
 static char ue4_requested[24];
 static int ue4_request_pending;
