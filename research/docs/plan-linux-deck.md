@@ -1441,3 +1441,22 @@ between two `ab` runs and the log is split at that time. Note the clock with eve
 Pool prefill dropped: demand faults are only ~1.8k/s. The user (2026-11-05): judge by the 0.1% lows and by pacing in
 motion too; still-camera rejects may help in panning / combat. Round 2 (fixed GPU clock) re-takes nice, the stage A
 cuts and the particle pass.
+
+### Round 2 results, GPU fixed at 1,200 MHz (2026-11-05 ~20:51-21:06, same launch as stage A 1, log `data/deck-stagea-1200.log`)
+
+The user locked the GPU at 1,200 MHz in the Quick Access Menu after the auto-clock A/B (stage A 1); the log was split
+at the lock (the dip windows) and switch windows left out. Medians of 5 s windows (worst = median of the windows'
+worst frames; max = the worst window).
+
+| A/B @1,200 MHz | on | off | gain | worst median / max ms | p99 ms |
+|---|---|---|---|---|---|
+| stage A cuts A1-A3 (`0 0` vs `0 7340032`) | 79.25 | 78.60 | +0.65 | 17.8 / 20.5 vs 18.2 / 22.3 | 16.89 vs 16.96 |
+| particle single pass (`0 0` vs `0 8192`) | 80.60 | 77.90 | +2.7 | 17.3 / **18.8** vs 18.5 / **36.0** | 16.20 vs 17.11 |
+
+- The stage A cuts give the same +0.6 as at auto, with slightly better lows. Keep (Deck preset candidates).
+- The particle pass also improves the lows (the worst window 36 -> 19 ms), but keeps the torch glitch until the fixed-step
+  patch (study-particle-fixed-step.md) is verified.
+- The fixed clock did not raise FPS here (79-81 as at auto): this view is CPU-gated either way.
+- **Drift within one launch:** the two `0 0` segments at 1,200 MHz differ by 1.35 FPS (79.25 vs 80.60, same state).
+  Between-launch results of under ~1.5 FPS (thread nice +0.8, populate -1) are inside that drift: only live A/Bs in one
+  launch settle them. Thread nice should become a live switch before it is judged.
