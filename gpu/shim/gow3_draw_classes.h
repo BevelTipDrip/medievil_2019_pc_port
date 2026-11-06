@@ -76,6 +76,14 @@ inline std::array<std::atomic<std::uint64_t>, Count> draws{}, cycles{};
 /// Particle simulation runs (consecutive simulation draws), and the runs with an inject draw
 /// since the previous run (for the dt=0 copy skip: research/docs/impl-draw-reduction.md).
 inline std::atomic<std::uint64_t> sim_runs{0}, sim_runs_after_inject{0};
+/// Runs whose first draw writes the same colour target 0 (guest address) as the previous run's
+/// (research/docs/study-particle-fixed-step.md): UE4 alternates the state pair once per
+/// simulation, so with the single pass (r.GPUParticle.FixDeltaSeconds 0) this stays 0 unless a
+/// flip went missing or doubled (the run then reads a pair one simulation too old); with the
+/// default fixed step the next frame's first run writes the previous frame's second run's pair:
+/// about one a frame.
+inline std::atomic<std::uint64_t> sim_runs_same_target{0};
+inline std::uint64_t last_run_target = 0;
 /// The previous recorded draw's class and whether an inject came since the last simulation run
 /// (draws are recorded on one thread at a time: stage B, or stage A without the draw pipe).
 inline Class last_class = Count;
@@ -87,7 +95,7 @@ struct SimShader {
 };
 inline std::array<SimShader, 4> sim_shaders{};
 
-inline void Note(Class c, std::uint64_t draw_cycles, std::uint64_t ps) {
+inline void Note(Class c, std::uint64_t draw_cycles, std::uint64_t ps, std::uint64_t target = 0) {
     draws[c].fetch_add(1, std::memory_order_relaxed);
     cycles[c].fetch_add(draw_cycles, std::memory_order_relaxed);
     if (c == ParticleSim) {
@@ -109,6 +117,10 @@ inline void Note(Class c, std::uint64_t draw_cycles, std::uint64_t ps) {
             sim_runs_after_inject.fetch_add(1, std::memory_order_relaxed);
         }
         inject_since_run = false;
+        if (target && target == last_run_target) {
+            sim_runs_same_target.fetch_add(1, std::memory_order_relaxed);
+        }
+        last_run_target = target;
     } else if (c == ParticleInject) {
         inject_since_run = true;
     }
@@ -121,12 +133,13 @@ struct Scope {
     explicit Scope(bool enabled) : start{enabled ? __rdtsc() : 0} {}
     ~Scope() {
         if (start && cls != Count) {
-            Note(cls, __rdtsc() - start, ps);
+            Note(cls, __rdtsc() - start, ps, target);
         }
     }
     std::uint64_t start;
     Class cls = Count;
-    std::uint64_t ps = 0; ///< the pixel shader's guest hash
+    std::uint64_t ps = 0;     ///< the pixel shader's guest hash
+    std::uint64_t target = 0; ///< colour target 0's guest address
 };
 
 /// The 5 s report line: draws per frame and us per draw of each class with any draws.
@@ -162,8 +175,11 @@ inline std::string Report(std::uint64_t frames) {
     }
     const std::uint64_t runs = sim_runs.exchange(0, std::memory_order_relaxed);
     const std::uint64_t after_inject = sim_runs_after_inject.exchange(0, std::memory_order_relaxed);
-    std::snprintf(item, sizeof(item), " total %.1f; particle sim runs %.2f (%.2f after an inject draw)",
+    const std::uint64_t same_target = sim_runs_same_target.exchange(0, std::memory_order_relaxed);
+    std::snprintf(item, sizeof(item), " total %.1f; particle sim runs %.2f (%.2f after an inject draw",
                   total / per_frame, runs / per_frame, after_inject / per_frame);
+    out += item;
+    std::snprintf(item, sizeof(item), ", %.2f on the previous run's target)", same_target / per_frame);
     out += item;
     for (auto& shader : sim_shaders) {
         const std::uint64_t n = shader.draws.exchange(0, std::memory_order_relaxed);

@@ -37,11 +37,28 @@ int main() {
     Note(DepthPrepass, 10, 0);
     assert(sim_runs == 2 && sim_runs_after_inject == 1);
     Report(1); // the first report has no clock pair yet
+
+    // The state pair alternates per run (targets A, B, A): no run on its predecessor's target.
+    // A run on the same target as the one before (a missing or doubled flip) is counted once.
+    Note(ParticleSim, 10, 0xabc, 0xa000);
+    Note(ParticleSim, 10, 0xabc, 0xa000);
+    Note(DepthPrepass, 10, 0);
+    Note(ParticleSim, 10, 0xabc, 0xb000);
+    Note(DepthPrepass, 10, 0);
+    Note(ParticleSim, 10, 0xabc, 0xa000);
+    Note(DepthPrepass, 10, 0);
+    assert(sim_runs_same_target == 0);
+    Note(ParticleSim, 10, 0xabc, 0xa000);
+    Note(DepthPrepass, 10, 0);
+    assert(sim_runs == 4 && sim_runs_same_target == 1);
+    Report(1);
+
     Note(ShadowDepth, 10, 0);
     const std::string line = Report(1);
     std::fputs(line.c_str(), stdout);
     assert(line.rfind("Draw classes per frame: shadow depth 1.0", 0) == 0);
-    assert(line.find("total 1.0; particle sim runs 0.00 (0.00 after an inject draw)") != std::string::npos);
+    assert(line.find("total 1.0; particle sim runs 0.00 (0.00 after an inject draw, 0.00 on the previous run's "
+                     "target)") != std::string::npos);
     assert(line.back() == '\n');
     std::puts("draw classes: ok");
     return 0;
