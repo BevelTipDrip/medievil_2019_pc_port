@@ -1460,3 +1460,24 @@ worst frames; max = the worst window).
 - **Drift within one launch:** the two `0 0` segments at 1,200 MHz differ by 1.35 FPS (79.25 vs 80.60, same state).
   Between-launch results of under ~1.5 FPS (thread nice +0.8, populate -1) are inside that drift: only live A/Bs in one
   launch settle them. Thread nice should become a live switch before it is judged.
+
+### Particle fix 1 (2026-11-05 ~21:10-21:28, build `49291f3-particlefix`, log `data/deck-particlefix-1.log`)
+
+Launched by the user. Settings: stage A 1's plus `GOW3_PARTICLE_SINGLE_FIXED=1` and `GOW3_PARTICLE_FLIP_GUARD=1`; ini
+logging (single pass on); GPU clock auto. The log: the patch applied ("GPU particle fixed step in the single pass"),
+sim runs 1.00 a frame, 0.00 on the previous run's target; the guard skipped nearly every flip as "without a
+simulation" (1,067-1,200 of each 1,200).
+- **Visual (the user):** lone torch with the fix (`0 0`): "it's animating now"; guard off (`0 16384`): frozen again;
+  Dan's crypt floor with the fix: "That glitch is also gone"; guard off: "Yup, it's back". **The flip guard fixes both
+  glitches**: the lost update is a buffer flip without a simulation (study-particle-fixed-step.md's candidate).
+- **Performance** (heavy view, `ab "0 0" "0 8192" 30 5`, GPU auto):
+
+| state | n | FPS | draws | stage B | p99 ms | worst median / max ms |
+|---|---|---|---|---|---|---|
+| `0 0` fix (single pass + guard + fixed-step patch) | 27 | **81.2** | 1,102 | 85.9% | 15.64 | 17.0 / 19.7 |
+| `0 8192` stock 1/30 step | 25 | 79.5 | 1,295 | 91.8% | 15.94 | 17.2 / 22.2 |
+
+  +1.7 FPS (+2.1%), -193 draws, stage B -5.9 points, better lows.
+- Next: one launch with the guard only (`GOW3_PARTICLE_SINGLE_FIXED` unset). If the torch and the floor are right, the
+  fixed-step patch is not needed (it saves nothing measurable and costs flag-8 emitters their look-ahead step). Then
+  the Deck preset gets the guard; the PC default stays as it is until regression-tested on `lab`.
