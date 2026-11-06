@@ -88,6 +88,8 @@ struct Liverpool {
     static constexpr u64 NoSeq = ~0ull;
     u64 gfx_submit_seq{};
     static u64 HashRegisterPacket(u64 checksum, const u32* words, u32 count);
+    /// gow3 A3: GOW3_REG_HASH_PAIRED=1 at start and second toggle word 4194304 clear.
+    static bool PairedRegisterHash();
     /// `dirty` (draw-preparation scanner) records the register blocks written.
     static void ApplyGraphicsRegisterPacket(Regs& regs, const PM4Header* header, u64& checksum,
                                             RegDirty* dirty = nullptr);

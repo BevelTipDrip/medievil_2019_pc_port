@@ -514,6 +514,9 @@ void Rasterizer::NotePendingGpuWrite(VAddr address, u64 size) {
     // Draws write the same buffers over and over: an entry for the range only moves on.
     const u64 position = draw_pipe->Head();
     const VAddr end = address + size;
+    // A2: the entry grows by [address, end) at most (a merge is the union of two ranges that
+    // touch), so marking the new range keeps every byte of every entry marked.
+    pending_pages.Mark(address, end);
     for (auto& write : pending_writes) {
         if (address <= write.end && write.begin <= end) {
             write.begin = std::min(write.begin, address);
@@ -529,8 +532,22 @@ void Rasterizer::NotePendingGpuWrite(VAddr address, u64 size) {
     pending_max = std::max(pending_max, end);
 }
 
+bool Rasterizer::PendingFilterOn() {
+    static const bool wanted = [] {
+        const char* env = std::getenv("GOW3_PENDING_FILTER");
+        return env && env[0] == '1';
+    }();
+    return wanted && !Gow3Toggle2::Disabled(Gow3Toggle2::PendingWriteFilter);
+}
+
 bool Rasterizer::PendingWriteOverlaps(VAddr address, u64 size) {
+    if (Gow3Stats::enabled) {
+        Gow3StageA::Add(Gow3StageA::pending_checks);
+    }
     if (pending_writes.empty() || address >= pending_max || address + size <= pending_min) {
+        if (Gow3Stats::enabled) {
+            Gow3StageA::Add(Gow3StageA::pending_bounds);
+        }
         return false;
     }
     // Now and then drop entries whose writes the recording thread has done: the bounds shrink.
@@ -540,10 +557,25 @@ bool Rasterizer::PendingWriteOverlaps(VAddr address, u64 size) {
         });
         pending_min = ~VAddr{0};
         pending_max = 0;
+        pending_pages.Clear();
         for (const auto& write : pending_writes) {
             pending_min = std::min(pending_min, write.begin);
             pending_max = std::max(pending_max, write.end);
+            pending_pages.Mark(write.begin, write.end);
         }
+    }
+    // gow3 A2 (impl-stage-a-decode.md; GOW3_PENDING_FILTER=1, second toggle word 2097152 off):
+    // the pages of the range are on no entry, so no entry overlaps it and the scan below would
+    // find nothing. After the pruning above, so the entries (and every later answer) are the
+    // same as without the filter.
+    if (size != 0 && PendingFilterOn() && pending_pages.Untouched(address, address + size)) {
+        if (Gow3Stats::enabled) {
+            Gow3StageA::Add(Gow3StageA::pending_filtered);
+        }
+        return false;
+    }
+    if (Gow3Stats::enabled) {
+        Gow3StageA::Add(Gow3StageA::pending_scanned, pending_writes.size());
     }
     const VAddr end = address + size;
     for (const auto& write : pending_writes) {
@@ -602,6 +634,9 @@ void Rasterizer::CollectRingBindings(const Shader::Info& stage, const PreparedDr
             if (entry->epoch == ring_reuse_epoch && entry->address == address &&
                 entry->size == size) {
                 Gow3Stats::constant_ring_reused_bytes.fetch_add(size, std::memory_order_relaxed);
+                if (Gow3Stats::enabled) {
+                    Gow3StageA::Add(Gow3StageA::ring_reused);
+                }
                 out.push_back({index, static_cast<u32>(size), entry->offset, address});
                 return;
             }
@@ -622,6 +657,9 @@ void Rasterizer::CollectRingBindings(const Shader::Info& stage, const PreparedDr
             memory->CopySparseMemory(address, dst, size);
         }
         constant_ring->Flush(*offset, size);
+        if (Gow3Stats::enabled) {
+            Gow3StageA::Add(Gow3StageA::ring_copied);
+        }
         out.push_back({index, static_cast<u32>(size), *offset, address});
     };
     for (u32 index = 0; index < stage.buffers.size(); ++index) {
@@ -639,6 +677,9 @@ void Rasterizer::CollectRingBindings(const Shader::Info& stage, const PreparedDr
         const VAddr address = vsharp.base_address;
         if (address == 0 || vsharp.GetSize() == 0) {
             continue;
+        }
+        if (Gow3Stats::enabled) {
+            Gow3StageA::Add(Gow3StageA::ring_bindings);
         }
         const u64 size = memory->ClampRangeSize(address, vsharp.GetSize());
         if (desc.is_written) {

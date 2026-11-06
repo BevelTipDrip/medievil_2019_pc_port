@@ -439,6 +439,12 @@ add_executable(texset-table-test EXCLUDE_FROM_ALL ../tests/test_texset_table.cpp
     shim/gow3_texset_table.cpp)
 target_include_directories(texset-table-test PRIVATE shim)
 target_compile_options(texset-table-test PRIVATE -UNDEBUG -Wall -Wextra -Werror)
+add_executable(pending-pages-test EXCLUDE_FROM_ALL ../tests/test_pending_pages.cpp)
+target_include_directories(pending-pages-test PRIVATE shim)
+target_compile_options(pending-pages-test PRIVATE -UNDEBUG -Wall -Wextra -Werror)
+add_executable(stage-a-hash-test EXCLUDE_FROM_ALL ../tests/test_stage_a_hash.cpp)
+target_include_directories(stage-a-hash-test PRIVATE shim)
+target_compile_options(stage-a-hash-test PRIVATE -UNDEBUG -Wall -Wextra -Werror)
 add_executable(resident-blocks-test EXCLUDE_FROM_ALL ../tests/test_resident_blocks.cpp)
 target_include_directories(resident-blocks-test PRIVATE shim shadps4)
 # -Wno-sign-compare: shadPS4's interval_set.h (IntervalList::Splice).

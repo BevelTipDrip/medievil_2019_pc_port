@@ -14,6 +14,7 @@
 #include "gow3_gpu_fences.h"
 #include "gow3_sections.h"
 #include "gow3_toggles.h"
+#include "gow3_stage_a.h"
 #include <cstdio>
 #include <cstring>
 #include <boost/preprocessor/stringize.hpp>
@@ -1012,12 +1013,26 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
 // gow3: graphics-register effects of a type-3 packet. The GPU thread and the draw-preparation
 // workers both go through this function, and both fold every register-writing packet into a
 // running checksum: equal checksums at a draw mean equal register files.
+// gow3 A3 (research/docs/impl-stage-a-decode.md; GOW3_REG_HASH_PAIRED=1, second toggle word
+// 4194304 off): two words per step. Every step is one multiply and one shift on a chain that
+// depends on the previous step (~6 cycles on Zen 2), so pairs halve the chain over the words of
+// a packet on stage A, the scanner and the four workers alike. Still a bijection of the state
+// per step (xor, odd multiply, xor-shift), 64 bits of state as before; only the values differ,
+// and every thread that compares them (stage A's running checksum, the prepared draws' copies)
+// uses this function. A switch flip between a worker's hash and stage A's makes their checksums
+// differ for that submission: those draws take the unprepared path (correct, slower), until the
+// next submission seeds the workers from stage A's checksum again.
+bool Liverpool::PairedRegisterHash() {
+    static const bool wanted = [] {
+        const char* env = std::getenv("GOW3_REG_HASH_PAIRED");
+        return env && env[0] == '1';
+    }();
+    return wanted && !Gow3Toggle2::Disabled(Gow3Toggle2::PairedRegisterHash);
+}
+
 u64 Liverpool::HashRegisterPacket(u64 checksum, const u32* words, u32 count) {
-    for (u32 i = 0; i < count; ++i) {
-        checksum = (checksum ^ words[i]) * 0x9E3779B97F4A7C15ull;
-        checksum ^= checksum >> 29;
-    }
-    return checksum;
+    return PairedRegisterHash() ? Gow3StageA::HashWordsPaired(checksum, words, count)
+                                : Gow3StageA::HashWords(checksum, words, count);
 }
 
 void Liverpool::ApplyGraphicsRegisterPacket(Regs& regs, const PM4Header* header, u64& checksum,
@@ -1298,6 +1313,11 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             const u32 count = header->type3.NumWords();
             const PM4ItOpcode opcode = header->type3.opcode;
             ApplyGraphicsRegisterPacket(regs, header, gfx_reg_checksum, &pipe_dirty);
+            if (Gow3Stats::enabled &&
+                (opcode == PM4ItOpcode::SetContextReg || opcode == PM4ItOpcode::SetShReg ||
+                 opcode == PM4ItOpcode::SetConfigReg || opcode == PM4ItOpcode::SetUconfigReg)) {
+                Gow3StageA::Add(Gow3StageA::reg_words, count + 1); // A3: the words hashed
+            }
             // DmaData to 0x3022C does nothing here (skipped below): no need to wait.
             if (rasterizer && !PipelinedOpcode(opcode) &&
                 !(opcode == PM4ItOpcode::DmaData &&

@@ -1388,3 +1388,30 @@ Launched by the user. ini: logging (67%, fog off, uncapped), GPU clock auto, the
   at 60 too, so it does not scale with the frame rate. The preset cannot dodge it by capping.
 - Next: a fix that keeps one run with correct torches (study-particle-fixed-step.md, in progress). Until then the
   Deck Optimized preset's `perf_particle_single_pass` is the user's call.
+
+## Stage A per packet: A1 / A2 / A3 (2026-11-05, built, not run; [impl-stage-a-decode.md](impl-stage-a-decode.md))
+
+Read from the code against the v3 profile and `data/deck-perdraw-1.log`: stage A costs ~8 us of CPU a draw (76% of a
+core, 1,168 draws) against stage B's 6.45 us, so after each drain (2.75 a frame, all compute-queue drains) stage B
+waits packet by packet (0.83 ms a frame on the packet ring): the wait is stage A's cost per draw, not batching
+(`Commit` publishes each packet at once). The hybrid drain's wake latency (51 us average) exceeds its 2-packet early
+wake: `GOW3_DRAIN_WAKE_AHEAD=6` is worth one restart-only launch. R1 already answers the clamp / region lookups;
+still per constant-ring copy on Linux: the region table's read lock and a second 13,000-region search
+(`runtime_memory_read_backing`), also on the recorder. The libc hotspot is almost certainly memmove (the ring copies,
+2.18 MB a frame: the work itself). Built, each opt-in with a live off bit (second word):
+**A1** backing copies without the table lock (Linux; `GOW3_BACKING_COPY=1`, 1048576), **A2** pending-write page
+filter (`GOW3_PENDING_FILTER=1`, 2097152), **A3** register checksum two words per step (`GOW3_REG_HASH_PAIRED=1`,
+4194304; the scanner and workers too), plus `PublishGraphics` skipping an empty map (no switch). All remove work.
+Expected: stage A -0.5 to -0.9 ms of CPU a frame, the process -0.7 to -1.3 ms; FPS +0 to +2%. New lines "Stage A cuts
+per frame", "Backing copies per frame". Tests: `runtime-test --backing-copies`, `pending-pages-test`,
+`stage-a-hash-test` pass (Windows and WSL).
+
+- **Build:** WSL `/root/src/medievil` switched from `deck-lab` `d20f010` to the local branch `stage-a-decode` (the
+  code of `5e4e4b6`); `CC=clang CXX=clang++ GOW3_CPU_LEVEL= bash build.sh` (LTO, static, baseline, no warnings) and
+  `packaging/linux/appimage.sh` with only its output name changed: **`dist/MediEvil-x86_64-stagea.AppImage`**
+  (131,344,888 bytes, sha256 `718990178e7174e6e76a6d4c055b0dcf62a4254b4d638a921bd6c896de83b45e`), `--help` runs; every
+  other `dist/` file checked unchanged (sha256). Not deployed.
+- **Deck test** (one launch, the user's go): impl doc section 5: `deck.sh deploy /root/src/medievil
+  MediEvil-x86_64-stagea.AppImage`, the three variables in extra-env.txt beside the current keys, `deck.sh toggle "0
+  0"`, `deck.sh ab "0 0" "0 7340032" 30 5`, then one pair per bit; `deck.sh threads` and power in their own windows;
+  look at the picture while toggling 1048576 (A1 carries the constants).

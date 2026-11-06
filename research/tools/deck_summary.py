@@ -61,7 +61,8 @@ def parse(path):
                        'Arena writes', 'Early frame EOP', 'Thread ids per frame', 'Draw classes per frame',
                        'Readback pre-check per frame', 'Region table per frame', 'Stage B sleeps per frame',
                        'Guest pool faults', 'Texture-set memo per frame', 'Stage A drain waits per frame',
-                       'Stage B cuts per frame', 'Region cache per frame'):
+                       'Stage B cuts per frame', 'Region cache per frame', 'Backing copies per frame',
+                       'Stage A cuts per frame'):
             if line.startswith(prefix):
                 current['extra'][prefix] = line
     if current:

@@ -21,6 +21,7 @@
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "gow3_draw_classes.h"
 #include "gow3_sections.h"
+#include "gow3_stage_a.h"
 #include "gow3_texset_table.h"
 #include "video_core/renderer_vulkan/vk_occlusion.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -671,6 +672,11 @@ private:
     std::vector<PendingWrite> pending_writes;
     VAddr pending_min = ~VAddr{0}, pending_max = 0; ///< bounds of pending_writes
     u32 pending_checks = 0;
+    /// gow3 A2 (impl-stage-a-decode.md): the pages pending_writes covers, a filter in front of
+    /// PendingWriteOverlaps' scan (kept whatever the switch, so it can be switched on live).
+    Gow3StageA::PendingPages pending_pages;
+    /// GOW3_PENDING_FILTER=1 at start and second toggle word 2097152 clear.
+    static bool PendingFilterOn();
     u64 proxy_samples = 0; ///< texture bindings that read a scene proxy (statistics)
     float sampler_lod_bias = 0.0f; ///< gow3: extra bias of this draw's samplers
     bool scene_debug_frame = false; ///< GOW3_SCENE_DEBUG: this frame's passes are printed
