@@ -7,8 +7,11 @@ which the state changed is marked and left out of the per-state medians (it mixe
 windows: --min-draws. The 1% and 0.1% lows are pooled over a state's windows: each "Frame pacing" line
 ends with the window's frame count and its slowest 2% of frames (builds from 2026-11-06 on; older logs
 give nan); the low is the frame time at that point of all the state's frames, shown as FPS.
+--perf: windows from the "Perf: N FPS, worst frame N ms" lines instead (GOW3_FPS_LOG, printed with
+frame stats off too: a run without GOW3_FRAME_STATS against one with it); FPS and worst only, no
+draw counts, so every window counts (pick the heavy view with --last).
 
-    py -3.14 deck_summary.py <log> [--min-draws 1000] [--last N] [--windows]
+    py -3.14 deck_summary.py <log> [--min-draws 1000] [--last N] [--windows] [--perf]
 """
 import argparse
 import math
@@ -28,7 +31,10 @@ FIELDS = [
 ]
 
 
-def parse(path):
+PERF = re.compile(r'^Perf: ([\d.]+) FPS, worst frame ([\d.]+) ms')
+
+
+def parse(path, perf=False):
     lines = open(path, encoding='utf-8', errors='replace').read().splitlines()
     mask, word2, changed, scale = 0, 0, False, ''
     windows, current = [], None
@@ -47,6 +53,13 @@ def parse(path):
         if m:
             changed |= windows != [] or current is not None
             scale = f' {m.group(1) or m.group(2)}%'
+            continue
+        if perf:
+            m = PERF.match(line)
+            if m:
+                windows.append({'state': f'{mask} {word2}{scale}', 'mixed': changed, 'extra': {},
+                                'fps': float(m.group(1)), 'worst': float(m.group(2))})
+                changed = False
             continue
         if line.startswith('Frame stats:'):
             if current:
@@ -95,8 +108,11 @@ def main():
     parser.add_argument('--min-draws', type=int, default=1000, help='heavy-view windows only (0: all)')
     parser.add_argument('--last', type=int, default=0, help='only the last N windows')
     parser.add_argument('--windows', action='store_true', help='print every window')
+    parser.add_argument('--perf', action='store_true', help='windows from the Perf lines (frame stats off)')
     args = parser.parse_args()
-    windows = parse(args.log)
+    windows = parse(args.log, args.perf)
+    if args.perf:
+        args.min_draws = 0
     if args.last:
         windows = windows[-args.last:]
     print(f'{len(windows)} windows; FPS: ' + ' '.join(str(round(w.get("fps", 0))) for w in windows))
@@ -106,7 +122,7 @@ def main():
         for w in windows:
             print(f'{w["state"]:<16}' + ('*' if w['mixed'] else ' ') +
                   ' '.join(f'{w.get(k, float("nan")):11.2f}' for k in keys))
-    heavy = [w for w in windows if not w['mixed'] and w.get('draws', 0) >= args.min_draws]
+    heavy = [w for w in windows if not w['mixed'] and (args.perf or w.get('draws', 0) >= args.min_draws)]
     states = sorted({w['state'] for w in heavy})
     print(f'\nHeavy windows (>= {args.min_draws} draws, switch windows left out), medians by toggle state:')
     print(f'{"state":<17}{"n":>3} ' + ' '.join(f'{k:>11}' for k in keys) + f'{"low1%":>9}{"low0.1%":>9}')
