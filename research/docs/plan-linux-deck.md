@@ -1290,10 +1290,13 @@ in the Quick Access Menu. Now a launcher preset: Graphics quality > **Deck Optim
   what was measured; Reflex falls back to Precise on AMD).
 - **Switches** (`DECK_SWITCHES`, launcher setting `deck_switches`, the checkbox "Steam Deck performance switches"
   under Graphics quality): `GOW3_EARLY_FRAME_EOP=1`, `GOW3_DECODE_PACING=1` + `GOW3_DECODE_PACING_LEAD=2`,
-  `GOW3_ARENA_HOST_VISIBLE=0`, `GOW3_DRAIN_HYBRID=1`, `GOW3_TEXSET_WIDE=1`, `GOW3_REGION_INDEX=1`, set by
+  `GOW3_ARENA_HOST_VISIBLE=0`, `GOW3_DRAIN_HYBRID=1`, `GOW3_TEXSET_WIDE=1`, `GOW3_REGION_INDEX=1`, and since
+  2026-11-06 stage A's cuts `GOW3_BACKING_COPY=1` / `GOW3_PENDING_FILTER=1` / `GOW3_REG_HASH_PAIRED=1` (round 1
+  and 2), `GOW3_PARTICLE_FLIP_GUARD=1` (particle fix 1 and 2: the single pass without its glitches; not the
+  fixed-step patch) and `GOW3_THREAD_NICE=1` (thread nice, live: better lows at a fixed GPU clock), set by
   `game_environment` with `setdefault` (an environment variable already set wins; extra-env.txt still overrides).
-  Preset-driven, not Linux defaults: measured on the Deck only; the PC / Windows defaults are unchanged. Left out
-  (not measured): `GOW3_NAV_PURGE_NOFENCE`, `GOW3_STAGE_B_SPIN`, the v3 build, core scheduling / nice, pool prefill.
+  Preset-driven, not Linux defaults: measured on the Deck only; the PC / Windows defaults are unchanged. Left out:
+  `GOW3_NAV_PURGE_NOFENCE` (neutral), `GOW3_STAGE_B_SPIN`, the v3 build, core scheduling (rejected), pool prefill.
   Picking another Graphics quality ends the preset and turns the switches off; the other values stay.
 - **Recommendation**, shown under Graphics quality (Home and Performance) while Deck Optimized is chosen and in the
   first-run message: set a manual GPU clock of about 1,200 MHz in the Quick Access Menu (Performance) and keep the
@@ -1485,7 +1488,9 @@ simulation" (1,067-1,200 of each 1,200).
 ### Particle fix 2: the guard alone (2026-11-06, build `49291f3-particlefix`)
 
 Launched by the user. Particle fix 1's settings without `GOW3_PARTICLE_SINGLE_FIXED`. The user: "the torches still
-worked". The crypt floor is not confirmed yet. If it is right too, the fixed-step patch is dropped.
+worked"; Dan's crypt floor (same launch, the log: flip guard ready, no fixed-step line): "the crypt floor looks
+fine". **The guard alone fixes both glitches**: `GOW3_PARTICLE_SINGLE_FIXED` is not needed and stays off (flag-8
+emitters keep their look-ahead step). The Deck preset gets the guard (Deck Optimized preset, Switches).
 
 ### Thread nice, live (2026-11-06, build `5ab1a24-nicelive`, logs `data/deck-nicelive-1.log`, `data/deck-nicelive-1400.log`)
 

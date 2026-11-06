@@ -74,7 +74,8 @@ class DeckPresetTest(unittest.TestCase):
         self.assertEqual(launcher.DECK_SWITCHES, {
             'GOW3_EARLY_FRAME_EOP': '1', 'GOW3_DECODE_PACING': '1', 'GOW3_DECODE_PACING_LEAD': '2',
             'GOW3_ARENA_HOST_VISIBLE': '0', 'GOW3_DRAIN_HYBRID': '1', 'GOW3_TEXSET_WIDE': '1',
-            'GOW3_REGION_INDEX': '1'})
+            'GOW3_REGION_INDEX': '1', 'GOW3_BACKING_COPY': '1', 'GOW3_PENDING_FILTER': '1',
+            'GOW3_REG_HASH_PAIRED': '1', 'GOW3_PARTICLE_FLIP_GUARD': '1', 'GOW3_THREAD_NICE': '1'})
         self.assertFalse(launcher.APP_DEFAULTS['deck_switches'])
         added = lambda env: {k: v for k, v in env.items() if k not in os.environ}
         plain = added(launcher.game_environment({**launcher.APP_DEFAULTS}))

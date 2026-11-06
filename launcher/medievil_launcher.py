@@ -678,12 +678,15 @@ DECK_PRESET = {
 INI_OPTIONAL_KEYS = ('preshadows',)
 # The Deck's measured wins that are still opt-in start switches (plan-linux-deck.md): early frame EOP,
 # decode pacing with a 2-frame lead, U2 off (no gain on the Deck, its tracking costs stage B), stage A's
-# hybrid drain wait (-1/3 of its CPU), the wide texture-set memo (T2) and the region cache index (R1).
-# Measured on the Deck only, so they come with the preset (launcher setting deck_switches), not as
-# Linux defaults; an environment variable already set wins, and run.py applies extra-env.txt last.
+# hybrid drain wait (-1/3 of its CPU), the wide texture-set memo (T2), the region cache index (R1),
+# stage A's per-packet cuts A1 / A2 / A3, the particle flip guard (the single pass's lost updates: the
+# frozen torch, the crypt floor) and nice -10 for stage B and the vblank thread (better lows at a fixed
+# GPU clock). Measured on the Deck only, so they come with the preset (launcher setting deck_switches),
+# not as Linux defaults; an environment variable already set wins, and run.py applies extra-env.txt last.
 DECK_SWITCHES = {'GOW3_EARLY_FRAME_EOP': '1', 'GOW3_DECODE_PACING': '1', 'GOW3_DECODE_PACING_LEAD': '2',
                  'GOW3_ARENA_HOST_VISIBLE': '0', 'GOW3_DRAIN_HYBRID': '1', 'GOW3_TEXSET_WIDE': '1',
-                 'GOW3_REGION_INDEX': '1'}
+                 'GOW3_REGION_INDEX': '1', 'GOW3_BACKING_COPY': '1', 'GOW3_PENDING_FILTER': '1',
+                 'GOW3_REG_HASH_PAIRED': '1', 'GOW3_PARTICLE_FLIP_GUARD': '1', 'GOW3_THREAD_NICE': '1'}
 DECK_QUALITY = 'deck'
 QUALITY_PRESETS = [*QUALITY_CHOICES, (DECK_QUALITY, ('Deck Optimized',))]
 DECK_HINT = ('Steam Deck: in the Quick Access Menu (Performance) set a manual GPU clock of about 1,200 MHz and '
