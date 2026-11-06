@@ -81,6 +81,7 @@ Environment variables and settings already in the port that this work uses (full
 | [impl-texset-index.md](impl-texset-index.md) | Texture-set memo in a compact layout (second word 2048: as before), stage B task sections and sleep ms by site; Deck A/B |
 | [impl-stage-b-per-draw-2.md](impl-stage-b-per-draw-2.md) | Stage B per draw, round 2: residency bitmap (R2), no-image texture binds (T1), wide texture-set memo (T2), region cache index (R1); second word 65536-524288; one-launch Deck A/B |
 | [study-live-switches.md](study-live-switches.md) | What can be switched live and what needs a restart; cvar objects in the 01.00 eboot |
+| [study-particle-fixed-step.md](study-particle-fixed-step.md) | The single GPU particle pass's torch / crypt floor bug (2026-11-05): what FixDeltaSeconds changes, the opt-in patch, flip guard and diagnostic, the test |
 | [plan-roadmap.md](plan-roadmap.md) | Working plan: rule, order, Progress table (2026-10-18; superseded by the work queue for order) |
 | [plan-baseline-issues.md](plan-baseline-issues.md) | Run 1 findings: menu navigation, frame pacing; tests |
 | [patches-and-pr-proposal.md](patches-and-pr-proposal.md) | Confirmed fixes on `lab` with evidence; proposed upstream PRs (2026-10-19) |
