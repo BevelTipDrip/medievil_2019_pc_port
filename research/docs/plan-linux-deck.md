@@ -1481,3 +1481,30 @@ simulation" (1,067-1,200 of each 1,200).
 - Next: one launch with the guard only (`GOW3_PARTICLE_SINGLE_FIXED` unset). If the torch and the floor are right, the
   fixed-step patch is not needed (it saves nothing measurable and costs flag-8 emitters their look-ahead step). Then
   the Deck preset gets the guard; the PC default stays as it is until regression-tested on `lab`.
+
+### Particle fix 2: the guard alone (2026-11-06, build `49291f3-particlefix`)
+
+Launched by the user. Particle fix 1's settings without `GOW3_PARTICLE_SINGLE_FIXED`. The user: "the torches still
+worked". The crypt floor is not confirmed yet. If it is right too, the fixed-step patch is dropped.
+
+### Thread nice, live (2026-11-06, build `5ab1a24-nicelive`, logs `data/deck-nicelive-1.log`, `data/deck-nicelive-1400.log`)
+
+Launched by the user. Particle fix 2's settings (guard only, stage A cuts on) plus `GOW3_THREAD_NICE=1`. Stage B and
+the vblank thread got nice -10 through rtkit at start (setpriority: Permission denied, RLIMIT_NICE 0). The toggle
+file's second word 32768 puts them back at nice 0 live, and clearing it gives -10 again through rtkit. The log shows
+both switches. Heavy view, `ab "0 0" "0 32768" 30 5`; medians of each block's non-switch windows.
+
+| GPU clock | state | windows | FPS (block medians) | FPS median | worst median / max ms | sd ms | p99 ms | stage B | stage A wait |
+|---|---|---|---|---|---|---|---|---|---|
+| auto | nice -10 | 25 | 81.2, 81.7, 81.9, 81.8, 81.9 | 81.7 | 17.0 / 18.4 | 1.24 | 15.63 | 88-90% | 20-26% |
+| auto | nice 0 | 25 | 81.5, 81.7, 82.2, 82.1, 82.4 | 82.0 | 16.7 / 19.2 | 1.27 | 15.41 | 91-92% | 28-32% |
+| 1,400 MHz | nice -10 | 31 | 77.7, 77.3, 77.7, 78.1, 78.1, 78.0 | **77.8** | **18.4 / 20.4** | **1.82** | **17.38** | 74.6% | 4.4% |
+| 1,400 MHz | nice 0 | 25 | 77.2, 76.6, 77.6, 77.6, 77.6 | 77.4 | 19.1 / 21.5 | 1.98 | 17.64 | 74.2% | 5.0% |
+
+- **GPU auto:** neutral; nice 0 is 0.3 FPS ahead, inside the noise. Nice -10 does run the threads sooner (stage B
+  busy 2-3 points less, stage A waits about 7 points less), but the frame is set by the GPU and the power cap.
+- **GPU fixed at 1,400 MHz** (the user: where the next view starts to lose FPS while static): nice -10 wins every
+  block. Each nice 0 block is below both of its nice -10 neighbours. +0.5 FPS (mean 77.82 vs 77.28), worst median
+  -0.7 ms, sd 1.82 vs 1.98 (lower in every block), p99 -0.26 ms. The gain is mostly in frame pacing.
+- Kept for the Deck preset (with the 1,400 MHz result); a motion test is still worth doing. It is Linux-only: nothing
+  changes on Windows.
