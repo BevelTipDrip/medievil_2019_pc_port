@@ -1530,3 +1530,19 @@ Heavy view, `ab "0 0" "0 8388608" 30 5`.
 - **Neutral; the default 2 stays.** +0.3 FPS is inside the noise, the lows and p99 match, and stage A's drain wait is
   the same over all windows. The earlier wake does not shorten the wait: stage A wakes before the end more often and
   sleeps again (1.66 vs 1.50 sleeps a frame). The 51 us wake latency is not what stage A waits on.
+
+### Static vs shared GPU library (2026-11-06, build `d2f145f-shared2`, log `data/deck-shared-1.log`)
+
+Launched by the user. `GOW3_STATIC_GPU=OFF` (the runtime loads `libgow3gpu.so` from the AppImage, checked in
+`/proc/<pid>/maps`), the Deck preset's switches, the logging ini, GPU fixed at 1,400 MHz, 5 minutes in the heavy view
+without toggling. Against wake ahead 1's static build of the same commit (the previous launch):
+
+| build | windows | FPS median | low 1% / 0.1% FPS | worst ms | p99 ms | stage B | HZB hidden |
+|---|---|---|---|---|---|---|---|
+| shared | 62 | 74.7 | 55.6 / 51.3 | 19.2 | 17.87 | 76.8% | 42,999 |
+| static (2 ahead) | 25 | 76.5 | 56.6 / 51.0 | 19.1 | 17.64 | 75.1% | 35,134 |
+
+- **Static stays (it is the default).** -1.8 FPS is past the ~1.5 FPS between-launch noise, stage B is 1.7 points
+  busier (calls across the library boundary through the PLT, no LTO across it), and the user saw the shared build
+  "more sensitive to camera movement induced drop". The static-view lows match. The camera spot was not identical
+  (HZB hidden 43k vs 35k), so the gap is approximate; the direction and the user's motion report agree.
