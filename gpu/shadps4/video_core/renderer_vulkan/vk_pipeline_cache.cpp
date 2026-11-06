@@ -708,6 +708,26 @@ bool PipelineCache::AsyncCompilation() const {
     return compiler && Gow3Settings::Get().async_shaders.load(std::memory_order_relaxed);
 }
 
+// gow3: programs whose draws run once (at level load) into targets nothing redraws. A draw
+// skipped while its pipeline compiles in the background is lost for good, so these compile
+// on the spot. UE4's particle curve injection (FParticleCurveTexture): without it the curve
+// texture keeps its red clear and GPU sprites such as the torch flames get a zero size.
+// GOW3_CURVE_SYNC=0 puts them back on the async path (A/B on a cold pipeline cache).
+static bool MustCompileSync(u64 pgm_hash) {
+    static const bool enabled = [] {
+        const char* env = std::getenv("GOW3_CURVE_SYNC");
+        return !(env && env[0] == '0');
+    }();
+    if (!enabled) {
+        return false;
+    }
+    constexpr u64 programs[] = {
+        0x113f0c20873a7659ull, // vs: curve injection
+        0x1b1e7c76d6a281d3ull, // ps: curve injection
+    };
+    return std::ranges::find(programs, pgm_hash) != std::end(programs);
+}
+
 void PipelineCache::SeedWorkerCaches() {
     if (!compiler || worker_caches_seeded) {
         return;
@@ -792,7 +812,10 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline(const DrawIndirectPar
         }
         return nullptr;
     }
-    if (AsyncCompilation() && !sel.regs->stage_enable.hs_en && !EmulatorSettings.IsShaderCollect()) {
+    const bool sync_stage = std::ranges::any_of(
+        sel.infos, [](const Shader::Info* info) { return info && MustCompileSync(info->pgm_hash); });
+    if (AsyncCompilation() && !sel.regs->stage_enable.hs_en && !EmulatorSettings.IsShaderCollect() &&
+        !sync_stage) {
         const auto found = graphics_pipelines.find(sel.graphics_key);
         if (found != graphics_pipelines.end()) {
             return found->second.get();
@@ -1301,7 +1324,8 @@ PipelineCache::Result PipelineCache::GetProgram(PipelineSelection& sel, HwStage 
     auto it_pgm = program_cache.find(params.hash); // this thread is the only writer
     const bool compile_async = AsyncCompilation() && hw_stage != HwStage::Compute &&
                                !sel.regs->stage_enable.hs_en &&
-                               !EmulatorSettings.IsShaderCollect();
+                               !EmulatorSettings.IsShaderCollect() &&
+                               !MustCompileSync(params.hash);
     if (!compile_async && it_pgm != program_cache.end() && it_pgm->second->pending) {
         {
             PhaseTimer waiting{g_gow3_compile_wait_ns};
@@ -1324,8 +1348,16 @@ PipelineCache::Result PipelineCache::GetProgram(PipelineSelection& sel, HwStage 
             return {};
         }
         auto start = binding;
+        const auto compile_started = std::chrono::steady_clock::now();
         const auto module =
             CompileModule(new_program->info, runtime_info, params.code, 0, binding);
+        if (MustCompileSync(params.hash)) {
+            // gow3: one line per run and program, the evidence the exception was taken.
+            std::printf("gow3: curve injection program %#llx ready synchronously (%.1f ms)\n",
+                        static_cast<unsigned long long>(params.hash),
+                        std::chrono::duration<double, std::milli>(
+                            std::chrono::steady_clock::now() - compile_started).count());
+        }
         auto spec = Shader::StageSpecialization(new_program->info, runtime_info, profile, start);
         const auto perm_hash = HashCombine(params.hash, 0);
 
