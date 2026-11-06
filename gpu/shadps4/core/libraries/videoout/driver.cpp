@@ -25,6 +25,7 @@
 #include "gow3_drain_wait.h"
 #include "gow3_stage_b_wait.h"
 #include "gow3_texset_table.h"
+#include "gow3_stage_a.h"
 #include "gow3_gpu_fences.h"
 extern "C" void runtime_memory_fault_report(char* out, size_t size, unsigned frames, double window_s);
 extern "C" void runtime_memory_lock_report(char* out, size_t size, unsigned frames);
@@ -837,6 +838,30 @@ void VideoOutDriver::Flip(const Request& req) {
                             : Gow3Toggle2::Disabled(Gow3Toggle2::TextureSetWide) ? "toggled off"
                                                                                  : "on",
                             d[0], d[1], d[2], d[3], TS::wide_bytes.load() / 1e6);
+                    }
+                    {
+                        // gow3 (impl-stage-a-decode.md): stage A's constant ring bindings and
+                        // pending-write checks per frame, A2's filter.
+                        namespace SA = Gow3StageA;
+                        std::array<double, SA::NumCounters> n{};
+                        for (unsigned k = 0; k < SA::NumCounters; ++k) {
+                            n[k] = SA::counters[k].exchange(0, std::memory_order_relaxed) / frames_d;
+                        }
+                        const char* filter = std::getenv("GOW3_PENDING_FILTER");
+                        const bool filter_wanted = filter && filter[0] == '1';
+                        const double scans = n[SA::pending_checks] - n[SA::pending_bounds] -
+                                             n[SA::pending_filtered];
+                        std::printf(
+                            "Stage A cuts per frame: ring buffers %.1f (reused %.1f, copied %.1f); "
+                            "pending-write checks %.1f (bounds %.1f, filter (A2 %s) %.1f, scans "
+                            "%.1f of %.1f entries each)\n",
+                            n[SA::ring_bindings], n[SA::ring_reused], n[SA::ring_copied],
+                            n[SA::pending_checks], n[SA::pending_bounds],
+                            !filter_wanted ? "off"
+                            : Gow3Toggle2::Disabled(Gow3Toggle2::PendingWriteFilter) ? "toggled off"
+                                                                                     : "on",
+                            n[SA::pending_filtered], scans,
+                            scans > 0 ? n[SA::pending_scanned] / scans : 0.0);
                     }
                     // gow3 (impl-deck-cpu-bundle.md): the Vulkan recorder's hand-offs, sleeps
                     // and spin; in lean mode (second toggle word 32 clear, <= 8 threads) the

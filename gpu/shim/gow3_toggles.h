@@ -157,6 +157,10 @@ enum : std::uint64_t {
     /// reads the backing view without the region table lock, checked by the table generation.
     /// Set: the region lookup and the locked read, as before (live). Read by the runtime.
     BackingCopy = 1048576,
+    /// A2 (impl-stage-a-decode.md; vk_rasterizer.cpp, gow3_stage_a.h), with GOW3_PENDING_FILTER=1
+    /// at start (opt-in): stage A's pending-write check answers "no overlap" from a page filter
+    /// of the pending writes before scanning them (the same answers). Set: the scan every time.
+    PendingWriteFilter = 2097152,
 };
 inline bool Disabled(std::uint64_t bit) {
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;
