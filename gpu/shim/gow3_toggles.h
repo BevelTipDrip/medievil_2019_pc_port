@@ -140,6 +140,10 @@ enum : std::uint64_t {
     /// Set: the game's flips as they come, live (the hooks keep counting: "GPU particle flips"
     /// in the log). Read by the runtime.
     ParticleFlipGuardOff = 16384,
+    /// #8 (gow3_linux_sched.cpp, Linux), with GOW3_THREAD_NICE at start (opt-in): stage B and the
+    /// vblank thread at the start's nice. Set: both back at nice 0, live; clear: the start's nice
+    /// again (setpriority or rtkit, from a helper thread). "Thread priority ... (live)" in the log.
+    ThreadNiceOff = 32768,
     /// R2 (impl-stage-b-per-draw-2.md): the buffer cache's residency check (EnsureResident,
     /// every ObtainBuffer outside the stream buffer) answers from a bitmap of resident blocks
     /// (gow3_resident_blocks.h; kept either way). Set: the interval search every time.

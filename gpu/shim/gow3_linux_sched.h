@@ -11,7 +11,8 @@
 //   (GOW3_THREAD_NICE=-N: nice -N, down to -20), by setpriority when RLIMIT_NICE allows it, else
 //   through rtkit's MakeThreadHighPriority (D-Bus, system bus; rtkit allows down to -15 by
 //   default); the vblank thread's timer slack also drops to 1 ns (PR_SET_TIMERSLACK).
-// Threads these two create later inherit the cookie and the nice level.
+// Threads these two create later inherit the cookie and the nice level. The nice level switches
+// live (PollLive, toggle file second word 32768: nice 0; clear: the start's nice again).
 // Windows: nothing (the functions do nothing).
 #pragma once
 
@@ -22,5 +23,10 @@ void StageBThread();
 
 /// On the vblank thread, once at its start.
 void VBlankThread();
+
+/// On the vblank thread, every tick: with GOW3_THREAD_NICE at start, the toggle file's second
+/// word 32768 (Gow3Toggle2::ThreadNiceOff) puts both threads back at nice 0 live, and clearing it
+/// gives them the start's nice again (a helper thread makes the calls; rtkit can take a while).
+void PollLive();
 
 } // namespace Gow3LinuxSched

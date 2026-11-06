@@ -1597,6 +1597,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     bool immediate_flips = frame_limit != 0 || reflex;
 
     while (!token.stop_requested()) {
+        Gow3LinuxSched::PollLive(); // GOW3_THREAD_NICE live (toggle second word 32768)
         if (const u32 limit = current_limit(); limit != frame_limit) {
             frame_limit = limit;
             frame_period = limit ? std::chrono::nanoseconds(1000000000 / limit) : std::chrono::nanoseconds(0);

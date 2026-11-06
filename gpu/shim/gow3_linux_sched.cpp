@@ -2,23 +2,28 @@
 // gow3 #7 / #8: core scheduling and priority for stage B and the vblank thread (gow3_linux_sched.h).
 
 #include "gow3_linux_sched.h"
+#include "gow3_toggles.h"
 
 #ifdef _WIN32
 
 namespace Gow3LinuxSched {
 void StageBThread() {}
 void VBlankThread() {}
+void PollLive() {}
 } // namespace Gow3LinuxSched
 
 #else
 
 #include <algorithm>
+#include <atomic>
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <thread>
+#include <utility>
 #include <dlfcn.h>
 #include <sys/prctl.h>
 #include <sys/resource.h>
@@ -144,9 +149,8 @@ bool RtkitHighPriority(pid_t tid, int nice, std::string& why) {
     return done; // libdbus stays loaded: it is not made to be unloaded
 }
 
-/// The calling thread at `nice`: setpriority first (RLIMIT_NICE or CAP_SYS_NICE), else rtkit.
-void RaisePriority(const char* name, int nice, const char* extra) {
-    const pid_t tid = gettid();
+/// Thread `tid` at `nice`: setpriority first (RLIMIT_NICE or CAP_SYS_NICE), else rtkit.
+void RaisePriority(const char* name, pid_t tid, int nice, const char* extra) {
     if (setpriority(PRIO_PROCESS, static_cast<id_t>(tid), nice) == 0) {
         std::printf("Thread priority (GOW3_THREAD_NICE): %s, tid %d, nice %d by setpriority%s\n", name,
                     int(tid), nice, extra);
@@ -169,6 +173,11 @@ void RaisePriority(const char* name, int nice, const char* extra) {
                 name, int(tid), nice, std::strerror(direct_error), rlimit_nice, why.c_str(), extra);
 }
 
+/// The threads at the start's nice (PollLive), and the live state (vblank thread only).
+std::atomic<pid_t> stage_b_tid{0}, vblank_tid{0};
+std::atomic<bool> live_busy{false};
+bool live_off = false;
+
 } // namespace
 
 void StageBThread() {
@@ -189,7 +198,8 @@ void StageBThread() {
         }
     }
     if (const int nice = WantedNice()) {
-        RaisePriority("stage B (gow3:DrawRec)", nice, "");
+        stage_b_tid.store(gettid(), std::memory_order_relaxed);
+        RaisePriority("stage B (gow3:DrawRec)", gettid(), nice, "");
     }
 }
 
@@ -200,8 +210,44 @@ void VBlankThread() {
     }
     // A 1 ns timer slack: the tick's sleep_until wakes on time instead of up to 50 us late.
     const bool slack = prctl(PR_SET_TIMERSLACK, 1UL, 0UL, 0UL, 0UL) == 0;
-    RaisePriority("vblank (shadPS4:PresentThread)", nice,
+    vblank_tid.store(gettid(), std::memory_order_relaxed);
+    RaisePriority("vblank (shadPS4:PresentThread)", gettid(), nice,
                   slack ? "; timer slack 1 ns" : "; timer slack unchanged");
+}
+
+void PollLive() {
+    const int nice = WantedNice();
+    if (!nice) {
+        return;
+    }
+    const bool off = Gow3Toggle2::Disabled(Gow3Toggle2::ThreadNiceOff);
+    if (off == live_off || live_busy.exchange(true, std::memory_order_acquire)) {
+        return; // unchanged, or the last switch is still being made (tried again next tick)
+    }
+    live_off = off;
+    // rtkit is a D-Bus call of up to a second: not on the vblank thread. Nice 0 needs no privilege
+    // (raising a thread's own nice value); the start's nice again goes the start's way.
+    std::thread([off, nice] {
+        const std::pair<const char*, pid_t> threads[] = {
+            {"stage B (gow3:DrawRec)", stage_b_tid.load(std::memory_order_relaxed)},
+            {"vblank (shadPS4:PresentThread)", vblank_tid.load(std::memory_order_relaxed)}};
+        for (const auto& [name, tid] : threads) {
+            if (!tid) {
+                continue;
+            }
+            if (!off) {
+                RaisePriority(name, tid, nice, " (live)");
+            } else if (setpriority(PRIO_PROCESS, static_cast<id_t>(tid), 0) == 0) {
+                std::printf("Thread priority (GOW3_THREAD_NICE): %s, tid %d, nice 0 (live, toggle file "
+                            "second word 32768)\n",
+                            name, int(tid));
+            } else {
+                std::printf("Thread priority (GOW3_THREAD_NICE): %s, tid %d, not back at nice 0: %s\n",
+                            name, int(tid), std::strerror(errno));
+            }
+        }
+        live_busy.store(false, std::memory_order_release);
+    }).detach();
 }
 
 } // namespace Gow3LinuxSched
