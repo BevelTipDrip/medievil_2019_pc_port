@@ -1546,3 +1546,62 @@ without toggling. Against wake ahead 1's static build of the same commit (the pr
   busier (calls across the library boundary through the PLT, no LTO across it), and the user saw the shared build
   "more sensitive to camera movement induced drop". The static-view lows match. The camera spot was not identical
   (HZB hidden 43k vs 35k), so the gap is approximate; the direction and the user's motion report agree.
+
+### Two draw-preparation helpers (2026-11-06, build `d2f145f-lows`, log `data/deck-helpers2-1.log`)
+
+Launched by the user. Wake ahead 1's settings without the wake-ahead count, plus `GOW3_PREP_WORKERS=2` (the Deck's
+default is 4, half its 8 threads; the log: "draw preparation workers: 2 (+1 scanner, 8 hardware threads)"). The user
+moved between views and between GPU auto and 1,400 MHz during the run, and the log does not record the clock, so only
+the last 17 windows (the heavy spot of wake ahead 1, 1,142 draws, the clock at 1,400 MHz then) are compared:
+
+| at 1,400 MHz | windows | FPS | low 1% / 0.1% FPS | sd ms | p99 ms | stage B | stage B packet-ring sleeps |
+|---|---|---|---|---|---|---|---|
+| 2 helpers | 17 | 76.3 | **57.8 / 52.6** | **1.66** | **17.20** | 68.8% | 3.25 ms/frame |
+| 4 helpers (wake ahead 1, 2 ahead) | 25 | 76.5 | 56.6 / 51.0 | 1.88 | 17.64 | 75.1% | |
+
+- **The user:** "1400mhz was a little ambitious, the CPU gets starved. However, in 'auto' mode, 2 helpers is worth a
+  couple frames." At 1,400 MHz: the same FPS, better pacing and lows (fewer busy threads at the 15 W cap). Not yet
+  measured at auto: launch 14 below.
+- **The user on the clock range:** the Deck's GPU ceiling is already 1,600 MHz, so a range test uses a ceiling of
+  ~1,200-1,300 MHz. A fixed 1,400 MHz in a fixed heavy view still has a lot of frame-time instability: the CPU work
+  itself is uneven (perhaps some stages boost high in some frames and cannot in others).
+
+## Clock push-pull at GPU auto (2026-11-06; the user's model; tooling `5ead842`, not run)
+
+**The model (the user):** the game's work is cyclical (the game thread, then the translator, then the GPU). CPU idle
+lets the GPU boost; the CPU then lacks power for the heavy part of the next frame; the GPU starves and drops its
+clock; the CPU boosts and finishes early and waits; the GPU boosts again. Not 1:1, but heavy views alternate 16-20 ms
+and ~10 ms frames. Some frames may also simply cost more with a still camera (seen on the 4090 too, where the
+throughput and a proper frame pacer hide it). The two need different fixes, so the trace tells them apart first.
+
+**Tooling** (`5ead842`):
+- `apu_trace.py` (`deck.sh trace [s] [ms]`, no root): every 4 ms on CLOCK_MONOTONIC, the amdgpu metrics table
+  (gpu_metrics 2.x: GPU current / average clock, busy, socket / CPU / SoC / GPU power, core clocks) and, for stage A,
+  stage B, the recorder, the vblank thread and the 4 busiest other threads, the CPU each last ran on and its run time
+  (schedstat ns). Prints how often the table really changed and its own CPU (3.4% of a core in a WSL test).
+- `frame_clocks.py` (`deck.sh frames NAME`): per frame (between "presented" notes of `GOW3_FLIP_TRACE`, stages
+  matched per flip from its submit): frame time, game submit interval, submit -> irq (recording), irq -> gpu_ready
+  (GPU), the GPU clock over the frame and over its GPU window, power, each traced thread's run ms and its core's clock.
+  Prints frame-time autocorrelation at lags 1-8 (negative at 1: alternation), the share of alternating pairs, means
+  by frame-time band (thirds, spikes > 1.3x median) and correlations one frame before / same / after. Checked on a
+  synthetic run with a planted alternation (autocorrelation -0.98, GPU clock 900 vs 1,500 MHz found by band).
+- `deck.sh pull-trace NAME`: both CSVs to `research-data/deck/` (not in git). The toggle file's optional third word
+  is a live frame cap in FPS ("Runtime: toggle file frame cap=N"; `deck_summary.py` labels the state `capN`), and
+  `deck.sh steps PERIOD CYCLES "S1" "S2" ...` cycles any number of states: a cap sweep in one launch.
+
+**What tells them apart:** push-pull = frame times alternate (lag-1 autocorrelation clearly negative) and the GPU
+clock and the CPU / GPU power split swing with them, leading by about a frame. Uneven work = long frames carry more
+recording or GPU time at steady clocks; what is left at a fixed clock is the CPU side.
+
+**Launch 14** (build `5ead842-trace`; the Deck preset's switches + `GOW3_PREP_WORKERS=2` +
+`GOW3_FLIP_TRACE=/home/deck/.local/share/medievil-pc/user/flip-trace.csv`; logging ini, uncapped; heavy view):
+1. GPU auto: `deck.sh trace 60`, then 5 minutes of windows (2 helpers at auto against launch 10's 81.7 FPS).
+2. The user fixes the GPU clock (1,200-1,400 MHz): `deck.sh trace 60` (the CPU side's own unevenness).
+3. GPU auto again: cap sweep `deck.sh steps 30 3 "0 0" "0 0 75" "0 0 70" "0 0 65"`, with `deck.sh trace` beside it.
+4. `deck.sh pull-trace deck-pushpull-1`, `deck.sh frames deck-pushpull-1 --skip S --seconds 60` per part.
+
+**Fixes, if it is push-pull (cheapest first):** a cap just under the auto average (step 3); `frames_queued=2` (the
+CPU builds frame N+1 while the GPU draws N, so neither side idles; one frame of latency; ini, restart-only); a GPU
+clock range instead of a fixed clock (`power_dpm_force_performance_level` manual + `pp_od_clk_voltage` "s 0 <floor>",
+"s 1 <1,200-1,300>", "c": a system change the user makes with sudo, lost at reboot; does Steam's QAM reset it?). If
+it is uneven work: which frames cost more and on which stage, from the same per-frame table.
