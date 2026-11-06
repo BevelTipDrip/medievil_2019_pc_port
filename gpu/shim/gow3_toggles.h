@@ -17,6 +17,8 @@ extern "C" __attribute__((returns_twice)) int gow3_setjmp(sigjmp_buf buffer);
 extern "C" std::uint64_t runtime_disabled_optimizations;
 /// The toggle file's optional second number (Gow3Toggle2).
 extern "C" std::uint64_t runtime_disabled_optimizations2;
+/// The toggle file's optional third word: a frame cap in FPS replacing the menu's limit live (0: none).
+extern "C" std::uint64_t runtime_toggle_frame_cap;
 /// scePthreadGetthreadid calls and kernel lookups, with GOW3_FRAME_STATS (runtime_extra.c).
 extern "C" std::uint64_t runtime_thread_id_calls, runtime_thread_id_lookups;
 /// Recovery point for speculative guest memory reads on this thread (runtime_memory.c).

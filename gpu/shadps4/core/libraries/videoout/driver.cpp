@@ -1478,6 +1478,10 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
             const u32 base = EmulatorSettings.GetFrameLimit();
             limit = !env_limit && user && (!base || user < base) ? user : base;
         }
+        // The toggle file's third word (diagnostics): a cap in FPS in place of the limit, live.
+        if (const u64 cap = __atomic_load_n(&runtime_toggle_frame_cap, __ATOMIC_RELAXED)) {
+            limit = u32(std::min<u64>(cap, 1000));
+        }
         limit = limit >= vblank_hz ? 0u : limit;
         // With VSync the display paces the presents too: a limit at its refresh rate is another
         // clock beside the display's own (often 59.94 Hz) and repeats or drops a frame now and

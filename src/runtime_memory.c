@@ -1469,20 +1469,29 @@ void *runtime_low_map(size_t size, int prot) {
  * 131072 texture binds of stages without images through the slow path again (T1),
  * 262144 with GOW3_TEXSET_WIDE=1: the texture-set memo for 16 images or fewer and prepared
  * draws only again (T2), 524288 with GOW3_REGION_INDEX=1: the region cache without its index
- * by address (R1). */
-uint64_t runtime_disabled_optimizations, runtime_disabled_optimizations2;
+ * by address (R1).
+ * An optional third word is a frame cap in FPS (0: none) that replaces the menu's frame rate limit
+ * live while it is set (runtime_toggle_frame_cap; the present thread's limiter, videoout/driver.cpp):
+ * a sweep of caps in one launch. */
+uint64_t runtime_disabled_optimizations, runtime_disabled_optimizations2, runtime_toggle_frame_cap;
 /* Speculative readers of guest memory (GPU draw-preparation workers) register a recovery
  * point: a fault on that thread jumps back to it instead of terminating (probe.c). */
 __thread sigjmp_buf *runtime_fault_recover;
 static void *toggle_watcher(void *path) {
-    for (unsigned long long last=ULLONG_MAX,last2=ULLONG_MAX;;) {
+    for (unsigned long long last=ULLONG_MAX,last2=ULLONG_MAX,last_cap=0;;) {
         FILE *f=fopen(path,"r");
-        unsigned long long value=0,value2=0;
+        unsigned long long value=0,value2=0,cap=0;
         if (f) {
-            const int read=fscanf(f,"%llu %llu",&value,&value2);
+            const int read=fscanf(f,"%llu %llu %llu",&value,&value2,&cap);
             if (read<1) value=0;
             if (read<2) value2=0;
+            if (read<3) cap=0;
             fclose(f);
+        }
+        if (cap!=last_cap) {
+            __atomic_store_n(&runtime_toggle_frame_cap,(uint64_t)cap,__ATOMIC_RELEASE);
+            printf("Runtime: toggle file frame cap=%llu\n",cap);
+            last_cap=cap;
         }
         if (value!=last) {
             __atomic_store_n(&runtime_disabled_optimizations,(uint64_t)value,__ATOMIC_RELEASE);

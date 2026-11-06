@@ -36,7 +36,7 @@ PERF = re.compile(r'^Perf: ([\d.]+) FPS, worst frame ([\d.]+) ms')
 
 def parse(path, perf=False):
     lines = open(path, encoding='utf-8', errors='replace').read().splitlines()
-    mask, word2, changed, scale = 0, 0, False, ''
+    mask, word2, cap, changed, scale = 0, 0, '', False, ''
     windows, current = [], None
     for line in lines:
         m = re.match(r'Runtime: disabled optimizations mask=(\d+)', line)
@@ -49,6 +49,11 @@ def parse(path, perf=False):
             changed |= windows != [] or current is not None
             word2 = int(m.group(1))
             continue
+        m = re.match(r'Runtime: toggle file frame cap=(\d+)', line)
+        if m:
+            changed |= windows != [] or current is not None
+            cap = f' cap{m.group(1)}' if m.group(1) != '0' else ''
+            continue
         m = re.match(r'Render resolution: .*render scale (\d+)%|Render scale: \d+% -> (\d+)% \(live\)', line)
         if m:
             changed |= windows != [] or current is not None
@@ -57,14 +62,14 @@ def parse(path, perf=False):
         if perf:
             m = PERF.match(line)
             if m:
-                windows.append({'state': f'{mask} {word2}{scale}', 'mixed': changed, 'extra': {},
+                windows.append({'state': f'{mask} {word2}{cap}{scale}', 'mixed': changed, 'extra': {},
                                 'fps': float(m.group(1)), 'worst': float(m.group(2))})
                 changed = False
             continue
         if line.startswith('Frame stats:'):
             if current:
                 windows.append(current)
-            current = {'state': f'{mask} {word2}{scale}', 'mixed': changed, 'extra': {}}
+            current = {'state': f'{mask} {word2}{cap}{scale}', 'mixed': changed, 'extra': {}}
             changed = False
         if current is None:
             continue
