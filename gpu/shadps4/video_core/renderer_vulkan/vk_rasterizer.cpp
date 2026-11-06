@@ -362,6 +362,7 @@ void Rasterizer::DrawClass(const GraphicsPipeline* pipeline, Gow3DrawClasses::Sc
         }
         if (shape.colors++ == 0) {
             const auto format = texture_cache.GetImage(cb_descs[cb].first).info.pixel_format;
+            scope.target = regs.color_buffers[cb] ? regs.color_buffers[cb].Address() : 0;
             shape.color0_rgba32f = format == vk::Format::eR32G32B32A32Sfloat;
             shape.color0_rgba16f = format == vk::Format::eR16G16B16A16Sfloat;
             shape.color0_rg16 = format == vk::Format::eR16G16Unorm;

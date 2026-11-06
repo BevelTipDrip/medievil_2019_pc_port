@@ -212,6 +212,24 @@ def hzb_full_size_environment(env, width=0, height=0, render_scale=100):
     return env
 
 
+PARTICLE_SINGLE_FIXED_PATCH = 'GPU particle fixed step in the single pass'
+
+
+def particle_single_fixed_environment(env):
+    """GOW3_PARTICLE_SINGLE_FIXED=1 adds the "GPU particle fixed step in the single pass" patch
+    (the single GPU particle pass keeps the 1/30 s step of the emitters that ask for it,
+    research/docs/study-particle-fixed-step.md) to GOW3_PATCHES, =0 removes it; unset, the
+    launcher's Patches page decides (off by default)."""
+    switch = env.get('GOW3_PARTICLE_SINGLE_FIXED')
+    if switch not in ('0', '1'):
+        return env
+    selected = [n for n in env.get('GOW3_PATCHES', '').split(';') if n and n != PARTICLE_SINGLE_FIXED_PATCH]
+    if switch == '1':
+        selected.append(PARTICLE_SINGLE_FIXED_PATCH)
+    env['GOW3_PATCHES'] = ';'.join(selected)
+    return env
+
+
 NAV_PURGE_PATCH = 'Navigation path purge without fences (CPU)'
 
 

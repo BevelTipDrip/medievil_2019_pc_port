@@ -135,6 +135,11 @@ enum : std::uint64_t {
     /// its choice); clear, the menu's / ini's choice again. Only a change of the effective value
     /// sets the cvar ("Particle single pass: on|off (live...)" in the log). Read by the runtime.
     ParticleFixedStep = 8192,
+    /// The GPU particle flip guard (src/particle_hook.h, runtime_extra.c), with
+    /// GOW3_PARTICLE_FLIP_GUARD=1 at start (opt-in): one state flip per main-phase simulation.
+    /// Set: the game's flips as they come, live (the hooks keep counting: "GPU particle flips"
+    /// in the log). Read by the runtime.
+    ParticleFlipGuardOff = 16384,
     /// R2 (impl-stage-b-per-draw-2.md): the buffer cache's residency check (EnsureResident,
     /// every ObtainBuffer outside the stream buffer) answers from a bitmap of resident blocks
     /// (gow3_resident_blocks.h; kept either way). Set: the interval search every time.

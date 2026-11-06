@@ -273,4 +273,57 @@
             <Line Type="bytes" Address="0x03094b9f" Value="8b4008660f1f440000" Original="0faef08b40080faef0"/>
         </PatchList>
     </Metadata>
+    <!-- The single GPU particle pass (r.GPUParticle.FixDeltaSeconds 0, the in-game menu's
+         "Single GPU particle pass") without losing the fixed step of emitters whose local vector
+         field asks for it (bUseFixDT, flag 8 at Simulation+0x1cc: PS_air_sparkles in Dan's crypt,
+         leaves and fluff). Unpatched, 0 also turns their 1/30 s steps into one step of the frame
+         time; patched, the game thread (FGPUSpriteParticleEmitterInstance's per-frame data,
+         01.00 0x2382e50) always steps with the registered 1/30 s, and the single pass on the
+         render thread (SimulateGPUParticles 0x2366cb0) runs as the fixed-step pass: the
+         emitters' fixed-step parameters, read from and written to the same buffers as before,
+         drawn from the buffer it writes (the cvar's 0 still drops the second, copying pass and
+         reads the current state). Only the sub-step look-ahead of those few emitters is lost
+         (they move in 1/30 s steps). With the cvar at its 1/30 default nothing changes, so the
+         live switch (menu, toggle file second word 8192) still compares with the stock game.
+         research/docs/study-particle-fixed-step.md. Off by default: run.py
+         GOW3_PARTICLE_SINGLE_FIXED=1 / 0 switches it on / off (extra-env.txt). 01.02: the same
+         bytes at +0x2dd0; the 1/30 constant at 0x3e276dc. -->
+    <Metadata Title="MediEvil"
+              Name="GPU particle fixed step in the single pass"
+              Note="With the single GPU particle pass on, particle effects that the artists set to a fixed 1/30 s step (floating sparkles, leaves, fluff) keep it instead of stepping with the frame time. Needs the single pass to change anything."
+              Author="medievil_pc"
+              PatchVer="1.0"
+              AppVer="01.00"
+              AppElf="eboot.bin"
+              isEnabled="false">
+        <PatchList>
+            <!-- mov rbx, [rip -> 0x5c14d28 (the cvar's value pointer)] -> lea rbx, [rip -> 0x3e2461c (1/30, the registered default)] -->
+            <Line Type="bytes" Address="0x02783a36" Value="488d1ddf0baa01" Original="488b1deb128903"/>
+            <!-- vmovss xmm5, [rbx + rcx*4] (game / render thread slot) -> vmovss xmm5, [rbx]; nop -->
+            <Line Type="bytes" Address="0x02783a5c" Value="c5fa102b90" Original="c5fa102c8b"/>
+            <!-- the first ExecuteSimulationCommands' bUseFixDT (three collision variants): seta al -> mov al, 1; nop -->
+            <Line Type="bytes" Address="0x027684da" Value="b00190" Original="0f97c0"/>
+            <Line Type="bytes" Address="0x0276851f" Value="b00190" Original="0f97c0"/>
+            <Line Type="bytes" Address="0x0276855b" Value="b00190" Original="0f97c0"/>
+        </PatchList>
+    </Metadata>
+    <Metadata Title="MediEvil"
+              Name="GPU particle fixed step in the single pass"
+              Note="With the single GPU particle pass on, particle effects that the artists set to a fixed 1/30 s step (floating sparkles, leaves, fluff) keep it instead of stepping with the frame time. Needs the single pass to change anything."
+              Author="medievil_pc"
+              PatchVer="1.0"
+              AppVer="01.02"
+              AppElf="eboot.bin"
+              isEnabled="false">
+        <PatchList>
+            <!-- mov rbx, [rip -> 0x5c14d68] -> lea rbx, [rip -> 0x3e276dc (1/30)] -->
+            <Line Type="bytes" Address="0x02786806" Value="488d1dcf0eaa01" Original="488b1d5be58803"/>
+            <!-- vmovss xmm5, [rbx + rcx*4] -> vmovss xmm5, [rbx]; nop -->
+            <Line Type="bytes" Address="0x0278682c" Value="c5fa102b90" Original="c5fa102c8b"/>
+            <!-- seta al -> mov al, 1; nop -->
+            <Line Type="bytes" Address="0x0276b2aa" Value="b00190" Original="0f97c0"/>
+            <Line Type="bytes" Address="0x0276b2ef" Value="b00190" Original="0f97c0"/>
+            <Line Type="bytes" Address="0x0276b32b" Value="b00190" Original="0f97c0"/>
+        </PatchList>
+    </Metadata>
 </Patch>
