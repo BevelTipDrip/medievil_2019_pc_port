@@ -81,7 +81,8 @@ steps)
     period=${1:?PERIOD}; cycles=${2:?CYCLES}; shift 2; (( $# )) || { echo 'no states' >&2; exit 1; }
     running || { echo 'The game is not running on the Deck.' >&2; exit 1; }
     states=$(printf "'%s' " "$@")
-    remote "for i in \$(seq $cycles); do for s in $states; do echo \"\$s\" > $toggle_file; echo \"\$(date +%T) \$s\"; sleep $period; done; done
+    remote "for i in \$(seq $cycles); do for s in $states; do echo \"\$s\" > $toggle_file
+            echo \"\$(date +%T) mono \$(python3 -c 'import time; print(time.monotonic_ns())') \$s\"; sleep $period; done; done
         echo '$1' > $toggle_file; echo \"\$(date +%T) done (left at $1)\""
     ;;
 pull)

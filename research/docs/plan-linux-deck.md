@@ -1608,3 +1608,39 @@ and blocked in bursts, 12.5/25 ms alternation at 80 FPS, the reason the default 
 clock range instead of a fixed clock (`power_dpm_force_performance_level` manual + `pp_od_clk_voltage` "s 0 <floor>",
 "s 1 <1,200-1,300>", "c": a system change the user makes with sudo, lost at reboot; does Steam's QAM reset it?). If
 it is uneven work: which frames cost more and on which stage, from the same per-frame table.
+
+### Launch 14 results (2026-11-06 ~19:45-20:22, build `5ead842-trace`, 2 helpers, logging ini 67% uncapped; log `data/deck-pushpull-1.log`, traces `research-data/deck/deck-pushpull-{auto1,fixed1100,capsweep}-*.csv`)
+
+- **2 helpers at auto:** 80.8 FPS mean over 5 clean minutes (median 80.95, low 1% 63.7, low 0.1% 56.4) against launch
+  10's 81.7 with 4 helpers: inside the between-launch noise; the user's "+2 FPS" is not confirmed in this view.
+- **Auto, 60 s trace** (sampler 23.7% of a core at 4 ms: too costly; the SMU table changes every ~8 ms, so 8 ms
+  sampling from now on): socket power 14.8-15.0 W in every frame-time band, so the cap binds and frame time follows the
+  split. Long frames: CPU +330 mW and +60 MHz, GPU -480 mW and -170 MHz over its own GPU window (1,112 -> 940 MHz),
+  GPU busy 97 -> 91%; stage A / B are a smaller share of a long frame (they wait more). Frame time vs the GPU-window
+  clock -0.41; lag-1 autocorrelation -0.23 (mild alternation, not every other frame).
+- **What the user's graph shows is the present call** (`present_start` in the flip trace): p1 ~10.4 ms, p99.9 ~17.8 ms
+  in the traced auto run, matching the overlay. The summary's median FPS and SD hide it; the lows columns and the
+  count of present intervals over 15 ms per minute show it. The game's own submit cadence is rougher than what reaches
+  the screen (the queue absorbs most of it).
+- **Fixed 1,100 MHz (the auto run's average clock), same view, sampler 13.2% at 8 ms:** present intervals over 15 ms
+  26/min (sampler-free auto: 57/min), p99 14.6 ms (15.4), GPU time SD 1.05 ms (1.45), same FPS in the windows
+  (~80.9). **The CPU work is as uneven as at auto** (the user's point): per-frame run time CV stage A 16% (14),
+  stage B 12% (13), recorder 13% (13), game main thread 11% (12.5), RenderThread 23% (18). Locked, the GPU stops adding
+  its own swing on top, and the queue absorbs most of the CPU swing; what spikes remain carry the GPU idle (86% busy)
+  and a long game submit gap (CPU side). Every traced thread runs a near-fixed share of each frame (game main thread
+  93-94%, stage B 73-75%, stage A 55-56%), so per-thread ms vs frame time correlates by construction, and schedstat
+  run time counts spin-waits too: which CPU work varies needs per-flip busy time without waits (not built).
+- **Cap sweep at auto, live** (`deck.sh steps 30 3`, no sampler, first 3 s after each switch left out; present calls):
+
+  | cap | FPS | median | SD | p99 | p99.9 | max | > 17 ms / min |
+  |---|---|---|---|---|---|---|---|
+  | none | 80.5 | 12.27 | 0.96 | 15.42 | 16.67 | 19.5 | 4 |
+  | 75 | 74.9 | 13.33 | 0.22 | 13.56 | 14.14 | 26.3 (one hitch) | 2 |
+  | 70 | 70.0 | 14.29 | 0.10 | 14.52 | 14.66 | 15.8 | 0 |
+  | 65 | 65.0 | 15.38 | 0.06 | 15.55 | 15.68 | 16.2 | 0 |
+
+  The game's submit SD falls 1.40 -> 0.67 ms at 75: with slack the work evens out. A cap a few FPS under the
+  uncapped rate makes the pacing flat at auto; the push-pull needs no other fix.
+- **The user's decision:** no finer sweep; a 60 cap is fine on this screen. **The goal stays cutting CPU work** for
+  headroom (higher settings, fewer stutters). From now on CPU cuts are judged at a 60 cap by CPU power and per-thread
+  CPU time (the saving shows as idle time and watts there, not as FPS).

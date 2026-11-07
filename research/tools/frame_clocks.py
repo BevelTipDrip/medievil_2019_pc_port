@@ -30,6 +30,8 @@ def read_flip(path):
             if row['stage'] == 'start':
                 start = int(row['ns'])
                 continue
+            if not row['ns']:  # the game was still writing the last row when it was pulled
+                continue
             stages.setdefault(row['stage'], []).append((int(row['ns']), int(row['flip_arg'])))
     if start is None:
         raise SystemExit(f'{path}: no start row')
