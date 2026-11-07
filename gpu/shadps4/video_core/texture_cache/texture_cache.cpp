@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cmath>
 #include <cstdio>
+#include <format>
+#include <limits>
 #include <mutex>
 #include <unordered_set>
 #include <xxhash.h>
@@ -1586,6 +1589,64 @@ ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure
     return {};
 }
 
+namespace {
+// gow3 (plan-linux-deck.md "Mausoleum lighting"): GOW3_SKIPPED_TARGET_LOG=1 logs, once per image,
+// each small render target or storage image (at most 64 KiB) the GPU writes but this cache never
+// copies back to guest memory (tiled and wider than 8 pixels), with the first bytes the CPU would
+// read there instead, as half floats: a CPU read of such a target sees those bytes.
+bool SkippedTargetLog() {
+    static const bool on = [] {
+        const char* env = std::getenv("GOW3_SKIPPED_TARGET_LOG");
+        return env && env[0] == '1';
+    }();
+    return on;
+}
+
+float HalfToFloat(u16 h) {
+    const u32 sign = (h >> 15) & 1, exponent = (h >> 10) & 31, mantissa = h & 1023;
+    float value;
+    if (exponent == 0) {
+        value = std::ldexp(float(mantissa), -24);
+    } else if (exponent == 31) {
+        value = mantissa ? std::numeric_limits<float>::quiet_NaN()
+                         : std::numeric_limits<float>::infinity();
+    } else {
+        value = std::ldexp(float(mantissa | 1024), int(exponent) - 25);
+    }
+    return sign ? -value : value;
+}
+
+void LogSkippedTarget(const ImageInfo& info, const char* kind) {
+    if (info.guest_address == 0 || info.guest_size > 64_KB) {
+        return;
+    }
+    static std::mutex mutex;
+    static std::unordered_set<u64> seen;
+    const u64 key = info.guest_address ^ (u64{info.size.width} << 48) ^ (u64{info.size.height} << 32) ^
+                    u64(info.pixel_format);
+    {
+        std::scoped_lock lk{mutex};
+        if (!seen.insert(key).second) {
+            return;
+        }
+    }
+    std::array<u16, 16> words{};
+    const bool read = Core::Memory::Instance()->ReadBacking(info.guest_address, words.data(),
+                                                            sizeof(words));
+    std::string halves;
+    for (const u16 w : words) {
+        halves += std::format(" {:.6g}", HalfToFloat(w));
+    }
+    std::printf("Skipped target (%s, never copied back): %#llx %u bytes, %ux%u x%u, %s, %s; guest "
+                "bytes as halves:%s\n",
+                kind, static_cast<unsigned long long>(info.guest_address), info.guest_size,
+                info.size.width, info.size.height, info.resources.layers,
+                vk::to_string(info.pixel_format).c_str(),
+                std::string(AmdGpu::NameOf(info.tile_mode)).c_str(),
+                read ? halves.c_str() : " (unreadable)");
+}
+} // namespace
+
 ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc, ViewMemo* memo,
                                      bool refresh) {
     Image& image = slot_images[image_id];
@@ -1595,6 +1656,8 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc, Vi
             image.info.guest_address != 0) {
             std::unique_lock lk{download_images_mutex};
             download_images.emplace(image_id);
+        } else if (SkippedTargetLog()) {
+            LogSkippedTarget(image.info, "storage");
         }
     }
     if (refresh) {
@@ -1626,6 +1689,8 @@ ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& des
     if (readback_linear_images && (!image.info.props.is_tiled || image.info.size.width <= 8)) {
         std::unique_lock lk{download_images_mutex};
         download_images.emplace(image_id);
+    } else if (SkippedTargetLog()) {
+        LogSkippedTarget(image.info, "render target");
     }
     image.usage.render_target = 1u;
     UpdateImage(image_id);
