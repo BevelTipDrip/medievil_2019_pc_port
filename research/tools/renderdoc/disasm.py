@@ -1,5 +1,5 @@
 # Run inside qrenderdoc:  qrenderdoc.exe --python disasm.py
-# RD_CAPTURE, RD_OUT, RD_EID, RD_STAGE (Vertex / Pixel): the shader's disassembly (RenderDoc's
+# RD_CAPTURE, RD_REMOTE (optional), RD_OUT, RD_EID, RD_STAGE (Vertex / Pixel): the shader's disassembly (RenderDoc's
 # SPIR-V view) and the raw bytes of its read-only buffers / constant ring ranges as floats.
 # V1 (2026-10-18).
 import os
@@ -10,9 +10,15 @@ import renderdoc as rd
 
 lines = []
 try:
-    cap = rd.OpenCaptureFile()
-    cap.OpenFile(os.environ['RD_CAPTURE'], '', None)
-    result, controller = cap.OpenCapture(rd.ReplayOptions(), None)
+    remote = cap = None
+    if os.environ.get('RD_REMOTE'):  # replay on another machine (pass_images.py)
+        result, remote = rd.CreateRemoteServerConnection(os.environ['RD_REMOTE'])
+        result, controller = remote.OpenCapture(getattr(rd.RemoteServer, 'NoPreference', 0xFFFFFFFF),
+                                                os.environ['RD_CAPTURE'], rd.ReplayOptions(), None)
+    else:
+        cap = rd.OpenCaptureFile()
+        cap.OpenFile(os.environ['RD_CAPTURE'], '', None)
+        result, controller = cap.OpenCapture(rd.ReplayOptions(), None)
     names = {r.resourceId: r.name for r in controller.GetResources()}
     eid = int(os.environ['RD_EID'])
     stage = getattr(rd.ShaderStage, os.environ.get('RD_STAGE', 'Pixel'))
@@ -36,8 +42,12 @@ try:
         lines.append(f'\n==== buffer {i}: {names.get(rid, rid)} +{d.byteOffset} size {size}')
         for k in range(0, len(floats), 4):
             lines.append(f'  [{k * 4:5d}] ' + ' '.join(f'{v: .6g}' for v in floats[k:k + 4]))
-    controller.Shutdown()
-    cap.Shutdown()
+    if remote is not None:
+        remote.CloseCapture(controller)
+        remote.ShutdownConnection()
+    else:
+        controller.Shutdown()
+        cap.Shutdown()
 except Exception:
     lines.append(traceback.format_exc())
 with open(os.environ['RD_OUT'], 'w', encoding='utf-8') as f:

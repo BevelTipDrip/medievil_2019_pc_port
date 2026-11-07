@@ -548,6 +548,23 @@ private:
     }();
     template <bool track>
     void WatchReadback(VAddr address, u64 size);
+    /// gow3 (plan-linux-deck.md "Mausoleum lighting"): in stale mode a CPU read of a range whose
+    /// first copy is still pending sees bytes no copy wrote (nothing was published there yet).
+    /// GOW3_READBACK_LOG=1 logs each first copy (queued, published, read by the CPU);
+    /// GOW3_READBACK_FIRST_WAIT=1 also watches CPU reads of first copies, so such a read waits
+    /// for the GPU as without stale mode. Later copies stay stale (frame pacing unchanged).
+    const bool readback_log = [] {
+        const char* value = std::getenv("GOW3_READBACK_LOG");
+        return value && value[0] == '1';
+    }();
+    const bool readback_first_wait = stale_readbacks && [] {
+        const char* value = std::getenv("GOW3_READBACK_FIRST_WAIT");
+        return value && value[0] == '1';
+    }();
+    std::unordered_set<VAddr> readback_published; ///< ranges with a published copy (readback_mutex)
+    /// Drops the page watch a queued copy holds (a read watch too for a first copy).
+    template <typename Entry>
+    void UnwatchReadback(const Entry& entry);
     struct ReadbackImageStat {
         VAddr address;
         u32 width, height, bits, copies, cpu_accesses;

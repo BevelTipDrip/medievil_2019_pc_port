@@ -186,6 +186,15 @@ void TextureCache::WatchReadback(VAddr address, u64 size) {
     }
 }
 
+template <typename Entry>
+void TextureCache::UnwatchReadback(const Entry& entry) {
+    if (entry.reads) {
+        tracker.UpdatePageWatchers<false, true>(entry.address, entry.size);
+    } else {
+        WatchReadback<false>(entry.address, entry.size);
+    }
+}
+
 void TextureCache::PublishReadbackSpans() {
     std::array<std::pair<u64, u64>, ReadbackSpanCount> spans{};
     const std::size_t count = pending_readbacks.Spans(spans);
@@ -229,8 +238,14 @@ void TextureCache::RetireReadbacks(bool polled) {
                 entry.payload.Invalidate();
                 Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(entry.address),
                     entry.payload.mapped, entry.size);
-                if (entry.watched) WatchReadback<false>(entry.address, entry.size);
+                if (entry.watched) UnwatchReadback(entry);
                 if (entry.seq) NoteTrackedPublish(entry.address, entry.size, entry.seq);
+                if (stale_readbacks && readback_published.insert(entry.address).second &&
+                    readback_log) {
+                    std::printf("Readback first copy published: %#llx (%llu bytes)\n",
+                                static_cast<unsigned long long>(entry.address),
+                                static_cast<unsigned long long>(entry.size));
+                }
                 ++readbacks_completed;
             }
             runtime.GetStagingPool().FreeDeferred(entry.payload);
@@ -272,7 +287,7 @@ bool TextureCache::ResolveReadbacks(VAddr address, u64 size, bool assume_locks,
         // copy only stops protecting its page and is still published when the GPU is done.
         if (stale_readbacks && source == ReadbackSource::CpuWrite) {
             readbacks_released += pending_readbacks.ReleaseOutside(address, size, 64_KB,
-                [this](auto& entry) { WatchReadback<false>(entry.address, entry.size); });
+                [this](auto& entry) { UnwatchReadback(entry); });
         }
         if (!pending_readbacks.RequiredTick(address, size)) return false;
     }
@@ -293,6 +308,13 @@ bool TextureCache::ResolveReadbacks(VAddr address, u64 size, bool assume_locks,
         if (const u64 tick = pending_readbacks.RequiredTick(address, size)) {
             ++readbacks_waited;
             waited = !scheduler.IsFree(tick);
+            if (readback_log && source == ReadbackSource::CpuRead) {
+                // gow3: in stale mode only a first copy's pages watch reads (GOW3_READBACK_FIRST_WAIT).
+                std::printf("Readback first copy read by the CPU: %#llx (%llu bytes), GPU %s\n",
+                            static_cast<unsigned long long>(address),
+                            static_cast<unsigned long long>(size),
+                            waited ? "not done yet: waiting" : "already done");
+            }
             const auto start = diag ? std::chrono::steady_clock::now()
                                     : std::chrono::steady_clock::time_point{};
             scheduler.Wait(tick);
@@ -354,7 +376,7 @@ void TextureCache::CancelReadbacks(VAddr address, u64 size) {
     std::scoped_lock lock{readback_mutex};
     const u64 canceled_before = readbacks_canceled;
     pending_readbacks.Cancel(address, size, [this](auto& entry) {
-        if (entry.watched) WatchReadback<false>(entry.address, entry.size);
+        if (entry.watched) UnwatchReadback(entry);
         ++readbacks_canceled;
     });
     if (readbacks_canceled != canceled_before) {
@@ -443,9 +465,30 @@ void TextureCache::ProcessDownloadImages() {
                     if (const u64 seq = NoteTrackedPush(copy->guest_address, copy->size)) {
                         NoteTrackedPublish(copy->guest_address, copy->size, seq);
                     }
+                    readback_published.insert(copy->guest_address);
                     runtime.GetStagingPool().FreeDeferred(copy->staging);
                 } else {
-                    WatchReadback<true>(copy->guest_address, copy->size);
+                    // gow3: a first copy (nothing published at this range yet) in stale mode:
+                    // logged, and with GOW3_READBACK_FIRST_WAIT its pages watch CPU reads too.
+                    const bool first = stale_readbacks &&
+                                       !readback_published.contains(copy->guest_address);
+                    const bool reads = first && readback_first_wait;
+                    if (reads) {
+                        tracker.UpdatePageWatchers<true, true>(copy->guest_address, copy->size);
+                    } else {
+                        WatchReadback<true>(copy->guest_address, copy->size);
+                    }
+                    if (first && readback_log) {
+                        std::printf("Readback first copy queued: %#llx (%llu bytes), image %ux%u "
+                                    "%u bits %s, tick %llu; CPU reads %s\n",
+                                    static_cast<unsigned long long>(copy->guest_address),
+                                    static_cast<unsigned long long>(copy->size),
+                                    image.info.size.width, image.info.size.height,
+                                    image.info.num_bits,
+                                    vk::to_string(image.info.pixel_format).c_str(),
+                                    static_cast<unsigned long long>(scheduler.CurrentTick()),
+                                    reads ? "wait for it" : "see the old bytes (stale mode)");
+                    }
                     if (Vulkan::WaitDiagnostics::Enabled()) {
                         // Which images go back to RAM each frame (the report lists the busiest).
                         auto* slot = std::ranges::find(readback_images, image.info.guest_address,
@@ -461,7 +504,7 @@ void TextureCache::ProcessDownloadImages() {
                     }
                     pending_readbacks.Push(copy->guest_address, copy->size,
                         scheduler.CurrentTick(), copy->staging,
-                        NoteTrackedPush(copy->guest_address, copy->size));
+                        NoteTrackedPush(copy->guest_address, copy->size), reads);
                     PublishReadbackSpans(); // C5: before any pre-check may skip the lock
                     has_pending_readbacks.store(true, std::memory_order_release);
                     ++readbacks_queued;

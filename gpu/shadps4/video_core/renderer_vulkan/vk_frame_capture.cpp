@@ -234,7 +234,13 @@ void FrameCapture::BeginPass(const VideoCore::ImageInfo* const* colors, u32 num_
     display = display && targets.size() == 1;
     const bool new_pass = !(pass_open && !entries.empty() && !entries.back().compute &&
                             entries.back().colors == targets);
-    if (display && new_pass) {
+    // gow3: MediEvil writes a display buffer alone twice a frame (the composite, then the UI): a
+    // capture that ended at the second one held only UI passes. It ends at a display pass that
+    // follows a scene pass (one with a depth target).
+    const bool saw_scene = std::ranges::any_of(
+        entries, [](const Entry& e) { return !e.compute && e.depth.address != 0; });
+    if (display && new_pass &&
+        (state.load(std::memory_order_relaxed) != Recording || saw_scene)) {
         if (state.load(std::memory_order_relaxed) == Recording) {
             Write(last_presented.load(std::memory_order_relaxed));
             entries.clear();
@@ -296,7 +302,13 @@ void FrameCapture::Dispatch(u64 cs_hash, u32 x, u32 y, u32 z) {
 }
 
 void FrameCapture::Buffer(u64 stage_hash, u32 slot, VAddr address, const void* data, u64 size) {
-    const u64 bytes = std::min<u64>(size, 1024) & ~u64(3);
+    // GOW3_CAPTURE_BUFFER_BYTES: how much of each buffer to print (default 1024; the view's
+    // constants are ~3.3 KB).
+    static const u64 limit = [] {
+        const char* env = std::getenv("GOW3_CAPTURE_BUFFER_BYTES");
+        return env && *env ? std::strtoull(env, nullptr, 10) : u64{1024};
+    }();
+    const u64 bytes = std::min<u64>(size, limit) & ~u64(3);
     std::string out = std::format("  buffer stage {:016x} slot {} at {:#x} size {}:", stage_hash,
                                   slot, address, size);
     const auto* words = static_cast<const float*>(data);
