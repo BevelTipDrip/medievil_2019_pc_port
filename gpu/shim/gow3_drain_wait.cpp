@@ -33,4 +33,13 @@ void FutexWake(std::atomic<std::uint32_t>& word) {
 #endif
 }
 
+void FutexWakeAll(std::atomic<std::uint32_t>& word) {
+#ifdef _WIN32
+    WakeByAddressAll(reinterpret_cast<PVOID>(&word));
+#else
+    syscall(SYS_futex, reinterpret_cast<std::uint32_t*>(&word), FUTEX_WAKE_PRIVATE, INT32_MAX,
+            nullptr, nullptr, 0);
+#endif
+}
+
 } // namespace Gow3DrainWait

@@ -73,6 +73,8 @@ inline std::uint64_t NowNs() {
 void FutexWait(std::atomic<std::uint32_t>& word, std::uint32_t seen);
 /// Wakes one thread sleeping in FutexWait on `word`.
 void FutexWake(std::atomic<std::uint32_t>& word);
+/// Wakes every thread sleeping in FutexWait on `word` (gow3_signal_wait.h).
+void FutexWakeAll(std::atomic<std::uint32_t>& word);
 
 /// Counters (GOW3_FRAME_STATS), reset by the report. Both paths: drains that waited and their
 /// time. Today's path: drains that ended within the 4096 pauses, sched_yield calls (or

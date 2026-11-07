@@ -23,6 +23,7 @@
 #include "gow3_decode_pacing.h"
 #include "gow3_draw_classes.h"
 #include "gow3_drain_wait.h"
+#include "gow3_signal_wait.h"
 #include "gow3_stage_b_wait.h"
 #include "gow3_texset_table.h"
 #include "gow3_stage_a.h"
@@ -968,6 +969,30 @@ void VideoOutDriver::Flip(const Request& req) {
                             latency_n ? latency_ns / 1e3 / latency_n : 0.0,
                             DW::wake_latency_max_ns.exchange(0) / 1e3, wakes / frames_d,
                             wakes ? wake_call_ns / 1e3 / wakes : 0.0);
+                    }
+                    // gow3 (gow3_signal_wait.h): the recording threads' waits for the recorder
+                    // (deferred signals, host copies; GOW3_SIGNAL_SLEEP=1: pauses, then a futex
+                    // sleep; second word 16777216 off).
+                    {
+                        namespace SW = Gow3SignalWait;
+                        char state[40];
+                        if (!SW::Wanted()) {
+                            std::snprintf(state, sizeof(state), "off");
+                        } else if (!SW::Enabled()) {
+                            std::snprintf(state, sizeof(state), "toggled off");
+                        } else {
+                            std::snprintf(state, sizeof(state), "on, spin %llu us",
+                                          static_cast<unsigned long long>(SW::SpinNs() / 1000));
+                        }
+                        std::printf("Recorder waits per frame (sleep %s): %.2f (%.3f ms); ended in "
+                                    "the spin %.2f, slept %.2f (sleeps %.2f, %.3f ms), wakes %.2f\n",
+                                    state, SW::waits.exchange(0) / frames_d,
+                                    SW::wait_ns.exchange(0) / 1e6 / frames_d,
+                                    SW::spin_ends.exchange(0) / frames_d,
+                                    SW::slept.exchange(0) / frames_d,
+                                    SW::sleeps.exchange(0) / frames_d,
+                                    SW::sleep_ns.exchange(0) / 1e6 / frames_d,
+                                    SW::wakes.exchange(0) / frames_d);
                     }
                     // gow3 (impl-texset-index.md): the texture-set memo's lookups by layout
                     // (compact, or the table as before with second word 2048), hits, misses by

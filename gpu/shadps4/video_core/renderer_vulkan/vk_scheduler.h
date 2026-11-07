@@ -21,6 +21,7 @@
 
 #include "gow3_cacheline.h"
 #include "gow3_sections.h"
+#include "gow3_signal_wait.h"
 #include "gow3_toggles.h"
 #include "common/assert.h"
 #include "common/interval_set.h"
@@ -903,6 +904,7 @@ public:
                 seq = ++host_copies_issued](vk::CommandBuffer) {
             copy();
             host_copies_done.store(seq, std::memory_order_release);
+            Gow3SignalWait::Notify(); // a recording thread may sleep in WaitHostCopies
         });
     }
 

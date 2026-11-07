@@ -180,6 +180,10 @@ enum : std::uint64_t {
     /// wakes a sleeping stage A the default 2 packets before the end again, not the start's count
     /// (a same-launch A/B of the count). Set: 2 (live).
     DrainWakeAheadDefault = 8388608,
+    /// With GOW3_SIGNAL_SLEEP=1 at start (gow3_signal_wait.h): the recording thread's waits for
+    /// the recorder (deferred signals, host copies) spin briefly, then sleep. Set: sched_yield
+    /// until done, as before (live).
+    SignalSleepOff = 16777216,
 };
 inline bool Disabled(std::uint64_t bit) {
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;

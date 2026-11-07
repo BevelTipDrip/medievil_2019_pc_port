@@ -330,6 +330,11 @@ if (WIN32)
     target_compile_options(draw-pipe-drain-test PRIVATE
         -include ${CMAKE_CURRENT_SOURCE_DIR}/shim/gow3_win_compat.h)
 endif()
+add_executable(signal-wait-test EXCLUDE_FROM_ALL ../tests/test_signal_wait.cpp)
+target_compile_definitions(signal-wait-test PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+target_include_directories(signal-wait-test PRIVATE shim)
+target_link_libraries(signal-wait-test PRIVATE gow3gpu)
+target_compile_options(signal-wait-test PRIVATE -UNDEBUG)
 set_source_files_properties(../tests/test_pipeline_binary_cache.cpp PROPERTIES
     COMPILE_OPTIONS "-fvisibility=hidden;-fvisibility-inlines-hidden")
 add_executable(motion-history-test EXCLUDE_FROM_ALL ../tests/test_motion_history.cpp)

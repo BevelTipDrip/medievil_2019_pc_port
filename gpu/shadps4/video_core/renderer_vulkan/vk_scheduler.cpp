@@ -361,6 +361,7 @@ void Scheduler::SignalAfterHostCopies(std::function<void()> signal, bool urgent)
             signal();
             Gow3FenceStats::FenceSignaled(fence);
             done->fetch_add(1, std::memory_order_release);
+            Gow3SignalWait::Notify(); // a recording thread may sleep in WaitDeferredSignals
         });
     });
     // gow3 (impl-deck-cpu-bundle.md): a polled label recorded on stage B may leave a sleeping
@@ -377,10 +378,22 @@ void Scheduler::WaitDeferredSignals() {
     }
     Gow3Stats::WaitTimer timer{Gow3Stats::host_copies_wait_ns};
     KickRecording(true);
-    while (deferred_signals_done->load(std::memory_order_acquire) < issued) {
+    const auto done = [&] { return deferred_signals_done->load(std::memory_order_acquire) >= issued; };
+    if (Gow3SignalWait::Enabled()) {
+        // gow3 (gow3_signal_wait.h): helps the copy threads once, then pauses and sleeps.
+        Gow3Copy::WaitAsync();
+        Gow3SignalWait::Wait(done, Gow3Stats::enabled);
+        return;
+    }
+    const u64 start_ns = Gow3Stats::enabled ? Gow3DrainWait::NowNs() : 0;
+    while (!done()) {
         // Helps the copy threads the signals wait for.
         Gow3Copy::WaitAsync();
         std::this_thread::yield();
+    }
+    if (Gow3Stats::enabled) {
+        Gow3SignalWait::waits.fetch_add(1, std::memory_order_relaxed);
+        Gow3SignalWait::wait_ns.fetch_add(Gow3DrainWait::NowNs() - start_ns, std::memory_order_relaxed);
     }
 }
 
@@ -461,8 +474,21 @@ void Scheduler::WaitHostCopies(std::source_location caller) {
         Gow3Stats::WaitTimer timer{Gow3Stats::host_copies_wait_ns};
         Gow3Stats::host_copy_waits.fetch_add(1, std::memory_order_relaxed);
         KickRecording(true);
-        while (host_copies_done.load(std::memory_order_acquire) < host_copies_issued) {
-            std::this_thread::yield();
+        const u64 issued = host_copies_issued;
+        const auto done = [&] { return host_copies_done.load(std::memory_order_acquire) >= issued; };
+        if (Gow3SignalWait::Enabled()) {
+            // gow3 (gow3_signal_wait.h): pauses, then sleeps until the recorder ran the copies.
+            Gow3SignalWait::Wait(done, Gow3Stats::enabled);
+        } else {
+            const u64 start_ns = Gow3Stats::enabled ? Gow3DrainWait::NowNs() : 0;
+            while (!done()) {
+                std::this_thread::yield();
+            }
+            if (Gow3Stats::enabled) {
+                Gow3SignalWait::waits.fetch_add(1, std::memory_order_relaxed);
+                Gow3SignalWait::wait_ns.fetch_add(Gow3DrainWait::NowNs() - start_ns,
+                                                  std::memory_order_relaxed);
+            }
         }
     }
     const auto recorded = diagnose ? now() : start;
