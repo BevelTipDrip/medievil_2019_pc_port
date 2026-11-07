@@ -3862,6 +3862,16 @@ RenderState Rasterizer::BeginRenderingFull(const GraphicsPipeline* pipeline) {
         state.height = proxy.height;
         target_scale = {float(size.width) / 1920.0f, float(size.height) / 1080.0f};
     }
+    if (FrameCapture::TargetWatch() && !FrameCapture::Active()) {
+        // gow3 GOW3_CAPTURE_ON_TARGET: a pass into a target of the watched size starts a capture.
+        std::array<const VideoCore::ImageInfo*, AmdGpu::NUM_COLOR_BUFFERS> colors{};
+        for (u32 cb = 0; cb < state.num_color_attachments; ++cb) {
+            if (cb_descs[cb].first) {
+                colors[cb] = &texture_cache.GetImage(cb_descs[cb].first).info;
+            }
+        }
+        FrameCapture::StartForTarget(colors.data(), state.num_color_attachments);
+    }
     if (FrameCapture::Active()) {
         std::array<const VideoCore::ImageInfo*, AmdGpu::NUM_COLOR_BUFFERS> colors{};
         for (u32 cb = 0; cb < state.num_color_attachments; ++cb) {

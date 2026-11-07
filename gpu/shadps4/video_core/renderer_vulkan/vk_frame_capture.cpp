@@ -2,6 +2,7 @@
 #include "video_core/renderer_vulkan/vk_frame_capture.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <cstdlib>
 #include <ctime>
 #include <chrono>
@@ -217,8 +218,60 @@ void FrameCapture::AddDisplayBuffer(VAddr address) {
     }
 }
 
+namespace {
+struct TargetWatchSpec {
+    u32 width = 0, height = 0, remaining = 0;
+};
+TargetWatchSpec& WatchSpec() {
+    static TargetWatchSpec spec = [] {
+        TargetWatchSpec s;
+        const char* env = std::getenv("GOW3_CAPTURE_ON_TARGET");
+        if (env && std::sscanf(env, "%ux%u", &s.width, &s.height) == 2) {
+            const char* count = std::getenv("GOW3_CAPTURE_ON_TARGET_COUNT");
+            s.remaining = count && *count ? u32(std::strtoul(count, nullptr, 10)) : 2;
+        }
+        return s;
+    }();
+    return spec;
+}
+} // namespace
+
+bool FrameCapture::TargetWatch() {
+    return WatchSpec().remaining != 0;
+}
+
+void FrameCapture::StartForTarget(const VideoCore::ImageInfo* const* colors, u32 num_colors) {
+    auto& spec = WatchSpec();
+    if (!spec.remaining || state.load(std::memory_order_relaxed) != Idle) {
+        return;
+    }
+    for (u32 i = 0; i < num_colors; ++i) {
+        if (colors[i] && colors[i]->size.width == spec.width &&
+            colors[i]->size.height == spec.height) {
+            --spec.remaining;
+            entries.clear();
+            pending_sampled.clear();
+            pending_buffers.clear();
+            pass_open = false;
+            state.store(Recording, std::memory_order_release);
+            std::printf("Frame capture: started at a %ux%u target (%#llx)\n", spec.width,
+                        spec.height, static_cast<unsigned long long>(colors[i]->guest_address));
+            return;
+        }
+    }
+}
+
 void FrameCapture::BeginPass(const VideoCore::ImageInfo* const* colors, u32 num_colors,
                              const VideoCore::ImageInfo* depth) {
+    // gow3: a recording started by StartForTarget may see no frame boundary while a level loads.
+    if (state.load(std::memory_order_relaxed) == Recording && entries.size() >= 400) {
+        Write(last_presented.load(std::memory_order_relaxed));
+        entries.clear();
+        pending_sampled.clear();
+        pending_buffers.clear();
+        state.store(Idle, std::memory_order_release);
+        return;
+    }
     std::vector<Target> targets;
     bool display = false;
     {
