@@ -1670,3 +1670,34 @@ flip trace + frame stats; logging ini uncapped, the cap by the toggle file; GPU 
 2. The cuts already in the preset, in watts for the first time: `steps 30 4 "0 0 60" "0 4096 60" "0 7340032 60"
    "0 983040 60"` (drain hybrid off; stage A's A1+A2+A3 off; stage B's R1+R2+T1+T2 off) with a 540 s trace.
 3. Uncapped, one pair (`"0 0" "0 16777216"`, 30 s x 3): what the signal sleep costs in FPS when stage B is the limit.
+
+### Launch 15 results (2026-11-06 ~20:50-21:28, build `2a6efea-signal`, a new arena with a guaranteed heavy view (the old spot cannot be found under a cap), GPU auto; log `data/deck-launch15.log`, traces `research-data/deck/deck-{cap60-signal,cap60-cuts,uncap-cuts}-*`)
+
+- **Signal sleep at 60** (162 s each): FPS 60 / 60, socket 15.03 / 15.05 W, CPU 7.93 / 7.96 W, process CPU 362 / 363%,
+  stage B 49.1 / 50.0%: neutral. It works (1.5 of 2.7 waits a frame slept; wait time 0.38 vs 0.62 ms a frame) but each
+  slept wait is woken ~12 times (every host copy's Notify wakes it, its target or not: 42 wakes a frame). Uncapped
+  (rounds 2-4): sleep off 78.8 vs on 78.3 FPS, present intervals > 15 ms 96 vs 120 / min: the wake latency's sign,
+  inside the noise. **Not for the preset**; if picked up again, wake only at the waiter's target.
+- **At the 60 cap the APU still draws its 15 W:** GPU 83-85% busy at ~1,040 MHz, 3.5 W; **CPU cores ~3.2-3.4 GHz
+  (near the 3.5 GHz top), 7.7-7.9 W**; process CPU 3.6-3.7 cores. Uncapped in the same arena: GPU 96% busy at ~1,115
+  MHz, 4.3 W; CPU 2.89 GHz avg, 6.7 W; process 5.5 cores. The cap frees GPU work and the power manager gives what
+  is left to the CPU's boost, so the socket stays at 15 W.
+- **The preset's cuts, each switched off (second word), at 60** (108 s each): process CPU +4.8 (drain hybrid),
+  +9.9 (stage A's A1-A3), +14.6 (stage B's R1/R2/T1/T2) points of a core; CPU power +0.00-0.03 W, socket +0.01-0.06
+  W: the saved CPU time becomes idle at full clock and voltage, not watts.
+- **The same uncapped** (30 s x 4 rounds; round 1 left out: FPS rose 64.6 -> 76.9 through it while the arena
+  settled, with 527 / 414 ms hitches; 81 s per state; GPU 96% busy, so FPS is GPU-bound here):
+
+  | state | FPS | process CPU % | stage A % | stage B % | present > 15 ms / min | > 17 ms / min | p99.9 ms |
+  |---|---|---|---|---|---|---|---|
+  | all on | 78.3 | 553.5 | 70.7 | 76.0 | 120 | 3 | 16.84 |
+  | drain hybrid off | 78.3 | 569.3 | 86.5 | 76.2 | 108 | 10 | 17.82 |
+  | A1-A3 off | 78.1 | 557.5 | 74.1 | 77.9 | 112 | 4 | 16.89 |
+  | R1/R2/T1/T2 off | 77.6 | 554.6 | 73.9 | 81.2 | 122 | 5 | 17.29 |
+  | signal sleep off | 78.8 | 557.2 | 71.5 | 78.4 | 96 | 7 | 17.67 |
+
+  The cuts keep their CPU savings uncapped (drain hybrid 16 points of a core on stage A, the per-draw cuts 5 on
+  stage B) and the preset keeps them; FPS moves at most 0.7 here because the GPU is the limit.
+- **Next (proposed):** a CPU clock ceiling at the 60 cap (`scaling_max_freq`, amd-pstate-epp, all cores; the user
+  with sudo: 3.0 / 2.6 / 2.2 GHz, restore 3501250), a 60 s trace each: the lowest ceiling that holds 60 by the 0.1%
+  lows, and the watts it gives back. Capping every core lowers the shared voltage (capping some did not, 2026-11-05).
