@@ -1061,11 +1061,27 @@ void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size) {
     // Partial buffer writes still need the image's untouched bytes in guest memory.
     ResolveReadbacks(address, max_size, true, ReadbackSource::GpuPartialWrite);
     std::scoped_lock lock{mutex};
+    // gow3 GOW3_GPU_WRITE_SUBRESOURCES=1 (plan-linux-deck.md "Mausoleum lighting"): a GPU write
+    // anywhere inside an image marks it too, not only one at its base address. UE4 copies each
+    // reflection capture into its slice of the capture array: those writes start inside the
+    // array, so the cached array kept what guest memory held when it was first sampled.
+    static const bool subresources = [] {
+        const char* env = std::getenv("GOW3_GPU_WRITE_SUBRESOURCES");
+        return env && env[0] == '1';
+    }();
     ForEachImageInRegion(address, max_size, [&](ImageId image_id, Image& image) {
         // Only consider images that match base address.
         // TODO: Maybe also consider subresources
         if (image.info.guest_address != address) {
-            return;
+            const bool inside = image.Overlaps(address, max_size);
+            if (inside && Watched(image.info)) {
+                WatchNote(image, subresources ? "GPU write inside" : "GPU write inside, ignored",
+                          std::format(" at +{:#x} size {:#x}", address - image.info.guest_address,
+                                      max_size));
+            }
+            if (!subresources || !inside) {
+                return;
+            }
         }
         // Ensure image is reuploaded when accessed again.
         InvalidateAlias(image);
