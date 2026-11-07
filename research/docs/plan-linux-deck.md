@@ -1644,3 +1644,29 @@ it is uneven work: which frames cost more and on which stage, from the same per-
 - **The user's decision:** no finer sweep; a 60 cap is fine on this screen. **The goal stays cutting CPU work** for
   headroom (higher settings, fewer stutters). From now on CPU cuts are judged at a 60 cap by CPU power and per-thread
   CPU time (the saving shows as idle time and watts there, not as FPS).
+
+## CPU cuts at a 60 cap (2026-11-06; tooling `7379aa0`, signal waits `2a6efea`; not run)
+
+**Method (the user's goal: CPU headroom, judged at the 60 cap they play at):** at a fixed frame rate a cut shows as
+idle time and watts, not FPS. The live cap word holds 60 (`"W1 W2 60"`) while the second word switches one cut;
+`deck.sh trace 420 50` (sampling every 50 ms is enough for averages; the APU trace now keeps its files open, 1.2%
+of a core at 8 ms in a WSL test, and logs the whole process's CPU) runs beside `deck.sh steps`, and `deck.sh power
+NAME` (`state_power.py`) gives per state: FPS (did the cap hold), socket / CPU / SoC / GPU power, GPU clock and busy,
+the process's CPU (% of one core) and each traced thread's.
+
+**Signal waits** (`gow3_signal_wait.h`, `GOW3_SIGNAL_SLEEP=1`, second word **16777216** off live; opt-in): the
+recording thread's waits for the recorder, `WaitDeferredSignals` (before WRITE_DATA, end-of-shader fences, the flip)
+and `WaitHostCopies`, called `sched_yield` until done: "blocked: host copies" 7-8% of stage B's time in launch 14
+(~0.9 ms a frame at 80 FPS). Now a pause spin of `GOW3_SIGNAL_SPIN_US` (30) then a futex sleep; the recorder / copy
+threads raise their counters as before and then wake sleepers only if one is registered (a fence and a load
+otherwise). Wake latency on the Deck ~70 us (stage A's drain line): a few a frame cost stage B time uncapped, none at
+a cap with slack. "Recorder waits per frame" line on both paths. `signal-wait-test`: two waiters, a producer with
+2 / 80 / 400 us gaps, watchdog on lost wakes.
+
+**Launch 15** (build `2a6efea-signal`; the preset's switches + `GOW3_PREP_WORKERS=2` + `GOW3_SIGNAL_SLEEP=1` +
+flip trace + frame stats; logging ini uncapped, the cap by the toggle file; GPU auto; heavy view, still):
+1. Signal waits: `deck.sh trace 420 50` beside `deck.sh steps 30 6 "0 0 60" "0 16777216 60"`, then `deck.sh
+   pull-trace deck-cap60-signal` and `deck.sh power deck-cap60-signal`.
+2. The cuts already in the preset, in watts for the first time: `steps 30 4 "0 0 60" "0 4096 60" "0 7340032 60"
+   "0 983040 60"` (drain hybrid off; stage A's A1+A2+A3 off; stage B's R1+R2+T1+T2 off) with a 540 s trace.
+3. Uncapped, one pair (`"0 0" "0 16777216"`, 30 s x 3): what the signal sleep costs in FPS when stage B is the limit.
