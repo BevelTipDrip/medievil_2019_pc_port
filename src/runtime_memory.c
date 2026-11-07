@@ -1179,6 +1179,20 @@ static int pool_keep_views(void) {
     return 0;
 #endif
 }
+/* gow3 GOW3_POOL_ZERO_DECOMMIT=1 (Linux; plan-linux-deck.md "Mausoleum lighting"): pool pages are
+ * zeroed (hole-punched) as a decommit gives them back. Windows keeps a decommitted range's pages
+ * for its next commit at that address (pool_keep_views): a render target UE4 decommits while
+ * unused and commits again gets its own bytes back. Linux took any free pages: another
+ * allocation's leftovers (the Hilltop Mausoleum's sky and reflection captures lit in garbage). */
+static int pool_zero_decommit(void) {
+#ifdef _WIN32
+    return 0;
+#else
+    static int v=-1;
+    if (v<0) { const char *e=getenv("GOW3_POOL_ZERO_DECOMMIT"); v=e && e[0]=='1'; }
+    return v;
+#endif
+}
 static void pool_give_locked(uint64_t phys, uint64_t size, int state) {
     for (int c=0;c<POOL_CHUNKS;++c)
         if (pool_chunks[c].pages && phys>=pool_chunks[c].phys && phys<pool_chunks[c].phys+pool_chunks[c].pages*PAGE) {
@@ -1278,6 +1292,7 @@ static int32_t pool_decommit_unlocked(uintptr_t start, uintptr_t end) {
                 r=INVALID;
                 if (recorded) write_unlock();
             } else {
+                if (pool_zero_decommit()) host_discard(v.phys+(a-v.start),b-a); /* unmapped: no view left */
                 if (!recorded) write_lock();
                 pool_give_locked(v.phys+(a-v.start),b-a,POOL_FREE);
                 write_unlock();
@@ -1373,7 +1388,10 @@ static int32_t pool_decommit_impl(void *address, uint64_t size) {
             drop_range(a,b);
             if (!r && vma_insert(vma_index(a),(Vma){a,b,KIND_RESERVED,0,0,0})) r=NO_MEMORY;
         } else if (vmas[i].kind!=KIND_RESERVED) {
-            if (vmas[i].kind==KIND_DIRECT) pool_give_locked(vmas[i].phys+(a-vmas[i].start),b-a,POOL_FREE);
+            if (vmas[i].kind==KIND_DIRECT) {
+                if (pool_zero_decommit()) host_discard(vmas[i].phys+(a-vmas[i].start),b-a);
+                pool_give_locked(vmas[i].phys+(a-vmas[i].start),b-a,POOL_FREE);
+            }
             r=unmap_locked(a,b-a);
             void *p=(void *)a;
             if (!r) r=place(&p,b-a,0,MAP_FIXED_FLAG,PAGE,KIND_RESERVED,0,0);
