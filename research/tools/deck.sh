@@ -12,14 +12,18 @@
 #   deck.sh ab "A" "B" [period] [cycles]   alternate the toggle file B, A, B, A ... (default 30 s, 5 cycles;
 #                                          ends on A); the game must be running
 #   deck.sh steps PERIOD CYCLES "S1" "S2" ...  write S1, S2, ... to the toggle file, PERIOD s each, CYCLES times
-#                                          (ends on S1); a third word is a live frame cap in FPS, e.g. "0 0 70"
+#                                          (ends on S1); a third word is a live frame cap in FPS, e.g. "0 0 70";
+#                                          output also in research-data/deck/last-steps.txt (pull-trace keeps it)
 #   deck.sh pull NAME                      copy the game log to research/docs/data/NAME.log
 #   deck.sh summary NAME|PATH [args]       per-window and per-toggle-state summary (deck_summary.py)
 #   deck.sh trace [seconds] [ms]           APU clocks / power and the key threads' CPU every ms (default 60 s,
-#                                          4 ms; apu_trace.py, no root) beside the running game
+#                                          8 ms; apu_trace.py, no root) beside the running game
 #   deck.sh pull-trace NAME                copy flip-trace.csv (GOW3_FLIP_TRACE) and apu-trace.csv to
-#                                          research-data/deck/NAME-{flip,apu}.csv (not in git: large)
+#                                          research-data/deck/NAME-{flip,apu}.csv (not in git: large), and
+#                                          the last steps output to NAME-steps.txt
 #   deck.sh frames NAME [args]             frame times beside clocks and power (frame_clocks.py)
+#   deck.sh power NAME [args]              power, GPU clock and CPU time by toggle state (state_power.py):
+#                                          CPU cuts at a frame cap, e.g. trace 400 50 beside steps 30 6 "0 0" "0 4096 60"
 #   deck.sh threads [seconds]              per-thread CPU and context switches during a run (/proc)
 #   deck.sh clocks [seconds] [names]       the clock of the CPU each named thread runs on, every 200 ms
 #   deck.sh ini logging|play|save N|diff  switch the ini between the fixed logging copy and the user's own (game closed)
@@ -83,7 +87,7 @@ steps)
     states=$(printf "'%s' " "$@")
     remote "for i in \$(seq $cycles); do for s in $states; do echo \"\$s\" > $toggle_file
             echo \"\$(date +%T) mono \$(python3 -c 'import time; print(time.monotonic_ns())') \$s\"; sleep $period; done; done
-        echo '$1' > $toggle_file; echo \"\$(date +%T) done (left at $1)\""
+        echo '$1' > $toggle_file; echo \"\$(date +%T) done (left at $1)\"" | tee "$repo/research-data/deck/last-steps.txt"
     ;;
 pull)
     name=${1:?NAME}
@@ -98,7 +102,7 @@ summary)
 trace)
     # The flip trace needs GOW3_FLIP_TRACE=/home/deck/.local/share/medievil-pc/user/flip-trace.csv in
     # extra-env.txt before the start (the game opens the file once); frame_clocks.py lines the two up.
-    seconds=${1:-60}; interval=${2:-4}
+    seconds=${1:-60}; interval=${2:-8}
     running || { echo 'game not running' >&2; exit 1; }
     remote 'cat > ~/MediEvil/apu_trace.py' < "$here/apu_trace.py"
     remote "python3 ~/MediEvil/apu_trace.py --seconds $seconds --interval $interval"
@@ -107,11 +111,16 @@ pull-trace)
     name=${1:?NAME}; out=$repo/research-data/deck; mkdir -p "$out"
     remote "cat ~/$data_dir/user/flip-trace.csv" > "$out/$name-flip.csv"
     remote "cat ~/$data_dir/user/apu-trace.csv" > "$out/$name-apu.csv"
+    [[ -f $out/last-steps.txt ]] && mv "$out/last-steps.txt" "$out/$name-steps.txt"
     echo "research-data/deck/$name-flip.csv ($(wc -l < "$out/$name-flip.csv") lines), $name-apu.csv ($(wc -l < "$out/$name-apu.csv") lines)"
     ;;
 frames)
     name=${1:?NAME}; shift
     py -3.14 "$here/frame_clocks.py" "$repo/research-data/deck/$name-flip.csv" "$repo/research-data/deck/$name-apu.csv" "$@"
+    ;;
+power)
+    name=${1:?NAME}; shift; d=$repo/research-data/deck
+    py -3.14 "$here/state_power.py" "$d/$name-apu.csv" "$d/$name-steps.txt" --flip "$d/$name-flip.csv" "$@"
     ;;
 threads)
     seconds=${1:-3}

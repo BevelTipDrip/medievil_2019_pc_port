@@ -4,7 +4,9 @@ Every --interval ms (default 4) one CSV row: CLOCK_MONOTONIC ns (the clock of th
 GOW3_FLIP_TRACE, so frame_clocks.py lines the two up), then from the amdgpu metrics table
 (/sys/class/drm/card*/device/gpu_metrics, format 2.x: Van Gogh) the driver's fetch time, the GPU's
 current and average clock and busy %, socket / CPU / SoC / GPU power (mW) and each CPU core's current
-clock, then for each traced thread the CPU it last ran on and its total run time (schedstat, ns).
+clock, the game process's total CPU time (all threads, utime + stime in ns, 10 ms resolution), then for
+each traced thread the CPU it last ran on and its total run time (schedstat, ns). Files stay open and are
+re-read with pread (the sampler cost 13-24% of a core at 4-8 ms when it reopened them every row).
 
 Traced threads: --names (default stage A, stage B, the recorder, the vblank / present thread) and the
 --top N busiest others over the first second (the game's own threads). Ends after --seconds or when
@@ -38,9 +40,23 @@ def metrics_path():
     return paths[0]
 
 
+_fds = {}
+
+
+def pread(path, size=4096):
+    """The file's current contents, from a descriptor kept open (procfs and sysfs regenerate at offset 0)."""
+    fd = _fds.get(path)
+    if fd is None:
+        fd = _fds[path] = os.open(path, os.O_RDONLY)
+    try:
+        return os.pread(fd, size, 0)
+    except OSError:
+        os.close(_fds.pop(path))
+        raise
+
+
 def read_metrics(path):
-    with open(path, 'rb') as f:
-        data = f.read(512)
+    data = pread(path, 512)
     if len(data) < MIN_SIZE or data[2] != 2:
         sys.exit(f'gpu_metrics: format {data[2] if len(data) > 2 else "?"}.{data[3] if len(data) > 3 else "?"}, '
                  f'{len(data)} bytes: not 2.x (an APU)')
@@ -62,15 +78,26 @@ def game_pid():
 def thread_info(pid, tid):
     """(name, cpu, run_ns), or None once the thread is gone."""
     try:
-        with open(f'/proc/{pid}/task/{tid}/stat') as f:
-            stat = f.read()
-        with open(f'/proc/{pid}/task/{tid}/schedstat') as f:
-            run_ns = int(f.read().split()[0])
+        stat = pread(f'/proc/{pid}/task/{tid}/stat').decode()
+        run_ns = int(pread(f'/proc/{pid}/task/{tid}/schedstat').split()[0])
     except (OSError, ValueError, IndexError):
         return None
     name = stat[stat.index('(') + 1:stat.rindex(')')]
     cpu = int(stat[stat.rindex(')') + 2:].split()[36])  # field 39 (processor), after the comm
     return name, cpu, run_ns
+
+
+TICK_NS = 1e9 / os.sysconf('SC_CLK_TCK')
+
+
+def process_cpu_ns(pid):
+    """The whole process's utime + stime (every thread), in ns."""
+    try:
+        stat = pread(f'/proc/{pid}/stat').decode()
+    except OSError:
+        return ''
+    fields = stat[stat.rindex(')') + 2:].split()
+    return int((int(fields[11]) + int(fields[12])) * TICK_NS)  # fields 14, 15 (utime, stime)
 
 
 def pick_threads(pid, names, top):
@@ -112,7 +139,7 @@ def main():
     print(f'gpu_metrics {path} format {first[2]}.{first[3]}, {len(first)} bytes; {cores} cores; '
           f'game pid {pid}; threads: ' + ', '.join(f'{n} ({t})' for t, n in threads))
     columns = ['t_ns', 'smu_ns', 'gfx_mhz', 'gfx_avg_mhz', 'gfx_busy', 'socket_mw', 'cpu_mw', 'soc_mw',
-               'gfx_mw'] + [f'core{c}_mhz' for c in range(cores)]
+               'gfx_mw'] + [f'core{c}_mhz' for c in range(cores)] + ['process.cpu_ns']
     for t, n in threads:
         columns += [f'{n}/{t}.cpu', f'{n}/{t}.run_ns']
     step = int(args.interval * 1e6)
@@ -136,7 +163,7 @@ def main():
             avg_gfx = struct.unpack_from('<H', data, AVG_GFXCLK)[0]
             cur_gfx = struct.unpack_from('<H', data, CUR_GFXCLK)[0]
             core = struct.unpack_from(f'<{cores}H', data, CUR_CORECLK)
-            row = [t_ns, smu, cur_gfx, avg_gfx, busy, *power, *core]
+            row = [t_ns, smu, cur_gfx, avg_gfx, busy, *power, *core, process_cpu_ns(pid)]
             alive = False
             for t, _n in threads:
                 info = thread_info(pid, t)
