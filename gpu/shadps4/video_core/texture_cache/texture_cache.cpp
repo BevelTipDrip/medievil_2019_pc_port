@@ -3,6 +3,8 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstring>
+#include <string>
 #include <format>
 #include <limits>
 #include <mutex>
@@ -42,6 +44,38 @@ namespace {
 bool IsTinyTarget(const ImageInfo& info) {
     return !info.props.is_depth && info.guest_address != 0 && info.guest_size <= 64_KB &&
            u64{info.size.width} * info.size.height * info.size.depth * info.resources.layers <= 64;
+}
+
+float HalfToFloat(u16 h) {
+    const u32 sign = (h >> 15) & 1, exponent = (h >> 10) & 31, mantissa = h & 1023;
+    float value;
+    if (exponent == 0) {
+        value = std::ldexp(float(mantissa), -24);
+    } else if (exponent == 31) {
+        value = mantissa ? std::numeric_limits<float>::quiet_NaN()
+                         : std::numeric_limits<float>::infinity();
+    } else {
+        value = std::ldexp(float(mantissa | 1024), int(exponent) - 25);
+    }
+    return sign ? -value : value;
+}
+
+/// GOW3_READBACK_LOG: up to `max` 8-byte groups of `data` that are not zero, as offset and four
+/// half floats (where a tiny RGBA16F target's texels landed in its guest copy).
+std::string NonZeroTexels(const u8* data, u64 size, u32 max) {
+    std::string out;
+    u32 found = 0;
+    for (u64 offset = 0; offset + 8 <= size && found < max; offset += 8) {
+        u16 h[4];
+        std::memcpy(h, data + offset, 8);
+        if ((h[0] | h[1] | h[2] | h[3]) == 0) {
+            continue;
+        }
+        out += std::format(" +{}:({:.5g} {:.5g} {:.5g} {:.5g})", offset, HalfToFloat(h[0]),
+                           HalfToFloat(h[1]), HalfToFloat(h[2]), HalfToFloat(h[3]));
+        ++found;
+    }
+    return out.empty() ? std::string(" all zero") : out;
 }
 } // namespace
 
@@ -257,9 +291,11 @@ void TextureCache::RetireReadbacks(bool polled) {
                 if (entry.seq) NoteTrackedPublish(entry.address, entry.size, entry.seq);
                 if (stale_readbacks && readback_published.insert(entry.address).second &&
                     readback_log) {
-                    std::printf("Readback first copy published: %#llx (%llu bytes)\n",
+                    std::printf("Readback first copy published: %#llx (%llu bytes); non-zero 8-byte "
+                                "groups:%s\n",
                                 static_cast<unsigned long long>(entry.address),
-                                static_cast<unsigned long long>(entry.size));
+                                static_cast<unsigned long long>(entry.size),
+                                NonZeroTexels(entry.payload.mapped, entry.size, 16).c_str());
                 }
                 ++readbacks_completed;
             }
@@ -610,6 +646,31 @@ std::optional<TextureCache::PendingDownload> TextureCache::RecordImageDownload(I
         const auto download = runtime.GetStagingPool().Request(
             image.info.guest_size, MemoryType::HostCached, 256, true);
         tile_manager.TileImage(image, copies, download.buffer, download.offset);
+        if (readback_log && !readback_published.contains(image.info.guest_address)) {
+            // gow3 GOW3_READBACK_LOG: the first copy's texels as the GPU holds them (linear, mip
+            // 0, layer 0), to compare with where the tiled copy puts them.
+            const u64 linear_size =
+                u64{image.info.size.width} * image.info.size.height * (image.info.num_bits / 8);
+            const auto linear =
+                runtime.GetStagingPool().Request(linear_size, MemoryType::HostCached, 16, true);
+            vk::BufferImageCopy copy = copies[0];
+            copy.bufferOffset = linear.offset;
+            copy.bufferRowLength = image.info.size.width;
+            copy.bufferImageHeight = image.info.size.height;
+            copy.imageSubresource.layerCount = 1;
+            copy.imageExtent.depth = 1;
+            runtime.DownloadImage(&image, linear.buffer, std::span{&copy, 1});
+            scheduler.DeferPriorityOperation([this, linear, linear_size,
+                                              address = image.info.guest_address,
+                                              width = image.info.size.width,
+                                              height = image.info.size.height] {
+                linear.Invalidate();
+                std::printf("Readback first copy GPU texels (linear): %#llx %ux%u:%s\n",
+                            static_cast<unsigned long long>(address), width, height,
+                            NonZeroTexels(linear.mapped, linear_size, 16).c_str());
+                runtime.GetStagingPool().FreeDeferred(linear);
+            });
+        }
         return PendingDownload{image.info.guest_address, image.info.guest_size, download};
     }
     const u32 download_size = image.info.pitch * image.info.size.height * image.info.size.depth *
@@ -1639,20 +1700,6 @@ bool SkippedTargetLog() {
         return env && env[0] == '1';
     }();
     return on;
-}
-
-float HalfToFloat(u16 h) {
-    const u32 sign = (h >> 15) & 1, exponent = (h >> 10) & 31, mantissa = h & 1023;
-    float value;
-    if (exponent == 0) {
-        value = std::ldexp(float(mantissa), -24);
-    } else if (exponent == 31) {
-        value = mantissa ? std::numeric_limits<float>::quiet_NaN()
-                         : std::numeric_limits<float>::infinity();
-    } else {
-        value = std::ldexp(float(mantissa | 1024), int(exponent) - 25);
-    }
-    return sign ? -value : value;
 }
 
 void LogSkippedTarget(const ImageInfo& info, const char* kind) {
