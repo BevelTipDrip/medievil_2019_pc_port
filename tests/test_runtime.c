@@ -178,6 +178,50 @@ static void wall_time(void) {
     assert(get(NULL,NULL)==0 && get(NULL,z.value)==0);
     assert(!runtime_resolve("n88vx3C5nW8#libc",0));
 }
+/* Kept pool pages (Linux, runtime_memory.c pool_keep_locked): a range decommitted and committed
+ * again at its address gets its own bytes back; a range committed elsewhere that has to take
+ * those pages reads zero, not their bytes (the Hilltop Mausoleum's garbage lighting). With
+ * GOW3_POOL_KEEP_PAGES=0 it only prints what the old behaviour does. */
+typedef int32_t (ABI *PoolExpand)(int64_t, int64_t, uint64_t, uint64_t, int64_t *);
+typedef int32_t (ABI *PoolReserve)(void *, uint64_t, uint64_t, int, void **);
+typedef int32_t (ABI *PoolCommit)(void *, uint64_t, int, int, int);
+typedef int32_t (ABI *PoolDecommit)(void *, uint64_t, int);
+static void pool_pages(void) {
+    PoolExpand expand=GET(PoolExpand,"qCSfqDILlns#libkernel");
+    PoolReserve reserve=GET(PoolReserve,"pU-QydtGcGY#libkernel");
+    PoolCommit commit=GET(PoolCommit,"Vzl66WmfLvk#libkernel");
+    PoolDecommit decommit=GET(PoolDecommit,"LXo1tpFqJGs#libkernel");
+    const char *keep_env=getenv("GOW3_POOL_KEEP_PAGES");
+    const int keep=!(keep_env && keep_env[0]=='0');
+    const uint64_t size=65536; /* 4 pool pages of 16 KiB: the whole pool */
+    int64_t phys=-1;
+    void *base=NULL;
+    assert(expand(0,536870912,size,65536,&phys)==0);
+    assert(reserve(NULL,2*size,65536,0,&base)==0 && base);
+    unsigned char *one=base, *two=(unsigned char *)base+size;
+    /* 1. own bytes back */
+    assert(commit(one,size,0,3,0)==0);
+    for (uint64_t p=0;p<size;p+=16384) memset(one+p,0xA5,64);
+    assert(decommit(one,size,0)==0);
+    assert(commit(one,size,0,3,0)==0);
+    int own=1;
+    for (uint64_t p=0;p<size;p+=16384) own&=one[p]==0xA5 && one[p+63]==0xA5;
+    /* 2. another range on a full pool takes those pages: zero, not their bytes */
+    assert(decommit(one,size,0)==0);
+    assert(commit(two,size,0,3,0)==0);
+    int zero2=1;
+    for (uint64_t p=0;p<size;p+=16384) zero2&=two[p]==0 && two[p+63]==0;
+    /* 3. and back: the first range takes the second's pages, zero again */
+    for (uint64_t p=0;p<size;p+=16384) memset(two+p,0x5A,64);
+    assert(decommit(two,size,0)==0);
+    assert(commit(one,size,0,3,0)==0);
+    int zero1=1;
+    for (uint64_t p=0;p<size;p+=16384) zero1&=one[p]==0 && one[p+63]==0;
+    assert(decommit(one,size,0)==0);
+    printf("pool pages (kept %s): own bytes back %s, another range's bytes leaked %s / %s\n",
+           keep ? "on" : "off", own ? "yes" : "no", zero2 ? "no" : "YES", zero1 ? "no" : "YES");
+    if (keep) assert(own && zero2 && zero1);
+}
 static void direct_memory(void) {
     Allocate alloc=GET(Allocate,"rTXw65xmLIA#libkernel");
     Map map=GET(Map,"L-Q3LEjIbgA#libkernel");
@@ -468,6 +512,7 @@ int main(int argc,char **argv) {
     if (argc>1 && !strcmp(argv[1],"--rwlock-timeouts")) { rw_timeouts(); return 0; }
     /* A1 alone (the full run stops earlier today: posix_mutexes' destroy-while-locked check). */
     if (argc>1 && !strcmp(argv[1],"--backing-copies")) { direct_memory(); backing_copies(); return 0; }
+    if (argc>1 && !strcmp(argv[1],"--pool-pages")) { pool_pages(); return 0; }
     libc_support(); posix_mutexes(); wall_time(); exit_handlers(); guards(); mutexes(); direct_memory(); memory_primitives(); backing_copies();
     rw_lifecycle(); rw_concurrency(); rw_timeouts();
     puts("PASS: callback lifecycle, guard ABI, mutex errors, shared direct memory, memory primitives, resolver scope");
