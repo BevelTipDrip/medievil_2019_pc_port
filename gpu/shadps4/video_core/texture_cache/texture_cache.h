@@ -551,15 +551,24 @@ private:
     /// gow3 (plan-linux-deck.md "Mausoleum lighting"): in stale mode a CPU read of a range whose
     /// first copy is still pending sees bytes no copy wrote (nothing was published there yet).
     /// GOW3_READBACK_LOG=1 logs each first copy (queued, published, read by the CPU);
-    /// GOW3_READBACK_FIRST_WAIT=1 also watches CPU reads of first copies, so such a read waits
-    /// for the GPU as without stale mode. Later copies stay stale (frame pacing unchanged).
+    /// CPU reads of first copies are watched too, so such a read waits for the GPU as without
+    /// stale mode (GOW3_READBACK_FIRST_WAIT=0: not, as before). Later copies stay stale (frame
+    /// pacing unchanged). A copy read once at a level's load (UE4's sky light lighting) is a
+    /// first copy.
     const bool readback_log = [] {
         const char* value = std::getenv("GOW3_READBACK_LOG");
         return value && value[0] == '1';
     }();
     const bool readback_first_wait = stale_readbacks && [] {
         const char* value = std::getenv("GOW3_READBACK_FIRST_WAIT");
-        return value && value[0] == '1';
+        return !(value && value[0] == '0');
+    }();
+    /// gow3: tiny color targets and storage images (at most 64 texels) are copied back to guest
+    /// memory in their tiled layout too (texture_cache.cpp IsTinyTarget; GOW3_TINY_TARGET_READBACK=0:
+    /// only linear or at most 8 wide, as before).
+    const bool tiny_target_readback = [] {
+        const char* value = std::getenv("GOW3_TINY_TARGET_READBACK");
+        return !(value && value[0] == '0');
     }();
     std::unordered_set<VAddr> readback_published; ///< ranges with a published copy (readback_mutex)
     /// Drops the page watch a queued copy holds (a read watch too for a first copy).

@@ -34,6 +34,18 @@
 namespace VideoCore {
 
 namespace {
+// gow3 (plan-linux-deck.md "Mausoleum lighting"): a color target or storage image of at most 64
+// texels (and 64 KiB) is copied back to guest memory whatever its tiling (the rule before:
+// linear or at most 8 wide). UE4's sky light lighting is a 9x1 RGBA16F tiled target the CPU reads
+// back once at a level's load: never copied back, the CPU took the bytes left there (zeros on the
+// PC by luck, leftovers on the Deck: the Hilltop Mausoleum lit in wrong colours).
+bool IsTinyTarget(const ImageInfo& info) {
+    return !info.props.is_depth && info.guest_address != 0 && info.guest_size <= 64_KB &&
+           u64{info.size.width} * info.size.height * info.size.depth * info.resources.layers <= 64;
+}
+} // namespace
+
+namespace {
 // gow3: GOW3_TEXCACHE_STATS=1 (diagnostics): what the cache does per 5 s, printed after a
 // submission's collector run. MediEvil lost FPS the longer a level was played and a restart
 // restored it: these show which part grows. Off: one load per counter.
@@ -572,6 +584,33 @@ std::optional<TextureCache::PendingDownload> TextureCache::RecordImageDownload(I
     Image& image = slot_images[image_id];
     if (False(image.flags & ImageFlagBits::GpuModified)) {
         return std::nullopt;
+    }
+    if (image.info.props.is_tiled && tiny_target_readback && IsTinyTarget(image.info)) {
+        // gow3: in the guest's tiled layout (the tiling shader writes the whole guest range,
+        // every mip), so a CPU read of the target finds each texel where the game looks for it.
+        boost::container::small_vector<vk::BufferImageCopy, 16> copies;
+        for (u32 mip = 0; mip < image.info.resources.levels; ++mip) {
+            const auto& mip_info = image.info.mips_layout[mip];
+            copies.push_back(vk::BufferImageCopy{
+                .bufferOffset = mip_info.offset,
+                .bufferRowLength = mip_info.pitch,
+                .bufferImageHeight = mip_info.height,
+                .imageSubresource{
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .mipLevel = mip,
+                    .baseArrayLayer = 0,
+                    .layerCount = image.info.resources.layers,
+                },
+                .imageOffset = {0, 0, 0},
+                .imageExtent = {std::max(image.info.size.width >> mip, 1u),
+                                std::max(image.info.size.height >> mip, 1u),
+                                std::max(image.info.size.depth >> mip, 1u)},
+            });
+        }
+        const auto download = runtime.GetStagingPool().Request(
+            image.info.guest_size, MemoryType::HostCached, 256, true);
+        tile_manager.TileImage(image, copies, download.buffer, download.offset);
+        return PendingDownload{image.info.guest_address, image.info.guest_size, download};
     }
     const u32 download_size = image.info.pitch * image.info.size.height * image.info.size.depth *
                               image.info.resources.layers * (image.info.num_bits / 8);
@@ -1652,7 +1691,8 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc, Vi
     Image& image = slot_images[image_id];
     if (desc.type == BindingType::Storage) {
         image.flags |= ImageFlagBits::GpuModified;
-        if (readback_linear_images && (!image.info.props.is_tiled || image.info.size.width <= 8) &&
+        if (readback_linear_images && (!image.info.props.is_tiled || image.info.size.width <= 8 ||
+                                       (tiny_target_readback && IsTinyTarget(image.info))) &&
             image.info.guest_address != 0) {
             std::unique_lock lk{download_images_mutex};
             download_images.emplace(image_id);
@@ -1686,7 +1726,8 @@ ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& des
     DiscardUndefinedContents(image_id);
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
-    if (readback_linear_images && (!image.info.props.is_tiled || image.info.size.width <= 8)) {
+    if (readback_linear_images && (!image.info.props.is_tiled || image.info.size.width <= 8 ||
+                                   (tiny_target_readback && IsTinyTarget(image.info)))) {
         std::unique_lock lk{download_images_mutex};
         download_images.emplace(image_id);
     } else if (SkippedTargetLog()) {
