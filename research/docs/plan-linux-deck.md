@@ -1701,3 +1701,52 @@ flip trace + frame stats; logging ini uncapped, the cap by the toggle file; GPU 
 - **Next (proposed):** a CPU clock ceiling at the 60 cap (`scaling_max_freq`, amd-pstate-epp, all cores; the user
   with sudo: 3.0 / 2.6 / 2.2 GHz, restore 3501250), a 60 s trace each: the lowest ceiling that holds 60 by the 0.1%
   lows, and the watts it gives back. Capping every core lowers the shared voltage (capping some did not, 2026-11-05).
+
+## Hilltop Mausoleum lighting: pool pages leaked on Linux (2026-11-06/07; fixed `7246f88` + `f74e1a1`)
+
+**Symptom (the user, Deck):** the Hilltop Mausoleum lit in wrong colours, surface by surface (pink, green, blue,
+over-bright; "like a normal map"), different every launch, the same after a level reload, white splotches on pillars
+and a sparkle on the silver shield. The user's own PC preset never showed it; the PC with the Deck preset did once.
+
+**Root cause [code, test, Deck runs]:** UE4 decommits a render target's pool memory while the target is unused
+(`sceKernelMemoryPoolDecommit`) and commits it again at the same address. Windows hands the same physical pages back
+(M1 pool views kept across a decommit, `40a416a` / `3c5704e`, a performance patch): the target gets its own bytes.
+Linux (`pool_keep_views()` = 0) put decommitted pages on the free list un-zeroed and a commit took any free pages:
+the target came back holding another allocation's bytes. The original import `ac900f8` already did this on both
+platforms; Windows stopped by accident with M1; D4 (`b7e947d`) only changed locking. Victims found: UE4's sky light
+capture cubemap (128x128 FP16, 8 layers: NaN and +-65504 in every mip), the 9x1 RGBA16F sky light SH target, the
+luminance chain's mips, the reflection capture arrays (128x128 L8 x 128/512/1024, uploaded once from guest memory
+"was undefined"). The view constants (words 624-651, sky irradiance) held garbage on the Deck, exact zeros on the PC.
+`runtime-test --pool-pages` reproduces it: with `GOW3_POOL_KEEP_PAGES=0` another range's bytes leak both ways.
+
+**Fix (`7246f88`, Linux):** kept pages, Windows' behaviour without views. A decommit leaves its pages kept for their
+address (`pool_owner`, `kept_table`); a commit takes back the pages kept for its address first; a kept page another
+address takes is zeroed first (`pool_zero_foreign_locked`); `f74e1a1`: a failed commit zeroes the pages it frees.
+`GOW3_POOL_KEEP_PAGES=0`: as before. Frame stats "Guest pool faults" line: kept pages taken back / commits without /
+another address's zeroed. **Deck result (the user):** "everything loaded in correctly"; 60 FPS; ~64,000 kept pages
+taken back per 5 s, 0 commits without, 0 zeroed; minor page faults ~7-35k per 5 s (broken baseline ~6-33k).
+`GOW3_POOL_ZERO_DECOMMIT=1` (`b42c0a8`, test) also fixed it but cost ~40x the page faults (~231k per 5 s).
+
+**Open (not changed here):**
+- Windows still leaks once no never-used page is left: `pool_take_locked`'s second loop hands out kept pages
+  un-zeroed, and a stale kept view can get another owner's bytes via `pool_take_at_locked` [code, research agent].
+  Smaller pools (PS4 memory sizes, the Deck preset on the PC) reach that sooner: the one PC glitch. Fix: zero there
+  (`host_discard` is a memset on Windows). Belongs to `lab` with its regression pass.
+- Under pressure a Linux recommit can get zeros instead of its own bytes (pages taken by another address, or a
+  `kept_table` slot replaced): safe but not PS4-identical; the counters show it.
+- The spacepepperoni fork (Linux, same runtime lineage) very likely has the same leak (their "purple reflections,
+  random colours per run").
+
+**Dead ends on the way (each ruled out by a run; kept as opt-in diagnostics):** A2 / every Deck switch / the finer
+culling patch / particle single pass / 4K memory (bisect), undefined-target uploads (`GOW3_NEW_IMAGES_UNDEFINED=0`),
+RADV `zerovram`, stale first readbacks (`GOW3_READBACK_FIRST_WAIT`), tiny tiled target copy-back
+(`GOW3_TINY_TARGET_READBACK`, off by default: frame cost), GPU writes inside images (`GOW3_GPU_WRITE_SUBRESOURCES`).
+One run "repaired itself" with `GOW3_TEXCACHE_STATS=1`; not reproducible (memory reuse luck).
+
+**Tools added (deck-lab):** RenderDoc on the Deck (`VK_LOADER_LAYERS_ENABLE=VK_LAYER_RENDERDOC_Capture` in
+extra-env; `renderdoccmd` injection kills the runtime), remote trigger `research/tools/renderdoc/trigger_capture.py`
+(SSH tunnel 38920), remote replay on the Deck (`renderdoccmd remoteserver` inside the SSH session, tunnel 39931 ->
+39920; set `MSYS2_ENV_CONV_EXCL=RD_CAPTURE` in Git Bash), `pass_images.py`, `pixel_draw_textures.py`,
+`debug_pixel_values.py`, `resource_names.py`, `disasm.py` remote; the frame map past the UI passes,
+`GOW3_CAPTURE_BUFFER_BYTES`, `GOW3_CAPTURE_ON_TARGET=WxH[:Format]` (load-time passes) with texel statistics;
+`GOW3_READBACK_LOG`, `GOW3_SKIPPED_TARGET_LOG`, `GOW3_IMAGE_WATCH=WxH[:min_layers]`.
