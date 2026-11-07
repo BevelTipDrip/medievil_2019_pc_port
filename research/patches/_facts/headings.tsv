@@ -1,0 +1,1032 @@
+# file	line	level	anchor	heading  (generated)
+START-HERE.md	1	1	start-here-medievil-port-work	START HERE: MediEvil port work
+START-HERE.md	6	2	read-in-this-order	Read in this order
+START-HERE.md	17	2	rules-the-users-also-in-claudes-memory	Rules (the user's; also in Claude's memory)
+START-HERE.md	38	2	current-state-2026-10-18	Current state (2026-10-18)
+START-HERE.md	56	2	knobs-and-triggers	Knobs and triggers
+START-HERE.md	73	2	document-index	Document index
+START-HERE.md	105	2	elsewhere	Elsewhere
+building-and-tools.md	1	1	building-and-tools	Building and tools
+building-and-tools.md	5	2	paths	Paths
+building-and-tools.md	16	2	toolchain-installed-2026-10-18	Toolchain (installed 2026-10-18)
+building-and-tools.md	34	2	build	Build
+building-and-tools.md	49	2	run	Run
+building-and-tools.md	57	2	profiling-and-crashes	Profiling and crashes
+building-and-tools.md	69	2	research-tools	Research tools
+building-and-tools.md	96	2	traps	Traps
+design-u5-deck-memory.md	1	1	design-u5-on-the-deck-guest-memory-as-gpu-visible-memory-buffers-read-in-place	Design: U5 on the Deck: guest memory as GPU-visible memory, buffers read in place
+design-u5-deck-memory.md	13	2	summary	Summary
+design-u5-deck-memory.md	43	2	1-scope	1. Scope
+design-u5-deck-memory.md	52	2	2-what-we-know-going-in	2. What we know going in
+design-u5-deck-memory.md	83	2	3-the-ps4-memory-type-as-the-policy-input	3. The PS4 memory type as the policy input
+design-u5-deck-memory.md	121	2	4-guest-memory-allocation	4. Guest memory allocation
+design-u5-deck-memory.md	163	2	5-binding-in-place	5. Binding in place
+design-u5-deck-memory.md	189	2	6-write-tracking	6. Write tracking
+design-u5-deck-memory.md	202	2	7-gpu-writes-to-buffers	7. GPU writes to buffers
+design-u5-deck-memory.md	219	2	8-fences-gpu-ordered	8. Fences (GPU-ordered)
+design-u5-deck-memory.md	249	2	9-textures-copy-threads-staging-rings	9. Textures, copy threads, staging, rings
+design-u5-deck-memory.md	272	2	10-step-plan	10. Step plan
+design-u5-deck-memory.md	291	2	11-failure-modes-and-how-each-shows-up	11. Failure modes and how each shows up
+design-u5-deck-memory.md	309	2	12-gate-2-first-then-the-decision	12. Gate 2 first, then the decision
+design-u5-deck-memory.md	326	2	13-the-pc-fixes-under-u5-on-the-deck-input-to-the-deck-audit-of-the-pc-fixes	13. The PC fixes under U5 on the Deck (input to the "Deck audit of the PC fixes")
+design-u5-deck-memory.md	357	2	14-where-the-type-policy-could-help-the-pc-build	14. Where the type policy could help the PC build
+design-u5-deck-memory.md	371	2	open-questions	Open questions
+fix-inventory.md	1	1	fix-inventory-what-this-port-fixed-and-how-to-take-it-2026-11-02	Fix inventory: what this port fixed and how to take it (2026-11-02)
+fix-inventory.md	10	2	for-other-ports-how-to-read-this	For other ports: how to read this
+fix-inventory.md	53	2	1-gpu-sync-barriers-and-render-pass-breaks	1. GPU sync, barriers and render-pass breaks
+fix-inventory.md	69	2	2-draw-translation-cost-stage-b-per-draw	2. Draw translation cost (stage B, per draw)
+fix-inventory.md	86	2	3-memory-sync-uploads-and-readbacks	3. Memory sync, uploads and readbacks
+fix-inventory.md	105	2	4-runtime-loader-hle-guest-memory	4. Runtime (loader, HLE, guest memory)
+fix-inventory.md	115	2	5-correctness-and-stability	5. Correctness and stability
+fix-inventory.md	124	2	6-frame-pacing-and-present	6. Frame pacing and present
+fix-inventory.md	142	2	7-medievil-specific-ue4-config-eboot-patches-hooks	7. MediEvil-specific (UE4 config, eboot patches, hooks)
+fix-inventory.md	161	2	8-derived-and-inherited	8. Derived and inherited
+fix-inventory.md	163	3	from-the-bloodborne-port-credited-in-the-commits	From the Bloodborne port (credited in the commits)
+fix-inventory.md	173	3	from-upstream-medievil-133-138-bc160201983-and-contributors-merged-into-lab	From upstream MediEvil 1.3.3-1.3.8 (bc160201983 and contributors), merged into `lab`
+fix-inventory.md	200	2	9-diagnostics-worth-taking	9. Diagnostics worth taking
+fix-inventory.md	213	2	10-tried-and-dropped	10. Tried and dropped
+fix-inventory.md	239	2	caveats-in-the-evidence	Caveats in the evidence
+gpu-threading-reference.md	1	1	gpu-threading-reference-scheduler-recording-submit-waits-memory	GPU threading reference: scheduler, recording, submit, waits, memory
+gpu-threading-reference.md	7	2	1-directory	1. Directory
+gpu-threading-reference.md	22	2	2-invariants-must-hold-after-every-change	2. Invariants: must hold after every change
+gpu-threading-reference.md	35	2	3-before-every-test-launch	3. Before every test launch
+gpu-threading-reference.md	44	2	4-symptom--first-place-to-look	4. Symptom → first place to look
+gpu-threading-reference.md	53	2	5-things-not-to-retry	5. Things not to retry
+handoff-2026-10-18.md	1	1	handoff-2026-10-18-setup-and-research	Handoff 2026-10-18: setup and research
+handoff-2026-10-18.md	6	2	state-nothing-verified-in-game-yet	State (nothing verified in game yet)
+handoff-2026-10-18.md	21	2	how-it-works-files	How it works (files)
+handoff-2026-10-18.md	31	2	traps	Traps
+handoff-2026-10-18.md	37	2	later-the-same-day-to-1300-what-landed-on-lab	Later the same day (to 13:00): what landed on `lab`
+handoff-2026-10-18.md	58	2	next-steps--pending	Next steps / pending
+impl-cpu-waste.md	1	1	implementation-less-wasted-cpu-on-the-steam-deck-stage-as-drain-wait-the-game-threads-nav-purge	Implementation: less wasted CPU on the Steam Deck (stage A's drain wait, the game thread's nav purge)
+impl-cpu-waste.md	22	2	1-stage-as-drain-wait	1. Stage A's drain wait
+impl-cpu-waste.md	24	3	what-it-does-today-read-in-the-code	What it does today [read in the code]
+impl-cpu-waste.md	34	3	why-gow3_drain_sleep-lost-607-vs-640-fps-inferred-from-the-code	Why GOW3_DRAIN_SLEEP lost (60.7 vs 64.0 FPS) [inferred from the code]
+impl-cpu-waste.md	42	3	the-hybrid-wait-gow3_drain_hybrid1	The hybrid wait (`GOW3_DRAIN_HYBRID=1`)
+impl-cpu-waste.md	68	3	the-frame-stats-line	The frame-stats line
+impl-cpu-waste.md	84	3	unit-test	Unit test
+impl-cpu-waste.md	99	2	2-the-game-threads-tight-loop-task-2	2. The game thread's "tight loop" (task 2)
+impl-cpu-waste.md	101	3	address-mapping-read-in-the-code-and-logs	Address mapping [read in the code and logs]
+impl-cpu-waste.md	110	3	what-0x802c94ba2--ba5--ba8-is-not-a-wait-static-analysis-0102-high-confidence	What 0x802c94ba2 / ba5 / ba8 is: not a wait [static analysis, 01.02, high confidence]
+impl-cpu-waste.md	151	3	the-patch-item-2-gow3_nav_purge_nofence1	The patch (item 2; `GOW3_NAV_PURGE_NOFENCE=1`)
+impl-cpu-waste.md	168	2	3-every-spin-yield-and-busy-loop-on-the-ports-threads-task-1-inventory	3. Every spin, yield and busy loop on the port's threads (task 1 inventory)
+impl-cpu-waste.md	192	2	4-other-clear-waste-in-the-profile-recommendations-not-implemented	4. Other clear waste in the profile (recommendations, not implemented)
+impl-cpu-waste.md	228	2	the-deck-test-one-launch-the-users-go	The Deck test (one launch, the user's go)
+impl-cpu-waste.md	254	2	builds-and-tests	Builds and tests
+impl-deck-build-sched-pool.md	1	1	implemented-deck-build-flavour-scheduling-switches-guest-pool-prefill-2026-11-04	Implemented: Deck build flavour, scheduling switches, guest pool prefill (2026-11-04)
+impl-deck-build-sched-pool.md	24	2	s1-the-x86-64-v3-build-flavour	S1: the x86-64-v3 build flavour
+impl-deck-build-sched-pool.md	86	2	7-core-scheduling-cookie-on-stage-b-gow3_stage_b_core_sched1	#7: core scheduling cookie on stage B (GOW3_STAGE_B_CORE_SCHED=1)
+impl-deck-build-sched-pool.md	105	2	8-nice-for-stage-b-and-the-vblank-thread-gow3_thread_nice	#8: nice for stage B and the vblank thread (GOW3_THREAD_NICE)
+impl-deck-build-sched-pool.md	127	2	pool-prefill-and-populate-gow3_pool_prefill_mb-gow3_pool_populate	Pool prefill and populate (GOW3_POOL_PREFILL_MB, GOW3_POOL_POPULATE)
+impl-deck-build-sched-pool.md	169	2	build-and-test	Build and test
+impl-deck-build-sched-pool.md	191	2	the-deck-test-one-change-per-launch-each-with-the-users-go	The Deck test (one change per launch, each with the user's go)
+impl-deck-cpu-bundle.md	1	1	implemented-deck-cpu-bundle-d1-d2-recorder-lean-mode-2026-11-04	Implemented: Deck CPU bundle (D1, D2, recorder lean mode) (2026-11-04)
+impl-deck-cpu-bundle.md	22	2	d1-static-tls-for-the-gpu-library	D1: static TLS for the GPU library
+impl-deck-cpu-bundle.md	44	2	d2-cached-thread-id	D2: cached thread id
+impl-deck-cpu-bundle.md	52	2	r-recorder-lean-mode	R: recorder lean mode
+impl-deck-cpu-bundle.md	95	2	s-counters-gow3_frame_stats1	S: counters (`GOW3_FRAME_STATS=1`)
+impl-deck-cpu-bundle.md	103	2	build-and-test	Build and test
+impl-deck-cpu-bundle.md	112	2	the-deck-test-one-launch-the-users-go	The Deck test (one launch, the user's go)
+impl-deck-cpu-bundle.md	136	2	g-static-gpu-library-on-linux-gow3_static_gpu-98dca62	G: static GPU library on Linux (`GOW3_STATIC_GPU`, `98dca62`)
+impl-deck-cpu-bundle.md	181	3	the-deck-test-one-launch-each-the-users-go	The Deck test (one launch each, the user's go)
+impl-decode-pacing.md	1	1	implementation-decode-pacing-under-the-copy-model-gow3_decode_pacing1	Implementation: decode pacing under the copy model (`GOW3_DECODE_PACING=1`)
+impl-decode-pacing.md	12	2	what-it-is-for	What it is for
+impl-decode-pacing.md	24	2	switches	Switches
+impl-decode-pacing.md	41	2	design	Design
+impl-decode-pacing.md	43	3	1-gpu-idle-without-the-drain-liverpoolcpp	1. GPU idle without the drain (`liverpool.cpp`)
+impl-decode-pacing.md	60	3	2-pacing-gow3_decode_pacinghcpp-gnmdrivercpp	2. Pacing (`gow3_decode_pacing.{h,cpp}`, `gnmdriver.cpp`)
+impl-decode-pacing.md	87	3	3-with-gow3_early_frame_eop	3. With `GOW3_EARLY_FRAME_EOP`
+impl-decode-pacing.md	101	2	heap-safety-argument	Heap-safety argument
+impl-decode-pacing.md	150	2	statistics-gow3_frame_stats1-5-s-block-after-the-guest-memory-line-nothing-with-the-switch-off	Statistics (`GOW3_FRAME_STATS=1`, 5 s block, after the "Guest memory" line; nothing with the switch off)
+impl-decode-pacing.md	171	2	risks	Risks
+impl-decode-pacing.md	188	2	deck-test-one-launch-per-setting-each-with-the-users-go	Deck test (one launch per setting, each with the user's go)
+impl-decode-pacing.md	218	2	deck-results-2026-11-04-build-fb62432-logs-datadeck-decode-d0log-datadeck-decode-d1log-d2-on-the-deck	Deck results (2026-11-04, build `fb62432`; logs `data/deck-decode-D0.log`, `data/deck-decode-D1.log`, D2 on the Deck)
+impl-decode-pacing.md	238	2	display-buffer-label-waits-spacepepperonimedievil_ps4_linux-6ef7566-ported-2026-11-04	Display buffer label waits (spacepepperoni/medievil_ps4_Linux `6ef7566`, ported 2026-11-04)
+impl-decode-pacing.md	260	2	onsubmit-on-stage-b-gow3_onsubmit_stage_b-ported-2026-11-04	OnSubmit on stage B (`GOW3_ONSUBMIT_STAGE_B`, ported 2026-11-04)
+impl-decode-pacing.md	274	3	thread-safety-argument	Thread-safety argument
+impl-decode-pacing.md	338	2	deck-test-follow-up-one-launch-per-setting-each-with-the-users-go-build-after-fb62432	Deck test, follow-up (one launch per setting, each with the user's go; build after `fb62432`)
+impl-draw-reduction.md	1	1	implemented-draw-reduction-for-the-deck-hzb-size-patch-n0-draw-classes-2026-11-04	Implemented: draw reduction for the Deck (HZB size patch, N0 draw classes) (2026-11-04)
+impl-draw-reduction.md	17	2	1-finer-occlusion-culling-patchesmedievilxml	1. Finer occlusion culling (`patches/MediEvil.xml`)
+impl-draw-reduction.md	53	2	2-n0-draw-classes-gpushimgow3_draw_classesh	2. N0: draw classes (`gpu/shim/gow3_draw_classes.h`)
+impl-draw-reduction.md	89	2	3-gpu-particle-dt0-copy-skip-not-built	3. GPU-particle dt=0 copy skip: not built
+impl-draw-reduction.md	132	2	build-and-test	Build and test
+impl-draw-reduction.md	143	2	the-deck-test-one-change-per-launch-each-with-the-users-go	The Deck test (one change per launch, each with the user's go)
+impl-gpu-ordered-fences.md	1	1	implementation-gpu-ordered-fences-under-the-copy-model-u5-2-gow3_gpu_fences1	Implementation: GPU-ordered fences under the copy model (U5-2, `GOW3_GPU_FENCES=1`)
+impl-gpu-ordered-fences.md	13	2	what-it-is-for	What it is for
+impl-gpu-ordered-fences.md	20	2	switches	Switches
+impl-gpu-ordered-fences.md	43	2	what-was-ported-from-where	What was ported, from where
+impl-gpu-ordered-fences.md	61	2	differences-from-07-and-why	Differences from 0.7, and why
+impl-gpu-ordered-fences.md	98	2	what-frame-means-here	What "frame" means here
+impl-gpu-ordered-fences.md	106	2	flow-with-the-switch-on	Flow with the switch on
+impl-gpu-ordered-fences.md	119	2	stats-gow3_frame_stats1-in-the-5-s-block-after-cache-actions	Stats (`GOW3_FRAME_STATS=1`, in the 5 s block after "Cache actions")
+impl-gpu-ordered-fences.md	138	2	known-risks	Known risks
+impl-gpu-ordered-fences.md	168	2	test-plan-for-the-deck	Test plan for the Deck
+impl-live-render-scale.md	1	1	implementation-render-scale-live-in-1-steps	Implementation: render scale live, in 1% steps
+impl-live-render-scale.md	8	2	what-the-user-gets	What the user gets
+impl-live-render-scale.md	21	2	how-it-works	How it works
+impl-live-render-scale.md	53	2	limits	Limits
+impl-live-render-scale.md	74	2	what-follows-a-live-change-what-stays-as-started	What follows a live change, what stays as started
+impl-live-render-scale.md	95	2	tests-and-builds-2026-11-04	Tests and builds (2026-11-04)
+impl-live-render-scale.md	109	2	deck-test-one-launch-with-the-users-go	Deck test (one launch, with the user's go)
+impl-stage-a-decode.md	1	1	implementation-stage-as-per-packet-cost-on-the-steam-deck-a1-a2-a3	Implementation: stage A's per-packet cost on the Steam Deck (A1, A2, A3)
+impl-stage-a-decode.md	34	2	1-what-stage-a-does-per-draw-now	1. What stage A does per draw now
+impl-stage-a-decode.md	92	2	2-why-stage-b-waits-1-ms-a-frame-on-stage-a	2. Why stage B waits ~1 ms a frame on stage A
+impl-stage-a-decode.md	117	2	3-the-cuts	3. The cuts
+impl-stage-a-decode.md	119	3	a1-backing-copies-without-the-table-lock-be214c8-linux-gow3_backing_copy1-bit-1048576	A1: backing copies without the table lock (`be214c8`; Linux; `GOW3_BACKING_COPY=1`, bit 1048576)
+impl-stage-a-decode.md	168	3	a2-pending-write-filter-6fefc55-gow3_pending_filter1-bit-2097152	A2: pending-write filter (`6fefc55`; `GOW3_PENDING_FILTER=1`, bit 2097152)
+impl-stage-a-decode.md	187	3	a3-paired-register-checksum-3283c10-gow3_reg_hash_paired1-bit-4194304	A3: paired register checksum (`3283c10`; `GOW3_REG_HASH_PAIRED=1`, bit 4194304)
+impl-stage-a-decode.md	209	2	4-considered-not-done	4. Considered, not done
+impl-stage-a-decode.md	221	2	5-deck-ab-one-launch-the-users-go	5. Deck A/B (one launch, the user's go)
+impl-stage-a-decode.md	258	2	6-builds-and-tests-2026-11-05	6. Builds and tests (2026-11-05)
+impl-stage-a-decode.md	271	2	unverified	Unverified
+impl-stage-b-bundle-2.md	1	1	implemented-stage-b-bundle-2-c5-d4-d5-4-6-2026-11-04	Implemented: stage B bundle 2 (C5, D4, D5, #4, #6) (2026-11-04)
+impl-stage-b-bundle-2.md	30	2	c5-lock-free-readback-pre-check	C5: lock-free readback pre-check
+impl-stage-b-bundle-2.md	52	2	d4-pool-maps-outside-the-table-lock-linux	D4: pool maps outside the table lock (Linux)
+impl-stage-b-bundle-2.md	70	2	d5-table-lock-spin-linux-and-the-empty-hook-flush	D5: table lock spin (Linux) and the empty hook flush
+impl-stage-b-bundle-2.md	82	2	4-stage-b-never-blocks-for-a-short-wait-opt-in	#4: stage B never blocks for a short wait (opt-in)
+impl-stage-b-bundle-2.md	102	2	6-cache-line-groups	#6: cache-line groups
+impl-stage-b-bundle-2.md	113	2	build-and-test	Build and test
+impl-stage-b-bundle-2.md	129	2	the-deck-test-one-launch-the-users-go	The Deck test (one launch, the user's go)
+impl-stage-b-bundle-2.md	167	2	review-2026-11-04	Review (2026-11-04)
+impl-stage-b-per-draw-2.md	1	1	implemented-stage-b-per-draw-round-2-r1-r2-t1-t2-2026-11-05	Implemented: stage B per draw, round 2 (R1, R2, T1, T2) (2026-11-05)
+impl-stage-b-per-draw-2.md	33	2	1-where-the-per-draw-time-goes-read-from-the-code-and-deck-texset-1	1. Where the per-draw time goes (read from the code and deck-texset-1)
+impl-stage-b-per-draw-2.md	85	2	2-the-cuts	2. The cuts
+impl-stage-b-per-draw-2.md	87	3	r2-residency-bitmap-1f384e5-second-word-65536-default-on	R2: residency bitmap (`1f384e5`, second word 65536, default on)
+impl-stage-b-per-draw-2.md	97	3	t1-no-image-texture-binds-a8b0c13-second-word-131072-default-on	T1: no-image texture binds (`a8b0c13`, second word 131072, default on)
+impl-stage-b-per-draw-2.md	105	3	t2-wide-texture-set-memo-3d42992-gow3_texset_wide1-second-word-262144-off	T2: wide texture-set memo (`3d42992`, `GOW3_TEXSET_WIDE=1`, second word 262144 off)
+impl-stage-b-per-draw-2.md	123	3	r1-region-cache-index-ccfa08a-gow3_region_index1-second-word-524288-off	R1: region cache index (`ccfa08a`, `GOW3_REGION_INDEX=1`, second word 524288 off)
+impl-stage-b-per-draw-2.md	135	2	3-deck-test-one-launch-the-users-go	3. Deck test (one launch, the user's go)
+impl-stage-b-per-draw-2.md	165	2	4-build-and-tests-2026-11-05-windows	4. Build and tests (2026-11-05, Windows)
+impl-texset-index.md	1	1	implementation-the-texture-set-memo-in-a-compact-layout-and-stage-b-task--sleep-instrumentation	Implementation: the texture-set memo in a compact layout, and stage B task / sleep instrumentation
+impl-texset-index.md	16	2	1-instrumentation	1. Instrumentation
+impl-texset-index.md	18	3	1a-stage-b-sleeps-by-site	1a. Stage B sleeps by site
+impl-texset-index.md	30	3	1b-ordered-tasks-by-kind	1b. Ordered tasks by kind
+impl-texset-index.md	60	2	2-the-compact-texture-set-memo	2. The compact texture-set memo
+impl-texset-index.md	62	3	what-it-was	What it was
+impl-texset-index.md	77	3	why-not-a-fingerprint-index-in-front-of-the-table	Why not a fingerprint index in front of the table
+impl-texset-index.md	85	3	the-layout-vk_rasterizerh	The layout (`vk_rasterizer.h`)
+impl-texset-index.md	120	3	same-decisions-why-the-default-is-on	Same decisions (why the default is on)
+impl-texset-index.md	138	3	the-switch	The switch
+impl-texset-index.md	147	3	frame-statistics	Frame statistics
+impl-texset-index.md	161	3	expected-effect-inferred	Expected effect [inferred]
+impl-texset-index.md	170	2	the-deck-test-one-launch-the-users-go	The Deck test (one launch, the user's go)
+impl-texset-index.md	196	2	builds-and-tests	Builds and tests
+impl-u2-direct-arena-writes.md	1	1	u2-direct-arena-writes-implementation-2026-11-04	U2: direct arena writes (implementation, 2026-11-04)
+impl-u2-direct-arena-writes.md	9	2	1-what-it-does	1. What it does
+impl-u2-direct-arena-writes.md	25	2	2-the-guard-and-why-it-is-correct	2. The guard, and why it is correct
+impl-u2-direct-arena-writes.md	80	2	3-memory-types-per-platform	3. Memory types per platform
+impl-u2-direct-arena-writes.md	98	2	4-switches	4. Switches
+impl-u2-direct-arena-writes.md	106	2	5-stats-gow3_frame_stats1-every-5-s	5. Stats (`GOW3_FRAME_STATS=1`, every 5 s)
+impl-u2-direct-arena-writes.md	125	2	6-risks	6. Risks
+impl-u2-direct-arena-writes.md	152	2	7-deck-test-plan-one-launch-the-users-go	7. Deck test plan (one launch, the user's go)
+patches-and-pr-proposal.md	1	1	patches-on-lab-and-a-proposal-for-upstream-pull-requests	Patches on `lab` and a proposal for upstream pull requests
+patches-and-pr-proposal.md	7	2	executive-summary	Executive summary
+patches-and-pr-proposal.md	30	2	how-to-read-this	How to read this
+patches-and-pr-proposal.md	38	3	known-corrections-from-plan-frame-pacingmd	Known corrections (from plan-frame-pacing.md)
+patches-and-pr-proposal.md	48	2	1-confirmed-working-changes	1. Confirmed working changes
+patches-and-pr-proposal.md	50	3	summary	Summary
+patches-and-pr-proposal.md	65	3	i1-native-4k-start-the-game-at-4k-instead-of-a-live-rsetres	I1. Native 4K: start the game at 4K instead of a live r.SetRes
+patches-and-pr-proposal.md	93	3	l5-liverpool-drain-the-draw-pipe-before-every-queued-command	L5. Liverpool: drain the draw pipe before every queued command
+patches-and-pr-proposal.md	117	3	r2-runtime-validate-rwlock-handles-through-a-hash-set	R2. Runtime: validate rwlock handles through a hash set
+patches-and-pr-proposal.md	135	3	r3-runtime-start-the-memory-pools-free-page-search-at-a-per-chunk-hint	R3. Runtime: start the memory pool's free-page search at a per-chunk hint
+patches-and-pr-proposal.md	145	3	v3-texture-cache-render-volumes-through-2d-array-views-instead-of-expanding	V3. Texture cache: render volumes through 2D array views instead of expanding
+patches-and-pr-proposal.md	167	3	p1-regs-scan-dirty-register-blocks-by-word-instead-of-bit	P1. regs: scan dirty register blocks by word instead of bit
+patches-and-pr-proposal.md	179	3	m1--m1b-runtime_memory-keep-memory-pool-views-across-a-decommit-windows	M1 (+ M1b). runtime_memory: keep memory pool views across a decommit (Windows)
+patches-and-pr-proposal.md	197	3	v4-vk_rasterizer-apply-shader-writes-to-a-depth-buffers-stencil-plane	V4. vk_rasterizer: apply shader writes to a depth buffer's stencil plane
+patches-and-pr-proposal.md	220	3	c3-texture_cache-targets-made-where-an-unmap-freed-images-skip-the-first-upload	C3. texture_cache: targets made where an unmap freed images skip the first upload
+patches-and-pr-proposal.md	239	3	d2-gpu-guest-libc-writes-into-shader-written-memory-without-a-gpu-wait	D2. gpu: guest libc writes into shader-written memory without a GPU wait
+patches-and-pr-proposal.md	269	2	2-not-confirmed-or-not-a-fix	2. Not confirmed, or not a fix
+patches-and-pr-proposal.md	271	3	kept-but-no-measured-gain	Kept, but no measured gain
+patches-and-pr-proposal.md	278	3	opt-in-or-partial	Opt-in or partial
+patches-and-pr-proposal.md	287	3	reverted-or-rejected	Reverted or rejected
+patches-and-pr-proposal.md	297	3	diagnostics-only-no-behaviour-change-unless-their-switch-is-set	Diagnostics only (no behaviour change unless their switch is set)
+patches-and-pr-proposal.md	311	3	findings-worth-reporting-upstream-as-issues-no-fix-on-lab	Findings worth reporting upstream as issues (no fix on `lab`)
+patches-and-pr-proposal.md	323	2	3-what-stays-out-of-upstream	3. What stays out of upstream
+patches-and-pr-proposal.md	343	2	4-pull-request-proposal	4. Pull request proposal
+patches-and-pr-proposal.md	374	3	pr-1-liverpool-drain-the-draw-pipe-before-every-queued-command	PR 1. Liverpool: drain the draw pipe before every queued command
+patches-and-pr-proposal.md	386	3	pr-2-depth-buffers-apply-shader-writes-to-the-stencil-plane	PR 2. Depth buffers: apply shader writes to the stencil plane
+patches-and-pr-proposal.md	395	3	pr-3-render-targets-made-where-an-unmap-freed-images-skip-the-first-upload	PR 3. Render targets made where an unmap freed images skip the first upload
+patches-and-pr-proposal.md	403	3	pr-4-guest-libc-writes-into-shader-written-memory-without-a-gpu-wait	PR 4. Guest libc writes into shader-written memory without a GPU wait
+patches-and-pr-proposal.md	415	3	pr-5-6-runtime-rwlock-hash-set-pool-free-page-hint	PR 5, 6. Runtime: rwlock hash set; pool free-page hint
+patches-and-pr-proposal.md	423	3	pr-7-regs-scan-dirty-register-blocks-by-word	PR 7. regs: scan dirty register blocks by word
+patches-and-pr-proposal.md	428	3	pr-8-runtime-memory-windows-keep-pool-views-across-a-decommit	PR 8. Runtime memory (Windows): keep pool views across a decommit
+patches-and-pr-proposal.md	436	3	pr-9-native-4k-boot-conditional	PR 9. Native 4K boot (conditional)
+patches-and-pr-proposal.md	446	3	pr-10-minidump-on-a-fatal-fault	PR 10. Minidump on a fatal fault
+patches-and-pr-proposal.md	452	3	not-proposed	Not proposed
+patches-and-pr-proposal.md	466	2	5-inconsistencies-and-gaps-found-in-the-docs	5. Inconsistencies and gaps found in the docs
+plan-0102.md	1	1	medievil-0102-the-us-update-on-lab-2026-10-31	MediEvil 01.02 (the US update) on `lab` (2026-10-31)
+plan-0102.md	5	2	the-game-folder	The game folder
+plan-0102.md	20	2	the-eboot	The eboot
+plan-0102.md	26	2	the-ports-0100-only-sites-mapped	The port's 01.00-only sites, mapped
+plan-0102.md	53	2	first-launch-by-the-user-2026-10-31-1430-launcher-userlast_runlog	First launch by the user (2026-10-31 14:30, launcher, `user/last_run.log`)
+plan-0102.md	64	2	t-0102-1-2026-10-31-1431-1453-launched-by-claude-with-the-users-go-build-3cf6d69--nostats-log-datat-0102-1log	T-0102-1 (2026-10-31 14:31-14:53, launched by Claude with the user's go, build `3cf6d69`, `-NoStats`, log `data/t-0102-1.log`)
+plan-0102.md	90	2	t-0102-2-2026-11-01-194x-launched-by-claude-with-the-users-go-build-f6fcc91-log-datat-0102-2log	T-0102-2 (2026-11-01 19:4x, launched by Claude with the user's go, build `f6fcc91`, log `data/t-0102-2.log`)
+plan-0102.md	97	2	t-0102-3-2026-11-01-launched-by-claude-with-the-users-go-build-ffc247d-log-datat-0102-3log	T-0102-3 (2026-11-01, launched by Claude with the user's go, build `ffc247d`, log `data/t-0102-3.log`)
+plan-0102.md	106	2	t-0102-4-2026-11-01-1955-launched-by-claude-with-the-users-go-build-723a893-log-datat-0102-4log	T-0102-4 (2026-11-01 ~19:55, launched by Claude with the user's go, build `723a893`, log `data/t-0102-4.log`)
+plan-0102.md	118	2	t-0102-5-the-dust-culled-by-angle-2026-11-01-2016-renderdoc-build-09af284-log-datat-0102-5log	T-0102-5: the dust culled by angle (2026-11-01 20:16, RenderDoc, build `09af284`, log `data/t-0102-5.log`)
+plan-0102.md	143	3	the-gpu-particle-bounds-patch-2026-11-01-offline-to-test-in-game	The "GPU particle bounds" patch (2026-11-01, offline; to test in game)
+plan-0102.md	166	3	t-0102-6-2026-11-01-2338-2352-launched-by-claude-with-the-users-go-build-548db4c-log-datat-0102-6log	T-0102-6 (2026-11-01 23:38-23:52, launched by Claude with the user's go, build `548db4c`, log `data/t-0102-6.log`)
+plan-0102.md	175	2	upstream-as-shipped-for-comparison-2026-11-02-0104-0108-run-by-the-user	Upstream as shipped, for comparison (2026-11-02 01:04-01:08, run by the user)
+plan-0102.md	211	2	not-done--to-check-in-game	Not done / to check in game
+plan-baseline-issues.md	1	1	plan-baseline-issues-to-fix-before-any-enhancement-menus-frame-pacing	Plan: baseline issues to fix before any enhancement (menus, frame pacing)
+plan-baseline-issues.md	6	2	run-1-2026-10-18-0142-0207-the-user	Run 1 (2026-10-18 01:42-02:07, the user)
+plan-baseline-issues.md	16	2	i1-menu-navigation-stops-part-way	I1. Menu navigation stops part-way
+plan-baseline-issues.md	39	3	i1-research-2026-10-18-verified-in-outebootelf-of-0100	I1 research (2026-10-18, verified in `out/eboot.elf` of 01.00)
+plan-baseline-issues.md	62	3	i1-fix-attempt-1-lab-change-l3-built-2026-10-18-0300-not-yet-run	I1 fix, attempt 1 (lab change L3, built 2026-10-18 03:00, not yet run)
+plan-baseline-issues.md	81	3	t-i1b-result-2026-10-18-0320-0325-not-verified-yet	T-I1b result (2026-10-18 ~03:20-03:25): not verified yet
+plan-baseline-issues.md	102	2	i2-frame-times-oscillating-50--120-fps-gpu-not-saturated	I2. Frame times: oscillating 50 ↔ 120+ FPS, GPU not saturated
+plan-baseline-issues.md	134	2	run-2-2026-10-18-0222-0226-the-user-crash-while-loading-into-a-level	Run 2 (2026-10-18 ~02:22-02:26, the user): crash while loading into a level
+plan-baseline-issues.md	163	2	run-3-2026-10-18-0236-0242-the-user-from-the-launcher	Run 3 (2026-10-18 ~02:36-02:42, the user, from the launcher)
+plan-baseline-issues.md	185	2	h1-freeze-on-the-last-frame-run-i2-profile-4k-2026-10-18-0335-0337	H1. Freeze on the last frame (run i2-profile-4k, 2026-10-18 03:35-03:37)
+plan-baseline-issues.md	218	2	run-i2-profile-4k-2-2026-10-18-0347-0352-c1-again-first-profile	Run i2-profile-4k-2 (2026-10-18 03:47-03:52): C1 again, first profile
+plan-baseline-issues.md	249	2	h1--c1-one-cause-2026-10-18	H1 + C1: one cause? (2026-10-18)
+plan-baseline-issues.md	270	3	t-race-result-2026-10-18-0401-0410-launched-by-claude-with-the-users-go	T-race result (2026-10-18 04:01-04:10, launched by Claude with the user's go)
+plan-baseline-issues.md	278	3	root-cause-found-2026-10-18-read-only-trace--checked-by-hand	Root cause found (2026-10-18, read-only trace + checked by hand)
+plan-baseline-issues.md	316	2	c1-next-catch-it-when-it-happens	C1 next: catch it when it happens
+plan-baseline-issues.md	340	2	s1-silent-exit-with-code-5-at-startup-2026-10-18-1253-once	S1. Silent exit with code 5 at startup (2026-10-18 12:53, once)
+plan-baseline-issues.md	375	2	v2-fire--torches-broken-more-box-shadows-the-user-2026-10-18-run-perfdiag-heavy	V2. Fire / torches broken, more box shadows (the user, 2026-10-18, run `perfdiag-heavy`)
+plan-baseline-issues.md	388	2	v1-shadows-sometimes-drawn-as-a-big-box-the-user-2026-10-18	V1. Shadows sometimes drawn as a big box (the user, 2026-10-18)
+plan-baseline-issues.md	425	2	v3-effects-wrong-blending-misplaced-missing-at-an-angle-the-user-2026-10-31-play-session-on-3cea271	V3. Effects: wrong blending, misplaced, missing at an angle (the user, 2026-10-31, play session on `3cea271`)
+plan-baseline-issues.md	452	2	tests-one-change-per-launch-the-users-go-each-time	Tests (one change per launch, the user's go each time)
+plan-dlss.md	1	1	plan-dlss-sr-on-correct-inputs-then-dlss-frame-generation-ngx-vulkan	Plan: DLSS SR on correct inputs, then DLSS frame generation (NGX Vulkan)
+plan-dlss.md	6	2	what-is-known-today-read-2026-10-18	What is known today (read, 2026-10-18)
+plan-dlss.md	20	2	design	Design
+plan-dlss.md	31	2	stages-one-change-per-launch	Stages (one change per launch)
+plan-dlss.md	40	2	risks	Risks
+plan-frame-pacing.md	1	1	plan-frame-pacing-i2-stage-bs-waits-and-syscalls	Plan: frame pacing (I2): stage B's waits and syscalls
+plan-frame-pacing.md	8	2	baseline-build-bc0e1d6-race-fix-l5	Baseline (build `bc0e1d6`, race fix L5)
+plan-frame-pacing.md	17	2	lead-r-render-target-readbacks-first	Lead R: render-target readbacks (first)
+plan-frame-pacing.md	45	3	the-launchers-gpu-data-settings-read-2026-10-18-the-user-asked	The launcher's "GPU data" settings (read 2026-10-18, the user asked)
+plan-frame-pacing.md	58	3	p0-run-setup-2026-10-18-the-user-both-in-one-launch	P0 run setup (2026-10-18, the user: both in one launch)
+plan-frame-pacing.md	65	3	p0-results-2026-10-18-1122-1138-launched-by-claude-with-the-users-go	P0 results (2026-10-18 11:22-11:38, launched by Claude with the user's go)
+plan-frame-pacing.md	106	3	r1-ab-2026-10-18-a-1146-1153-b-1154-1201-launched-by-claude-with-the-users-go	R1 A/B (2026-10-18, A 11:46-11:53, B 11:54-12:01, launched by Claude with the user's go)
+plan-frame-pacing.md	138	3	whole-process-trace-2026-10-18-1214-1215-wpr-cpulight-20-s-the-user-recorded-build-e384aa1-r1-on	Whole-process trace (2026-10-18 12:14-12:15, WPR CPU.light 20 s, the user recorded; build `e384aa1`, R1 on)
+plan-frame-pacing.md	192	3	t-r23-result-2026-10-18-1255-1300-launched-by-claude-with-the-users-go-build-2097554	T-R23 result (2026-10-18 12:55-13:00, launched by Claude with the user's go; build `2097554`)
+plan-frame-pacing.md	212	3	wait-sites-2026-10-18-1340-gow3_wait_sites1-lab-diagnostic-9f088f1-run-wait-sites	Wait sites (2026-10-18 13:40, `GOW3_WAIT_SITES=1`, lab diagnostic `9f088f1`, run `wait-sites`)
+plan-frame-pacing.md	233	3	stacks-trace-2026-10-18-1346-graveyard-stacks2etl-wpr-cpu-15-s-read-with-xperf--tle--tti	Stacks trace (2026-10-18 13:46, `graveyard-stacks2.etl`, WPR CPU 15 s, read with `xperf -tle -tti`)
+plan-frame-pacing.md	249	3	what-the-render-thread-waits-for-2026-10-18-ghidra-1214--ghidraorbis-no-launch	What the render thread waits for (2026-10-18, Ghidra 12.1.4 + GhidraOrbis, no launch)
+plan-frame-pacing.md	275	3	r4a-result-2026-10-18-1405-1415-launched-by-claude-with-the-users-go-rejected	R4a result (2026-10-18 14:05-14:15, launched by Claude with the user's go): **rejected**
+plan-frame-pacing.md	296	3	gpu-wait-sites-2026-10-18-1420-gow3_perf_diag1-current-build-without-r4a-run-perfdiag-heavy	GPU wait sites (2026-10-18 14:20, `GOW3_PERF_DIAG=1`, current build without R4a; run `perfdiag-heavy`)
+plan-frame-pacing.md	326	3	r1-reverted-performance-degrades-with-new-content-2026-10-18-1440-1510	R1 reverted; performance degrades with new content (2026-10-18 14:40-15:10)
+plan-frame-pacing.md	347	3	t-c0-result-2026-10-18-1510-1515-the-cache-re-creates-and-re-uploads-20-images-per-frame	T-C0 result (2026-10-18 15:10-15:15): the cache re-creates and re-uploads ~20 images per frame
+plan-frame-pacing.md	377	3	t-c1-result-2026-10-18-1520-1530-launched-by-claude-with-the-users-go-build-4035556-log-datat-c1-expandslog	T-C1 result (2026-10-18 15:20-15:30, launched by Claude with the user's go; build `4035556`; log `data/t-c1-expands.log`)
+plan-frame-pacing.md	404	3	t-v3-result-2026-10-18-1545-1610-launched-by-claude-with-the-users-go-build-1f18217-log-datat-v3-volume-viewslog	T-V3 result (2026-10-18 15:45-16:10, launched by Claude with the user's go; build `1f18217`; log `data/t-v3-volume-views.log`)
+plan-frame-pacing.md	424	3	fog-ab-and-heavy-view-trace-2026-10-18-1600-1620-launched-by-claude-with-the-users-go-build-1f18217-log-datat-v3-fog-heavylog	Fog A/B and heavy-view trace (2026-10-18 16:00-16:20, launched by Claude with the user's go; build `1f18217`; log `data/t-v3-fog-heavy.log`)
+plan-frame-pacing.md	451	3	t-p1-result-2026-10-18-1625-1650-launched-by-claude-with-the-users-go-build-5cd037e-log-datat-p1-bitsetlog	T-P1 result (2026-10-18 16:25-16:50, launched by Claude with the user's go; build `5cd037e`; log `data/t-p1-bitset.log`)
+plan-frame-pacing.md	472	3	episode-captured-the-kernel-trims-the-guest-memory-section-2026-10-18-1725-1737-launched-by-claude-with-the-users-go-build-5cd037e-log-datat-episodelog--times	Episode captured: the kernel trims the guest memory section (2026-10-18 17:25-17:37, launched by Claude with the user's go; build `5cd037e`; log `data/t-episode.log` + `.times`)
+plan-frame-pacing.md	497	3	t-h1-result-2026-10-18-1750-1800-launched-by-claude-with-the-users-go-build-2618b9c-log-datat-h1-hostmaplog--times	T-H1 result (2026-10-18 17:50-18:00, launched by Claude with the user's go; build `2618b9c`; log `data/t-h1-hostmap.log` + `.times`)
+plan-frame-pacing.md	521	3	t-m1-result-2026-10-18-1810-1820-launched-by-claude-with-the-users-go-build-40a416a-log-datat-m1-poolviewslog--times	T-M1 result (2026-10-18 18:10-18:20, launched by Claude with the user's go; build `40a416a`; log `data/t-m1-poolviews.log` + `.times`)
+plan-frame-pacing.md	540	2	lead-c-texture-cache-churn-second	Lead C: texture-cache churn (second)
+plan-frame-pacing.md	546	2	lead-f-flip-waits-on-stage-b-third	Lead F: flip waits on stage B (third)
+plan-frame-pacing.md	550	2	stages-one-change-per-launch-behind-a-switch-defaulting-to-the-old-path	Stages (one change per launch, behind a switch defaulting to the old path)
+plan-frame-pacing.md	563	3	t-m1b-result-2026-10-18-1829-1839-launched-by-claude-with-the-users-go-build-3c5704e-log-datat-m1b-keptlog--times	T-M1b result (2026-10-18 18:29-18:39, launched by Claude with the user's go; build `3c5704e`; log `data/t-m1b-kept.log` + `.times`)
+plan-frame-pacing.md	593	3	t-c2-result-2026-10-18-1850-1853-launched-by-claude-with-the-users-go-build-9a3127a-log-datat-c2-recreatelog--times-ring-trace-pan-1etl-saved-1851416	T-C2 result (2026-10-18 18:50-18:53, launched by Claude with the user's go; build `9a3127a`; log `data/t-c2-recreate.log` + `.times`; ring trace `pan-1.etl` saved 18:51:41.6)
+plan-frame-pacing.md	628	3	panning-stall-anatomy-2026-10-19-pan-1etl-no-launch	Panning stall anatomy (2026-10-19, `pan-1.etl`, no launch)
+plan-frame-pacing.md	672	3	the-panning-stall-is-a-wait-chain-not-work-2026-10-19-pan-1etl--ghidra-no-launch	The panning stall is a wait chain, not work (2026-10-19, `pan-1.etl` + Ghidra, no launch)
+plan-frame-pacing.md	719	3	p2a-profile-and-fix-p2-2026-10-19	P2a profile and fix P2 (2026-10-19)
+plan-frame-pacing.md	770	3	step-1-heavy-view-stage-b-2026-10-19-the-user-1-then-2	Step 1: heavy view, stage B (2026-10-19, the user: "1 then 2")
+plan-frame-pacing.md	787	3	bloodborne-item-1-targeted-host-copy-waits-2026-10-19-the-user-port-over-anything-from-them-that-applies	Bloodborne item #1: targeted host copy waits (2026-10-19, the user: "port over anything from them that applies")
+plan-frame-pacing.md	803	3	upload-audit-what-is-copied-from-system-ram-to-the-gpu-2026-10-19-logs-only-no-launch	Upload audit: what is copied from system RAM to the GPU (2026-10-19, logs only, no launch)
+plan-frame-pacing.md	824	3	buffer-copies-and-resizable-bar--sam-2026-10-19-code--vulkaninfo-no-launch	Buffer copies and Resizable BAR / SAM (2026-10-19, code + vulkaninfo, no launch)
+plan-frame-pacing.md	863	3	t-u1-uploads-intro-trace-bit-62-ab-2026-10-19-171x-1726-launched-by-claude-with-the-users-go-build-fde3624-log-datat-u1-uploadslog	T-U1: uploads, intro trace, bit 62 A/B (2026-10-19 17:1x-17:26, launched by Claude with the user's go; build `fde3624`; log `data/t-u1-uploads.log`)
+plan-frame-pacing.md	885	3	t-sf1-what-the-slow-frames-do-2026-10-19-1735-1744-launched-by-claude-with-the-users-go-build-7d3d288-log-datat-sf1-slow-frameslog	T-SF1: what the slow frames do (2026-10-19 ~17:35-17:44, launched by Claude with the user's go; build `7d3d288`; log `data/t-sf1-slow-frames.log`)
+plan-frame-pacing.md	912	3	t-d1b-the-downloads-are-guest-write-faults-2026-10-19-1749-1753-launched-by-claude-with-the-users-go-build-057afc6-log-datat-d1b-unmap-discardlog	T-D1b: the downloads are guest write faults (2026-10-19 17:49-17:53, launched by Claude with the user's go; build `057afc6`; log `data/t-d1b-unmap-discard.log`)
+plan-frame-pacing.md	929	3	t-d2-who-writes-into-shader-written-memory-2026-10-19-1755-1800-launched-by-claude-with-the-users-go-build-537d86e-log-datat-d2-fault-siteslog	T-D2: who writes into shader-written memory (2026-10-19 ~17:55-18:00, launched by Claude with the user's go; build `537d86e`; log `data/t-d2-fault-sites.log`)
+plan-frame-pacing.md	949	3	t-d2b-d2-result-2026-10-19-1802-1813-launched-by-claude-with-the-users-go-build-1bc2dda-log-datat-d2b-precise-writeslog	T-D2b: D2 result (2026-10-19 18:02-18:13, launched by Claude with the user's go; build `1bc2dda`; log `data/t-d2b-precise-writes.log`)
+plan-frame-pacing.md	973	3	t-d2c-d2-live-ab-with-the-toggle-file-and-the-4k-boot-2026-10-19-1846-185x-launched-by-claude-with-the-users-go-build-8779190-log-datat-d2c-precise-ablog	T-D2c: D2 live A/B with the toggle file and the 4K boot (2026-10-19 18:46-18:5x, launched by Claude with the user's go; build `8779190`; log `data/t-d2c-precise-ab.log`)
+plan-frame-pacing.md	1010	3	t-d2d-d2b-result-2026-10-19-1900-1904-launched-by-claude-with-the-users-go-build-42a4943-log-datat-d2d-releaselog	T-D2d: D2b result (2026-10-19 ~19:00-19:04, launched by Claude with the user's go; build `42a4943`; log `data/t-d2d-release.log`)
+plan-frame-pacing.md	1020	3	t-o1-occlusion-queries-off-2026-10-19-1920-1926-launched-by-claude-with-the-users-go-build-42a4943-log-datat-o1-no-occlusionlog	T-O1: occlusion queries off (2026-10-19 ~19:20-19:26, launched by Claude with the user's go; build `42a4943`; log `data/t-o1-no-occlusion.log`)
+plan-frame-pacing.md	1039	3	o2-real-occlusion-query-results-2026-10-19-gow3_occlusion1-built-not-run-yet	O2: real occlusion query results (2026-10-19, `GOW3_OCCLUSION=1`, built, not run yet)
+plan-frame-pacing.md	1075	3	t-o2b-o2-runs-2026-10-19-1947-1952-launched-by-claude-with-the-users-go-build-11eba14-log-datat-o2b-occlusionlog	T-O2b: O2 runs (2026-10-19 19:47-19:52, launched by Claude with the user's go; build `11eba14`; log `data/t-o2b-occlusion.log`)
+plan-frame-pacing.md	1087	3	t-o2c-two-frame-old-queries-2026-10-19-1955-1959-launched-by-claude-with-the-users-go-build-11eba14-log-datat-o2c-buffered2log	T-O2c: two-frame-old queries (2026-10-19 19:55-19:59, launched by Claude with the user's go; build `11eba14`; log `data/t-o2c-buffered2.log`)
+plan-frame-pacing.md	1105	3	t-o2d-three-frame-old-queries-latency-split-2026-10-19-2004-2009-launched-by-claude-with-the-users-go-build-1daae1a-log-datat-o2d-buffered3log	T-O2d: three-frame-old queries, latency split (2026-10-19 20:04-20:09, launched by Claude with the user's go; build `1daae1a`; log `data/t-o2d-buffered3.log`)
+plan-frame-pacing.md	1128	3	o3-submit-the-queries-when-their-render-pass-ends-2026-10-19-built-b6dfc40-not-run-yet	O3: submit the queries when their render pass ends (2026-10-19, built `b6dfc40`, not run yet)
+plan-frame-pacing.md	1137	3	t-o3-a-submission-per-query-pass-is-too-many-2026-10-19-2021-2025-launched-by-claude-with-the-users-go-build-2b4e699-log-datat-o3-early-submitlog	T-O3: a submission per query pass is too many (2026-10-19 20:21-20:25, launched by Claude with the user's go; build `2b4e699`; log `data/t-o3-early-submit.log`)
+plan-frame-pacing.md	1148	3	t-o3b-rate-limited-o3-2026-10-19-2026-2032-launched-by-claude-with-the-users-go-build-df29fe7-log-datat-o3b-rate-limitedlog	T-O3b: rate-limited O3 (2026-10-19 20:26-20:32, launched by Claude with the user's go; build `df29fe7`; log `data/t-o3b-rate-limited.log`)
+plan-frame-pacing.md	1174	3	t-o3c-two-frame-old-queries-again-guest-wait-sites-2026-10-19-2041-2053-launched-by-claude-with-the-users-go-build-b6f9536-log-datat-o3c-buffered2log	T-O3c: two-frame-old queries again, guest wait sites (2026-10-19 20:41-20:53, launched by Claude with the user's go; build `b6f9536`; log `data/t-o3c-buffered2.log`)
+plan-frame-pacing.md	1199	2	cpu-oscillation-waits-and-hitches-trace-cpu-osc-1-2026-10-25	CPU oscillation, waits and hitches: trace cpu-osc-1 (2026-10-25)
+plan-frame-pacing.md	1253	3	t-m1-intro-movie-suspended-at-the-level-change-2026-10-26-launched-by-claude-with-the-users-go-log-datat-m1-movie-suspendlog	T-M1: intro movie suspended at the level change (2026-10-26, launched by Claude with the user's go; log `data/t-m1-movie-suspend.log`)
+plan-frame-pacing.md	1268	3	stage-bs-gpu-memory-calls-moved-off-it-2026-10-26-launched-by-claude-with-the-users-go	Stage B's GPU memory calls moved off it (2026-10-26, launched by Claude with the user's go)
+plan-frame-pacing.md	1289	3	n-1-nsight-systems-gpu-busy-vs-working-hard-in-the-fight-2026-10-27-launched-by-the-user-report-research-datansysnsys-fight-1-1nsys-rep-log-datansys-fight-1log	N-1: Nsight Systems, GPU busy vs working hard in the fight (2026-10-27, launched by the user; report `research-data\nsys\nsys-fight-1-1.nsys-rep`, log `data/nsys-fight-1.log`)
+plan-frame-pacing.md	1332	3	n-2-nsight-graphics-gpu-trace-the-gpu-waits-for-idle-most-of-each-frame-2026-10-27-launched-by-the-user-research-datangfxngfx-fight-1	N-2: Nsight Graphics GPU Trace: the GPU waits for idle most of each frame (2026-10-27, launched by the user; `research-data\ngfx\ngfx-fight-1`)
+plan-frame-pacing.md	1360	3	n-3-where-the-drains-come-from-by-code-site-2026-10-27-launched-by-the-user-gow3_perf_diag1-log-datat-b1-barrier-siteslog	N-3: where the drains come from, by code site (2026-10-27, launched by the user; `GOW3_PERF_DIAG=1`, log `data/t-b1-barrier-sites.log`)
+plan-frame-pacing.md	1392	3	n-4-change-1-image-transitions-to-the-reading-shader-stages-2026-10-2728-launched-by-the-user	N-4: change 1, image transitions to the reading shader stages (2026-10-27/28, launched by the user)
+plan-frame-pacing.md	1411	3	n-5-same-spot-ab-of-change-1-and-the-pcie-split-2026-10-28-launched-by-the-user-research-datangfxngfx-ab-1	N-5: same-spot A/B of change 1, and the PCIe split (2026-10-28, launched by the user; `research-data\ngfx\ngfx-ab-1`)
+plan-frame-pacing.md	1459	3	n-6-depth-writes-only-with-the-depth-test-on-2026-10-28	N-6: depth writes only with the depth test on (2026-10-28)
+plan-frame-pacing.md	1473	3	n-7-constant-ring-reuse-2026-10-28-launched-by-the-user	N-7: constant-ring reuse (2026-10-28, launched by the user)
+plan-frame-pacing.md	1487	3	n-8-panning-hitches-the-stream-class-table-and-logging-cost-2026-10-28-launched-by-the-user	N-8: panning hitches, the stream-class table, and logging cost (2026-10-28, launched by the user)
+plan-frame-pacing.md	1526	3	n-9-ue4-streaming--traversal-settings-for-this-game-2026-10-28-research-subagent-to-test	N-9: UE4 streaming / traversal settings for this game (2026-10-28, research subagent; to test)
+plan-frame-pacing.md	1556	3	n-10-what-the-image-upload-bursts-are-2026-10-28-launched-by-the-user-t-up1-refresh-siteslog-gow3_texcache_stats1	N-10: what the image upload bursts are (2026-10-28, launched by the user; `t-up1-refresh-sites.log`, `GOW3_TEXCACHE_STATS=1`)
+plan-frame-pacing.md	1571	3	n-11-render-targets-uploaded-before-being-rendered-into-the-map-oscillations-writer-2026-10-28-launched-by-the-user	N-11: render targets uploaded before being rendered into; the map oscillation's writer (2026-10-28, launched by the user)
+plan-frame-pacing.md	1594	3	n-12-why-the-maps-bone-page-counts-as-gpu-written-2026-10-28-launched-by-the-user-t-map1-gpu-writerlog-gow3_perf_diag1	N-12: why the map's bone page counts as GPU-written (2026-10-28, launched by the user; `t-map1-gpu-writer.log`, `GOW3_PERF_DIAG=1`)
+plan-frame-pacing.md	1610	3	n-13-the-map-oscillations-waits-2026-10-28-launched-by-the-user--by-claude-at-the-users-request	N-13: the map oscillation's waits (2026-10-28, launched by the user / by Claude at the user's request)
+plan-frame-pacing.md	1625	3	n-14-bumps-with-stats-off-the-constant-ring-ran-full-2026-10-28-launched-by-the-user	N-14: bumps with stats off: the constant ring ran full (2026-10-28, launched by the user)
+plan-frame-pacing.md	1642	3	n-15-heavy-area-9-10-ms-frames-with-the-gpu-partly-idle-ring-reuse-2026-10-2829-launched-by-the-user	N-15: heavy-area 9-10 ms frames with the GPU partly idle: ring reuse (2026-10-28/29, launched by the user)
+plan-frame-pacing.md	1660	3	n-16-research-where-heavy-frames-lose-time-constant-ring-stamp-fix-2026-10-29	N-16: research: where heavy frames lose time; constant-ring stamp fix (2026-10-29)
+plan-frame-pacing.md	1679	3	n-17-baseline-on-current-defaults-2026-10-29-launched-by-the-user-t-base1log-research-datasmi-base1csv	N-17: baseline on current defaults (2026-10-29, launched by the user; `t-base1.log`, `research-data\smi-base1.csv`)
+plan-frame-pacing.md	1693	3	n-18-preshadows-off-2026-10-29-launched-by-claude-with-the-users-go-t-pre1-preshadows-offlog-research-datasmi-pre1csv	N-18: preshadows off (2026-10-29, launched by Claude with the user's go; `t-pre1-preshadows-off.log`, `research-data\smi-pre1.csv`)
+plan-frame-pacing.md	1712	3	n-19-what-the-fights-slow-frames-are-per-pass-2026-10-29-launched-by-claude-with-the-users-go-t-prof1-fight-burstslog	N-19: what the fight's slow frames are, per pass (2026-10-29, launched by Claude with the user's go; `t-prof1-fight-bursts.log`)
+plan-frame-pacing.md	1726	3	n-20-the-fights-effects-at-half-resolution-2026-10-29-launched-by-claude-with-the-users-go-t-prof2-translucency-50log	N-20: the fight's effects at half resolution (2026-10-29, launched by Claude with the user's go; `t-prof2-translucency-50.log`)
+plan-frame-pacing.md	1743	3	n-21-why-the-death-effects-cost-2-3-ms-2026-10-29-launched-by-claude-with-the-users-go-t-diag1-death-effectslog-shader-dumps-in-usershaderdumps	N-21: why the death effects cost 2-3 ms (2026-10-29, launched by Claude with the user's go; `t-diag1-death-effects.log`, shader dumps in `user\shader\dumps`)
+plan-frame-pacing.md	1761	3	n-22-the-hzbs-small-mips-were-never-rendered-2026-10-30-launched-by-claude-with-the-users-go-t-hzb1-mip-targetslog-t-hzb2-micro-mipslog	N-22: the HZB's small mips were never rendered (2026-10-30, launched by Claude with the user's go; `t-hzb1-mip-targets.log`, `t-hzb2-micro-mips.log`)
+plan-frame-pacing.md	1792	3	n-23-the-view-switch-spikes-after-the-hzb-fix-2026-10-30-launched-by-claude-with-the-users-go-t-hzb5-switch-waitslog-t-hzb6-long-waitslog-t-hzb7-switch-profilelog	N-23: the view-switch spikes after the HZB fix (2026-10-30, launched by Claude with the user's go; `t-hzb5-switch-waits.log`, `t-hzb6-long-waits.log`, `t-hzb7-switch-profile.log`)
+plan-frame-pacing.md	1816	3	n-24-targets-a-guest-unmap-frees-are-parked-for-reuse-2026-10-30-launched-by-claude-with-the-users-go-t-park1-checklog-t-park2-cleanlog	N-24: targets a guest unmap frees are parked for reuse (2026-10-30, launched by Claude with the user's go; `t-park1-check.log`, `t-park2-clean.log`)
+plan-frame-pacing.md	1833	3	n-25-preshadows-as-a-live-switch-2026-10-30-launched-by-claude-with-the-users-go-t-park3-clean-preshadows-offlog-t-pre2-live-switchlog	N-25: preshadows as a live switch (2026-10-30, launched by Claude with the user's go; `t-park3-clean-preshadows-off.log`, `t-pre2-live-switch.log`)
+plan-frame-pacing.md	1855	3	n-26-effects-resolution-as-a-live-switch-2026-10-30-launched-by-claude-with-the-users-go-t-fx1-live-effectslog-gow3_gpu_profile1	N-26: effects resolution as a live switch (2026-10-30, launched by Claude with the user's go; `t-fx1-live-effects.log`, `GOW3_GPU_PROFILE=1`)
+plan-frame-pacing.md	1866	3	n-27-single-frame-stalls-and-the-fight-dips-measured-per-frame-2026-10-30-merge-branch-merge-138-launched-by-claude-with-the-users-go-t-m138-flip-1-t-m138-flip-2-host-off-t-lab-flip-1-t-m138-stall-1--wpr-stall-1etl	N-27: single-frame stalls and the fight dips, measured per frame (2026-10-30, merge branch `merge-1.3.8`, launched by Claude with the user's go; `t-m138-flip-1`, `t-m138-flip-2-host-off`, `t-lab-flip-1`, `t-m138-stall-1` + WPR `stall-1.etl`)
+plan-frame-pacing.md	1914	3	n-28-stage-b-counters-the-studys-step-0-2026-10-30-launched-by-claude-with-the-users-go-t-sb0-counterslog-build-ae09fcc-gow3_sections1	N-28: stage B counters, the study's Step 0 (2026-10-30, launched by Claude with the user's go; `t-sb0-counters.log`, build `ae09fcc`, `GOW3_SECTIONS=1`)
+plan-frame-pacing.md	1934	3	n-29-thinlto-on-by-default-2026-10-30-launched-by-claude-with-the-users-go-t-lto-a1log-t-lto-blog-same-code-a855b18	N-29: ThinLTO on by default (2026-10-30, launched by Claude with the user's go; `t-lto-a1.log`, `t-lto-b.log`, same code `a855b18`)
+plan-frame-pacing.md	1949	3	n-30-bulk-descriptor-copy-ab-inside-one-launch-2026-10-30-launched-by-claude-with-the-users-go-t-bulk-1log-build-ca5636f-lto	N-30: bulk descriptor copy, A/B inside one launch (2026-10-30, launched by Claude with the user's go; `t-bulk-1.log`, build `ca5636f`, LTO)
+plan-frame-pacing.md	1960	3	n-31-sampler-handle-memo-ab-inside-one-launch-2026-10-30-launched-by-claude-with-the-users-go-t-sampler-1log-build-5c752e8-lto-bulk-copy-on	N-31: sampler handle memo, A/B inside one launch (2026-10-30, launched by Claude with the user's go; `t-sampler-1.log`, build `5c752e8`, LTO, bulk copy on)
+plan-frame-pacing.md	1970	3	n-32-ring-reuse-retest-ab-inside-one-launch-2026-10-30-launched-by-claude-with-the-users-go-t-ring-1-build-9fb2d6c--nostats-flip-trace-research-dataflipt-ring-1csv	N-32: ring reuse retest, A/B inside one launch (2026-10-30, launched by Claude with the user's go; `t-ring-1`, build `9fb2d6c`, `-NoStats`, flip trace `research-data\flip\t-ring-1.csv`)
+plan-fsr-frame-generation.md	1	1	plan-fsr-3-frame-generation	Plan: FSR 3 frame generation
+plan-fsr-frame-generation.md	6	2	what-is-known-today-read-2026-10-18	What is known today (read, 2026-10-18)
+plan-fsr-frame-generation.md	20	2	design	Design
+plan-fsr-frame-generation.md	30	2	stages-one-change-per-launch	Stages (one change per launch)
+plan-fsr-frame-generation.md	39	2	risks	Risks
+plan-gpu-threading.md	1	1	plan-port-the-bloodborne-ports-performance-work-threading-waits-memory	Plan: port the Bloodborne port's performance work (threading, waits, memory)
+plan-gpu-threading.md	7	2	answer	Answer
+plan-gpu-threading.md	16	2	threads-today-both-ports	Threads today (both ports)
+plan-gpu-threading.md	23	2	candidates-ranked-claimed-gains-are-bloodbornes-own-numbers	Candidates (ranked; claimed gains are Bloodborne's own numbers)
+plan-gpu-threading.md	50	2	order-proposed-decided-by-p1	Order (proposed; decided by P1)
+plan-gpu-threading.md	58	2	what-to-measure-before-and-after-every-stage	What to measure (before and after every stage)
+plan-gpu-threading.md	67	2	stages-one-change-per-launch	Stages (one change per launch)
+plan-linux-deck.md	1	1	plan-linux-build-steam-deck-first-shared-memory-fixes-remote-dev-loop	Plan: Linux build, Steam Deck first, shared-memory fixes, remote dev loop
+plan-linux-deck.md	12	2	answer	Answer
+plan-linux-deck.md	48	2	1-current-state-of-linux	1. Current state of Linux
+plan-linux-deck.md	50	3	11-what-exists-code	1.1 What exists [code]
+plan-linux-deck.md	66	3	12-windows-only-code-paths-that-linux-lacks-code	1.2 Windows-only code paths that Linux lacks [code]
+plan-linux-deck.md	84	3	13-stale-or-dead-pieces-code	1.3 Stale or dead pieces [code]
+plan-linux-deck.md	93	3	14-known-linux-problems-on-lab	1.4 Known Linux problems on `lab`
+plan-linux-deck.md	105	3	15-what-was-tested-by-whom	1.5 What was tested, by whom
+plan-linux-deck.md	118	3	16-what-30-says-about-where-linux-loses-time-report	1.6 What #30 says about where Linux loses time [report]
+plan-linux-deck.md	143	2	2-hardware-facts-that-shape-the-plan	2. Hardware facts that shape the plan
+plan-linux-deck.md	163	2	3-build-environment	3. Build environment
+plan-linux-deck.md	165	3	31-options	3.1 Options
+plan-linux-deck.md	177	3	32-recommended-a-concrete-steps	3.2 Recommended: A, concrete steps
+plan-linux-deck.md	220	2	4-quick-baseline-the-windows-build-under-proton	4. Quick baseline: the Windows build under Proton
+plan-linux-deck.md	252	2	5-shared-memory-uma-and-handheld-fixes	5. Shared-memory (UMA) and handheld fixes
+plan-linux-deck.md	254	3	51-what-uma-changes-and-what-it-does-not	5.1 What UMA changes, and what it does not
+plan-linux-deck.md	275	3	52-every-copy-or-wait-between-guest-memory-and-gpu-memory-code	5.2 Every copy or wait between guest memory and GPU memory [code]
+plan-linux-deck.md	290	3	53-uma-fixes-ranked	5.3 UMA fixes, ranked
+plan-linux-deck.md	312	3	54-linux-and-4-core-items-not-uma-likely-bigger-on-the-deck	5.4 Linux and 4-core items (not UMA, likely bigger on the Deck)
+plan-linux-deck.md	324	3	55-handheld-settings	5.5 Handheld settings
+plan-linux-deck.md	343	2	6-remote-dev-loop-for-the-deck	6. Remote dev loop for the Deck
+plan-linux-deck.md	345	3	61-options	6.1 Options
+plan-linux-deck.md	360	3	62-one-time-setup-on-the-deck-the-user	6.2 One-time setup on the Deck (the user)
+plan-linux-deck.md	390	3	63-layout-on-the-deck	6.3 Layout on the Deck
+plan-linux-deck.md	405	3	64-commands-claude-runs-from-here-git-bash	6.4 Commands Claude runs from here (Git Bash)
+plan-linux-deck.md	476	2	7-proposed-order-with-tests	7. Proposed order, with tests
+plan-linux-deck.md	498	2	8-open-questions	8. Open questions
+plan-linux-deck.md	513	2	sources	Sources
+plan-linux-deck.md	537	2	decisions-and-answers-the-user-2026-11-03	Decisions and answers (the user, 2026-11-03)
+plan-linux-deck.md	560	2	the-deck-as-found-2026-11-03-read-over-ssh	The Deck as found (2026-11-03, read over SSH)
+plan-linux-deck.md	573	2	the-users-direction-on-performance-2026-11-03	The user's direction on performance (2026-11-03)
+plan-linux-deck.md	586	2	proton-run-1-2026-11-03-v200-package-steamos-3620-before-the-update-log-datadeck-proton-1log	Proton run 1 (2026-11-03, v2.0.0 package, SteamOS 3.6.20 before the update; log `data/deck-proton-1.log`)
+plan-linux-deck.md	614	2	proton-run-2-2026-11-03-after-the-update-v200-package-log-datadeck-proton-2log	Proton run 2 (2026-11-03, after the update; v2.0.0 package; log `data/deck-proton-2.log`)
+plan-linux-deck.md	627	2	proton-runs-3-4-2026-11-03-settings-changed-by-the-user-while-exploring	Proton runs 3-4 (2026-11-03, settings changed by the user while exploring)
+plan-linux-deck.md	643	2	branch-deck-lab-2026-11-03-the-user	Branch `deck-lab` (2026-11-03, the user)
+plan-linux-deck.md	648	2	native-run-1-2026-11-03-appimage-of-8072f54-gow3_frame_stats1-log-datadeck-native-1log-partial	Native run 1 (2026-11-03, AppImage of `8072f54`, `GOW3_FRAME_STATS=1`; log `data/deck-native-1.log`, partial)
+plan-linux-deck.md	658	2	native-run-2-2026-11-03-same-appimage-log-datadeck-native-2log	Native run 2 (2026-11-03, same AppImage; log `data/deck-native-2.log`)
+plan-linux-deck.md	673	2	native-run-3-stage-b-by-part-2026-11-03-appimage-of-56e323b-gow3_frame_stats1-gow3_sections1-gow3_slow_frames14-log-datadeck-native-3log	Native run 3: stage B by part (2026-11-03, AppImage of `56e323b`; `GOW3_FRAME_STATS=1 GOW3_SECTIONS=1 GOW3_SLOW_FRAMES=1.4`; log `data/deck-native-3.log`)
+plan-linux-deck.md	709	2	native-run-4-flip-trace-2026-11-03-gow3_frame_stats1-gow3_flip_trace-log-datadeck-native-4log-trace-research-dataflipdeck-native-4csv	Native run 4: flip trace (2026-11-03, `GOW3_FRAME_STATS=1 GOW3_FLIP_TRACE`; log `data/deck-native-4.log`, trace `research-data/flip/deck-native-4.csv`)
+plan-linux-deck.md	727	2	native-run-5-render-scale-67-2026-11-03-log-datadeck-native-5log-trace-research-dataflipdeck-native-5csv	Native run 5: render scale 67% (2026-11-03; log `data/deck-native-5.log`, trace `research-data/flip/deck-native-5.csv`)
+plan-linux-deck.md	739	2	test-settings-by-file-2026-11-03-the-users-request-a15b5cb	Test settings by file (2026-11-03, the user's request; `a15b5cb`)
+plan-linux-deck.md	747	2	native-run-6-gow3_uffd1-2026-11-03-appimage-a15b5cb-settings-by-extra-envtxt-log-datadeck-native-6log-trace-research-dataflipdeck-native-6csv	Native run 6: `GOW3_UFFD=1` (2026-11-03, AppImage `a15b5cb`, settings by extra-env.txt; log `data/deck-native-6.log`, trace `research-data/flip/deck-native-6.csv`)
+plan-linux-deck.md	761	2	direction-the-user-2026-11-03-build-for-the-decks-architecture-not-around-the-pcs	Direction (the user, 2026-11-03): build for the Deck's architecture, not around the PC's
+plan-linux-deck.md	775	2	u5-gate-1-probes-on-the-deck-2026-11-03-steamos-395-radv-26199-built-from-bloodborne_pctools-run-over-ssh-not-the-game	U5 gate 1: probes on the Deck (2026-11-03, SteamOS 3.9.5, RADV 26.1.99; built from `bloodborne_pc/tools`, run over SSH, not the game)
+plan-linux-deck.md	795	2	native-run-7-gate-2-stats-2026-11-03-appimage-3efee7a-gow3_frame_stats1-by-file-log-datadeck-native-7-crashlog	Native run 7: gate 2 stats (2026-11-03, AppImage `3efee7a`, `GOW3_FRAME_STATS=1` by file; log `data/deck-native-7-crash.log`)
+plan-linux-deck.md	824	2	native-run-8-gate-2-in-the-graveyard-2026-11-03-appimage-aec1592-67-log-datadeck-native-8log	Native run 8: gate 2 in the graveyard (2026-11-03, AppImage `aec1592`, 67%; log `data/deck-native-8.log`)
+plan-linux-deck.md	841	2	native-run-9-fence-lag-2026-11-03-appimage-579c9d2-67-log-datadeck-native-9log	Native run 9: fence lag (2026-11-03, AppImage `579c9d2`, 67%; log `data/deck-native-9.log`)
+plan-linux-deck.md	859	2	gate-2-ab-attempt-2026-11-03-f97479f-reverted-in-ba95907	Gate 2 A/B attempt (2026-11-03, `f97479f`, reverted in `ba95907`)
+plan-linux-deck.md	870	2	u5-2-implemented-2026-11-03-0771a23-not-run-yet	U5-2 implemented (2026-11-03, `0771a23`; not run yet)
+plan-linux-deck.md	877	2	u5-2-ab-on-the-deck-2026-11-04-appimage-0771a23-67-gpu-clock-auto-logs-datadeck-u5-2-ab0b2log	U5-2 A/B on the Deck (2026-11-04, AppImage `0771a23`, 67%, GPU clock auto; logs `data/deck-u5-2-{A,B0,B2}.log`)
+plan-linux-deck.md	898	2	pinned-gpu-clock-2026-11-04-the-user-log-datadeck-u5-2-b2-1600log-partial	Pinned GPU clock (2026-11-04, the user; log `data/deck-u5-2-B2-1600.log`, partial)
+plan-linux-deck.md	912	2	wait-sites-and-per-thread-cpu-2026-11-04-appimage-0771a23-fences-off-auto-clocks-except-the-last-30-s-log-datadeck-waitsites-1log	Wait sites and per-thread CPU (2026-11-04, AppImage `0771a23`, fences off, auto clocks except the last ~30 s; log `data/deck-waitsites-1.log`)
+plan-linux-deck.md	932	2	drain-sleep-2026-11-04-appimage-ea8f4c1-fences-off-auto-clocks-log-datadeck-drain-sleep-1log	Drain sleep (2026-11-04, AppImage `ea8f4c1`, fences off, auto clocks; log `data/deck-drain-sleep-1.log`)
+plan-linux-deck.md	944	2	what-the-per-frame-eop-wait-is-2026-11-04-study-eop-wait-sitemd-static-0102	What the per-frame EOP wait is (2026-11-04, [study-eop-wait-site.md](study-eop-wait-site.md), static, 01.02)
+plan-linux-deck.md	961	2	u2-implemented-2026-11-04-not-run-yet	U2 implemented (2026-11-04; not run yet)
+plan-linux-deck.md	970	2	u2-ab-early-frame-eop-and-the-submission-gates-2026-11-04	U2 A/B, early frame EOP, and the submission gates (2026-11-04)
+plan-linux-deck.md	990	2	decode-pacing-d0-d2-2026-11-04-appimage-fb62432-67-auto-clocks-helpers-auto-no-dedicated-core-logs-datadeck-decode-d012log	Decode pacing D0-D2 (2026-11-04, AppImage `fb62432`, 67%, auto clocks, helpers Auto, no dedicated core; logs `data/deck-decode-D{0,1,2}.log`)
+plan-linux-deck.md	1018	2	hzb-resolution-and-culling-2026-11-04-runs-4-and-5-same-spot-and-settings-but-render-scale	HZB resolution and culling (2026-11-04; runs 4 and 5, same spot and settings but render scale)
+plan-linux-deck.md	1033	2	e1-and-the-fix-hit-rates-2026-11-04	E1 and the fix hit rates (2026-11-04)
+plan-linux-deck.md	1052	2	stage-b-per-draw-2026-11-04-study-stage-b-per-drawmd-c1-built-in-f03ee52-not-run	Stage B per draw (2026-11-04, [study-stage-b-per-draw.md](study-stage-b-per-draw.md); C1 built in `f03ee52`, not run)
+plan-linux-deck.md	1062	2	deck-test-tooling-2026-11-04-researchtoolsdecksh--deck_summarypy	Deck test tooling (2026-11-04): `research/tools/deck.sh` + `deck_summary.py`
+plan-linux-deck.md	1077	2	built-and-researched-while-the-deck-was-away-2026-11-04-nothing-run-yet	Built and researched while the Deck was away (2026-11-04; nothing run yet)
+plan-linux-deck.md	1124	2	baseline-1-and-live-abs-2026-11-04-appimage-a863482-67-helpers-auto-no-dedicated-core-auto-clocks-mailbox-log-datadeck-baseline-1-ablog	Baseline 1 and live A/Bs (2026-11-04, AppImage `a863482`, 67%, helpers Auto, no dedicated core, auto clocks, Mailbox; log `data/deck-baseline-1-ab.log`)
+plan-linux-deck.md	1155	2	finer-occlusion-culling-on-the-deck-2026-11-04-appimage-a4250a2-baseline-settings--gow3_hzb_full_size1-mailbox-log-datadeck-hzb-1log	Finer occlusion culling on the Deck (2026-11-04, AppImage `a4250a2`, baseline settings + `GOW3_HZB_FULL_SIZE=1`, Mailbox; log `data/deck-hzb-1.log`)
+plan-linux-deck.md	1170	2	decisions-after-the-culling-run-the-user-2026-11-04	Decisions after the culling run (the user, 2026-11-04)
+plan-linux-deck.md	1184	2	spin-compact-texture-memo-and-the-task-split-2026-11-04	Spin, compact texture memo and the task split (2026-11-04)
+plan-linux-deck.md	1201	2	cpu-clocks-and-the-power-cap-2026-11-0405-log-datadeck-epp-perf-1log-datadeck-dedicated-1log	CPU clocks and the power cap (2026-11-04/05; log `data/deck-epp-perf-1.log`, `data/deck-dedicated-1.log`)
+plan-linux-deck.md	1217	2	cutting-cpu-work-stage-as-wait-and-the-game-threads-top-samples-2026-11-05-built-not-run-impl-cpu-wastemd	Cutting CPU work: stage A's wait and the game thread's top samples (2026-11-05, built, not run; [impl-cpu-waste.md](impl-cpu-waste.md))
+plan-linux-deck.md	1229	2	stage-a-hybrid-drain-wait-2026-11-05-appimage-d6029de-gow3_drain_hybrid1-frame-stats-without-sections-log-datadeck-drain-hybrid-1log	Stage A hybrid drain wait (2026-11-05, AppImage `d6029de`, `GOW3_DRAIN_HYBRID=1`, frame stats without sections; log `data/deck-drain-hybrid-1.log`)
+plan-linux-deck.md	1237	2	stage-b-per-draw-round-2-2026-11-05-branch-stage-b-per-draw-2-impl-stage-b-per-draw-2md-not-run	Stage B per draw, round 2 (2026-11-05, branch `stage-b-per-draw-2`; [impl-stage-b-per-draw-2.md](impl-stage-b-per-draw-2.md); not run)
+plan-linux-deck.md	1250	2	per-draw-cuts-r1--r2--t1--t2-on-the-deck-2026-11-05-appimage-c71e87c-drain-hybrid-on-gow3_texset_wide1-gow3_region_index1-frame-stats-without-sections-log-datadeck-perdraw-1log	Per-draw cuts R1 / R2 / T1 / T2 on the Deck (2026-11-05, AppImage `c71e87c`, drain hybrid on, `GOW3_TEXSET_WIDE=1 GOW3_REGION_INDEX=1`, frame stats without sections; log `data/deck-perdraw-1.log`)
+plan-linux-deck.md	1262	2	a-flat-60-on-the-deck-the-user-2026-11-05	A flat 60 on the Deck (the user, 2026-11-05)
+plan-linux-deck.md	1271	2	deck-optimized-preset-2026-11-05-launcher-built-not-run	Deck Optimized preset (2026-11-05, launcher; built, not run)
+plan-linux-deck.md	1314	2	single-gpu-particle-pass-live-2026-11-05-d20f010-built-not-run	Single GPU particle pass, live (2026-11-05, `d20f010`; built, not run)
+plan-linux-deck.md	1339	3	deck-test-one-launch-the-users-go-the-user-presses-play	Deck test (one launch, the user's go; the user presses Play)
+plan-linux-deck.md	1377	3	particle-1-results-2026-11-05-1946-build-d20f010-test1105-log-datadeck-particle-1log	Particle 1 results (2026-11-05 ~19:46, build `d20f010-test1105`, log `data/deck-particle-1.log`)
+plan-linux-deck.md	1395	2	stage-a-per-packet-a1--a2--a3-2026-11-05-built-not-run-impl-stage-a-decodemd	Stage A per packet: A1 / A2 / A3 (2026-11-05, built, not run; [impl-stage-a-decode.md](impl-stage-a-decode.md))
+plan-linux-deck.md	1422	3	round-2-method-a-fixed-gpu-clock-for-cpu-efficiency-abs-the-user-2026-11-05	Round 2 method: a fixed GPU clock for CPU-efficiency A/Bs (the user, 2026-11-05)
+plan-linux-deck.md	1432	3	round-1-results-gpu-clock-auto-2026-11-05-ini-logging-67-uncapped-launched-by-the-user	Round 1 results, GPU clock auto (2026-11-05, ini logging 67% uncapped; launched by the user)
+plan-linux-deck.md	1448	3	round-2-results-gpu-fixed-at-1200-mhz-2026-11-05-2051-2106-same-launch-as-stage-a-1-log-datadeck-stagea-1200log	Round 2 results, GPU fixed at 1,200 MHz (2026-11-05 ~20:51-21:06, same launch as stage A 1, log `data/deck-stagea-1200.log`)
+plan-linux-deck.md	1467	3	particle-fix-1-2026-11-05-2110-2128-build-49291f3-particlefix-log-datadeck-particlefix-1log	Particle fix 1 (2026-11-05 ~21:10-21:28, build `49291f3-particlefix`, log `data/deck-particlefix-1.log`)
+plan-linux-deck.md	1488	3	particle-fix-2-the-guard-alone-2026-11-06-build-49291f3-particlefix	Particle fix 2: the guard alone (2026-11-06, build `49291f3-particlefix`)
+plan-linux-deck.md	1495	3	thread-nice-live-2026-11-06-build-5ab1a24-nicelive-logs-datadeck-nicelive-1log-datadeck-nicelive-1400log	Thread nice, live (2026-11-06, build `5ab1a24-nicelive`, logs `data/deck-nicelive-1.log`, `data/deck-nicelive-1400.log`)
+plan-linux-deck.md	1517	3	drain-wake-ahead-6-vs-2-live-2026-11-06-build-d2f145f-lows-log-datadeck-wakeahead-1log	Drain wake-ahead 6 vs 2, live (2026-11-06, build `d2f145f-lows`, log `data/deck-wakeahead-1.log`)
+plan-linux-deck.md	1534	3	static-vs-shared-gpu-library-2026-11-06-build-d2f145f-shared2-log-datadeck-shared-1log	Static vs shared GPU library (2026-11-06, build `d2f145f-shared2`, log `data/deck-shared-1.log`)
+plan-linux-deck.md	1550	3	two-draw-preparation-helpers-2026-11-06-build-d2f145f-lows-log-datadeck-helpers2-1log	Two draw-preparation helpers (2026-11-06, build `d2f145f-lows`, log `data/deck-helpers2-1.log`)
+plan-linux-deck.md	1569	2	clock-push-pull-at-gpu-auto-2026-11-06-the-users-model-tooling-5ead842-not-run	Clock push-pull at GPU auto (2026-11-06; the user's model; tooling `5ead842`, not run)
+plan-linux-deck.md	1612	3	launch-14-results-2026-11-06-1945-2022-build-5ead842-trace-2-helpers-logging-ini-67-uncapped-log-datadeck-pushpull-1log-traces-research-datadeckdeck-pushpull-auto1fixed1100capsweep-csv	Launch 14 results (2026-11-06 ~19:45-20:22, build `5ead842-trace`, 2 helpers, logging ini 67% uncapped; log `data/deck-pushpull-1.log`, traces `research-data/deck/deck-pushpull-{auto1,fixed1100,capsweep}-*.csv`)
+plan-linux-deck.md	1648	2	cpu-cuts-at-a-60-cap-2026-11-06-tooling-7379aa0-signal-waits-2a6efea-not-run	CPU cuts at a 60 cap (2026-11-06; tooling `7379aa0`, signal waits `2a6efea`; not run)
+plan-linux-deck.md	1674	3	launch-15-results-2026-11-06-2050-2128-build-2a6efea-signal-a-new-arena-with-a-guaranteed-heavy-view-the-old-spot-cannot-be-found-under-a-cap-gpu-auto-log-datadeck-launch15log-traces-research-datadeckdeck-cap60-signalcap60-cutsuncap-cuts-	Launch 15 results (2026-11-06 ~20:50-21:28, build `2a6efea-signal`, a new arena with a guaranteed heavy view (the old spot cannot be found under a cap), GPU auto; log `data/deck-launch15.log`, traces `research-data/deck/deck-{cap60-signal,cap60-cuts,uncap-cuts}-*`)
+plan-linux-deck.md	1705	2	hilltop-mausoleum-lighting-pool-pages-leaked-on-linux-2026-11-0607-fixed-7246f88--f74e1a1	Hilltop Mausoleum lighting: pool pages leaked on Linux (2026-11-06/07; fixed `7246f88` + `f74e1a1`)
+plan-live-switches.md	1	1	plan-graphics-settings-switched-live	Plan: graphics settings switched live
+plan-live-switches.md	6	2	scope-the-user-2026-10-30	Scope (the user, 2026-10-30)
+plan-live-switches.md	14	2	mechanism-built	Mechanism (built)
+plan-live-switches.md	23	2	done	Done
+plan-live-switches.md	35	2	next-in-order	Next, in order
+plan-live-switches.md	58	2	stays-a-restart-study	Stays a restart (study)
+plan-roadmap.md	1	1	plan-faster-medievil-with-real-motion-vectors-fsr-3-fg-and-dlss-srfg	Plan: faster MediEvil with real motion vectors, FSR 3 FG and DLSS SR/FG
+plan-roadmap.md	7	2	the-rule	The rule
+plan-roadmap.md	13	2	order-proposed-2026-10-18-the-user-to-confirm	Order (proposed 2026-10-18; the user to confirm)
+plan-roadmap.md	26	2	progress	Progress
+plan-roadmap.md	54	2	test-notes	Test notes
+plan-stage-b-split.md	1	1	plan-stage-bs-work-across-threads-feasibility-study	Plan: stage B's work across threads (feasibility study)
+plan-stage-b-split.md	7	2	why	Why
+plan-stage-b-split.md	13	2	profile-t-p3-2026-10-19-2100-2102-launched-by-claude-with-the-users-go-build-32eaea9--samples-log-datat-p3-stageb-profilelog-samples-in-research-datasamplest-p3-stageb-profile	Profile T-P3 (2026-10-19 21:00-21:02, launched by Claude with the user's go; build `32eaea9`; `-Samples`; log `data/t-p3-stageb-profile.log`, samples in `research-data\samples\t-p3-stageb-profile`)
+plan-stage-b-split.md	28	2	stage-bs-per-draw-path-code-map-vk_rasterizercpp--r	Stage B's per-draw path (code map; `vk_rasterizer.cpp` = R)
+plan-stage-b-split.md	48	2	options	Options
+plan-stage-b-split.md	63	2	order	Order
+plan-stage-b-split.md	72	2	t-w1-frames-queued-2-2026-10-19-2112-2116-launched-by-claude-with-the-users-go-build-3b30fe9-log-datat-w1-frames-queuedlog	T-W1: frames queued 2 (2026-10-19 21:12-21:16, launched by Claude with the user's go; build `3b30fe9`; log `data/t-w1-frames-queued.log`)
+plan-stage-b-split.md	85	2	t-w2-targeted-end-of-pipe-wait-queries-on-2026-10-19-2117-2121-launched-by-claude-with-the-users-go-build-3b30fe9-log-datat-w2-eop-targetedlog	T-W2: targeted end-of-pipe wait, queries on (2026-10-19 21:17-21:21, launched by Claude with the user's go; build `3b30fe9`; log `data/t-w2-eop-targeted.log`)
+plan-stage-b-split.md	99	2	t-w2b-queries-off-w2-ab-2026-10-19-2133-2138-launched-by-claude-with-the-users-go-build-f748f80-log-datat-w2b-queries-offlog	T-W2b: queries off, W2 A/B (2026-10-19 21:33-21:38, launched by Claude with the user's go; build `f748f80`; log `data/t-w2b-queries-off.log`)
+plan-stage-b-split.md	109	2	d3-downloads-on-a-readback-queue-built-5a5d73f	D3: downloads on a readback queue (built `5a5d73f`)
+plan-stage-b-split.md	117	2	t-d3b-downloads-on-the-readback-queue-2026-10-19-2214-2221-launched-by-claude-with-the-users-go-build-1afe70a-log-datat-d3b-readback-queuelog	T-D3b: downloads on the readback queue (2026-10-19 22:14-22:21, launched by Claude with the user's go; build `1afe70a`; log `data/t-d3b-readback-queue.log`)
+plan-stage-b-split.md	137	2	t-t1-gpu-write-twins-2026-10-19-2310-2316-launched-by-claude-with-the-users-go-build-2a40666-log-datat-t1-twinslog	T-T1: GPU write twins (2026-10-19 23:10-23:16, launched by Claude with the user's go; build `2a40666`; log `data/t-t1-twins.log`)
+plan-stage-b-split.md	151	2	l2--t-l2-region-caches-that-answer-during-writes-2026-10-19-2323-2330-launched-by-claude-with-the-users-go-build-03c363b--samples-log-datat-l2-region-bucketslog	L2 / T-L2: region caches that answer during writes (2026-10-19 23:23-23:30, launched by Claude with the user's go; build `03c363b`; `-Samples`; log `data/t-l2-region-buckets.log`)
+plan-stage-b-split.md	163	2	t-s1-stage-bs-time-per-packet-2026-10-19-2333-2341-launched-by-claude-with-the-users-go-build-c4bf2dc-gow3_sections1-log-datat-s1-sectionslog	T-S1: stage B's time per packet (2026-10-19 23:33-23:41, launched by Claude with the user's go; build `c4bf2dc`; `GOW3_SECTIONS=1`; log `data/t-s1-sections.log`)
+plan-stage-b-split.md	192	2	t-s2-small-host-copies-to-the-copy-threads-bit-19-2026-10-19-2343-2349-launched-by-claude-with-the-users-go-build-c4bf2dc-log-datat-s2-small-copieslog	T-S2: small host copies to the copy threads (bit 19) (2026-10-19 23:43-23:49, launched by Claude with the user's go; build `c4bf2dc`; log `data/t-s2-small-copies.log`)
+plan-stage-b-split.md	202	2	t-s3-record-calls-and-ordered-tasks-2026-10-1920-2357-0002-launched-by-claude-with-the-users-go-build-ba9c433-log-datat-s3-record-taskslog	T-S3: Record calls and ordered tasks (2026-10-19/20 23:57-00:02, launched by Claude with the user's go; build `ba9c433`; log `data/t-s3-record-tasks.log`)
+plan-stage-b-split.md	218	2	t-e1-end-of-shader-fences-deferred--w2-2026-10-20-0005-0013-launched-by-claude-with-the-users-go-build-cb1da6c-log-datat-e1-eos-deferredlog	T-E1: end-of-shader fences deferred + W2 (2026-10-20 00:05-00:13, launched by Claude with the user's go; build `cb1da6c`; log `data/t-e1-eos-deferred.log`)
+plan-stage-b-split.md	241	2	t-hz1-ue4s-hzb-occlusion-2026-10-20-0022-0027-launched-by-claude-with-the-users-go-build-852ec13-log-datat-hz1-hzblog	T-HZ1: UE4's HZB occlusion (2026-10-20 00:22-00:27, launched by Claude with the user's go; build `852ec13`; log `data/t-hz1-hzb.log`)
+plan-stage-b-split.md	257	2	t-hz2b-hzb-with-precise-readbacks-2026-10-20-0028-0033-launched-by-claude-with-the-users-go-build-a968802-log-datat-hz2b-hzb-preciselog	T-HZ2b: HZB with precise readbacks (2026-10-20 00:28-00:33, launched by Claude with the user's go; build `a968802`; log `data/t-hz2b-hzb-precise.log`)
+plan-stage-b-split.md	268	2	t-hz3-hzb--precise-readbacks--r1-2026-10-20-0037-0041-launched-by-claude-with-the-users-go-build-9dea0af-log-datat-hz3-readback-submitlog	T-HZ3: HZB + precise readbacks + R1 (2026-10-20 00:37-00:41, launched by Claude with the user's go; build `9dea0af`; log `data/t-hz3-readback-submit.log`)
+plan-stage-b-split.md	283	2	defaults-verified-in-a-normal-launch-2026-10-20-0047-0109-the-launcher-started-by-claude-with-the-users-go-without-lab-variables-build-c8615ea	Defaults verified in a normal launch (2026-10-20 00:47-01:09, the launcher started by Claude with the user's go, without lab variables; build `c8615ea`)
+plan-stage-b-split.md	292	2	t-hz4-hzb-remap-2026-10-20-2000-2148-launched-by-claude-with-the-users-go-builds-aceb5a4-53ade79-dfdc5fe-logs-datat-hz4log	T-HZ4: HZB remap (2026-10-20 20:00-21:48, launched by Claude with the user's go; builds `aceb5a4`, `53ade79`, `dfdc5fe`; logs `data/t-hz4*.log`)
+plan-stage-b-split.md	312	3	t-hz4f--t-hz4g--t-hz4h-where-the-remaining-spikes-come-from-2026-10-20-2157-2225-launched-by-claude-with-the-users-go	T-HZ4f / T-HZ4g / T-HZ4h: where the remaining spikes come from (2026-10-20 21:57-22:25, launched by Claude with the user's go)
+plan-stage-b-split.md	323	3	s2-small-read-only-buffers-bound-from-the-arena-opt-in-gow3_stream_clean1	S2: small read-only buffers bound from the arena (opt-in `GOW3_STREAM_CLEAN=1`)
+plan-stage-b-split.md	332	3	t-s1a-texture-binding-split-2026-10-20-2312-launched-by-claude-with-the-users-go-build-60d27d4-log-datat-s1a-texture-sectionslog	T-S1a: texture binding split (2026-10-20 23:12, launched by Claude with the user's go; build `60d27d4`; log `data/t-s1a-texture-sections.log`)
+plan-stage-b-split.md	345	3	t-s1b-region-stamps-2026-10-20-2322-2327-launched-by-claude-with-the-users-go-build-641134c-log-datat-s1b-region-stampslog	T-S1b: region stamps (2026-10-20 23:22-23:27, launched by Claude with the user's go; build `641134c`; log `data/t-s1b-region-stamps.log`)
+plan-stage-b-split.md	353	3	t-s1c--t-w3-texture-memo-two-way-the-write_data-wait-2026-10-20-2331-2345-launched-by-claude-with-the-users-go-builds-2492874-d67ac70-logs-datat-s1c-two-waylog-datat-w3-writedata-targetslog	T-S1c / T-W3: texture memo two-way; the WRITE_DATA wait (2026-10-20 23:31-23:45, launched by Claude with the user's go; builds `2492874`, `d67ac70`; logs `data/t-s1c-two-way.log`, `data/t-w3-writedata-targets.log`)
+plan-stage-b-split.md	384	3	t-w3d-w3-ab-without-diagnostics-2026-10-21-0012-0028-launched-by-claude-with-the-users-go-build-807d4c8--nostats	T-W3d: W3 A/B without diagnostics (2026-10-21 00:12-00:28, launched by Claude with the user's go; build `807d4c8`; `-NoStats`)
+plan-stage-b-split.md	397	3	t-z1-depth-prepass-off-2026-10-21-0058-0122-launched-by-claude-with-the-users-go-build-8acd280-logs-datat-z1-earlyz-offlog-datat-z1-baselinelog	T-Z1: depth prepass off (2026-10-21 00:58-01:22, launched by Claude with the user's go; build `8acd280`; logs `data/t-z1-earlyz-off.log`, `data/t-z1-baseline.log`)
+plan-stage-b-split.md	407	3	t-l0-rhisyncinterval0-2026-10-21-0128-0133-launched-by-claude-with-the-users-go-build-5231983-log-datat-l0-syncinterval0log	T-L0: `rhi.SyncInterval=0` (2026-10-21 01:28-01:33, launched by Claude with the user's go; build `5231983`; log `data/t-l0-syncinterval0.log`)
+plan-stage-b-split.md	416	3	t-l1b-precise-frame-limiter-at-233-2026-10-21-0140-launched-by-claude-with-the-users-go-build-a297c6b-log-datat-l1b-precise-233log	T-L1b: precise frame limiter at 233 (2026-10-21 01:40, launched by Claude with the user's go; build `a297c6b`; log `data/t-l1b-precise-233.log`)
+plan-stage-b-split.md	426	3	t-z2-t-z4b-dbuffer-decals-and-the-forced-prepass-2026-10-21-0200-0314-launched-by-claude-with-the-users-go	T-Z2-T-Z4b: DBuffer decals and the forced prepass (2026-10-21 02:00-03:14, launched by Claude with the user's go)
+plan-stage-b-split.md	456	3	t-p1--t-p2-why-panning-costs-2026-10-21-0335-1940-launched-by-claude-with-the-users-go-build-166557c-logs-datat-p1-panninglog-datat-p2-panning-sampleslog-samples-research-datasamplest-p2-panning-samples	T-P1 / T-P2: why panning costs (2026-10-21 03:35-19:40, launched by Claude with the user's go; build `166557c`; logs `data/t-p1-panning.log`, `data/t-p2-panning-samples.log`, samples `research-data\samples\t-p2-panning-samples`)
+plan-stage-b-split.md	489	3	t-m1-table-stats-what-the-region-table-costs-2026-10-21-2125-launched-by-claude-with-the-users-go-build-c7e128e--nostats-50-gow3_host_map_stats1-log-datat-m1-table-statslog	T-M1 (table stats): what the region table costs (2026-10-21 21:25, launched by Claude with the user's go; build `c7e128e`; `-NoStats`, 50%, `GOW3_HOST_MAP_STATS=1`; log `data/t-m1-table-stats.log`)
+plan-stage-b-split.md	504	3	t-s5--t-q2-the-remaining-spikes-frames-queued-2-2026-10-21-2210-2222-launched-by-claude-with-the-users-go-50-slow-frames--sections-logs-datat-s5-spikeslog-datat-q2-frames-queued-2log	T-S5 / T-Q2: the remaining spikes; frames queued 2 (2026-10-21 22:10-22:22, launched by Claude with the user's go; 50%, slow frames + sections; logs `data/t-s5-spikes.log`, `data/t-q2-frames-queued-2.log`)
+plan-stage-b-split.md	515	3	t-h3b-one-gpu-particle-pass-2026-10-21-2310-rgpuparticlefixdeltaseconds0-4k-frame-stats-log-datat-h3b-particles-fixdelta0log	T-H3b: one GPU particle pass (2026-10-21 23:10, `r.GPUParticle.FixDeltaSeconds=0`, 4K, frame stats; log `data/t-h3b-particles-fixdelta0.log`)
+plan-stage-b-split.md	520	3	launcher-performance-patch-toggles-2026-10-21	Launcher: performance patch toggles (2026-10-21)
+plan-stage-b-split.md	530	3	in-game-menu-and-the-launcher-share-the-settings-2026-10-22	In-game menu and the launcher share the settings (2026-10-22)
+plan-stage-b-split.md	544	3	t-l2-flip-trace-uncapped-vs-120-cap-2026-10-22-0020-0029-launched-by-claude-with-the-users-go-build-1e657ca--nostats-gow3_flip_trace-trace-research-dataflip-trace-1csv	T-L2: flip trace, uncapped vs 120 cap (2026-10-22 00:20-00:29, launched by Claude with the user's go; build `1e657ca`; `-NoStats`, `GOW3_FLIP_TRACE`; trace `research-data\flip-trace-1.csv`)
+plan-stage-b-split.md	555	3	t-l3--t-l4-precise-limiter-2026-10-22-launched-by-claude-with-the-users-go--nostats-gow3_precise_limit1-traces-flip-trace-2csv-flip-trace-3csv	T-L3 / T-L4: precise limiter (2026-10-22, launched by Claude with the user's go; `-NoStats`, `GOW3_PRECISE_LIMIT=1`; traces `flip-trace-2.csv`, `flip-trace-3.csv`)
+plan-stage-b-split.md	566	3	t-l5-newest-frame-mode-gow3_newest_frame1-the-users-proposal	T-L5: newest-frame mode (`GOW3_NEWEST_FRAME=1`, the user's proposal)
+plan-stage-b-split.md	604	3	t-v120-120-hz-tick-vsync-fifo-no-limiter-50-ue4_upscaleperformance-2026-10-23-launched-by-claude-with-the-users-go-f4ffc01-gow3_vblank_hz120-trace-flip-trace-8csv	T-V120: 120 Hz tick, VSync (FIFO), no limiter, 50% (`ue4_upscale=performance`) (2026-10-23, launched by Claude with the user's go; `f4ffc01`; `GOW3_VBLANK_HZ=120`; trace `flip-trace-8.csv`)
+plan-stage-b-split.md	647	3	baseline-recheck-of-t-v120-2026-10-23-0130-0210-launched-by-claude-with-the-users-go-each-time	Baseline recheck of T-V120 (2026-10-23 01:30-02:10, launched by Claude with the user's go each time)
+plan-stage-b-split.md	670	3	presentation-settings-in-the-launcher-2026-10-23	Presentation settings in the launcher (2026-10-23)
+plan-stage-b-split.md	695	3	t-p120-the-configuration-that-holds-the-cap-2026-10-23-0300-the-user-launcher-settings	T-P120: the configuration that holds the cap (2026-10-23 ~03:00, the user, launcher settings)
+plan-stage-b-split.md	726	3	ablation-of-the-t-p120-settings-2026-10-23-evening-traces-research-dataflip-trace-18csv-to--24csv	Ablation of the T-P120 settings (2026-10-23 evening; traces `research-data\flip-trace-18.csv` to `-24.csv`)
+plan-stage-b-split.md	750	3	t-p960-high-tick--limiter-on-top-of-the-t-p120-settings-2026-10-23-trace-flip-trace-25csv	T-P960: high tick + limiter, on top of the T-P120 settings (2026-10-23, trace `flip-trace-25.csv`)
+plan-stage-b-split.md	763	3	t-f1-what-makes-the-fights-frames-slow-2026-10-25-logs-t-p960-gpu-profile-5-t-p960-slow-frames	T-F1: what makes the fight's frames slow (2026-10-25; logs `t-p960-gpu-profile-5`, `t-p960-slow-frames`)
+plan-stage-b-split.md	787	3	t-f2-which-barriers-break-the-passes-log-t-f2-barrier-breaks-trace-33	T-F2: which barriers break the passes (log `t-f2-barrier-breaks`, trace 33)
+plan-stage-b-split.md	973	3	t-f27-the-capped-mode-that-works-and-the-launcher-consolidation-2026-10-25	T-F27: the capped mode that works, and the launcher consolidation (2026-10-25)
+plan-stage-b-split.md	994	3	t-r1--t-r2-booting-at-the-output-resolution-2026-10-25-launched-by-claude-with-the-users-go-logs-datat-r1-boot1440log-datat-r2-boot1440-windowlog	T-R1 / T-R2: booting at the output resolution (2026-10-25, launched by Claude with the user's go; logs `data/t-r1-boot1440.log`, `data/t-r2-boot1440-window.log`)
+plan-stage-b-split.md	1011	3	resolution-split-output-resolution--render-scale-2026-10-25	Resolution split: output resolution + render scale (2026-10-25)
+plan-ue4-motion-vectors.md	1	1	plan-real-ue4-motion-vectors-depth-jitter-and-camera-for-the-temporal-upscalers	Plan: real UE4 motion vectors, depth, jitter and camera for the temporal upscalers
+plan-ue4-motion-vectors.md	6	2	what-is-known-today-read-2026-10-18	What is known today (read, 2026-10-18)
+plan-ue4-motion-vectors.md	27	2	design	Design
+plan-ue4-motion-vectors.md	45	2	stages-one-change-per-launch	Stages (one change per launch)
+plan-ue4-motion-vectors.md	55	2	frame-map	Frame map
+plan-ue4-motion-vectors.md	59	2	risks	Risks
+plan-upstream-merge.md	1	1	plan-merge-upstream-133-135-into-lab-then-the-next-work-items	Plan: merge upstream 1.3.3-1.3.5 into `lab`, then the next work items
+plan-upstream-merge.md	10	2	1-where-upstream-and-lab-overlap	1. Where upstream and `lab` overlap
+plan-upstream-merge.md	25	2	2-the-five-conflicts-and-how-to-resolve-them	2. The five conflicts and how to resolve them
+plan-upstream-merge.md	50	2	3-test-after-the-merge-one-session-the-users-go	3. Test after the merge (one session, the user's go)
+plan-upstream-merge.md	63	2	4-next-work-items-in-order	4. Next work items, in order
+plan-work-queue.md	1	1	work-queue-what-is-next-in-order	Work queue: what is next, in order
+plan-work-queue.md	7	2	the-users-quality-of-life-list-2026-11-03-after-the-v200-release	The user's quality-of-life list (2026-11-03, after the v2.0.0 release)
+plan-work-queue.md	42	2	the-users-order-2026-10-30	The user's order (2026-10-30)
+plan-work-queue.md	71	2	pending-fixes-research-2026-10-29-ranked-there-state-now	Pending fixes (research 2026-10-29, ranked there; state now)
+plan-work-queue.md	99	2	found-on-the-way-2026-10-30	Found on the way (2026-10-30)
+pr-checklist.md	1	1	pr-checklist-the-bar-for-anything-proposed-upstream	PR checklist: the bar for anything proposed upstream
+pr-checklist.md	7	2	scope	Scope
+pr-checklist.md	14	2	code	Code
+pr-checklist.md	24	2	proof-in-the-pr-record-with-links-to-the-evidence	Proof (in the PR record, with links to the evidence)
+pr-checklist.md	37	2	commits	Commits
+pr-checklist.md	44	2	before-opening	Before opening
+pr-crash-dump.md	1	1	pr-windows-write-a-minidump-when-the-runtime-reports-a-fatal-fault	PR: Windows: write a minidump when the runtime reports a fatal fault
+pr-crash-dump.md	6	2	what	What
+pr-crash-dump.md	13	2	how	How
+pr-crash-dump.md	22	2	how-it-fits-in	How it fits in
+pr-crash-dump.md	30	2	proof	Proof
+pr-crash-dump.md	40	2	risks-and-limits	Risks and limits
+pr-crash-dump.md	48	2	attribution	Attribution
+pr-template.md	1	1	pr-title	PR: <title>
+pr-template.md	6	2	what	What
+pr-template.md	10	2	how	How
+pr-template.md	14	2	how-it-fits-in	How it fits in
+pr-template.md	22	2	proof	Proof
+pr-template.md	31	2	risks-and-limits	Risks and limits
+pr-template.md	35	2	attribution	Attribution
+repo-boundaries.md	1	1	repo-boundaries	Repo boundaries
+repo-boundaries.md	5	2	remotes-set-2026-10-18	Remotes (set 2026-10-18)
+repo-boundaries.md	12	2	branches	Branches
+repo-boundaries.md	22	2	other-repos	Other repos
+study-bloodborne-07-memory.md	1	1	study-bloodborne-07s-one-memory-model-and-what-ports-to-deck-lab	Study: Bloodborne 0.7's "one memory model", and what ports to `deck-lab`
+study-bloodborne-07-memory.md	17	2	answer	Answer
+study-bloodborne-07-memory.md	47	2	1-07s-memory-model-piece-by-piece	1. 0.7's memory model, piece by piece
+study-bloodborne-07-memory.md	49	3	11-which-way-per-gpu-class	1.1 Which way, per GPU class
+study-bloodborne-07-memory.md	67	3	12-how-chunks-map-at-guest-addresses	1.2 How chunks map at guest addresses
+study-bloodborne-07-memory.md	103	3	13-how-buffers-are-bound	1.3 How buffers are bound
+study-bloodborne-07-memory.md	132	3	14-what-is-still-copied	1.4 What is still copied
+study-bloodborne-07-memory.md	147	3	15-what-write-tracking-remains	1.5 What write tracking remains
+study-bloodborne-07-memory.md	163	3	16-fences-labels-eop-gpu-idle-the-submission-lock	1.6 Fences, labels, EOP, GPU idle, the submission lock
+study-bloodborne-07-memory.md	202	3	17-the-guest-heap-corruption-class-and-how-it-was-closed-mostly	1.7 The guest heap corruption class, and how it was closed (mostly)
+study-bloodborne-07-memory.md	221	3	18-memory-budget-gtt-pinned-memory	1.8 Memory budget (GTT, pinned memory)
+study-bloodborne-07-memory.md	238	2	2-their-measured-results	2. Their measured results
+study-bloodborne-07-memory.md	263	2	3-port-map-for-medievil-deck-lab	3. Port map for MediEvil (`deck-lab`)
+study-bloodborne-07-memory.md	302	2	4-where-07-contradicts-or-improves-design-u5-deck-memorymd-changes-to-make-there	4. Where 0.7 contradicts or improves design-u5-deck-memory.md (changes to make there)
+study-bloodborne-07-memory.md	363	2	5-recommended-port-order-on-deck-lab	5. Recommended port order on `deck-lab`
+study-bloodborne-07-memory.md	394	2	open-questions	Open questions
+study-boot-resolution.md	1	1	study-booting-medievil-at-any-output-resolution	Study: booting MediEvil at any output resolution
+study-boot-resolution.md	15	2	summary	Summary
+study-boot-resolution.md	41	2	1-how-the-boot-size-is-decided-0100	1. How the boot size is decided (01.00)
+study-boot-resolution.md	43	3	the-cache-and-the-two-readers	The cache and the two readers
+study-boot-resolution.md	80	3	who-calls-videoout-for-a-size	Who calls VideoOut for a size
+study-boot-resolution.md	96	3	from-metrics-to-window-viewport-and-backbuffers	From metrics to window, viewport and backbuffers
+study-boot-resolution.md	110	2	2-videoout-at-2560x1440-what-the-game-would-do	2. VideoOut at 2560x1440: what the game would do
+study-boot-resolution.md	125	2	3-the-patch-set	3. The patch set
+study-boot-resolution.md	127	3	display-size-generic	Display size (generic)
+study-boot-resolution.md	166	3	framebuffer-pool-per-size	Framebuffer pool per size
+study-boot-resolution.md	186	3	ui-scale-dpi-and-aspect-ratio	UI scale (DPI) and aspect ratio
+study-boot-resolution.md	207	2	4-fixing-the-live-rsetres-instead	4. Fixing the live r.SetRes instead
+study-boot-resolution.md	219	2	5-other-versions	5. Other versions
+study-boot-resolution.md	232	2	recommendation-ranked	Recommendation (ranked)
+study-deck-apu-deep-dive.md	1	1	study-the-decks-apu-and-linux-platform-in-depth-for-stage-b	Study: the Deck's APU and Linux platform, in depth, for stage B
+study-deck-apu-deep-dive.md	19	2	answer	Answer
+study-deck-apu-deep-dive.md	65	2	1-the-core-and-memory-seen-from-stage-b	1. The core and memory, seen from stage B
+study-deck-apu-deep-dive.md	67	3	11-numbers-web	1.1 Numbers [web]
+study-deck-apu-deep-dive.md	86	3	12-what-47x-is-made-of-inferred-from-log-numbers	1.2 What 4.7x is made of [inferred, from [log] numbers]
+study-deck-apu-deep-dive.md	102	3	13-smt-and-stage-b	1.3 SMT and stage B
+study-deck-apu-deep-dive.md	126	3	14-tlb-and-page-walks-what-the-platform-study-did-not-cover	1.4 TLB and page walks: what the platform study did not cover
+study-deck-apu-deep-dive.md	157	3	15-prefetching-for-a-pointer-chasing-thread	1.5 Prefetching for a pointer-chasing thread
+study-deck-apu-deep-dive.md	182	3	16-working-set-and-data-layout	1.6 Working set and data layout
+study-deck-apu-deep-dive.md	206	3	17-false-sharing-between-stage-a-stage-b-the-recorder-and-the-copy-threads-code	1.7 False sharing between stage A, stage B, the recorder and the copy threads [code]
+study-deck-apu-deep-dive.md	230	3	18-branch-prediction	1.8 Branch prediction
+study-deck-apu-deep-dive.md	239	3	19-bandwidth-shared-with-the-gpu	1.9 Bandwidth shared with the GPU
+study-deck-apu-deep-dive.md	247	2	2-power-and-clocks	2. Power and clocks
+study-deck-apu-deep-dive.md	249	3	21-what-is-known-about-the-decks-cpu-frequency-behaviour-web	2.1 What is known about the Deck's CPU frequency behaviour [web]
+study-deck-apu-deep-dive.md	270	3	22-per-core-boost-and-preferred-cores	2.2 Per-core boost and preferred cores
+study-deck-apu-deep-dive.md	284	3	23-the-cpugpu-power-split	2.3 The CPU/GPU power split
+study-deck-apu-deep-dive.md	300	3	24-steamoss-power-daemons-and-what-a-user-can-change-web	2.4 SteamOS's power daemons and what a user can change [web]
+study-deck-apu-deep-dive.md	315	3	25-what-can-favour-stage-bs-clock-and-what-cannot	2.5 What can favour stage B's clock, and what cannot
+study-deck-apu-deep-dive.md	326	2	3-frame-pacing-on-the-deck	3. Frame pacing on the Deck
+study-deck-apu-deep-dive.md	328	3	31-how-gamescope-presents-a-native-vulkan-game-wsi-layer-source-valvesoftwaregamescope-master-commits-to-2026-10-16-webcode-read	3.1 How gamescope presents a native Vulkan game (WSI layer source, `ValveSoftware/gamescope` master, commits to 2026-10-16) [web/code read]
+study-deck-apu-deep-dive.md	357	3	32-what-the-port-does-today-code	3.2 What the port does today [code]
+study-deck-apu-deep-dive.md	375	3	33-amd-anti-lag-on-linux-web	3.3 AMD Anti-Lag on Linux [web]
+study-deck-apu-deep-dive.md	388	3	34-what-the-pacer-should-do-differently-on-the-deck-inferred-from-31-33-and-the-logs	3.4 What the pacer should do differently on the Deck [inferred, from 3.1-3.3 and the logs]
+study-deck-apu-deep-dive.md	419	2	4-linux-specifics-a-user-process-can-use	4. Linux specifics a user process can use
+study-deck-apu-deep-dive.md	421	3	41-scheduling	4.1 Scheduling
+study-deck-apu-deep-dive.md	434	3	42-measurements-with-no-root-and-no-build-they-ride-on-a-planned-run	4.2 Measurements with no root and no build (they ride on a planned run)
+study-deck-apu-deep-dive.md	457	3	43-transparent-huge-pages-additions-to-the-platform-study-web	4.3 Transparent huge pages: additions to the platform study [web]
+study-deck-apu-deep-dive.md	468	3	44-io-cgroups-other	4.4 I/O, cgroups, other
+study-deck-apu-deep-dive.md	482	2	5-ranked-actions	5. Ranked actions
+study-deck-apu-deep-dive.md	508	2	6-where-this-qualifies-the-platform-study-and-the-plan	6. Where this qualifies the platform study and the plan
+study-deck-apu-deep-dive.md	534	2	sources	Sources
+study-deck-build-optimization.md	1	1	study-compiler-linker-and-build-level-optimisation-of-the-linux-build-for-the-steam-deck-2026-11-04	Study: compiler, linker and build-level optimisation of the Linux build for the Steam Deck (2026-11-04)
+study-deck-build-optimization.md	14	2	answer	Answer
+study-deck-build-optimization.md	43	2	1-what-the-build-does-today-code-bin	1. What the build does today [code, bin]
+study-deck-build-optimization.md	73	2	2-flags-one-by-one-for-a-branchy-pointer-chasing-thread-on-zen-2	2. Flags, one by one, for a branchy pointer-chasing thread on Zen 2
+study-deck-build-optimization.md	100	2	3-pgo-with-clang	3. PGO with clang
+study-deck-build-optimization.md	102	3	31-which-kind	3.1 Which kind
+study-deck-build-optimization.md	121	3	32-the-workflow-fits-wsl-build--appimage--deck-run--profiles-back-over-ssh	3.2 The workflow (fits: WSL build → AppImage → Deck run → profiles back over SSH)
+study-deck-build-optimization.md	155	3	33-expected-gain-and-staleness	3.3 Expected gain, and staleness
+study-deck-build-optimization.md	175	2	4-allocators	4. Allocators
+study-deck-build-optimization.md	203	2	5-keeping-one-portable-appimage	5. Keeping one portable AppImage
+study-deck-build-optimization.md	223	2	6-measurement-per-step-one-build-one-launch	6. Measurement per step (one build, one launch)
+study-deck-build-optimization.md	244	2	7-bolt	7. BOLT
+study-deck-build-optimization.md	275	2	8-what-the-emulators-ship-checked	8. What the emulators ship (checked)
+study-deck-build-optimization.md	284	2	9-order-and-what-each-step-needs-from-the-user	9. Order, and what each step needs from the user
+study-deck-build-optimization.md	297	2	sources	Sources
+study-deck-memory-budget.md	1	1	study-the-steam-decks-memory-budget-spending-ram-to-cut-cpu-stutter-and-loading	Study: the Steam Deck's memory budget (spending RAM to cut CPU, stutter and loading)
+study-deck-memory-budget.md	17	2	answer	Answer
+study-deck-memory-budget.md	42	2	1-todays-budget	1. Today's budget
+study-deck-memory-budget.md	44	3	11-how-the-driver-presents-the-decks-memory-log	1.1 How the driver presents the Deck's memory [log]
+study-deck-memory-budget.md	61	3	12-where-the-memory-goes	1.2 Where the memory goes
+study-deck-memory-budget.md	89	3	13-the-ports-own-thresholds-against-this-budget-code-log	1.3 The port's own thresholds against this budget [code] [log]
+study-deck-memory-budget.md	100	2	2-where-spending-ram-could-save-cpu-or-stutter	2. Where spending RAM could save CPU or stutter
+study-deck-memory-budget.md	102	3	21-texture-cache-gc-and-eviction-thresholds-no-gain-code-log	2.1 Texture cache GC and eviction thresholds: no gain [code] [log]
+study-deck-memory-budget.md	113	3	22-keeping-uploaded-images-instead-of-re-uploading-them-log-doc	2.2 Keeping uploaded images instead of re-uploading them [log] [doc]
+study-deck-memory-budget.md	137	3	23-detiling-once-and-keeping-the-result-already-the-case	2.3 Detiling once and keeping the result: already the case
+study-deck-memory-budget.md	144	3	24-a-larger-pipeline--shader-cache-no-gain-log-code	2.4 A larger pipeline / shader cache: no gain [log] [code]
+study-deck-memory-budget.md	155	3	25-guest-memory-first-touches-and-recommits-the-ram-item-that-pays-code-log	2.5 Guest memory: first touches and recommits (the RAM item that pays) [code] [log]
+study-deck-memory-budget.md	204	3	26-claiming-gpu-memory-at-boot-instead-of-during-play-code-log	2.6 Claiming GPU memory at boot instead of during play [code] [log]
+study-deck-memory-budget.md	223	3	27-the-paks-in-ram-file-code	2.7 The paks in RAM [file] [code]
+study-deck-memory-budget.md	259	3	28-larger-rings-no-gain-smaller-ones-are-free-ram-log-code	2.8 Larger rings: no gain; smaller ones are free RAM [log] [code]
+study-deck-memory-budget.md	267	3	29-memoization-tables-denser-not-larger-code-doc	2.9 Memoization tables: denser, not larger [code] [doc]
+study-deck-memory-budget.md	289	2	3-where-ram-use-costs	3. Where RAM use costs
+study-deck-memory-budget.md	291	3	31-gpu-memory-and-the-ttm-cap-inferred	3.1 GPU memory and the TTM cap [inferred]
+study-deck-memory-budget.md	303	3	32-carve-out-or-gtt-placement-inferred	3.2 Carve-out or GTT placement [inferred]
+study-deck-memory-budget.md	320	3	33-first-touches-and-zeroing-log	3.3 First touches and zeroing [log]
+study-deck-memory-budget.md	327	3	34-page-cache-pressure-thp-compaction-swap-inferred	3.4 Page-cache pressure, THP compaction, swap [inferred]
+study-deck-memory-budget.md	340	2	4-ranked-list-for-the-deck	4. Ranked list for the Deck
+study-deck-memory-budget.md	359	2	5-reads-to-collect-no-build-no-root-light-enough-to-run-during-a-run-but-tell-the-user-it-runs	5. Reads to collect (no build, no root; light enough to run during a run, but tell the user it runs)
+study-deck-memory-budget.md	384	2	6-notes-for-other-docs	6. Notes for other docs
+study-deck-memory-budget.md	395	2	sources	Sources
+study-deck-other-threads.md	1	1	study-cpu-of-the-non-gpu-threads-on-the-steam-deck-and-what-the-port-can-cut	Study: CPU of the non-GPU threads on the Steam Deck, and what the port can cut
+study-deck-other-threads.md	12	2	answer	Answer
+study-deck-other-threads.md	58	2	0-the-measurement-and-how-far-it-carries	0. The measurement, and how far it carries
+study-deck-other-threads.md	73	2	1-wwise	1. Wwise
+study-deck-other-threads.md	75	3	11-what-akeventmanager-runs-code	1.1 What `AK::EventManager` runs [code]
+study-deck-other-threads.md	99	3	12-wake-cadence-vs-the-ps4-log	1.2 Wake cadence vs the PS4 [log]
+study-deck-other-threads.md	115	3	13-where-each-piece-of-the-ports-audio-path-runs	1.3 Where each piece of the port's audio path runs
+study-deck-other-threads.md	132	3	14-busy-polling-none-found-code	1.4 Busy polling: none found [code]
+study-deck-other-threads.md	147	3	15-what-in-wwises-cpu-is-the-ports	1.5 What in Wwise's CPU is the port's
+study-deck-other-threads.md	160	2	2-the-main-thread-and-rhithread	2. The main thread and RHIThread
+study-deck-other-threads.md	162	3	21-hle-calls-at-high-rate-and-what-each-costs-code--log	2.1 HLE calls at high rate, and what each costs [code] / [log]
+study-deck-other-threads.md	179	3	22-kernel-work-the-port-puts-on-guest-threads	2.2 Kernel work the port puts on guest threads
+study-deck-other-threads.md	204	3	23-rhithreads-66k-voluntary-switchess	2.3 RHIThread's 6.6k voluntary switches/s
+study-deck-other-threads.md	215	2	3-our-threads	3. Our threads
+study-deck-other-threads.md	217	3	31-gow3vkrecorder-63-73k-switchess-code--log	3.1 `gow3:VkRecorder`: 63%, 7.3k switches/s [code] / [log]
+study-deck-other-threads.md	234	3	32-gow3drawprep-4-19-each-17k-involuntary-switchess-each-code--log	3.2 `gow3:DrawPrep` ×4: ~19% each, 1.7k involuntary switches/s each [code] / [log]
+study-deck-other-threads.md	270	3	33-others-briefly	3.3 Others, briefly
+study-deck-other-threads.md	277	2	4-ranked-cuts-for-the-deck	4. Ranked cuts for the Deck
+study-deck-other-threads.md	301	2	5-measurement-recipes-no-perf	5. Measurement recipes (no perf)
+study-deck-other-threads.md	330	2	sources	Sources
+study-deck-patch-audit.md	1	1	study-every-performance-patch-audited-for-the-steam-deck-and-slower-hardware-2026-11-04	Study: every performance patch, audited for the Steam Deck and slower hardware (2026-11-04)
+study-deck-patch-audit.md	17	2	short-answer	Short answer
+study-deck-patch-audit.md	55	2	0-cost-model-used	0. Cost model used
+study-deck-patch-audit.md	71	2	1-inventory	1. Inventory
+study-deck-patch-audit.md	84	3	11-draw-pipeline-and-helper-threads-inherited-lineage-docsparallel_gpumd-measured-on-the-base-ports-game-not-medievil	1.1 Draw pipeline and helper threads (inherited lineage: `docs/parallel_gpu.md`, measured on the base port's game, not MediEvil)
+study-deck-patch-audit.md	100	3	12-stage-b-per-draw-caches-and-memos	1.2 Stage B per-draw caches and memos
+study-deck-patch-audit.md	135	3	13-barriers-sync-and-readbacks	1.3 Barriers, sync and readbacks
+study-deck-patch-audit.md	151	3	14-guest-memory-sync-uploads-faults	1.4 Guest memory sync, uploads, faults
+study-deck-patch-audit.md	170	3	15-runtime-hle-guest-memory	1.5 Runtime (HLE, guest memory)
+study-deck-patch-audit.md	183	3	16-presentation-and-pacing	1.6 Presentation and pacing
+study-deck-patch-audit.md	195	3	17-medievil-specific-ue4-config-eboot-patches-hooks	1.7 MediEvil-specific (UE4 config, eboot patches, hooks)
+study-deck-patch-audit.md	211	2	2-scores	2. Scores
+study-deck-patch-audit.md	275	2	3-test-plan	3. Test plan
+study-deck-patch-audit.md	288	3	31-live-abs-no-rebuild-decksh-ab-a-b-20-4-3-min-a-pair-summary-by-state-with-decksh-summary-name---min-draws-1000	3.1 Live A/Bs (no rebuild; `deck.sh ab "A" "B" 20 4`, ~3 min a pair; summary by state with `deck.sh summary NAME --min-draws 1000`)
+study-deck-patch-audit.md	308	3	32-restart-only-one-launch-each-against-l1s-a-windows-in-the-same-spot	3.2 Restart-only (one launch each, against L1's A windows in the same spot)
+study-deck-patch-audit.md	328	3	33-also-worth-a-pc-ab-on-the-slower-machine-5800x3d--6900xt-windows-amd-driver	3.3 Also worth a PC A/B on the slower machine (5800X3D + 6900XT, Windows, AMD driver)
+study-deck-patch-audit.md	346	2	4-notes	4. Notes
+study-deck-platform-optimization.md	1	1	study-steam-deck-platform-optimisation-kernel-radv-power-gamescope-build	Study: Steam Deck platform optimisation (kernel, RADV, power, gamescope, build)
+study-deck-platform-optimization.md	16	2	answer	Answer
+study-deck-platform-optimization.md	50	2	0-facts-to-read-on-the-deck-first-no-launch-no-root-over-ssh	0. Facts to read on the Deck first (no launch, no root, over SSH)
+study-deck-platform-optimization.md	72	2	1-memory-and-tlb	1. Memory and TLB
+study-deck-platform-optimization.md	74	3	11-why-the-deck-is-different-here-web--log	1.1 Why the Deck is different here [web] / [log]
+study-deck-platform-optimization.md	105	3	12-where-the-ports-memory-is-and-which-huge-page-mechanism-reaches-it-code	1.2 Where the port's memory is, and which huge-page mechanism reaches it [code]
+study-deck-platform-optimization.md	115	3	13-items	1.3 Items
+study-deck-platform-optimization.md	179	2	2-radv--mesa	2. RADV / Mesa
+study-deck-platform-optimization.md	253	2	3-cpu-scheduling-and-power	3. CPU scheduling and power
+study-deck-platform-optimization.md	339	2	4-gamescope--steamos	4. gamescope / SteamOS
+study-deck-platform-optimization.md	381	2	5-build-level	5. Build level
+study-deck-platform-optimization.md	435	2	6-other-deck-specific-items	6. Other Deck-specific items
+study-deck-platform-optimization.md	445	2	7-ranked-shortlist-cheapest-and-most-likely-first	7. Ranked shortlist (cheapest and most likely first)
+study-deck-platform-optimization.md	468	2	8-where-this-contradicts-or-qualifies-the-current-plan	8. Where this contradicts or qualifies the current plan
+study-deck-platform-optimization.md	486	2	sources	Sources
+study-deck-rescore-rejected.md	1	1	study-the-stage-b--cpu-ideas-never-shipped-re-scored-for-the-steam-deck-2026-11-04	Study: the stage B / CPU ideas never shipped, re-scored for the Steam Deck (2026-11-04)
+study-deck-rescore-rejected.md	22	2	the-yardstick	The yardstick
+study-deck-rescore-rejected.md	41	2	a-switches-that-already-exist-no-build	A. Switches that already exist (no build)
+study-deck-rescore-rejected.md	64	2	b-built-measured-and-reverted-or-dropped-no-switch-left	B. Built, measured and reverted or dropped (no switch left)
+study-deck-rescore-rejected.md	74	2	c-analysed-gated-or-ranked-never-built	C. Analysed, gated or ranked, never built
+study-deck-rescore-rejected.md	95	2	d-linux-only-items-from-the-spacepepperoni-review-verdict-adopt-not-ported	D. Linux-only items from the spacepepperoni review (verdict "Adopt", not ported)
+study-deck-rescore-rejected.md	107	2	ranked-shortlist-for-the-deck-cheapest-first	Ranked shortlist for the Deck (cheapest first)
+study-eop-wait-site.md	1	1	study-what-the-per-frame-eop-wait-at-guest0x68af47-protects-and-whether-early-signalling-stays-safe-with-in-place-reads	Study: what the per-frame EOP wait at guest+0x68af47 protects, and whether early signalling stays safe with in-place reads
+study-eop-wait-site.md	18	2	answer	Answer
+study-eop-wait-site.md	70	2	1-the-wait-and-its-callers	1. The wait and its callers
+study-eop-wait-site.md	72	3	11-function-map	1.1 Function map
+study-eop-wait-site.md	98	3	12-the-wait-0x68acc0-excerpt	1.2 The wait (0x68acc0, excerpt)
+study-eop-wait-site.md	128	3	13-before-the-wait-the-frame-end-eop-0x68a5a0	1.3 Before the wait: the frame-end EOP (0x68a5a0)
+study-eop-wait-site.md	149	3	14-after-the-wait-in-endframe-0x679560	1.4 After the wait, in EndFrame (0x679560)
+study-eop-wait-site.md	160	2	2-frames-ahead	2. Frames ahead
+study-eop-wait-site.md	174	2	3-what-is-recycled-when-and-who-reads-it	3. What is recycled, when, and who reads it
+study-eop-wait-site.md	176	3	31-the-transient-chunk-pool-guest-0x5805e70	3.1 The transient chunk pool (guest 0x5805e70)
+study-eop-wait-site.md	213	3	32-gpu-labels-3-frame-deferred-free-list	3.2 GPU labels: 3-frame deferred free list
+study-eop-wait-site.md	225	3	33-flush-then-rewind-intra-frame-reuse	3.3 Flush-then-rewind (intra-frame reuse)
+study-eop-wait-site.md	245	3	34-summary-table	3.4 Summary table
+study-eop-wait-site.md	256	2	4-consequences-for-the-hybrid-u5	4. Consequences for the hybrid U5
+study-eop-wait-site.md	318	2	5-cross-checks	5. Cross-checks
+study-eop-wait-site.md	326	2	6-runtime-checks-one-deck-run-stats-only-before-any-u5-change	6. Runtime checks (one Deck run, stats only, before any U5 change)
+study-eop-wait-site.md	353	2	open-questions	Open questions
+study-eop-wait-site.md	363	2	method	Method
+study-fence-waits.md	1	1	study-where-the-game-waits-on-gpu-work-and-what-gpu-ordered-fences-would-cost-on-the-deck	Study: where the game waits on GPU work, and what GPU-ordered fences would cost on the Deck
+study-fence-waits.md	14	2	answer	Answer
+study-fence-waits.md	48	2	1-how-a-guest-fence-travels-today	1. How a guest fence travels today
+study-fence-waits.md	73	2	2-inventory-of-waits	2. Inventory of waits
+study-fence-waits.md	81	3	21-guest-cpu-side-waits	2.1 Guest (CPU-side) waits
+study-fence-waits.md	92	3	22-command-processor-waits-the-gpu-side-packets-run-by-stage-a--b-on-the-cpu	2.2 Command-processor waits (the GPU-side packets, run by stage A / B on the CPU)
+study-fence-waits.md	104	3	23-the-ports-own-waits-copy-model-and-pacing	2.3 The port's own waits (copy model and pacing)
+study-fence-waits.md	115	3	24-ps4-memory-types-and-the-games-cache-actions-as-sync-points	2.4 PS4 memory types and the game's cache actions as sync points
+study-fence-waits.md	161	2	3-critical-path	3. Critical path
+study-fence-waits.md	178	2	4-cost-model	4. Cost model
+study-fence-waits.md	219	2	5-instrumentation-plan-stats-only	5. Instrumentation plan (stats only)
+study-fence-waits.md	230	3	51-fence-lag-probe-signal--gpu-done	5.1 Fence lag probe (signal → GPU done)
+study-fence-waits.md	242	3	52-guest-consumption	5.2 Guest consumption
+study-fence-waits.md	251	3	53-command-processor-waits	5.3 Command-processor waits
+study-fence-waits.md	259	3	54-cache-actions-histogram	5.4 Cache actions histogram
+study-fence-waits.md	270	3	55-fault-map-by-ps4-memory-type-the-coordinators-addition	5.5 Fault map by PS4 memory type (the coordinator's addition)
+study-fence-waits.md	284	3	56-port-waits-small-additions	5.6 Port waits (small additions)
+study-fence-waits.md	292	3	57-printed-lines-every-5-s-after-frame-stats	5.7 Printed lines (every 5 s, after "Frame stats")
+study-fence-waits.md	305	2	6-gate-2-what-to-run-first-and-the-decision-rule	6. Gate 2: what to run first, and the decision rule
+study-fence-waits.md	326	2	sources	Sources
+study-fork-spacepepperoni.md	1	1	study-spacepepperonis-linux--steam-deck-fork-and-what-lab-should-take-from-it	Study: spacepepperoni's Linux / Steam Deck fork, and what `lab` should take from it
+study-fork-spacepepperoni.md	24	2	summary	Summary
+study-fork-spacepepperoni.md	70	2	1-every-commit-with-a-verdict	1. Every commit, with a verdict
+study-fork-spacepepperoni.md	79	3	11-packaging-ci-launcher	1.1 Packaging, CI, launcher
+study-fork-spacepepperoni.md	94	3	12-steam-deck-mode-values-and-the-low-preset-ue4-config-class-m	1.2 Steam Deck mode values and the Low preset (UE4 config, class M)
+study-fork-spacepepperoni.md	109	3	13-gpu-thread-synchronisation-memory-shadps4-video-core	1.3 GPU thread, synchronisation, memory (shadPS4 video core)
+study-fork-spacepepperoni.md	136	3	14-runtime-loader-guest-memory-threads	1.4 Runtime (loader, guest memory, threads)
+study-fork-spacepepperoni.md	156	3	15-input-and-test-tools	1.5 Input and test tools
+study-fork-spacepepperoni.md	166	2	2-steam-deck-performance	2. Steam Deck performance
+study-fork-spacepepperoni.md	198	2	3-presentation-under-gamescope--proton	3. Presentation under gamescope / Proton
+study-fork-spacepepperoni.md	200	3	31-what-the-fork-tells-us	3.1 What the fork tells us
+study-fork-spacepepperoni.md	211	3	32-what-run-1-shows-datadeck-proton-1log-plan-linux-deckmd-proton-run-1	3.2 What run 1 shows (`data/deck-proton-1.log`, plan-linux-deck.md "Proton run 1")
+study-fork-spacepepperoni.md	235	3	33-suspects-for-the-black-screen-ranked	3.3 Suspects for the black screen, ranked
+study-fork-spacepepperoni.md	250	3	34-suspects-for-the-exit-after-the-menu-loads-ranked	3.4 Suspects for the exit after the menu loads, ranked
+study-fork-spacepepperoni.md	260	3	35-tests-one-change-per-launch-settings-and-variables-first	3.5 Tests: one change per launch, settings and variables first
+study-fork-spacepepperoni.md	283	2	4-button-prompts-caa9708	4. Button prompts (`caa9708`)
+study-fork-spacepepperoni.md	285	3	41-how-theirs-works-code-scriptsbutton_promptspy-scriptsue4_overridepy-apply	4.1 How theirs works [code: `scripts/button_prompts.py`, `scripts/ue4_override.py` `apply`]
+study-fork-spacepepperoni.md	308	3	42-compared-with-our-plan-study-glyphsmd	4.2 Compared with our plan (study-glyphs.md)
+study-fork-spacepepperoni.md	334	2	5-recommended-port-order-smallest-risk-first	5. Recommended port order (smallest risk first)
+study-fork-spacepepperoni.md	360	2	open-questions	Open questions
+study-forks-survey.md	1	1	study-every-fork-of-the-upstream-port-and-what-lab--deck-lab-should-take-from-them	Study: every fork of the upstream port, and what `lab` / `deck-lab` should take from them
+study-forks-survey.md	29	2	answer	Answer
+study-forks-survey.md	119	2	1-all-forks	1. All forks
+study-forks-survey.md	140	2	2-porticus	2. Porticus
+study-forks-survey.md	146	3	21-fsr-upscalers-pr-61-fsr-31--fsr-411--fsr-316-frame-generation-on-ue4s-taau	2.1 `fsr-upscalers` (PR #61): FSR 3.1 / FSR 4.1.1 / FSR 3.1.6 frame generation on UE4's TAAU
+study-forks-survey.md	203	3	22-other-porticus-branches	2.2 Other Porticus branches
+study-forks-survey.md	215	2	3-spacepepperoni-what-is-new-since-our-study	3. spacepepperoni: what is new since our study
+study-forks-survey.md	234	2	4-dvilelaf-prs-68-69-70	4. dvilelaf (PRs #68, #69, #70)
+study-forks-survey.md	264	2	5-therhyswyrill-linux-appimage-ci	5. TheRhysWyrill: Linux AppImage CI
+study-forks-survey.md	283	2	6-nydal91-depth-bias-and-shadow-flicker-tests	6. nydal91: depth bias and shadow-flicker tests
+study-forks-survey.md	303	2	7-upstream-issues-that-touch-fork-work	7. Upstream issues that touch fork work
+study-forks-survey.md	314	2	8-spacepepperonis-merged-prs-reviewed-one-by-one	8. spacepepperoni's merged PRs, reviewed one by one
+study-forks-survey.md	335	3	81-per-pr	8.1 Per PR
+study-forks-survey.md	469	3	82-why-they-see-broken-effects-that-we-do-not	8.2 Why they see broken effects that we do not
+study-forks-survey.md	523	2	9-worth-porting-shortlist	9. Worth porting: shortlist
+study-forks-survey.md	548	2	unverified--open	Unverified / open
+study-frame-cost-2026-10-29.md	1	1	study-where-heavy-frames-lose-time-2026-10-29	Study: where heavy frames lose time (2026-10-29)
+study-frame-cost-2026-10-29.md	9	1	a-synthesis	A. Synthesis
+study-frame-cost-2026-10-29.md	18	2	1-what-the-frame-time-goes-to	1. What the frame time goes to
+study-frame-cost-2026-10-29.md	20	3	gpu-work-goal-1	GPU work (goal 1)
+study-frame-cost-2026-10-29.md	47	3	gpu-waiting-goal-2	GPU waiting (goal 2)
+study-frame-cost-2026-10-29.md	58	3	cpu-feed-goal-3	CPU feed (goal 3)
+study-frame-cost-2026-10-29.md	82	2	2-ranked-plan	2. Ranked plan
+study-frame-cost-2026-10-29.md	84	3	step-0-re-baseline-and-fix-the-yardsticks-do-first-no-behaviour-change	Step 0: re-baseline and fix the yardsticks (do first, no behaviour change)
+study-frame-cost-2026-10-29.md	106	3	ranked-items	Ranked items
+study-frame-cost-2026-10-29.md	110	4	1-preshadow-cut--cull-qw-no-build--goals-3-1-2	1. Preshadow cut / cull (QW, no build) · goals 3, 1, 2
+study-frame-cost-2026-10-29.md	127	4	2-bulk-descriptor-copy-per-push-bloodborne-03-port-plus-a-single-guard--goal-3	2. Bulk descriptor copy per push (Bloodborne 0.3 port), plus a single guard · goal 3
+study-frame-cost-2026-10-29.md	135	4	3-sampler-handle-cache-in-the-textureset-memo-entry-qw-then-s1-delta-draw--goal-3	3. Sampler-handle cache in the TextureSet memo entry (QW), then S1 delta-draw · goal 3
+study-frame-cost-2026-10-29.md	142	4	4-make-sets-that-contain-the-current-target-memoizable--goal-3	4. Make sets that contain the current target memoizable · goal 3
+study-frame-cost-2026-10-29.md	149	4	5-identify-then-avoid-the-mid-frame-4k-stencil-plane-copy--goals-2-1	5. Identify, then avoid, the mid-frame 4K stencil-plane copy · goals 2, 1
+study-frame-cost-2026-10-29.md	157	4	6-lto-build-experiment-qw-no-code--goal-3	6. LTO build experiment (QW, no code) · goal 3
+study-frame-cost-2026-10-29.md	166	4	7-volumetric-fog-grid-at-ps4-density-for-4k-gridpixelsize-16--32--goal-1	7. Volumetric fog grid at PS4 density for 4K (GridPixelSize 16 → 32) · goal 1
+study-frame-cost-2026-10-29.md	173	4	8-skip-identity-gpu-particle-sim-draws-dt0-for-2-frames--goal-3	8. Skip identity GPU-particle sim draws (dt=0 for ≥2 frames) · goal 3
+study-frame-cost-2026-10-29.md	179	4	9-shadow-map-transition-batching--goal-2	9. Shadow-map transition batching · goal 2
+study-frame-cost-2026-10-29.md	188	4	10-findimage-generation-only-misses-and-render-state-spikes--goal-3-lows	10. FindImage generation-only misses and render-state spikes · goal 3, lows
+study-frame-cost-2026-10-29.md	196	4	11-rshadowmaxresolution1024-min-kept-at-512--goals-2-3	11. r.Shadow.MaxResolution=1024, Min kept at 512 · goals 2, 3
+study-frame-cost-2026-10-29.md	201	4	12-real-results-for-the-20-remaining-shadow-occlusion-queries--goal-3	12. Real results for the ~20 remaining shadow occlusion queries · goal 3
+study-frame-cost-2026-10-29.md	212	2	3-the-oscillation	3. The oscillation
+study-frame-cost-2026-10-29.md	245	2	4-dropped-ideas-do-not-re-propose	4. Dropped ideas (do not re-propose)
+study-frame-cost-2026-10-29.md	278	2	5-open-questions-and-the-runs-and-captures-needed	5. Open questions and the runs and captures needed
+study-frame-cost-2026-10-29.md	280	3	zero-launch-gui-or-offline-do-first	Zero-launch (GUI or offline; do first)
+study-frame-cost-2026-10-29.md	297	3	launches-each-needs-the-users-go-re-read-medievilini-first-one-change-per-launch	Launches (each needs the user's go; re-read medievil.ini first; one change per launch)
+study-frame-cost-2026-10-29.md	308	3	open-questions	Open questions
+study-frame-cost-2026-10-29.md	317	1	b-completeness-critic	B. Completeness critic
+study-frame-cost-2026-10-29.md	321	2	a-findings-that-contradict-the-plan-or-the-docs-closed-by-me	A. Findings that contradict the plan or the docs (closed by me)
+study-frame-cost-2026-10-29.md	381	2	b-measurement-and-yardstick-gaps	B. Measurement and yardstick gaps
+study-frame-cost-2026-10-29.md	398	2	c-plan-items-with-unverified-premises-or-missing-parts	C. Plan items with unverified premises or missing parts
+study-glyphs.md	1	1	study-xbox-and-keyboard-button-prompts-glyphs	Study: Xbox and keyboard button prompts (glyphs)
+study-glyphs.md	16	2	summary	Summary
+study-glyphs.md	39	2	1-how-the-game-draws-prompts	1. How the game draws prompts
+study-glyphs.md	41	3	11-chain-from-action-to-pixels-v	1.1 Chain from action to pixels [V]
+study-glyphs.md	58	3	12-atlas-cells-all-64x64-row-y--063-of-inventorybuttonatlas-v	1.2 Atlas cells (all 64x64, row y = 0..63 of `InventoryButtonAtlas`) [V]
+study-glyphs.md	78	3	13-all-prompt-textures-v	1.3 All prompt textures [V]
+study-glyphs.md	99	3	14-platform-logic-v	1.4 Platform logic [V]
+study-glyphs.md	116	2	2-how-to-swap-them	2. How to swap them
+study-glyphs.md	118	3	21-format-of-the-cooked-texture-what-a-patch-must-write-v	2.1 Format of the cooked texture (what a patch must write) [V]
+study-glyphs.md	150	3	22-options	2.2 Options
+study-glyphs.md	168	2	3-art	3. Art
+study-glyphs.md	193	2	4-step-plan-smallest-first-every-launch-needs-the-users-go	4. Step plan (smallest first; every launch needs the user's go)
+study-glyphs.md	204	2	open-questions	Open questions
+study-glyphs.md	214	2	decisions-the-user-2026-11-03	Decisions (the user, 2026-11-03)
+study-guest-memory-direct.md	1	1	study-could-the-gpu-use-guest-memory-directly-no-vram-copy	Study: could the GPU use guest memory directly (no VRAM copy)?
+study-guest-memory-direct.md	8	2	answer	Answer
+study-guest-memory-direct.md	19	2	1-what-the-bloodborne-port-actually-does	1. What the Bloodborne port actually does
+study-guest-memory-direct.md	59	2	2-feasibility-here	2. Feasibility here
+study-guest-memory-direct.md	86	3	a-import-guest-memory-with-vk_ext_external_memory_host	(a) Import guest memory with VK_EXT_external_memory_host
+study-guest-memory-direct.md	114	3	b-allocate-guest-memory-from-rebar-type-4-and-map-it-as-the-guest-address-space	(b) Allocate guest memory from ReBAR (type 4) and map it as the guest address space
+study-guest-memory-direct.md	128	3	c-by-resource-class	(c) By resource class
+study-guest-memory-direct.md	142	2	3-what-it-costs-today-heavy-view-queries-off-4k	3. What it costs today (heavy view, queries off, 4K)
+study-guest-memory-direct.md	161	2	4-expected-gain-and-risks	4. Expected gain and risks
+study-guest-memory-direct.md	187	2	5-if-it-is-pursued-anyway-probe-first-no-game-launch	5. If it is pursued anyway: probe first (no game launch)
+study-heavy-frame-map.md	1	1	study-heavy-view-frame-map-2026-10-21	Study: heavy-view frame map (2026-10-21)
+study-heavy-frame-map.md	12	2	1-frame-map	1. Frame map
+study-heavy-frame-map.md	47	2	2-h3-gpu-particle-double-run	2. H3: GPU-particle double run
+study-heavy-frame-map.md	77	2	3-redundancy-same-measure-as-study-stage-b-native-2-redundancy-txt	3. Redundancy (same measure as study-stage-b-native §2; `redundancy-*.txt`)
+study-heavy-frame-map.md	96	2	4-other-large-or-possibly-redundant-work	4. Other large or possibly redundant work
+study-heavy-frame-map.md	116	2	5-ranked-what-could-go-draws-per-frame-a--b	5. Ranked: what could go, draws per frame (A / B)
+study-hzb-double-buffer.md	1	1	study-double-buffered-hzb-occlusion-results	Study: double-buffered HZB occlusion results
+study-hzb-double-buffer.md	10	2	summary	Summary
+study-hzb-double-buffer.md	31	2	locations-cusa11227-0100	Locations (CUSA11227 01.00)
+study-hzb-double-buffer.md	33	3	fhzbocclusiontester-frenderresource-0x50-bytes-at-fsceneviewstate0x170	FHZBOcclusionTester (FRenderResource, 0x50 bytes, at FSceneViewState+0x170)
+study-hzb-double-buffer.md	86	3	visibility-side	Visibility side
+study-hzb-double-buffer.md	109	3	how-index-frame-number-and-results-tie-together-frame-n	How index, frame number and results tie together (frame N)
+study-hzb-double-buffer.md	133	2	what-isvisible-does-when-results-are-not-valid-deliverable-3	What IsVisible does when results are not valid (deliverable 3)
+study-hzb-double-buffer.md	141	2	options	Options
+study-hzb-double-buffer.md	143	3	a-binary-patch-patchesmedievilxml-style-rejected	(a) Binary patch (`patches/MediEvil.xml` style): rejected
+study-hzb-double-buffer.md	152	3	b-host-hook--remap-recommended	(b) Host hook + remap: recommended
+study-hzb-double-buffer.md	187	3	b-variants-considered	(b') Variants considered
+study-hzb-double-buffer.md	194	2	correctness-risks	Correctness risks
+study-hzb-double-buffer.md	205	2	expected-performance	Expected performance
+study-hzb-double-buffer.md	218	2	test-needs-the-users-go-one-change	Test (needs the user's go; one change)
+study-hzb-double-buffer.md	228	2	open	Open
+study-intro-movie.md	1	1	study-why-the-intro-movie-is-never-stopped	Study: why the intro movie is never stopped
+study-intro-movie.md	17	2	summary	Summary
+study-intro-movie.md	66	2	1-the-two-avplayer-wrappers-in-the-eboot	1. The two AvPlayer wrappers in the eboot
+study-intro-movie.md	98	3	cluster-a-layout-relocated-vtable-at-0x4e89638-vtpy-4e89640-80-v-slots-i-names	Cluster A layout (relocated vtable at 0x4e89638.., `vt.py 4e89640 80`) **[V]** slots, **[I]** names
+study-intro-movie.md	114	2	2-when-the-game-calls-stop--close	2. When the game calls Stop / Close
+study-intro-movie.md	116	3	2a-the-destructor-the-only-close	2a. The destructor (the only Close)
+study-intro-movie.md	131	3	2b-end-of-clip-in-tickinput-the-second-stop	2b. End of clip in TickInput (the second Stop)
+study-intro-movie.md	152	3	2c-the-event-callback-eventreplacement-registered-in-0x45a820	2c. The event callback (eventReplacement, registered in 0x45a820)
+study-intro-movie.md	174	2	3-what-the-intro-and-the-skip-do-the-games-blueprints	3. What the intro and the skip do (the game's Blueprints)
+study-intro-movie.md	201	2	4-the-port-compared	4. The port compared
+study-intro-movie.md	216	2	5-recommended-fix	5. Recommended fix
+study-intro-movie.md	252	2	6-open-questions	6. Open questions
+study-live-settings.md	1	1	study-which-restart-only-settings-can-become-live	Study: which restart-only settings can become live
+study-live-settings.md	13	2	short-answer	Short answer
+study-live-settings.md	42	3	top-5-conversions-user-value--effort--risk	Top 5 conversions (user value × effort × risk)
+study-live-settings.md	55	2	1-inventory-what-needs-a-restart-today	1. Inventory: what needs a restart today
+study-live-settings.md	57	3	11-medievilini-keys-gpushimgow3_settingshcpp-scriptsgraphics_optionspy	1.1 medievil.ini keys (`gpu/shim/gow3_settings.{h,cpp}`, `scripts/graphics_options.py`)
+study-live-settings.md	83	3	12-launcher-only-app-options-launchermedievil_launcherpy470-500	1.2 Launcher-only ("app") options (`launcher/medievil_launcher.py:470-500`)
+study-live-settings.md	90	3	13-gow3_-environment-variables	1.3 `GOW3_*` environment variables
+study-live-settings.md	109	3	14-ue4-cvars-boot-vs-live	1.4 UE4 cvars: boot vs live
+study-live-settings.md	123	3	15-binary-patches-patchesmedievilxml-applied-once-by-probec-apply_patches	1.5 Binary patches (`patches/MediEvil.xml`, applied once by `probe.c apply_patches`)
+study-live-settings.md	131	3	16-vulkan-level-choices	1.6 Vulkan-level choices
+study-live-settings.md	141	2	2-per-setting-how-it-could-become-live	2. Per setting: how it could become live
+study-live-settings.md	143	3	21-a-already-live-or-a-value-read-each-frame	2.1 (a) Already live, or a value read each frame
+study-live-settings.md	153	3	22-b-live-through-the-ue4-cvar-path	2.2 (b) Live through the UE4 cvar path
+study-live-settings.md	170	3	23-c-re-create-port-side-renderer-objects-at-a-frame-boundary	2.3 (c) Re-create port-side renderer objects at a frame boundary
+study-live-settings.md	216	3	24-d-needs-the-games-own-render-resources-re-created	2.4 (d) Needs the game's own render resources re-created
+study-live-settings.md	254	3	25-e-binary-patches-at-run-time	2.5 (e) Binary patches at run time
+study-live-settings.md	271	3	26-f-driver-level-choices-a-new-vkdevice	2.6 (f) Driver-level choices: a new VkDevice
+study-live-settings.md	317	2	3-ranking	3. Ranking
+study-live-settings.md	335	2	4-open-checks-each-one-launch-with-the-users-go	4. Open checks (each one launch, with the user's go)
+study-live-switches.md	1	1	study-which-options-can-be-switched-live	Study: which options can be switched live
+study-live-switches.md	12	2	summary	Summary
+study-live-switches.md	41	2	how-live-works-today-three-mechanisms	How "live" works today (three mechanisms)
+study-live-switches.md	81	2	summary-table	Summary table
+study-live-switches.md	118	2	ue4-console-variables-objects-for-ue4_cvars-cusa11227-0100	UE4 console variables: objects for `ue4_cvars[]` (CUSA11227 01.00)
+study-live-switches.md	172	2	per-option-notes	Per-option notes
+study-live-switches.md	174	3	graphics-quality-ue4_quality-scriptsue4_overridepy153-217-300-307	Graphics quality (ue4_quality; `scripts/ue4_override.py:153-217, 300-307`)
+study-live-switches.md	210	3	sg-scalability-groups-shortcut	sg.* scalability groups (shortcut?)
+study-live-switches.md	223	3	render-scale-render_scale-ue4_overridepy308-311	Render scale (render_scale; `ue4_override.py:308-311`)
+study-live-switches.md	237	3	effects-resolution-already-live	Effects resolution (already live)
+study-live-switches.md	244	3	output-resolution-restart	Output resolution (restart)
+study-live-switches.md	251	3	engine-frame-rate-restart-moot	Engine frame rate (restart; moot)
+study-live-switches.md	261	3	deferred-gpu-readbacks--game-reads-gpu-data-without-waiting-restart-low-value-live	Deferred GPU readbacks / game reads GPU data without waiting (restart; low value live)
+study-live-switches.md	270	3	perf_hzb_occlusion-restart--medium	perf_hzb_occlusion (restart → medium)
+study-live-switches.md	281	3	perf_no_decal_prepass-restart--easy-medium	perf_no_decal_prepass (restart → easy-medium)
+study-live-switches.md	288	3	perf_particle_single_pass-restart--easy-done-2026-11-05	perf_particle_single_pass (restart → easy; done 2026-11-05)
+study-live-switches.md	315	3	perf_texture_memo-restart--easy-medium	perf_texture_memo (restart → easy-medium)
+study-live-switches.md	321	3	perf_lockfree_memory-live-half	perf_lockfree_memory (live, half)
+study-live-switches.md	328	3	perf_gpu_data_no_waits-restart--medium-twins-hard	perf_gpu_data_no_waits (restart → medium, twins hard)
+study-live-switches.md	338	3	perf_4k_memory-restart	perf_4k_memory (restart)
+study-live-switches.md	343	3	perf_lean_barriers-restart--easy	perf_lean_barriers (restart → easy)
+study-live-switches.md	351	3	presentation-launcher-only	Presentation (launcher only)
+study-live-switches.md	366	2	found-on-the-way	Found on the way
+study-live-switches.md	384	2	recommended-order-user-value-per-effort	Recommended order (user value per effort)
+study-mgs2-temporal-for-ue4.md	1	1	study-what-the-mgs2-temporal-work-gives-medievil-ue4-and-a-revised-dlss--fsr--fg-plan	Study: what the MGS2 temporal work gives MediEvil (UE4), and a revised DLSS / FSR / FG plan
+study-mgs2-temporal-for-ue4.md	13	2	1-the-answer-in-short	1. The answer in short
+study-mgs2-temporal-for-ue4.md	31	2	2-what-mgs2-built-question-1	2. What MGS2 built (question 1)
+study-mgs2-temporal-for-ue4.md	48	2	3-what-ue4-gives-in-medievil-question-2	3. What UE4 gives in MediEvil (question 2)
+study-mgs2-temporal-for-ue4.md	50	3	31-engine-and-config	3.1 Engine and config
+study-mgs2-temporal-for-ue4.md	60	3	32-the-frame-from-the-existing-capture-frame-map-in-study-heavy-frame-mapmd-section-1	3.2 The frame (from the existing capture; frame map in [study-heavy-frame-map.md](study-heavy-frame-map.md) section 1)
+study-mgs2-temporal-for-ue4.md	79	3	33-the-view-uniform-buffer-checked	3.3 The View uniform buffer (checked)
+study-mgs2-temporal-for-ue4.md	109	3	34-velocity-and-jitter-semantics-inferred-from-ue-421-to-confirm-at-m2	3.4 Velocity and jitter semantics (inferred from UE 4.21, to confirm at M2)
+study-mgs2-temporal-for-ue4.md	123	2	4-mapping-mgs2-to-medievil-question-3	4. Mapping MGS2 to MediEvil (question 3)
+study-mgs2-temporal-for-ue4.md	147	2	5-revised-step-plan-question-4	5. Revised step plan (question 4)
+study-mgs2-temporal-for-ue4.md	170	2	6-where-the-existing-medievil-plans-are-wrong-or-outdated-not-edited	6. Where the existing MediEvil plans are wrong or outdated (not edited)
+study-mgs2-temporal-for-ue4.md	186	2	7-open-questions	7. Open questions
+study-mgs2-temporal-for-ue4.md	197	2	how-this-was-checked	How this was checked
+study-mgs2-temporal-for-ue4.md	206	2	decisions-the-user-2026-11-03	Decisions (the user, 2026-11-03)
+study-mouse-input.md	1	1	study-raw-mouse-camera-and-mouse-menus-2026-11-03	Study: raw mouse camera and mouse menus (2026-11-03)
+study-mouse-input.md	14	2	1-summary	1. Summary
+study-mouse-input.md	26	2	2-scemouse-the-api-and-how-ue4-uses-it	2. sceMouse: the API and how UE4 uses it
+study-mouse-input.md	28	3	21-imports-and-the-runtime-today	2.1 Imports and the runtime today
+study-mouse-input.md	39	3	22-the-data-layout-read-from-the-consumers-offsets	2.2 The data layout (read from the consumer's offsets)
+study-mouse-input.md	59	3	23-the-engine-side-read	2.3 The engine side (read)
+study-mouse-input.md	97	2	3-the-games-input-config-and-camera	3. The game's input config and camera
+study-mouse-input.md	99	3	31-defaultinputini-read-overbiteconfigdefaultinputini-in-pakchunk0	3.1 DefaultInput.ini (read, `OVERBITE/Config/DefaultInput.ini` in pakchunk0)
+study-mouse-input.md	112	3	32-who-consumes-the-axes-read-name-tables-of-the-cooked-blueprints	3.2 Who consumes the axes (read: name tables of the cooked Blueprints)
+study-mouse-input.md	136	3	33-what-a-pak-edit-could-and-could-not-do	3.3 What a pak edit could and could not do
+study-mouse-input.md	151	2	4-design-options	4. Design options
+study-mouse-input.md	153	3	41-where-the-mouse-enters-the-game	4.1 Where the mouse enters the game
+study-mouse-input.md	173	3	42-capture-sdl-not-a-dedicated-8000-hz-thread	4.2 Capture: SDL, not a dedicated 8000 Hz thread
+study-mouse-input.md	198	3	43-sensitivity-invert-acceleration-coexistence	4.3 Sensitivity, invert, acceleration, coexistence
+study-mouse-input.md	213	3	44-cursor-and-capture-rules-with-the-cursor-hide-work-in-the-main-session	4.4 Cursor and capture rules (with the cursor-hide work in the main session)
+study-mouse-input.md	233	3	45-menu-navigation	4.5 Menu navigation
+study-mouse-input.md	245	2	5-lessons-from-mgs2-read-cuserstymgs2-labmgshdfixresearchdocsmouse-inputmd	5. Lessons from MGS2 (read: `C:\Users\Ty\MGS2-Lab\MGSHDFix\research\docs\mouse-input.md`)
+study-mouse-input.md	261	2	6-bloodbornes-mouse-look-compared-read-bloodborne_pc-at-3c57da4	6. Bloodborne's mouse look, compared (read, `bloodborne_pc` at 3c57da4)
+study-mouse-input.md	271	2	7-step-plan-smallest-first-each-step-one-change-one-launch-with-the-users-go	7. Step plan (smallest first; each step one change, one launch with the user's go)
+study-mouse-input.md	284	2	8-open-questions	8. Open questions
+study-mouse-input.md	296	2	method-notes	Method notes
+study-mouse-input.md	305	2	decision-the-user-2026-11-03	Decision (the user, 2026-11-03)
+study-native-render-paths.md	1	1	study-native-render-paths-or-cutting-out-the-middle-man-2026-11-04	Study: native render paths, or "cutting out the middle man" (2026-11-04)
+study-native-render-paths.md	15	2	answer	Answer
+study-native-render-paths.md	41	2	1-the-heavy-frame-by-class-question-1	1. The heavy frame by class (question 1)
+study-native-render-paths.md	96	2	2-fast-paths-inside-stage-b-vs-a-separate-native-renderer-question-2	2. Fast paths inside stage B vs a separate native renderer (question 2)
+study-native-render-paths.md	124	2	3-what-bloodbornes-own-renderer-replaced-question-3	3. What Bloodborne's "own renderer" replaced (question 3)
+study-native-render-paths.md	169	2	4-ranked-plan-question-4	4. Ranked plan (question 4)
+study-native-render-paths.md	192	2	how-this-was-checked	How this was checked
+study-particle-fixed-step.md	1	1	study-the-single-gpu-particle-pass-without-the-torch--crypt-floor-bug-2026-11-05	Study: the single GPU particle pass without the torch / crypt floor bug (2026-11-05)
+study-particle-fixed-step.md	9	2	answer	Answer
+study-particle-fixed-step.md	48	2	evidence	Evidence
+study-particle-fixed-step.md	50	3	the-emitters-per-frame-data-game-thread-code	The emitter's per-frame data (game thread) [code]
+study-particle-fixed-step.md	68	3	the-simulation-render-thread-code	The simulation (render thread) [code]
+study-particle-fixed-step.md	87	3	which-emitters-have-flag-8-assets	Which emitters have flag 8 [assets]
+study-particle-fixed-step.md	97	3	measurements-log	Measurements [log]
+study-particle-fixed-step.md	106	3	why-the-copy-pass-makes-the-default-immune-inferred-from-the-code-above	Why the copy pass makes the default immune [inferred from the code above]
+study-particle-fixed-step.md	114	2	the-change	The change
+study-particle-fixed-step.md	156	2	test-deck-or-pc-needs-the-users-go	Test (Deck or PC, needs the user's go)
+study-particle-fixed-step.md	175	2	unverified	Unverified
+study-stage-b-native.md	1	1	study-native--hle-work-to-unload-stage-b-2026-10-20	Study: native / HLE work to unload stage B (2026-10-20)
+study-stage-b-native.md	20	2	1-how-the-game-builds-gpu-work	1. How the game builds GPU work
+study-stage-b-native.md	42	2	2-hot-patterns-and-redundancy-measured	2. Hot patterns and redundancy (measured)
+study-stage-b-native.md	90	2	3-candidates	3. Candidates
+study-stage-b-native.md	92	3	inside-stage-b-no-game-hooks	Inside stage B (no game hooks)
+study-stage-b-native.md	125	3	game-side-hle--ue4-knowledge	Game side (HLE / UE4 knowledge)
+study-stage-b-native.md	154	2	4-ranking	4. Ranking
+study-stage-b-per-draw.md	1	1	study-stage-bs-cpu-cost-per-draw-for-the-steam-deck-2026-11-04	Study: stage B's CPU cost per draw, for the Steam Deck (2026-11-04)
+study-stage-b-per-draw.md	8	2	answer	Answer
+study-stage-b-per-draw.md	36	2	1-data-and-three-caveats	1. Data, and three caveats
+study-stage-b-per-draw.md	77	2	2-the-per-draw-path-part-by-part	2. The per-draw path, part by part
+study-stage-b-per-draw.md	124	2	3-what-runs-as-tasks-on-stage-b	3. What runs as tasks on stage B
+study-stage-b-per-draw.md	159	2	4-ranked-cuts	4. Ranked cuts
+study-stage-b-per-draw.md	247	2	5-implemented-c1-f03ee52	5. Implemented: C1 (`f03ee52`)
+study-stage-b-per-draw.md	267	2	6-the-deck-test-one-launch-the-users-go	6. The Deck test (one launch, the user's go)
+study-ue4-draw-reduction.md	1	1	study-ue-421-ways-to-cut-draws-and-gpu-work-on-the-steam-deck	Study: UE 4.21 ways to cut draws (and GPU work) on the Steam Deck
+study-ue4-draw-reduction.md	21	2	summary	Summary
+study-ue4-draw-reduction.md	47	2	1-where-the-decks-draws-go-and-what-cuts-each-class	1. Where the Deck's draws go, and what cuts each class
+study-ue4-draw-reduction.md	69	3	11-shadows-what-actually-controls-the-count-ue-421	1.1 Shadows: what actually controls the count (UE 4.21)
+study-ue4-draw-reduction.md	92	3	12-live-or-restart	1.2 Live or restart
+study-ue4-draw-reduction.md	104	2	2-extra-culling-we-do-not-have	2. Extra culling we do not have
+study-ue4-draw-reduction.md	119	2	3-gpu-particle-simulation-ue4-behaviour-port-fix	3. GPU-particle simulation (UE4 behaviour, port fix)
+study-ue4-draw-reduction.md	128	2	4-full-resolution-hzb	4. Full-resolution HZB
+study-ue4-draw-reduction.md	169	2	5-variable-rate-shading-ue-421-has-none-driver-level-only	5. Variable rate shading (UE 4.21 has none; driver-level only)
+study-ue4-draw-reduction.md	186	2	6-ranked-for-the-deck	6. Ranked for the Deck
+study-ue4-draw-reduction.md	208	2	open-questions	Open questions
+study-upstream-commits.md	1	1	study-upstream-commits-since-our-fork-133-137-vs-lab	Study: upstream commits since our fork (1.3.3-1.3.7) vs `lab`
+study-upstream-commits.md	14	2	summary	Summary
+study-upstream-commits.md	31	2	1-commits	1. Commits
+study-upstream-commits.md	48	2	2-same-as-ours-independent-equivalents	2. Same as ours (independent equivalents)
+study-upstream-commits.md	58	2	3-conflicts-with-ours	3. Conflicts with ours
+study-upstream-commits.md	71	3	semantic-hazards-in-files-that-auto-merge-mt	Semantic hazards in files that auto-merge [mt]
+study-upstream-commits.md	84	2	4-worth-porting-ranked-by-benefit--risk	4. Worth porting (ranked by benefit / risk)
+study-upstream-commits.md	99	2	5-not-relevant-bulk	5. Not relevant (bulk)
+study-upstream-commits.md	106	2	6-the-topics-in-the-brief	6. The topics in the brief
+study-upstream-commits.md	120	2	7-what-was-verified-and-what-is-inferred	7. What was verified and what is inferred
+study-vrr-present-pacing.md	1	1	study-frame-pacing-under-g-sync--vrr-and-where-it-goes-in-this-pipeline	Study: frame pacing under G-Sync / VRR, and where it goes in this pipeline
+study-vrr-present-pacing.md	14	2	summary	Summary
+study-vrr-present-pacing.md	56	2	what-the-traces-show-new-analysis-no-launch	What the traces show (new analysis, no launch)
+study-vrr-present-pacing.md	85	2	the-pipeline-and-its-pacing-points	The pipeline and its pacing points
+study-vrr-present-pacing.md	101	2	state-of-the-art-by-technique	State of the art (by technique)
+study-vrr-present-pacing.md	116	2	mapping-onto-this-pipeline	Mapping onto this pipeline
+study-vrr-present-pacing.md	129	2	specific-questions	Specific questions
+study-vrr-present-pacing.md	193	2	ranked-options	Ranked options
+study-vrr-present-pacing.md	206	2	first-experiments-one-change-per-launch-the-users-go-each-time	First experiments (one change per launch, the user's go each time)
+study-vrr-present-pacing.md	227	2	sources	Sources
+study-wwise-stereo-mix.md	1	1	study-can-wwise-mix-in-stereo-on-the-steam-deck-to-cut-akeventmanagers-cpu	Study: can Wwise mix in stereo on the Steam Deck to cut `AK::EventManager`'s CPU?
+study-wwise-stereo-mix.md	21	2	answer	Answer
+study-wwise-stereo-mix.md	73	2	1-every-audio-related-import-and-how-the-port-implements-it-code	1. Every audio-related import and how the port implements it [code]
+study-wwise-stereo-mix.md	96	2	2-wwises-ps4-sink-how-the-layout-is-chosen-code	2. Wwise's PS4 sink: how the layout is chosen [code]
+study-wwise-stereo-mix.md	107	3	21-registration-and-creation	2.1 Registration and creation
+study-wwise-stereo-mix.md	119	3	22-cakps4sinkinit-0x35182e0-0x3515520	2.2 `CAkPS4Sink::Init`, 0x35182e0 [0x3515520]
+study-wwise-stereo-mix.md	148	3	23-what-reaches-the-port	2.3 What reaches the port
+study-wwise-stereo-mix.md	162	3	24-the-games-init-settings	2.4 The game's init settings
+study-wwise-stereo-mix.md	174	2	3-the-bus-tree-follows-the-main-mix-inferred	3. The bus tree follows the main mix [inferred]
+study-wwise-stereo-mix.md	189	2	4-no-game-or-project-setting-overrides-it-code	4. No game or project setting overrides it [code]
+study-wwise-stereo-mix.md	200	2	5-cpu-what-scales-with-the-output-channel-count-inferred	5. CPU: what scales with the output channel count [inferred]
+study-wwise-stereo-mix.md	224	2	6-candidate-changes	6. Candidate changes
+study-wwise-stereo-mix.md	239	2	7-recommended-deck-test-one-launch-optional	7. Recommended Deck test (one launch, optional)
+study-wwise-stereo-mix.md	254	2	8-corrections-to-earlier-docs	8. Corrections to earlier docs
+upscaler-reference.md	1	1	upscaler-reference-motion-vectors-fsr-dlss-frame-generation	Upscaler reference: motion vectors, FSR, DLSS, frame generation
+upscaler-reference.md	7	2	1-directory	1. Directory
+upscaler-reference.md	21	2	2-invariants-must-hold-after-every-change	2. Invariants: must hold after every change
+upscaler-reference.md	34	2	3-before-every-test-launch	3. Before every test launch
+upscaler-reference.md	42	2	4-symptom--first-place-to-look	4. Symptom → first place to look
+upscaler-reference.md	48	2	5-things-not-to-retry	5. Things not to retry
