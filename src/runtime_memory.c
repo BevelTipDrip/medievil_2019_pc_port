@@ -1358,6 +1358,8 @@ static int32_t pool_commit_unlocked(void *address, uint64_t size, int type, int 
         const int mapped=!host_map_unlocked(at,pages*PAGE,host_prot(prot),0,phys);
         write_lock();
         const int32_t r=mapped ? record_mapped(at,pages*PAGE,prot,KIND_DIRECT,type,phys) : NO_MEMORY;
+        /* Freed after a failed commit: they may hold this address's kept bytes (no owner now). */
+        if (r && pool_keep_pages()) host_discard(phys,pages*PAGE);
         if (r) pool_give_locked(phys,pages*PAGE,POOL_FREE);
         else pool_committed_bytes+=pages*PAGE;
         write_unlock();
@@ -1456,6 +1458,10 @@ static int32_t pool_commit_impl(void *address, uint64_t size, int type, int prot
 #endif
         if (!got && !pool_take_locked((size-done)/PAGE,&phys,&pages)) { write_unlock(); pool_map_unlock(); return NO_MEMORY; }
         int32_t r=place(&at,pages*PAGE,prot,MAP_FIXED_FLAG,PAGE,KIND_DIRECT,type,phys);
+#ifndef _WIN32
+        /* Freed after a failed commit: they may hold this address's kept bytes (no owner now). */
+        if (r && pool_keep_pages()) host_discard(phys,pages*PAGE);
+#endif
         if (r) pool_give_locked(phys,pages*PAGE,POOL_FREE);
         else pool_committed_bytes+=pages*PAGE;
         write_unlock();
