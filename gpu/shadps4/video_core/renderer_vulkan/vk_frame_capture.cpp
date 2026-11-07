@@ -221,12 +221,13 @@ void FrameCapture::AddDisplayBuffer(VAddr address) {
 namespace {
 struct TargetWatchSpec {
     u32 width = 0, height = 0, remaining = 0;
+    char format[64] = {}; ///< optional ":Format" (vk::to_string, e.g. R16G16B16A16Sfloat)
 };
 TargetWatchSpec& WatchSpec() {
     static TargetWatchSpec spec = [] {
         TargetWatchSpec s;
         const char* env = std::getenv("GOW3_CAPTURE_ON_TARGET");
-        if (env && std::sscanf(env, "%ux%u", &s.width, &s.height) == 2) {
+        if (env && std::sscanf(env, "%ux%u:%63s", &s.width, &s.height, s.format) >= 2) {
             const char* count = std::getenv("GOW3_CAPTURE_ON_TARGET_COUNT");
             s.remaining = count && *count ? u32(std::strtoul(count, nullptr, 10)) : 2;
         }
@@ -247,7 +248,8 @@ void FrameCapture::StartForTarget(const VideoCore::ImageInfo* const* colors, u32
     }
     for (u32 i = 0; i < num_colors; ++i) {
         if (colors[i] && colors[i]->size.width == spec.width &&
-            colors[i]->size.height == spec.height) {
+            colors[i]->size.height == spec.height &&
+            (!spec.format[0] || vk::to_string(colors[i]->pixel_format) == spec.format)) {
             --spec.remaining;
             entries.clear();
             pending_sampled.clear();
