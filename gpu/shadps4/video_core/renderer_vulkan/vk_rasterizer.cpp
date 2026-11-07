@@ -2858,6 +2858,12 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
                     continue;
                 }
             }
+            // gow3 GOW3_CAPTURE_ON_TARGET (diagnostics): the inputs of the watched pass chain
+            // (UE4's sky light integration at a level's load): their texel statistics, read
+            // before the layout transition below.
+            if (!is_storage && FrameCapture::TargetRecording()) {
+                texture_cache.LogTexelStats(image);
+            }
             // The image is either bound as storage in a separate descriptor or bound as render
             // target in feedback loop. Depth images are excluded because they can't be bound as
             // storage and feedback loop doesn't make sense for them

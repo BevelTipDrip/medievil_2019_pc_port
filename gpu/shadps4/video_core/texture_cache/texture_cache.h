@@ -546,6 +546,14 @@ private:
         const char* value = std::getenv("GOW3_STALE_READBACK");
         return value && value[0] == '1';
     }();
+public:
+    /// gow3 GOW3_CAPTURE_ON_TARGET (diagnostics, Mausoleum lighting): copies a float image of at
+    /// most 256x256 back once (all mips and layers) and logs per mip its NaN and infinity counts
+    /// and finite range, when the GPU is done. Call before the image's layout transition for a
+    /// draw (the copy leaves it in the transfer layout).
+    void LogTexelStats(Image& image);
+
+private:
     template <bool track>
     void WatchReadback(VAddr address, u64 size);
     /// gow3 (plan-linux-deck.md "Mausoleum lighting"): in stale mode a CPU read of a range whose

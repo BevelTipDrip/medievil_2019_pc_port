@@ -254,6 +254,7 @@ void FrameCapture::StartForTarget(const VideoCore::ImageInfo* const* colors, u32
             pending_buffers.clear();
             pass_open = false;
             state.store(Recording, std::memory_order_release);
+            target_recording = true;
             std::printf("Frame capture: started at a %ux%u target (%#llx)\n", spec.width,
                         spec.height, static_cast<unsigned long long>(colors[i]->guest_address));
             return;
@@ -270,6 +271,7 @@ void FrameCapture::BeginPass(const VideoCore::ImageInfo* const* colors, u32 num_
         pending_sampled.clear();
         pending_buffers.clear();
         state.store(Idle, std::memory_order_release);
+        target_recording = false;
         return;
     }
     std::vector<Target> targets;
@@ -300,6 +302,7 @@ void FrameCapture::BeginPass(const VideoCore::ImageInfo* const* colors, u32 num_
             pending_sampled.clear();
             pending_buffers.clear();
             state.store(Idle, std::memory_order_release);
+            target_recording = false;
             return;
         }
         entries.clear();
@@ -307,6 +310,7 @@ void FrameCapture::BeginPass(const VideoCore::ImageInfo* const* colors, u32 num_
         pending_buffers.clear();
         pass_open = false;
         state.store(Recording, std::memory_order_release);
+        target_recording = false;
     }
     if (state.load(std::memory_order_relaxed) != Recording) {
         pending_sampled.clear();

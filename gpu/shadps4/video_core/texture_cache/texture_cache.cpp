@@ -697,6 +697,90 @@ std::optional<TextureCache::PendingDownload> TextureCache::RecordImageDownload(I
     return PendingDownload{image.info.guest_address, download_size, download};
 }
 
+void TextureCache::LogTexelStats(Image& image) {
+    const auto& info = image.info;
+    const auto format = info.pixel_format;
+    const bool half = format == vk::Format::eR16G16B16A16Sfloat ||
+                      format == vk::Format::eR16G16Sfloat || format == vk::Format::eR16Sfloat;
+    const bool single = format == vk::Format::eR32G32B32A32Sfloat ||
+                        format == vk::Format::eR32G32Sfloat || format == vk::Format::eR32Sfloat;
+    if ((!half && !single) || info.props.is_depth || info.size.width > 256 ||
+        info.size.height > 256 || info.size.depth != 1) {
+        return;
+    }
+    static std::unordered_set<u64> seen; // GPU thread only
+    if (!seen.insert(info.guest_address ^ (u64(format) << 56) ^ (u64{info.size.width} << 40))
+             .second) {
+        return;
+    }
+    const u32 texel_bytes = info.num_bits / 8;
+    const u32 layers = info.resources.layers, levels = info.resources.levels;
+    boost::container::small_vector<vk::BufferImageCopy, 16> copies;
+    std::array<u64, 16> offsets{};
+    u64 total = 0;
+    for (u32 mip = 0; mip < levels && mip < 16; ++mip) {
+        const u32 w = std::max(info.size.width >> mip, 1u), h = std::max(info.size.height >> mip, 1u);
+        offsets[mip] = total;
+        copies.push_back(vk::BufferImageCopy{
+            .bufferOffset = total,
+            .bufferRowLength = w,
+            .bufferImageHeight = h,
+            .imageSubresource{.aspectMask = vk::ImageAspectFlagBits::eColor,
+                              .mipLevel = mip,
+                              .baseArrayLayer = 0,
+                              .layerCount = layers},
+            .imageOffset = {0, 0, 0},
+            .imageExtent = {w, h, 1},
+        });
+        total += u64{w} * h * layers * texel_bytes;
+    }
+    const auto staging = runtime.GetStagingPool().Request(total, MemoryType::HostCached, 16, true);
+    for (auto& copy : copies) {
+        copy.bufferOffset += staging.offset;
+    }
+    runtime.DownloadImage(&image, staging.buffer, copies);
+    scheduler.DeferPriorityOperation([this, staging, offsets, half, layers, texel_bytes,
+                                      levels = u32(copies.size()), address = info.guest_address,
+                                      width = info.size.width, height = info.size.height,
+                                      name = vk::to_string(format)] {
+        staging.Invalidate();
+        const u32 components = texel_bytes / (half ? 2 : 4);
+        for (u32 mip = 0; mip < levels; ++mip) {
+            const u32 w = std::max(width >> mip, 1u), h = std::max(height >> mip, 1u);
+            const u64 count = u64{w} * h * layers * components;
+            u64 nans = 0, infs = 0, nonzero = 0;
+            float lo = std::numeric_limits<float>::infinity(), hi = -lo;
+            const u8* base = staging.mapped + offsets[mip];
+            for (u64 i = 0; i < count; ++i) {
+                float v;
+                if (half) {
+                    u16 h16;
+                    std::memcpy(&h16, base + i * 2, 2);
+                    v = HalfToFloat(h16);
+                } else {
+                    std::memcpy(&v, base + i * 4, 4);
+                }
+                if (std::isnan(v)) {
+                    ++nans;
+                } else if (std::isinf(v)) {
+                    ++infs;
+                } else {
+                    lo = std::min(lo, v);
+                    hi = std::max(hi, v);
+                    nonzero += v != 0.0f;
+                }
+            }
+            std::printf("Texel stats %#llx %ux%u x%u %s mip %u: %llu values, NaN %llu, inf %llu, "
+                        "non-zero %llu, finite range %g .. %g\n",
+                        static_cast<unsigned long long>(address), width, height, layers,
+                        name.c_str(), mip, static_cast<unsigned long long>(count),
+                        static_cast<unsigned long long>(nans), static_cast<unsigned long long>(infs),
+                        static_cast<unsigned long long>(nonzero), lo, hi);
+        }
+        runtime.GetStagingPool().FreeDeferred(staging);
+    });
+}
+
 void TextureCache::DownloadImageMemory(ImageId image_id, bool sync) {
     Image& image = slot_images[image_id];
     ResolveReadbacks(image.info.guest_address, image.info.guest_size, true,
