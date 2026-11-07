@@ -1098,6 +1098,13 @@ extern uint64_t runtime_disabled_optimizations;
 /* free_hint: every page below it is used. Commits searched from page 0 each time, under the
  * memory write lock (MediEvil: up to 28.7% of a game thread in that scan). */
 static struct { uint64_t phys, pages, free_hint; unsigned char *used; } pool_chunks[POOL_CHUNKS];
+#ifndef _WIN32
+/* Kept pages (Linux, pool_keep_locked): per page the guest address it was kept for (or 0), and
+ * a table from a kept page's address to its physical page. */
+static uint64_t *pool_owner[POOL_CHUNKS];
+#define KEPT_SLOTS (UINT32_C(1) << 19)
+static struct KeptSlot { uintptr_t va; uint64_t phys; } *kept_table;
+#endif
 static ABI int32_t pool_expand(int64_t low, int64_t high, uint64_t size, uint64_t alignment, int64_t *out) {
     if (!out || !size || size%(64*1024)) return INVALID;
     int32_t r=direct_allocate(low,high,size,alignment ? alignment : 64*1024,0,out);
@@ -1108,6 +1115,12 @@ static ABI int32_t pool_expand(int64_t low, int64_t high, uint64_t size, uint64_
     unsigned char *used=slot>=0 ? calloc(size/PAGE,1) : NULL;
     if (used) pool_chunks[slot].phys=(uint64_t)*out, pool_chunks[slot].pages=size/PAGE, pool_chunks[slot].free_hint=0,
               pool_chunks[slot].used=used;
+#ifndef _WIN32
+    if (used) { /* kept pages (pool_keep_locked): without the tables a decommit frees as before */
+        pool_owner[slot]=calloc(size/PAGE,sizeof(uint64_t));
+        if (!kept_table) kept_table=calloc(KEPT_SLOTS,sizeof(*kept_table));
+    }
+#endif
     write_unlock();
     if (!used) return NO_MEMORY;
     printf("Runtime: memory pool expanded by %" PRIu64 " bytes at 0x%" PRIx64 "\n",size,(uint64_t)*out);
@@ -1150,6 +1163,87 @@ static int pool_take_locked(uint64_t want, uint64_t *phys, uint64_t *pages) {
     }
     return 0;
 }
+#ifndef _WIN32
+/* gow3 (Linux; plan-linux-deck.md "Mausoleum lighting"): kept pages, Windows' kept views (M1)
+ * without views. UE4 decommits a render target's pool pages while the target is unused and
+ * commits them again at the same address; Windows hands the same pages back (its contents with
+ * them), Linux took any free pages and the target came back holding another allocation's bytes
+ * (the Hilltop Mausoleum's sky and reflection captures: garbage, different every launch). A
+ * decommit now leaves its pages kept for their address (pool_owner, kept_table); a commit takes
+ * back the pages kept for its address first; a kept page another address takes is zeroed first.
+ * GOW3_POOL_KEEP_PAGES=0: off (as before). Counters in the "Guest pool faults" line. */
+#define KEPT_PROBES 8
+static uint64_t kept_hits, kept_misses, kept_foreign_zeroed; /* atomic; GOW3_FRAME_STATS */
+static int pool_keep_pages(void) {
+    static int v=-1;
+    if (v<0) { const char *e=getenv("GOW3_POOL_KEEP_PAGES"); v=!(e && e[0]=='0'); }
+    return v && kept_table;
+}
+static uint32_t kept_slot(uintptr_t va) {
+    return (uint32_t)(((uint64_t)(va/PAGE)*UINT64_C(0x9E3779B97F4A7C15))>>45) & (KEPT_SLOTS-1);
+}
+static int pool_chunk_of(uint64_t phys, uint64_t *index) {
+    for (int c=0;c<POOL_CHUNKS;++c)
+        if (pool_chunks[c].pages && phys>=pool_chunks[c].phys && phys<pool_chunks[c].phys+pool_chunks[c].pages*PAGE) {
+            *index=(phys-pool_chunks[c].phys)/PAGE;
+            return c;
+        }
+    return -1;
+}
+/* Decommit (write lock held): [phys, phys+size) mapped at va is kept for va. */
+static void pool_keep_locked(uintptr_t va, uint64_t phys, uint64_t size) {
+    for (uint64_t off=0; off<size; off+=PAGE) {
+        uint64_t i;
+        const int c=pool_chunk_of(phys+off,&i);
+        if (c<0 || !pool_owner[c]) continue;
+        pool_chunks[c].used[i]=POOL_KEPT;
+        pool_owner[c][i]=va+off;
+        uint32_t s=kept_slot(va+off);
+        for (int probe=0; probe<KEPT_PROBES; ++probe) {
+            const uint32_t t=(s+(uint32_t)probe)&(KEPT_SLOTS-1);
+            if (!kept_table[t].va || kept_table[t].va==va+off) { s=t; break; }
+        }
+        kept_table[s].va=va+off; kept_table[s].phys=phys+off; /* full probe run: the first is replaced */
+    }
+}
+/* Commit (write lock held): the pages kept for va, contiguous from va (at most want); 0 if none. */
+static int pool_take_kept_locked(uintptr_t va, uint64_t want, uint64_t *phys, uint64_t *pages) {
+    const uint32_t s=kept_slot(va);
+    for (int probe=0; probe<KEPT_PROBES; ++probe) {
+        const struct KeptSlot k=kept_table[(s+(uint32_t)probe)&(KEPT_SLOTS-1)];
+        if (k.va!=va) continue;
+        uint64_t i;
+        const int c=pool_chunk_of(k.phys,&i);
+        if (c<0 || !pool_owner[c]) break;
+        uint64_t n=0;
+        while (i+n<pool_chunks[c].pages && n<want && pool_chunks[c].used[i+n]==POOL_KEPT &&
+               pool_owner[c][i+n]==va+n*PAGE) {
+            pool_chunks[c].used[i+n]=POOL_TAKEN;
+            pool_owner[c][i+n]=0;
+            ++n;
+        }
+        if (!n) break;
+        *phys=k.phys; *pages=n;
+        __atomic_fetch_add(&kept_hits,n,__ATOMIC_RELAXED);
+        return 1;
+    }
+    __atomic_fetch_add(&kept_misses,1,__ATOMIC_RELAXED);
+    return 0;
+}
+/* After pool_take_locked (write lock held): pages of the run that were kept for another address
+ * hold that range's bytes; they are zeroed (as a fresh page reads) before this commit maps them. */
+static void pool_zero_foreign_locked(uint64_t phys, uint64_t pages) {
+    uint64_t i;
+    const int c=pool_chunk_of(phys,&i);
+    if (c<0 || !pool_owner[c]) return;
+    for (uint64_t n=0; n<pages && i+n<pool_chunks[c].pages; ++n) {
+        if (!pool_owner[c][i+n]) continue;
+        pool_owner[c][i+n]=0;
+        host_discard(phys+n*PAGE,PAGE);
+        __atomic_fetch_add(&kept_foreign_zeroed,1,__ATOMIC_RELAXED);
+    }
+}
+#endif
 /* Takes up to `want` free pages starting exactly at `phys` (a kept view's pages); 0 if none. */
 static int pool_take_at_locked(uint64_t phys, uint64_t want, uint64_t *pages) {
     for (int c=0;c<POOL_CHUNKS;++c)
@@ -1252,7 +1346,12 @@ static int32_t pool_commit_unlocked(void *address, uint64_t size, int type, int 
         uint64_t phys, pages;
         pthread_mutex_lock(&pool_map_mutex);
         write_lock();
-        const int taken=pool_take_locked((size-done)/PAGE,&phys,&pages);
+        /* Kept pages: this address's own first; another address's are zeroed first. */
+        int taken=pool_keep_pages() && pool_take_kept_locked((uintptr_t)address+done,(size-done)/PAGE,&phys,&pages);
+        if (!taken) {
+            taken=pool_take_locked((size-done)/PAGE,&phys,&pages);
+            if (taken) pool_zero_foreign_locked(phys,pages);
+        }
         write_unlock();
         if (!taken) { pthread_mutex_unlock(&pool_map_mutex); return NO_MEMORY; }
         const uintptr_t at=(uintptr_t)address+done;
@@ -1294,7 +1393,8 @@ static int32_t pool_decommit_unlocked(uintptr_t start, uintptr_t end) {
             } else {
                 if (pool_zero_decommit()) host_discard(v.phys+(a-v.start),b-a); /* unmapped: no view left */
                 if (!recorded) write_lock();
-                pool_give_locked(v.phys+(a-v.start),b-a,POOL_FREE);
+                if (pool_keep_pages()) pool_keep_locked(a,v.phys+(a-v.start),b-a);
+                else pool_give_locked(v.phys+(a-v.start),b-a,POOL_FREE);
                 write_unlock();
                 r=recorded;
             }
@@ -1345,6 +1445,15 @@ static int32_t pool_commit_impl(void *address, uint64_t size, int type, int prot
             const uint64_t want=size-done<kept_bytes ? size-done : kept_bytes;
             got=pool_take_at_locked(phys,want/PAGE,&pages);
         }
+#ifndef _WIN32
+        /* Kept pages (Linux): this address's own first; another address's are zeroed first. */
+        if (!got && pool_keep_pages()) got=pool_take_kept_locked((uintptr_t)at,(size-done)/PAGE,&phys,&pages);
+        if (!got) {
+            if (!pool_take_locked((size-done)/PAGE,&phys,&pages)) { write_unlock(); pool_map_unlock(); return NO_MEMORY; }
+            pool_zero_foreign_locked(phys,pages);
+            got=1;
+        }
+#endif
         if (!got && !pool_take_locked((size-done)/PAGE,&phys,&pages)) { write_unlock(); pool_map_unlock(); return NO_MEMORY; }
         int32_t r=place(&at,pages*PAGE,prot,MAP_FIXED_FLAG,PAGE,KIND_DIRECT,type,phys);
         if (r) pool_give_locked(phys,pages*PAGE,POOL_FREE);
@@ -1390,6 +1499,10 @@ static int32_t pool_decommit_impl(void *address, uint64_t size) {
         } else if (vmas[i].kind!=KIND_RESERVED) {
             if (vmas[i].kind==KIND_DIRECT) {
                 if (pool_zero_decommit()) host_discard(vmas[i].phys+(a-vmas[i].start),b-a);
+#ifndef _WIN32
+                if (pool_keep_pages()) pool_keep_locked(a,vmas[i].phys+(a-vmas[i].start),b-a);
+                else
+#endif
                 pool_give_locked(vmas[i].phys+(a-vmas[i].start),b-a,POOL_FREE);
             }
             r=unmap_locked(a,b-a);
@@ -2151,9 +2264,13 @@ void runtime_memory_lock_report(char *out, size_t size, unsigned frames) {
                        populate_pages=__atomic_exchange_n(&pool_populate_pages,0,__ATOMIC_RELAXED);
         snprintf(out+used,size-(size_t)used,"Guest pool faults (window): process page faults %" PRIu64 " minor, %" PRIu64
                  " major; pool commit populates %" PRIu64 " (%" PRIu64 " pages, minor faults too; %.1f ms, %" PRIu64
-                 " failed); prefilled %" PRIu64 " MiB\n",
+                 " failed); prefilled %" PRIu64 " MiB; kept pages (%s): taken back %" PRIu64 ", commits without "
+                 "%" PRIu64 ", another address's zeroed %" PRIu64 "\n",
                  minor-last_minor,major-last_major,populates,populate_pages,populate_ns/1e6,populate_failed,
-                 __atomic_load_n(&pool_prefilled_bytes,__ATOMIC_RELAXED)>>20);
+                 __atomic_load_n(&pool_prefilled_bytes,__ATOMIC_RELAXED)>>20, pool_keep_pages() ? "on" : "off",
+                 __atomic_exchange_n(&kept_hits,0,__ATOMIC_RELAXED),
+                 __atomic_exchange_n(&kept_misses,0,__ATOMIC_RELAXED),
+                 __atomic_exchange_n(&kept_foreign_zeroed,0,__ATOMIC_RELAXED));
         last_minor=minor; last_major=major;
     }
 #else
