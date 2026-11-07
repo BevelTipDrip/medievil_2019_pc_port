@@ -472,10 +472,21 @@ private:
     /// Touch the image in the LRU cache.
     void TouchImage(const Image& image);
 
+    /// gow3 GOW3_IMAGE_WATCH=WxH[:min_layers] (diagnostics, Mausoleum lighting): images of that
+    /// size (and at least that many layers) get a timed log line for every event that can set or
+    /// lose their contents (created, CPU / GPU dirty, uploaded from guest memory, bound as a render
+    /// target or storage image, copied into, unmapped, freed); GOW3_IMAGE_WATCH_LINES caps them
+    /// (default 4000).
+    bool Watched(const ImageInfo& info) const;
+    void WatchNote(const Image& image, const char* event, const std::string& detail = {});
+
     void FreeImage(ImageId image_id, u32 line = __builtin_LINE()) {
         const auto& image = slot_images[image_id];
         if (image_stats) {
             NoteImageChurn(false, line, image.info);
+        }
+        if (Watched(image.info)) {
+            WatchNote(image, "freed", "at texture_cache line " + std::to_string(line));
         }
         // gow3 GOW3_UNDEFINED_GPU_FREED (default on; 0: off): the guest memory under a GPU-written
         // image never received the GPU's data (no write-back), so a new image made there holds

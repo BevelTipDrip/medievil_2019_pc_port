@@ -959,6 +959,55 @@ void TextureCache::InvalidateAlias(Image& image) {
     }
 }
 
+namespace {
+struct ImageWatchSpec {
+    u32 width = 0, height = 0, min_layers = 0;
+    std::atomic<u32> lines{0};
+    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+};
+ImageWatchSpec& ImageWatch() {
+    static ImageWatchSpec spec;
+    static const bool parsed = [] {
+        const char* env = std::getenv("GOW3_IMAGE_WATCH");
+        if (env && std::sscanf(env, "%ux%u:%u", &spec.width, &spec.height, &spec.min_layers) >= 2) {
+            const char* lines = std::getenv("GOW3_IMAGE_WATCH_LINES");
+            spec.lines = lines && *lines ? u32(std::strtoul(lines, nullptr, 10)) : 4000;
+        }
+        return true;
+    }();
+    (void)parsed;
+    return spec;
+}
+} // namespace
+
+bool TextureCache::Watched(const ImageInfo& info) const {
+    const auto& spec = ImageWatch();
+    return spec.width != 0 && info.size.width == spec.width && info.size.height == spec.height &&
+           info.resources.layers >= spec.min_layers;
+}
+
+void TextureCache::WatchNote(const Image& image, const char* event, const std::string& detail) {
+    auto& spec = ImageWatch();
+    u32 left = spec.lines.load(std::memory_order_relaxed);
+    while (left && !spec.lines.compare_exchange_weak(left, left - 1, std::memory_order_relaxed)) {
+    }
+    if (!left) {
+        return;
+    }
+    const double seconds =
+        std::chrono::duration<double>(std::chrono::steady_clock::now() - spec.start).count();
+    const auto flags = image.flags;
+    std::printf("Image watch %.3f s: %#llx %ux%u L%u/%u %s%s [%s%s%s%s%s] tick %llu\n", seconds,
+                static_cast<unsigned long long>(image.info.guest_address), image.info.size.width,
+                image.info.size.height, image.info.resources.levels, image.info.resources.layers,
+                event, detail.c_str(), True(flags & ImageFlagBits::Undefined) ? " undefined" : "",
+                True(flags & ImageFlagBits::CpuDirty) ? " cpu-dirty" : "",
+                True(flags & ImageFlagBits::MaybeCpuDirty) ? " maybe-cpu-dirty" : "",
+                True(flags & ImageFlagBits::GpuDirty) ? " gpu-dirty" : "",
+                True(flags & ImageFlagBits::GpuModified) ? " gpu-modified" : "",
+                static_cast<unsigned long long>(scheduler.CurrentTick()));
+}
+
 void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {
     if (image.hash == 0) {
         // Initialize hash
@@ -982,6 +1031,10 @@ void TextureCache::InvalidateMemory(VAddr addr, size_t size) {
             InvalidateAlias(image);
             image.flags |= ImageFlagBits::CpuDirty;
             UntrackImage(image_id);
+            if (Watched(image.info)) {
+                WatchNote(image, "CPU dirty",
+                          std::format(" by a write at +{:#x} size {:#x}", addr - image_begin, size));
+            }
         } else if (pages_end < image_end) {
             // This page access may or may not modify the image.
             // We should not mark it as dirty now. If it really was modified
@@ -997,6 +1050,9 @@ void TextureCache::InvalidateMemory(VAddr addr, size_t size) {
             // Image begins and ends on this page so it can not receive any more invalidations.
             // We will check it's hash later to see if it really was modified.
             MarkAsMaybeDirty(image_id, image);
+            if (Watched(image.info)) {
+                WatchNote(image, "maybe CPU dirty");
+            }
         }
     });
 }
@@ -1014,6 +1070,9 @@ void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size) {
         // Ensure image is reuploaded when accessed again.
         InvalidateAlias(image);
         image.flags |= ImageFlagBits::GpuDirty;
+        if (Watched(image.info)) {
+            WatchNote(image, "GPU dirty", std::format(" by a GPU buffer write of {:#x}", max_size));
+        }
     });
 }
 
@@ -1033,6 +1092,10 @@ void TextureCache::UnmapMemory(VAddr cpu_addr, size_t size) {
             CACHE_STAT(unmap_frees, 1);
             CACHE_STAT(unmap_free_bytes, info.guest_size);
             unmapped_recently[RecreateKey(info)] = stats_reports;
+        }
+        if (Watched(slot_images[id].info)) {
+            WatchNote(slot_images[id], "unmapped",
+                      std::format(" (guest unmap at {:#x} size {:#x})", cpu_addr, size));
         }
         if (ParkImage(id)) {
             continue;
@@ -1463,6 +1526,10 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                 if (merged_image_id) {
                     auto& merged_image = slot_images[merged_image_id];
                     runtime.CopyMip(&cache_image, &merged_image, mip, slice);
+                    if (Watched(merged_image.info)) {
+                        WatchNote(merged_image, "mip merged in",
+                                  std::format(" (mip {} slice {} from a separate image)", mip, slice));
+                    }
                     FreeImage(cache_image_id);
                 }
             }
@@ -1514,6 +1581,11 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
 
     RefreshImage(new_image);
     runtime.CopyImage(&src_image, &new_image);
+    if (Watched(new_image.info)) {
+        WatchNote(new_image, "expanded",
+                  std::format(" (contents copied from the old image L{}/{})",
+                              src_image.info.resources.levels, src_image.info.resources.layers));
+    }
 
     if (src_image.binding.is_bound || src_image.binding.is_target) {
         src_image.binding.needs_rebind = 1u;
@@ -1682,6 +1754,13 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
             }
         }
         RegisterImage(image_id);
+        if (Watched(slot_images[image_id].info)) {
+            static constexpr const char* bindings[] = {"texture", "storage", "render target",
+                                                       "depth target", "video out"};
+            const u32 b = u32(desc.type);
+            WatchNote(slot_images[image_id], "created",
+                      std::format(" for use as {}", b < 5 ? bindings[b] : "?"));
+        }
         // gow3: UE4 takes render targets from pool memory it decommits while a pass is unused
         // and commits again when it is needed (MediEvil: the first torch in view); the guest
         // memory there holds nothing the GPU needs to load (T-R1: 64 + 32 MiB uploaded per torch
@@ -1822,6 +1901,12 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc, Vi
     Image& image = slot_images[image_id];
     if (desc.type == BindingType::Storage) {
         image.flags |= ImageFlagBits::GpuModified;
+        if (Watched(image.info)) {
+            const auto& range = desc.view_info.range;
+            WatchNote(image, "storage write", std::format(" mips {}+{} layers {}+{}", range.base.level,
+                                                          range.extent.levels, range.base.layer,
+                                                          range.extent.layers));
+        }
         if (readback_linear_images && (!image.info.props.is_tiled || image.info.size.width <= 8 ||
                                        (tiny_target_readback && IsTinyTarget(image.info))) &&
             image.info.guest_address != 0) {
@@ -1854,6 +1939,12 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc, Vi
 }
 
 ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& desc) {
+    if (Watched(slot_images[image_id].info)) {
+        const auto& range = desc.view_info.range;
+        WatchNote(slot_images[image_id], "render target", std::format(
+            " mips {}+{} layers {}+{}", range.base.level, range.extent.levels, range.base.layer,
+            range.extent.layers));
+    }
     DiscardUndefinedContents(image_id);
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
@@ -1965,6 +2056,13 @@ void TextureCache::RefreshImage(Image& image, std::source_location caller) {
     image.flags &= ~ImageFlagBits::Undefined;
     if (False(image.flags & ImageFlagBits::Dirty) || image.info.num_samples > 1) {
         return;
+    }
+    if (Watched(image.info)) {
+        std::string_view file{caller.file_name()};
+        file = file.substr(file.find_last_of("/\\") + 1);
+        WatchNote(image, "uploaded from guest memory",
+                  std::format(" ({:#x} bytes{}, from {}:{})", image.info.guest_size,
+                              was_undefined ? ", was undefined" : "", file, caller.line()));
     }
     CACHE_STAT(refreshes, 1);
     CACHE_STAT(refresh_bytes, image.info.guest_size);
