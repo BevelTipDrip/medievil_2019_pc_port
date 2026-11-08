@@ -1163,7 +1163,16 @@ static int pool_take_locked(uint64_t want, uint64_t *phys, uint64_t *pages) {
     }
     return 0;
 }
-static uint64_t kept_foreign_zeroed, view_pages_back; /* atomic; GOW3_FRAME_STATS */
+static uint64_t kept_foreign_zeroed, view_pages_back, foreign_handed; /* atomic; GOW3_FRAME_STATS */
+/* GOW3_POOL_ZERO_FOREIGN=1 (Windows, opt-in until a PC A/B; LANDMINES item 9): pool pages holding
+ * another address's bytes are zeroed before they move, and a kept view takes back only its own.
+ * Off (default): as before 8d4607e; the owners are still recorded (one store per page on a
+ * decommit) so the frame stats count the pages that moved with another address's bytes. */
+static int pool_zero_foreign(void) {
+    static int v=-1;
+    if (v<0) { const char *e=getenv("GOW3_POOL_ZERO_FOREIGN"); v=e && e[0]=='1'; }
+    return v;
+}
 static int pool_chunk_of(uint64_t phys, uint64_t *index) {
     for (int c=0;c<POOL_CHUNKS;++c)
         if (pool_chunks[c].pages && phys>=pool_chunks[c].phys && phys<pool_chunks[c].phys+pool_chunks[c].pages*PAGE) {
@@ -1187,15 +1196,29 @@ static void pool_zero_foreign_locked(uint64_t phys, uint64_t pages) {
 }
 #ifdef _WIN32
 /* Windows decommit (write lock held): [phys, phys+size) holds the bytes the guest left at va. A
- * commit at va takes them back through its kept view (pool_take_at_locked); any other address
- * gets them zeroed (LANDMINES item 9: pool_take_locked's second loop handed kept pages out with
- * their bytes, and a stale view could take back pages another address had kept since). */
+ * commit at va takes them back through its kept view (pool_take_at_locked); with
+ * GOW3_POOL_ZERO_FOREIGN=1 any other address gets them zeroed (LANDMINES item 9:
+ * pool_take_locked's second loop handed kept pages out with their bytes, and a stale view could
+ * take back pages another address had kept since). */
 static void pool_own_locked(uintptr_t va, uint64_t phys, uint64_t size) {
     for (uint64_t off=0; off<size; off+=PAGE) {
         uint64_t i;
         const int c=pool_chunk_of(phys+off,&i);
         if (c>=0 && pool_owner[c]) pool_owner[c][i]=va+off;
     }
+}
+/* After pool_take_locked (write lock held): zeroes the run's pages that hold another address's
+ * bytes (GOW3_POOL_ZERO_FOREIGN=1), or only counts them (off, the old behaviour). */
+static void pool_hand_over_locked(uint64_t phys, uint64_t pages) {
+    if (pool_zero_foreign()) { pool_zero_foreign_locked(phys,pages); return; }
+    uint64_t i;
+    const int c=pool_chunk_of(phys,&i);
+    if (c<0 || !pool_owner[c]) return;
+    for (uint64_t n=0; n<pages && i+n<pool_chunks[c].pages; ++n)
+        if (pool_owner[c][i+n]) {
+            pool_owner[c][i+n]=0;
+            __atomic_fetch_add(&foreign_handed,1,__ATOMIC_RELAXED);
+        }
 }
 #endif
 #ifndef _WIN32
@@ -1259,18 +1282,24 @@ static int pool_take_kept_locked(uintptr_t va, uint64_t want, uint64_t *phys, ui
 }
 #endif
 /* Takes up to `want` free pages starting exactly at `phys` (a kept view's pages, mapped at va);
- * 0 if none. Only pages that hold va's own bytes or none (owner 0): a page kept for another
- * address since (pool_take_locked's second loop gave it away, its new owner decommitted it) ends
- * the run, and the commit takes other pages, which unmaps the stale view. */
+ * 0 if none. With GOW3_POOL_ZERO_FOREIGN=1 only pages that hold va's own bytes or none (owner 0):
+ * a page kept for another address since (pool_take_locked's second loop gave it away, its new
+ * owner decommitted it) ends the run, and the commit takes other pages, which unmaps the stale
+ * view. Off: any page not taken, as before; such pages are counted. */
 static int pool_take_at_locked(uint64_t phys, uint64_t want, uint64_t *pages, uintptr_t va) {
     for (int c=0;c<POOL_CHUNKS;++c)
         if (pool_chunks[c].pages && phys>=pool_chunks[c].phys && phys<pool_chunks[c].phys+pool_chunks[c].pages*PAGE) {
             const uint64_t first=(phys-pool_chunks[c].phys)/PAGE;
             uint64_t *owner=pool_owner[c];
+            const int strict=pool_zero_foreign();
             uint64_t n=0;
             while (first+n<pool_chunks[c].pages && n<want && pool_chunks[c].used[first+n]!=POOL_TAKEN &&
-                   (!owner || !owner[first+n] || owner[first+n]==va+n*PAGE)) {
-                if (owner) owner[first+n]=0;
+                   (!strict || !owner || !owner[first+n] || owner[first+n]==va+n*PAGE)) {
+                if (owner) {
+                    if (owner[first+n] && owner[first+n]!=va+n*PAGE)
+                        __atomic_fetch_add(&foreign_handed,1,__ATOMIC_RELAXED);
+                    owner[first+n]=0;
+                }
                 ++n;
             }
             if (!n) return 0;
@@ -1480,10 +1509,11 @@ static int32_t pool_commit_impl(void *address, uint64_t size, int type, int prot
         }
 #else
         /* Windows: pages kept for another address's view (the second loop) or decommitted ones
-         * hold that address's bytes: zeroed before this commit maps them. */
+         * hold that address's bytes: zeroed before this commit maps them (GOW3_POOL_ZERO_FOREIGN=1),
+         * else counted. */
         if (!got) {
             if (!pool_take_locked((size-done)/PAGE,&phys,&pages)) { write_unlock(); pool_map_unlock(); return NO_MEMORY; }
-            pool_zero_foreign_locked(phys,pages);
+            pool_hand_over_locked(phys,pages);
             got=1;
         }
 #endif
@@ -1492,7 +1522,7 @@ static int32_t pool_commit_impl(void *address, uint64_t size, int type, int prot
 #ifndef _WIN32
         if (r && pool_keep_pages()) host_discard(phys,pages*PAGE);
 #else
-        if (r) host_discard(phys,pages*PAGE);
+        if (r && pool_zero_foreign()) host_discard(phys,pages*PAGE);
 #endif
         if (r) pool_give_locked(phys,pages*PAGE,POOL_FREE);
         else pool_committed_bytes+=pages*PAGE;
@@ -2319,9 +2349,11 @@ void runtime_memory_lock_report(char *out, size_t size, unsigned frames) {
 #else
     if (used>0 && (size_t)used<size)
         snprintf(out+used,size-(size_t)used,"Guest pool (window): kept-view pages taken back %" PRIu64
-                 ", another address's pages zeroed %" PRIu64 "\n",
-                 __atomic_exchange_n(&view_pages_back,0,__ATOMIC_RELAXED),
-                 __atomic_exchange_n(&kept_foreign_zeroed,0,__ATOMIC_RELAXED));
+                 "; pages with another address's bytes (GOW3_POOL_ZERO_FOREIGN %s): zeroed %" PRIu64
+                 ", handed over with their bytes %" PRIu64 "\n",
+                 __atomic_exchange_n(&view_pages_back,0,__ATOMIC_RELAXED), pool_zero_foreign() ? "on" : "off",
+                 __atomic_exchange_n(&kept_foreign_zeroed,0,__ATOMIC_RELAXED),
+                 __atomic_exchange_n(&foreign_handed,0,__ATOMIC_RELAXED));
 #endif
     /* gow3 R1 (impl-stage-b-per-draw-2.md): the region cache's answers on every thread that asks
      * (clamp, region, is_mapped; counted per thread, summed here): from the index, from the 8
