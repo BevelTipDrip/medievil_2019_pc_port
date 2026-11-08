@@ -56,8 +56,10 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
    `pool_take_locked`'s second loop and `pool_take_at_locked` on a stale kept view hand kept pages to another address
    un-zeroed. With decommit-keep-access the old view also stays writable onto pages someone else now owns. Fix
    (zero there) belongs on `lab` with its regression pass.
-   **Fix built `8d4607e` on deck-lab (2026-11-07), not run:** Windows owner tracking, zero on hand-off. Needs a PC
-   run with frame stats ("Guest pool (window)" line), then the lab regression pass.
+   **Fix built `8d4607e` on deck-lab (2026-11-07), behind `GOW3_POOL_ZERO_FOREIGN=1`, off by default (`49f8fd7`), not
+   run.** Not certain Windows needs it: confirmed in code only; T-M1b's 52 kept-view unmaps in ~10 min suggest free
+   pages ran out then (inferred). Next: a normal PC session with frame stats reads "handed over with their bytes";
+   if it is above 0, an A/B with the switch on, judged on lows and hitches.
 10. **Linux crash window in `CopySparseSerial`** ([copy-thread-backing-view](deck/copy-thread-backing-view.md)): if
     `runtime_memory_read_backing` returns 0 after a lock-free lookup said "mapped", the code memcpys from a PROT_NONE
     guest address: the native run 7 SIGSEGV. The Linux branch should zero-fill or retry.

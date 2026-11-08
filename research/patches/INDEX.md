@@ -19,7 +19,7 @@ _guest memory, pools, flexible/direct memory, region table (src/runtime_memory.c
 | [L1-region-buckets](memory/l1-region-buckets.md) | reverted | n/a / n/a | lab |  | Region caches checked per 16 MiB bucket, not table-wide (reverted) |
 | [L2](memory/l2.md) | active | on / on | lab | GOW3_REGION_BUCKETS, perf_lockfree_memory | Region caches per 16 MiB bucket that answer while a writer holds the table lock |
 | [lockfree-region-reads](memory/lockfree-region-reads.md) | active | on / on | lab | GOW3_OPTIMISTIC_CLAMP, perf_lockfree_memory | Lock-free runtime_memory_clamp / runtime_memory_region (seqcount; spin through an edit before locking) |
-| [M1](memory/m1.md) | active | on / n/a | lab | toggle:NarrowImageStages | Windows: memory pool views kept across a decommit, kept pages handed out last (M1 + M1b) |
+| [M1](memory/m1.md) | active | on / n/a | lab | toggle:NarrowImageStages, GOW3_POOL_ZERO_FOREIGN | Windows: memory pool views kept across a decommit, kept pages handed out last (M1 + M1b) |
 | [memory-chore](memory/memory-chore.md) | chore | n/a / n/a | deck-lab |  | Memory area: tests and test build fixes with no behaviour of their own |
 | [pool-kept-pages](memory/pool-kept-pages.md) | active | n/a / on | deck-lab | GOW3_POOL_KEEP_PAGES, GOW3_POOL_ZERO_DECOMMIT | Kept pool pages on Linux: a recommit gets its own bytes back (Hilltop Mausoleum lighting fix) |
 | [pool-prefill](memory/pool-prefill.md) | rejected | n/a / off | deck-lab | GOW3_POOL_PREFILL_MB, GOW3_POOL_POPULATE | Deck memory #1: guest pool prefill at boot and populate per pool commit (Linux, opt-in) |
