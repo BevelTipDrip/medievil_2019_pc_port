@@ -67,3 +67,15 @@ set to `preset` (were 512 / console; backup `medievil.ini.bak-before-ps4-shadows
 in-game menu: shadow resolution Preset (PS4, dynamic) vs 512; shadow distance Preset (PS4) vs Console (0.8, 2).
 Look for: flicker of torch / light shadows while walking; draws a frame, FPS and lows in a heavy outdoor view
 (graveyard); small-object shadows are PS4 for the whole launch (not live).
+
+### PS4 shadow test, result (2026-11-08 00:17-00:29, PC, launched by Claude with the user's go; log `data/t-ps4-shadows-1.log`, marks `.marks.txt`)
+
+Current deck-lab build, Console quality, 4K, the launcher's Deck switches on (8 on Windows; the log line shows them),
+frame stats on. Heavy view (the usual one), same launch: PS4 values (dynamic up to 2048, 1.0 up to 10 cascades) 226.9
+FPS (min 225.5), ~1,310 draws a frame, worst frame 9.8 ms a window; switched live to upstream's (fixed 512, 0.8 / 2)
+229.0 FPS (226.7-231.3), ~1,350 draws, worst 10.9 ms: within noise. Small-object shadows were the PS4's (0.01) in both
+(not live). A frame spike every 5 s was the frame stats printing (one per window). **The user:** no issues, and "It
+looks like their patch wasn't necessary, the cause of all those draws was likely something else." Not checked: the
+Deck (its own preset uses its own shadow values), other areas, the small-object threshold alone.
+**Decision:** Console uses the PS4's shadow values; they are the highest choice of settings 1-3 and High / Ultra select
+them (the plan's * cells resolve to PS4).
