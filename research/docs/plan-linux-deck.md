@@ -1821,3 +1821,34 @@ rebooted at 19:41 on 2026-11-06, before Launch 14 / 15, so a leftover EPP `perfo
 tests is unlikely unless it was set again; the user recalls no change. Unexplained. `deck.sh status` and every
 `steps` output now record the power state (`deck-power-state.sh`: boot time, EPP per CPU, governor, CPU min / max,
 APU power cap, GPU level, the toggle file the game reads), so the next difference can be traced.
+
+## Cemetery Hill heavier than before (2026-11-08, the user; build `e3112f4`)
+
+The user: Cemetery Hill (the level before the Mausoleum) held 60 before and now has pacing problems; the main menu
+gave ~120 FPS and now ~115. Noticed before `e3112f4` too. Their guesses: the Mausoleum fix brought back lighting, or
+the CPU side got heavier and the GPU boosts less.
+
+- **Launcher bug, confirmed (log + launcher replay of the Deck's ini):** the first start of `e3112f4` gave the Low
+  ini small object shadows 0.01 and refraction 2 (Console's): heavier than intended in this build only. Fix built
+  `023cc58` (card `ue4/graphics-quality-sync`), not run; the Deck ini corrected by hand (backup
+  `medievil.ini.bak-before-low-fix-20261108`).
+- **GPU clock:** `GPU auto, 1040 MHz` during the run; the flat-60 results above were at a fixed 1,200 MHz. The user
+  then fixed it at 1,000 MHz for the fog test.
+- **Volumetric fog, measured** (live switch at a still spot, 1,000 MHz fixed, uncapped, render scale 67%): off 75.1 FPS
+  (13.32 ms), on 73.7 FPS (13.57 ms): ~0.25 ms. A cheaper fog grid (GridPixelSize / GridSizeZ, not in the live list)
+  is not worth adding. GPU utilization swung 89-99% with fog off as well.
+- **Long frames, found (cause unknown):** every 2-3 Perf lines (~10 s) one frame of 27-31 ms against ~13.3 ms, fog on
+  or off, standing still; not aligned with the particle-guard log line. The PC shows a spike every ~5 s too (the
+  user, 2026-11-08). Next: one launch with frame stats at the same spot (per-frame GPU time and CPU stages of the long
+  frames), then the same on `c7a6a40-keptpages` (before the Mausoleum fix) for the level and the long frames.
+
+## Deck freezes after quitting (the user, "every few runs"; capture 2026-11-08 ~18:15, `data/deck-quit-freeze-20261108.txt`)
+
+After quitting, the screen shows the launcher behind a translucent Steam overlay and takes no input; only a reboot
+helps. During the freeze: no game, launcher or AppImage process and no AppImage mount left; no D-state process;
+kernel log clean. **Found:** each quit in the journal ends with two of the launcher's python3 processes (bundled
+Python 3.13, run from `/tmp/.mount_MediEv...`) killed by **SIGBUS** right after Steam removes the game's processes
+(18:15:53-54; also 00:10, 00:37, 00:40 and 17:53 on 2026-11-08, older builds included): 10 such core dumps. SIGBUS
+from code in a FUSE mount fits the AppImage being unmounted while its processes still run. Not confirmed as the
+cause of the freeze (most quits crash, only some freeze). Next: how the user quits (Steam menu "Exit game" or the
+launcher's window), and how AppRun / the AppImage runtime end (who unmounts first).

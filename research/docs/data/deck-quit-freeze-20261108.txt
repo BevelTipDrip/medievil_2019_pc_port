@@ -1,0 +1,128 @@
+# Deck quit freeze, 2026-11-08 ~18:15 (build e3112f4). Captured over SSH during the freeze, then the previous boot's user journal after the reboot.
+Sun Nov  8 18:18:16 EST 2026
+ 18:18:16 up  2:55,  2 users,  load average: 5.16, 6.20, 6.35
+    PID    PPID STAT     ELAPSED %CPU   RSS COMMAND
+   4647    1206 Ss         00:00  4.3 13496 sshd-session
+   1685    1385 Ssl     02:54:56  4.3 90876 mangoapp
+   1855    1697 Sl      02:54:53  4.2 321812 steam
+   2531    2272 Rl      02:54:48  4.0 1996288 steamwebhelper
+   2425    2271 Rl      02:54:49  3.3 214876 steamwebhelper
+   1567    1385 S<sl    02:54:57  2.7 74140 gamescope-wl
+   2258    2232 Rl      02:54:50  2.4 440728 steamwebhelper
+   1648    1385 S<l     02:54:56  2.4 114616 Xwayland
+   1443    1385 S<sl    02:54:57  0.8 32612 pipewire
+   4104       2 I          25:05  0.6     0 kworker/u32:5-events_unbound
+   1631    1385 S<Lsl   02:54:56  0.5 25064 pipewire-pulse
+   3358       2 I          45:20  0.5     0 kworker/u32:0-events_unbound
+   1649    1385 S<l     02:54:56  0.3 85076 Xwayland
+   4532       2 I          05:41  0.3     0 kworker/u32:1-gfx_0.0.0
+   4533       2 I          05:19  0.2     0 kworker/u32:3-flush-259:0
+   3045       2 I       02:50:30  0.1     0 kworker/u32:11-gfx_0.0.0
+   2660    2258 Sl      02:54:45  0.1 65644 steamwebhelper
+    967       1 Ss      02:54:58  0.1 15868 fancontrol.py
+     16       2 I       02:55:05  0.0     0 rcu_preempt
+   1124       1 Ss      02:54:58  0.0  3124 vpower
+    855       2 S       02:55:02  0.0     0 irq/66-AudioDSP
+      1       0 Ss      02:55:06  0.0 18272 systemd
+    954       1 Ss      02:54:58  0.0  6688 bluetoothd
+   1445    1385 S<Lsl   02:54:57  0.0 29088 wireplumber
+---
+     71 S    oom_reaper      [oom_reaper]
+    958 Ssl  firewalld       /usr/bin/python /usr/bin/firewalld --nofork --nopid
+    960 Ss   python3         python3 /usr/bin/gpu-trace -l /var/log/gpu-trace-daemon.log --daemon
+    967 Ss   fancontrol.py   /usr/bin/python -u /usr/share/jupiter-fan-control/fancontrol.py --run
+    975 SNs  python          /usr/bin/python -m steamos_log_submitter.daemon
+   1348 S    sddm-helper     /usr/lib/sddm/sddm-helper --socket /tmp/sddm-auth-644daf30-c121-4b2b-93c0-578415562055 --id 1 --start start-gamescope-session --user deck --autologin
+   1447 Ss+  start-gamescope /bin/sh /usr/bin/start-gamescope-session
+   1499 S+   systemctl       systemctl --user --wait start gamescope-session.target
+   1567 S<sl gamescope-wl    gamescope --generate-drm-mode fixed --xwayland-count 2 -w 1280 -h 800 --default-touch-mode 4 --hide-cursor-delay 3000 --max-scale 2 --fade-out-duration 200 -e -R /run/user
+   1909 Ssl  xdg-desktop-por /usr/lib/xdg-desktop-portal-gamescope
+---
+Perf: 59.2 FPS, worst frame 18.1 ms
+Perf: 59.3 FPS, worst frame 17.9 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 87.7 FPS, worst frame 20.4 ms
+UE4: r.VolumetricFog 1 (live)
+Perf: 96.6 FPS, worst frame 22.5 ms
+Perf: 61.3 FPS, worst frame 20.0 ms
+Perf: 58.2 FPS, worst frame 18.2 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 58.1 FPS, worst frame 18.0 ms
+Perf: 58.2 FPS, worst frame 18.5 ms
+Perf: 58.3 FPS, worst frame 18.0 ms
+Perf: 58.7 FPS, worst frame 29.0 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 47.1 FPS, worst frame 31.2 ms
+   1590    1553 Z       02:55:07 -                        sd_festival <defunct>
+   1592    1553 Z       02:55:07 -                        sd_espeak-ng-mb <defunct>
+   1637    1553 Z       02:55:07 -                        sd_openjtalk <defunct>
+---reaper
+     71       2 S       02:55:16 oom_reaper      [oom_reaper]
+---mounts
+---dmesg
+Nov 08 18:01:45 steamdeck kernel: perf: interrupt took too long (2504 > 2500), lowering kernel.perf_event_max_sample_rate to 79000
+Nov 08 18:12:58 steamdeck kernel: perf: interrupt took too long (3142 > 3130), lowering kernel.perf_event_max_sample_rate to 63000
+Nov 08 18:15:53 steamdeck kernel: input: Microsoft X-Box 360 pad 0 as /devices/virtual/input/input30
+
+# journalctl --user -b -1 --since 18:05 --until 18:25
+ 18:20:42 up 0 min,  2 users,  load average: 1.15, 0.33, 0.12
+Nov 08 18:15:53 steamdeck steam[1741]: Removing process 4155 for gameID 15931857073428496384
+Nov 08 18:15:53 steamdeck steam[1741]: Removing process 4156 for gameID 15931857073428496384
+Nov 08 18:15:53 steamdeck steam[1741]: Removing process 4152 for gameID 15931857073428496384
+Nov 08 18:15:53 steamdeck steam[1741]: Removing process 4151 for gameID 15931857073428496384
+Nov 08 18:15:53 steamdeck steam[1741]: Removing process 4149 for gameID 15931857073428496384
+Nov 08 18:15:53 steamdeck steam[1741]: Removing process 4140 for gameID 15931857073428496384
+Nov 08 18:15:53 steamdeck steam[1741]: Removing process 4139 for gameID 15931857073428496384
+Nov 08 18:15:53 steamdeck mangoapp[1685]: [2026-11-08 18:15:53.576] [MANGOHUD] [error] [overlay_params.cpp:758] Unknown option 'nis_steam_sharpness'
+Nov 08 18:15:53 steamdeck mangoapp[1685]: [2026-11-08 18:15:53.739] [MANGOHUD] [error] [overlay_params.cpp:758] Unknown option 'nis_steam_sharpness'
+Nov 08 18:15:53 steamdeck gamescope-session[1567]: radv: Updated the per-vertex VRS rate to '0'.
+Nov 08 18:15:54 steamdeck (sd-parse-elf)[4631]: Could not parse number of program headers from core file: invalid `Elf' handle
+Nov 08 18:15:54 steamdeck (sd-parse-elf)[4631]: Could not parse number of program headers from core file: invalid `Elf' handle
+Nov 08 18:15:54 steamdeck (sd-parse-elf)[4631]: Could not parse number of program headers from core file: invalid `Elf' handle
+Nov 08 18:15:54 steamdeck (sd-parse-elf)[4631]: Could not parse number of program headers from core file: invalid `Elf' handle
+Nov 08 18:15:54 steamdeck (sd-parse-elf)[4631]: Could not parse number of program headers from core file: invalid `Elf' handle
+Nov 08 18:15:54 steamdeck (sd-parse-elf)[4631]: Could not parse number of program headers from core file: invalid `Elf' handle
+Nov 08 18:15:54 steamdeck (sd-parse-elf)[4631]: Could not parse number of program headers from core file: invalid `Elf' handle
+Nov 08 18:15:54 steamdeck (sd-parse-elf)[4631]: Could not parse number of program headers from core file: invalid `Elf' handle
+Nov 08 18:15:54 steamdeck (sd-parse-elf)[4631]: Could not parse number of program headers from core file: invalid `Elf' handle
+Nov 08 18:15:54 steamdeck (sd-parse-elf)[4631]: Could not parse number of program headers from core file: invalid `Elf' handle
+Nov 08 18:15:54 steamdeck systemd-coredump[4594]: Process 4140 (python3) of user 1000 dumped core.
+                                                  
+                                                  Module /usr/python/bin/python3.13 without build-id.
+                                                  Module /usr/python/lib/python3.13/site-packages/pillow.libs/libfreetype-57f805ba.so.6.20.6 without build-id.
+                                                  Module /usr/python/lib/python3.13/site-packages/pillow.libs/libfreetype-57f805ba.so.6.20.6
+                                                  Module /usr/python/lib/python3.13/site-packages/pillow.libs/libXau-154567c4.so.6.0.0 without build-id.
+                                                  Module /usr/python/lib/python3.13/site-packages/pillow.libs/libXau-154567c4.so.6.0.0
+                                                  Module /usr/python/lib/python3.13/site-packages/pillow.libs/libpng16-1d1ba958.so.16.58.0 without build-id.
+                                                  Module /usr/python/lib/python3.13/site-packages/pillow.libs/libpng16-1d1ba958.so.16.58.0
+                                                  Module /usr/python/lib/python3.13/site-packages/pillow.libs/liblzma-de26b416.so.5.8.4 without build-id.
+                                                  Module /usr/python/lib/python3.13/site-packages/pillow.libs/liblzma-de26b416.so.5.8.4
+                                                  Module /usr/python/lib/python3.13/site-packages/pillow.libs/libzstd-40ad5e7e.so.1.5.7 without build-id.
+                                                  Module /usr/python/lib/python3.13/site-packages/pillow.libs/libzstd-40ad5e7e.so.1.5.7
+                                                  Module /usr/python/lib/python3.13/site-packages/pillow.libs/libxcb-9065bb12.so.1.1.0 without build-id.
+                                                  Module /usr/python/lib/python3.13/site-packages/pillow.libs/libxcb-9065bb12.so.1.1.0
+                                                  Module /usr/python/lib/python3.13/site-packages/pillow.libs/libopenjp2-e530e1bf.so.2.5.4 without build-id.
+                                                  Module /usr/python/lib/python3.13/site-packages/pillow.libs/libopenjp2-e530e1bf.so.2.5.4
+                                                  Module /usr/python/lib/python3.13/site-packages/PIL/_imaging.cpython-313-x86_64-linux-gnu.so without build-id.
+                                                  Module /usr/python/lib/python3.13/site-packages/PIL/_imaging.cpython-313-x86_64-linux-gnu.so
+                                                  Module /usr/python/lib/python3.13/site-packages/PIL/_imagingft.cpython-313-x86_64-linux-gnu.so without build-id.
+                                                  Module /usr/python/lib/python3.13/site-packages/PIL/_imagingft.cpython-313-x86_64-linux-gnu.so
+                                                  Module /usr/python/lib/libXft.so.2 without build-id.
+                                                  Module /usr/python/lib/libXft.so.2
+                                                  Stack trace of thread 4140:
+                                                  #0  0x0000000001f05e56 n/a (/usr/python/bin/python3.13 + 0x1b06e56)
+                                                  #1  0x0000000001a6d1ac n/a (/usr/python/bin/python3.13 + 0x166e1ac)
+                                                  #2  0x0000000001a6c962 n/a (/usr/python/bin/python3.13 + 0x166d962)
+                                                  #3  0x0000000001b73016 n/a (/usr/python/bin/python3.13 + 0x1774016)
+                                                  #4  0x0000000001b72249 n/a (/usr/python/bin/python3.13 + 0x1773249)
+                                                  #5  0x0000000001b70ec6 n/a (/usr/python/bin/python3.13 + 0x1771ec6)
+                                                  #6  0x0000000001b70c14 n/a (/usr/python/bin/python3.13 + 0x1771c14)
+                                                  #7  0x0000000001b70a78 n/a (/usr/python/bin/python3.13 + 0x1771a78)
+                                                  #8  0x00007ff745427741 n/a (libc.so.6 + 0x27741)
+                                                  #9  0x00007ff745427879 __libc_start_main (libc.so.6 + 0x27879)
+                                                  #10 0x0000000001bea769 n/a (/usr/python/bin/python3.13 + 0x17eb769)
+                                                  ELF object binary architecture: AMD x86-64
+Nov 08 18:18:17 steamdeck sshd-session[4653]: Received disconnect from 192.168.8.119 port 19425:11: disconnected by user
+Nov 08 18:18:17 steamdeck sshd-session[4653]: Disconnected from user deck 192.168.8.119 port 19425
+Nov 08 18:18:27 steamdeck sshd-session[4676]: Received disconnect from 192.168.8.119 port 19426:11: disconnected by user
+Nov 08 18:18:27 steamdeck sshd-session[4676]: Disconnected from user deck 192.168.8.119 port 19426
