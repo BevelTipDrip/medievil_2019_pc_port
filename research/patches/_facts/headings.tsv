@@ -58,10 +58,9 @@ handoff-2026-10-18.md	21	2	how-it-works-files	How it works (files)
 handoff-2026-10-18.md	31	2	traps	Traps
 handoff-2026-10-18.md	37	2	later-the-same-day-to-1300-what-landed-on-lab	Later the same day (to 13:00): what landed on `lab`
 handoff-2026-10-18.md	58	2	next-steps--pending	Next steps / pending
-handoff-2026-11-07-patch-map.md	1	1	handoff-2026-11-07-patch-map-in-progress	Handoff 2026-11-07: patch map in progress
-handoff-2026-11-07-patch-map.md	6	2	what-exists	What exists
-handoff-2026-11-07-patch-map.md	15	2	to-finish-next-session	To finish (next session)
-handoff-2026-11-07-patch-map.md	29	2	other-open-items-from-the-same-session	Other open items from the same session
+handoff-2026-11-07-patch-map.md	1	1	handoff-2026-11-07-patch-map-built	Handoff 2026-11-07: patch map built
+handoff-2026-11-07-patch-map.md	5	2	what-exists	What exists
+handoff-2026-11-07-patch-map.md	18	2	next	Next
 impl-cpu-waste.md	1	1	implementation-less-wasted-cpu-on-the-steam-deck-stage-as-drain-wait-the-game-threads-nav-purge	Implementation: less wasted CPU on the Steam Deck (stage A's drain wait, the game thread's nav purge)
 impl-cpu-waste.md	22	2	1-stage-as-drain-wait	1. Stage A's drain wait
 impl-cpu-waste.md	24	3	what-it-does-today-read-in-the-code	What it does today [read in the code]
@@ -139,10 +138,10 @@ impl-stage-a-decode.md	117	2	3-the-cuts	3. The cuts
 impl-stage-a-decode.md	119	3	a1-backing-copies-without-the-table-lock-be214c8-linux-gow3_backing_copy1-bit-1048576	A1: backing copies without the table lock (`be214c8`; Linux; `GOW3_BACKING_COPY=1`, bit 1048576)
 impl-stage-a-decode.md	168	3	a2-pending-write-filter-6fefc55-gow3_pending_filter1-bit-2097152	A2: pending-write filter (`6fefc55`; `GOW3_PENDING_FILTER=1`, bit 2097152)
 impl-stage-a-decode.md	187	3	a3-paired-register-checksum-3283c10-gow3_reg_hash_paired1-bit-4194304	A3: paired register checksum (`3283c10`; `GOW3_REG_HASH_PAIRED=1`, bit 4194304)
-impl-stage-a-decode.md	209	2	4-considered-not-done	4. Considered, not done
-impl-stage-a-decode.md	221	2	5-deck-ab-one-launch-the-users-go	5. Deck A/B (one launch, the user's go)
-impl-stage-a-decode.md	258	2	6-builds-and-tests-2026-11-05	6. Builds and tests (2026-11-05)
-impl-stage-a-decode.md	271	2	unverified	Unverified
+impl-stage-a-decode.md	211	2	4-considered-not-done	4. Considered, not done
+impl-stage-a-decode.md	223	2	5-deck-ab-one-launch-the-users-go	5. Deck A/B (one launch, the user's go)
+impl-stage-a-decode.md	260	2	6-builds-and-tests-2026-11-05	6. Builds and tests (2026-11-05)
+impl-stage-a-decode.md	273	2	unverified	Unverified
 impl-stage-b-bundle-2.md	1	1	implemented-stage-b-bundle-2-c5-d4-d5-4-6-2026-11-04	Implemented: stage B bundle 2 (C5, D4, D5, #4, #6) (2026-11-04)
 impl-stage-b-bundle-2.md	30	2	c5-lock-free-readback-pre-check	C5: lock-free readback pre-check
 impl-stage-b-bundle-2.md	52	2	d4-pool-maps-outside-the-table-lock-linux	D4: pool maps outside the table lock (Linux)
@@ -434,18 +433,18 @@ plan-linux-deck.md	1377	3	particle-1-results-2026-11-05-1946-build-d20f010-test1
 plan-linux-deck.md	1395	2	stage-a-per-packet-a1--a2--a3-2026-11-05-built-not-run-impl-stage-a-decodemd	Stage A per packet: A1 / A2 / A3 (2026-11-05, built, not run; [impl-stage-a-decode.md](impl-stage-a-decode.md))
 plan-linux-deck.md	1422	3	round-2-method-a-fixed-gpu-clock-for-cpu-efficiency-abs-the-user-2026-11-05	Round 2 method: a fixed GPU clock for CPU-efficiency A/Bs (the user, 2026-11-05)
 plan-linux-deck.md	1432	3	round-1-results-gpu-clock-auto-2026-11-05-ini-logging-67-uncapped-launched-by-the-user	Round 1 results, GPU clock auto (2026-11-05, ini logging 67% uncapped; launched by the user)
-plan-linux-deck.md	1448	3	round-2-results-gpu-fixed-at-1200-mhz-2026-11-05-2051-2106-same-launch-as-stage-a-1-log-datadeck-stagea-1200log	Round 2 results, GPU fixed at 1,200 MHz (2026-11-05 ~20:51-21:06, same launch as stage A 1, log `data/deck-stagea-1200.log`)
-plan-linux-deck.md	1467	3	particle-fix-1-2026-11-05-2110-2128-build-49291f3-particlefix-log-datadeck-particlefix-1log	Particle fix 1 (2026-11-05 ~21:10-21:28, build `49291f3-particlefix`, log `data/deck-particlefix-1.log`)
-plan-linux-deck.md	1488	3	particle-fix-2-the-guard-alone-2026-11-06-build-49291f3-particlefix	Particle fix 2: the guard alone (2026-11-06, build `49291f3-particlefix`)
-plan-linux-deck.md	1495	3	thread-nice-live-2026-11-06-build-5ab1a24-nicelive-logs-datadeck-nicelive-1log-datadeck-nicelive-1400log	Thread nice, live (2026-11-06, build `5ab1a24-nicelive`, logs `data/deck-nicelive-1.log`, `data/deck-nicelive-1400.log`)
-plan-linux-deck.md	1517	3	drain-wake-ahead-6-vs-2-live-2026-11-06-build-d2f145f-lows-log-datadeck-wakeahead-1log	Drain wake-ahead 6 vs 2, live (2026-11-06, build `d2f145f-lows`, log `data/deck-wakeahead-1.log`)
-plan-linux-deck.md	1534	3	static-vs-shared-gpu-library-2026-11-06-build-d2f145f-shared2-log-datadeck-shared-1log	Static vs shared GPU library (2026-11-06, build `d2f145f-shared2`, log `data/deck-shared-1.log`)
-plan-linux-deck.md	1550	3	two-draw-preparation-helpers-2026-11-06-build-d2f145f-lows-log-datadeck-helpers2-1log	Two draw-preparation helpers (2026-11-06, build `d2f145f-lows`, log `data/deck-helpers2-1.log`)
-plan-linux-deck.md	1569	2	clock-push-pull-at-gpu-auto-2026-11-06-the-users-model-tooling-5ead842-not-run	Clock push-pull at GPU auto (2026-11-06; the user's model; tooling `5ead842`, not run)
-plan-linux-deck.md	1612	3	launch-14-results-2026-11-06-1945-2022-build-5ead842-trace-2-helpers-logging-ini-67-uncapped-log-datadeck-pushpull-1log-traces-research-datadeckdeck-pushpull-auto1fixed1100capsweep-csv	Launch 14 results (2026-11-06 ~19:45-20:22, build `5ead842-trace`, 2 helpers, logging ini 67% uncapped; log `data/deck-pushpull-1.log`, traces `research-data/deck/deck-pushpull-{auto1,fixed1100,capsweep}-*.csv`)
-plan-linux-deck.md	1648	2	cpu-cuts-at-a-60-cap-2026-11-06-tooling-7379aa0-signal-waits-2a6efea-not-run	CPU cuts at a 60 cap (2026-11-06; tooling `7379aa0`, signal waits `2a6efea`; not run)
-plan-linux-deck.md	1674	3	launch-15-results-2026-11-06-2050-2128-build-2a6efea-signal-a-new-arena-with-a-guaranteed-heavy-view-the-old-spot-cannot-be-found-under-a-cap-gpu-auto-log-datadeck-launch15log-traces-research-datadeckdeck-cap60-signalcap60-cutsuncap-cuts-	Launch 15 results (2026-11-06 ~20:50-21:28, build `2a6efea-signal`, a new arena with a guaranteed heavy view (the old spot cannot be found under a cap), GPU auto; log `data/deck-launch15.log`, traces `research-data/deck/deck-{cap60-signal,cap60-cuts,uncap-cuts}-*`)
-plan-linux-deck.md	1705	2	hilltop-mausoleum-lighting-pool-pages-leaked-on-linux-2026-11-0607-fixed-7246f88--f74e1a1	Hilltop Mausoleum lighting: pool pages leaked on Linux (2026-11-06/07; fixed `7246f88` + `f74e1a1`)
+plan-linux-deck.md	1454	3	round-2-results-gpu-fixed-at-1200-mhz-2026-11-05-2051-2106-same-launch-as-stage-a-1-log-datadeck-stagea-1200log	Round 2 results, GPU fixed at 1,200 MHz (2026-11-05 ~20:51-21:06, same launch as stage A 1, log `data/deck-stagea-1200.log`)
+plan-linux-deck.md	1473	3	particle-fix-1-2026-11-05-2110-2128-build-49291f3-particlefix-log-datadeck-particlefix-1log	Particle fix 1 (2026-11-05 ~21:10-21:28, build `49291f3-particlefix`, log `data/deck-particlefix-1.log`)
+plan-linux-deck.md	1494	3	particle-fix-2-the-guard-alone-2026-11-06-build-49291f3-particlefix	Particle fix 2: the guard alone (2026-11-06, build `49291f3-particlefix`)
+plan-linux-deck.md	1501	3	thread-nice-live-2026-11-06-build-5ab1a24-nicelive-logs-datadeck-nicelive-1log-datadeck-nicelive-1400log	Thread nice, live (2026-11-06, build `5ab1a24-nicelive`, logs `data/deck-nicelive-1.log`, `data/deck-nicelive-1400.log`)
+plan-linux-deck.md	1523	3	drain-wake-ahead-6-vs-2-live-2026-11-06-build-d2f145f-lows-log-datadeck-wakeahead-1log	Drain wake-ahead 6 vs 2, live (2026-11-06, build `d2f145f-lows`, log `data/deck-wakeahead-1.log`)
+plan-linux-deck.md	1540	3	static-vs-shared-gpu-library-2026-11-06-build-d2f145f-shared2-log-datadeck-shared-1log	Static vs shared GPU library (2026-11-06, build `d2f145f-shared2`, log `data/deck-shared-1.log`)
+plan-linux-deck.md	1556	3	two-draw-preparation-helpers-2026-11-06-build-d2f145f-lows-log-datadeck-helpers2-1log	Two draw-preparation helpers (2026-11-06, build `d2f145f-lows`, log `data/deck-helpers2-1.log`)
+plan-linux-deck.md	1575	2	clock-push-pull-at-gpu-auto-2026-11-06-the-users-model-tooling-5ead842-not-run	Clock push-pull at GPU auto (2026-11-06; the user's model; tooling `5ead842`, not run)
+plan-linux-deck.md	1618	3	launch-14-results-2026-11-06-1945-2022-build-5ead842-trace-2-helpers-logging-ini-67-uncapped-log-datadeck-pushpull-1log-traces-research-datadeckdeck-pushpull-auto1fixed1100capsweep-csv	Launch 14 results (2026-11-06 ~19:45-20:22, build `5ead842-trace`, 2 helpers, logging ini 67% uncapped; log `data/deck-pushpull-1.log`, traces `research-data/deck/deck-pushpull-{auto1,fixed1100,capsweep}-*.csv`)
+plan-linux-deck.md	1654	2	cpu-cuts-at-a-60-cap-2026-11-06-tooling-7379aa0-signal-waits-2a6efea-not-run	CPU cuts at a 60 cap (2026-11-06; tooling `7379aa0`, signal waits `2a6efea`; not run)
+plan-linux-deck.md	1680	3	launch-15-results-2026-11-06-2050-2128-build-2a6efea-signal-a-new-arena-with-a-guaranteed-heavy-view-the-old-spot-cannot-be-found-under-a-cap-gpu-auto-log-datadeck-launch15log-traces-research-datadeckdeck-cap60-signalcap60-cutsuncap-cuts-	Launch 15 results (2026-11-06 ~20:50-21:28, build `2a6efea-signal`, a new arena with a guaranteed heavy view (the old spot cannot be found under a cap), GPU auto; log `data/deck-launch15.log`, traces `research-data/deck/deck-{cap60-signal,cap60-cuts,uncap-cuts}-*`)
+plan-linux-deck.md	1720	2	hilltop-mausoleum-lighting-pool-pages-leaked-on-linux-2026-11-0607-fixed-7246f88--f74e1a1	Hilltop Mausoleum lighting: pool pages leaked on Linux (2026-11-06/07; fixed `7246f88` + `f74e1a1`)
 plan-live-switches.md	1	1	plan-graphics-settings-switched-live	Plan: graphics settings switched live
 plan-live-switches.md	6	2	scope-the-user-2026-10-30	Scope (the user, 2026-10-30)
 plan-live-switches.md	14	2	mechanism-built	Mechanism (built)

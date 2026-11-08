@@ -14,7 +14,7 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
    uncapped table) ran mostly without draw preparation in both states. The comment above `PairedRegisterHash` and
    impl-stage-a-decode.md:197 claim it recovers; the code says it does not. Fix: force a rebase when the fold
    changes, or make A3 restart-only.
-   **Confirmed 2026-11-07** (code + logs; the uncapped table had no draw preparation in any state). Caveats added to
+   **Confirmed 2026-11-07; fixed in `adfeb67` (A3 restart-only; live A1 + A2 = 3145728).** (code + logs; the uncapped table had no draw preparation in any state). Caveats added to
    plan-linux-deck.md (Round 1, Launch 15) and impl-stage-a-decode.md.
 2. **The PC toggle scripts and a launcher-started game watch different files** ([lineage-toggle-file](tooling/lineage-toggle-file.md)).
    `toggle-ab.ps1` / `toggle-groups.ps1` only reach games started by `run-game.ps1`. In a launcher-started game a

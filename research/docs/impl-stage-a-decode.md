@@ -15,7 +15,7 @@ Marks: **[code]** read in the tree. **[log]** a number from a Deck log. **[infer
 |---|---|---|---|---|---|---|
 | A1 | GPU-side guest copies through the backing view without the region table lock (Linux) | `src/runtime_memory.c` (`runtime_memory_copy_backing`), `gpu/shim/gow3gpu.cpp` (`CopySparseSerial`) | `GOW3_BACKING_COPY=1` | **1048576** | off | stage A -0.3 to -0.5 ms a frame, the recorder -0.2 to -0.4 ms (CPU) |
 | A2 | Pending-write check answered from a page filter before the scan | `vk_rasterizer.cpp` (`PendingWriteOverlaps`, `NotePendingGpuWrite`), `gpu/shim/gow3_stage_a.h` | `GOW3_PENDING_FILTER=1` | **2097152** | off | stage A -0.1 to -0.25 ms |
-| A3 | Register-packet checksum two words per step | `liverpool.cpp` (`HashRegisterPacket`), `gow3_stage_a.h` | `GOW3_REG_HASH_PAIRED=1` | **4194304** | off | ~-0.1 ms on stage A, about as much again on the scanner and the workers together |
+| A3 | Register-packet checksum two words per step | `liverpool.cpp` (`HashRegisterPacket`), `gow3_stage_a.h` | `GOW3_REG_HASH_PAIRED=1` | none (restart-only since `adfeb67`; 4194304 is no longer read) | off | ~-0.1 ms on stage A, about as much again on the scanner and the workers together |
 | - | `PublishGraphics` returns when nothing is pending | `vk_pipeline_cache.cpp` | none (same behaviour) | - | on | unknown, below the profile's cut-off (< ~0.1 ms) |
 
 All three are opt-in and live: start with the three variables, then `deck.sh ab` flips the bits (section 5). Every
@@ -235,9 +235,9 @@ Before (game closed):
 3. `deck.sh toggle "0 0"` (all on).
 
 In game (heavy view; no SSH sampling while `ab` runs):
-4. `deck.sh ab "0 0" "0 7340032" 30 5` (7340032 = 1048576 + 2097152 + 4194304: all three off vs on).
-5. One pair per cut, same launch: `deck.sh ab "0 0" "0 1048576" 20 3` (A1), `"0 0" "0 2097152"` (A2), `"0 0"
-   "0 4194304"` (A3).
+4. `deck.sh ab "0 0" "0 3145728" 30 5` (A1 + A2 off vs on; A3 is restart-only since `adfeb67`: a live flip stopped
+   draw preparation for the rest of the launch, see the correction below).
+5. One pair per cut, same launch: `deck.sh ab "0 0" "0 1048576" 20 3` (A1), `"0 0" "0 2097152"` (A2), A3 only as a restart pair (`GOW3_REG_HASH_PAIRED=1` vs unset).
 6. CPU and power in their own windows afterwards: `deck.sh toggle "0 7340032"`, ~10 s, `deck.sh threads 5` and
    `ssh deck python3 ~/MediEvil/apu_power.py`; then `deck.sh toggle "0 0"`, ~10 s, the same; twice each.
 7. `deck.sh pull deck-stagea-1`, `deck.sh summary deck-stagea-1 --min-draws 1000`.
