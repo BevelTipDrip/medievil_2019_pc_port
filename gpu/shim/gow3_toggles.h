@@ -172,9 +172,9 @@ enum : std::uint64_t {
     /// at start (opt-in): stage A's pending-write check answers "no overlap" from a page filter
     /// of the pending writes before scanning them (the same answers). Set: the scan every time.
     PendingWriteFilter = 2097152,
-    /// A3 (impl-stage-a-decode.md; liverpool.cpp HashRegisterPacket), with GOW3_REG_HASH_PAIRED=1
-    /// at start (opt-in): the register-packet checksum of stage A, the scanner and the
-    /// draw-preparation workers takes two words per step. Set: one word per step, as before.
+    /// Former A3 live bit, no longer read: A3 (GOW3_REG_HASH_PAIRED=1) is restart-only, because a
+    /// live flip stopped draw preparation for the rest of the launch (liverpool.cpp
+    /// PairedRegisterHash). Kept reserved so old toggle states (7340032) mean A1 + A2 only.
     PairedRegisterHash = 4194304,
     /// With GOW3_DRAIN_HYBRID=1 and GOW3_DRAIN_WAKE_AHEAD at start (gow3_drain_wait.h): stage B
     /// wakes a sleeping stage A the default 2 packets before the end again, not the start's count

@@ -1013,21 +1013,22 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
 // gow3: graphics-register effects of a type-3 packet. The GPU thread and the draw-preparation
 // workers both go through this function, and both fold every register-writing packet into a
 // running checksum: equal checksums at a draw mean equal register files.
-// gow3 A3 (research/docs/impl-stage-a-decode.md; GOW3_REG_HASH_PAIRED=1, second toggle word
-// 4194304 off): two words per step. Every step is one multiply and one shift on a chain that
-// depends on the previous step (~6 cycles on Zen 2), so pairs halve the chain over the words of
-// a packet on stage A, the scanner and the four workers alike. Still a bijection of the state
-// per step (xor, odd multiply, xor-shift), 64 bits of state as before; only the values differ,
-// and every thread that compares them (stage A's running checksum, the prepared draws' copies)
-// uses this function. A switch flip between a worker's hash and stage A's makes their checksums
-// differ for that submission: those draws take the unprepared path (correct, slower), until the
-// next submission seeds the workers from stage A's checksum again.
+// gow3 A3 (research/docs/impl-stage-a-decode.md; GOW3_REG_HASH_PAIRED=1 at start): two words per
+// step. Every step is one multiply and one shift on a chain that depends on the previous step
+// (~6 cycles on Zen 2), so pairs halve the chain over the words of a packet on stage A, the
+// scanner and the four workers alike. Still a bijection of the state per step (xor, odd multiply,
+// xor-shift), 64 bits of state as before; only the values differ, and every thread that compares
+// them (stage A's running checksum, the prepared draws' copies) uses this function.
+// Restart-only: the scanner carries its own checksum chain, seeded from stage A only at the first
+// submission or a rebase (DrawPreparation::BeginSubmission), so a live switch left the two chains
+// apart for good and no draw was prepared for the rest of the launch (deck-stagea-1.log,
+// deck-launch15.log). The former live bit (second word 4194304) is no longer read.
 bool Liverpool::PairedRegisterHash() {
     static const bool wanted = [] {
         const char* env = std::getenv("GOW3_REG_HASH_PAIRED");
         return env && env[0] == '1';
     }();
-    return wanted && !Gow3Toggle2::Disabled(Gow3Toggle2::PairedRegisterHash);
+    return wanted;
 }
 
 u64 Liverpool::HashRegisterPacket(u64 checksum, const u32* words, u32 count) {

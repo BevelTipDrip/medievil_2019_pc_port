@@ -863,11 +863,7 @@ void VideoOutDriver::Flip(const Request& req) {
                                                                                      : "on",
                             n[SA::pending_filtered], scans,
                             scans > 0 ? n[SA::pending_scanned] / scans : 0.0, n[SA::reg_words],
-                            AmdGpu::Liverpool::PairedRegisterHash()           ? "on"
-                            : Gow3Toggle2::Disabled(Gow3Toggle2::PairedRegisterHash) &&
-                                    std::getenv("GOW3_REG_HASH_PAIRED")
-                                ? "toggled off"
-                                : "off");
+                            AmdGpu::Liverpool::PairedRegisterHash() ? "on" : "off");
                     }
                     // gow3 (impl-deck-cpu-bundle.md): the Vulkan recorder's hand-offs, sleeps
                     // and spin; in lean mode (second toggle word 32 clear, <= 8 threads) the
