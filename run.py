@@ -113,6 +113,11 @@ def main():
     # As run.sh: relative paths (GOW3_GAME_DIR, GOW3_DATA_DIR, fsr4_shaders/) are from the port.
     os.chdir(PORT)
     env = os.environ
+    # Values this script derived on the previous start ("Apply and restart" inherits them) are
+    # derived again from the new options. Dropped before extra-env.txt is read, so a test setting
+    # there is never dropped with them.
+    for key in env.pop('GOW3_DERIVED', '').split(','):
+        env.pop(key, None)
     data = Path(env.get('GOW3_DATA_DIR', PORT))
     load_extra_env(env, data / 'extra-env.txt')
     out = data / 'out'
@@ -120,10 +125,11 @@ def main():
     if not (data / 'medievil.ini').exists() and (data / 'gow3.ini').exists():
         (data / 'gow3.ini').rename(data / 'medievil.ini')  # settings of builds before 1.1
     env.setdefault('GOW3_CONFIG', str(data / 'medievil.ini'))
-    # Values this script derived on the previous start ("Apply and restart" inherits them) are
-    # derived again from the new options.
-    for key in env.pop('GOW3_DERIVED', '').split(','):
-        env.pop(key, None)
+    # Everything set from here on is derived from the options (GOW3_DERIVED below), including the
+    # setdefault()s: the performance patches' off switches, the HZB / stream switches, the engine
+    # frame-rate and memory sizes. Before, only a listed few were, so after "Apply and restart" a
+    # patch turned back on in the menu stayed off (LANDMINES item 12).
+    given = set(env)
     derived = []
     sys.path.insert(0, str(PORT / 'scripts'))
     import graphics_options
@@ -290,7 +296,7 @@ def main():
         if 'GOW3_VBLANK_HZ' not in env:
             env['GOW3_VBLANK_HZ'] = '60'
             derived.append('GOW3_VBLANK_HZ')
-        env['GOW3_DERIVED'] = ','.join(derived)
+        env['GOW3_DERIVED'] = ','.join(sorted(set(derived) | (set(env) - given)))
 
         # The in-game restart starts this script again once this process is gone.
         # GPU caches (shaders, pipelines) beside the saves; read before main(), so set here.
