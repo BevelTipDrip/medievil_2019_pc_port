@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: ours
 class: M
-commits: a75f7a0
+commits: a75f7a0, 023cc58
 files: scripts/graphics_options.py, scripts/ue4_override.py, run.py, launcher/medievil_launcher.py, gpu/shim/gow3_settings.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_overlay.cpp, tests/test_launcher_controls.py, tests/test_graphics_settings.cpp
 symbols: GRAPHICS_SETTINGS, QUALITY_LEVELS, LEGACY_TOKENS, ALWAYS_CVARS, level_choices, graphics_choices, graphics_migration, matched_level, graphics_cvars, UE4ApplyLevel, UE4MatchedLevel, UE4LevelChoice, UE4DeckLevel, quality_choice_var
 switches:
@@ -63,4 +63,4 @@ every setting's console variables into the override pak (`graphics_cvars`); 13 a
 - Deck, 2026-11-08, build `e3112f4` (confirmed in its log and a launcher replay of the Deck's ini): the launcher
   gave a Low ini the five new keys at Console's values (`load_ini` started from `INI_DEFAULTS`); small object
   shadows 0.01 and refraction 2 reached the game (sun shadows and foliage were changed by the user). The tests had
-  checked `graphics_migration` alone. Fix built (this card's next commit), not run.
+  checked `graphics_migration` alone. Fix built `023cc58`, not run.

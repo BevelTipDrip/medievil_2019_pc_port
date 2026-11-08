@@ -8,12 +8,12 @@ START-HERE.md	85	2	document-index	Document index
 START-HERE.md	118	2	elsewhere	Elsewhere
 building-and-tools.md	1	1	building-and-tools	Building and tools
 building-and-tools.md	5	2	paths	Paths
-building-and-tools.md	16	2	toolchain-installed-2026-10-18	Toolchain (installed 2026-10-18)
-building-and-tools.md	34	2	build	Build
-building-and-tools.md	49	2	run	Run
-building-and-tools.md	57	2	profiling-and-crashes	Profiling and crashes
-building-and-tools.md	69	2	research-tools	Research tools
-building-and-tools.md	96	2	traps	Traps
+building-and-tools.md	19	2	toolchain-installed-2026-10-18	Toolchain (installed 2026-10-18)
+building-and-tools.md	37	2	build	Build
+building-and-tools.md	52	2	run	Run
+building-and-tools.md	60	2	profiling-and-crashes	Profiling and crashes
+building-and-tools.md	72	2	research-tools	Research tools
+building-and-tools.md	99	2	traps	Traps
 design-u5-deck-memory.md	1	1	design-u5-on-the-deck-guest-memory-as-gpu-visible-memory-buffers-read-in-place	Design: U5 on the Deck: guest memory as GPU-visible memory, buffers read in place
 design-u5-deck-memory.md	13	2	summary	Summary
 design-u5-deck-memory.md	43	2	1-scope	1. Scope
@@ -247,10 +247,10 @@ plan-baseline-issues.md	270	3	t-race-result-2026-10-18-0401-0410-launched-by-cla
 plan-baseline-issues.md	278	3	root-cause-found-2026-10-18-read-only-trace--checked-by-hand	Root cause found (2026-10-18, read-only trace + checked by hand)
 plan-baseline-issues.md	316	2	c1-next-catch-it-when-it-happens	C1 next: catch it when it happens
 plan-baseline-issues.md	340	2	s1-silent-exit-with-code-5-at-startup-2026-10-18-1253-once	S1. Silent exit with code 5 at startup (2026-10-18 12:53, once)
-plan-baseline-issues.md	375	2	v2-fire--torches-broken-more-box-shadows-the-user-2026-10-18-run-perfdiag-heavy	V2. Fire / torches broken, more box shadows (the user, 2026-10-18, run `perfdiag-heavy`)
-plan-baseline-issues.md	388	2	v1-shadows-sometimes-drawn-as-a-big-box-the-user-2026-10-18	V1. Shadows sometimes drawn as a big box (the user, 2026-10-18)
-plan-baseline-issues.md	425	2	v3-effects-wrong-blending-misplaced-missing-at-an-angle-the-user-2026-10-31-play-session-on-3cea271	V3. Effects: wrong blending, misplaced, missing at an angle (the user, 2026-10-31, play session on `3cea271`)
-plan-baseline-issues.md	452	2	tests-one-change-per-launch-the-users-go-each-time	Tests (one change per launch, the user's go each time)
+plan-baseline-issues.md	381	2	v2-fire--torches-broken-more-box-shadows-the-user-2026-10-18-run-perfdiag-heavy	V2. Fire / torches broken, more box shadows (the user, 2026-10-18, run `perfdiag-heavy`)
+plan-baseline-issues.md	394	2	v1-shadows-sometimes-drawn-as-a-big-box-the-user-2026-10-18	V1. Shadows sometimes drawn as a big box (the user, 2026-10-18)
+plan-baseline-issues.md	431	2	v3-effects-wrong-blending-misplaced-missing-at-an-angle-the-user-2026-10-31-play-session-on-3cea271	V3. Effects: wrong blending, misplaced, missing at an angle (the user, 2026-10-31, play session on `3cea271`)
+plan-baseline-issues.md	458	2	tests-one-change-per-launch-the-users-go-each-time	Tests (one change per launch, the user's go each time)
 plan-dlss.md	1	1	plan-dlss-sr-on-correct-inputs-then-dlss-frame-generation-ngx-vulkan	Plan: DLSS SR on correct inputs, then DLSS frame generation (NGX Vulkan)
 plan-dlss.md	6	2	what-is-known-today-read-2026-10-18	What is known today (read, 2026-10-18)
 plan-dlss.md	20	2	design	Design
