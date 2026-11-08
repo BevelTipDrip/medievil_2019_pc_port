@@ -82,6 +82,8 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
 15. **Two defaults for `stale_readback`** ([lineage-deferred-readbacks](caches/lineage-deferred-readbacks.md)): run.py
     and the Deck preset use 1, the launcher's `INI_DEFAULTS` 0. A fresh launcher install runs precise readbacks, a
     mode the user's ini never tests.
+    **Fix built `8600b28` (2026-11-07), not run:** the launcher default is now 1, as run.py and the Deck preset (the
+    user's call: upstream's reason for 0 is likely patched since; not checked). Inis with the key are unchanged.
 16. **Newest-frame + the default inline present** can run `Presenter::Present` on two threads at once;
     one-clock + `GOW3_NEWEST_FRAME` gives two clocks again; one-clock + `GOW3_VBLANK_SYNC` never flips
     ([newest-frame](present/newest-frame.md), [one-clock](present/one-clock.md)). Never run.

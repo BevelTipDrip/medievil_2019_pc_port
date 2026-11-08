@@ -8,7 +8,7 @@ default_windows: mixed
 default_deck: on
 origin: upstream 1.3.2
 class: C
-commits: 7c1db31, cc3563a
+commits: 7c1db31, cc3563a, 8600b28
 files: gpu/shadps4/video_core/texture_cache/texture_cache.cpp, gpu/shadps4/video_core/texture_cache/texture_cache.h, gpu/shim/core/emulator_settings.h, scripts/graphics_options.py, launcher/medievil_launcher.py, run.py
 symbols: TextureCache::ProcessDownloadImages, TextureCache::ResolveReadbacks, TextureCache::RetireReadbacks, WatchReadback, UnwatchReadback, RecordImageDownload, SnapshotReadback, ReleaseOutside, deferred_readbacks, stale_readbacks, readback_linear_images, GetReadbacksMode, IsReadbackLinearImagesEnabled, INI_DEFAULTS, DECK_PRESET
 switches: GOW3_DEFERRED_READBACK, GOW3_STALE_READBACK, GOW3_READBACK_LINEAR, GOW3_READBACKS
@@ -67,6 +67,8 @@ Relaxed / 2 Precise) is the separate buffer readback mode.
 
 ## History and pitfalls
 
+- Launcher default `stale_readback` 0 -> 1 (fix built `8600b28`, 2026-11-07, LANDMINES item 15): it had been 0 since upstream's
+  import `ac900f8` (no reason given) while run.py and the Deck preset used 1. Inis that have the key are unchanged.
 - From the God of War III port (`7c1db31`, `cc3563a`: launcher checkbox on), present at the fork base. Stale
   CPU reads do not fault, so "CPU accesses while pending" counts writes only (P0). Each watch / unwatch is an
   mprotect (`VirtualProtect`), part of stage B's protect cost.
