@@ -163,7 +163,7 @@ INI_FLAGS = {'cheat_menu', 'cheat_infinite_ammo', 'cheat_double_jumps', 'cheat_v
 # The God of War III port's temporal upscaler keys (upscaler, preset, output_res, sharpen, ...)
 # are not set here: run.py turns that upscaler off for MediEvil (its page was removed).
 INI_DEFAULTS = {'show_fps': '1', 'display_mode': 'windowed', 'vsync': '1', 'fps_limit': '0',
-                'async_shaders': '1', 'deferred_readback': '1', 'stale_readback': '0',
+                'async_shaders': '1', 'deferred_readback': '1', 'stale_readback': '1',
                 'output_resolution': '1920x1080', 'render_scale': '100', 'engine_fps': '60', 'fsr1': '0',
                 'rcas': '1', 'rcas_strength': '75', 'frames_queued': '1', 'ue4_quality': 'console',
                 'effects_resolution': '75',
