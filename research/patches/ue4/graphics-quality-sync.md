@@ -33,6 +33,8 @@ every setting's console variables into the override pak (`graphics_cvars`); 13 a
 - Column order is `QUALITY_LEVELS` = the launcher's `QUALITY_CHOICES` = the game's `UE4QualityKeys`, then Deck.
 - Old inis are translated (`graphics_migration` in run.py's prepare and the launcher's load; `Set` in C++ for a game
   started without run.py): "preset" and missing keys from ue4_quality, `LEGACY_TOKENS`.
+- The launcher's `load_ini` must not fill graphics keys from `INI_DEFAULTS` (Console's): a filled key looks set and
+  the migration keeps it. `test_loaded_ini_takes_missing_settings_from_its_level` goes through `load_ini`.
 - Shadow caching stays on for every level (`ALWAYS_CVARS`, as upstream's presets did).
 - The 5 settings that are not live apply at the next start; `RestartChanges` counts them, not ue4_quality.
 - `GOW3_UE4_CVARS` (extra-env) still wins over the settings in the pak: remove test lines after a test.
@@ -58,3 +60,7 @@ every setting's console variables into the override pak (`graphics_cvars`); 13 a
   (flicker, ~4,000 draws); Console now uses the PS4's values again.
 - The launcher's Quick settings box reset an unknown quality to its first entry (Ultra): it now shows Custom.
 - The first Deck column had LOD "PS4"; the measured Deck value is Low (fixed before commit).
+- Deck, 2026-11-08, build `e3112f4` (confirmed in its log and a launcher replay of the Deck's ini): the launcher
+  gave a Low ini the five new keys at Console's values (`load_ini` started from `INI_DEFAULTS`); small object
+  shadows 0.01 and refraction 2 reached the game (sun shadows and foliage were changed by the user). The tests had
+  checked `graphics_migration` alone. Fix built (this card's next commit), not run.

@@ -103,6 +103,29 @@ class ControlMapTest(unittest.TestCase):
         self.assertEqual((cvars['r.Shadow.MinResolution'], cvars['r.Shadow.MaxResolution']), ('32', '2048'))
         self.assertEqual(cvars['r.Shadow.CacheWholeSceneShadows'], '1')
 
+    def test_loaded_ini_takes_missing_settings_from_its_level(self):
+        # The launcher's own load (load_ini, then the migration as Launcher.__init__ does): a Low ini written
+        # before the five new keys existed gets Low's, not the Console defaults (Deck, 2026-11-08: small object
+        # shadows 0.01 and refraction 2 on a Low ini).
+        import tempfile
+        from pathlib import Path
+        import graphics_options as g
+        folder = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        path = folder / 'medievil.ini'
+        path.write_text('ue4_quality=low\nshadow_resolution=256\n', encoding='utf-8')
+        saved = launcher.ini_path
+        launcher.ini_path = lambda: path
+        try:
+            ini, _lines = launcher.load_ini()
+        finally:
+            launcher.ini_path = saved
+        ini.update(g.graphics_migration(ini))
+        low = g.level_choices('low')
+        for key in ('small_object_shadows', 'sun_shadow_resolution', 'foliage_density', 'texture_filtering',
+                    'refraction'):
+            self.assertEqual(ini[key], low[key], key)
+        self.assertEqual(ini['shadow_resolution'], '256')
+
     def test_render_scale_range_matches_the_game(self):
         # gpu/shim/gow3_settings.h RenderScaleMin / RenderScaleMax: the launcher's box and the in-game
         # slider take the same whole percents; every preset is one of them.

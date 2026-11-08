@@ -372,7 +372,10 @@ def ini_path():
 
 
 def load_ini():
-    values, lines, found = dict(INI_DEFAULTS), [], {}
+    # Graphics settings missing from the file stay out: graphics_migration (run by both callers) fills them
+    # from the file's ue4_quality. INI_DEFAULTS holds Console's, which a Low file must not get.
+    values = {key: value for key, value in INI_DEFAULTS.items() if key not in graphics_options.GRAPHICS_KEYS}
+    lines, found = [], {}
     try:
         lines = ini_path().read_text(encoding='utf-8').splitlines()
     except OSError:
