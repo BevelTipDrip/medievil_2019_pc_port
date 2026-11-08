@@ -82,8 +82,9 @@ class DeckPresetTest(unittest.TestCase):
         for name in launcher.DECK_SWITCHES:
             self.assertNotIn(name, plain)
         deck = launcher.game_environment({**launcher.APP_DEFAULTS, 'deck_switches': True})
-        for name, value in launcher.DECK_SWITCHES.items():
+        for name, value in launcher.deck_switch_env({'deck_switches': True})[0].items():
             self.assertEqual(deck[name], os.environ.get(name, value))
+        self.assertIn('GOW3_DECK_SWITCHES', deck)
         # A variable already set (a test) wins over the preset.
         saved = os.environ.get('GOW3_ARENA_HOST_VISIBLE')
         os.environ['GOW3_ARENA_HOST_VISIBLE'] = '1'
@@ -95,6 +96,37 @@ class DeckPresetTest(unittest.TestCase):
                 del os.environ['GOW3_ARENA_HOST_VISIBLE']
             else:
                 os.environ['GOW3_ARENA_HOST_VISIBLE'] = saved
+
+
+class DeckSwitchItemsTest(unittest.TestCase):
+    """The switches one by one: all on Linux, the Linux-only ones never on Windows, unchecked ones left out."""
+
+    def test_linux_sets_all_of_them(self):
+        env, summary = launcher.deck_switch_env({'deck_switches': True}, windows=False)
+        self.assertEqual(env, launcher.DECK_SWITCHES)
+        self.assertTrue(summary.startswith('11 on'))
+
+    def test_windows_leaves_out_what_does_nothing_there(self):
+        env, summary = launcher.deck_switch_env({'deck_switches': True}, windows=True)
+        for name in ('GOW3_BACKING_COPY', 'GOW3_THREAD_NICE', 'GOW3_ARENA_HOST_VISIBLE'):
+            self.assertNotIn(name, env)
+        self.assertEqual(len(env), len(launcher.DECK_SWITCHES) - 3)
+        self.assertIn('Windows: untested', summary)
+
+    def test_unchecked_ones_are_left_out(self):
+        env, summary = launcher.deck_switch_env(
+            {'deck_switches': True, 'deck_switches_off': 'decode_pacing,thread_nice'}, windows=False)
+        for name in ('GOW3_DECODE_PACING', 'GOW3_DECODE_PACING_LEAD', 'GOW3_THREAD_NICE'):
+            self.assertNotIn(name, env)
+        self.assertIn('decode_pacing (unchecked)', summary)
+
+    def test_off_sets_nothing(self):
+        self.assertEqual(launcher.deck_switch_env({'deck_switches': False}, windows=False), ({}, ''))
+
+    def test_items_cover_the_preset_switches(self):
+        keys = [key for key, *_rest in launcher.DECK_SWITCH_ITEMS]
+        self.assertEqual(len(keys), len(set(keys)))
+        self.assertEqual(len(launcher.DECK_SWITCHES), 12)
 
 
 class SteamDeckDetectionTest(unittest.TestCase):

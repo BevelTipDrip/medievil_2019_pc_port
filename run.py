@@ -120,6 +120,8 @@ def main():
         env.pop(key, None)
     data = Path(env.get('GOW3_DATA_DIR', PORT))
     load_extra_env(env, data / 'extra-env.txt')
+    if env.get('GOW3_DECK_SWITCHES'):  # the launcher's Steam Deck performance switches (deck_switch_env)
+        print(f"Deck switches: {env['GOW3_DECK_SWITCHES']}", flush=True)
     out = data / 'out'
     out.mkdir(parents=True, exist_ok=True)
     if not (data / 'medievil.ini').exists() and (data / 'gow3.ini').exists():

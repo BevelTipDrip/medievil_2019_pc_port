@@ -180,7 +180,8 @@ APP_DEFAULTS = {'ui_language': 'en', 'game_dir': os.environ.get('GOW3_GAME_DIR',
                 'background_warmup': True, 'parallel_warmup': True, 'pipeline_binary_cache': True, 'perf_diag': False, 'frame_capture_key': False, 'frame_stats': False, 'gpu_profile': False,
                 'vk_validation': False, 'close_on_play': False, 'prep_workers': '', 'stage_b_core': False,
                 'update_check': True, 'game_patches': {}, 'game_patches_seen': {}, 'controls': {}, 'pad_style': 'playstation', 'stick_range': '',
-                'last_pkg': '', 'graphics_preset': '', 'deck_switches': False, 'deck_offered': False}
+                'last_pkg': '', 'graphics_preset': '', 'deck_switches': False, 'deck_switches_off': '',
+                'deck_offered': False}
 
 # PS4 button, default key, default gamepad button (SDL names; src/runtime_pad.c). L2/R2 come
 # from the analog triggers and are not remapped on the gamepad.
@@ -487,9 +488,12 @@ def game_environment(s):
         env['GOW3_PREP_WORKERS'] = str(s['prep_workers'])
     if s.get('stage_b_core', False):
         env['GOW3_STAGE_B_CORE'] = '1'
-    if s.get('deck_switches', False):  # Deck Optimized (DECK_SWITCHES); a variable already set wins
-        for name, value in DECK_SWITCHES.items():
-            env.setdefault(name, value)
+    # Deck Optimized (DECK_SWITCH_ITEMS): the checked ones that work here; a variable already set wins.
+    deck_env, deck_summary = deck_switch_env(s)
+    for name, value in deck_env.items():
+        env.setdefault(name, value)
+    if deck_summary:
+        env['GOW3_DECK_SWITCHES'] = deck_summary  # logged by run.py
     env['GOW3_PIPELINE_BINARIES'] = '1' if s.get('pipeline_binary_cache', True) else '0'
     env.setdefault('GOW3_PERF_DIAG', '1' if s.get('perf_diag', False) else '0')
     for key, name in (('frame_stats', 'GOW3_FRAME_STATS'), ('gpu_profile', 'GOW3_GPU_PROFILE'),
@@ -683,10 +687,58 @@ INI_OPTIONAL_KEYS = ('preshadows',)
 # frozen torch, the crypt floor) and nice -10 for stage B and the vblank thread (better lows at a fixed
 # GPU clock). Measured on the Deck only, so they come with the preset (launcher setting deck_switches),
 # not as Linux defaults; an environment variable already set wins, and run.py applies extra-env.txt last.
-DECK_SWITCHES = {'GOW3_EARLY_FRAME_EOP': '1', 'GOW3_DECODE_PACING': '1', 'GOW3_DECODE_PACING_LEAD': '2',
-                 'GOW3_ARENA_HOST_VISIBLE': '0', 'GOW3_DRAIN_HYBRID': '1', 'GOW3_TEXSET_WIDE': '1',
-                 'GOW3_REGION_INDEX': '1', 'GOW3_BACKING_COPY': '1', 'GOW3_PENDING_FILTER': '1',
-                 'GOW3_REG_HASH_PAIRED': '1', 'GOW3_PARTICLE_FLIP_GUARD': '1', 'GOW3_THREAD_NICE': '1'}
+# One by one (Advanced: the switches under "Steam Deck performance switches"): (key, title, hint, variables,
+# why it does nothing on Windows or None). The Windows reasons are the code's: A1 and thread nice are Linux
+# code, and U2 is off on Windows anyway (buffer_cache.cpp HostVisibleArenaType), so those are greyed out
+# and never set there; the others run on both and are untested on Windows (research/patches/deck).
+DECK_SWITCH_ITEMS = [
+    ('early_frame_eop', 'Early frame end signals',
+     "The frame's end signal at decode instead of after recording (stage A runs ahead).",
+     {'GOW3_EARLY_FRAME_EOP': '1'}, None),
+    ('decode_pacing', 'Decode pacing (2 frames ahead)', 'Stage A decodes up to 2 frames ahead of the GPU.',
+     {'GOW3_DECODE_PACING': '1', 'GOW3_DECODE_PACING_LEAD': '2'}, None),
+    ('drain_hybrid', "Stage A's hybrid wait", 'Stage A spins briefly, then sleeps, while it waits for stage B.',
+     {'GOW3_DRAIN_HYBRID': '1'}, None),
+    ('texset_wide', 'Wide texture-set memo (T2)', 'Texture sets of draws without a prepared draw are memoized too.',
+     {'GOW3_TEXSET_WIDE': '1'}, None),
+    ('region_index', 'Region cache index (R1)', 'Guest memory lookups answered from an index by page.',
+     {'GOW3_REGION_INDEX': '1'}, None),
+    ('pending_filter', 'Pending-write filter (A2)', "Stage A's pending-write checks answered from a page filter.",
+     {'GOW3_PENDING_FILTER': '1'}, None),
+    ('reg_hash_paired', 'Paired register checksum (A3)', 'The register checksum takes two words per step.',
+     {'GOW3_REG_HASH_PAIRED': '1'}, None),
+    ('particle_flip_guard', 'Particle flip guard', "One state flip per particle simulation (the single pass's "
+     'frozen torches).', {'GOW3_PARTICLE_FLIP_GUARD': '1'}, None),
+    ('backing_copy', 'Backing copies without the lock (A1)', 'GPU-side guest copies read the backing memory '
+     'without the region table lock.', {'GOW3_BACKING_COPY': '1'}, 'Linux only'),
+    ('thread_nice', 'Thread priorities', 'Stage B and the vblank thread at a higher priority (nice -10).',
+     {'GOW3_THREAD_NICE': '1'}, 'Linux only'),
+    ('arena_writes_off', 'Direct arena writes off (U2)', 'Buffer data through staging copies instead of direct '
+     'writes (no gain on the Deck; their tracking costs stage B).', {'GOW3_ARENA_HOST_VISIBLE': '0'},
+     'already off on Windows'),
+]
+DECK_SWITCHES = {name: value for *_rest, env, _why in DECK_SWITCH_ITEMS for name, value in env.items()}
+
+
+def deck_switch_env(s, windows=WINDOWS):
+    """The Deck switches to set at start: with deck_switches on, every item not listed in deck_switches_off
+    (the ones unchecked) and not one that does nothing on this platform. Also the summary run.py logs."""
+    if not s.get('deck_switches', False):
+        return {}, ''
+    off = {key for key in str(s.get('deck_switches_off', '')).split(',') if key}
+    env, on, skipped = {}, [], []
+    for key, _title, _hint, variables, windows_reason in DECK_SWITCH_ITEMS:
+        if windows and windows_reason:
+            skipped.append(f'{key} ({windows_reason})')
+        elif key in off:
+            skipped.append(f'{key} (unchecked)')
+        else:
+            env.update(variables)
+            on.append(key)
+    summary = f'{len(on)} on: {", ".join(on) or "none"}' + (f'; off: {", ".join(skipped)}' if skipped else '')
+    if windows:
+        summary += '; Windows: untested'
+    return env, summary
 DECK_QUALITY = 'deck'
 QUALITY_PRESETS = [*QUALITY_CHOICES, (DECK_QUALITY, ('Deck Optimized',))]
 DECK_HINT = ('Steam Deck: in the Quick Access Menu (Performance) set a manual GPU clock of about 1,200 MHz and '
@@ -1105,6 +1157,56 @@ class Launcher:
             self.ttk.Label(cell, text=_('applies at next start'), style='Restart.TLabel').pack(side='left', padx=(8, 0))
         return cell
 
+    def deck_switch_rows(self, parent):
+        """Steam Deck performance switches: the checkbox turns them all on (every one checked again); the
+        arrow shows them one by one (DECK_SWITCH_ITEMS, unchecked ones in deck_switches_off). On Windows
+        the ones that do nothing there are unchecked and greyed out, with the reason."""
+        ttk, top, off = self.ttk, self.var('deck_switches', 'app'), self.var('deck_switches_off', 'app')
+        holder = ttk.Frame(parent)
+        ttk.Checkbutton(holder, variable=top).pack(side='left')
+        arrow = ttk.Button(holder, text=_('Show the switches ▸'))
+        arrow.pack(side='left', padx=(12, 0))
+        self.row(parent, _('Steam Deck performance switches'), holder,
+                 _('Measured on the Steam Deck, applied at start; on with Deck Optimized. On Windows untested, '
+                   'and the Linux-only ones are left out.'), restart=True)
+        slot = ttk.Frame(parent)  # always in the grid, empty while the list is hidden
+        slot.grid(row=self.next_row(parent), column=0, columnspan=2, sticky='w', padx=(24, 0))
+        panel = ttk.Frame(slot)
+        boxes = {}
+        for i, (key, title, hint, _env, windows_reason) in enumerate(DECK_SWITCH_ITEMS):
+            dead = WINDOWS and windows_reason
+            item = self.tk.BooleanVar(value=not dead and key not in off.get().split(','))
+            text = _(title) + (' — ' + _('does nothing on Windows ({})').format(_(windows_reason)) if dead else '')
+            box = ttk.Checkbutton(panel, text=text, variable=item)
+            box.grid(row=2 * i, column=0, sticky='w', pady=(4, 0))
+            ttk.Label(panel, text=_(hint), style='Muted.TLabel', wraplength=self.px(600), justify='left').grid(
+                row=2 * i + 1, column=0, sticky='w', padx=(22, 0))
+            boxes[key] = (item, box, dead)
+
+        def write_off(*_args):
+            off.set(','.join(k for k, (v, _b, dead) in boxes.items() if not dead and not v.get()))
+
+        def follow_top(*_args):
+            if top.get():  # on: all of them again
+                for v, _b, dead in boxes.values():
+                    v.set(not dead)
+            for v, b, dead in boxes.values():
+                b.state(['disabled'] if dead or not top.get() else ['!disabled'])
+        for v, _b, _dead in boxes.values():
+            v.trace_add('write', write_off)
+        top.trace_add('write', follow_top)
+        for v, b, dead in boxes.values():
+            b.state(['disabled'] if dead or not top.get() else ['!disabled'])
+
+        def show_or_hide():
+            if panel.winfo_ismapped():
+                panel.pack_forget()
+                arrow.configure(text=_('Show the switches ▸'))
+            else:
+                panel.pack(anchor='w')
+                arrow.configure(text=_('Hide the switches ▾'))
+        arrow.configure(command=show_or_hide)
+
     def row(self, parent, title, widget, hint=None, restart=False):
         """Name on the left, control on the right, an optional note below."""
         r = self.next_row(parent)
@@ -1491,10 +1593,7 @@ class Launcher:
         note, show = self.deck_note(f)
         note.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(4, 2))
         show()
-        self.check(f, 'deck_switches', 'app', _('Steam Deck performance switches'),
-                   _('Measured on the Steam Deck: early frame end signals, decode pacing (2 frames), stage A\'s '
-                     'hybrid wait, the wide texture-set memo and the region cache index on; direct arena writes '
-                     'off. On with Deck Optimized. Applied at start.'), restart=True)
+        self.deck_switch_rows(f)
         self.row(f, _('Effects resolution'), self.choice(f, 'effects_resolution', 'ini', EFFECTS_CHOICES),
                  _('Smoke, fire and enemy death effects drawn at a lower resolution and blended in. At 4K '
                    'several enemy deaths at once cost 2-3 ms a frame at 100%; 50% matches the effect detail '
