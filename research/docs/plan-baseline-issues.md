@@ -372,6 +372,12 @@ initialised, or overwritten. The "exit code 5" is how the runner reports the cra
 1.3.8). Next: the lock sites in `runtime_mutex.c` (guest `scePthreadMutex*` mapped to winpthread, destroy vs. a
 late lock), and a crash dump (WER LocalDumps needs admin: the user runs it). Retry after an S1: it boots normally. **Again 2026-10-30 19:47** (`t-sb0-counters`, build `ae09fcc`, ~5 s in, after `PoolThread 6-9`, the same offset): two in ~9 launches today; the boot point matches 15:45 exactly (right after the game creates PoolThread 6-9).
 
+**Again 2026-11-08 01:12** (PC, deck-lab build `a75f7a0`, the first start with the new graphics settings; log
+[data/t-s1-20261108-boot.log](data/t-s1-20261108-boot.log)): the same fault (`read access to 0x10 at libwinpthread-1.dll+0x3583`,
+from `medievil-runtime.exe+0x519be` called from guest offset `0x5cc9d47`), at boot after the online services start and
+flexible memory is mapped. **This time with a crash dump** (the port's handler: `user/crashdumps/medievil-20261108-011208-1140.dmp`,
+type 0x1065): the mutex and its caller can now be read in WinDbg (research/tools/windbg.ps1).
+
 ## V2. Fire / torches broken, more box shadows (the user, 2026-10-18, run `perfdiag-heavy`)
 
 "I loaded into the starting area … It looks like fire/torches were broken, and I saw more of those broken 'shadows'
@@ -400,7 +406,8 @@ find the draw that writes the box, inspect its bound textures and blend state, t
 texture (texture cache: block / format views, depth-as-texture, readbacks).
 
 **RenderDoc captures (2026-10-18 19:08-19:11, launched by Claude with the user's go; `run.py` `GOW3_RENDERDOC`;
-`research-dataenderdoc1-shadow_frame22745.rdc`, `_frame24679.rdc`; scripts `research/tools/renderdoc/`).** The user
+`research-data
+enderdoc1-shadow_frame22745.rdc`, `_frame24679.rdc`; scripts `research/tools/renderdoc/`).** The user
 circled the broken areas in frame 24679 (right of Dan along the path; lower left).
 - Spot / per-object shadow maps (512² / 1024² D16) are cleared and rendered each frame with real depth (e.g. min
   0.27-0.47 to 1.0); UE4 projects each with a 36-index box (`min` blend into R / A of the shadow mask, R8G8B8A8 4K at
