@@ -59,6 +59,8 @@ zeroes the pages it gives back (`f74e1a1`).
 
 ## History and pitfalls
 
+- Windows got the same rule in `8d4607e` (M1 card): the shared `pool_owner` / `pool_zero_foreign_locked`; Linux
+  behaviour unchanged (`runtime-test --pool-pages`: on, no leak; off, leaks, 2026-11-07).
 - The leak existed since the import (`ac900f8`): no patch removed pool zeroing, it never existed. D4 (pool
   locking) is unrelated.
 - About 15 Deck launches went to toggle bisects (A2, fog, scale, sky light) before tooling showed the images

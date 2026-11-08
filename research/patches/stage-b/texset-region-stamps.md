@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: ours
 class: G
-commits: 641134c, 2492874, 61440d7
+commits: 641134c, 2492874, 61440d7, c44a640
 files: gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.h, gpu/shadps4/video_core/texture_cache/texture_cache.cpp, gpu/shadps4/video_core/texture_cache/texture_cache.h, scripts/graphics_options.py
 symbols: TextureSetRegions, TextureSetTwoWay, TextureSetStamp, BindTexturesFromSetIn, KeepTextureSet, RegionStamp, BumpRegions, region_gens, RegistryGeneration, PERF_SWITCHES
 switches: GOW3_TEXSET_REGIONS, GOW3_TEXSET_TWO_WAY, perf_texture_memo
@@ -69,6 +69,9 @@ in slot `key % slots` or its neighbour `^ 1`, and the less recently used one is 
 
 ## History and pitfalls
 
+- **Ordering fixed `c44a640` (2026-11-07, LANDMINES item 11, code reading):** `RegisterImage` / `UnregisterImage` bumped
+  the generation before the region stamps; a lookup in between could confirm a set at the new generation with the
+  old stamps, and later lookups at that generation skip the stamp check. Stamps now first. Keep that order.
 - Two-way did not reduce the "other key" misses (~14,500 a window). They are new sets (~5.5% of draws), not slot
   conflicts. It is kept as harmless.
 - The lesson of T-W3d: at ~175-185 FPS single feel runs differ by about as much as such changes. Judge small stage

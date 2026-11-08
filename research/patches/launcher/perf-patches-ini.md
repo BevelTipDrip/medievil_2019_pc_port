@@ -8,7 +8,7 @@ default_windows: on
 default_deck: mixed
 origin: ours
 class: G
-commits: 27ec51e36d, 1e657ca5ef, e9d86996a4
+commits: 27ec51e36d, 1e657ca5ef, e9d86996a4, a39d538
 files: scripts/graphics_options.py, launcher/medievil_launcher.py, run.py, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_settings.h, gpu/shim/gow3_overlay.cpp, src/runtime_memory.c, tests/test_launcher_controls.py, tests/test_graphics_settings.cpp
 symbols: PERF_SWITCHES, PERF_DEFAULT_OFF, perf_environment, PERF_PATCHES, PerfPatch, PerfKeys, PerfLive, PerfOn, perf_off, RestartChanges, PerfPatchesSection, runtime_memory_set_perf, TakeBaseline, Baseline, Serialize, collect
 switches: perf_hzb_occlusion, perf_no_decal_prepass, perf_particle_single_pass, perf_small_buffers, perf_texture_memo, perf_lockfree_memory, perf_cheap_frees, perf_gpu_data_no_waits, perf_4k_memory, perf_lean_barriers, perf_lean_binding, perf_ring_reuse
@@ -81,6 +81,10 @@ the particle pass is still a restart change: it went live in `d20f010`); the oth
 
 ## History and pitfalls
 
+- **Apply and restart fixed `a39d538` (2026-11-07, LANDMINES item 12):** run.py set the off switches with `setdefault`
+  and listed only a few variables in `GOW3_DERIVED`, so the restarted run.py kept the old ones: a patch turned back
+  on in the menu stayed off. Now every variable run.py adds after extra-env.txt / GOW3_CONFIG is derived again.
+  Not yet seen in game.
 - Before `e9d8699`, the menu rewrote every key from memory. Test overrides such as frames queued and readback modes
   became permanent that way, and about 40 keys were added, God of War III's among them.
 - The launcher's `collect` still writes every `INI_DEFAULTS` key on Play, so an existing default is frozen into the

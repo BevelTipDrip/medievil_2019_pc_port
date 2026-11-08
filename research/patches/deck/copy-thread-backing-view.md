@@ -8,7 +8,7 @@ default_windows: n/a
 default_deck: on
 origin: spacepepperoni 97f0ac9
 class: G
-commits: 8e7bb25
+commits: 8e7bb25, a4fc572
 files: gpu/shim/gow3gpu.cpp, src/runtime_memory.c
 symbols: CopySparseSerial, CopySparseMemory, runtime_memory_read_backing, runtime_memory_region, backing_base
 switches:
@@ -59,6 +59,10 @@ recommits pool pages several times a frame, so a copy thread could read an unmap
 
 ## History and pitfalls
 
+- **Fixed `a4fc572` (2026-11-07, LANDMINES item 10):** the lock-free `runtime_memory_region` could say "mapped" and a
+  decommit land before the locked `runtime_memory_read_backing`; the fall-through `memcpy` from the guest address
+  (PROT_NONE) was the signal 11 of native runs 5 and 7 and nav-1 (libc memcpy in `CopySparseMemory` at a 1 MiB
+  boundary). Linux now never reads through the guest mapping: one more lookup, then zeros.
 - Same crash and fix as spacepepperoni/medievil_ps4_Linux `97f0ac9` (GPL-2.0).
 - Residual window (confirmed in the code 2026-11-07, not seen in a run): `runtime_memory_region` may say "mapped"
   without the lock; if the range is decommitted (or split) before `runtime_memory_read_backing` takes the lock, that
