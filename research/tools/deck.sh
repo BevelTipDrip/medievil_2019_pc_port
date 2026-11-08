@@ -48,8 +48,8 @@ status)
         echo \"--- toggles: \$(cat $toggle_file 2>/dev/null)\"
         echo \"--- launcher: \$(grep -o '\"prep_workers\": \"[0-9]*\"\|\"stage_b_core\": [a-z]*' ~/.config/medievil-launcher/settings.json | tr '\n' ' ')\"
         echo \"--- ini: \$(grep -E '^(render_scale|vsync|fps_limit|ue4_quality|frames_queued)=' ~/$data_dir/medievil.ini | tr '\n' ' ')\"
-        d=\$(ls -d /sys/class/drm/card[0-9]/device | head -1)
-        echo \"--- GPU: \$(cat \$d/power_dpm_force_performance_level) \$(grep '\\*' \$d/pp_dpm_sclk)\""
+        echo '--- power:'"
+    remote 'bash -s' < "$here/deck-power-state.sh"
     ;;
 deploy)
     tree=${1:-/root/src/medievil}; file=${2:-MediEvil-x86_64.AppImage}
@@ -90,9 +90,10 @@ steps)
     period=${1:?PERIOD}; cycles=${2:?CYCLES}; shift 2; (( $# )) || { echo 'no states' >&2; exit 1; }
     running || { echo 'The game is not running on the Deck.' >&2; exit 1; }
     states=$(printf "'%s' " "$@")
-    remote "for i in \$(seq $cycles); do for s in $states; do echo \"\$s\" > $toggle_file
+    { remote 'bash -s' < "$here/deck-power-state.sh" | sed 's/^/# /'
+      remote "for i in \$(seq $cycles); do for s in $states; do echo \"\$s\" > $toggle_file
             echo \"\$(date +%T) mono \$(python3 -c 'import time; print(time.monotonic_ns())') \$s\"; sleep $period; done; done
-        echo '$1' > $toggle_file; echo \"\$(date +%T) done (left at $1)\"" | tee "$repo/research-data/deck/last-steps.txt"
+        echo '$1' > $toggle_file; echo \"\$(date +%T) done (left at $1)\""; } | tee "$repo/research-data/deck/last-steps.txt"
     ;;
 pull)
     name=${1:?NAME}

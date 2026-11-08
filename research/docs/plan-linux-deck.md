@@ -1808,3 +1808,14 @@ at ~2.96 GHz (Launch 15: 15 W, 7.8 W, ~3.21 GHz), GPU 73% busy at ~1,008 MHz (83
 shows as watts too: +0.12 to +0.20 W socket, +0.16 to +0.21 W CPU. Why the clocks differ is open: EPP reads
 `balance_performance` and `scaling_max_freq` is the full 3.5 GHz now; what Launch 15 had is not recorded (a reboot
 resets any EPP change made with sudo). Uncapped both runs reach ~15 W.
+
+Follow-up (2026-11-07): **the CPU work was the same in both runs**, so the code since Launch 15 is not the cause. Launch 15's
+clean capped step (signal sleep, before the A3 flip) vs today's "all on": process CPU 362.5 / 364.6%, every traced
+thread within ~2 points (stage A 40.9 / 41.4, stage B 49.1 / 50.2, recorder 28.0 / 28.1, game thread 50.2 / 49.3),
+present > 17 ms 38 / 40 a minute. What differs is power management: CPU 7.93 / 5.20 W at ~3.21 / ~2.96 GHz, GPU 83 /
+73% busy at ~1,040 / ~1,008 MHz, socket 15.0 / 11.5 W. Uncapped, GPU work per frame matches (busy x clock / FPS:
+13.7 vs 13.8). The code since then is diagnostics off by default, kept pool pages and A3 restart-only. The Deck
+rebooted at 19:41 on 2026-11-06, before Launch 14 / 15, so a leftover EPP `performance` from the 2026-11-05 clock
+tests is unlikely unless it was set again; the user recalls no change. Unexplained. `deck.sh status` and every
+`steps` output now record the power state (`deck-power-state.sh`: boot time, EPP per CPU, governor, CPU min / max,
+APU power cap, GPU level, the toggle file the game reads), so the next difference can be traced.
