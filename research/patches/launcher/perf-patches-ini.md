@@ -16,7 +16,7 @@ tests: T-H3b, T-0102-4
 docs: plan-stage-b-split.md#launcher-performance-patch-toggles-2026-10-21, plan-stage-b-split.md#in-game-menu-and-the-launcher-share-the-settings-2026-10-22, study-live-switches.md#summary, study-live-switches.md#found-on-the-way
 depends_on:
 related: hzb-remap, no-decal-prepass, single-particle-pass, S2, texset-region-stamps, lockfree-region-reads, L2, decommit-keep-access, D3, gpu-write-twins, E1, W2, 4k-memory, lean-barriers, bulk-descriptor-copy, sampler-memo, ring-reuse, deck-preset, extra-env-file, frame-stats-lines, launcher-graphics-page
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 
@@ -81,10 +81,9 @@ the particle pass is still a restart change: it went live in `d20f010`); the oth
 
 ## History and pitfalls
 
-- **Apply and restart fixed `a39d538` (2026-11-07, LANDMINES item 12):** run.py set the off switches with `setdefault`
+- **Apply and restart fix built `a39d538` (2026-11-07, LANDMINES item 12), not run:** run.py set the off switches with `setdefault`
   and listed only a few variables in `GOW3_DERIVED`, so the restarted run.py kept the old ones: a patch turned back
   on in the menu stayed off. Now every variable run.py adds after extra-env.txt / GOW3_CONFIG is derived again.
-  Not yet seen in game.
 - Before `e9d8699`, the menu rewrote every key from memory. Test overrides such as frames queued and readback modes
   became permanent that way, and about 40 keys were added, God of War III's among them.
 - The launcher's `collect` still writes every `INI_DEFAULTS` key on Play, so an existing default is frozen into the

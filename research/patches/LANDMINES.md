@@ -14,7 +14,7 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
    uncapped table) ran mostly without draw preparation in both states. The comment above `PairedRegisterHash` and
    impl-stage-a-decode.md:197 claim it recovers; the code says it does not. Fix: force a rebase when the fold
    changes, or make A3 restart-only.
-   **Confirmed 2026-11-07; fixed in `adfeb67`; cut table redone with draw preparation alive (plan-linux-deck.md "Cuts redo") (A3 restart-only; live A1 + A2 = 3145728).** (code + logs; the uncapped table had no draw preparation in any state). Caveats added to
+   **Confirmed in code and logs 2026-11-07; fix built `adfeb67` (A3 restart-only; live A1 + A2 = 3145728); run on the Deck: the cuts redo had draw preparation in all 287 windows (plan-linux-deck.md "Cuts redo").** (code + logs; the uncapped table had no draw preparation in any state). Caveats added to
    plan-linux-deck.md (Round 1, Launch 15) and impl-stage-a-decode.md.
 2. **The PC toggle scripts and a launcher-started game watch different files** ([lineage-toggle-file](tooling/lineage-toggle-file.md)).
    `toggle-ab.ps1` / `toggle-groups.ps1` only reach games started by `run-game.ps1`. In a launcher-started game a
@@ -56,20 +56,20 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
    `pool_take_locked`'s second loop and `pool_take_at_locked` on a stale kept view hand kept pages to another address
    un-zeroed. With decommit-keep-access the old view also stays writable onto pages someone else now owns. Fix
    (zero there) belongs on `lab` with its regression pass.
-   **Fixed `8d4607e` on deck-lab (2026-11-07; built, not run):** Windows owner tracking, zero on hand-off. Needs a PC
+   **Fix built `8d4607e` on deck-lab (2026-11-07), not run:** Windows owner tracking, zero on hand-off. Needs a PC
    run with frame stats ("Guest pool (window)" line), then the lab regression pass.
 10. **Linux crash window in `CopySparseSerial`** ([copy-thread-backing-view](deck/copy-thread-backing-view.md)): if
     `runtime_memory_read_backing` returns 0 after a lock-free lookup said "mapped", the code memcpys from a PROT_NONE
     guest address: the native run 7 SIGSEGV. The Linux branch should zero-fill or retry.
-    **Fixed `a4fc572` (2026-11-07):** all three Deck crash logs (native runs 5 and 7, nav-1) died there.
+    **Confirmed in logs, fix built `a4fc572` (2026-11-07), not run:** all three Deck crash logs (native runs 5 and 7, nav-1) died there.
 11. **Texture-set memo ordering** ([texset-region-stamps](stage-b/texset-region-stamps.md)): `RegisterImage` /
     `UnregisterImage` raise `registry_generation` before `BumpRegions`, and the lookup reads the generation first. A
     registration beside a lookup can memo a set with stale stamps. Swapping the two lines removes it.
-    **Fixed `c44a640` (2026-11-07):** stamps bumped first.
+    **Fix built `c44a640` (2026-11-07), not run:** stamps bumped first.
 12. **"Apply and restart" keeps the old perf switches** ([perf-patches-ini](launcher/perf-patches-ini.md)): the
     restart inherits the environment and pops only `GOW3_DERIVED`. A restart-only patch turned back on in the menu
     stays off; the live particle pass reverts to off; likely also the old VideoOut size after an output change.
-    **Fixed `a39d538` (2026-11-07):** every variable run.py adds is derived again; not yet seen in game.
+    **Fix built `a39d538` (2026-11-07), not run:** every variable run.py adds is derived again.
 13. **`GOW3_ASYNC_FENCES` is unsafe** ([async-fences](stage-b/async-fences.md)): an async EOP label can reach the
     guest before the recorder's small copies and deferred E1 / W3 labels.
 14. **Deck Optimized is not platform-gated** ([deck-preset](deck/deck-preset.md)): chosen on Windows it turns on

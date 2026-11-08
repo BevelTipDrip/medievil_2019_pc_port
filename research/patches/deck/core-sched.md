@@ -16,7 +16,7 @@ tests:
 docs: impl-deck-build-sched-pool.md#7-core-scheduling-cookie-on-stage-b-gow3_stage_b_core_sched1, plan-linux-deck.md#round-1-results-gpu-clock-auto-2026-11-05-ini-logging-67-uncapped-launched-by-the-user, study-deck-apu-deep-dive.md#13-smt-and-stage-b
 depends_on:
 related: thread-nice, stage-b-core, stage-b-spin, drain-hybrid, prep-workers-2, deck-preset
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

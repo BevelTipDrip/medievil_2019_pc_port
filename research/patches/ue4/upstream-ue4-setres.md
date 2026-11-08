@@ -16,7 +16,7 @@ tests:
 docs: fix-inventory.md#from-upstream-medievil-133-138-bc160201983-and-contributors-merged-into-lab, study-boot-resolution.md#4-fixing-the-live-rsetres-instead, study-boot-resolution.md#summary
 depends_on: upstream-0102-eu-support
 related: I1, upstream-4k-framebuffer-pool, live-graphics-options, effects-resolution, preshadows-live, single-particle-pass
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

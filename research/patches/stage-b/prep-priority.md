@@ -16,7 +16,7 @@ tests: T-S5
 docs: plan-stage-b-split.md#t-s5--t-q2-the-remaining-spikes-frames-queued-2-2026-10-21-2210-2222-launched-by-claude-with-the-users-go-50-slow-frames--sections-logs-datat-s5-spikeslog-datat-q2-frames-queued-2log, study-deck-other-threads.md#32-gow3drawprep-4-19-each-17k-involuntary-switchess-each-code--log
 depends_on: lineage-draw-preparation
 related: prep-workers-2, slow-frames, lineage-texture-set-memo, T2, thread-nice, stage-b-core
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

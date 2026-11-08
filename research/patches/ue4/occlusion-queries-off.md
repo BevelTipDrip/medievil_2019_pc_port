@@ -16,7 +16,7 @@ tests: T-O1, T-U1
 docs: plan-frame-pacing.md#t-o1-occlusion-queries-off-2026-10-19-1920-1926-launched-by-claude-with-the-users-go-build-42a4943-log-datat-o1-no-occlusionlog, plan-frame-pacing.md#t-u1-uploads-intro-trace-bit-62-ab-2026-10-19-171x-1726-launched-by-claude-with-the-users-go-build-fde3624-log-datat-u1-uploadslog, fix-inventory.md#7-medievil-specific-ue4-config-eboot-patches-hooks, fix-inventory.md#caveats-in-the-evidence
 depends_on:
 related: hzb-remap, O2-O3, R4a
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

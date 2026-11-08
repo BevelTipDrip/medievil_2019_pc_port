@@ -16,7 +16,7 @@ tests:
 docs: study-deck-rescore-rejected.md#c-analysed-gated-or-ranked-never-built, docs/parallel_gpu.md
 depends_on:
 related: obtainbuffer-memo, lineage-draw-preparation, S2, hot-pages
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

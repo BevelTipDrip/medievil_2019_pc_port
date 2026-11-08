@@ -16,7 +16,7 @@ tests: T-F16, T-F17, T-F18, T-F19, T-F23, T-F24, T-F25, T-F26, T-F27
 docs: fix-inventory.md#6-frame-pacing-and-present, plan-stage-b-split.md#t-f2-which-barriers-break-the-passes-log-t-f2-barrier-breaks-trace-33, plan-stage-b-split.md#t-f27-the-capped-mode-that-works-and-the-launcher-consolidation-2026-10-25, study-deck-patch-audit.md#16-presentation-and-pacing
 depends_on:
 related: precise-limiter, precise-tick, inline-present, vrr-auto-limits, frame-limit-parse, upstream-vsync-limit-rule, present-side-limiter, one-clock, menu-idle-redraw, display-trace, vsync-control, deck-preset
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

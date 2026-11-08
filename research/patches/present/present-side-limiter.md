@@ -16,7 +16,7 @@ tests: T-F9, T-F10, T-F11, T-F12
 docs: plan-stage-b-split.md#t-f2-which-barriers-break-the-passes-log-t-f2-barrier-breaks-trace-33, fix-inventory.md#10-tried-and-dropped
 depends_on: precise-limiter
 related: reflex, inline-present, one-clock, flip-trace, lean-barriers
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

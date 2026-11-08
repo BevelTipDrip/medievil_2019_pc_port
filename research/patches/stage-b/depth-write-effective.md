@@ -16,7 +16,7 @@ tests: N-5, N-6
 docs: fix-inventory.md#1-gpu-sync-barriers-and-render-pass-breaks, plan-frame-pacing.md#n-6-depth-writes-only-with-the-depth-test-on-2026-10-28
 depends_on:
 related: lean-barriers, narrow-image-stages, V4
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

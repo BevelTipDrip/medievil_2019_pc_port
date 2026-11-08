@@ -15,7 +15,7 @@ tests: T-S1b, T-texset-both-off
 docs: fix-inventory.md#2-draw-translation-cost-stage-b-per-draw, study-deck-patch-audit.md#12-stage-b-per-draw-caches-and-memos, docs/parallel_gpu.md
 depends_on: lineage-draw-preparation
 related: texset-region-stamps, texset-compact, T1, T2, own-target-texsets, S3-split-descriptors, S1-delta-draw, prep-priority, findimage-generation-misses
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

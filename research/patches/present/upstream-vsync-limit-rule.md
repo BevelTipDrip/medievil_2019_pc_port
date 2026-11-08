@@ -16,7 +16,7 @@ tests:
 docs: fix-inventory.md#from-upstream-medievil-133-138-bc160201983-and-contributors-merged-into-lab, study-upstream-commits.md#3-conflicts-with-ours, plan-stage-b-split.md#t-l1b-precise-frame-limiter-at-233-2026-10-21-0140-launched-by-claude-with-the-users-go-build-a297c6b-log-datat-l1b-precise-233log
 depends_on:
 related: reflex, precise-limiter, vrr-auto-limits, frame-limit-parse, vsync-control, presentation-settings, present-mode-select, one-clock, lineage-toggle-file
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

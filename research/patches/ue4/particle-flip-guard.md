@@ -16,7 +16,7 @@ tests:
 docs: plan-linux-deck.md#particle-fix-1-2026-11-05-2110-2128-build-49291f3-particlefix-log-datadeck-particlefix-1log, plan-linux-deck.md#particle-fix-2-the-guard-alone-2026-11-06-build-49291f3-particlefix, study-particle-fixed-step.md#the-change, study-particle-fixed-step.md#why-the-copy-pass-makes-the-default-immune-inferred-from-the-code-above
 depends_on:
 related: single-particle-pass, particle-single-fixed, deck-preset, lineage-toggle-file, draw-classes, game-update-0102
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

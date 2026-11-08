@@ -16,7 +16,7 @@ tests: T-S1, T-S2
 docs: plan-stage-b-split.md#t-s2-small-host-copies-to-the-copy-threads-bit-19-2026-10-19-2343-2349-launched-by-claude-with-the-users-go-build-c4bf2dc-log-datat-s2-small-copieslog, study-deck-rescore-rejected.md#a-switches-that-already-exist-no-build, study-deck-patch-audit.md#11-draw-pipeline-and-helper-threads-inherited-lineage-docsparallel_gpumd-measured-on-the-base-ports-game-not-medievil
 depends_on:
 related: lineage-recorder-fences, lineage-dropped-stage-b, async-fences, recorder-lean, B1, S2, E1, W2
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

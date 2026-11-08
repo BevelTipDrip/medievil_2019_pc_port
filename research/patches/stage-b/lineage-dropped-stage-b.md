@@ -16,7 +16,7 @@ tests:
 docs: study-deck-rescore-rejected.md#b-built-measured-and-reverted-or-dropped-no-switch-left, docs/parallel_gpu.md, fix-inventory.md#10-tried-and-dropped
 depends_on:
 related: pool-small-copies, lineage-draw-pipe, stage-b-spin, L4, R1-stale-eop, L1-region-buckets, O2-O3, lineage-constant-ring, ring-reuse
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

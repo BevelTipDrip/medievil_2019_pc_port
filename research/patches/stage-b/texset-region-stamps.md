@@ -16,7 +16,7 @@ tests: T-S1a, T-S1b, T-S1c, T-W3d
 docs: fix-inventory.md#2-draw-translation-cost-stage-b-per-draw, plan-stage-b-split.md#t-s1a-texture-binding-split-2026-10-20-2312-launched-by-claude-with-the-users-go-build-60d27d4-log-datat-s1a-texture-sectionslog, plan-stage-b-split.md#t-s1b-region-stamps-2026-10-20-2322-2327-launched-by-claude-with-the-users-go-build-641134c-log-datat-s1b-region-stampslog, plan-stage-b-split.md#t-s1c--t-w3-texture-memo-two-way-the-write_data-wait-2026-10-20-2331-2345-launched-by-claude-with-the-users-go-builds-2492874-d67ac70-logs-datat-s1c-two-waylog-datat-w3-writedata-targetslog, plan-stage-b-split.md#t-w3d-w3-ab-without-diagnostics-2026-10-21-0012-0028-launched-by-claude-with-the-users-go-build-807d4c8--nostats
 depends_on: lineage-texture-set-memo
 related: texset-compact, T2, lineage-draw-preparation, findimage-generation-misses
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 
@@ -69,7 +69,7 @@ in slot `key % slots` or its neighbour `^ 1`, and the less recently used one is 
 
 ## History and pitfalls
 
-- **Ordering fixed `c44a640` (2026-11-07, LANDMINES item 11, code reading):** `RegisterImage` / `UnregisterImage` bumped
+- **Ordering fix built `c44a640` (2026-11-07, LANDMINES item 11, found in code), not run:** `RegisterImage` / `UnregisterImage` bumped
   the generation before the region stamps; a lookup in between could confirm a set at the new generation with the
   old stamps, and later lookups at that generation skip the stamp check. Stamps now first. Keep that order.
 - Two-way did not reduce the "other key" misses (~14,500 a window). They are new sets (~5.5% of draws), not slot

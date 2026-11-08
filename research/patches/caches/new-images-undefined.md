@@ -16,7 +16,7 @@ tests: N-10, N-11, N-14
 docs: fix-inventory.md#3-memory-sync-uploads-and-readbacks, plan-frame-pacing.md#n-11-render-targets-uploaded-before-being-rendered-into-the-map-oscillations-writer-2026-10-28-launched-by-the-user, plan-frame-pacing.md#n-10-what-the-image-upload-bursts-are-2026-10-28-launched-by-the-user-t-up1-refresh-siteslog-gow3_texcache_stats1, plan-linux-deck.md#hilltop-mausoleum-lighting-pool-pages-leaked-on-linux-2026-11-0607-fixed-7246f88--f74e1a1
 depends_on: C3
 related: clear-skips-upload, park-unmapped, pool-kept-pages, mausoleum-toggle-bisect, texcache-stats
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

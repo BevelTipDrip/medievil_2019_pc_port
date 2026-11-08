@@ -16,7 +16,7 @@ tests: T-0102-5, T-0102-6
 docs: plan-baseline-issues.md#v3-effects-wrong-blending-misplaced-missing-at-an-angle-the-user-2026-10-31-play-session-on-3cea271, plan-0102.md#t-0102-5-the-dust-culled-by-angle-2026-11-01-2016-renderdoc-build-09af284-log-datat-0102-5log, plan-0102.md#the-gpu-particle-bounds-patch-2026-11-01-offline-to-test-in-game, plan-0102.md#t-0102-6-2026-11-01-2338-2352-launched-by-claude-with-the-users-go-build-548db4c-log-datat-0102-6log, fix-inventory.md#7-medievil-specific-ue4-config-eboot-patches-hooks
 depends_on:
 related: single-particle-pass, particle-flip-guard, game-update-0102, launcher-graphics-page, renderdoc-capture
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

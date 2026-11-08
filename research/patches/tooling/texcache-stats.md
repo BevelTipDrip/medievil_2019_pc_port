@@ -16,7 +16,7 @@ tests: T-C0, T-C1, T-C2, T-P2, N-10, N-11, N-22, N-23
 docs: plan-frame-pacing.md#r1-reverted-performance-degrades-with-new-content-2026-10-18-1440-1510, plan-frame-pacing.md#t-c0-result-2026-10-18-1510-1515-the-cache-re-creates-and-re-uploads-20-images-per-frame, plan-frame-pacing.md#t-c2-result-2026-10-18-1850-1853-launched-by-claude-with-the-users-go-build-9a3127a-log-datat-c2-recreatelog--times-ring-trace-pan-1etl-saved-1851416, plan-frame-pacing.md#n-10-what-the-image-upload-bursts-are-2026-10-28-launched-by-the-user-t-up1-refresh-siteslog-gow3_texcache_stats1
 depends_on:
 related: V3, C3, new-images-undefined, clear-skips-upload, park-unmapped, micro-mip-targets, P2, upstream-texture-gc, mausoleum-toggle-bisect, pool-kept-pages, perf-diag
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

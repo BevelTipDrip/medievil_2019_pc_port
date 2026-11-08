@@ -16,7 +16,7 @@ tests: T-L1
 docs: fix-inventory.md#10-tried-and-dropped, plan-frame-pacing.md#step-1-heavy-view-stage-b-2026-10-19-the-user-1-then-2
 depends_on:
 related: L2
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

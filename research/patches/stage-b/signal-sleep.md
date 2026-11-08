@@ -18,7 +18,7 @@ depends_on: lineage-recorder-fences
 conflicts_with:
 supersedes:
 related: recorder-lean, drain-hybrid, drain-sleep, stage-b-spin
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

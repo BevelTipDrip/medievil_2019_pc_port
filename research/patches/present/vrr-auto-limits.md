@@ -16,7 +16,7 @@ tests: T-F19, T-F26, T-F27
 docs: fix-inventory.md#6-frame-pacing-and-present, plan-stage-b-split.md#t-f27-the-capped-mode-that-works-and-the-launcher-consolidation-2026-10-25, study-vrr-present-pacing.md
 depends_on: frame-limit-parse
 related: reflex, upstream-vsync-limit-rule, vsync-control, precise-limiter, deck-preset
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

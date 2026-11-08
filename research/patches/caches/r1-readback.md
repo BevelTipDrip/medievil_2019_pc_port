@@ -16,7 +16,7 @@ tests: T-HZ2b, T-HZ3
 docs: fix-inventory.md#3-memory-sync-uploads-and-readbacks, plan-stage-b-split.md#t-hz2b-hzb-with-precise-readbacks-2026-10-20-0028-0033-launched-by-claude-with-the-users-go-build-a968802-log-datat-hz2b-hzb-preciselog, plan-stage-b-split.md#t-hz3-hzb--precise-readbacks--r1-2026-10-20-0037-0041-launched-by-claude-with-the-users-go-build-9dea0af-log-datat-hz3-readback-submitlog
 depends_on: lineage-deferred-readbacks
 related: hzb-remap, R1-stale-eop, C5
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

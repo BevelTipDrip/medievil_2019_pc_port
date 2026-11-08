@@ -16,7 +16,7 @@ tests: N-27
 docs: fix-inventory.md#from-upstream-medievil-133-138-bc160201983-and-contributors-merged-into-lab, plan-upstream-merge.md#2-the-five-conflicts-and-how-to-resolve-them, plan-upstream-merge.md#1-where-upstream-and-lab-overlap, patches-and-pr-proposal.md#not-proposed
 depends_on: V3
 related: V3, upstream-safe-gpu-mode
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

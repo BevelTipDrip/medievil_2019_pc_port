@@ -16,7 +16,7 @@ tests: T-P2, T-P3, T-P4, T-P5
 docs: fix-inventory.md#4-runtime-loader-hle-guest-memory, plan-stage-b-split.md#t-p1--t-p2-why-panning-costs-2026-10-21-0335-1940-launched-by-claude-with-the-users-go-build-166557c-logs-datat-p1-panninglog-datat-p2-panning-sampleslog-samples-research-datasamplest-p2-panning-samples
 depends_on:
 related: L2, R1-region-index, A1, D4, D5, M1, decommit-keep-access
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

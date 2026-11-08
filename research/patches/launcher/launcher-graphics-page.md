@@ -16,7 +16,7 @@ tests: T-0102-6
 docs: plan-live-switches.md#done, plan-0102.md#t-0102-6-2026-11-01-2338-2352-launched-by-claude-with-the-users-go-build-548db4c-log-datat-0102-6log
 depends_on: live-graphics-options
 related: particle-bounds, vsync-control, presentation-settings, perf-patches-ini, deck-preset, flip-trace
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

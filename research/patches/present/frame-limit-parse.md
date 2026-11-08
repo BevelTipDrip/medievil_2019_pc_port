@@ -16,7 +16,7 @@ tests: T-F26, T-F27
 docs: fix-inventory.md#6-frame-pacing-and-present, plan-stage-b-split.md#t-f2-which-barriers-break-the-passes-log-t-f2-barrier-breaks-trace-33, plan-stage-b-split.md#t-f27-the-capped-mode-that-works-and-the-launcher-consolidation-2026-10-25
 depends_on:
 related: vrr-auto-limits, reflex, vsync-control
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

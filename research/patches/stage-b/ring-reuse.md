@@ -18,7 +18,7 @@ depends_on: lineage-constant-ring
 conflicts_with:
 supersedes:
 related: decode-pacing, early-frame-eop, A1, A2, C1-semaphore-poll, stream-class-table, S2, perf-patches-ini
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

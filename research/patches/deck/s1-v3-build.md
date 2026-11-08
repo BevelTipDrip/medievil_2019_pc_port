@@ -16,7 +16,7 @@ tests:
 docs: impl-deck-build-sched-pool.md#s1-the-x86-64-v3-build-flavour, study-deck-build-optimization.md#2-flags-one-by-one-for-a-branchy-pointer-chasing-thread-on-zen-2, study-deck-build-optimization.md#5-keeping-one-portable-appimage
 depends_on: static-gpu-lib
 related: pgo-build, thinlto, deck-preset
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

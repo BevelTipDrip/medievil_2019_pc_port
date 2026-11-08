@@ -7,7 +7,7 @@ Parent: [START-HERE.md](START-HERE.md).
 - [research/patches/INDEX.md](../patches/INDEX.md): 198 cards, one line each (status, Windows / Deck default,
   branch, switches). Every code commit on `lab` / `deck-lab` (248) and every switch, toggle bit and ini key of ours
   (171) belongs to a card. Rejected and reverted attempts have cards.
-- Each card was written by one agent and checked against the code and the docs by a separate one (`verified:
+- Each card was written by one agent and checked against the code and the docs by a separate one (`checked:
   2026-11-07`). Checkers fixed wrong defaults, commits, invariants and numbers on most cards.
 - [LANDMINES.md](../patches/LANDMINES.md): what the checkers found (code reading, not run). The first item matters
   most: **A3 flipped live disables draw preparation for the rest of the launch**, so several Deck live A/Bs

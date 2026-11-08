@@ -16,7 +16,7 @@ tests: T-N120, T-V120h, T-P120
 docs: fix-inventory.md#6-frame-pacing-and-present, plan-stage-b-split.md#t-p120-the-configuration-that-holds-the-cap-2026-10-23-0300-the-user-launcher-settings, plan-stage-b-split.md#ablation-of-the-t-p120-settings-2026-10-23-evening-traces-research-dataflip-trace-18csv-to--24csv
 depends_on:
 related: precise-tick, reflex, precise-limiter, menu-idle-redraw, newest-frame, one-clock, present-mode-select, presentation-settings, deck-preset
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

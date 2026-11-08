@@ -16,7 +16,7 @@ tests: T-P120
 docs: fix-inventory.md#6-frame-pacing-and-present, plan-linux-deck.md#baseline-1-and-live-abs-2026-11-04-appimage-a863482-67-helpers-auto-no-dedicated-core-auto-clocks-mailbox-log-datadeck-baseline-1-ablog, plan-stage-b-split.md#ablation-of-the-t-p120-settings-2026-10-23-evening-traces-research-dataflip-trace-18csv-to--24csv
 depends_on:
 related: vsync-control, presentation-settings, inline-present, reflex, deck-preset, upstream-vsync-limit-rule
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

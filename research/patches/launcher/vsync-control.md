@@ -16,7 +16,7 @@ tests: T-F27
 docs: plan-stage-b-split.md#t-f27-the-capped-mode-that-works-and-the-launcher-consolidation-2026-10-25
 depends_on: presentation-settings
 related: present-mode-select, reflex, precise-limiter, vrr-auto-limits, frame-limit-parse, launcher-graphics-page, deck-preset
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

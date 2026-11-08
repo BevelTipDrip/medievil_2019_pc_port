@@ -16,7 +16,7 @@ tests: Native run 5, Native run 6, Native run 7, Native run 8
 docs: plan-linux-deck.md#native-run-6-gow3_uffd1-2026-11-03-appimage-a15b5cb-settings-by-extra-envtxt-log-datadeck-native-6log-trace-research-dataflipdeck-native-6csv, plan-linux-deck.md#native-run-7-gate-2-stats-2026-11-03-appimage-3efee7a-gow3_frame_stats1-by-file-log-datadeck-native-7-crashlog, study-deck-rescore-rejected.md#a-switches-that-already-exist-no-build
 depends_on:
 related: hot-pages, lineage-deferred-readbacks, pool-kept-pages, U5
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -16,7 +16,7 @@ tests: T-F1, N-19, N-20, N-23
 docs: fix-inventory.md#9-diagnostics-worth-taking, plan-stage-b-split.md#t-f1-what-makes-the-fights-frames-slow-2026-10-25-logs-t-p960-gpu-profile-5-t-p960-slow-frames, study-upstream-commits.md#3-conflicts-with-ours, plan-frame-pacing.md#n-19-what-the-fights-slow-frames-are-per-pass-2026-10-29-launched-by-claude-with-the-users-go-t-prof1-fight-burstslog
 depends_on:
 related: effects-resolution, ring-reuse, slow-frames, park-unmapped
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

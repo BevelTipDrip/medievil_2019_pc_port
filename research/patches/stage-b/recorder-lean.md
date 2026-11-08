@@ -18,7 +18,7 @@ depends_on: lineage-recorder-fences, lineage-draw-pipe
 conflicts_with:
 supersedes:
 related: signal-sleep, E1, U5-2, C1-semaphore-poll, cacheline-groups, stage-b-core
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

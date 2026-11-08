@@ -16,7 +16,7 @@ tests:
 docs: plan-work-queue.md#the-users-quality-of-life-list-2026-11-03-after-the-v200-release
 depends_on:
 related: port-identity
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

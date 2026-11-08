@@ -18,7 +18,7 @@ depends_on: lineage-draw-pipe
 conflicts_with:
 supersedes:
 related: deck-epp-governor, signal-sleep, stage-b-core, thread-nice, deck-preset, stage-b-counters, C1-semaphore-poll
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -16,7 +16,7 @@ tests: N-30, N-31, N-32, Launch 14
 docs: fix-inventory.md#for-other-ports-how-to-read-this, study-live-switches.md#how-live-works-today-three-mechanisms
 depends_on:
 related: deck-test-tooling, M1, narrow-image-stages, bulk-descriptor-copy, sampler-memo, ring-reuse, perf-patches-ini, thinlto, extra-env-file
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

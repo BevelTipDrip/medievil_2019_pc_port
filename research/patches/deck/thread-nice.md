@@ -16,7 +16,7 @@ tests:
 docs: impl-deck-build-sched-pool.md#8-nice-for-stage-b-and-the-vblank-thread-gow3_thread_nice, plan-linux-deck.md#thread-nice-live-2026-11-06-build-5ab1a24-nicelive-logs-datadeck-nicelive-1log-datadeck-nicelive-1400log, plan-linux-deck.md#round-1-results-gpu-clock-auto-2026-11-05-ini-logging-67-uncapped-launched-by-the-user
 depends_on:
 related: core-sched, deck-preset, inline-present, precise-tick, lineage-toggle-file
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -16,7 +16,7 @@ tests: N-28
 docs: plan-frame-pacing.md#n-28-stage-b-counters-the-studys-step-0-2026-10-30-launched-by-claude-with-the-users-go-t-sb0-counterslog-build-ae09fcc-gow3_sections1, impl-texset-index.md#1-instrumentation, plan-linux-deck.md#spin-compact-texture-memo-and-the-task-split-2026-11-04, study-deck-rescore-rejected.md
 depends_on: sections, frame-stats-lines
 related: own-target-texsets, findimage-generation-misses, bulk-descriptor-copy, sampler-memo, W3, W3b, stage-b-spin, lineage-texture-set-memo, crash-dump
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

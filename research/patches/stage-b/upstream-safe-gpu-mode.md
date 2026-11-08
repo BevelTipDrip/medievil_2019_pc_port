@@ -14,7 +14,7 @@ switches: GOW3_VULKAN_COMPAT, GOW3_NO_MAINTENANCE5, GOW3_NO_MAINTENANCE8
 tests: N-27
 docs: fix-inventory.md#from-upstream-medievil-133-138-bc160201983-and-contributors-merged-into-lab
 related: upstream-barrier-batch-limit, upstream-volume-views, V3, lean-barriers, crash-dump
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

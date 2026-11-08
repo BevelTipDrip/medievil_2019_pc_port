@@ -16,7 +16,7 @@ tests:
 docs: plan-linux-deck.md#cpu-clocks-and-the-power-cap-2026-11-0405-log-datadeck-epp-perf-1log-datadeck-dedicated-1log, plan-linux-deck.md#launch-15-results-2026-11-06-2050-2128-build-2a6efea-signal-a-new-arena-with-a-guaranteed-heavy-view-the-old-spot-cannot-be-found-under-a-cap-gpu-auto-log-datadeck-launch15log-traces-research-datadeckdeck-cap60-signalcap60-cutsuncap-cuts-, study-deck-apu-deep-dive.md#22-per-core-boost-and-preferred-cores, study-deck-apu-deep-dive.md#23-the-cpugpu-power-split
 depends_on:
 related: deck-epp-governor, stage-b-core, deck-test-tooling
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

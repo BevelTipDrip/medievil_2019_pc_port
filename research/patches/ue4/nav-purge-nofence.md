@@ -16,7 +16,7 @@ tests:
 docs: impl-cpu-waste.md#the-patch-item-2-gow3_nav_purge_nofence1, impl-cpu-waste.md#what-0x802c94ba2--ba5--ba8-is-not-a-wait-static-analysis-0102-high-confidence, plan-linux-deck.md#round-1-results-gpu-clock-auto-2026-11-05-ini-logging-67-uncapped-launched-by-the-user
 depends_on:
 related: deck-preset
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

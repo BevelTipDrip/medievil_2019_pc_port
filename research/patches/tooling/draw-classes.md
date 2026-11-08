@@ -16,7 +16,7 @@ tests:
 docs: impl-draw-reduction.md#2-n0-draw-classes-gpushimgow3_draw_classesh, plan-linux-deck.md#particle-1-results-2026-11-05-1946-build-d20f010-test1105-log-datadeck-particle-1log, plan-linux-deck.md#particle-fix-1-2026-11-05-2110-2128-build-49291f3-particlefix-log-datadeck-particlefix-1log, study-particle-fixed-step.md
 depends_on: frame-stats-lines
 related: single-particle-pass, particle-flip-guard, particle-single-fixed, particle-identity-skip, finer-occlusion-culling, sections
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

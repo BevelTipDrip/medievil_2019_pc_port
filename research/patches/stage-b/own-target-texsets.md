@@ -16,7 +16,7 @@ tests: N-28
 docs: study-frame-cost-2026-10-29.md#4-make-sets-that-contain-the-current-target-memoizable--goal-3, plan-frame-pacing.md#n-28-stage-b-counters-the-studys-step-0-2026-10-30-launched-by-claude-with-the-users-go-t-sb0-counterslog-build-ae09fcc-gow3_sections1, study-stage-b-per-draw.md#4-ranked-cuts, study-deck-rescore-rejected.md#c-analysed-gated-or-ranked-never-built
 depends_on: lineage-texture-set-memo
 related: texset-region-stamps, T2, lean-barriers, stage-b-counters, S1-delta-draw
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

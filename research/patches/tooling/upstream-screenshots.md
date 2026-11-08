@@ -16,7 +16,7 @@ tests:
 docs: fix-inventory.md#from-upstream-medievil-133-138-bc160201983-and-contributors-merged-into-lab
 depends_on:
 related: renderdoc-capture, upstream-frame-analyzer-fix, upstream-launcher-features
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

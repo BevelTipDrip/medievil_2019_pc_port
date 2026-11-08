@@ -17,7 +17,7 @@ docs: plan-stage-b-split.md#t-z2-t-z4b-dbuffer-decals-and-the-forced-prepass-202
 depends_on:
 supersedes: early-z-pass-off
 related: hzb-remap, perf-patches-ini, ue4-cvars-tool, deck-preset
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

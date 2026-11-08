@@ -15,7 +15,7 @@ switches: GOW3_MICRO_MIP_TARGETS
 tests: N-22, N-23
 docs: fix-inventory.md#5-correctness-and-stability, plan-frame-pacing.md#n-22-the-hzbs-small-mips-were-never-rendered-2026-10-30-launched-by-claude-with-the-users-go-t-hzb1-mip-targetslog-t-hzb2-micro-mipslog
 related: hzb-remap, finer-occlusion-culling, park-unmapped, texcache-stats, perf-diag
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -16,7 +16,7 @@ tests: T-L2, T-L3, T-L4, N-27, N-32, Native run 4
 docs: fix-inventory.md#9-diagnostics-worth-taking, plan-stage-b-split.md#t-l2-flip-trace-uncapped-vs-120-cap-2026-10-22-0020-0029-launched-by-claude-with-the-users-go-build-1e657ca--nostats-gow3_flip_trace-trace-research-dataflip-trace-1csv, plan-linux-deck.md#native-run-4-flip-trace-2026-11-03-gow3_frame_stats1-gow3_flip_trace-log-datadeck-native-4log-trace-research-dataflipdeck-native-4csv, plan-frame-pacing.md#n-32-ring-reuse-retest-ab-inside-one-launch-2026-10-30-launched-by-claude-with-the-users-go-t-ring-1-build-9fb2d6c--nostats-flip-trace-research-dataflipt-ring-1csv
 depends_on:
 related: precise-limiter, present-side-limiter, reflex, display-trace, deck-test-tooling, ring-reuse, async-log-writer, presentation-settings
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -16,7 +16,7 @@ tests:
 docs: plan-live-switches.md#mechanism-built, plan-live-switches.md#done, study-live-switches.md#summary, study-live-switches.md#ue4-console-variables-objects-for-ue4_cvars-cusa11227-0100, fix-inventory.md#7-medievil-specific-ue4-config-eboot-patches-hooks
 depends_on: preshadows-live
 related: effects-resolution, launcher-graphics-page, deck-preset, live-render-scale, force-aniso, single-particle-pass
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -16,7 +16,7 @@ tests: T-D2d
 docs: plan-frame-pacing.md#upload-audit-what-is-copied-from-system-ram-to-the-gpu-2026-10-19-logs-only-no-launch, study-intro-movie.md#summary
 depends_on:
 related: movie-suspend, avplayer-join-hang, texcache-stats
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

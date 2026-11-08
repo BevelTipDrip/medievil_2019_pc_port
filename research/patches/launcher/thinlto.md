@@ -16,7 +16,7 @@ tests: N-29
 docs: plan-frame-pacing.md#n-29-thinlto-on-by-default-2026-10-30-launched-by-claude-with-the-users-go-t-lto-a1log-t-lto-blog-same-code-a855b18, study-deck-build-optimization.md#1-what-the-build-does-today-code-bin
 depends_on:
 related: pgo-build, static-gpu-lib, S1-v3-build, bulk-descriptor-copy
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

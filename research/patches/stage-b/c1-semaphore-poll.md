@@ -18,7 +18,7 @@ depends_on: lineage-deferred-readbacks
 conflicts_with:
 supersedes:
 related: ring-reuse, P2, W2, R1-readback, C5, stage-b-spin, recorder-lean
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

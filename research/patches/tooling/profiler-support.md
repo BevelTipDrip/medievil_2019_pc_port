@@ -16,7 +16,7 @@ tests: N-1, N-2, N-5
 docs: fix-inventory.md#9-diagnostics-worth-taking, building-and-tools.md#profiling-and-crashes, plan-frame-pacing.md#n-1-nsight-systems-gpu-busy-vs-working-hard-in-the-fight-2026-10-27-launched-by-the-user-report-research-datansysnsys-fight-1-1nsys-rep-log-datansys-fight-1log
 depends_on:
 related: narrow-image-stages, ring-reuse, depth-write-effective, perf-diag, renderdoc-capture, reflex
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

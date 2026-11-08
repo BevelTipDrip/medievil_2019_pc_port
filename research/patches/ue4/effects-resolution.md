@@ -16,7 +16,7 @@ tests: N-19, N-20, N-21, N-26
 docs: plan-frame-pacing.md#n-19-what-the-fights-slow-frames-are-per-pass-2026-10-29-launched-by-claude-with-the-users-go-t-prof1-fight-burstslog, plan-frame-pacing.md#n-20-the-fights-effects-at-half-resolution-2026-10-29-launched-by-claude-with-the-users-go-t-prof2-translucency-50log, plan-frame-pacing.md#n-21-why-the-death-effects-cost-2-3-ms-2026-10-29-launched-by-claude-with-the-users-go-t-diag1-death-effectslog-shader-dumps-in-usershaderdumps, plan-frame-pacing.md#n-26-effects-resolution-as-a-live-switch-2026-10-30-launched-by-claude-with-the-users-go-t-fx1-live-effectslog-gow3_gpu_profile1, study-live-switches.md#effects-resolution-already-live, fix-inventory.md#7-medievil-specific-ue4-config-eboot-patches-hooks
 depends_on:
 related: live-graphics-options, preshadows-live, deck-preset, gpu-profiler-fixes, upstream-ue4-setres
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

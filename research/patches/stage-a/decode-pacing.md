@@ -17,7 +17,7 @@ docs: impl-decode-pacing.md#what-it-is-for, impl-decode-pacing.md#heap-safety-ar
 depends_on: lineage-draw-pipe, lineage-recorder-fences
 conflicts_with: U5-2
 related: early-frame-eop, E1-deck-drains, deck-preset, L5
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

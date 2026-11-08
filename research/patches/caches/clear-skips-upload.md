@@ -16,7 +16,7 @@ tests: N-11
 docs: fix-inventory.md#10-tried-and-dropped, plan-frame-pacing.md#n-11-render-targets-uploaded-before-being-rendered-into-the-map-oscillations-writer-2026-10-28-launched-by-the-user
 depends_on:
 related: new-images-undefined, C3
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

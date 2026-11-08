@@ -16,7 +16,7 @@ tests:
 docs: plan-linux-deck.md#particle-fix-1-2026-11-05-2110-2128-build-49291f3-particlefix-log-datadeck-particlefix-1log, plan-linux-deck.md#particle-fix-2-the-guard-alone-2026-11-06-build-49291f3-particlefix, study-particle-fixed-step.md#the-change, study-particle-fixed-step.md#the-emitters-per-frame-data-game-thread-code
 depends_on: single-particle-pass
 related: particle-flip-guard
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

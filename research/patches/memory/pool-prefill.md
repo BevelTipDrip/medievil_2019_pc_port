@@ -16,7 +16,7 @@ tests:
 docs: impl-deck-build-sched-pool.md#pool-prefill-and-populate-gow3_pool_prefill_mb-gow3_pool_populate, study-deck-memory-budget.md#25-guest-memory-first-touches-and-recommits-the-ram-item-that-pays-code-log, plan-linux-deck.md#round-1-results-gpu-clock-auto-2026-11-05-ini-logging-67-uncapped-launched-by-the-user
 depends_on:
 related: R3, D4, pool-kept-pages, A1
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

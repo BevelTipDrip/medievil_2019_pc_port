@@ -17,7 +17,7 @@ docs: fix-inventory.md#10-tried-and-dropped, plan-stage-b-split.md#t-f2-which-ba
 depends_on: precise-tick
 conflicts_with: vblank-sync, newest-frame
 related: precise-limiter, reflex, inline-present, present-side-limiter, upstream-vsync-limit-rule, frame-limit-parse
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -18,7 +18,7 @@ depends_on: lineage-draw-pipe, upstream-record-data-fix
 conflicts_with:
 supersedes:
 related: sampler-memo, record-skip-identical, perf-patches-ini, lineage-toggle-file
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

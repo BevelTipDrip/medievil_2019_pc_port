@@ -16,7 +16,7 @@ tests: T-SF1, T-D1b, T-HZ4f, T-HZ4g, T-F1, N-8, Native run 3
 docs: fix-inventory.md#9-diagnostics-worth-taking, plan-frame-pacing.md#t-sf1-what-the-slow-frames-do-2026-10-19-1735-1744-launched-by-claude-with-the-users-go-build-7d3d288-log-datat-sf1-slow-frameslog, plan-stage-b-split.md#t-hz4f--t-hz4g--t-hz4h-where-the-remaining-spikes-come-from-2026-10-20-2157-2225-launched-by-claude-with-the-users-go, plan-stage-b-split.md#t-f1-what-makes-the-fights-frames-slow-2026-10-25-logs-t-p960-gpu-profile-5-t-p960-slow-frames
 depends_on: frame-stats-lines
 related: sections, async-log-writer, prep-priority, D1, stage-b-core, lean-barriers, perf-diag
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -16,7 +16,7 @@ tests:
 docs: impl-deck-cpu-bundle.md#g-static-gpu-library-on-linux-gow3_static_gpu-98dca62, plan-linux-deck.md#static-vs-shared-gpu-library-2026-11-06-build-d2f145f-shared2-log-datadeck-shared-1log
 depends_on:
 related: D1-tls, S1-v3-build, thinlto, pgo-build, linux-build-lab
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

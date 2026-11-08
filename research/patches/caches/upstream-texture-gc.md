@@ -16,7 +16,7 @@ tests: T-C0
 docs: fix-inventory.md#from-upstream-medievil-133-138-bc160201983-and-contributors-merged-into-lab, plan-upstream-merge.md#1-where-upstream-and-lab-overlap, plan-frame-pacing.md#t-c0-result-2026-10-18-1510-1515-the-cache-re-creates-and-re-uploads-20-images-per-frame, plan-frame-pacing.md#lead-c-texture-cache-churn-second
 depends_on:
 related: sampler-memo, park-unmapped, driver-memory-off-stage-b, lineage-deferred-readbacks, V4, C3
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

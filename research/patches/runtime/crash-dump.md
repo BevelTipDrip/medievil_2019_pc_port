@@ -16,7 +16,7 @@ tests: T-Z4, T-V120f
 docs: fix-inventory.md#9-diagnostics-worth-taking, pr-crash-dump.md#how, plan-roadmap.md#progress, plan-baseline-issues.md#run-i2-profile-4k-2-2026-10-18-0347-0352-c1-again-first-profile, plan-baseline-issues.md#s1-silent-exit-with-code-5-at-startup-2026-10-18-1253-once
 depends_on:
 related: upstream-safe-gpu-mode
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

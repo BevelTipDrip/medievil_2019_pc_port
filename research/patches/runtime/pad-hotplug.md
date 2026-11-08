@@ -16,7 +16,7 @@ tests:
 docs: study-forks-survey.md#9-worth-porting-shortlist, study-forks-survey.md#22-other-porticus-branches
 depends_on:
 related: upstream-audio-input, cursor-hide
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

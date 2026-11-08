@@ -16,7 +16,7 @@ tests:
 docs: plan-linux-deck.md#u2-ab-early-frame-eop-and-the-submission-gates-2026-11-04, impl-decode-pacing.md#3-with-gow3_early_frame_eop, study-eop-wait-site.md#answer, study-eop-wait-site.md#33-flush-then-rewind-intra-frame-reuse
 depends_on: lineage-draw-pipe
 related: decode-pacing, E1-deck-drains, U5, U5-2, deck-preset
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

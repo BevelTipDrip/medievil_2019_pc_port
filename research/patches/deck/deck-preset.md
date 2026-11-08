@@ -16,7 +16,7 @@ tests:
 docs: plan-linux-deck.md#a-flat-60-on-the-deck-the-user-2026-11-05, plan-linux-deck.md#deck-optimized-preset-2026-11-05-launcher-built-not-run, plan-linux-deck.md#thread-nice-live-2026-11-06-build-5ab1a24-nicelive-logs-datadeck-nicelive-1log-datadeck-nicelive-1400log
 depends_on: early-frame-eop, decode-pacing, drain-hybrid, T2, R1-region-index, A1, A2, A3, particle-flip-guard, thread-nice, single-particle-pass
 related: U2, 4k-memory, pool-kept-pages, M1, perf-patches-ini, presentation-settings, vsync-control, extra-env-file, prep-workers-2, core-sched, S1-v3-build, nav-purge-nofence, stage-b-spin
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

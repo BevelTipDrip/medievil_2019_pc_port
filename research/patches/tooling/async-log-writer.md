@@ -16,7 +16,7 @@ tests: N-8
 docs: plan-frame-pacing.md#n-8-panning-hitches-the-stream-class-table-and-logging-cost-2026-10-28-launched-by-the-user, fix-inventory.md#9-diagnostics-worth-taking
 depends_on:
 related: slow-frames, perf-diag, stream-class-table, sections, frame-stats-lines, flip-trace, ring-reuse
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -16,7 +16,7 @@ tests: N-25
 docs: plan-linux-deck.md#spin-compact-texture-memo-and-the-task-split-2026-11-04, plan-work-queue.md#found-on-the-way-2026-10-30, plan-frame-pacing.md#n-25-preshadows-as-a-live-switch-2026-10-30-launched-by-claude-with-the-users-go-t-park3-clean-preshadows-offlog-t-pre2-live-switchlog
 depends_on:
 related: inline-present, reflex, precise-limiter, one-clock
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

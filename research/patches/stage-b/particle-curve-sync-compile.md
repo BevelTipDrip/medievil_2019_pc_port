@@ -13,7 +13,7 @@ files: gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp
 symbols: GetGraphicsPipeline, GetProgram, AsyncCompilation, TryPreparedPipeline
 docs: study-forks-survey.md#9-worth-porting-shortlist, study-forks-survey.md#unverified--open
 related: lineage-draw-preparation, particle-bounds, particle-flip-guard, single-particle-pass, publish-graphics-empty
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

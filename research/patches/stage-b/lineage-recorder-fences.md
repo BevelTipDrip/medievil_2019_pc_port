@@ -14,7 +14,7 @@ switches: toggle:RecorderFences
 docs: fix-inventory.md#1-gpu-sync-barriers-and-render-pass-breaks, gpu-threading-reference.md#2-invariants-must-hold-after-every-change, study-deck-patch-audit.md#11-draw-pipeline-and-helper-threads-inherited-lineage-docsparallel_gpumd-measured-on-the-base-ports-game-not-medievil, docs/parallel_gpu.md
 depends_on: lineage-draw-pipe
 related: E1, W3, W3b, async-fences, gate2-ordered-fences, U5-2, early-frame-eop, decode-pacing, recorder-lean, signal-sleep, W2, B1
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

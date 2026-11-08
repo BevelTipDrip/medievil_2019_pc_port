@@ -16,7 +16,7 @@ tests:
 docs: plan-linux-deck.md#hilltop-mausoleum-lighting-pool-pages-leaked-on-linux-2026-11-0607-fixed-7246f88--f74e1a1, plan-baseline-issues.md#v1-shadows-sometimes-drawn-as-a-big-box-the-user-2026-10-18, fix-inventory.md#9-diagnostics-worth-taking
 depends_on:
 related: mausoleum-diagnostics, pool-kept-pages, mausoleum-toggle-bisect, V4, upstream-frame-analyzer-fix, upstream-screenshots, extra-env-file
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

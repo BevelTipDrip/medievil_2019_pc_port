@@ -16,7 +16,7 @@ tests:
 docs: study-deck-rescore-rejected.md#c-analysed-gated-or-ranked-never-built, study-fork-spacepepperoni.md#13-gpu-thread-synchronisation-memory-shadps4-video-core, study-frame-cost-2026-10-29.md#4-dropped-ideas-do-not-re-propose, impl-stage-a-decode.md#2-why-stage-b-waits-1-ms-a-frame-on-stage-a, plan-linux-deck.md#e1-and-the-fix-hit-rates-2026-11-04
 depends_on: lineage-draw-pipe
 related: E1-deck-drains, decode-pacing, drain-hybrid, L5, A3
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

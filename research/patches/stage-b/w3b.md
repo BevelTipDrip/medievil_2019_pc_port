@@ -17,7 +17,7 @@ docs: plan-stage-b-split.md#t-s1c--t-w3-texture-memo-two-way-the-write_data-wait
 depends_on:
 conflicts_with:
 related: W3, lineage-recorder-fences, frames-queued-2
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

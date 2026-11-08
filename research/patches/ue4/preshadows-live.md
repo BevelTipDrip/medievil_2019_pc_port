@@ -16,7 +16,7 @@ tests: N-18, N-25
 docs: plan-frame-pacing.md#n-18-preshadows-off-2026-10-29-launched-by-claude-with-the-users-go-t-pre1-preshadows-offlog-research-datasmi-pre1csv, plan-frame-pacing.md#n-25-preshadows-as-a-live-switch-2026-10-30-launched-by-claude-with-the-users-go-t-park3-clean-preshadows-offlog-t-pre2-live-switchlog, plan-live-switches.md#mechanism-built, fix-inventory.md#7-medievil-specific-ue4-config-eboot-patches-hooks
 depends_on:
 related: live-graphics-options, effects-resolution, park-unmapped, deck-preset, upstream-ue4-setres, single-particle-pass, live-render-scale
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -16,7 +16,7 @@ tests: T-V120, T-V120s
 docs: plan-stage-b-split.md#t-v120-120-hz-tick-vsync-fifo-no-limiter-50-ue4_upscaleperformance-2026-10-23-launched-by-claude-with-the-users-go-f4ffc01-gow3_vblank_hz120-trace-flip-trace-8csv, fix-inventory.md#10-tried-and-dropped
 depends_on:
 related: precise-tick, one-clock, vrr-auto-limits
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

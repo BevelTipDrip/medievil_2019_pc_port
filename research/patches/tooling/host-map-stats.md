@@ -16,7 +16,7 @@ tests: T-H1, T-M1, T-M2
 docs: plan-frame-pacing.md#t-h1-result-2026-10-18-1750-1800-launched-by-claude-with-the-users-go-build-2618b9c-log-datat-h1-hostmaplog--times, plan-stage-b-split.md#t-m1-table-stats-what-the-region-table-costs-2026-10-21-2125-launched-by-claude-with-the-users-go-build-c7e128e--nostats-50-gow3_host_map_stats1-log-datat-m1-table-statslog
 depends_on:
 related: M1, decommit-keep-access, lockfree-region-reads, linux-build-lab
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -16,7 +16,7 @@ tests:
 docs: plan-linux-deck.md#hilltop-mausoleum-lighting-pool-pages-leaked-on-linux-2026-11-0607-fixed-7246f88--f74e1a1
 depends_on:
 related: pool-kept-pages, readback-first-wait, R1-readback, tiny-target-readback, gpu-write-subresources, renderdoc-capture, mausoleum-toggle-bisect, texcache-stats, lineage-deferred-readbacks, new-images-undefined, upstream-frame-analyzer-fix
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

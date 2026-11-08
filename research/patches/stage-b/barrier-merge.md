@@ -13,7 +13,7 @@ symbols: GetBarriers, first_barrier, SkipReadBarriers, ReadCovered
 switches: GOW3_BARRIER_MERGE
 docs: fix-inventory.md#from-upstream-medievil-133-138-bc160201983-and-contributors-merged-into-lab, study-deck-rescore-rejected.md#a-switches-that-already-exist-no-build, study-deck-patch-audit.md#13-barriers-sync-and-readbacks
 related: upstream-barrier-batch-limit, upstream-safe-gpu-mode, lean-barriers, narrow-image-stages, upstream-hitch-work, particle-curve-sync-compile
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

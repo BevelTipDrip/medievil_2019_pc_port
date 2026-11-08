@@ -16,7 +16,7 @@ tests:
 docs: plan-frame-pacing.md#the-launchers-gpu-data-settings-read-2026-10-18-the-user-asked, plan-frame-pacing.md#p0-results-2026-10-18-1122-1138-launched-by-claude-with-the-users-go, plan-linux-deck.md#proton-runs-3-4-2026-11-03-settings-changed-by-the-user-while-exploring
 depends_on:
 related: W2, P2, R1-stale-eop, R1-readback, C1-semaphore-poll, C5, hzb-remap, tiny-target-readback, readback-first-wait, gpu-write-subresources, upstream-texture-gc, D3, uffd
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

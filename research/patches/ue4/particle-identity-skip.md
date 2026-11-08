@@ -16,7 +16,7 @@ tests:
 docs: impl-draw-reduction.md#3-gpu-particle-dt0-copy-skip-not-built, study-frame-cost-2026-10-29.md#8-skip-identity-gpu-particle-sim-draws-dt0-for-2-frames--goal-3, study-deck-rescore-rejected.md#c-analysed-gated-or-ranked-never-built, study-heavy-frame-map.md#2-h3-gpu-particle-double-run
 depends_on:
 related: single-particle-pass, particle-flip-guard, draw-classes
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -16,7 +16,7 @@ tests:
 docs: plan-linux-deck.md#drain-sleep-2026-11-04-appimage-ea8f4c1-fences-off-auto-clocks-log-datadeck-drain-sleep-1log, impl-cpu-waste.md#why-gow3_drain_sleep-lost-607-vs-640-fps-inferred-from-the-code, study-deck-rescore-rejected.md#a-switches-that-already-exist-no-build, study-fork-spacepepperoni.md#13-gpu-thread-synchronisation-memory-shadps4-video-core
 depends_on: lineage-draw-pipe
 related: drain-hybrid, E1-deck-drains
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -16,7 +16,7 @@ tests:
 docs: plan-linux-deck.md#test-settings-by-file-2026-11-03-the-users-request-a15b5cb, study-deck-patch-audit.md#3-test-plan, study-deck-build-optimization.md#1-what-the-build-does-today-code-bin
 depends_on:
 related: deck-preset, perf-patches-ini, presentation-settings, U2, deck-test-tooling
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

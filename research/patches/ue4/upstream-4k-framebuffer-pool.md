@@ -16,7 +16,7 @@ tests: T-R3, T-I1b
 docs: fix-inventory.md#caveats-in-the-evidence, study-boot-resolution.md#framebuffer-pool-per-size
 depends_on:
 related: 4k-memory, I1, upstream-0102-eu-support, pool-kept-pages
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

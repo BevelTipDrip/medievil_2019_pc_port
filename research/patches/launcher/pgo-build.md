@@ -16,7 +16,7 @@ tests: N-29
 docs: study-deck-rescore-rejected.md#c-analysed-gated-or-ranked-never-built, study-deck-build-optimization.md#answer, study-deck-build-optimization.md#33-expected-gain-and-staleness, study-deck-build-optimization.md#7-bolt, study-deck-build-optimization.md#2-flags-one-by-one-for-a-branchy-pointer-chasing-thread-on-zen-2
 depends_on:
 related: thinlto, S1-v3-build, static-gpu-lib
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

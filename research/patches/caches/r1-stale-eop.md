@@ -15,7 +15,7 @@ switches: GOW3_STALE_SKIP_COPY_WAIT
 docs: plan-frame-pacing.md#r1-ab-2026-10-18-a-1146-1153-b-1154-1201-launched-by-claude-with-the-users-go, plan-frame-pacing.md#r1-reverted-performance-degrades-with-new-content-2026-10-18-1440-1510, fix-inventory.md#10-tried-and-dropped, plan-baseline-issues.md#v2-fire--torches-broken-more-box-shadows-the-user-2026-10-18-run-perfdiag-heavy
 depends_on: lineage-deferred-readbacks
 related: W2, P2, R1-readback
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

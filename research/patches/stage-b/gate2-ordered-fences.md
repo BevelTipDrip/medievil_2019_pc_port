@@ -17,7 +17,7 @@ docs: plan-linux-deck.md#gate-2-ab-attempt-2026-11-03-f97479f-reverted-in-ba9590
 depends_on: lineage-recorder-fences
 related: U5-2, U5, E1, async-fences, early-frame-eop
 superseded_by: U5-2
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

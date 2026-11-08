@@ -15,7 +15,7 @@ tests: N-14, N-16
 docs: fix-inventory.md#2-draw-translation-cost-stage-b-per-draw, study-deck-patch-audit.md#11-draw-pipeline-and-helper-threads-inherited-lineage-docsparallel_gpumd-measured-on-the-base-ports-game-not-medievil, docs/parallel_gpu.md
 depends_on: lineage-draw-pipe
 related: ring-reuse, S2, lineage-draw-preparation, D2, U2
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -14,7 +14,7 @@ tests: N-27
 docs: fix-inventory.md#from-upstream-medievil-133-138-bc160201983-and-contributors-merged-into-lab, study-deck-patch-audit.md#13-barriers-sync-and-readbacks
 depends_on: upstream-record-data-fix
 related: barrier-merge, upstream-safe-gpu-mode, lean-barriers, narrow-image-stages, upstream-hitch-work
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

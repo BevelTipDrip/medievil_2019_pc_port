@@ -16,7 +16,7 @@ tests:
 docs: study-deck-rescore-rejected.md#c-analysed-gated-or-ranked-never-built, study-frame-cost-2026-10-29.md#4-dropped-ideas-do-not-re-propose, study-stage-b-native.md#3-candidates, fix-inventory.md#10-tried-and-dropped
 depends_on:
 related: S2, C5, R2-residency-bitmap, stream-class-table, lockfree-region-reads, hot-pages, U2
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

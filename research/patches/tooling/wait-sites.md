@@ -16,7 +16,7 @@ tests: T-W1, T-W2, T-W3
 docs: plan-frame-pacing.md#wait-sites-2026-10-18-1340-gow3_wait_sites1-lab-diagnostic-9f088f1-run-wait-sites, plan-frame-pacing.md#the-panning-stall-is-a-wait-chain-not-work-2026-10-19-pan-1etl--ghidra-no-launch, plan-linux-deck.md#wait-sites-and-per-thread-cpu-2026-11-04-appimage-0771a23-fences-off-auto-clocks-except-the-last-30-s-log-datadeck-waitsites-1log
 depends_on:
 related: fence-stats, early-frame-eop, drain-sleep, hzb-remap, occlusion-queries-off, U5
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

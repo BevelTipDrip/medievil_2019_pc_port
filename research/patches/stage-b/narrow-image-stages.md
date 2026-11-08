@@ -16,7 +16,7 @@ tests: N-3, N-4, N-5, N-16
 docs: fix-inventory.md#1-gpu-sync-barriers-and-render-pass-breaks, plan-frame-pacing.md#n-4-change-1-image-transitions-to-the-reading-shader-stages-2026-10-2728-launched-by-the-user, plan-frame-pacing.md#n-5-same-spot-ab-of-change-1-and-the-pcie-split-2026-10-28-launched-by-the-user-research-datangfxngfx-ab-1, plan-frame-pacing.md#n-16-research-where-heavy-frames-lose-time-constant-ring-stamp-fix-2026-10-29, study-frame-cost-2026-10-29.md#gpu-work-goal-1, plan-linux-deck.md#baseline-1-and-live-abs-2026-11-04-appimage-a863482-67-helpers-auto-no-dedicated-core-auto-clocks-mailbox-log-datadeck-baseline-1-ablog
 depends_on:
 related: lean-barriers, depth-write-effective, M1, ring-reuse
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

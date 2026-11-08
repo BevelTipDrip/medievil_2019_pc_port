@@ -16,7 +16,7 @@ tests: Launch 15
 docs: impl-stage-b-per-draw-2.md#r1-region-cache-index-ccfa08a-gow3_region_index1-second-word-524288-off, plan-linux-deck.md#per-draw-cuts-r1--r2--t1--t2-on-the-deck-2026-11-05-appimage-c71e87c-drain-hybrid-on-gow3_texset_wide1-gow3_region_index1-frame-stats-without-sections-log-datadeck-perdraw-1log, plan-linux-deck.md#launch-15-results-2026-11-06-2050-2128-build-2a6efea-signal-a-new-arena-with-a-guaranteed-heavy-view-the-old-spot-cannot-be-found-under-a-cap-gpu-auto-log-datadeck-launch15log-traces-research-datadeckdeck-cap60-signalcap60-cutsuncap-cuts-
 depends_on: L2, lockfree-region-reads
 related: A1, deck-preset, R2-residency-bitmap, T1, T2
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -18,7 +18,7 @@ depends_on:
 conflicts_with:
 supersedes:
 related: perf-patches-ini, hzb-remap, game-update-0102
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -16,7 +16,7 @@ tests:
 docs: study-frame-cost-2026-10-29.md#4-dropped-ideas-do-not-re-propose, study-deck-rescore-rejected.md#c-analysed-gated-or-ranked-never-built, study-deck-rescore-rejected.md#a-switches-that-already-exist-no-build, fix-inventory.md#10-tried-and-dropped
 depends_on:
 related: frames-queued-2, recorder-lean, compute-drains-pipelined, obtainbuffer-memo, narrow-image-stages, effects-resolution, ring-reuse
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

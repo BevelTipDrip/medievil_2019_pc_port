@@ -16,7 +16,7 @@ tests: Launch 14
 docs: plan-linux-deck.md#clock-push-pull-at-gpu-auto-2026-11-06-the-users-model-tooling-5ead842-not-run, plan-linux-deck.md#launch-14-results-2026-11-06-1945-2022-build-5ead842-trace-2-helpers-logging-ini-67-uncapped-log-datadeck-pushpull-1log-traces-research-datadeckdeck-pushpull-auto1fixed1100capsweep-csv, plan-linux-deck.md#deck-test-tooling-2026-11-04-researchtoolsdecksh--deck_summarypy, plan-linux-deck.md#cpu-cuts-at-a-60-cap-2026-11-06-tooling-7379aa0-signal-waits-2a6efea-not-run
 depends_on: lineage-toggle-file, flip-trace
 related: precise-limiter, reflex, upstream-vsync-limit-rule, frames-queued-2, deck-preset, prep-workers-2, signal-sleep
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

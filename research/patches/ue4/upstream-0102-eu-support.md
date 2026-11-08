@@ -16,7 +16,7 @@ tests:
 docs: fix-inventory.md#from-upstream-medievil-133-138-bc160201983-and-contributors-merged-into-lab, plan-0102.md#the-eboot, study-boot-resolution.md#5-other-versions
 depends_on:
 related: game-update-0102, upstream-4k-framebuffer-pool, upstream-ue4-setres, I1, upstream-launcher-features
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

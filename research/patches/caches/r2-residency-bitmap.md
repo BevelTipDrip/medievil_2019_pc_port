@@ -15,7 +15,7 @@ switches: toggle2:ResidencyBitmap
 docs: impl-stage-b-per-draw-2.md#r2-residency-bitmap-1f384e5-second-word-65536-default-on, plan-linux-deck.md#per-draw-cuts-r1--r2--t1--t2-on-the-deck-2026-11-05-appimage-c71e87c-drain-hybrid-on-gow3_texset_wide1-gow3_region_index1-frame-stats-without-sections-log-datadeck-perdraw-1log
 depends_on: driver-memory-off-stage-b
 related: T1, T2, R1-region-index, S2, R2
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

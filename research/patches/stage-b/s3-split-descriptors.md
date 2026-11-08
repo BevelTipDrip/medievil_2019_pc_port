@@ -16,7 +16,7 @@ tests:
 docs: study-stage-b-native.md#inside-stage-b-no-game-hooks, study-stage-b-native.md#4-ranking, study-stage-b-per-draw.md#4-ranked-cuts, study-deck-rescore-rejected.md#c-analysed-gated-or-ranked-never-built
 depends_on: lineage-texture-set-memo
 related: bulk-descriptor-copy, S1-delta-draw, sampler-memo, texset-compact
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

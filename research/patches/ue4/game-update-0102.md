@@ -16,7 +16,7 @@ tests: T-0102-1
 docs: plan-0102.md#the-ports-0100-only-sites-mapped, plan-0102.md#first-launch-by-the-user-2026-10-31-1430-launcher-userlast_runlog, plan-0102.md#t-0102-1-2026-10-31-1431-1453-launched-by-claude-with-the-users-go-build-3cf6d69--nostats-log-datat-0102-1log, fix-inventory.md#7-medievil-specific-ue4-config-eboot-patches-hooks, fix-inventory.md#caveats-in-the-evidence
 depends_on: upstream-0102-eu-support
 related: hzb-remap, movie-suspend, I1, live-graphics-options, effects-resolution, preshadows-live, single-particle-pass, particle-flip-guard, finer-occlusion-culling, engine-cap-cvars
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

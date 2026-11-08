@@ -16,7 +16,7 @@ tests:
 docs: plan-gpu-threading.md#candidates-ranked-claimed-gains-are-bloodbornes-own-numbers, study-deck-rescore-rejected.md#c-analysed-gated-or-ranked-never-built, study-deck-rescore-rejected.md#the-yardstick
 depends_on:
 related: lineage-draw-pipe, lineage-recorder-fences, recorder-lean, pool-small-copies, record-skip-identical, lineage-dropped-stage-b, C1-semaphore-poll
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

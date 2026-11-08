@@ -16,7 +16,7 @@ tests:
 docs: impl-decode-pacing.md#display-buffer-label-waits-spacepepperonimedievil_ps4_linux-6ef7566-ported-2026-11-04, impl-decode-pacing.md#onsubmit-on-stage-b-gow3_onsubmit_stage_b-ported-2026-11-04, impl-decode-pacing.md#thread-safety-argument, plan-linux-deck.md#e1-and-the-fix-hit-rates-2026-11-04, study-deck-patch-audit.md#32-restart-only-one-launch-each-against-l1s-a-windows-in-the-same-spot
 depends_on: lineage-draw-pipe
 related: decode-pacing, early-frame-eop, compute-drains-pipelined, upstream-texture-gc, lineage-draw-preparation, lineage-texture-set-memo
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

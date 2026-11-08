@@ -16,7 +16,7 @@ tests:
 docs: plan-work-queue.md#the-users-quality-of-life-list-2026-11-03-after-the-v200-release, study-upstream-commits.md#semantic-hazards-in-files-that-auto-merge-mt
 depends_on:
 related: 4k-memory, upstream-launcher-features, cursor-hide
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

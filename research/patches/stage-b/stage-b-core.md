@@ -18,7 +18,7 @@ depends_on: lineage-draw-pipe
 conflicts_with:
 supersedes:
 related: core-sched, thread-nice, prep-workers-2, prep-priority, deck-cpu-clock-split, stage-b-spin, recorder-lean
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

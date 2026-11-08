@@ -16,7 +16,7 @@ tests: N-28
 docs: study-stage-b-native.md#inside-stage-b-no-game-hooks, study-frame-cost-2026-10-29.md#3-sampler-handle-cache-in-the-textureset-memo-entry-qw-then-s1-delta-draw--goal-3, study-stage-b-per-draw.md#4-ranked-cuts, study-deck-rescore-rejected.md#c-analysed-gated-or-ranked-never-built
 depends_on: lineage-texture-set-memo, sampler-memo
 related: record-skip-identical, S3-split-descriptors, bulk-descriptor-copy, own-target-texsets, stage-b-counters
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

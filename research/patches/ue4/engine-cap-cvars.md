@@ -16,7 +16,7 @@ tests: T-L0, T-Z4, T-Z4c, T-Z4d, T-F13
 docs: plan-stage-b-split.md#t-l0-rhisyncinterval0-2026-10-21-0128-0133-launched-by-claude-with-the-users-go-build-5231983-log-datat-l0-syncinterval0log, plan-stage-b-split.md#t-z2-t-z4b-dbuffer-decals-and-the-forced-prepass-2026-10-21-0200-0314-launched-by-claude-with-the-users-go, fix-inventory.md#10-tried-and-dropped, plan-linux-deck.md#deck-optimized-preset-2026-11-05-launcher-built-not-run
 depends_on:
 related: game-update-0102, precise-limiter, reflex, vsync-control, deck-preset, ue4-cvars-tool
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

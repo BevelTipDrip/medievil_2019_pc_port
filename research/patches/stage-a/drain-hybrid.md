@@ -16,7 +16,7 @@ tests: Launch 15
 docs: impl-cpu-waste.md#the-hybrid-wait-gow3_drain_hybrid1, impl-cpu-waste.md#unit-test, plan-linux-deck.md#stage-a-hybrid-drain-wait-2026-11-05-appimage-d6029de-gow3_drain_hybrid1-frame-stats-without-sections-log-datadeck-drain-hybrid-1log, plan-linux-deck.md#launch-15-results-2026-11-06-2050-2128-build-2a6efea-signal-a-new-arena-with-a-guaranteed-heavy-view-the-old-spot-cannot-be-found-under-a-cap-gpu-auto-log-datadeck-launch15log-traces-research-datadeckdeck-cap60-signalcap60-cutsuncap-cuts-
 depends_on: lineage-draw-pipe
 related: drain-sleep, drain-wake-ahead-6, L5, cacheline-groups, signal-sleep, core-sched, deck-preset, A3
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

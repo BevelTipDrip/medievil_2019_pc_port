@@ -16,7 +16,7 @@ tests: T-D3b, T-T1, N-13
 docs: fix-inventory.md#3-memory-sync-uploads-and-readbacks, plan-stage-b-split.md#t-t1-gpu-write-twins-2026-10-19-2310-2316-launched-by-claude-with-the-users-go-build-2a40666-log-datat-t1-twinslog, plan-frame-pacing.md#n-13-the-map-oscillations-waits-2026-10-28-launched-by-the-user--by-claude-at-the-users-request
 depends_on: D3
 related: fault-page-download, D2, D1
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

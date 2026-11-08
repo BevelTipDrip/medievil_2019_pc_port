@@ -16,7 +16,7 @@ tests:
 docs: fix-inventory.md#from-upstream-medievil-133-138-bc160201983-and-contributors-merged-into-lab, plan-linux-deck.md#11-what-exists-code, plan-linux-deck.md#13-stale-or-dead-pieces-code, plan-linux-deck.md#14-known-linux-problems-on-lab, plan-linux-deck.md#15-what-was-tested-by-whom
 depends_on:
 related: linux-build-lab, static-gpu-lib, S1-v3-build, thinlto, avplayer-join-hang, upstream-screenshots, deck-preset, extra-env-file, D1-tls
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

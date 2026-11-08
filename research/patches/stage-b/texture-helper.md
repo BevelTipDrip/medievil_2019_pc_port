@@ -16,7 +16,7 @@ tests:
 docs: study-deck-rescore-rejected.md#a-switches-that-already-exist-no-build, docs/parallel_gpu.md, plan-baseline-issues.md#i2-frame-times-oscillating-50--120-fps-gpu-not-saturated
 depends_on:
 related: lineage-texture-set-memo, texset-region-stamps, T1, T2, sampler-memo, lineage-draw-pipe, stage-b-core
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

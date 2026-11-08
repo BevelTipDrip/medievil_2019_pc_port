@@ -16,7 +16,7 @@ tests:
 docs: impl-draw-reduction.md#1-finer-occlusion-culling-patchesmedievilxml, study-ue4-draw-reduction.md#4-full-resolution-hzb, plan-linux-deck.md#finer-occlusion-culling-on-the-deck-2026-11-04-appimage-a4250a2-baseline-settings--gow3_hzb_full_size1-mailbox-log-datadeck-hzb-1log, plan-linux-deck.md#decisions-after-the-culling-run-the-user-2026-11-04
 depends_on: hzb-remap
 related: I1, live-render-scale, mausoleum-toggle-bisect, game-update-0102
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

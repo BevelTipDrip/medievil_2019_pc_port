@@ -16,7 +16,7 @@ tests: Native run 1
 docs: plan-linux-deck.md#1-current-state-of-linux, plan-linux-deck.md#native-run-1-2026-11-03-appimage-of-8072f54-gow3_frame_stats1-log-datadeck-native-1log-partial, plan-linux-deck.md#branch-deck-lab-2026-11-03-the-user
 depends_on:
 related: upstream-linux-build, host-map-stats, D2, decommit-keep-access, static-gpu-lib
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

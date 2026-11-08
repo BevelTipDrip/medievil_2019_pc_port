@@ -16,7 +16,7 @@ tests: R4a
 docs: plan-frame-pacing.md#r4a-result-2026-10-18-1405-1415-launched-by-claude-with-the-users-go-rejected, fix-inventory.md#10-tried-and-dropped
 depends_on:
 related: hzb-remap, occlusion-queries-off, frames-queued-2, ue4-cvars-tool
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

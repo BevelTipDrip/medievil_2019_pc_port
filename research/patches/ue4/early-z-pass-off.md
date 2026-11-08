@@ -17,7 +17,7 @@ tests: T-Z1
 docs: plan-stage-b-split.md#t-z1-depth-prepass-off-2026-10-21-0058-0122-launched-by-claude-with-the-users-go-build-8acd280-logs-datat-z1-earlyz-offlog-datat-z1-baselinelog, plan-stage-b-split.md#t-z2-t-z4b-dbuffer-decals-and-the-forced-prepass-2026-10-21-0200-0314-launched-by-claude-with-the-users-go, fix-inventory.md#10-tried-and-dropped
 depends_on:
 related: no-decal-prepass, ue4-cvars-tool
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -16,7 +16,7 @@ tests: Native run 7, Native run 8
 docs: plan-linux-deck.md#native-run-7-gate-2-stats-2026-11-03-appimage-3efee7a-gow3_frame_stats1-by-file-log-datadeck-native-7-crashlog, plan-linux-deck.md#native-run-8-gate-2-in-the-graveyard-2026-11-03-appimage-aec1592-67-log-datadeck-native-8log
 depends_on:
 related: A1, pool-kept-pages, D4, lockfree-region-reads, linux-build-lab
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 
@@ -59,7 +59,7 @@ recommits pool pages several times a frame, so a copy thread could read an unmap
 
 ## History and pitfalls
 
-- **Fixed `a4fc572` (2026-11-07, LANDMINES item 10):** the lock-free `runtime_memory_region` could say "mapped" and a
+- **Fix built `a4fc572` (2026-11-07, LANDMINES item 10), not run:** the lock-free `runtime_memory_region` could say "mapped" and a
   decommit land before the locked `runtime_memory_read_backing`; the fall-through `memcpy` from the guest address
   (PROT_NONE) was the signal 11 of native runs 5 and 7 and nav-1 (libc memcpy in `CopySparseMemory` at a 1 MiB
   boundary). Linux now never reads through the guest mapping: one more lookup, then zeros.

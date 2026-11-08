@@ -14,7 +14,7 @@ symbols: ImageReleaser, DrainImageReleases, UniqueImage::Destroy, ResidencyPool,
 switches: GOW3_IMAGE_RELEASE_THREAD, GOW3_RESIDENCY_CHUNK_MB
 docs: fix-inventory.md#2-draw-translation-cost-stage-b-per-draw, plan-frame-pacing.md#cpu-oscillation-waits-and-hitches-trace-cpu-osc-1-2026-10-25, plan-frame-pacing.md#stage-bs-gpu-memory-calls-moved-off-it-2026-10-26-launched-by-claude-with-the-users-go
 related: R2-residency-bitmap, U2, park-unmapped, upstream-texture-gc
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

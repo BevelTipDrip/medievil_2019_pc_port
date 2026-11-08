@@ -16,7 +16,7 @@ tests: T-D1b, N-3, N-11, N-12, T-F1, T-F2, N-23
 docs: fix-inventory.md#9-diagnostics-worth-taking, plan-frame-pacing.md#t-d1b-the-downloads-are-guest-write-faults-2026-10-19-1749-1753-launched-by-claude-with-the-users-go-build-057afc6-log-datat-d1b-unmap-discardlog, plan-frame-pacing.md#n-3-where-the-drains-come-from-by-code-site-2026-10-27-launched-by-the-user-gow3_perf_diag1-log-datat-b1-barrier-siteslog, plan-frame-pacing.md#n-12-why-the-maps-bone-page-counts-as-gpu-written-2026-10-28-launched-by-the-user-t-map1-gpu-writerlog-gow3_perf_diag1, plan-stage-b-split.md#t-f2-which-barriers-break-the-passes-log-t-f2-barrier-breaks-trace-33
 depends_on:
 related: D1, B1, W2, lean-barriers, narrow-image-stages, fault-page-download, gpu-write-twins, park-unmapped, async-log-writer, micro-mip-targets, ring-reuse, depth-write-effective, texcache-stats
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -17,7 +17,7 @@ docs: study-deck-rescore-rejected.md#a-switches-that-already-exist-no-build, stu
 depends_on:
 conflicts_with: E1, W3
 related: lineage-recorder-fences, pool-small-copies, U5-2, gate2-ordered-fences, early-frame-eop, decode-pacing
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -16,7 +16,7 @@ tests:
 docs: impl-live-render-scale.md#how-it-works, impl-live-render-scale.md#limits, impl-live-render-scale.md#what-follows-a-live-change-what-stays-as-started, plan-linux-deck.md#spin-compact-texture-memo-and-the-task-split-2026-11-04, plan-live-switches.md#done
 depends_on: live-graphics-options
 related: finer-occlusion-culling, effects-resolution, 4k-memory, upstream-ue4-setres, I1, park-unmapped, deck-preset, launcher-graphics-page
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

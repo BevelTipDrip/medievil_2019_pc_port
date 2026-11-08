@@ -16,7 +16,7 @@ tests:
 docs: fix-inventory.md#from-upstream-medievil-133-138-bc160201983-and-contributors-merged-into-lab, study-wwise-stereo-mix.md#answer
 depends_on:
 related: pad-hotplug
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -16,7 +16,7 @@ tests: N-23, N-24
 docs: fix-inventory.md#3-memory-sync-uploads-and-readbacks, plan-frame-pacing.md#n-24-targets-a-guest-unmap-frees-are-parked-for-reuse-2026-10-30-launched-by-claude-with-the-users-go-t-park1-checklog-t-park2-cleanlog, plan-frame-pacing.md#n-23-the-view-switch-spikes-after-the-hzb-fix-2026-10-30-launched-by-claude-with-the-users-go-t-hzb5-switch-waitslog-t-hzb6-long-waitslog-t-hzb7-switch-profilelog
 depends_on: C3
 related: new-images-undefined, pool-kept-pages, preshadows-live, upstream-texture-gc, texcache-stats
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

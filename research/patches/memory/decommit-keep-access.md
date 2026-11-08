@@ -16,7 +16,7 @@ tests: T-M1, T-M2, T-M3
 docs: fix-inventory.md#4-runtime-loader-hle-guest-memory, plan-stage-b-split.md#t-m1-table-stats-what-the-region-table-costs-2026-10-21-2125-launched-by-claude-with-the-users-go-build-c7e128e--nostats-50-gow3_host_map_stats1-log-datat-m1-table-statslog
 depends_on: M1
 related: L2, lockfree-region-reads, perf-patches-ini, linux-build-lab
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

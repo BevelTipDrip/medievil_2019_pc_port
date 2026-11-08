@@ -15,7 +15,7 @@ tests: N-27
 docs: fix-inventory.md#from-upstream-medievil-133-138-bc160201983-and-contributors-merged-into-lab, plan-upstream-merge.md#1-where-upstream-and-lab-overlap, plan-upstream-merge.md#2-the-five-conflicts-and-how-to-resolve-them, plan-work-queue.md#pending-fixes-research-2026-10-29-ranked-there-state-now
 depends_on: lineage-draw-pipe
 related: L5, upstream-barrier-batch-limit, bulk-descriptor-copy, U2, D2
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

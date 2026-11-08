@@ -14,7 +14,7 @@ symbols: Sampler::Sampler, force_aniso, trilinear_texture, anisotropy_enable, ma
 switches: GOW3_FORCE_ANISO
 docs: fix-inventory.md#5-correctness-and-stability, plan-linux-deck.md#round-1-results-gpu-clock-auto-2026-11-05-ini-logging-67-uncapped-launched-by-the-user, study-deck-patch-audit.md#short-answer
 related: sampler-memo, live-graphics-options, deck-preset
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

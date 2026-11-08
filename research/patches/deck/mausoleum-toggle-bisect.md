@@ -16,7 +16,7 @@ tests:
 docs: plan-linux-deck.md#hilltop-mausoleum-lighting-pool-pages-leaked-on-linux-2026-11-0607-fixed-7246f88--f74e1a1
 depends_on:
 related: pool-kept-pages, M1, A2, deck-preset, finer-occlusion-culling, single-particle-pass, particle-flip-guard, 4k-memory, new-images-undefined, C3, tiny-target-readback, readback-first-wait, gpu-write-subresources, texcache-stats, mausoleum-diagnostics, renderdoc-capture
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

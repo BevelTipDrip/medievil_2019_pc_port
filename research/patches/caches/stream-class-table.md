@@ -15,7 +15,7 @@ tests: N-8
 docs: fix-inventory.md#2-draw-translation-cost-stage-b-per-draw, plan-frame-pacing.md#n-8-panning-hitches-the-stream-class-table-and-logging-cost-2026-10-28-launched-by-the-user
 depends_on: S2
 related: async-log-writer, sections, ring-reuse, narrow-image-stages
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

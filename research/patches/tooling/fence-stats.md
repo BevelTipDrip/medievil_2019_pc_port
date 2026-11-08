@@ -16,7 +16,7 @@ tests: Native run 7, Native run 8, Native run 9
 docs: study-fence-waits.md#5-instrumentation-plan-stats-only, plan-linux-deck.md#native-run-7-gate-2-stats-2026-11-03-appimage-3efee7a-gow3_frame_stats1-by-file-log-datadeck-native-7-crashlog, plan-linux-deck.md#native-run-8-gate-2-in-the-graveyard-2026-11-03-appimage-aec1592-67-log-datadeck-native-8log, plan-linux-deck.md#native-run-9-fence-lag-2026-11-03-appimage-579c9d2-67-log-datadeck-native-9log
 depends_on: frame-stats-lines
 related: U5, U5-2, gate2-ordered-fences, wait-sites, early-frame-eop, uffd, copy-thread-backing-view, E1
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

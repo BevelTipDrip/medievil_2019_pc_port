@@ -15,7 +15,7 @@ switches: GOW3_FRAMES_AHEAD
 tests: T-W1, T-Q2, N-15, N-25
 docs: plan-frame-pacing.md#gpu-wait-sites-2026-10-18-1420-gow3_perf_diag1-current-build-without-r4a-run-perfdiag-heavy, plan-stage-b-split.md#t-w1-frames-queued-2-2026-10-19-2112-2116-launched-by-claude-with-the-users-go-build-3b30fe9-log-datat-w1-frames-queuedlog, plan-stage-b-split.md#t-s5--t-q2-the-remaining-spikes-frames-queued-2-2026-10-21-2210-2222-launched-by-claude-with-the-users-go-50-slow-frames--sections-logs-datat-s5-spikeslog-datat-q2-frames-queued-2log, plan-frame-pacing.md#n-25-preshadows-as-a-live-switch-2026-10-30-launched-by-claude-with-the-users-go-t-park3-clean-preshadows-offlog-t-pre2-live-switchlog, study-deck-rescore-rejected.md#a-switches-that-already-exist-no-build, plan-linux-deck.md#clock-push-pull-at-gpu-auto-2026-11-06-the-users-model-tooling-5ead842-not-run, study-eop-wait-site.md#4-consequences-for-the-hybrid-u5, fix-inventory.md#10-tried-and-dropped
 related: early-frame-eop, decode-pacing, U5, U5-2, lineage-draw-pipe, reflex, deck-preset
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -18,7 +18,7 @@ depends_on: upstream-texture-gc
 conflicts_with:
 supersedes:
 related: bulk-descriptor-copy, force-aniso, lineage-texture-set-memo, texture-helper
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -16,7 +16,7 @@ tests: N-27
 docs: fix-inventory.md#from-upstream-medievil-133-138-bc160201983-and-contributors-merged-into-lab, plan-work-queue.md#the-users-order-2026-10-30, plan-frame-pacing.md#n-27-single-frame-stalls-and-the-fight-dips-measured-per-frame-2026-10-30-merge-branch-merge-138-launched-by-claude-with-the-users-go-t-m138-flip-1-t-m138-flip-2-host-off-t-lab-flip-1-t-m138-stall-1--wpr-stall-1etl
 depends_on:
 related: barrier-merge, upstream-barrier-batch-limit, upstream-texture-gc, driver-memory-off-stage-b, crash-dump
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

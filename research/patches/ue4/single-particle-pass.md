@@ -16,7 +16,7 @@ tests: T-H3b, T-0102-1, T-0102-2, T-0102-3, T-0102-4
 docs: plan-stage-b-split.md#t-h3b-one-gpu-particle-pass-2026-10-21-2310-rgpuparticlefixdeltaseconds0-4k-frame-stats-log-datat-h3b-particles-fixdelta0log, plan-0102.md#t-0102-4-2026-11-01-1955-launched-by-claude-with-the-users-go-build-723a893-log-datat-0102-4log, plan-linux-deck.md#single-gpu-particle-pass-live-2026-11-05-d20f010-built-not-run, plan-linux-deck.md#particle-1-results-2026-11-05-1946-build-d20f010-test1105-log-datadeck-particle-1log, study-particle-fixed-step.md#answer, study-heavy-frame-map.md#2-h3-gpu-particle-double-run
 depends_on: particle-flip-guard
 related: particle-single-fixed, particle-identity-skip, deck-preset, perf-patches-ini, live-graphics-options, draw-classes, lineage-toggle-file, mausoleum-toggle-bisect
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

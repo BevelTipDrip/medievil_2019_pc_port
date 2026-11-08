@@ -16,7 +16,7 @@ tests: T-S3, N-30
 docs: study-frame-cost-2026-10-29.md#2-bulk-descriptor-copy-per-push-bloodborne-03-port-plus-a-single-guard--goal-3, study-stage-b-per-draw.md#4-ranked-cuts, study-stage-b-native.md#2-hot-patterns-and-redundancy-measured, study-deck-rescore-rejected.md#c-analysed-gated-or-ranked-never-built
 depends_on: bulk-descriptor-copy
 related: S1-delta-draw, recorder-lean, parallel-recording, upstream-record-data-fix
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

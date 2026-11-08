@@ -16,7 +16,7 @@ tests: T-R3
 docs: fix-inventory.md#7-medievil-specific-ue4-config-eboot-patches-hooks, fix-inventory.md#caveats-in-the-evidence, plan-frame-pacing.md#panning-stall-anatomy-2026-10-19-pan-1etl-no-launch, study-live-switches.md#found-on-the-way
 depends_on: upstream-4k-framebuffer-pool
 related: I1, pool-kept-pages, perf-patches-ini, mausoleum-toggle-bisect, deck-preset
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

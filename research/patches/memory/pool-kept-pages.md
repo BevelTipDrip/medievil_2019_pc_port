@@ -16,7 +16,7 @@ tests: Launch 15
 docs: plan-linux-deck.md#hilltop-mausoleum-lighting-pool-pages-leaked-on-linux-2026-11-0607-fixed-7246f88--f74e1a1
 depends_on:
 related: M1
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

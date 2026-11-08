@@ -16,7 +16,7 @@ tests:
 docs: impl-deck-cpu-bundle.md#d1-static-tls-for-the-gpu-library, study-deck-rescore-rejected.md#d-linux-only-items-from-the-spacepepperoni-review-verdict-adopt-not-ported
 depends_on:
 related: static-gpu-lib, sampler-memo
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -17,7 +17,7 @@ docs: plan-stage-b-split.md#t-hz1-ue4s-hzb-occlusion-2026-10-20-0022-0027-launch
 depends_on: micro-mip-targets, lineage-deferred-readbacks
 supersedes: O2-O3
 related: occlusion-queries-off, R4a, finer-occlusion-culling, R1-readback, game-update-0102, perf-patches-ini
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

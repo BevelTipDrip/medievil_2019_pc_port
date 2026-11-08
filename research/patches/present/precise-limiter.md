@@ -16,7 +16,7 @@ tests: T-L1b, T-L2, T-L3, T-L4, T-F7, T-F8, T-F9, T-F15, T-F16
 docs: fix-inventory.md#6-frame-pacing-and-present, plan-stage-b-split.md#t-l1b-precise-frame-limiter-at-233-2026-10-21-0140-launched-by-claude-with-the-users-go-build-a297c6b-log-datat-l1b-precise-233log, plan-stage-b-split.md#t-l3--t-l4-precise-limiter-2026-10-22-launched-by-claude-with-the-users-go--nostats-gow3_precise_limit1-traces-flip-trace-2csv-flip-trace-3csv, plan-stage-b-split.md#t-f2-which-barriers-break-the-passes-log-t-f2-barrier-breaks-trace-33, study-deck-patch-audit.md#16-presentation-and-pacing
 depends_on:
 related: reflex, precise-tick, inline-present, newest-frame, present-side-limiter, one-clock, lean-barriers, thread-nice, deck-preset, menu-idle-redraw
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

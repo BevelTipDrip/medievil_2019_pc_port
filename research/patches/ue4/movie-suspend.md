@@ -16,7 +16,7 @@ tests: T-M1, T-U1
 docs: plan-frame-pacing.md#t-m1-intro-movie-suspended-at-the-level-change-2026-10-26-launched-by-claude-with-the-users-go-log-datat-m1-movie-suspendlog, study-intro-movie.md#summary, study-intro-movie.md#5-recommended-fix, fix-inventory.md#7-medievil-specific-ue4-config-eboot-patches-hooks
 depends_on:
 related: avplayer-trace, avplayer-join-hang, game-update-0102
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

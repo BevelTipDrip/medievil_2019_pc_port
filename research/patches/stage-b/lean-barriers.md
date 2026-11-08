@@ -16,7 +16,7 @@ tests: T-F1, T-F2, T-F3, T-F4, T-F5, T-F6, T-F7
 docs: fix-inventory.md#1-gpu-sync-barriers-and-render-pass-breaks, plan-stage-b-split.md#t-f1-what-makes-the-fights-frames-slow-2026-10-25-logs-t-p960-gpu-profile-5-t-p960-slow-frames, plan-stage-b-split.md#t-f2-which-barriers-break-the-passes-log-t-f2-barrier-breaks-trace-33, study-deck-patch-audit.md#2-scores
 depends_on:
 related: narrow-image-stages, depth-write-effective, V4, precise-limiter
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

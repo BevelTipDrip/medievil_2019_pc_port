@@ -16,7 +16,7 @@ tests: T-L5
 docs: plan-stage-b-split.md#t-l5-newest-frame-mode-gow3_newest_frame1-the-users-proposal, fix-inventory.md#10-tried-and-dropped
 depends_on: precise-limiter
 related: inline-present, frames-queued-2, present-side-limiter, reflex
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

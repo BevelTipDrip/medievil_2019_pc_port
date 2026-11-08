@@ -16,7 +16,7 @@ tests:
 docs: impl-stage-a-decode.md#1-what-stage-a-does-per-draw-now, impl-stage-a-decode.md#3-the-cuts
 depends_on:
 related: A2, A3
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

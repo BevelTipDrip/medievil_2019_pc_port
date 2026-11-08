@@ -15,7 +15,7 @@ switches: GOW3_TINY_TARGET_READBACK
 docs: plan-linux-deck.md#hilltop-mausoleum-lighting-pool-pages-leaked-on-linux-2026-11-0607-fixed-7246f88--f74e1a1
 depends_on: lineage-deferred-readbacks
 related: pool-kept-pages, readback-first-wait, mausoleum-diagnostics, mausoleum-toggle-bisect
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

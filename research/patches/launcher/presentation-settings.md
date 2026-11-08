@@ -16,7 +16,7 @@ tests: T-P120
 docs: plan-stage-b-split.md#presentation-settings-in-the-launcher-2026-10-23, plan-stage-b-split.md#t-p120-the-configuration-that-holds-the-cap-2026-10-23-0300-the-user-launcher-settings, plan-linux-deck.md#deck-optimized-preset-2026-11-05-launcher-built-not-run
 depends_on:
 related: vsync-control, precise-tick, inline-present, present-mode-select, reflex, precise-limiter, flip-trace, deck-preset, launcher-graphics-page, upstream-vsync-limit-rule, engine-cap-cvars
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

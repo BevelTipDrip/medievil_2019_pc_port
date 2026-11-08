@@ -16,7 +16,7 @@ tests:
 docs: impl-deck-cpu-bundle.md#d2-cached-thread-id, impl-deck-cpu-bundle.md#s-counters-gow3_frame_stats1, study-deck-rescore-rejected.md#d-linux-only-items-from-the-spacepepperoni-review-verdict-adopt-not-ported
 depends_on:
 related: frame-stats-lines
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

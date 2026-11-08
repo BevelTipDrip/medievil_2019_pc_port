@@ -13,7 +13,7 @@ symbols: DrawPipe, Drain, Commit, OnStageB, Backlog, DrawPipeWanted, UseDrawPipe
 switches: GOW3_DRAW_PIPE, GOW3_PIPE_SPIN_US, GOW3_VK_RECORD_THREAD, toggle:DrawPipeline
 docs: gpu-threading-reference.md#2-invariants-must-hold-after-every-change, START-HERE.md#knobs-and-triggers, study-deck-patch-audit.md#11-draw-pipeline-and-helper-threads-inherited-lineage-docsparallel_gpumd-measured-on-the-base-ports-game-not-medievil, docs/parallel_gpu.md
 related: L5, drain-hybrid, E1-deck-drains, decode-pacing, lineage-recorder-fences, lineage-constant-ring, lineage-draw-preparation, upstream-record-data-fix, recorder-lean, stage-b-spin, cacheline-groups, parallel-recording
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

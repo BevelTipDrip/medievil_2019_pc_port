@@ -16,7 +16,7 @@ tests: T-O1, T-O2
 docs: plan-frame-pacing.md#r4a-result-2026-10-18-1405-1415-launched-by-claude-with-the-users-go-rejected, patches-and-pr-proposal.md
 depends_on:
 related: R4a, occlusion-queries-off, S1-streaming, preshadows-live, effects-resolution, live-graphics-options, extra-env-file, 4k-memory, engine-cap-cvars
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

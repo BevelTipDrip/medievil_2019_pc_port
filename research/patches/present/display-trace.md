@@ -16,7 +16,7 @@ tests: T-V120b, T-V120c
 docs: plan-stage-b-split.md#t-v120-120-hz-tick-vsync-fifo-no-limiter-50-ue4_upscaleperformance-2026-10-23-launched-by-claude-with-the-users-go-f4ffc01-gow3_vblank_hz120-trace-flip-trace-8csv, plan-stage-b-split.md#baseline-recheck-of-t-v120-2026-10-23-0130-0210-launched-by-claude-with-the-users-go-each-time, fix-inventory.md#10-tried-and-dropped
 depends_on:
 related: flip-trace, reflex, vblank-sync
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

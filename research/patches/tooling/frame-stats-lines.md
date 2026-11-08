@@ -16,7 +16,7 @@ tests: T-S1c, Native run 3, Native run 7, N-8, N-23, N-32
 docs: plan-stage-b-split.md#t-s1c--t-w3-texture-memo-two-way-the-write_data-wait-2026-10-20-2331-2345-launched-by-claude-with-the-users-go-builds-2492874-d67ac70-logs-datat-s1c-two-waylog-datat-w3-writedata-targetslog, plan-linux-deck.md#drain-wake-ahead-6-vs-2-live-2026-11-06-build-d2f145f-lows-log-datadeck-wakeahead-1log, plan-linux-deck.md#native-run-3-stage-b-by-part-2026-11-03-appimage-of-56e323b-gow3_frame_stats1-gow3_sections1-gow3_slow_frames14-log-datadeck-native-3log, plan-linux-deck.md#native-run-7-gate-2-stats-2026-11-03-appimage-3efee7a-gow3_frame_stats1-by-file-log-datadeck-native-7-crashlog, plan-frame-pacing.md#n-8-panning-hitches-the-stream-class-table-and-logging-cost-2026-10-28-launched-by-the-user
 depends_on:
 related: W3, B1, drain-wake-ahead-6, slow-frames, fence-stats, async-log-writer, uffd
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

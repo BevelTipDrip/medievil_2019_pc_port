@@ -16,7 +16,7 @@ tests: N-11, N-12, N-13
 docs: fix-inventory.md#3-memory-sync-uploads-and-readbacks, plan-frame-pacing.md#n-12-why-the-maps-bone-page-counts-as-gpu-written-2026-10-28-launched-by-the-user-t-map1-gpu-writerlog-gow3_perf_diag1, plan-frame-pacing.md#n-13-the-map-oscillations-waits-2026-10-28-launched-by-the-user--by-claude-at-the-users-request
 depends_on: D3
 related: gpu-write-twins, D2, perf-diag
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -56,7 +56,7 @@ its anchor).
 | `tests` | test IDs (`T-F6`, `N-30`, `Launch 15`) |
 | `docs` | `file.md#anchor` under `research/docs/` (anchors: `patchmap.py doc <file>`) |
 | `depends_on`, `conflicts_with`, `supersedes`, `related` | card IDs; the reason goes under Interactions |
-| `verified` | date a separate agent or session last checked the card against the code (`2026-11-07`) |
+| `checked` | date a separate agent or session last compared the card with the code and the docs (`2026-11-07`). Not "verified": that word is the user's (below) |
 
 Body, in this order (all required except for `chore` cards):
 
@@ -68,3 +68,17 @@ Body, in this order (all required except for `chore` cards):
 - `## History and pitfalls`: what went wrong, what was tried and dropped, which bug it caused or fixed.
 
 Keep a card under about 60 lines. Its detail lives in the docs it links.
+
+## Words for how far a change has got
+
+Use exactly these, in cards, LANDMINES.md, docs and commit messages (the user, 2026-11-07: with this many fixes,
+loose wording makes a regression hard to trace):
+
+- **found**: a problem seen in the code or a log; nothing changed yet.
+- **confirmed in code / in a log**: the problem is real (the file and line, or the log and line, named).
+- **fix built `<commit>`**: the change compiles; not run in the game.
+- **run**: the build ran in the game; say where (PC / Deck, which launch) and what the log showed.
+- **verified**: the user confirmed it in game, quoted, with the log line or number that goes with it.
+
+Never write "fixed" alone. Switches: one per patch; a fix to an existing patch rides on that patch's switch unless
+it could change performance or behaviour in normal play (then it gets its own, so it can be A/B'd).

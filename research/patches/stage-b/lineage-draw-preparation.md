@@ -13,7 +13,7 @@ symbols: DrawPreparation, DefaultWorkerCount, ScannerLoop, WorkerLoop, PrepareRe
 switches: toggle:DrawPreparation, GOW3_PREP_WORKERS
 docs: study-deck-other-threads.md#32-gow3drawprep-4-19-each-17k-involuntary-switchess-each-code--log, study-deck-patch-audit.md#11-draw-pipeline-and-helper-threads-inherited-lineage-docsparallel_gpumd-measured-on-the-base-ports-game-not-medievil, study-deck-rescore-rejected.md#a-switches-that-already-exist-no-build, docs/parallel_gpu.md
 related: prep-priority, prep-workers-2, lineage-texture-set-memo, lineage-constant-ring, lineage-draw-pipe, T2, A3, particle-curve-sync-compile, stage-b-core
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

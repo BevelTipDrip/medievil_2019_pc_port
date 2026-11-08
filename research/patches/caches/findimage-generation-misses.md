@@ -16,7 +16,7 @@ tests: N-28
 docs: plan-frame-pacing.md#n-28-stage-b-counters-the-studys-step-0-2026-10-30-launched-by-claude-with-the-users-go-t-sb0-counterslog-build-ae09fcc-gow3_sections1, fix-inventory.md#10-tried-and-dropped, study-deck-rescore-rejected.md#c-analysed-gated-or-ranked-never-built
 depends_on:
 related: texset-region-stamps, stage-b-counters
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

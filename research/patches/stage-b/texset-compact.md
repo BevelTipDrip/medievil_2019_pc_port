@@ -16,7 +16,7 @@ tests:
 docs: impl-texset-index.md#2-the-compact-texture-set-memo, plan-linux-deck.md#spin-compact-texture-memo-and-the-task-split-2026-11-04, study-deck-patch-audit.md#2-scores
 depends_on: lineage-texture-set-memo, texset-region-stamps
 related: T2
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

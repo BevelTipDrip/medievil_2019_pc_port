@@ -16,7 +16,7 @@ tests:
 docs: plan-linux-deck.md#drain-wake-ahead-6-vs-2-live-2026-11-06-build-d2f145f-lows-log-datadeck-wakeahead-1log, impl-stage-a-decode.md#2-why-stage-b-waits-1-ms-a-frame-on-stage-a
 depends_on: drain-hybrid
 related: deck-preset
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

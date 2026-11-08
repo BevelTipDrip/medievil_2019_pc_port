@@ -16,7 +16,7 @@ tests: T-V120, T-V120p, T-N120, T-P120, T-P960
 docs: fix-inventory.md#6-frame-pacing-and-present, plan-stage-b-split.md#t-v120-120-hz-tick-vsync-fifo-no-limiter-50-ue4_upscaleperformance-2026-10-23-launched-by-claude-with-the-users-go-f4ffc01-gow3_vblank_hz120-trace-flip-trace-8csv, plan-stage-b-split.md#t-p120-the-configuration-that-holds-the-cap-2026-10-23-0300-the-user-launcher-settings, plan-stage-b-split.md#ablation-of-the-t-p120-settings-2026-10-23-evening-traces-research-dataflip-trace-18csv-to--24csv, plan-stage-b-split.md#t-p960-high-tick--limiter-on-top-of-the-t-p120-settings-2026-10-23-trace-flip-trace-25csv, plan-linux-deck.md#proton-runs-3-4-2026-11-03-settings-changed-by-the-user-while-exploring, study-deck-patch-audit.md#short-answer
 depends_on:
 related: inline-present, precise-limiter, reflex, one-clock, vblank-sync, presentation-settings, deck-preset, thread-nice
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

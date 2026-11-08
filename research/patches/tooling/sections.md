@@ -16,7 +16,7 @@ tests: T-S1, T-S3, T-S1a, T-HZ4g, N-8, N-28, Native run 3
 docs: fix-inventory.md#from-the-bloodborne-port-credited-in-the-commits, plan-stage-b-split.md#t-s1-stage-bs-time-per-packet-2026-10-19-2333-2341-launched-by-claude-with-the-users-go-build-c4bf2dc-gow3_sections1-log-datat-s1-sectionslog, plan-stage-b-split.md#t-s3-record-calls-and-ordered-tasks-2026-10-1920-2357-0002-launched-by-claude-with-the-users-go-build-ba9c433-log-datat-s3-record-taskslog, plan-linux-deck.md#native-run-3-stage-b-by-part-2026-11-03-appimage-of-56e323b-gow3_frame_stats1-gow3_sections1-gow3_slow_frames14-log-datadeck-native-3log
 depends_on:
 related: slow-frames, stage-b-counters, pool-small-copies, E1, texset-region-stamps, stream-class-table, W3, ring-reuse
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

@@ -16,7 +16,7 @@ tests:
 docs: study-forks-survey.md#4-dvilelaf-prs-68-69-70, study-forks-survey.md#9-worth-porting-shortlist, plan-linux-deck.md#54-linux-and-4-core-items-not-uma-likely-bigger-on-the-deck
 depends_on:
 related: movie-suspend, avplayer-trace
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

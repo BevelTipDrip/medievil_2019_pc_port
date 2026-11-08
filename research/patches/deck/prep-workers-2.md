@@ -16,7 +16,7 @@ tests: Launch 14
 docs: plan-linux-deck.md#two-draw-preparation-helpers-2026-11-06-build-d2f145f-lows-log-datadeck-helpers2-1log, plan-linux-deck.md#launch-14-results-2026-11-06-1945-2022-build-5ead842-trace-2-helpers-logging-ini-67-uncapped-log-datadeck-pushpull-1log-traces-research-datadeckdeck-pushpull-auto1fixed1100capsweep-csv, study-deck-rescore-rejected.md#a-switches-that-already-exist-no-build
 depends_on:
 related: lineage-draw-preparation, T2, lineage-texture-set-memo, stage-b-core, core-sched, deck-preset
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

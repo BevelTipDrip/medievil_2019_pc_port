@@ -18,7 +18,7 @@ depends_on: lineage-draw-pipe
 conflicts_with:
 supersedes:
 related: recorder-lean, stage-b-spin, stage-b-core
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

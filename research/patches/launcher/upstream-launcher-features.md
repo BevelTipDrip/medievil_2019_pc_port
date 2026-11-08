@@ -16,7 +16,7 @@ tests: N-27
 docs: fix-inventory.md#from-upstream-medievil-133-138-bc160201983-and-contributors-merged-into-lab, study-upstream-commits.md#semantic-hazards-in-files-that-auto-merge-mt
 depends_on:
 related: upstream-0102-eu-support, port-identity, live-render-scale, vsync-control, game-update-0102
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 

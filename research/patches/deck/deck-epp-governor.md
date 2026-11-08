@@ -16,7 +16,7 @@ tests:
 docs: plan-linux-deck.md#cpu-clocks-and-the-power-cap-2026-11-0405-log-datadeck-epp-perf-1log-datadeck-dedicated-1log, plan-linux-deck.md#baseline-1-and-live-abs-2026-11-04-appimage-a863482-67-helpers-auto-no-dedicated-core-auto-clocks-mailbox-log-datadeck-baseline-1-ablog, study-deck-apu-deep-dive.md#24-steamoss-power-daemons-and-what-a-user-can-change-web, study-deck-apu-deep-dive.md#25-what-can-favour-stage-bs-clock-and-what-cannot
 depends_on:
 related: deck-cpu-clock-split, stage-b-spin, deck-test-tooling, deck-preset
-verified: 2026-11-07
+checked: 2026-11-07
 ---
 ## What it does
 
