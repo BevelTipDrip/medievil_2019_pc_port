@@ -126,6 +126,9 @@ static void CopySparseSerial(VAddr source, u8* dest, u64 size) {
         return;
     }
 #endif
+#ifndef _WIN32
+    bool retried = false;
+#endif
     while (size) {
         uintptr_t start = 0, end = 0;
         int mapped = 0;
@@ -134,15 +137,31 @@ static void CopySparseSerial(VAddr source, u8* dest, u64 size) {
         }
         const u64 n = std::min<u64>(size, end - source);
 #ifndef _WIN32
-        // Linux: through the backing view, under the region lock. Linux unmaps a pool page on
-        // every decommit (Windows keeps the view), and UE4 recommits pool pages several times a
-        // frame: a copy thread reading the guest mapping crashed in CopySparseMemory (signal 11,
-        // Deck native run 7). From spacepepperoni/medievil_ps4_Linux 97f0ac9 (GPL-2.0).
-        if (mapped && runtime_memory_read_backing(source, dest, n)) {
-        } else
-#endif
+        // Linux: through the backing view, under the region lock, never through the guest
+        // mapping. Linux unmaps a pool page on every decommit (Windows keeps the view), and UE4
+        // recommits pool pages several times a frame: a copy thread reading the guest mapping
+        // crashed in CopySparseMemory (signal 11, Deck native run 7). From
+        // spacepepperoni/medievil_ps4_Linux 97f0ac9 (GPL-2.0). The lookup above is lock-free, so
+        // the range can be decommitted or split before the locked read: then read_backing fails,
+        // and the old fall-through memcpy from the now PROT_NONE guest address crashed the same way
+        // (native run 5, native run 7, nav-1: libc memcpy at a 1 MiB boundary). Look it up once
+        // more; a range still unreadable reads as zeros, as an unmapped one does.
+        if (mapped) {
+            if (!runtime_memory_read_backing(source, dest, n)) {
+                if (!retried) {
+                    retried = true;
+                    continue;
+                }
+                std::memset(dest, 0, n);
+            }
+        } else {
+            std::memset(dest, 0, n);
+        }
+        retried = false;
+#else
         if (mapped) std::memcpy(dest, reinterpret_cast<const void*>(source), n);
         else std::memset(dest, 0, n);
+#endif
         source += n; dest += n; size -= n;
     }
 }
