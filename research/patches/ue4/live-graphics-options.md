@@ -1,6 +1,6 @@
 ---
 id: live-graphics-options
-title: Live graphics options: 13 options through 16 more console variables; Preset restores the boot preset
+title: Live graphics options: the settings switched in the game through their console variables (Preset removed 2026-11-08)
 area: ue4
 status: active
 platforms: all
@@ -11,11 +11,11 @@ class: M
 commits: 6fa68196f5, 3cea271054
 files: gpu/shim/gow3_settings.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_overlay.cpp, src/runtime_extra.c, scripts/ue4_override.py, run.py, launcher/medievil_launcher.py
 symbols: UE4LiveOption, UE4LiveOptions, UE4LiveCount, RequestUE4Live, ue4_live, ue4_cvars, preset_cvars, preset_values, LIVE_CVARS, LIVE_ENGINE_DEFAULTS
-switches: GOW3_UE4_PRESET_CVARS
+switches:
 tests:
 docs: plan-live-switches.md#mechanism-built, plan-live-switches.md#done, study-live-switches.md#summary, study-live-switches.md#ue4-console-variables-objects-for-ue4_cvars-cusa11227-0100, fix-inventory.md#7-medievil-specific-ue4-config-eboot-patches-hooks
 depends_on: preshadows-live
-related: effects-resolution, launcher-graphics-page, deck-preset, live-render-scale, force-aniso, single-particle-pass
+related: graphics-quality-sync, effects-resolution, launcher-graphics-page, deck-preset, live-render-scale, force-aniso, single-particle-pass
 checked: 2026-11-07
 ---
 ## What it does
@@ -60,6 +60,8 @@ Performance page.
 
 ## History and pitfalls
 
+- **2026-11-08 (`a75f7a0`, graphics-quality-sync):** "Preset" (choice 0) and `GOW3_UE4_PRESET_CVARS` are gone; every
+  option holds a real value, the table has 18 options (5 not live), generated from scripts/graphics_options.py.
 - The High / Ultra presets' `r.Shadow.MaxResolution` / `DistanceScale` / `CSM.MaxCascades` were overwritten by the
   local / sun shadow tables (`LOCAL_SHADOWS`, `SUN_SHADOWS` applied last in `preset_values`). The code agrees with
   plan-live-switches.md: `6fa6819` ("presets cleaned up") removed the dead entries (`QUALITY['high' / 'ultra']` no

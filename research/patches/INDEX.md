@@ -4,7 +4,7 @@ One line per card. Open a card for invariants, interactions and evidence; look u
 reading: `patchmap.py file <path>` / `switch <name>` / `commit <hash>` / `test <id>`.
 Card format and statuses: [README.md](README.md). W / D = default on Windows / Deck.
 
-198 cards.
+199 cards.
 
 ## memory
 
@@ -186,9 +186,10 @@ _UE4 config overrides, eboot patches, game hooks, particles, render scale, boot 
 | [engine-cap-cvars](ue4/engine-cap-cvars.md) | rejected | off / off | - |  | rhi.SyncInterval=0; t.MaxFPS / the engine frame-rate range as a cap (no effect in this build) |
 | [finer-occlusion-culling](ue4/finer-occlusion-culling.md) | active | mixed / on | deck-lab |  | Finer occlusion culling: HZB at the scene's size (eboot patch), default for scenes up to 1280x800 |
 | [game-update-0102](ue4/game-update-0102.md) | active | on / on | lab |  | MediEvil 01.02 (US update): every 01.00-only hook mapped by masked instruction search; t.MaxFPS 30/60 lifted |
+| [graphics-quality-sync](ue4/graphics-quality-sync.md) | active | on / on | deck-lab |  | Graphics quality and its 18 settings in sync; Console is the PS4's exactly (shadows included) |
 | [hzb-remap](ue4/hzb-remap.md) | active | on / on | lab | GOW3_HZB_REMAP, perf_hzb_occlusion | HZB occlusion through a remap hook: serve the newest finished HZB readback by (PrimitiveId, CustomIndex) |
 | [I1](ue4/i1.md) | active | on / on | lab | GOW3_UE4_SETRES | Boot at the output size (4K as a PS4 Pro on a 4K TV, other sizes by the boot display rect) instead of a live r.SetRes |
-| [live-graphics-options](ue4/live-graphics-options.md) | active | on / on | lab | GOW3_UE4_PRESET_CVARS | Live graphics options: 13 options through 16 more console variables; Preset restores the boot preset |
+| [live-graphics-options](ue4/live-graphics-options.md) | active | on / on | lab |  | Live graphics options: the settings switched in the game through their console variables (Preset removed 2026-11-08) |
 | [movie-suspend](ue4/movie-suspend.md) | active | on / on | lab | GOW3_MOVIE_SUSPEND | Intro movie still playing at a level change is paused (OpenLevel hook, AvPlayer pause) |
 | [nav-purge-nofence](ue4/nav-purge-nofence.md) | rejected | off / off | deck-lab |  | Navigation path purge without the two mfences per refcount read (GOW3_NAV_PURGE_NOFENCE) |
 | [no-decal-prepass](ue4/no-decal-prepass.md) | active | on / on | lab | perf_no_decal_prepass, GOW3_DECAL_PREPASS | r.DBuffer=0 + r.EarlyZPass=1: no forced full depth prepass for invisible DBuffer decals |

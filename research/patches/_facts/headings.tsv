@@ -354,6 +354,12 @@ plan-gpu-threading.md	23	2	candidates-ranked-claimed-gains-are-bloodbornes-own-n
 plan-gpu-threading.md	50	2	order-proposed-decided-by-p1	Order (proposed; decided by P1)
 plan-gpu-threading.md	58	2	what-to-measure-before-and-after-every-stage	What to measure (before and after every stage)
 plan-gpu-threading.md	67	2	stages-one-change-per-launch	Stages (one change per launch)
+plan-graphics-settings.md	1	1	plan-graphics-quality-and-the-individual-graphics-settings-in-sync	Plan: graphics quality and the individual graphics settings in sync
+plan-graphics-settings.md	5	2	the-model-agreed	The model (agreed)
+plan-graphics-settings.md	21	2	where-the-values-come-from-checked-2026-11-07-0100-and-0102-identical	Where the values come from (checked 2026-11-07, 01.00 and 01.02 identical)
+plan-graphics-settings.md	31	2	the-settings-to-build-after-the-shadow-test	The settings (to build after the shadow test)
+plan-graphics-settings.md	61	2	ps4-shadow-test-prepared-2026-11-08-not-run	PS4 shadow test (prepared 2026-11-08, not run)
+plan-graphics-settings.md	71	3	ps4-shadow-test-result-2026-11-08-0017-0029-pc-launched-by-claude-with-the-users-go-log-datat-ps4-shadows-1log-marks-markstxt	PS4 shadow test, result (2026-11-08 00:17-00:29, PC, launched by Claude with the user's go; log `data/t-ps4-shadows-1.log`, marks `.marks.txt`)
 plan-linux-deck.md	1	1	plan-linux-build-steam-deck-first-shared-memory-fixes-remote-dev-loop	Plan: Linux build, Steam Deck first, shared-memory fixes, remote dev loop
 plan-linux-deck.md	12	2	answer	Answer
 plan-linux-deck.md	48	2	1-current-state-of-linux	1. Current state of Linux
