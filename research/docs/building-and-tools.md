@@ -11,7 +11,9 @@ Parent: [START-HERE.md](START-HERE.md). Do not re-install the toolchain or re-de
 | Bloodborne reference | `C:\Users\Ty\MediEvil\bloodborne_pc` |
 | MGS2 reference (read only) | `C:\Users\Ty\MGS2-Lab` |
 | MSYS2 | `C:\msys64` (CLANG64 environment) |
-| Game (CUSA11227 01.00) | `C:\Users\Ty\MediEvil\Game Files\CUSA11227` (eboot sha256 matches `scripts/patches.py:72`); source `Game Files\MediEvil-CUSA11227_V0100.pkg` |
+| Game (CUSA11227 01.00) | `E:\MediEvil\CUSA11227`, reached through the junction `C:\Users\Ty\MediEvil\Game Files\CUSA11227` (moved 2026-11-08 for space; eboot sha256 matches `scripts/patches.py:122`); source `Game Files\MediEvil-CUSA11227_V0100.pkg` |
+| Game (CUSA11227 01.02) | `E:\MediEvil\CUSA11227-0102` (the launcher's game folder); update PKG `Game Files\CUSA11227-patch` |
+| Crash dumps | `user\crashdumps` is a junction to `D:\MediEvil-archive\crashdumps` (2026-11-08): new dumps land on D: |
 
 ## Toolchain (installed 2026-10-18)
 
