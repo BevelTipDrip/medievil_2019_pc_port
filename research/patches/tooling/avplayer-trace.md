@@ -16,6 +16,7 @@ tests: T-D2d
 docs: plan-frame-pacing.md#upload-audit-what-is-copied-from-system-ram-to-the-gpu-2026-10-19-logs-only-no-launch, study-intro-movie.md#summary
 depends_on:
 related: movie-suspend, avplayer-join-hang, texcache-stats
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -33,7 +34,12 @@ lives in `traces` under `trace_mutex`.
   behind a switch, or dropping the Init line, silently breaks the movie suspend (the intro decodes into gameplay
   again); deleting before forgetting lets the suspend touch a freed player.
 - Lines are few (a handful per movie); the frame count is a map lookup under a mutex once per delivered frame
-  (~30 a second while a movie plays), not per game frame.
+  (~30 a second for a 30 fps movie, inferred), not per game frame. Only `sceAvPlayerGetVideoDataEx` counts frames
+  (the non-Ex `GetVideoData` does not); `TraceSource` (AddSource / AddSourceEx) replaces the entry and resets the
+  count to 0.
+- Lock order: `SuspendPlayersForLevelChange` holds `trace_mutex` while `AvPlayerState::Suspend` takes
+  `m_source_mutex` (shared). Every `Trace*` call runs after the player call returns; one made while holding
+  `m_source_mutex` exclusively could deadlock against a level change [code].
 
 ## Interactions
 

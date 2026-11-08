@@ -16,6 +16,7 @@ tests: N-29
 docs: study-deck-rescore-rejected.md#c-analysed-gated-or-ranked-never-built, study-deck-build-optimization.md#answer, study-deck-build-optimization.md#33-expected-gain-and-staleness, study-deck-build-optimization.md#7-bolt, study-deck-build-optimization.md#2-flags-one-by-one-for-a-branchy-pointer-chasing-thread-on-zen-2
 depends_on:
 related: thinlto, S1-v3-build, static-gpu-lib
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -25,12 +26,15 @@ Three build-level ideas that were analysed and never built or measured:
 - **BOLT** (S4 / S5): an instrumented binary, then a re-laid-out one.
 - **`-march=znver2`** (C15): a Deck-only ISA build.
 The inherited `GOW3_PGO` path (generate / use, `__gcov_dump` every 30 s under `GOW3_PGO_GENERATE`) is GCC-only:
-`-fprofile-partial-training`, `*.gcda`. With clang it does nothing useful. The Windows build passes
-`-DGOW3_PGO=off`, and on Linux `build.sh` uses a profile only if `pgo/` holds `.gcda` files.
+`-fprofile-partial-training`, `*.gcda`, `__gcov_dump`. It was never tried with clang; expect it not to build or
+not to write a usable profile. The Windows build passes `-DGOW3_PGO=off`, and on Linux `build.sh` uses a profile
+only if `pgo/` holds `.gcda` files.
 
 ## Invariants
 
-- Do not build `GOW3_PGO=use` with clang: its flags are GCC options and a `.gcda` profile is GCC's format. A clang PGO needs `__llvm_profile_write_file` in place of `__gcov_dump` (gow3gpu.cpp), plus
+- Do not build `GOW3_PGO=use` with clang: its flags are GCC options and a `.gcda` profile is GCC's format. A Linux
+  build picks `use` by itself when `pgo/` holds any `.gcda` file, so a stale GCC profile there changes the build.
+  A clang PGO needs `__llvm_profile_write_file` in place of `__gcov_dump` (gow3gpu.cpp), plus
   llvm-profdata and `-fprofile-instr-use` (study-frame-cost: "Only after LTO pays").
 - Profiles go stale per function: clang drops the profile of a changed function. A BOLT profile is tied to one
   binary's addresses, so every release needs a new training run.

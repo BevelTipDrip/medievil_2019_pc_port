@@ -16,6 +16,7 @@ tests:
 docs: plan-work-queue.md#the-users-quality-of-life-list-2026-11-03-after-the-v200-release, study-upstream-commits.md#semantic-hazards-in-files-that-auto-merge-mt
 depends_on:
 related: 4k-memory, upstream-launcher-features, cursor-hide
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -25,7 +26,8 @@ the README has a "This fork" section. `c1db412`: Advanced has a "Start menu shor
 (`shortcut('Programs')`, built by `shortcut_script`). `711b396`: a new port icon (`launcher/medievil.ico` /
 `.png`, 16-256 px) on the exes (.rc), the shortcuts and the Linux menu entry; `make_medievil_icon.py` was removed
 so it cannot overwrite the design. `44a4036`: the launcher and game windows show the user's game icon again
-(`sce_sys/icon0.png`: the launcher's `set_icon`, run.py's `GOW3_WINDOW_ICON` BMP), falling back to the port icon.
+(`sce_sys/icon0.png`: the launcher's `set_icon`, run.py's `GOW3_WINDOW_ICON` BMP). The launcher falls back to the
+port icon; run.py has no fallback, so without the icon or Pillow the game window gets SDL's default.
 
 ## Invariants
 
@@ -33,9 +35,12 @@ so it cannot overwrite the design. `44a4036`: the launcher and game windows show
   `version_tuple(tag) > version_tuple(VERSION)`. A frozen build's `install_update` unpacks the release zip over the
   install, so pointing `RELEASES_API` at upstream again would install upstream's build over the fork (H4 in
   study-upstream-commits.md). `test_fork_release_is_newer_than_upstream_and_checks_the_fork` checks both.
-- `version_tuple` compares the digit groups only. A tag like `v2.0.0-deck` is read as 2.0.0 and is not newer.
+- `version_tuple` compares the digit groups only (`latest_release` joins them the same way). A tag like
+  `v2.0.0-deck` is read as 2.0.0 and is not newer, but a digit in a suffix counts: `v2.0.0-deck2` is 2.0.0.2 and is
+  offered as an update over 2.0.0 [code].
 - `install_update` only runs frozen (PyInstaller) and with a `.zip` asset. A source tree or an install without the
-  asset opens the release page instead.
+  asset opens the release page instead. The Linux AppImage runs the launcher with its bundled Python, not
+  PyInstaller (`FROZEN` false), so it always opens the page; a Windows zip is never unpacked over it [code].
 - No game files are bundled. The window icons are made at run time from the user's own `icon0.png`, and the
   shortcuts and exes use the port's own icon.
 
@@ -58,6 +63,6 @@ so it cannot overwrite the design. `44a4036`: the launcher and game windows show
 - Before `dda7485` the launcher checked bc160201983's releases with the same version (1.3.8), so a later upstream
   release would have been offered as an update over the fork. The inherited release-version test expected God of
   War III's 2.1.3.
-- `c1db412` added `launcher/medievil-game.ico` for the shortcuts. Eleven hours later `711b396` folded it back into
+- `c1db412` added `launcher/medievil-game.ico` for the shortcuts. About twelve hours later `711b396` folded it back into
   `medievil.ico`, and `package.sh` now copies only `medievil.ico` / `.png`. A card or doc that names
   `medievil-game.ico` is out of date.

@@ -16,6 +16,7 @@ tests: T-H3b, T-0102-4
 docs: plan-stage-b-split.md#launcher-performance-patch-toggles-2026-10-21, plan-stage-b-split.md#in-game-menu-and-the-launcher-share-the-settings-2026-10-22, study-live-switches.md#summary, study-live-switches.md#found-on-the-way
 depends_on:
 related: hzb-remap, no-decal-prepass, single-particle-pass, S2, texset-region-stamps, lockfree-region-reads, L2, decommit-keep-access, D3, gpu-write-twins, E1, W2, 4k-memory, lean-barriers, bulk-descriptor-copy, sampler-memo, ring-reuse, deck-preset, extra-env-file, frame-stats-lines, launcher-graphics-page
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -23,7 +24,8 @@ Twelve `perf_*` keys in `medievil.ini`, one per patch bundle, shown as checkboxe
 (`PERF_PATCHES`) and in the in-game menu > Performance (`PerfPatchesSection`). On every start `run.py` calls
 `perf_environment`: a key set to `0` adds that bundle's off variables from `PERF_SWITCHES` (for example
 `perf_gpu_data_no_waits=0` sets four variables). A missing key means on, except `PERF_DEFAULT_OFF`
-(`perf_particle_single_pass`). Six bundles switch live in the menu (`PerfLive`); the others count as restart changes
+(`perf_particle_single_pass`). Six bundles switch live in the menu on `deck-lab` (`PerfLive`; five on `lab`, where
+the particle pass is still a restart change: it went live in `d20f010`); the others count as restart changes
 (`RestartChanges`). Since `e9d8699` the in-game `Save` writes only the keys changed in the menu, in place.
 `27ec51e` also stopped the launcher from setting `GOW3_FRAME_STATS=1` by default (frame-stats-lines).
 
@@ -43,8 +45,8 @@ Twelve `perf_*` keys in `medievil.ini`, one per patch bundle, shown as checkboxe
   extra-env.txt (loaded first), `DECK_SWITCHES` and `run-game.ps1 -Env`.
 - Small buffers: the menu's state is on only when `GOW3_STREAM_CLEAN` starts with `1`. run.py sets it only for UE4
   profile games, so the ini key cannot turn S2 on for another game.
-- Live rows act at once: `PerfOn` is a relaxed load per draw (ring reuse, lean binding, the buffer cache's
-  small-buffer read). `runtime_memory_set_perf(optimistic, keep_access)` and `runtime_ue4_particle_single_pass`
+- Live rows act at once: `PerfOn` is a relaxed load per draw (ring reuse, lean binding); the buffer cache loads
+  `perf[PerfSmallBuffers]` itself (`buffer_cache.cpp`). `runtime_memory_set_perf(optimistic, keep_access)` and `runtime_ue4_particle_single_pass`
   run each time the section draws. "Lock-free memory map lookups" live switches only `GOW3_OPTIMISTIC_CLAMP`;
   `GOW3_REGION_BUCKETS` (L2) needs a restart. The texture memo and GPU data without waits must stay restart-only,
   because they build state at start (memo validation rule, twins, readback queue chosen with the device).
@@ -59,6 +61,8 @@ Twelve `perf_*` keys in `medievil.ini`, one per patch bundle, shown as checkboxe
   E1, W2), 4K memory (4k-memory), lean barriers (lean-barriers), cheaper binding (bulk-descriptor-copy +
   sampler-memo), ring reuse (ring-reuse).
 - deck-preset writes every key (`perf_4k_memory=0`, `perf_particle_single_pass=1`), hence `default_deck: mixed`.
+- Cheap frees acts on Windows only: `GOW3_DECOMMIT_KEEP_ACCESS` is read in `host_keep_view`, inside the `_WIN32`
+  branch of runtime_memory.c (kept views). On Linux / the Deck the row and the key change nothing [code].
 - extra-env-file overrides any key here without changing the ini (the baseline trap).
 
 ## Evidence

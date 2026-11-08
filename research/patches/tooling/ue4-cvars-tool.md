@@ -9,13 +9,14 @@ default_deck: off
 origin: ours
 class: M
 commits: b2f9d2612a
-files: scripts/ue4_override.py, run.py
-symbols: apply, preset_cvars, set_values, load_extra_env, EXTRA_ENV_PREFIXES
+files: scripts/ue4_override.py
+symbols: apply, preset_cvars, set_values
 switches:
 tests: T-O1, T-O2
 docs: plan-frame-pacing.md#r4a-result-2026-10-18-1405-1415-launched-by-claude-with-the-users-go-rejected, patches-and-pr-proposal.md
 depends_on:
-related: R4a, occlusion-queries-off, S1-streaming, preshadows-live, effects-resolution, live-graphics-options, extra-env-file, 4k-memory
+related: R4a, occlusion-queries-off, S1-streaming, preshadows-live, effects-resolution, live-graphics-options, extra-env-file, 4k-memory, engine-cap-cvars
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -23,8 +24,9 @@ related: R4a, occlusion-queries-off, S1-streaming, preshadows-live, effects-reso
 console variables to the override pak's `[SystemSettings]`. In `apply` they are merged after the presets, the
 render scale, the particle step and the other port cvars, so they win on the same name; the startup line ends
 "; extra cvars ...". `preset_cvars` (the live options' boot values, the menu's "Preset" restore) applies them too.
-Unset: no change. On the Deck, `extra-env.txt` (run.py `load_extra_env`, `GOW3_` prefix) sets it without
-editing Steam's launch options.
+Unset: no change. `ue4_override.py` reads `os.environ`; run.py's `env` is `os.environ` itself, so the value
+`extra-env.txt` sets (run.py `load_extra_env`, applied before the pak is written) reaches it: the Deck route
+without editing Steam's launch options.
 
 ## Invariants
 
@@ -33,7 +35,9 @@ editing Steam's launch options.
   same cvar while the game runs.
 - `values.update(extra)` must stay after every port-set value in `apply`; moving it earlier lets a preset win and
   the test silently measures the default.
-- Nothing checks the names: a misspelt cvar, or one this build does not have, is written to the ini as is.
+- Nothing checks the names: a misspelt cvar, or one this build does not have, is written to the ini as is. Keys are
+  case-sensitive (`values`, `set_section`): a name in another case than the port's or the game's line adds a second
+  line instead of replacing it; which one UE4 uses is untested.
   `[SystemSettings]` is also outranked by the PS4 device profile: `ue4_override.py` notes "this build has no
   r.GarlicHeapSizeMB, and the PS4 device profile's r.Streaming.PoolSize=2000 outranks [SystemSettings]".
 - Assumption (class M): the cvar exists in this UE 4.21 build and is read from `[SystemSettings]` at boot. Check

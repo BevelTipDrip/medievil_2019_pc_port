@@ -1,6 +1,6 @@
 ---
 id: deck-epp-governor
-title: EPP / governor performance on every CPU (Deck, steamosctl)
+title: EPP performance on every CPU (Deck; proposed via steamosctl, run via deck-cpu-clocks.sh perf)
 area: deck
 status: rejected
 platforms: linux
@@ -16,13 +16,16 @@ tests:
 docs: plan-linux-deck.md#cpu-clocks-and-the-power-cap-2026-11-0405-log-datadeck-epp-perf-1log-datadeck-dedicated-1log, plan-linux-deck.md#baseline-1-and-live-abs-2026-11-04-appimage-a863482-67-helpers-auto-no-dedicated-core-auto-clocks-mailbox-log-datadeck-baseline-1-ablog, study-deck-apu-deep-dive.md#24-steamoss-power-daemons-and-what-a-user-can-change-web, study-deck-apu-deep-dive.md#25-what-can-favour-stage-bs-clock-and-what-cannot
 depends_on:
 related: deck-cpu-clock-split, stage-b-spin, deck-test-tooling, deck-preset
+verified: 2026-11-07
 ---
 ## What it does
 
 A system setting, not code: every CPU at EPP `performance` (amd-pstate-epp; in active mode the `performance`
 governor pins EPP 0 on every core). The APU study's rank 2 proposed it through `steamosctl
 set-cpu-scaling-governor performance` (no root) on the guess that stage B sat on EPP's sticky ~2.4 GHz plateau
-after sleeps. It was applied with `research/tools/deck-cpu-clocks.sh perf` (the user, with sudo; reset at reboot).
+after sleeps. It was applied with `research/tools/deck-cpu-clocks.sh perf` (the user, with sudo; reset at reboot):
+`energy_performance_preference` = `performance` and `scaling_max_freq` = the hardware maximum on every CPU; the
+governor itself was not changed. `steamosctl` was never tried.
 
 ## Invariants
 
@@ -39,8 +42,8 @@ after sleeps. It was applied with `research/tools/deck-cpu-clocks.sh perf` (the 
 
 ## Evidence
 
-- Baseline 1 (`deck.sh clocks`): stage B at ~2.98 GHz mean (2.88-2.97), "not ~2.4 (the APU study's guess)"; the
-  governor's headroom is "~15% at most".
+- Baseline 1 (`deck.sh clocks`): stage B at ~2.98 GHz mean (the plan's range reads 2.88-2.97), "not ~2.4 (the APU
+  study's guess)"; the governor's headroom is "~15% at most".
 - EPP performance on every CPU (`data/deck-epp-perf-1.log`): stage B 2,963 MHz (2,976 before), **74-76 FPS vs
   76.5: no gain**.
 - Why: the APU is at its power cap: `power1_cap` 15 W, 14-15 W used, CPU 7.9 W and GPU 3.2 W of 14.9 W
@@ -52,4 +55,4 @@ after sleeps. It was applied with `research/tools/deck-cpu-clocks.sh perf` (the 
   GHz"; this run closed it. The user's direction after it: "cut total CPU work on every thread (less CPU power = GPU
   headroom)".
 - Worth retrying only with a higher APU power limit (TDP above 15 W) or a much lighter GPU load, where the CPU,
-  not the shared 15 W budget, sets the frame.
+  not the shared 15 W budget, sets the frame (this card's inference; the docs give no retry condition).

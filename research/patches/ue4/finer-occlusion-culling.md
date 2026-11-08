@@ -16,6 +16,7 @@ tests:
 docs: impl-draw-reduction.md#1-finer-occlusion-culling-patchesmedievilxml, study-ue4-draw-reduction.md#4-full-resolution-hzb, plan-linux-deck.md#finer-occlusion-culling-on-the-deck-2026-11-04-appimage-a4250a2-baseline-settings--gow3_hzb_full_size1-mailbox-log-datadeck-hzb-1log, plan-linux-deck.md#decisions-after-the-culling-run-the-user-2026-11-04
 depends_on: hzb-remap
 related: I1, live-render-scale, mausoleum-toggle-bisect, game-update-0102
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -35,15 +36,16 @@ switches.tsv).
   only add it, so `GOW3_HZB_FULL_SIZE=0` is the only way off.
 - Each line carries `Original` bytes (`41ffce`, `ffc8`). `original_mismatches` skips the patch on other bytes, even
   under `GOW3_FORCE_PATCHES` (which bypasses the sha256 gate). `Original` was added to `patches.py` for this patch.
-- Keep the 1280x800 limit: at 4K the patch would build a 4096x4096 pyramid for nothing. Scenes above ~81% of 720p
-  already get 1024x512.
+- Keep the 1280x800 limit: at 4K the patch would build a 4096x4096 pyramid for nothing. 720p scenes above 80%
+  (width over 1024) already get 1024x512; at exactly 80% (1024x576) the stock pyramid is 512x512.
 
 ## Interactions
 
 - hzb-remap: the culling gain exists only with HZB occlusion on (`r.HZBOcclusion=1`, set by `ue4_override` with the
   remap). Where queries are off (occlusion-queries-off) only the HZB build cost changes [inferred].
 - I1 / output size: the decision uses the same startup output size (`run.py` calls it after `output_environment`).
-- Deck Optimized (1280x720 at 80% = 1024x576) gets it automatically.
+- Deck Optimized (1280x720 at 80% = 1024x576) gets it automatically (1024x1024 instead of 512x512). The auto rule
+  does not look at `perf_hzb_occlusion`: with the remap off the patch is still added.
 - mausoleum-toggle-bisect: ruled out as a Hilltop Mausoleum suspect.
 
 ## Evidence

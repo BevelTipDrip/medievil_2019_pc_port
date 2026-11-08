@@ -16,6 +16,7 @@ tests: T-0102-1
 docs: plan-0102.md#the-ports-0100-only-sites-mapped, plan-0102.md#first-launch-by-the-user-2026-10-31-1430-launcher-userlast_runlog, plan-0102.md#t-0102-1-2026-10-31-1431-1453-launched-by-claude-with-the-users-go-build-3cf6d69--nostats-log-datat-0102-1log, fix-inventory.md#7-medievil-specific-ue4-config-eboot-patches-hooks, fix-inventory.md#caveats-in-the-evidence
 depends_on: upstream-0102-eu-support
 related: hzb-remap, movie-suspend, I1, live-graphics-options, effects-resolution, preshadows-live, single-particle-pass, particle-flip-guard, finer-occlusion-culling, engine-cap-cvars
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -35,10 +36,13 @@ the installed version.
   Lines with `Original` bytes are also checked per line.
 - `run.py` picks the HZB profile with `game_profile(title, game_app_version(game))`. Before `3cf6d69` it took the
   first profile (01.00), so 01.02 never got the remap.
-- The `t.MaxFPS` edit keeps the length ("30"/"60" -> "00") and runs only when `fps > 60`. It reuses
-  `files[GAME_INSTANCE]` when the voice-language edit already took that asset (both edit the same file).
-- 01.02 code moves are not uniform: the HZB code sits at +0x2c80, the particle code and SSE4a sites at
-  +0x2dd0 / +0x2dc0, and data at +0x40. Map each site; do not apply one offset to all.
+- The `t.MaxFPS` edit keeps the length ("30"/"60" -> "00") and runs only when `fps > 60` (engine_fps above 60, or
+  `present_no_frame_caps`). At the Windows default `engine_fps` 60 the game's own `t.MaxFPS 30` / `60` stay as
+  shipped; Deck Optimized (engine_fps 240, no frame caps) gets them lifted. It reuses `files[GAME_INSTANCE]` when the
+  voice-language edit already took that asset (both edit the same file).
+- 01.02 code moves are not uniform: the HZB code sits at +0x2c80, the level hook, the particle code and SSE4a sites
+  at +0x2dc0 / +0x2dd0, and data at +0, +0x20 or +0x40 (cvar objects: Preshadows +0x40, r.ScreenPercentage +0x20; the
+  HZB "no results" buffer unmoved). Map each site; do not apply one offset to all.
 
 ## Interactions
 
@@ -64,4 +68,4 @@ the installed version.
 - 01.02's DefaultInput.ini maps R3 to "RecenterCamera", the debug menu's button. The debug menu on 01.02 is still
   unchecked.
 - The comparison with upstream 1.3.8 as shipped (0.1% low 211.9 here vs 44.7 there) also mixes versions: upstream
-  applies its patches only on 01.00.
+  ran on 01.00 (its 01.02 hashes do not include the US build `fe2f88ba`, so it applies none there).

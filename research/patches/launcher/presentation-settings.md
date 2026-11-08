@@ -4,18 +4,19 @@ title: Launcher Presentation settings: tick rate, present mode, no built-in fram
 area: launcher
 status: active
 platforms: all
-default_windows: on
+default_windows: mixed
 default_deck: on
 origin: ours
 class: G
 commits: 44994b9bff
 files: scripts/graphics_options.py, run.py, gpu/shim/core/emulator_settings.h, launcher/medievil_launcher.py, tests/test_graphics_options.py
 symbols: PRESENT_DEFAULTS, PRESENT_FLAGS, PRESENT_LIMITERS, present_environment, no_frame_caps, GetFrameLimit, GetVblankFrequency, GOW3_DERIVED, PRESENT_SWITCHES, engine_cap_var
-switches: GOW3_NO_FRAME_CAP, present_no_frame_caps, present_tick_hz, present_frame_trace
+switches: GOW3_NO_FRAME_CAP, present_no_frame_caps
 tests: T-P120
 docs: plan-stage-b-split.md#presentation-settings-in-the-launcher-2026-10-23, plan-stage-b-split.md#t-p120-the-configuration-that-holds-the-cap-2026-10-23-0300-the-user-launcher-settings, plan-linux-deck.md#deck-optimized-preset-2026-11-05-launcher-built-not-run
 depends_on:
 related: vsync-control, precise-tick, inline-present, present-mode-select, reflex, precise-limiter, flip-trace, deck-preset, launcher-graphics-page, upstream-vsync-limit-rule, engine-cap-cvars
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -47,6 +48,8 @@ bound becomes 1002 and `GOW3_FPS_CAP` becomes 1000. This card is the plumbing an
 
 ## Interactions
 
+- Defaults: the plumbing runs on every start; `present_no_frame_caps` is `0` on Windows (`PRESENT_DEFAULTS`,
+  `INI_DEFAULTS`) and `1` in the Deck preset, hence `default_windows: mixed`, `default_deck: on`.
 - deck-preset: `present_no_frame_caps=1`, `engine_fps=240`, tick 900, not precise, Standard limiter. The 1000 bound
   and a 900 Hz tick leave `fps_limit=60` as the one clock. With `engine_fps=60`, UE4's bound would be a second clock at
   the same rate, and two limiters at one rate fight (T-F13).
@@ -59,8 +62,9 @@ bound becomes 1002 and `GOW3_FPS_CAP` becomes 1000. This card is the plumbing an
 
 - T-P120 (the user, launcher settings): "flat frame-time graph, 1% lows 118-119 at a 120 tick, no cyclical waves,
   with G-Sync on or off". That was the configuration these settings made reachable without variables.
-- Deck: the user's flat 60 in the heaviest graveyard view used `present_no_frame_caps=1`
-  (plan-linux-deck.md, "A flat 60 on the Deck").
+- Deck: the user's flat 60 in the heaviest graveyard view ran with the logging ini, which has engine 240 + no
+  built-in caps (plan-linux-deck.md, "Deck Optimized preset", which copies it; the preset itself is "built, not run").
+  That section also lists `GOW3_NO_FRAME_CAP=1` as part of the 60 cap; at the 900 Hz tick it has no effect (above).
 
 ## History and pitfalls
 

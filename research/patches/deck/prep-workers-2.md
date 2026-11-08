@@ -16,6 +16,7 @@ tests: Launch 14
 docs: plan-linux-deck.md#two-draw-preparation-helpers-2026-11-06-build-d2f145f-lows-log-datadeck-helpers2-1log, plan-linux-deck.md#launch-14-results-2026-11-06-1945-2022-build-5ead842-trace-2-helpers-logging-ini-67-uncapped-log-datadeck-pushpull-1log-traces-research-datadeckdeck-pushpull-auto1fixed1100capsweep-csv, study-deck-rescore-rejected.md#a-switches-that-already-exist-no-build
 depends_on:
 related: lineage-draw-preparation, T2, lineage-texture-set-memo, stage-b-core, core-sched, deck-preset
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -27,14 +28,20 @@ draw-preparation workers; unset, it is half the hardware threads clamped 1-8 (De
 ## Invariants
 
 - Unset stays the default on every platform; the Deck preset does not set it.
-- Class assumption of the idea: workers cost power and sibling time without being needed. Against it: an unprepared
-  draw cannot use the texture-set memo (`BindTexturesFromSet` returns at `!prepared`) and binds on the slow path,
-  ~15 us a call on the Deck (patch audit #3), so fewer workers can cost stage B more than they save.
+- Class assumption of the idea: workers cost power and sibling time without being needed. Against it (patch audit
+  #3, written before T2): an unprepared draw could not use the texture-set memo and bound on the slow path, ~15 us
+  a call on the Deck. Today `BindTexturesFromSet` returns early for `!prepared` only without T2
+  (`GOW3_TEXSET_WIDE`) or for compute; with T2 (Deck preset) an unprepared graphics draw hashes its sharps and uses
+  the wide memo. It still loses the prepared pipeline, sharps and vertex inputs, so the cost side is smaller with the
+  preset than the audit's ~0.2 ms a frame per 1% unprepared, not zero [code, 2026-11-07].
+- `GOW3_PREP_WORKERS=0` is accepted (clamp 0-16): no workers at all.
 
 ## Interactions
 
 - `lineage-draw-preparation`: the workers themselves (SCHED_IDLE on Linux, idle priority on Windows).
-- `T2` / `lineage-texture-set-memo`: only prepared draws reach the memo; watch "prepared" share and slow binds.
+- `T2` / `lineage-texture-set-memo`: with T2 on, unprepared graphics draws reach the (wide) memo too, which softens
+  the audit's argument against fewer workers; without T2 only prepared draws do. Watch the "prepared" share and
+  slow binds.
 - `core-sched`: the APU study proposed the cookie as the sibling fix instead of fewer workers (also rejected).
 - `stage-b-core`: the only earlier 2-worker run was confounded with the dedicated core (rescore A4).
 
@@ -49,7 +56,8 @@ draw-preparation workers; unset, it is half the hardware threads clamped 1-8 (De
 
 ## History and pitfalls
 
-- Rescore A4 predicted -0.5 to +0.5 ms; an earlier confounded run showed 90% of draws prepared with 2 workers
-  (vs 97.8%), up to ~1.5 ms more slow binds [inferred].
+- Rescore A4 predicted -0.5 to +0.5 ms; an earlier run confounded with the dedicated core (`data/deck-helpers-run1.log`,
+  63.2 vs 64.4 FPS, before T2) showed 90% of draws prepared with 2 workers (vs 97.8%), up to ~1.5 ms more slow binds
+  [inferred, patch audit].
 - Not a code rejection: the switch stays. Worth a retry as a same-launch comparison at a 60 cap judged by CPU power
   and per-thread CPU (the method since launch 14), or with `GOW3_PREP_WORKERS=3`, while watching the unprepared share.

@@ -16,6 +16,7 @@ tests:
 docs: plan-frame-pacing.md#panning-stall-anatomy-2026-10-19-pan-1etl-no-launch, fix-inventory.md#10-tried-and-dropped
 depends_on:
 related: 4k-memory, ue4-cvars-tool, I1
+verified: 2026-11-07
 ---
 ## What it does
 

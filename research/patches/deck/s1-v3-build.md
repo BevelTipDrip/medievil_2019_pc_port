@@ -16,6 +16,7 @@ tests:
 docs: impl-deck-build-sched-pool.md#s1-the-x86-64-v3-build-flavour, study-deck-build-optimization.md#2-flags-one-by-one-for-a-branchy-pointer-chasing-thread-on-zen-2, study-deck-build-optimization.md#5-keeping-one-portable-appimage
 depends_on: static-gpu-lib
 related: pgo-build, thinlto, deck-preset
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -35,8 +36,9 @@ option, so it is not in `switches.tsv`.
 - The flags are `add_compile_options` / `add_link_options` before any target, so every CMake target gets them; the
   link repeats `-march` so ThinLTO's code generator targets the same CPU. System libraries and
   `medievil-gpu-check` stay baseline.
-- AppRun's gate runs only when the marker exists and `/proc/cpuinfo` is readable; the default AppImage has neither
-  marker nor check. A default build must delete `out/cpu-level` (it does), or a baseline binary is packaged as v3.
+- AppRun's gate runs only when the marker reads `x86-64-v3`; with no `flags` line in `/proc/cpuinfo` it passes
+  (no check). The default AppImage has no marker. A default build must delete `out/cpu-level` (`build.sh` does), or a
+  baseline binary is packaged as v3; `appimage.sh` stops on an unknown level.
 
 ## Interactions
 
@@ -48,9 +50,10 @@ option, so it is not in `switches.tsv`.
 
 - Binary (impl S1, `a863482`): 71,646 VEX instructions, 12,401 using `%ymm`, BMI1/2, `lzcnt` and `movbe` used, 0 FMA,
   0 `pdep` / `pext`; instructions +3%, `.text` slightly smaller.
-- Expected 0-2% of stage B (study table), inside one launch's noise. A v3 build was used for a 10 s `perf record`
-  on the Deck (`research-data/perf/deck-v3-perf-report.txt`, impl-stage-a-decode.md), but **no v3 vs baseline A/B is
-  recorded**. Not verified in game.
+- Expected 0-2% of stage B (study table), inside one launch's noise. A v3 build ran on the Deck once: its log
+  `data/deck-v3-1.log` and a 10 s `perf record` (`research-data/perf/deck-v3-perf-report.txt`) were read for
+  addresses and hot spots (impl-cpu-waste.md, impl-stage-a-decode.md), but its FPS was never compared with a
+  baseline launch: **no v3 vs baseline A/B is recorded**. Not verified in game.
 
 ## History and pitfalls
 

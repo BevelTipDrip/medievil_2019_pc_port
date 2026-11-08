@@ -16,23 +16,28 @@ tests: T-L0, T-Z4, T-Z4c, T-Z4d, T-F13
 docs: plan-stage-b-split.md#t-l0-rhisyncinterval0-2026-10-21-0128-0133-launched-by-claude-with-the-users-go-build-5231983-log-datat-l0-syncinterval0log, plan-stage-b-split.md#t-z2-t-z4b-dbuffer-decals-and-the-forced-prepass-2026-10-21-0200-0314-launched-by-claude-with-the-users-go, fix-inventory.md#10-tried-and-dropped, plan-linux-deck.md#deck-optimized-preset-2026-11-05-launcher-built-not-run
 depends_on:
 related: game-update-0102, precise-limiter, reflex, vsync-control, deck-preset, ue4-cvars-tool
+verified: 2026-11-07
 ---
 ## What it does
 
 Three UE4-side frame controls were tried as config cvars through the override pak (`GOW3_UE4_CVARS`) or the ini:
 `rhi.SyncInterval=0` (T-L0: did the vblank quantise frame times?), `t.MaxFPS=120` (T-Z4), and the engine frame-rate
 range at 120 as a cap (`engine_fps=120` -> `SmoothedFrameRateRange`, T-Z4c, plus `r.VSync=1` in T-Z4d). None
-engaged. Every working cap is the port's present-thread limiter. Nothing of them is in the build. What remains is
-`frame_rate_range`, which only lifts the stock 60 FPS bound when `engine_fps > 60`.
+engaged. Every working cap above 60 is the port's present-thread limiter. Nothing of them is in the build.
+`frame_rate_range` is not one of them: it is upstream 1.2.0's unlock (`86fce58`), listed here because T-Z4c used it
+as a cap; it only lifts the stock 60 FPS bound when `engine_fps > 60`.
 
 ## Invariants
 
 - Do not rely on UE4's config cvars for a cap above 60 in this build. The cap is the port's limiter
   (precise-limiter, reflex). `run.py` gives the engine a 1000 FPS bound when `present_no_frame_caps` is on.
-- `frame_rate_range(fps)` sets the upper bound to `fps + 2` and is only written when `fps > 60`. At 60 the
-  stock range (below 62) bounds the game at 60 (UGameEngine::GetMaxTickRate with VSync on).
-- `rhi.SyncInterval` stays the game's (1). The vblank does not quantise frames: the immediate-flip path presents
-  frames when ready (run.py's vblank / `GOW3_FPS_CAP` setup assumes this).
+- `frame_rate_range(fps)` sets the upper bound to `fps + 2` and is only written when `fps > 60`. Its docstring says
+  the stock range (below 62) bounds the game at 60 (UGameEngine::GetMaxTickRate with VSync on). T-Z4c (bound 122)
+  ran at 175-182, so above 60 the range is no ceiling. The docs do not explain why the stock bound holds 60 while
+  a 122 bound holds nothing; do not build a cap on either reading.
+- `rhi.SyncInterval` stays the game's (1). At the 480 Hz tick the vblank did not quantise frames (T-L0), but a
+  120 Hz vblank did (run.py comment: 9 ms frames became 17 ms), so above 60 run.py sets `GOW3_VBLANK_HZ=0` and
+  `GOW3_FPS_CAP` unless the present settings already set the tick (`present_tick_hz`, 960 by default).
 
 ## Interactions
 

@@ -16,6 +16,7 @@ tests:
 docs: plan-linux-deck.md#a-flat-60-on-the-deck-the-user-2026-11-05, plan-linux-deck.md#deck-optimized-preset-2026-11-05-launcher-built-not-run, plan-linux-deck.md#thread-nice-live-2026-11-06-build-5ab1a24-nicelive-logs-datadeck-nicelive-1log-datadeck-nicelive-1400log
 depends_on: early-frame-eop, decode-pacing, drain-hybrid, T2, R1-region-index, A1, A2, A3, particle-flip-guard, thread-nice, single-particle-pass
 related: U2, 4k-memory, pool-kept-pages, M1, perf-patches-ini, presentation-settings, vsync-control, extra-env-file, prep-workers-2, core-sched, S1-v3-build, nav-purge-nofence, stage-b-spin
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -37,7 +38,9 @@ present, frames queued 1, every perf patch on but `perf_4k_memory=0`, `perf_part
   the cap so `driver.cpp` `current_limit` keeps it, VSync off so it is not zeroed, Standard limiter so no Reflex.
   `engine_fps=60` would add UE4's own bound (two limiters at one rate fight, T-F13); a 60 Hz tick turns a missed
   tick into 33 ms on the Deck. `test_the_60_limit_is_the_only_clock` checks it.
-- An environment variable already set (or extra-env.txt, applied last by run.py) wins over a Deck switch.
+- An environment variable already set (or extra-env.txt, applied last by `run.py` `load_extra_env`) wins over a Deck
+  switch. `--play` (Steam shortcuts) passes the saved `deck_switches` too (`play_without_window` ->
+  `game_environment`), but never makes the offer.
 - Not Linux defaults: off unless `deck_switches` (default False); choosing another quality in the launcher ends the
   preset and its switches (other values stay).
 - `test_switches_come_with_the_preset_only` pins `DECK_SWITCHES` exactly; a change needs the test changed with it.
@@ -45,6 +48,8 @@ present, frames queued 1, every perf patch on but `perf_4k_memory=0`, `perf_part
 ## Interactions
 
 - Each switch is its own card (depends_on). `U2` is turned off (`GOW3_ARENA_HOST_VISIBLE=0`: no gain on the Deck).
+  The switches are platform-neutral env: `deck_switches` on Windows sets them too, where `GOW3_THREAD_NICE` and A1's
+  `GOW3_BACKING_COPY` do nothing (Linux-only code).
 - `single-particle-pass` is on only with `particle-flip-guard` (the guard fixes the torch / crypt floor bug).
 - `perf_4k_memory=0` -> `GOW3_PS4_MEMORY=1` (stock pools): more pool reuse, so `pool-kept-pages` (Linux) and `M1`'s
   un-zeroed kept pages (Windows: "the PC with the Deck preset did once") show sooner.

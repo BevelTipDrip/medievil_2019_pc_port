@@ -18,15 +18,18 @@ depends_on:
 conflicts_with:
 supersedes:
 related: perf-patches-ini, hzb-remap, game-update-0102
+verified: 2026-11-07
 ---
 ## What it does
 
 - `de69b9f`: the "HZB occlusion culling" description in `PERF_PATCHES` used to say MediEvil 01.00 only. It now
   says "MediEvil 01.00 and 01.02", because the HZB remap hooks were mapped for 01.02 too (game-update-0102; run.py
-  turns on `GOW3_HZB_REMAP` for every eboot `src/hzb_hook.h` knows). Text only: the key, the variables and the
+  turns on `GOW3_HZB_REMAP` when the eboot's hash matches its patch profile in patches.py, 01.00 or 01.02, the builds
+  `src/hzb_hook.h` maps). Text only: the key, the variables and the
   default did not change.
 
 ## Invariants
 
 - The launcher texts in `PERF_PATCHES` and the in-game `hints` in `PerfPatchesSection` (gow3_overlay.cpp) are
-  written separately. A text fix in one should be checked against the other; no test compares them.
+  written separately. A text fix in one should be checked against the other; no test compares them. (The in-game
+  HZB hint names no version, so this fix had no counterpart there.)

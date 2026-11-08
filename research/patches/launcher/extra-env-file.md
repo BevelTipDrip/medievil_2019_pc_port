@@ -16,6 +16,7 @@ tests:
 docs: plan-linux-deck.md#test-settings-by-file-2026-11-03-the-users-request-a15b5cb, study-deck-patch-audit.md#3-test-plan, study-deck-build-optimization.md#1-what-the-build-does-today-code-bin
 depends_on:
 related: deck-preset, perf-patches-ini, presentation-settings, U2, deck-test-tooling
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -25,14 +26,19 @@ of `EXTRA_ENV_PREFIXES` (`GOW3_`, `RADV_`, `MESA_`, `AMD_`, `VK_`, `SDL_`) and c
 other lines are skipped and logged as "ignored". Valid lines overwrite the inherited environment and are logged in
 one line, `Extra environment (path): K=V ...`. It works however the game is started (Steam, the launcher, `--play`),
 so Deck tests need no Steam launch options: Claude writes the file over SSH (`deck.sh env`). Absent file: nothing
-happens. Same path on Windows (the port's data folder).
+happens. Same path on Windows (the port's data folder). On `deck-lab` only (not on `lab`).
 
 ## Invariants
 
-- The file must be applied first and must overwrite (`env[key] = ...`). Everything after it uses `setdefault` or
+- The file must be applied first and must overwrite (`env[key] = ...`). Most of what follows uses `setdefault` or
   `if key not in env`, so its keys win over medievil.ini: `perf_environment`, `present_environment`, the
   patch-derived `GOW3_DMEM_MB` / `GOW3_VBLANK_HZ`, and the launcher's `DECK_SWITCHES` (which reach run.py as
   inherited environment).
+- Exceptions, where run.py overwrites a key the file set [code]: `GOW3_DEFERRED_READBACK`, `GOW3_STALE_READBACK` and
+  `GOW3_ASYNC_SHADERS` (`env.update(graphics_options.environment(...))` from medievil.ini), `GOW3_PATCHES_ONLY=1`
+  (when patched), `GOW3_UE4_PRESET_CVARS`, `GOW3_UE4_SETRES_CVAR`, `GOW3_DERIVED` and `GOW3_RESTART_COMMAND`; and
+  `GOW3_UE4_SETRES` / `GOW3_INTERNAL_WIDTH` / `GOW3_INTERNAL_HEIGHT` are removed when the eboot has no `r.SetRes`.
+  A readback or async-shader test must change medievil.ini, not this file.
 - Only the listed prefixes. `LD_PRELOAD`, `LLVM_PROFILE_FILE` and `GLIBC_TUNABLES` cannot be set this way
   (study-deck-build-optimization.md notes this for the PGO / allocator steps). Widening the list widens what a stray
   file can do on every start.

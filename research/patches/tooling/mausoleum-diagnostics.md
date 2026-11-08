@@ -15,7 +15,8 @@ switches: GOW3_IMAGE_WATCH, GOW3_IMAGE_WATCH_LINES, GOW3_READBACK_LOG, GOW3_SKIP
 tests:
 docs: plan-linux-deck.md#hilltop-mausoleum-lighting-pool-pages-leaked-on-linux-2026-11-0607-fixed-7246f88--f74e1a1
 depends_on:
-related: pool-kept-pages, readback-first-wait, tiny-target-readback, gpu-write-subresources, renderdoc-capture, mausoleum-toggle-bisect, texcache-stats, lineage-deferred-readbacks, new-images-undefined
+related: pool-kept-pages, readback-first-wait, tiny-target-readback, gpu-write-subresources, renderdoc-capture, mausoleum-toggle-bisect, texcache-stats, lineage-deferred-readbacks, new-images-undefined, upstream-frame-analyzer-fix
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -24,7 +25,8 @@ timed "Image watch" line (flags, scheduler tick) for every event that can set or
 which binding), CPU / maybe-CPU / GPU dirty, uploaded from guest memory (caller file:line, "was undefined"), render
 target and storage binds (mips, layers), expanded, mip merged in, unmapped, freed; `GOW3_IMAGE_WATCH_LINES` caps
 the lines (default 4000). `GOW3_SKIPPED_TARGET_LOG=1` logs once each GPU-written target or storage image of at most
-64 KiB that is never copied back (tiled, wider than 8 px) with the guest bytes a CPU read would see, as halves.
+64 KiB that is never copied back (tiled, wider than 8 px, no `GOW3_TINY_TARGET_READBACK`; every one when linear
+readbacks are off) with the guest bytes a CPU read would see, as halves.
 `GOW3_READBACK_LOG=1` logs first copies (queued, published with their non-zero texels, the GPU's linear texels, a CPU
 read). The frame map now ends at a display pass after a scene pass (not at the UI pass) and prints
 `GOW3_CAPTURE_BUFFER_BYTES` of each buffer (default 1024; the view constants are ~3.3 KB).
@@ -35,13 +37,15 @@ read). The frame map now ends at a display pass after a scene pass (not at the U
   spec and a width compare) or a static bool test.
 - `WatchNote` takes a line from the budget by CAS, so the cap holds across threads; a new event site must call
   `Watched` first (the format work is not free) and add its own note, or the watch misses that way of losing data.
-- The "read by the CPU" readback line prints only when the read faults, i.e. with `GOW3_READBACK_FIRST_WAIT=1`
-  (readback-first-wait); "first copy published" only in stale mode (`stale_readbacks`). `readback_published` grows
-  by one entry per distinct readback address and is never pruned.
+- The "read by the CPU" line prints only when a CPU read faults on a pending copy: in stale mode (the default,
+  `stale_readback=1` in the ini) only first copies watch reads, and only with `GOW3_READBACK_FIRST_WAIT=1`
+  (readback-first-wait); without stale mode every pending copy's read prints it. "First copy published" prints in
+  stale mode only. `readback_published` gains one entry per distinct readback address and is never pruned.
 - The linear GPU copy for the log is an extra staging download per first copy, freed in a deferred priority
   operation; it adds GPU and staging work while `GOW3_READBACK_LOG` is on.
 - The frame map's end rule (`saw_scene` in `BeginPass`) assumes MediEvil's two display-only passes per frame
-  (composite, then UI); a game with no depth pass before its display pass would never end a recording that way.
+  (composite, then UI); a game with no depth pass before its display pass would end a recording only at the
+  400-entry cap (renderdoc-capture).
 
 ## Interactions
 
@@ -50,13 +54,15 @@ read). The frame map now ends at a display pass after a scene pass (not at the U
 - readback-first-wait, tiny-target-readback, gpu-write-subresources: suspects built in the same commits or hunt,
   each rejected with its own card; the image watch's "GPU write inside" note belongs to gpu-write-subresources.
 - renderdoc-capture: target-started captures and texel statistics; mausoleum-toggle-bisect: the method before.
+- upstream-frame-analyzer-fix: `FrameCapture::Buffer`'s null guard and hex flatbuf print; the byte limit here
+  caps the same dump.
 - texcache-stats: one run with `GOW3_TEXCACHE_STATS=1` "repaired itself" (memory reuse luck, not reproducible).
 
 ## Evidence
 
 - Mausoleum section: the reflection capture arrays (128x128 L8 x 128/512/1024) were "uploaded once from guest
   memory 'was undefined'"; the view constants (words 624-651) held garbage on the Deck, exact zeros on the PC.
-  The fix (pool-kept-pages) was verified by the user: "everything loaded in correctly". These logs carry no
+  The fix (pool-kept-pages) was verified by the user (plan-linux-deck.md: "everything loaded in correctly"). These logs carry no
   performance numbers; not verified in game as anything but tracing.
 
 ## History and pitfalls

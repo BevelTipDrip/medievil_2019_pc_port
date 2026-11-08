@@ -16,6 +16,7 @@ tests:
 docs: fix-inventory.md#from-upstream-medievil-133-138-bc160201983-and-contributors-merged-into-lab
 depends_on:
 related: renderdoc-capture, mausoleum-diagnostics, lineage-constant-ring, upstream-screenshots
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -31,10 +32,10 @@ the camera-motion constants read (`ring->size == 864 && gbuffer_draw`) against a
 - Every consumer of a ring binding must treat `address == 0` as "flatbuf, data in `FlatUserData()`", never as a
   guest pointer. Today: the capture branch and the `camera_motion->OnConstants` check in `BindBuffers`. A new
   reader of `ring->address` that skips the check faults when a stage binds its flatbuf.
-- `FrameCapture::Buffer` prints `min(size, GOW3_CAPTURE_BUFFER_BYTES)` rounded down to 4 bytes and only reads
-  `data` when non-null; `hex` keys on `address == 0`.
-- Only active while a capture records (`FrameCapture::Active()`), except the camera-motion guard, which is on
-  the normal draw path (G-buffer draws with an 864-byte ring binding).
+- `FrameCapture::Buffer` only reads `data` when non-null; `hex` keys on `address == 0`. The byte limit
+  (`min(size, GOW3_CAPTURE_BUFFER_BYTES)`, rounded down to 4) is ours, from mausoleum-diagnostics (`e383f7e`).
+- Only active while the frame map is Armed or Recording (`FrameCapture::Active()`), except the camera-motion
+  guard, which is on the normal draw path (G-buffer draws with an 864-byte ring binding).
 
 ## Interactions
 
@@ -47,8 +48,8 @@ the camera-motion constants read (`ring->size == 864 && gbuffer_draw`) against a
 ## Evidence
 
 - Upstream (Porticus, `3a240c1`): "Verified on Linux with GOW3_CAPTURE_TRIGGER: 43 passes written, the flatbuf
-  slots show their descriptors, and the game keeps running." Merged as PR #28 (`8a7abb9`); in `lab` through the
-  upstream merges (fix-inventory; merge test N-27: no regression). No port-side measurement.
+  slots show their descriptors, and the game keeps running." Merged as PR #28 (`8a7abb9`); in `lab` with the upstream
+  1.3.8 merge (`e308c4c`, 2026-10-30; fix-inventory; merge test N-27: no regression). No port-side measurement.
 
 ## History and pitfalls
 

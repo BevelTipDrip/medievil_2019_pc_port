@@ -1,6 +1,6 @@
 ---
 id: upstream-ue4-setres
-title: Upstream live r.SetRes for render resolution (fix for #11), kept as the fallback
+title: Upstream live r.SetRes for native output (1.3.0; per-eboot slot 1ae17cd), kept as the fallback
 area: ue4
 status: active
 platforms: all
@@ -16,6 +16,7 @@ tests:
 docs: fix-inventory.md#from-upstream-medievil-133-138-bc160201983-and-contributors-merged-into-lab, study-boot-resolution.md#4-fixing-the-live-rsetres-instead, study-boot-resolution.md#summary
 depends_on: upstream-0102-eu-support
 related: I1, upstream-4k-framebuffer-pool, live-graphics-options, effects-resolution, preshadows-live, single-particle-pass
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -33,8 +34,8 @@ Every live cvar shares `ue4_set_cvar`.
   (+0x20, +0x68) must lie inside the image (`lo..lo+0x6000000`), or nothing is called.
 - The slot comes only from `GOW3_UE4_SETRES_CVAR` (run.py, `setres_slot`: the pattern found exactly once). 0 or out
   of range means no live resolution change, logged once.
-- The start value is requested at 120 / 300 / 600 / 1200 pad reads. A menu request stops the repeats and is applied
-  only after 120 reads.
+- The start value is requested at 120 / 300 / 600 / 1200 pad reads. Any menu request stops the repeats; one made
+  before 120 reads is dropped, not deferred.
 - Runs on the game's pad thread. Values are at most 23 characters (UTF-16 buffer of 24).
 
 ## Interactions

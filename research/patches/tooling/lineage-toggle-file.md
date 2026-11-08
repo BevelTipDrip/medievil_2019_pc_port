@@ -15,7 +15,8 @@ switches: GOW3_TOGGLE_FILE, toggle:NarrowImageStages
 tests: N-30, N-31, N-32, Launch 14
 docs: fix-inventory.md#for-other-ports-how-to-read-this, study-live-switches.md#how-live-works-today-three-mechanisms
 depends_on:
-related: deck-test-tooling, M1, narrow-image-stages, bulk-descriptor-copy, sampler-memo, ring-reuse, perf-patches-ini
+related: deck-test-tooling, M1, narrow-image-stages, bulk-descriptor-copy, sampler-memo, ring-reuse, perf-patches-ini, thinlto, extra-env-file
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -23,9 +24,11 @@ When `GOW3_TOGGLE_FILE` is set, `runtime_memory_set_gpu_hooks` starts `toggle_wa
 up to three decimal numbers (`fscanf "%llu %llu %llu"`): `runtime_disabled_optimizations` (`Gow3Toggle`, bits
 0-63), `runtime_disabled_optimizations2` (`Gow3Toggle2`, from `e0c7566`) and `runtime_toggle_frame_cap` (a frame
 cap in FPS, `5ead842`). A set bit switches that optimisation **off**; `Disabled(bit)` is a relaxed load per use.
-Each change is logged ("Runtime: disabled optimizations mask=...", "second word=...", "toggle file frame cap=...").
-The launcher always sets the variable (`<user>/frame-dumps/toggles.txt`); `toggle-ab.ps1` and `deck.sh ab` /
-`steps` alternate states in one launch, and the logs are split by state afterwards.
+Each change is logged ("Runtime: disabled optimizations mask=...", "second word=...", "toggle file frame cap=...";
+a second word or cap of 0 at start prints nothing). The launcher sets the variable (`setdefault`, so a set
+variable wins) to `<user>/frame-dumps/toggles.txt`; `toggle-ab.ps1` (`ca5636f`, thinlto card) and `deck.sh ab` /
+`steps` alternate states in one launch, and the logs are split by state afterwards. The watcher is inherited
+(upstream's first import, Bloodborne lineage).
 
 ## Invariants
 
@@ -38,7 +41,9 @@ The launcher always sets the variable (`<user>/frame-dumps/toggles.txt`); `toggl
   (M1). Writing 2147483648 switches both off. Bits 20-29 are raw motion / upscaler debug toggles. A new bit must
   be checked against both headers (`gow3_toggles.h`, the `#define`s in `src/*.c`).
 - The overlay's `TestLabel` reads the first word only: any non-zero first word shows "TEST" (A-D for four fixed
-  sets) on screen; second-word A/Bs show no label.
+  sets) on screen at 250% overlay scale; second-word A/Bs show no label.
+- `tests/test_gpu_runtime_stubs.cpp` defines `runtime_disabled_optimizations` as `uint32_t` while the runtime and
+  `gow3_toggles.h` use `uint64_t`: a GPU test reading bits 32-63 reads past the stub [code].
 
 ## Interactions
 
@@ -52,7 +57,7 @@ The launcher always sets the variable (`<user>/frame-dumps/toggles.txt`); `toggl
 
 - N-30 (bulk copy, second word bit 1): descriptors 0.217 vs 0.337 us per draw median. N-31 (sampler memo, bit 2):
   0.041 vs 0.126 us. N-32 (ring reuse, bit 4): 1% low ~188 on vs ~179 off. Launch 14: the cap sweep through the third
-  word. The mechanism is live-verified [V] in study-live-switches.md.
+  word. study-live-switches.md checks in code [V] which bits are honoured at use.
 
 ## History and pitfalls
 
@@ -60,5 +65,8 @@ The launcher always sets the variable (`<user>/frame-dumps/toggles.txt`); `toggl
   particle-sim skip, impl-draw-reduction.md).
 - Frames within ~1 s of a switch mix two states: the split tools skip them (`toggle_ab_sections.py`,
   `flip_toggle_ab.py`, deck_summary's "mixed" windows).
-- On the Deck `deck.sh` writes `~/.local/share/medievil-pc/toggles.txt`: `GOW3_TOGGLE_FILE` must name that file
-  there, or the A/B writes go nowhere and every window shows one state.
+- On the Deck `deck.sh` writes `/home/deck/.local/share/medievil-pc/toggles.txt`; the launcher's default there is
+  `<data>/user/frame-dumps/toggles.txt`. The Deck's `extra-env.txt` sets `GOW3_TOGGLE_FILE` to deck.sh's path
+  (impl-texset-index.md, impl-u2-direct-arena-writes.md; run.py applies it last, so it wins). Without that line the
+  A/B writes go nowhere and every window shows one state.
+- study-live-switches.md still names the launcher's file `user/screenshots/toggles.txt`; the code uses `frame-dumps`.

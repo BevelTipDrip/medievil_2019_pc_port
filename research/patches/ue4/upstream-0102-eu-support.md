@@ -16,6 +16,7 @@ tests:
 docs: fix-inventory.md#from-upstream-medievil-133-138-bc160201983-and-contributors-merged-into-lab, plan-0102.md#the-eboot, study-boot-resolution.md#5-other-versions
 depends_on:
 related: game-update-0102, upstream-4k-framebuffer-pool, upstream-ue4-setres, I1, upstream-launcher-features
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -32,8 +33,10 @@ returning 0 (`optional_import`, `optional_stub`). The override pak is written lo
   the same version has its code elsewhere, and byte writes there corrupt it. `GOW3_FORCE_PATCHES` skips the gate
   and falls back to the first version's addresses. Only `Original`-checked lines are safe then.
 - Only `#libSceNpToolkit2` imports become no-ops. Every other unresolved import stays fatal (`unresolved`).
-- `setres_slot` must match the code pattern exactly once. Otherwise native output stays 1080p, `GOW3_UE4_SETRES` is
-  dropped, and the runtime's `ue4_setres_slot` logs "not located".
+- `setres_slot` must match the code pattern exactly once. Otherwise there is no `GOW3_UE4_SETRES_CVAR`: every live
+  r.SetRes (menu buttons, fallback start) is off and `ue4_setres_slot` logs "not located". Only when
+  `GOW3_UE4_SETRES` was set (the fallback) does run.py also drop it and the internal size, so output stays 1080p; the
+  boot-size path (I1) keeps its size.
 - The pak name must be lowercase. On case-sensitive file systems (Linux, Deck) the old `_P` name was never mounted:
   screen percentage, quality, the debug menu and the ammo edit were all silently off. `OLD_PAK_NAME` is deleted.
 
@@ -57,4 +60,5 @@ returning 0 (`optional_import`, `optional_stub`). The override pak is written lo
   (0x5c28328). `1ae17cd` replaced the fixed address with the code search.
 - Before `c167454`, run.py looked up `GAMES` without the APP_VER, so a 01.02 eboot was compared with 01.00's hash and
   every native output was refused.
-- Upstream's 01.02 is EU-tested. On the EU 01.02 the debug menu "does not open" (R3 is RecenterCamera there).
+- Upstream's 01.02 is EU-tested. On the EU 01.02 the debug menu "does not open"; the US 01.02's DefaultInput.ini maps
+  R3 (the menu's button) to RecenterCamera, the likely reason [inferred].

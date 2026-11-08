@@ -16,6 +16,7 @@ tests:
 docs: impl-deck-cpu-bundle.md#d1-static-tls-for-the-gpu-library, study-deck-rescore-rejected.md#d-linux-only-items-from-the-spacepepperoni-review-verdict-adopt-not-ported
 depends_on:
 related: static-gpu-lib, sampler-memo
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -29,9 +30,10 @@ confused with `D1` (unmap discard, caches).
 - Class C, assumption: the library is in the initial set of loaded objects (DT_NEEDED of `medievil-runtime` and the
   tests), never `dlopen`ed. Its TLS is then sized into the initial static block and glibc's small dlopen surplus does
   not apply. A `dlopen` of it would fail loudly (the linker marks it `STATIC_TLS`).
-- The library's TLS segment must fit the initial block (0x4b48 bytes measured: fine).
-- With `static-gpu-lib` ON (default) the option is still passed and the static link makes it local-exec; removing
-  it changes only an OFF build.
+- The library's TLS segment must fit the initial block (0x4b48 bytes measured: fine; the static runtime's one
+  segment is 0x5518, impl G).
+- The option sits in `gpu/CMakeLists.txt`'s `if (NOT WIN32)` block for both library kinds. With `static-gpu-lib` ON
+  (default) the static link relaxes it to local-exec; removing it changes only an OFF build.
 
 ## Interactions
 

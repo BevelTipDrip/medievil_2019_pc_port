@@ -16,6 +16,7 @@ tests:
 docs: impl-live-render-scale.md#how-it-works, impl-live-render-scale.md#limits, impl-live-render-scale.md#what-follows-a-live-change-what-stays-as-started, plan-linux-deck.md#spin-compact-texture-memo-and-the-task-split-2026-11-04, plan-live-switches.md#done
 depends_on: live-graphics-options
 related: finer-occlusion-culling, effects-resolution, 4k-memory, upstream-ue4-setres, I1, park-unmapped, deck-preset, launcher-graphics-page
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -25,7 +26,7 @@ In game, Performance > Applied now has a 1% render-scale slider with -/+ buttons
 100%, then `r.ScreenPercentage`. Both go through `runtime_ue4_request_cvar` on the game thread's next pad poll
 (objects and 7-byte sites for 01.00 and 01.02 in `ue4_cvars`), and the log says `Render scale: A% -> B% (live)`. The
 launcher shows the presets plus a 50-200 percent box (`render_scale_control`). The ini keeps whole percents; 25-49
-still start.
+still start. On `deck-lab` only (not on `lab`).
 
 ## Invariants
 
@@ -35,7 +36,8 @@ still start.
   `RenderScaleNeedsRestart`, and drawn at the top of the range until the next start.
 - `RenderScaleMin` / `RenderScaleMax` / `RenderScaleIniMin` (gow3_settings.h) must equal `RENDER_SCALE_RANGE` and
   `parse_render_scale` (`test_render_scale_range_matches_the_game` reads the header). `ParseRenderScale` must parse
-  as `int(float(v))` does in Python, or launcher and game disagree on an ini value.
+  as `int(float(v))` does in Python, or launcher and game disagree on an ini value. It nearly does: `strtod` also
+  reads hex (`0x50` is 80 in game, 100 in Python) [code].
 - The upsampling cvar must be set before `r.ScreenPercentage` (table order = poll order). Below 100% without it,
   UE4 falls back to its spatial upscale.
 - With `ue4_aa` FXAA / off, crossing 100% live keeps the start's anti-aliasing, so it is a restart change.
@@ -48,7 +50,9 @@ still start.
 - finer-occlusion-culling: a binary patch decided at start by `hzb_full_size_environment` from the start scene (on up
   to 1280x800). A live change keeps that decision. On the Deck's 720p / 800p output every live value up to 100% stays
   at most 1280x800, so the decision still holds there. On a PC at 1080p, a start at 50% (960x540, patch on) followed
-  by a move to 100% keeps a full-size HZB at 1920x1080. That has not been measured.
+  by a move to 100% keeps a full-size HZB at 1920x1080. The reverse, a 1080p start at 100% (patch off unless the
+  Patches page selects it) moved live to 50%, keeps the stock coarse HZB for the small scene. Neither has been
+  measured.
 - The HZB pyramid size follows the scene every frame. The HZB remap is unaffected (fixed 256x256 results).
 - effects-resolution follows, as a percent of the render size. 4k-memory / I1 stay as started (output size).
 - park-unmapped: freed guest targets are parked up to 10 s / 768 MiB (N-24), so a live increase peaks above a start
@@ -59,7 +63,8 @@ still start.
 
 - Deck (2026-11-04, plan-linux-deck.md): "Live render scale and the menu redraw fix: verified by the user (works;
   pacing with the menu up normal)". The per-scale numbers of the planned test (impl-live-render-scale.md, "Deck
-  test") are not written up.
+  test") are not written up. plan-live-switches.md ("Done", render scale row) still says "Not yet verified in game":
+  out of date against plan-linux-deck.md.
 - Unit tests: graphics-settings-test (parse, live requests, clamp, restart rule, save) and the two Python range tests.
 
 ## History and pitfalls

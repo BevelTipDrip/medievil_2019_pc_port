@@ -16,13 +16,15 @@ tests: N-29
 docs: plan-frame-pacing.md#n-29-thinlto-on-by-default-2026-10-30-launched-by-claude-with-the-users-go-t-lto-a1log-t-lto-blog-same-code-a855b18, study-deck-build-optimization.md#1-what-the-build-does-today-code-bin
 depends_on:
 related: pgo-build, static-gpu-lib, S1-v3-build, bulk-descriptor-copy
+verified: 2026-11-07
 ---
 ## What it does
 
 `build.sh`'s Windows branch (MSYS2 CLANG64) and `research/tools/build-pdb.sh` now pass `-DGOW3_LTO=ON` by default
 (`GOW3_LTO=OFF` turns it off). `gpu/CMakeLists.txt` then sets `CMAKE_INTERPROCEDURAL_OPTIMIZATION` after
-`check_ipo_supported`. With clang that is `-flto=thin` on every compile line, linked by lld. The Linux branch already
-defaulted to `GOW3_LTO=ON` upstream. With the Deck build's clang 19 it is ThinLTO too (319 `-flto=thin` lines,
+`check_ipo_supported`. With clang that is `-flto=thin` on every compile line (Windows: linked by lld, N-29). The
+Linux branch already defaulted to `GOW3_LTO=ON` upstream. With the Deck build's clang 19 it is ThinLTO too (319
+`-flto=thin` lines), linked by ld.bfd with the LLVMgold plugin, not lld (lld only with `GOW3_CPU_LEVEL=v3`;
 study-deck-build-optimization.md), and since static-gpu-lib the runtime C joins the same ThinLTO unit. The commit
 also added `sections_per_draw.py` (stage B microseconds per draw in heavy frames from a `GOW3_SECTIONS` log) and
 `toggle-ab.ps1` (alternates one toggle-file bit every N seconds in one launch). A build variable, not a runtime
@@ -31,6 +33,8 @@ switch: nothing in the game reads it.
 ## Invariants
 
 - Host code only. The game's own code is the PS4 binary, and no compiler flag touches it.
+- Linux `build.sh` names no compiler for the CMake tree (only Windows passes `clang` / `clang++`), so CMake's default
+  (or `CC` / `CXX` from the environment) is used: with GCC the same `GOW3_LTO=ON` is GCC's LTO, not ThinLTO, and N-29 does not describe it [code].
 - `check_ipo_supported` failing must only warn ("LTO unavailable") and build without LTO. A toolchain without LTO
   support still builds, slower.
 - Symbols keep resolving with llvm-nm / llvm-symbolizer under LTO (checked in N-29). The minidump and watchdog paths
@@ -51,7 +55,7 @@ switch: nothing in the game reads it.
 
 - N-29 (same code `a855b18`, LTO off vs on, heavy view, sections on): stage B per draw, median / mean. Packet
   2.62 / 2.66 us off vs 2.44 / 2.74 on. Draw section 2.07 / 2.15 vs 1.99 / 2.21. The user: "run-to-run variance,
-  no downside to keeping it". The exe is 129 MB with LTO, 150 MB without.
+  no downside to keeping it" (the doc's record of their words). The exe is 129 MB with LTO, 150 MB without.
 
 ## History and pitfalls
 

@@ -16,13 +16,15 @@ tests:
 docs: plan-linux-deck.md#particle-fix-1-2026-11-05-2110-2128-build-49291f3-particlefix-log-datadeck-particlefix-1log, plan-linux-deck.md#particle-fix-2-the-guard-alone-2026-11-06-build-49291f3-particlefix, study-particle-fixed-step.md#the-change, study-particle-fixed-step.md#the-emitters-per-frame-data-game-thread-code
 depends_on: single-particle-pass
 related: particle-flip-guard
+verified: 2026-11-07
 ---
 ## What it does
 
 Eboot patch "GPU particle fixed step in the single pass", 5 writes per build. The game thread's per-frame data
 (0x2383a36 / 0x2383a5c, 01.00) always plans with the registered 1/30 constant (0x3e2461c) instead of the cvar. The
-three first `ExecuteSimulationCommands` calls get `bUseFixDT = 1` (`seta al` -> `mov al, 1; nop`). With the single
-pass on, the 12 flag-8 emitters (`LocalVectorField.bUseFixDT`: `PS_air_sparkles`, leaves, fluff) keep 1/30 s steps
+first `ExecuteSimulationCommands` call gets `bUseFixDT = 1` in its three collision variants (`seta al` -> `mov al, 1;
+nop`). Image offsets; the XML adds the 0x400000 base. With the single pass on, the 12 flag-8 systems (of 174 GPU
+systems) (`LocalVectorField.bUseFixDT`: `PS_air_sparkles`, leaves, fluff) keep 1/30 s steps
 in one pass. Switch: `GOW3_PARTICLE_SINGLE_FIXED=1` / `0` (run.py, extra-env.txt). It is not in switches.tsv
 because it is a Python-only key. Unset, the launcher's Patches page decides (`isEnabled="false"`).
 

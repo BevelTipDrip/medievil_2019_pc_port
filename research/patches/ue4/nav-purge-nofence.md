@@ -16,6 +16,7 @@ tests:
 docs: impl-cpu-waste.md#the-patch-item-2-gow3_nav_purge_nofence1, impl-cpu-waste.md#what-0x802c94ba2--ba5--ba8-is-not-a-wait-static-analysis-0102-high-confidence, plan-linux-deck.md#round-1-results-gpu-clock-auto-2026-11-05-ini-logging-67-uncapped-launched-by-the-user
 depends_on:
 related: deck-preset
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -37,14 +38,16 @@ Python-only, not in switches.tsv) or the launcher's Patches page (`isEnabled="fa
 
 ## Interactions
 
-- deck-preset: left out of `DECK_SWITCHES` (neutral).
+- deck-preset: left out of `DECK_SWITCHES` (neutral). With the switch unset the launcher's Patches page can still
+  tick it (`isEnabled="false"` only sets the page's default).
 - Game thread only. Stage B is the Deck's bottleneck, so FPS was expected unchanged.
 
 ## Evidence
 
 - Deck round 1 (GPU auto, ini logging 67% uncapped, `data/deck-nav-1.log`, patch applied, 18 writes): 79.4 FPS,
   worst 17.3 ms, p99 16.14 ms. Neutral in FPS. Game-thread CPU and power were not measured.
-- Between-launch drift on the Deck is ~1.35-1.5 FPS (round 2), so a restart-only result this small cannot be judged.
+- Two segments of the same state within one launch differed by 1.35 FPS (round 2), so between-launch results under
+  ~1.5 FPS cannot be judged; this restart-only result is inside that.
 
 ## History and pitfalls
 

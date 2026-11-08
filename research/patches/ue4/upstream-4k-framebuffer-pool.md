@@ -16,6 +16,7 @@ tests: T-R3, T-I1b
 docs: fix-inventory.md#caveats-in-the-evidence, study-boot-resolution.md#framebuffer-pool-per-size
 depends_on:
 related: 4k-memory, I1, upstream-0102-eu-support, pool-kept-pages
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -35,8 +36,8 @@ paths' pool test (`addr >> 27 == 0x800` -> `addr >> 29 == 0x200`). Its note "Req
   game's general pool is 512 MiB smaller than intended) [inferred].
 - Gated by the eboot sha256 per version only (`eboot_matches`). The lines have no `Original` bytes, so
   `GOW3_FORCE_PATCHES` on another build writes blind.
-- `isEnabled="true"`: in the default selection at every resolution (`selected_patches`). `output_environment`
-  also forces it above 1080p whatever the Patches page says.
+- `isEnabled="true"`: in the default selection at every resolution (`selected_patches`); at 1080p and below the
+  launcher's Patches page can untick it. `output_environment` forces it above 1080p whatever the page says.
 
 ## Interactions
 
@@ -49,8 +50,8 @@ paths' pool test (`addr >> 27 == 0x800` -> `addr >> 29 == 0x200`). Its note "Req
 ## Evidence
 
 - Deck at 720p (`data/deck-baseline-1-ab.log`): applied by default ("Patches: ... 'Native 4K framebuffer pool (512
-  MB)'"), memory pool expanded by 5,301,534,720 bytes (5,056 MiB = 5,568 - 512).
-- 4K with 7,104 MiB: pool +6,592 MiB (fix-inventory Caveats). T-R3 (1800p): the user, "everything seemed to work as
+  MB)'"), memory pool expanded by 5,301,534,720 bytes (5,568 - 512 MiB, less 64 KiB).
+- 4K with 7,104 MiB: pool +6,592 MiB (fix-inventory Caveats; the logs give 6,912,147,456 bytes, again 64 KiB less). T-R3 (1800p): the user, "everything seemed to work as
   expected". T-I1b (4K menus): the user, "it can be navigated now".
 
 ## History and pitfalls

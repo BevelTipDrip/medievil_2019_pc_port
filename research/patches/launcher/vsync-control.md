@@ -5,7 +5,7 @@ area: launcher
 status: active
 platforms: all
 default_windows: on
-default_deck: on
+default_deck: mixed
 origin: ours
 class: G
 commits: ebe42c7616, 1b2c5af028, 49040f1e51, 0c357bc1cb
@@ -16,6 +16,7 @@ tests: T-F27
 docs: plan-stage-b-split.md#t-f27-the-capped-mode-that-works-and-the-launcher-consolidation-2026-10-25
 depends_on: presentation-settings
 related: present-mode-select, reflex, precise-limiter, vrr-auto-limits, frame-limit-parse, launcher-graphics-page, deck-preset
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -33,7 +34,13 @@ also `Values::fps_limit` in gow3_settings.h). In the same commit Reflex steps as
 
 - A fixed `present_mode` wins over the in-game VSync switch: `FindPresentMode` returns early on
   `GOW3_PRESENT_MODE`. `UpdateVsync` re-runs it but gets the same mode, so with tearing or Adaptive the menu's switch
-  does nothing. `VSYNC_HINT` says so, and must keep saying so while the swapchain works this way.
+  changes no mode (it still waits for the device to idle and recreates the swapchain). `VSYNC_HINT` says so, and must
+  keep saying so while the swapchain works this way.
+- Choosing "Off, allow tearing" or "Adaptive" sets only `present_mode`; the `vsync` key keeps its old value (`1` by
+  default). `PresentThread`'s rule "VSync on and a limit within 1 of the refresh: no limit" (driver.cpp
+  `current_limit`) reads that key, not the present mode, so with Immediate and `vsync=1` a limit at the refresh
+  (120 at 120 Hz, 144 at 144 Hz) is dropped and the game runs uncapped [code, not seen in a run]. The default
+  `fps_limit=-3` (half refresh) is not affected.
 - On and Off must leave `present_mode=auto`, or the in-game switch stops working. `vsync_choice_var` converts the
   older fixed `fifo` / `mailbox` values on load (they only duplicated the switch).
 - Derived variables (`store = 'derived'`) are skipped by `collect`. Their state must always be carried by the real
@@ -48,7 +55,9 @@ also `Values::fps_limit` in gow3_settings.h). In the same commit Reflex steps as
 - presentation-settings turns these keys into variables. present-mode-select is the swapchain side, and its
   Immediate-to-Mailbox fallback exists for gamescope.
 - vrr-auto-limits / frame-limit-parse: the Frame rate limit list beside it (`display_vrr`, the 119 / 237 entries).
-- deck-preset: VSync off (Mailbox under gamescope), Standard limiter, Unlimited.
+- deck-preset: VSync off (Mailbox under gamescope), Standard limiter, Unlimited, tick 900 without the precise tick,
+  `fps_limit=60`: it overrides every default `0c357bc` set, hence `default_deck: mixed` (the controls are there; the
+  T-F27 defaults are not used).
 
 ## Evidence
 

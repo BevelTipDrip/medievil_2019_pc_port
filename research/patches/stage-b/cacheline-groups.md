@@ -18,16 +18,18 @@ depends_on: lineage-draw-pipe
 conflicts_with:
 supersedes:
 related: recorder-lean, stage-b-spin, stage-b-core
+verified: 2026-11-07
 ---
 ## What it does
 
 `GOW3_CACHE_LINE` (`alignas(64)`, gow3_cacheline.h) starts each group of fields that one thread writes often and
 another reads often, so a write no longer takes the line from the reader's L1. No field moved. In `Scheduler`:
 `pending_polls` / `num_pending_ops` (read every draw) apart from the pending-ops mutexes and `priority_pending_ops`;
-the recording thread's `record_chunk` / `chunk_lock` / `recording_owner`; `wake_deadline_ns`; the recorder's
+the recording thread's `record_chunk` / `chunk_lock` / `recording_owner`; `wake_deadline_ns` (with `full_chunks`); the recorder's
 `recorder_mutex` group (queue, `recorder_busy`, `queued_chunks`, `recorder_running`, `recorder_sleeping`);
 `direct_mode` / `host_copies_issued`; `host_copies_done`; `host_copy_sources_mutex`. In `DrawPipe`: `busy_cycles`
-(stage B per packet) apart from `packets` (stage A per Commit); `handler`, `ring` and `head` each start a line.
+(stage B per packet) apart from `packets` (stage A per Commit); `handler` (with `idle`, `context`, `ring`) and
+`head` each start a line (`published` was already `alignas(64)`).
 Build option, not a runtime switch: `GOW3_CACHELINE_PADDING=OFF` (CMake / build.sh) gives the old layout exactly.
 
 ## Invariants
@@ -39,7 +41,9 @@ Build option, not a runtime switch: `GOW3_CACHELINE_PADDING=OFF` (CMake / build.
   (`Presenter` holds `draw_scheduler` by value, `DrawPipe` is a `make_unique`): heap allocation relies on C++17
   aligned `new`.
 - `GOW3_CACHELINE_PADDING` must be the same for every translation unit (it is a compile definition set in
-  gpu/CMakeLists.txt); a mix would give two layouts of one class (ODR violation).
+  gpu/CMakeLists.txt, only when OFF; the header defaults to padded); a mix would give two layouts of one class (ODR
+  violation). Every target including these headers is in gpu/CMakeLists.txt today (the tests too); a target added
+  elsewhere would silently be padded.
 
 ## Interactions
 
@@ -50,7 +54,8 @@ Build option, not a runtime switch: `GOW3_CACHELINE_PADDING=OFF` (CMake / build.
 ## Evidence
 
 - Expected (impl doc): 0.05-0.2 us a draw. Built Windows (LTO) and Linux; a `-nopad` AppImage was built for the
-  A/B (`MediEvil-x86_64-nopad.AppImage`, same commit).
+  A/B (`MediEvil-x86_64-nopad.AppImage`, from `0c57f23`, the docs commit right after `8dd5881`); the Deck test order
+  later asks to rebuild it from the current commit first, since the default AppImage moved on.
 - No result recorded: the padding vs none launch stayed on the to-do list ("Test every built-but-untested item ...
   padding"). Not measured, not verified in game; kept because it is layout only.
 

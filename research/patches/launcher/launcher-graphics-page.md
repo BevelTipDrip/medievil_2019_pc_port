@@ -16,6 +16,7 @@ tests: T-0102-6
 docs: plan-live-switches.md#done, plan-0102.md#t-0102-6-2026-11-01-2338-2352-launched-by-claude-with-the-users-go-build-548db4c-log-datat-0102-6log
 depends_on: live-graphics-options
 related: particle-bounds, vsync-control, presentation-settings, perf-patches-ini, deck-preset, flip-trace
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -41,7 +42,10 @@ never showed.
 - `chosen_by_run_py` patches (resolution, frame rate, boot size, 4K boot) never appear on the page and never enter
   the selection. run.py picks them from medievil.ini.
 - Selections are keyed by title id, not by app version (01.00 and 01.02 share `CUSA11227`). A name that exists in
-  only one version is filtered by `AppVer` when the page builds.
+  only one version is filtered by `AppVer` when the page builds. `store_game_patches` replaces the title's list with
+  the shown version's patches but unions the seen set. Once the page was shown for both versions, a patch that only
+  the other version has is neither chosen nor new there: it starts off even if it is a default (read from the code,
+  not seen).
 
 ## Interactions
 

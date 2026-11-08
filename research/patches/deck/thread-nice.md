@@ -16,6 +16,7 @@ tests:
 docs: impl-deck-build-sched-pool.md#8-nice-for-stage-b-and-the-vblank-thread-gow3_thread_nice, plan-linux-deck.md#thread-nice-live-2026-11-06-build-5ab1a24-nicelive-logs-datadeck-nicelive-1log-datadeck-nicelive-1400log, plan-linux-deck.md#round-1-results-gpu-clock-auto-2026-11-05-ini-logging-67-uncapped-launched-by-the-user
 depends_on:
 related: core-sched, deck-preset, inline-present, precise-tick, lineage-toggle-file
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -30,11 +31,17 @@ system bus (`RtkitHighPriority`: host `libdbus-1.so.3` dlopen'd, private connect
 ## Invariants
 
 - Never realtime scheduling; never root. Failure only logs ("unchanged, not nice -10: ...").
-- `PollLive` returns at once without the env, and never makes a call on the vblank thread itself; `live_busy`
+- `PollLive` returns at once without the env and makes no `setpriority` / rtkit call on the vblank thread (a change
+  starts a detached helper thread, which inherits the vblank thread's nice and slack); `live_busy`
   allows one switch in flight, a change seen meanwhile is retried on a later tick.
 - Live off resets only the two recorded tids (`stage_b_tid`, `vblank_tid`); threads they created after the start
-  inherited -10 and keep it.
-- A set bit turns the fix OFF (toggle-file convention); with the env unset the bit does nothing.
+  inherited -10 and keep it. It resets the nice level only: the vblank thread's 1 ns timer slack stays.
+- A tid is recorded when its thread starts. `PollLive` runs on the vblank thread, so the vblank tid is always
+  there first; if the off bit is already set before stage B starts, the switch is made without stage B
+  (`!tid`: skipped), `live_off` is then true, and stage B, starting later, takes nice -10 and keeps it until the bit
+  is cleared and set again [code reading, not seen].
+- A set bit turns the fix OFF (toggle-file convention); with the env unset the bit does nothing. 32768 is the
+  second word's bit; the first word's 32768 is `HotPages`, a different switch.
 - Windows: every function is empty (`#ifdef _WIN32`).
 
 ## Interactions
@@ -43,12 +50,13 @@ system bus (`RtkitHighPriority`: host `libdbus-1.so.3` dlopen'd, private connect
 - `precise-tick`: the 1 ns timer slack makes the tick's `sleep_until` wake on time; the Deck preset runs the tick
   at 900 Hz, not precise.
 - `deck-preset`: `GOW3_THREAD_NICE=1` is one of its switches (`c4158d1`).
-- `core-sched` was built in the same commit and rejected.
+- `core-sched` was built in the same commit and file and rejected; both run from `StageBThread`, each with its own
+  env.
 
 ## Evidence
 
-- Round 1, auto clock, between launches: 80.15 FPS, worst 17.0 ms, p99 15.82 (+0.8, sd 1.21): inside the ~1.35-1.5
-  FPS within-launch drift, so it was made live.
+- Round 1, auto clock, between launches (`data/deck-nice-1.log`): 80.15 FPS, worst 17.0 ms, p99 15.82 (the plan:
+  "+0.8, sd 1.21"): inside the ~1.35-1.5 FPS within-launch drift (round 2), so it was made live.
 - Live A/B (`data/deck-nicelive-1.log`, `-1400.log`; rtkit path: "setpriority: Permission denied, RLIMIT_NICE 0"):
   auto clock neutral (81.7 vs 82.0 FPS at nice 0), although stage B busy fell 2-3 points and stage A waits ~7
   points. **GPU fixed at 1,400 MHz: nice -10 wins every block**, 77.8 vs 77.4 FPS (mean +0.5), worst median 18.4

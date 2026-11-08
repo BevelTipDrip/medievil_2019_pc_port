@@ -16,6 +16,7 @@ tests:
 docs: impl-deck-build-sched-pool.md#7-core-scheduling-cookie-on-stage-b-gow3_stage_b_core_sched1, plan-linux-deck.md#round-1-results-gpu-clock-auto-2026-11-05-ini-logging-67-uncapped-launched-by-the-user, study-deck-apu-deep-dive.md#13-smt-and-stage-b
 depends_on:
 related: thread-nice, stage-b-core, stage-b-spin, drain-hybrid, prep-workers-2, deck-preset
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -28,10 +29,12 @@ One log line: the cookie, or the error (EINVAL: no `CONFIG_SCHED_CORE` / before 
 
 ## Invariants
 
-- Off unless the env is set; a failed `prctl` only logs, nothing else changes.
+- Off unless the env starts with `1` (`CoreSchedWanted`, read once); a failed `prctl` only logs, nothing else
+  changes. Independent of `GOW3_THREAD_NICE` (same `StageBThread` call, separate switches).
 - The cookie is per thread and inherited by threads stage B creates later (none known).
-- Stage B's spin before it blocks (`stage-b-spin`, 50 us default) counts as running, so the sibling idles through
-  the spin too.
+- Stage B's spin before it sleeps on the packet ring counts as running, so the sibling idles through it too: the
+  draw pipe's own spin (`GOW3_PIPE_SPIN_US`, 50 us below 12 hardware threads, 200 us above), longer with
+  `stage-b-spin` (`GOW3_STAGE_B_SPIN=1`, `GOW3_STAGE_B_SPIN_US` default 200).
 - Not live: no toggle bit, one launch per state.
 
 ## Interactions
@@ -47,9 +50,11 @@ One log line: the cookie, or the error (EINVAL: no `CONFIG_SCHED_CORE` / before 
 ## Evidence
 
 - Round 1, GPU clock auto (plan, launch 4, `data/deck-coresched-1.log`): the cookie was applied ("core scheduling
-  cookie 0x83ff0c57"), and the result was **66.4 FPS** (other round 1 launches 77.1-80.15), worst frame median
-  **35.4 ms** (others ~17-18), p99 22.79 ms. The sibling idles; stage A drain waits 2.1 -> 6.9 ms a frame.
-- The study's prediction: stage B -5-10% per draw, FPS -5% to +5% [inferred]; the measured FPS fell ~16%.
+  cookie 0x83ff0c57", log line 71), and the result was **66.4 FPS** (other round 1 launches 77.1-80.15), worst frame
+  median **35.4 ms** (others ~17-18), p99 22.79 ms. The plan's reading: the sibling idles; stage A drain waits
+  2.1 -> 6.9 ms a frame. Between launches, no same-launch baseline (the cookie is not live).
+- The study's prediction: stage B -5-10% per draw, FPS -5% to +5% [inferred]; measured ~16% below launches 2-3
+  (79.3-79.4 FPS), far outside the ~1.5 FPS between-launch noise.
 
 ## History and pitfalls
 
@@ -57,4 +62,4 @@ One log line: the cookie, or the error (EINVAL: no `CONFIG_SCHED_CORE` / before 
   (plan, "Deck Optimized preset": "core scheduling (rejected)").
 - Worth retrying only if the game's CPU demand drops well below 7 busy threads (stage A, the game threads and the
   recorder no longer need stage B's sibling), or with a cookie shared by stage B and stage A so they pair on one
-  core (not built). Whether `scx_lavd` honours cookies was not checked.
+  core (this card's idea, not in the docs; not built). Whether `scx_lavd` honours cookies was not checked.

@@ -16,6 +16,7 @@ tests:
 docs: plan-work-queue.md#the-users-quality-of-life-list-2026-11-03-after-the-v200-release
 depends_on:
 related: port-identity
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -34,7 +35,9 @@ window has no input focus (alt-tab, another window clicked).
 - Without input focus the cursor must stay shown, so another window is usable (`638b6a0`, the user's test).
 - Mouse motion must be recorded before `Gow3Overlay::HandleEvent` can swallow the event, as it is now
   (`last_mouse_motion_ms` is set first). Otherwise moving the mouse over the menu would not count as activity.
-- `UpdateCursor` runs on the thread that polls SDL events. SDL cursor calls must stay on that thread.
+- `UpdateCursor` runs on the thread that polls SDL events (the `PollEvents` loop in gow3gpu.cpp). SDL wants cursor
+  and window calls on that thread (SDL's rule, not checked in this code base); keep them there.
+- The 3 s idle timer counts only `SDL_EVENT_MOUSE_MOTION`: mouse buttons and the wheel do not reset it [code].
 
 ## Interactions
 
