@@ -161,5 +161,36 @@ int main() {
     Gow3Settings::Save();
     assert(Read(path) == "render_scale=bogus\n"); // unchanged in the menu: kept as written
     std::remove(path);
+
+    // Graphics quality and its settings (plan-graphics-settings.md): "preset" and missing keys follow
+    // ue4_quality, old tokens are translated, the level shown is the one all settings match, else Custom.
+    {
+        namespace S = Gow3Settings;
+        const auto index = [](const char* key) {
+            for (int o = 0; o < S::UE4LiveCount; ++o) {
+                if (std::strcmp(S::UE4LiveOptions[o].key, key) == 0) return o;
+            }
+            return -1;
+        };
+        const auto token = [&](const char* key) { return std::string(S::UE4LiveOptions[index(key)].tokens[v.ue4_live[index(key)]]); };
+        {
+            std::ofstream out(path);
+            out << "ue4_quality=high\nshadow_resolution=preset\nshadow_distance=far\nlod_distance=high\n";
+        }
+        S::Load();
+        assert(token("shadow_resolution") == "dynamic" && token("shadow_distance") == "ps4");
+        assert(token("texture_filtering") == "16" && token("shadow_quality") == "4"); // missing: High's
+        assert(S::UE4MatchedLevel(v, v.ue4_quality) == 1);                           // all of High's: High
+        v.ue4_live[index("bloom")] = 1;                                                  // Low bloom by hand
+        assert(S::UE4MatchedLevel(v, v.ue4_quality) == -1);                            // Custom
+        S::UE4ApplyLevel(4);                                                             // Low picked
+        assert(v.ue4_quality == 4 && S::UE4MatchedLevel(v, 4) == 4 && token("foliage_density") == "0.6");
+        assert(S::RestartChanges() > 0); // the settings that are not live changed: a restart applies them
+        for (int o = 0; o < S::UE4LiveCount; ++o) {
+            v.ue4_live[o] = S::UE4LevelChoice(o, S::UE4DeckLevel);
+        }
+        assert(S::UE4MatchedLevel(v, 4) == S::UE4DeckLevel); // the launcher's Deck Optimized
+        std::remove(path);
+    }
     std::puts("PASS: graphics settings");
 }

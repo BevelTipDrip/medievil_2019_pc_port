@@ -55,7 +55,7 @@ honestly, with the reason.
 | 17 | Lens flares | Off, Low, PS4 | Off | PS4 | PS4 | PS4 | PS4 | live |
 | 18 | Chromatic aberration | Off, On (PS4) | Off | On | On | On | On | live |
 
-Deck Optimized: 256, 0.15, Short, 1024, 1, 0.7, PS4 LOD, 60%, 8x, AO 2, reflections 1, refraction off, fog on, motion
+Deck Optimized: 256, 0.15, Short, 1024, 1, 0.7, LOD Low (the measured flat-60 value), 60%, 8x, AO 2, reflections 1, refraction off, fog on, motion
 blur off, DoF off, bloom Low, flares off, chromatic aberration off.
 
 ## PS4 shadow test (prepared 2026-11-08, not run)

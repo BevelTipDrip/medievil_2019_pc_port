@@ -27,7 +27,10 @@ class DeckPresetTest(unittest.TestCase):
             'present_limiter': 'standard', 'display_vrr': '0', 'shadow_resolution': '256', 'shadow_distance': 'short',
             'shadow_quality': '1', 'view_distance': '0.7', 'lod_distance': 'low', 'ambient_occlusion': '2',
             'reflections': '1', 'volumetric_fog': '0', 'motion_blur': '0', 'depth_of_field': '0', 'bloom': '2',
-            'lens_flares': '0', 'chromatic_aberration': 'preset', 'preshadows': '0'}
+            'lens_flares': '0', 'chromatic_aberration': '0', 'preshadows': '0',
+            # Settings only Low quality changed before 2026-11-08 (now in the list): Low's values.
+            'small_object_shadows': '0.15', 'sun_shadow_resolution': '1024', 'foliage_density': '0.6',
+            'texture_filtering': '8', 'refraction': '0'}
         self.assertEqual(launcher.DECK_PRESET,
                          {**logging, 'render_scale': '80', 'volumetric_fog': '1', 'fps_limit': '60'})
 

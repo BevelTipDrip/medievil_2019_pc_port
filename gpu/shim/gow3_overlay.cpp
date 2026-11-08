@@ -666,9 +666,31 @@ void PerformanceTab() {
                 runtime_ue4_request_cvar("r.SeparateTranslucencyScreenPercentage",
                                          Gow3Settings::UE4EffectsKeys[s.effects_resolution]);
             }
-            // The quality preset's parts, one at a time ("Preset": what Graphics quality sets).
+            // Graphics quality sets every graphics setting (the live ones now, the others below at the next
+            // start); it shows the level they all match, else Custom (research/docs/plan-graphics-settings.md).
+            {
+                namespace S = Gow3Settings;
+                static const char* const quality_labels[] = {"Ultra", "High", "Console (PS4)", "Medium",
+                                                             "Low (integrated graphics)", "Deck Optimized"};
+                const int matched = S::UE4MatchedLevel(s, s.ue4_quality);
+                Row("Graphics quality");
+                if (ImGui::BeginCombo("##value", matched >= 0 ? quality_labels[matched] : "Custom")) {
+                    for (int level = 0; level < int(std::size(S::UE4QualityKeys)); ++level) {
+                        if (ImGui::Selectable(quality_labels[level], level == matched)) {
+                            S::UE4ApplyLevel(level);
+                            dirty = true;
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+                Help("Sets every graphics setting: Console is exactly the PS4, High and Ultra go beyond it, "
+                     "Medium and Low are for integrated graphics. Custom: some settings changed by hand. "
+                     "The settings under \"Applied on restart\" take effect at the next start.");
+                ImGui::PopID();
+            }
             for (int o = 0; o < Gow3Settings::UE4LiveCount; ++o) {
                 const auto& option = Gow3Settings::UE4LiveOptions[o];
+                if (!option.live) continue; // under "Applied on restart"
                 const int before = s.ue4_live[o];
                 IndexChoiceRow(option.title, s.ue4_live[o], option.labels, option.count, option.hint);
                 if (s.ue4_live[o] != before) {
@@ -704,12 +726,13 @@ void PerformanceTab() {
         CheckRow("Deferred GPU readbacks", s.deferred_readback,
                  "Fewer waits for the GPU. Switch it off if textures or shadows look wrong.");
         if (!IsGow3()) {
-            // MediEvil (launcher > Performance): the override pak's quality.
-            static const char* const quality_labels[] = {"Ultra", "High", "Console (PS4)", "Medium",
-                                                         "Low (integrated graphics)"};
-            IndexChoiceRow("Graphics quality", s.ue4_quality, quality_labels, 5,
-                           "Console keeps the PS4 look; High and Ultra go beyond it, Low is for "
-                           "integrated graphics.");
+            // MediEvil: the graphics settings that are not live (Graphics quality, above, sets them too).
+            for (int o = 0; o < Gow3Settings::UE4LiveCount; ++o) {
+                const auto& option = Gow3Settings::UE4LiveOptions[o];
+                if (!option.live) {
+                    IndexChoiceRow(option.title, s.ue4_live[o], option.labels, option.count, option.hint);
+                }
+            }
         }
         ImGui::EndTable();
     }

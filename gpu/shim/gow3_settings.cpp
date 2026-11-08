@@ -57,8 +57,22 @@ void Set(Values& v, const std::string& key, const std::string& value) {
     }
     for (int o = 0; o < UE4LiveCount; ++o) {
         if (key == UE4LiveOptions[o].key) {
-            const int k = index_of(UE4LiveOptions[o].tokens);
-            v.ue4_live[o] = k > 0 && k < UE4LiveOptions[o].count ? k : 0;
+            // Tokens before 2026-11-08 that mean another choice now (graphics_options.LEGACY_TOKENS; run.py
+            // translates the file first, this is for a game started without it).
+            static const char* const legacy[][3] = {{"shadow_resolution", "2048", "dynamic"},
+                                                    {"shadow_distance", "console", "medium"},
+                                                    {"shadow_distance", "far", "ps4"},
+                                                    {"shadow_distance", "farthest", "ps4"},
+                                                    {"lod_distance", "console", "ps4"}};
+            std::string token = value;
+            for (const auto& [k, old_token, now] : legacy) {
+                if (key == k && token == old_token) token = now;
+            }
+            const auto& option = UE4LiveOptions[o];
+            v.ue4_live[o] = -1; // "preset" or unknown: the quality level's choice (Load)
+            for (int c = 0; c < option.count; ++c) {
+                if (token == option.tokens[c]) v.ue4_live[o] = c;
+            }
             return;
         }
     }
@@ -202,32 +216,48 @@ void Set(Values& v, const std::string& key, const std::string& value) {
 } // namespace
 
 void RequestUE4Live(int o, int choice) {
-    if (o < 0 || o >= UE4LiveCount || choice < 0 || choice >= UE4LiveOptions[o].count) {
+    if (o < 0 || o >= UE4LiveCount || choice < 0 || choice >= UE4LiveOptions[o].count || !UE4LiveOptions[o].live) {
         return;
     }
     const auto& option = UE4LiveOptions[o];
     for (int c = 0; c < 2 && option.cvars[c]; ++c) {
-        const char* value = option.values[choice][c];
-        std::string preset;
-        if (choice == 0) {
-            // run.py: "name=value;..." for every cvar of these options, as the preset leaves them.
-            const char* env = std::getenv("GOW3_UE4_PRESET_CVARS");
-            const std::string all = env ? env : "";
-            const std::string want = std::string(option.cvars[c]) + "=";
-            for (std::size_t at = 0; at < all.size();) {
-                const std::size_t end = std::min(all.find(';', at), all.size());
-                if (all.compare(at, want.size(), want) == 0) {
-                    preset = all.substr(at + want.size(), end - at - want.size());
-                }
-                at = end + 1;
-            }
-            if (preset.empty()) {
-                std::printf("UE4: no preset value for %s (restart for the preset)\n", option.cvars[c]);
-                continue;
-            }
-            value = preset.c_str();
+        runtime_ue4_request_cvar(option.cvars[c], option.values[choice][c]);
+    }
+}
+
+int UE4LevelChoice(int o, int level) {
+    const auto& option = UE4LiveOptions[o];
+    const char* token = option.levels[std::clamp(level, 0, UE4DeckLevel)];
+    for (int c = 0; c < option.count; ++c) {
+        if (std::strcmp(option.tokens[c], token) == 0) return c;
+    }
+    return 0;
+}
+
+int UE4MatchedLevel(const Values& v, int picked) {
+    const auto matches = [&](int level) {
+        for (int o = 0; o < UE4LiveCount; ++o) {
+            if (v.ue4_live[o] != UE4LevelChoice(o, level)) return false;
         }
-        runtime_ue4_request_cvar(option.cvars[c], value);
+        return true;
+    };
+    if (picked >= 0 && picked <= UE4DeckLevel && matches(picked)) return picked;
+    for (int level = 0; level <= UE4DeckLevel; ++level) {
+        if (matches(level)) return level;
+    }
+    return -1;
+}
+
+void UE4ApplyLevel(int level) {
+    auto& v = Get();
+    if (level < 0 || level >= int(std::size(UE4QualityKeys))) return;
+    v.ue4_quality = level;
+    for (int o = 0; o < UE4LiveCount; ++o) {
+        const int choice = UE4LevelChoice(o, level);
+        if (v.ue4_live[o] != choice) {
+            v.ue4_live[o] = choice;
+            RequestUE4Live(o, choice); // the others apply at the next start
+        }
     }
 }
 
@@ -293,6 +323,9 @@ int RequestRenderScale(int percent) {
 
 void Load() {
     auto& v = Get();
+    for (int& choice : v.ue4_live) {
+        choice = -1; // a key the file does not have: the quality level's choice (below)
+    }
     if (FILE* file = std::fopen(Path(), "r")) {
         char line[256];
         while (std::fgets(line, sizeof(line), file)) {
@@ -342,10 +375,13 @@ void Load() {
     if (!v.preshadows) {
         runtime_ue4_request_cvar("r.Shadow.Preshadows", "0");
     }
+    // Graphics settings missing from the file or still "preset": the quality level's choice. Their console
+    // variables are already in the override pak (run.py), so nothing is requested here.
     for (int o = 0; o < UE4LiveCount; ++o) {
-        if (v.ue4_live[o] > 0) {
-            RequestUE4Live(o, v.ue4_live[o]);
+        if (v.ue4_live[o] < 0) {
+            v.ue4_live[o] = UE4LevelChoice(o, v.ue4_quality >= 0 ? v.ue4_quality : 2);
         }
+        v.startup_ue4_live[o] = v.ue4_live[o];
     }
     if (v.effects_resolution > 0) { // the override pak sets it at boot too (run.py)
         runtime_ue4_request_cvar("r.SeparateTranslucencyScreenPercentage", UE4EffectsKeys[v.effects_resolution]);
@@ -381,8 +417,12 @@ int RestartChanges() {
     const auto& v = Get();
     int changes = (v.render_resolution != v.startup_render_resolution) + (v.engine_fps != v.startup_engine_fps) +
                   (v.deferred_readback != v.startup_deferred_readback) +
-                  (v.stale_readback != v.startup_stale_readback) + (v.ue4_quality != v.startup_ue4_quality) +
+                  (v.stale_readback != v.startup_stale_readback) +
                   (v.output_resolution != v.startup_output_resolution) + RenderScaleNeedsRestart();
+    // Graphics quality itself needs no restart any more: the settings it set do, if they are not live.
+    for (int o = 0; o < UE4LiveCount; ++o) {
+        changes += !UE4LiveOptions[o].live && v.ue4_live[o] != v.startup_ue4_live[o];
+    }
     for (int p = 0; p < PerfCount; ++p) {
         changes += !PerfLive[p] && v.perf[p] != v.startup_perf[p];
     }

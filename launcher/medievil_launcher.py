@@ -614,46 +614,12 @@ AA_CHOICES = [('taa', ('Temporal (default, smooth)',)), ('fxaa', ('FXAA (sharper
 QUALITY_CHOICES = [('ultra', ('Ultra',)), ('high', ('High',)), ('console', ('Console (PS4)',)),
                    ('medium', ('Medium',)), ('low', ('Low (integrated graphics)',))]
 EFFECTS_CHOICES = [('100', ('100%',)), ('75', ('75% (default)',)), ('50', ('50% (PS4 detail at 4K)',))]
-# The quality preset's parts, one at a time (medievil.ini; the in-game menu switches them live:
-# gpu/shim/gow3_settings.h UE4LiveOptions, the same keys, values and texts; tests check they match).
-# (key, title, hint, [(value, label)]); "preset" follows Graphics quality.
-GRAPHICS_OPTIONS = [
-    ('shadow_resolution', 'Shadow resolution',
-     'Shadow maps of torches and other lights (fixed size: no flicker as lights move). Each shadow map costs '
-     'GPU time; console quality uses 512.',
-     [('preset', 'Preset'), ('256', '256'), ('512', '512 (console)'), ('1024', '1024'), ('2048', '2048')]),
-    ('shadow_distance', 'Shadow distance',
-     'How far the sun and moon cast shadows and in how many cascades; each cascade draws the scene again '
-     '(draw thread and GPU).',
-     [('preset', 'Preset'), ('short', 'Short'), ('console', 'Console'), ('far', 'Far'), ('farthest', 'Farthest')]),
-    ('shadow_quality', 'Shadow filtering', 'Softness of shadow edges (filter samples). Mostly GPU.',
-     [('preset', 'Preset'), ('1', 'Low'), ('2', 'Medium'), ('3', 'Console'), ('4', 'High'), ('5', 'Ultra')]),
-    ('view_distance', 'View distance',
-     'How far away objects are still drawn. Lower: fewer draws (draw thread and GPU), objects disappear sooner.',
-     [('preset', 'Preset'), ('0.7', 'Near'), ('0.85', 'Medium'), ('1', 'Console'), ('1.5', 'Far'),
-      ('2', 'Farthest')]),
-    ('lod_distance', 'Level of detail',
-     'When models and foliage switch to their simpler versions. Higher: detailed models further away, more '
-     'triangles.',
-     [('preset', 'Preset'), ('low', 'Low'), ('console', 'Console'), ('high', 'High'), ('ultra', 'Ultra')]),
-    ('ambient_occlusion', 'Ambient occlusion', 'Contact shadows in corners and creases (screen space). GPU only.',
-     [('preset', 'Preset'), ('0', 'Off'), ('1', 'Low'), ('2', 'Medium'), ('3', 'High'), ('auto', 'Auto (console)')]),
-    ('reflections', 'Reflections', 'Screen-space reflections on wet and shiny surfaces. GPU only.',
-     [('preset', 'Preset'), ('0', 'Off'), ('1', 'Low'), ('2', 'Medium'), ('3', 'Console'), ('4', 'Ultra')]),
-    ('volumetric_fog', 'Volumetric fog', 'Light shafts and lit fog. GPU only; off changes the look of misty areas.',
-     [('preset', 'Preset'), ('0', 'Off'), ('1', 'On (console)')]),
-    ('motion_blur', 'Motion blur', 'Blur of fast camera and object motion.',
-     [('preset', 'Preset'), ('0', 'Off'), ('2', 'Low'), ('4', 'Console')]),
-    ('depth_of_field', 'Depth of field', 'Blur of out-of-focus distances (mostly in cutscenes).',
-     [('preset', 'Preset'), ('0', 'Off'), ('1', 'Low'), ('2', 'Console')]),
-    ('bloom', 'Bloom', 'Glow around bright lights and fire.',
-     [('preset', 'Preset'), ('0', 'Off'), ('2', 'Low'), ('5', 'Console')]),
-    ('lens_flares', 'Lens flares', 'Flares from bright lights.',
-     [('preset', 'Preset'), ('0', 'Off'), ('1', 'Low'), ('2', 'Console')]),
-    ('chromatic_aberration', 'Chromatic aberration', 'Colour fringes towards the screen edges.',
-     [('preset', 'Preset'), ('0', 'Off'), ('1', 'On (console)')]),
-]
-INI_DEFAULTS.update({key: 'preset' for key, *_rest in GRAPHICS_OPTIONS})
+# The graphics settings (scripts/graphics_options.py GRAPHICS_SETTINGS, the same table as the in-game menu's
+# gpu/shim/gow3_settings.h UE4LiveOptions; tests check they match): (key, title, hint, [(value, label)]).
+# Graphics quality sets all of them; a fresh medievil.ini starts at Console's (the PS4's) values.
+GRAPHICS_OPTIONS = [(key, title, hint, [(token, label) for token, label, _values in choices])
+                    for key, title, hint, _live, _cvars, choices, _levels in graphics_options.GRAPHICS_SETTINGS]
+INI_DEFAULTS.update(graphics_options.level_choices('console'))
 ENGINE_FPS_CHOICES = [('60', ('60 (original)',)), ('120', ('120',)), ('240', ('240',))]
 
 # Steam Deck (research/docs/plan-linux-deck.md, "Deck Optimized preset"): the user's flat 60 FPS in
@@ -675,9 +641,7 @@ DECK_PRESET = {
     'perf_ring_reuse': '1',
     'present_inline': '1', 'present_precise_tick': '0', 'present_frame_trace': '0', 'present_no_frame_caps': '1',
     'present_tick_hz': '900', 'present_mode': 'auto', 'present_limiter': 'standard', 'display_vrr': '0',
-    'shadow_resolution': '256', 'shadow_distance': 'short', 'shadow_quality': '1', 'view_distance': '0.7',
-    'lod_distance': 'low', 'ambient_occlusion': '2', 'reflections': '1', 'volumetric_fog': '1', 'motion_blur': '0',
-    'depth_of_field': '0', 'bloom': '2', 'lens_flares': '0', 'chromatic_aberration': 'preset', 'preshadows': '0'}
+    'preshadows': '0', **graphics_options.level_choices(graphics_options.DECK_LEVEL)}
 # medievil.ini keys the launcher writes only when they are set (the in-game menu's own switches).
 INI_OPTIONAL_KEYS = ('preshadows',)
 # The Deck's measured wins that are still opt-in start switches (plan-linux-deck.md): early frame EOP,
@@ -784,6 +748,7 @@ class Launcher:
         if self.app.get('readbacks') == '2':  # "Precise" is no longer offered (issue #15)
             self.app['readbacks'] = ''
         self.ini, self.ini_lines = load_ini()
+        self.ini.update(graphics_options.graphics_migration(self.ini))  # older tokens, "preset", new keys
         self.vars = {}
         self.process = self.job = None
         self.output = queue.Queue()
@@ -1002,31 +967,55 @@ class Launcher:
         return self.vars['engine_cap']
 
     def quality_choice_var(self):
-        """Graphics quality with "Deck Optimized" (graphics_preset): the game's ue4_quality, or the Deck
-        preset, which writes DECK_PRESET (ue4_quality low) and turns on the Deck switches. Another
-        quality picked after it ends the preset and its switches; the other settings stay as they are."""
+        """Graphics quality: the level every graphics setting matches (graphics_options.matched_level; the
+        picked level first, Deck Optimized while graphics_preset is deck), else 'custom', shown but not
+        picked. Picking a level sets every setting to its choice; Deck Optimized writes DECK_PRESET and turns
+        on the Deck switches; picking another level after it ends the preset and its switches."""
         if 'quality_choice' not in self.vars:
             quality, preset = self.var('ue4_quality', 'ini'), self.var('graphics_preset', 'app')
-            deck = preset.get() == DECK_QUALITY and quality.get() == DECK_PRESET['ue4_quality']
-            if not deck:  # another quality chosen in the game's menu since: the preset is over
-                preset.set('')
-            choice = self.tk.StringVar(value=DECK_QUALITY if deck else quality.get())
-            last = [choice.get()]
+            settings = {key: self.var(key, 'ini') for key in graphics_options.GRAPHICS_KEYS}
 
-            def write(*_args):
+            def shown():
+                picked = DECK_QUALITY if preset.get() == DECK_QUALITY else quality.get()
+                return graphics_options.matched_level({k: v.get() for k, v in settings.items()}, picked) or 'custom'
+            choice = self.tk.StringVar(value=shown())
+            busy, last = [False], [choice.get()]
+
+            def follow(*_args):  # a setting changed: the level it now matches, or Custom
+                if busy[0]:
+                    return
+                now = shown()
+                if now != choice.get():
+                    busy[0] = True
+                    try:
+                        choice.set(now)
+                    finally:
+                        busy[0] = False
+                last[0] = now
+
+            def pick(*_args):
                 value, previous = choice.get(), last[0]
                 last[0] = value
-                if value == previous:
+                if busy[0] or value == previous or value == 'custom':
                     return
-                if value == DECK_QUALITY:
-                    self.apply_deck_preset()
-                else:
-                    if previous == DECK_QUALITY:
-                        preset.set('')
-                        self.var('deck_switches', 'app').set(False)
-                    quality.set(value)
-            choice.trace_add('write', write)
-            choice.store = 'derived'  # saved through ue4_quality and graphics_preset
+                busy[0] = True
+                try:
+                    if value == DECK_QUALITY:
+                        self.apply_deck_preset()
+                    else:
+                        if preset.get() == DECK_QUALITY:
+                            preset.set('')
+                            self.var('deck_switches', 'app').set(False)
+                        quality.set(value)
+                        for key, token in graphics_options.level_choices(value).items():
+                            settings[key].set(token)
+                finally:
+                    busy[0] = False
+                follow()
+            choice.trace_add('write', pick)
+            for var in settings.values():
+                var.trace_add('write', follow)
+            choice.store = 'derived'  # saved through ue4_quality, graphics_preset and the settings
             self.vars['quality_choice'] = choice
         return self.vars['quality_choice']
 
@@ -1431,7 +1420,9 @@ class Launcher:
             r, c = 2 + index // 2, (index % 2) * 2
             ttk.Label(quick, text=title).grid(row=r, column=c, sticky='w', pady=6, padx=(0, 12))
             quick.grid_rowconfigure(r, minsize=self.px(34))
-            self.choice(quick, key, store, options, width=26, custom=self.custom_label(key)).grid(
+            # Graphics quality shows Custom when the settings match no level (shown, never reset to a level).
+            custom = (lambda _value: _('Custom')) if key is self.vars.get('quality_choice') else self.custom_label(key)
+            self.choice(quick, key, store, options, width=26, custom=custom).grid(
                 row=r, column=c + 1, sticky='w', padx=(0, 40))
         flags = ttk.Frame(quick)
         flags.grid(row=2 + (len(items) + 1) // 2, column=0, columnspan=4, sticky='w', pady=(6, 0))
@@ -1571,9 +1562,9 @@ class Launcher:
     def build_performance(self):
         f = self.scrolled_page('performance', _('Performance'), _('Graphics and speed options.'))
         self.section(f, _('Graphics settings'), top=4)
-        self.note(f, _('Each part of the quality preset on its own: "Preset" follows Graphics quality (below). '
-                       'Applied when the game reaches its main menu; the in-game menu also switches them '
-                       'while playing.'), top=2)
+        self.note(f, _('Graphics quality (below) sets all of these; changing one makes it Custom. "PS4 default" '
+                       'marks the value the PS4 itself uses. The in-game menu switches most of them while playing.'),
+                  top=2)
         for key, title, hint, choices in GRAPHICS_OPTIONS:
             self.row(f, _(title), self.choice(f, key, 'ini', [(value, (label,)) for value, label in choices]),
                      _(hint), restart=True)
@@ -1583,10 +1574,12 @@ class Launcher:
         for key, title, hint, _off in PERF_PATCHES:
             self.check(f, key, 'ini', _(title), _(hint), restart=True)
         self.section(f, _('Resolution and quality'))
-        self.row(f, _('Graphics quality'), self.choice(f, self.quality_choice_var(), None, QUALITY_PRESETS),
-                 _('High and Ultra go beyond the PS4: sharper, longer-range shadows, better reflections and more distant detail, for strong graphics cards. Console keeps the PS4 look. Low turns off volumetric fog, reflections and ambient occlusion '
-                   'and lowers shadows and view distance: for integrated graphics (Radeon 780M, Intel Arc) and '
-                   'older cards. Applied at start.') + ' ' +
+        self.row(f, _('Graphics quality'), self.choice(f, self.quality_choice_var(), None, QUALITY_PRESETS,
+                                                       custom=lambda _value: _('Custom')),
+                 _('Sets every graphics setting above. Console: exactly the PS4. High and Ultra go beyond it: '
+                   'sharper filtering, farther view and detail, better reflections, for strong graphics cards. Medium '
+                   'and Low lower shadows, effects and distances: for integrated graphics (Radeon 780M, Intel Arc) '
+                   'and older cards. Custom: some settings changed by hand.') + ' ' +
                  _('Deck Optimized: the Steam Deck settings of a flat 60 FPS (720p, 80% render scale, Low with '
                    'volumetric fog, a 60 FPS limit, VSync off) and the Steam Deck performance switches below.'),
                  restart=True)
@@ -2202,6 +2195,7 @@ class Launcher:
         save_ini({key: self.ini[key] for key in (*INI_DEFAULTS, *INI_OPTIONAL_KEYS) if key in self.ini},
                  self.ini_lines)
         self.ini, self.ini_lines = load_ini()
+        self.ini.update(graphics_options.graphics_migration(self.ini))  # older tokens, "preset", new keys
         if self.mod_order:
             (DATA_DIR / 'mods.json').write_text(json.dumps(
                 {'order': self.mod_order, 'disabled': [n for n, v in self.mod_vars.items() if not v.get()]},

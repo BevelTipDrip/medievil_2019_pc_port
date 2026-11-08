@@ -115,8 +115,11 @@ struct Values {
     /// switched live through the game's console variable (runtime_ue4_request_cvar). Off: the
     /// heavy Graveyard view stayed at the frame cap (N-25).
     std::atomic<bool> preshadows{true};
-    /// MediEvil live graphics options (UE4LiveOptions): the chosen index, 0 = the preset's value.
-    int ue4_live[13] = {};
+    /// MediEvil graphics settings (UE4LiveOptions): the chosen index (-1 while loading: a missing key or
+    /// an old "preset", resolved from ue4_quality after the file is read); the ones this launch started
+    /// with (RestartChanges: the settings that are not live).
+    int ue4_live[18] = {};
+    int startup_ue4_live[18] = {};
     // FSR 4 checks (menu): the provider's auto exposure, the jitter sign it is given.
     std::atomic<bool> fsr4_auto_exposure{true};
     std::atomic<bool> fsr4_invert_jitter{false};
@@ -198,76 +201,167 @@ inline int ScaledSize(int size, int percent) {
     return size * percent / 100;
 }
 inline constexpr const char* UE4EffectsKeys[] = {"100", "75", "50"};
-/// MediEvil graphics options switched live through UE4 console variables (in-game menu "Applied
-/// now", src/runtime_extra.c ue4_cvars[]). Choice 0, "Preset", follows the quality preset: picking
-/// it again restores the preset's values, which run.py passes in (GOW3_UE4_PRESET_CVARS, from
-/// scripts/ue4_override.py preset_cvars). Values fit the runtime's 7 characters.
+/// MediEvil graphics settings (research/docs/plan-graphics-settings.md): the same table as
+/// scripts/graphics_options.py GRAPHICS_SETTINGS (tests/test_launcher_controls.py checks they match).
+/// Graphics quality sets every one of them (UE4ApplyLevel); the quality shows the level they all match,
+/// else Custom (UE4MatchedLevel). Live ones switch through UE4 console variables at once (in-game menu,
+/// src/runtime_extra.c ue4_cvars[]); the others at the next start (run.py writes every setting into the
+/// override pak). "(PS4 default)" marks the PS4's own value. Values fit the runtime's 15 characters.
 struct UE4LiveOption {
     const char* key;   ///< medievil.ini; its value is one of `tokens`
     const char* title;
     const char* hint;
+    bool live;            ///< switched at once; else at the next start
     const char* cvars[2]; ///< set together (nullptr: unused)
-    int count;            ///< choices, the first is "Preset"
-    const char* labels[6];
-    const char* tokens[6];
-    const char* values[6][2]; ///< per choice, per cvar (choice 0: from the preset)
+    int count;            ///< choices
+    const char* labels[5];
+    const char* tokens[5];
+    const char* values[5][2]; ///< per choice, per cvar
+    const char* levels[6];    ///< the token of each quality level (UE4QualityKeys order), then Deck Optimized
 };
+inline constexpr int UE4DeckLevel = 5; ///< levels[] index of Deck Optimized (set by the launcher only)
 inline constexpr UE4LiveOption UE4LiveOptions[] = {
     {"shadow_resolution", "Shadow resolution",
-     "Shadow maps of torches and other lights (fixed size: no flicker as lights move). Each shadow "
-     "map costs GPU time; console quality uses 512.",
-     {"r.Shadow.MinResolution", "r.Shadow.MaxResolution"}, 5,
-     {"Preset", "256", "512 (console)", "1024", "2048"}, {"preset", "256", "512", "1024", "2048"},
-     {{}, {"256", "256"}, {"512", "512"}, {"1024", "1024"}, {"2048", "2048"}}},
+     "Shadow maps of torches and other lights. Dynamic: sized by how big the light is on screen, "
+     "as on the PS4; a fixed size costs less.",
+     true, {"r.Shadow.MinResolution", "r.Shadow.MaxResolution"}, 4,
+     {"256", "512", "1024", "Dynamic, up to 2048 (PS4 default)"},
+     {"256", "512", "1024", "dynamic"},
+     {{"256", "256"}, {"512", "512"}, {"1024", "1024"}, {"32", "2048"}},
+     {"dynamic", "dynamic", "dynamic", "512", "256", "256"}},
+    {"small_object_shadows", "Small object shadows",
+     "Objects smaller than this on screen cast no shadow (fewer shadow draws).",
+     false, {"r.Shadow.RadiusThreshold", nullptr}, 4,
+     {"Large objects only", "Fewer", "Most", "All (PS4 default)"},
+     {"0.15", "0.12", "0.1", "0.01"},
+     {{"0.15"}, {"0.12"}, {"0.1"}, {"0.01"}},
+     {"0.01", "0.01", "0.01", "0.12", "0.15", "0.15"}},
     {"shadow_distance", "Shadow distance",
-     "How far the sun and moon cast shadows and in how many cascades; each cascade draws the scene "
-     "again (draw thread and GPU).",
-     {"r.Shadow.DistanceScale", "r.Shadow.CSM.MaxCascades"}, 5,
-     {"Preset", "Short", "Console", "Far", "Farthest"}, {"preset", "short", "console", "far", "farthest"},
-     {{}, {"0.6", "2"}, {"0.8", "2"}, {"1.2", "3"}, {"1.5", "3"}}},
+     "How far the sun and moon cast shadows and in how many cascades; each cascade draws the "
+     "scene again (draw thread and GPU).",
+     true, {"r.Shadow.DistanceScale", "r.Shadow.CSM.MaxCascades"}, 3,
+     {"Short", "Medium", "Full, up to 10 cascades (PS4 default)"},
+     {"short", "medium", "ps4"},
+     {{"0.6", "2"}, {"0.8", "2"}, {"1.0", "10"}},
+     {"ps4", "ps4", "ps4", "medium", "short", "short"}},
+    {"sun_shadow_resolution", "Sun and moon shadow resolution",
+     "Size of the sun and moon shadow maps: sharper distant shadows at a GPU cost.",
+     false, {"r.Shadow.MaxCSMResolution", nullptr}, 4,
+     {"1024", "1536", "2048 (PS4 default)", "4096"},
+     {"1024", "1536", "2048", "4096"},
+     {{"1024"}, {"1536"}, {"2048"}, {"4096"}},
+     {"4096", "2048", "2048", "1536", "1024", "1024"}},
     {"shadow_quality", "Shadow filtering",
-     "Softness of shadow edges (filter samples). Mostly GPU.", {"r.ShadowQuality", nullptr}, 6,
-     {"Preset", "Low", "Medium", "Console", "High", "Ultra"}, {"preset", "1", "2", "3", "4", "5"},
-     {{}, {"1"}, {"2"}, {"3"}, {"4"}, {"5"}}},
+     "Softness of shadow edges (filter samples). Mostly GPU.",
+     true, {"r.ShadowQuality", nullptr}, 5,
+     {"Low", "Medium", "High (PS4 default)", "Very high", "Ultra"},
+     {"1", "2", "3", "4", "5"},
+     {{"1"}, {"2"}, {"3"}, {"4"}, {"5"}},
+     {"5", "4", "3", "2", "1", "1"}},
     {"view_distance", "View distance",
      "How far away objects are still drawn. Lower: fewer draws (draw thread and GPU), objects "
      "disappear sooner.",
-     {"r.ViewDistanceScale", nullptr}, 6, {"Preset", "Near", "Medium", "Console", "Far", "Farthest"},
-     {"preset", "0.7", "0.85", "1", "1.5", "2"}, {{}, {"0.7"}, {"0.85"}, {"1"}, {"1.5"}, {"2"}}},
+     true, {"r.ViewDistanceScale", nullptr}, 5,
+     {"Near", "Medium", "Normal (PS4 default)", "Far", "Farthest"},
+     {"0.7", "0.85", "1", "1.5", "2"},
+     {{"0.7"}, {"0.85"}, {"1"}, {"1.5"}, {"2"}},
+     {"2", "1.5", "1", "0.85", "0.7", "0.7"}},
     {"lod_distance", "Level of detail",
      "When models and foliage switch to their simpler versions. Higher: detailed models further "
      "away, more triangles.",
-     {"r.StaticMeshLODDistanceScale", "foliage.LODDistanceScale"}, 5,
-     {"Preset", "Low", "Console", "High", "Ultra"}, {"preset", "low", "console", "high", "ultra"},
-     {{}, {"1.5", "0.7"}, {"1", "1"}, {"0.75", "1.5"}, {"0.5", "2"}}},
+     true, {"r.StaticMeshLODDistanceScale", "foliage.LODDistanceScale"}, 4,
+     {"Low", "Normal (PS4 default)", "High", "Ultra"},
+     {"low", "ps4", "high", "ultra"},
+     {{"1.5", "0.7"}, {"1", "1"}, {"0.75", "1.5"}, {"0.5", "2"}},
+     {"ultra", "high", "ps4", "ps4", "ps4", "low"}},
+    {"foliage_density", "Foliage and grass density",
+     "How much grass and foliage is placed. Lower: fewer draws.",
+     false, {"foliage.DensityScale", "grass.DensityScale"}, 2,
+     {"60%", "100% (PS4 default)"},
+     {"0.6", "1"},
+     {{"0.6", "0.6"}, {"1", "1"}},
+     {"1", "1", "1", "1", "0.6", "0.6"}},
+    {"texture_filtering", "Texture filtering",
+     "Anisotropic filtering: sharper textures at a slant.",
+     false, {"r.MaxAnisotropy", nullptr}, 2,
+     {"8x (PS4 default)", "16x"},
+     {"8", "16"},
+     {{"8"}, {"16"}},
+     {"16", "16", "8", "8", "8", "8"}},
     {"ambient_occlusion", "Ambient occlusion",
      "Contact shadows in corners and creases (screen space). GPU only.",
-     {"r.AmbientOcclusionLevels", nullptr}, 6, {"Preset", "Off", "Low", "Medium", "High", "Auto (console)"},
-     {"preset", "0", "1", "2", "3", "auto"}, {{}, {"0"}, {"1"}, {"2"}, {"3"}, {"-1"}}},
+     true, {"r.AmbientOcclusionLevels", nullptr}, 5,
+     {"Off", "Low", "Medium", "High", "Auto (PS4 default)"},
+     {"0", "1", "2", "3", "auto"},
+     {{"0"}, {"1"}, {"2"}, {"3"}, {"-1"}},
+     {"3", "3", "auto", "1", "0", "2"}},
     {"reflections", "Reflections",
-     "Screen-space reflections on wet and shiny surfaces. GPU only.", {"r.SSR.Quality", nullptr}, 6,
-     {"Preset", "Off", "Low", "Medium", "Console", "Ultra"}, {"preset", "0", "1", "2", "3", "4"},
-     {{}, {"0"}, {"1"}, {"2"}, {"3"}, {"4"}}},
+     "Screen-space reflections on wet and shiny surfaces. GPU only.",
+     true, {"r.SSR.Quality", nullptr}, 5,
+     {"Off", "Low", "Medium", "High (PS4 default)", "Ultra"},
+     {"0", "1", "2", "3", "4"},
+     {{"0"}, {"1"}, {"2"}, {"3"}, {"4"}},
+     {"4", "3", "3", "1", "0", "1"}},
+    {"refraction", "Refraction",
+     "Heat haze and the bending of light through glass and water.",
+     false, {"r.RefractionQuality", nullptr}, 2,
+     {"Off", "On (PS4 default)"},
+     {"0", "2"},
+     {{"0"}, {"2"}},
+     {"2", "2", "2", "2", "0", "0"}},
     {"volumetric_fog", "Volumetric fog",
-     "Light shafts and lit fog. GPU only; off changes the look of misty areas.", {"r.VolumetricFog", nullptr},
-     3, {"Preset", "Off", "On (console)"}, {"preset", "0", "1"}, {{}, {"0"}, {"1"}}},
-    {"motion_blur", "Motion blur", "Blur of fast camera and object motion.", {"r.MotionBlurQuality", nullptr},
-     4, {"Preset", "Off", "Low", "Console"}, {"preset", "0", "2", "4"}, {{}, {"0"}, {"2"}, {"4"}}},
-    {"depth_of_field", "Depth of field", "Blur of out-of-focus distances (mostly in cutscenes).",
-     {"r.DepthOfFieldQuality", nullptr}, 4, {"Preset", "Off", "Low", "Console"}, {"preset", "0", "1", "2"},
-     {{}, {"0"}, {"1"}, {"2"}}},
-    {"bloom", "Bloom", "Glow around bright lights and fire.", {"r.BloomQuality", nullptr}, 4,
-     {"Preset", "Off", "Low", "Console"}, {"preset", "0", "2", "5"}, {{}, {"0"}, {"2"}, {"5"}}},
-    {"lens_flares", "Lens flares", "Flares from bright lights.", {"r.LensFlareQuality", nullptr}, 4,
-     {"Preset", "Off", "Low", "Console"}, {"preset", "0", "1", "2"}, {{}, {"0"}, {"1"}, {"2"}}},
-    {"chromatic_aberration", "Chromatic aberration", "Colour fringes towards the screen edges.",
-     {"r.SceneColorFringeQuality", nullptr}, 3, {"Preset", "Off", "On (console)"}, {"preset", "0", "1"},
-     {{}, {"0"}, {"1"}}},
+     "Light shafts and lit fog. GPU only; off changes the look of misty areas.",
+     true, {"r.VolumetricFog", nullptr}, 2,
+     {"Off", "On (PS4 default)"},
+     {"0", "1"},
+     {{"0"}, {"1"}},
+     {"1", "1", "1", "1", "0", "1"}},
+    {"motion_blur", "Motion blur",
+     "Blur of fast camera and object motion.",
+     true, {"r.MotionBlurQuality", nullptr}, 3,
+     {"Off", "Low", "Full (PS4 default)"},
+     {"0", "2", "4"},
+     {{"0"}, {"2"}, {"4"}},
+     {"4", "4", "4", "2", "0", "0"}},
+    {"depth_of_field", "Depth of field",
+     "Blur of out-of-focus distances (mostly in cutscenes).",
+     true, {"r.DepthOfFieldQuality", nullptr}, 3,
+     {"Off", "Low", "Full (PS4 default)"},
+     {"0", "1", "2"},
+     {{"0"}, {"1"}, {"2"}},
+     {"2", "2", "2", "1", "0", "0"}},
+    {"bloom", "Bloom",
+     "Glow around bright lights and fire.",
+     true, {"r.BloomQuality", nullptr}, 3,
+     {"Off", "Low", "Full (PS4 default)"},
+     {"0", "2", "5"},
+     {{"0"}, {"2"}, {"5"}},
+     {"5", "5", "5", "5", "2", "2"}},
+    {"lens_flares", "Lens flares",
+     "Flares from bright lights.",
+     true, {"r.LensFlareQuality", nullptr}, 3,
+     {"Off", "Low", "Full (PS4 default)"},
+     {"0", "1", "2"},
+     {{"0"}, {"1"}, {"2"}},
+     {"2", "2", "2", "2", "0", "0"}},
+    {"chromatic_aberration", "Chromatic aberration",
+     "Colour fringes towards the screen edges.",
+     true, {"r.SceneColorFringeQuality", nullptr}, 2,
+     {"Off", "On (PS4 default)"},
+     {"0", "1"},
+     {{"0"}, {"1"}},
+     {"1", "1", "1", "1", "0", "0"}},
 };
 inline constexpr int UE4LiveCount = int(std::size(UE4LiveOptions));
 static_assert(UE4LiveCount == int(sizeof(Values::ue4_live) / sizeof(int)), "Values::ue4_live: one per UE4LiveOptions");
-/// Requests option `o`'s cvars for choice `choice` (0: the preset's values, when run.py gave them).
+/// Requests option `o`'s cvars for choice `choice` (live options only; the others apply at the next start).
 void RequestUE4Live(int o, int choice);
+/// The choice index quality level `level` (UE4QualityKeys, or UE4DeckLevel) gives option `o`.
+int UE4LevelChoice(int o, int level);
+/// The level every option matches, `picked` first (0-4, UE4DeckLevel), or -1 (Custom).
+int UE4MatchedLevel(const Values& v, int picked);
+/// Graphics quality picked in the menu: every option set to the level's choice, the live ones at once.
+void UE4ApplyLevel(int level);
 
 /// Startup options changed since this launch (applied by "Apply and restart").
 int RestartChanges();

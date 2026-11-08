@@ -457,12 +457,19 @@ def preset_cvars(game, quality):
 
 
 def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_menu=False,
-          infinite_ammo=False, hzb=False, effects='75', aa='taa', voice=''):
-    """Writes or removes the override pak. Returns a short description of the active state."""
+          infinite_ammo=False, hzb=False, effects='75', aa='taa', voice='', graphics=None):
+    """Writes or removes the override pak. Returns a short description of the active state.
+    `graphics`: the graphics settings' console variables (graphics_options.graphics_cvars, run.py), which
+    replace the quality preset's; a diagnostic preset (diag_*) still adds its own on top."""
     pak = paks_dir(game) / PAK_NAME
     # Earlier builds wrote the `_P` spelling: on Linux it stayed behind, unread.
     (paks_dir(game) / OLD_PAK_NAME).unlink(missing_ok=True)
-    values = preset_values(quality)
+    if graphics is not None:
+        values = dict(graphics)
+        if quality.startswith('diag_'):
+            values.update(QUALITY.get(quality, {}))
+    else:
+        values = preset_values(quality)
     if scale != 100:
         values['r.ScreenPercentage'] = str(scale)
     if scale < 100:

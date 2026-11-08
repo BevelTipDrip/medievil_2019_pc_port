@@ -35,17 +35,73 @@ class ControlMapTest(unittest.TestCase):
         self.assertEqual(env.get('GOW3_FRAME_STATS'), launcher.os.environ.get('GOW3_FRAME_STATS'))
 
     def test_graphics_options_match_the_game(self):
-        # gpu/shim/gow3_settings.h UE4LiveOptions: the same keys, titles, choice labels and ini tokens.
+        # gpu/shim/gow3_settings.h UE4LiveOptions is scripts/graphics_options.py GRAPHICS_SETTINGS: every field
+        # (keys, titles, hints, live, cvars, labels, tokens, values, each quality level's choice).
         import re
+        import graphics_options as g
         header = (ROOT / 'gpu' / 'shim' / 'gow3_settings.h').read_text(encoding='utf-8')
-        table = header[header.index('UE4LiveOptions[] = {'):header.index('inline constexpr int UE4LiveCount')]
-        entries = re.findall(r'\{"([a-z_]+)", "([^"]+)",.*?\{([^{}]*)\},\s*\{([^{}]*)\},\s*\{\{', table, re.S)
-        self.assertEqual(len(entries), len(launcher.GRAPHICS_OPTIONS))
-        for (key, title, labels, tokens), (l_key, l_title, _hint, choices) in zip(entries, launcher.GRAPHICS_OPTIONS):
-            self.assertEqual((key, title), (l_key, l_title))
-            self.assertEqual(re.findall(r'"([^"]*)"', labels), [label for _v, label in choices])
-            self.assertEqual(re.findall(r'"([^"]*)"', tokens), [value for value, _l in choices])
-            self.assertEqual(launcher.INI_DEFAULTS[key], 'preset')
+        start = header.index('UE4LiveOptions[] = {') + len('UE4LiveOptions[] = {')
+        table = header[start:header.index('inline constexpr int UE4LiveCount')]
+
+        def groups(text):  # the top-level {...} of text, without their braces
+            out, depth, begin, quoted = [], 0, 0, False
+            for i, ch in enumerate(text):
+                if ch == '"' and text[i - 1] != '\\':
+                    quoted = not quoted
+                if quoted:
+                    continue
+                if ch == '{':
+                    begin, depth = (i + 1 if depth == 0 else begin), depth + 1
+                elif ch == '}':
+                    depth -= 1
+                    if depth == 0:
+                        out.append(text[begin:i])
+            return out
+
+        def strings(text):  # adjacent C++ literals are one string
+            return [''.join(re.findall(r'"((?:[^"\\]|\\.)*)"', part)) for part in re.split(r'",\s*\n?\s*(?=")', text)]
+        entries = groups(table)
+        self.assertEqual(len(entries), len(g.GRAPHICS_SETTINGS))
+        for entry, (key, title, hint, live, cvars, choices, levels) in zip(entries, g.GRAPHICS_SETTINGS):
+            head = entry[:entry.index('{')]
+            parts = re.findall(r'"((?:[^"\\]|\\.)*)"', head)
+            self.assertEqual((parts[0], parts[1]), (key, title))
+            self.assertEqual(''.join(parts[2:]), hint, key)
+            self.assertIn(('true' if live else 'false') + ',', head.split('"')[-1], key)
+            c_cvars, c_labels, c_tokens, c_values, c_levels = groups(entry)
+            self.assertEqual([c for c in re.findall(r'"([^"]*)"', c_cvars)], list(cvars), key)
+            self.assertEqual(re.findall(r'"([^"]*)"', c_labels), [label for _t, label, _v in choices], key)
+            self.assertEqual(re.findall(r'"([^"]*)"', c_tokens), [t for t, _l, _v in choices], key)
+            self.assertEqual([re.findall(r'"([^"]*)"', v) for v in groups(c_values)], [list(v) for _t, _l, v in choices], key)
+            self.assertEqual(re.findall(r'"([^"]*)"', c_levels),
+                             [levels[level] for level in (*g.QUALITY_LEVELS, g.DECK_LEVEL)], key)
+            self.assertEqual(launcher.INI_DEFAULTS[key], levels['console'])  # a fresh ini is the PS4's
+            for level, token in levels.items():
+                self.assertIn(token, [t for t, _l, _v in choices], (key, level))
+        # The level order of the tables' columns: the launcher's list and the game's UE4QualityKeys.
+        self.assertEqual([v for v, _t in launcher.QUALITY_CHOICES], list(g.QUALITY_LEVELS))
+        keys = header[header.index('UE4QualityKeys[] = {'):]
+        self.assertEqual(re.findall(r'"([^"]*)"', keys[:keys.index('}')]), list(g.QUALITY_LEVELS))
+
+    def test_quality_levels_and_migration(self):
+        import graphics_options as g
+        for level in (*g.QUALITY_LEVELS, g.DECK_LEVEL):
+            self.assertEqual(g.matched_level(g.level_choices(level), level), level)
+        # Every level differs from every other (the quality is told by the settings alone).
+        columns = [tuple(g.level_choices(level).values()) for level in (*g.QUALITY_LEVELS, g.DECK_LEVEL)]
+        self.assertEqual(len(set(columns)), len(columns))
+        # An old ini: "preset" follows ue4_quality, old tokens are translated, the new keys come from the level.
+        old = {'ue4_quality': 'high', 'shadow_resolution': 'preset', 'shadow_distance': 'far', 'lod_distance': 'console'}
+        choices = g.graphics_choices(old)
+        self.assertEqual(choices['shadow_resolution'], 'dynamic')
+        self.assertEqual(choices['shadow_distance'], 'ps4')
+        self.assertEqual(choices['lod_distance'], 'ps4')
+        self.assertEqual(choices['texture_filtering'], '16')
+        self.assertEqual(g.matched_level(choices, 'high'), '')  # LOD Normal at High: Custom
+        self.assertEqual(g.graphics_migration(g.level_choices('console')), {})
+        cvars = g.graphics_cvars(g.level_choices('console'))
+        self.assertEqual((cvars['r.Shadow.MinResolution'], cvars['r.Shadow.MaxResolution']), ('32', '2048'))
+        self.assertEqual(cvars['r.Shadow.CacheWholeSceneShadows'], '1')
 
     def test_render_scale_range_matches_the_game(self):
         # gpu/shim/gow3_settings.h RenderScaleMin / RenderScaleMax: the launcher's box and the in-game

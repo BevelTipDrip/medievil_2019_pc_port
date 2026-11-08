@@ -267,6 +267,151 @@ def migrate_resolution(ini):
     return {'output_resolution': output, 'render_scale': str(scale)}
 
 
+# Graphics quality and its settings (research/docs/plan-graphics-settings.md, the user's design 2026-11-08).
+# Graphics quality is the only preset: picking a level sets every setting below to the level's choice;
+# the quality shows the level all settings match, else Custom. Every difference between levels is a
+# setting here, so nothing is hidden. "(PS4 default)" marks the value the PS4 itself runs (Console).
+# The in-game menu has the same table (gpu/shim/gow3_settings.h UE4LiveOptions; tests check they
+# match). (key, title, hint, live, cvars, [(token, label, values per cvar)], {level: token}); live ones
+# switch in the game at once, the others at the next start (the override pak only).
+QUALITY_LEVELS = ('ultra', 'high', 'console', 'medium', 'low')
+DECK_LEVEL = 'deck'
+GRAPHICS_SETTINGS = [
+    ('shadow_resolution', 'Shadow resolution',
+     'Shadow maps of torches and other lights. Dynamic: sized by how big the light is on screen, as on the PS4; '
+     'a fixed size costs less.', True, ('r.Shadow.MinResolution', 'r.Shadow.MaxResolution'),
+     [('256', '256', ('256', '256')), ('512', '512', ('512', '512')), ('1024', '1024', ('1024', '1024')),
+      ('dynamic', 'Dynamic, up to 2048 (PS4 default)', ('32', '2048'))],
+     {'ultra': 'dynamic', 'high': 'dynamic', 'console': 'dynamic', 'medium': '512', 'low': '256', 'deck': '256'}),
+    ('small_object_shadows', 'Small object shadows',
+     'Objects smaller than this on screen cast no shadow (fewer shadow draws).', False, ('r.Shadow.RadiusThreshold',),
+     [('0.15', 'Large objects only', ('0.15',)), ('0.12', 'Fewer', ('0.12',)), ('0.1', 'Most', ('0.1',)),
+      ('0.01', 'All (PS4 default)', ('0.01',))],
+     {'ultra': '0.01', 'high': '0.01', 'console': '0.01', 'medium': '0.12', 'low': '0.15', 'deck': '0.15'}),
+    ('shadow_distance', 'Shadow distance',
+     'How far the sun and moon cast shadows and in how many cascades; each cascade draws the scene again '
+     '(draw thread and GPU).', True, ('r.Shadow.DistanceScale', 'r.Shadow.CSM.MaxCascades'),
+     [('short', 'Short', ('0.6', '2')), ('medium', 'Medium', ('0.8', '2')),
+      ('ps4', 'Full, up to 10 cascades (PS4 default)', ('1.0', '10'))],
+     {'ultra': 'ps4', 'high': 'ps4', 'console': 'ps4', 'medium': 'medium', 'low': 'short', 'deck': 'short'}),
+    ('sun_shadow_resolution', 'Sun and moon shadow resolution',
+     'Size of the sun and moon shadow maps: sharper distant shadows at a GPU cost.', False,
+     ('r.Shadow.MaxCSMResolution',),
+     [('1024', '1024', ('1024',)), ('1536', '1536', ('1536',)), ('2048', '2048 (PS4 default)', ('2048',)),
+      ('4096', '4096', ('4096',))],
+     {'ultra': '4096', 'high': '2048', 'console': '2048', 'medium': '1536', 'low': '1024', 'deck': '1024'}),
+    ('shadow_quality', 'Shadow filtering', 'Softness of shadow edges (filter samples). Mostly GPU.', True,
+     ('r.ShadowQuality',),
+     [('1', 'Low', ('1',)), ('2', 'Medium', ('2',)), ('3', 'High (PS4 default)', ('3',)), ('4', 'Very high', ('4',)),
+      ('5', 'Ultra', ('5',))],
+     {'ultra': '5', 'high': '4', 'console': '3', 'medium': '2', 'low': '1', 'deck': '1'}),
+    ('view_distance', 'View distance',
+     'How far away objects are still drawn. Lower: fewer draws (draw thread and GPU), objects disappear sooner.',
+     True, ('r.ViewDistanceScale',),
+     [('0.7', 'Near', ('0.7',)), ('0.85', 'Medium', ('0.85',)), ('1', 'Normal (PS4 default)', ('1',)),
+      ('1.5', 'Far', ('1.5',)), ('2', 'Farthest', ('2',))],
+     {'ultra': '2', 'high': '1.5', 'console': '1', 'medium': '0.85', 'low': '0.7', 'deck': '0.7'}),
+    ('lod_distance', 'Level of detail',
+     'When models and foliage switch to their simpler versions. Higher: detailed models further away, more '
+     'triangles.', True, ('r.StaticMeshLODDistanceScale', 'foliage.LODDistanceScale'),
+     [('low', 'Low', ('1.5', '0.7')), ('ps4', 'Normal (PS4 default)', ('1', '1')), ('high', 'High', ('0.75', '1.5')),
+      ('ultra', 'Ultra', ('0.5', '2'))],
+     {'ultra': 'ultra', 'high': 'high', 'console': 'ps4', 'medium': 'ps4', 'low': 'ps4', 'deck': 'low'}),
+    ('foliage_density', 'Foliage and grass density', 'How much grass and foliage is placed. Lower: fewer draws.',
+     False, ('foliage.DensityScale', 'grass.DensityScale'),
+     [('0.6', '60%', ('0.6', '0.6')), ('1', '100% (PS4 default)', ('1', '1'))],
+     {'ultra': '1', 'high': '1', 'console': '1', 'medium': '1', 'low': '0.6', 'deck': '0.6'}),
+    ('texture_filtering', 'Texture filtering', 'Anisotropic filtering: sharper textures at a slant.', False,
+     ('r.MaxAnisotropy',),
+     [('8', '8x (PS4 default)', ('8',)), ('16', '16x', ('16',))],
+     {'ultra': '16', 'high': '16', 'console': '8', 'medium': '8', 'low': '8', 'deck': '8'}),
+    ('ambient_occlusion', 'Ambient occlusion', 'Contact shadows in corners and creases (screen space). GPU only.',
+     True, ('r.AmbientOcclusionLevels',),
+     [('0', 'Off', ('0',)), ('1', 'Low', ('1',)), ('2', 'Medium', ('2',)), ('3', 'High', ('3',)),
+      ('auto', 'Auto (PS4 default)', ('-1',))],
+     {'ultra': '3', 'high': '3', 'console': 'auto', 'medium': '1', 'low': '0', 'deck': '2'}),
+    ('reflections', 'Reflections', 'Screen-space reflections on wet and shiny surfaces. GPU only.', True,
+     ('r.SSR.Quality',),
+     [('0', 'Off', ('0',)), ('1', 'Low', ('1',)), ('2', 'Medium', ('2',)), ('3', 'High (PS4 default)', ('3',)),
+      ('4', 'Ultra', ('4',))],
+     {'ultra': '4', 'high': '3', 'console': '3', 'medium': '1', 'low': '0', 'deck': '1'}),
+    ('refraction', 'Refraction', 'Heat haze and the bending of light through glass and water.', False,
+     ('r.RefractionQuality',),
+     [('0', 'Off', ('0',)), ('2', 'On (PS4 default)', ('2',))],
+     {'ultra': '2', 'high': '2', 'console': '2', 'medium': '2', 'low': '0', 'deck': '0'}),
+    ('volumetric_fog', 'Volumetric fog', 'Light shafts and lit fog. GPU only; off changes the look of misty areas.',
+     True, ('r.VolumetricFog',),
+     [('0', 'Off', ('0',)), ('1', 'On (PS4 default)', ('1',))],
+     {'ultra': '1', 'high': '1', 'console': '1', 'medium': '1', 'low': '0', 'deck': '1'}),
+    ('motion_blur', 'Motion blur', 'Blur of fast camera and object motion.', True, ('r.MotionBlurQuality',),
+     [('0', 'Off', ('0',)), ('2', 'Low', ('2',)), ('4', 'Full (PS4 default)', ('4',))],
+     {'ultra': '4', 'high': '4', 'console': '4', 'medium': '2', 'low': '0', 'deck': '0'}),
+    ('depth_of_field', 'Depth of field', 'Blur of out-of-focus distances (mostly in cutscenes).', True,
+     ('r.DepthOfFieldQuality',),
+     [('0', 'Off', ('0',)), ('1', 'Low', ('1',)), ('2', 'Full (PS4 default)', ('2',))],
+     {'ultra': '2', 'high': '2', 'console': '2', 'medium': '1', 'low': '0', 'deck': '0'}),
+    ('bloom', 'Bloom', 'Glow around bright lights and fire.', True, ('r.BloomQuality',),
+     [('0', 'Off', ('0',)), ('2', 'Low', ('2',)), ('5', 'Full (PS4 default)', ('5',))],
+     {'ultra': '5', 'high': '5', 'console': '5', 'medium': '5', 'low': '2', 'deck': '2'}),
+    ('lens_flares', 'Lens flares', 'Flares from bright lights.', True, ('r.LensFlareQuality',),
+     [('0', 'Off', ('0',)), ('1', 'Low', ('1',)), ('2', 'Full (PS4 default)', ('2',))],
+     {'ultra': '2', 'high': '2', 'console': '2', 'medium': '2', 'low': '0', 'deck': '0'}),
+    ('chromatic_aberration', 'Chromatic aberration', 'Colour fringes towards the screen edges.', True,
+     ('r.SceneColorFringeQuality',),
+     [('0', 'Off', ('0',)), ('1', 'On (PS4 default)', ('1',))],
+     {'ultra': '1', 'high': '1', 'console': '1', 'medium': '1', 'low': '0', 'deck': '0'}),
+]
+GRAPHICS_KEYS = tuple(key for key, *_rest in GRAPHICS_SETTINGS)
+# Tokens of the settings before 2026-11-08 that mean another choice now ("preset" followed the quality).
+LEGACY_TOKENS = {'shadow_resolution': {'2048': 'dynamic'},
+                 'shadow_distance': {'console': 'medium', 'far': 'ps4', 'farthest': 'ps4'},
+                 'lod_distance': {'console': 'ps4'}}
+# Every quality level wrote shadow caching on (upstream c2ad62e); kept, it is no setting (the same at every level).
+ALWAYS_CVARS = {'r.Shadow.CacheWholeSceneShadows': '1'}
+
+
+def level_choices(level):
+    """{key: token} of a quality level (or 'deck'); an unknown level (diagnostic presets) reads as console."""
+    level = level if level in (*QUALITY_LEVELS, DECK_LEVEL) else 'console'
+    return {key: levels[level] for key, *_rest, levels in GRAPHICS_SETTINGS}
+
+
+def graphics_choices(ini):
+    """{key: token} of every setting from medievil.ini: older tokens translated, "preset" and missing keys
+    resolved from ue4_quality, unknown values too."""
+    level = level_choices(ini.get('ue4_quality', 'console'))
+    out = {}
+    for key, _title, _hint, _live, _cvars, choices, _levels in GRAPHICS_SETTINGS:
+        token = ini.get(key, 'preset')
+        token = LEGACY_TOKENS.get(key, {}).get(token, token)
+        out[key] = token if token in {t for t, _label, _values in choices} else level[key]
+    return out
+
+
+def graphics_migration(ini):
+    """The ini keys to write so that every setting holds a token of today's table; {} when it does."""
+    choices = graphics_choices(ini)
+    return {key: token for key, token in choices.items() if ini.get(key) != token}
+
+
+def matched_level(choices, picked='console'):
+    """The quality level (or 'deck') whose choices all settings have, the picked one first; '' (Custom) if
+    none."""
+    for level in (picked, *QUALITY_LEVELS, DECK_LEVEL):
+        if level in (*QUALITY_LEVELS, DECK_LEVEL) and level_choices(level) == choices:
+            return level
+    return ''
+
+
+def graphics_cvars(choices):
+    """The console variables of the settings' choices (the override pak writes them at start)."""
+    out = dict(ALWAYS_CVARS)
+    for key, _title, _hint, _live, cvars, options, _levels in GRAPHICS_SETTINGS:
+        values = next(v for t, _label, v in options if t == choices[key])
+        out.update(zip(cvars, values))
+    return out
+
+
 def startup_options(ini):
     """The startup options, normalized; unknown values fall back to the defaults."""
     options = {key: ini.get(key, value) for key, value in DEFAULTS.items()}
@@ -286,6 +431,9 @@ def prepare(config, state_path):
     ones when the previous launch after a restart never confirmed its own."""
     ini = read_ini(config)
     if migrated := migrate_resolution(ini):
+        write_keys(config, migrated)
+        ini.update(migrated)
+    if migrated := graphics_migration(ini):  # every graphics setting holds a real value (no "preset")
         write_keys(config, migrated)
         ini.update(migrated)
     state = {}

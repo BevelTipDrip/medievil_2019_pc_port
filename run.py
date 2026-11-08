@@ -225,6 +225,12 @@ def main():
         import ue4_override
         try:
             ini = graphics_options.read_ini(env['GOW3_CONFIG'])
+            # The graphics settings (graphics_options.GRAPHICS_SETTINGS) decide the console variables,
+            # not the quality level: every difference between levels is a setting.
+            choices = graphics_options.graphics_choices(ini)
+            level = graphics_options.matched_level(choices, ini.get('ue4_quality', 'console'))
+            print(f"Graphics: quality {level or 'custom'}; "
+                  + ', '.join(f'{k}={v}' for k, v in choices.items()), flush=True)
             print('Render resolution:', ue4_override.apply(game, output, int(graphics['render_scale']),
                                                            ini.get('ue4_quality', 'console'), engine_fps,
                                                            ini.get('cheat_menu') == '1',
@@ -232,11 +238,8 @@ def main():
                                                            env.get('GOW3_HZB_REMAP') == '1',
                                                            ini.get('effects_resolution', '75'),
                                                            ini.get('ue4_aa', 'taa'),
-                                                           ini.get('ue4_voice', '')), flush=True)
-            # The in-game menu's live graphics options: what "Preset" restores (gow3_settings.cpp).
-            env['GOW3_UE4_PRESET_CVARS'] = ';'.join(
-                f'{name}={value}'
-                for name, value in ue4_override.preset_cvars(game, ini.get('ue4_quality', 'console')).items())
+                                                           ini.get('ue4_voice', ''),
+                                                           graphics_options.graphics_cvars(choices)), flush=True)
         except (OSError, ValueError) as error:
             print(f'Render resolution: unchanged ({error})', flush=True)
     original_game = game.resolve()
