@@ -22,6 +22,10 @@ Parent: [START-HERE.md](START-HERE.md).
 2. Deck settings review (the user re-enabled the Deck switches and finer culling; needs the Deck on). The cards'
    `default_deck` column and LANDMINES items 14, 18, 22 feed it.
 3. Windows pool leak fix on `lab` (LANDMINES item 9) with its regression pass.
+3b. **The Deck patches on the PC (the user, 2026-11-07):** played on Windows with them on, high frame rates, but no
+   solid A/B yet for new stutters, 0.1% lows in fights, panning. Before any of them goes to `lab` / Windows defaults:
+   a proper PC A/B (lows and motion, not averages). Note: Deck Optimized is not platform-gated (LANDMINES item 14),
+   and the Mausoleum PC logs (`t-mausoleum-pc-*`) ran with the Deck switches but measured nothing.
 4. START-HERE still has the 2026-10-18 state table (now marked stale); the repo CLAUDE.md still calls `origin`
    the public upstream: ask the user before editing it.
 5. Some cards run 60-90 lines (the guideline is ~60); the README has no "not built" status (pgo-build, U5 use
