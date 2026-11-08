@@ -4,7 +4,7 @@ One line per card. Open a card for invariants, interactions and evidence; look u
 reading: `patchmap.py file <path>` / `switch <name>` / `commit <hash>` / `test <id>`.
 Card format and statuses: [README.md](README.md). W / D = default on Windows / Deck.
 
-1 cards.
+198 cards.
 
 ## memory
 
@@ -12,4 +12,264 @@ _guest memory, pools, flexible/direct memory, region table (src/runtime_memory.c
 
 | ID | Status | W / D | Branch | Switches | Title |
 |---|---|---|---|---|---|
+| [A1](memory/a1.md) | active | n/a / on | deck-lab | GOW3_BACKING_COPY, toggle2:BackingCopy | Stage A: GPU-side guest copies read the backing view without the table lock (Linux) |
+| [D4](memory/d4.md) | active | n/a / on | deck-lab | toggle2:PoolMapsLocked | Linux: pool commit / decommit host maps outside the region table lock, locked paths take pool_map_mutex |
+| [D5](memory/d5.md) | active | on / on | deck-lab | toggle2:TableLockPlain | Region table lock spins before blocking (Linux); empty GPU hook queue seen without the lock |
+| [decommit-keep-access](memory/decommit-keep-access.md) | active | on / n/a | lab | GOW3_DECOMMIT_KEEP_ACCESS, perf_cheap_frees | Decommit keeps the kept view's access instead of flipping it to PAGE_NOACCESS (perf_cheap_frees) |
+| [L1-region-buckets](memory/l1-region-buckets.md) | reverted | n/a / n/a | lab |  | Region caches checked per 16 MiB bucket, not table-wide (reverted) |
+| [L2](memory/l2.md) | active | on / on | lab | GOW3_REGION_BUCKETS, perf_lockfree_memory | Region caches per 16 MiB bucket that answer while a writer holds the table lock |
+| [lockfree-region-reads](memory/lockfree-region-reads.md) | active | on / on | lab | GOW3_OPTIMISTIC_CLAMP, perf_lockfree_memory | Lock-free runtime_memory_clamp / runtime_memory_region (seqcount; spin through an edit before locking) |
+| [M1](memory/m1.md) | active | on / n/a | lab | toggle:NarrowImageStages | Windows: memory pool views kept across a decommit, kept pages handed out last (M1 + M1b) |
+| [memory-chore](memory/memory-chore.md) | chore | n/a / n/a | deck-lab |  | Memory area: tests and test build fixes with no behaviour of their own |
 | [pool-kept-pages](memory/pool-kept-pages.md) | active | n/a / on | deck-lab | GOW3_POOL_KEEP_PAGES, GOW3_POOL_ZERO_DECOMMIT | Kept pool pages on Linux: a recommit gets its own bytes back (Hilltop Mausoleum lighting fix) |
+| [pool-prefill](memory/pool-prefill.md) | rejected | n/a / off | deck-lab | GOW3_POOL_PREFILL_MB, GOW3_POOL_POPULATE | Deck memory #1: guest pool prefill at boot and populate per pool commit (Linux, opt-in) |
+| [R1-region-index](memory/r1-region-index.md) | active | off / on | deck-lab | GOW3_REGION_INDEX, toggle2:RegionIndex | Region cache index of 1,024 entries by page, filled by the lock-free searches too (Deck) |
+| [R3](memory/r3.md) | active | on / on | lab |  | Memory pool free-page search starts at a per-chunk hint |
+| [U5](memory/u5.md) | rejected | n/a / n/a | - |  | U5: guest memory as GPU-visible memory (Bloodborne 0.7 AMD model), buffers read in place (not built) |
+
+## runtime
+
+_loader, HLE libraries, threads, locks, files, audio, input (src/ outside memory)_
+
+| ID | Status | W / D | Branch | Switches | Title |
+|---|---|---|---|---|---|
+| [avplayer-join-hang](runtime/avplayer-join-hang.md) | active | on / on | fork-ports |  | Fix the game hanging after the first movie (AvPlayer thread joins, upstream PR #68) |
+| [crash-dump](runtime/crash-dump.md) | active | on / n/a | lab | GOW3_CRASH_DUMP | Minidump on any fatal fault, with fallbacks to smaller dump types and faults inside winpthreads |
+| [pad-hotplug](runtime/pad-hotplug.md) | active | on / on | fork-ports |  | Pads plugged in after start: SDL hotplug hints (fork port, #64) |
+| [R2](runtime/r2.md) | active | on / on | lab |  | Runtime: rwlock handles validated through an open-addressing hash set, not a list walk |
+| [upstream-audio-input](runtime/upstream-audio-input.md) | active | on / on | - | GOW3_AUDIO_SDL_DOWNMIX, GOW3_STICK_RANGE | Upstream audio and input: 7.1 -> stereo downmix, every controller merged, background pad events, stick range |
+| [upstream-hitch-work](runtime/upstream-hitch-work.md) | active | on / mixed | - | GOW3_TIMER_RES, GOW3_POWER_THROTTLE, GOW3_SPARE_IMAGE_BLOCK … | Upstream hitch work: 1 ms timer, no power throttling, spare GPU block, pageable memory, futex condvars, merged barrier ranges |
+
+## stage-a
+
+_PM4 decode, Liverpool, command processing, stage A pacing (amdgpu/liverpool*, gow3_stage_a*)_
+
+| ID | Status | W / D | Branch | Switches | Title |
+|---|---|---|---|---|---|
+| [A2](stage-a/a2.md) | active | off / on | deck-lab | GOW3_PENDING_FILTER, toggle2:PendingWriteFilter | Stage A's pending-write check answers from a page filter first |
+| [A3](stage-a/a3.md) | active | off / on | deck-lab | GOW3_REG_HASH_PAIRED, toggle2:PairedRegisterHash | Register-packet checksum two words per step (stage A, scanner, prep workers) |
+| [compute-drains-pipelined](stage-a/compute-drains-pipelined.md) | rejected | off / off | - |  | Compute-queue drains pipelined (spacepepperoni d82d86c); stage B drain bubbles (not ported) |
+| [decode-pacing](stage-a/decode-pacing.md) | active | off / on | deck-lab | GOW3_DECODE_PACING, GOW3_DECODE_PACING_LEAD, GOW3_SUBMIT_AHEAD | Decode pacing under the copy model: GPU idle in stream order, frame lead cap (GOW3_DECODE_PACING) |
+| [drain-hybrid](stage-a/drain-hybrid.md) | active | off / on | deck-lab | GOW3_DRAIN_HYBRID, GOW3_DRAIN_SPIN_US, GOW3_DRAIN_WAKE_AHEAD … | Stage A hybrid drain wait: short pause, then a futex sleep stage B ends two packets early |
+| [drain-sleep](stage-a/drain-sleep.md) | rejected | off / off | deck-lab | GOW3_DRAIN_SLEEP | Stage A sleeps on stage B's progress instead of yield-spinning (GOW3_DRAIN_SLEEP, spacepepperoni 6ef7566) |
+| [drain-wake-ahead-6](stage-a/drain-wake-ahead-6.md) | rejected | off / off | deck-lab | GOW3_DRAIN_WAKE_AHEAD, toggle2:DrainWakeAheadDefault | Drain wake-ahead count 6 instead of 2 (live A/B bit) |
+| [E1-deck-drains](stage-a/e1-deck-drains.md) | active | mixed / on | deck-lab | GOW3_ONSUBMIT_STAGE_B, GOW3_VO_LABEL_DRAIN | Stage A's last two drains off the frame path: met display-label waits without a drain, OnSubmit on stage B |
+| [early-frame-eop](stage-a/early-frame-eop.md) | active | off / on | deck-lab | GOW3_EARLY_FRAME_EOP, GOW3_EARLY_FRAME_EOP_LEAD | Signal the per-frame EOP label at decode, capped at 2 frames of lead (GOW3_EARLY_FRAME_EOP) |
+| [L5](stage-a/l5.md) | active | on / on | lab |  | Liverpool: drain the draw pipe (stage B) before every queued command |
+| [P1](stage-a/p1.md) | active | on / on | lab |  | Dirty register blocks scanned by word (26-word array, countr_zero) instead of 1,664 bitset bits per draw |
+| [publish-graphics-empty](stage-a/publish-graphics-empty.md) | active | on / on | deck-lab |  | PublishGraphics returns at once when no pipeline compilation is pending |
+
+## stage-b
+
+_draw recording, rasterizer, pipelines, descriptors, recorder, fences, drains_
+
+| ID | Status | W / D | Branch | Switches | Title |
+|---|---|---|---|---|---|
+| [async-fences](stage-b/async-fences.md) | rejected | off / off | - | GOW3_ASYNC_FENCES, toggle:AsyncFences | Async end-of-pipe fences: EOP label written once the copy threads finish (GOW3_ASYNC_FENCES) |
+| [B1](stage-b/b1.md) | active | on / on | lab | toggle:TargetedHostCopyWaits | Targeted WRITE_DATA waits: wait only when a deferred host copy may still read its range |
+| [barrier-merge](stage-b/barrier-merge.md) | rejected | off / off | - | GOW3_BARRIER_MERGE | Upstream opt-in layer-range barrier merging (GOW3_BARRIER_MERGE) |
+| [bulk-descriptor-copy](stage-b/bulk-descriptor-copy.md) | active | on / on | lab | GOW3_LEAN_BINDING, perf_lean_binding, toggle2:BulkDescriptorCopy | Bulk descriptor copy per push: writes and info arrays copied into the chunk once, pointers rebased |
+| [C1-semaphore-poll](stage-b/c1-semaphore-poll.md) | active | on / on | deck-lab | GOW3_SEMAPHORE_POLL_US, toggle2:SemaphorePollInterval | Stage B polls the GPU's timeline semaphore at most every 100 us for end-of-pipe readback retirement |
+| [cacheline-groups](stage-b/cacheline-groups.md) | active | on / on | deck-lab |  | Deck #6: cache-line groups for draw pipe / scheduler fields written and read by different threads |
+| [depth-write-effective](stage-b/depth-write-effective.md) | active | on / on | lab | GOW3_DEPTH_WRITE_EFFECTIVE | A depth target counts as written only with the depth test on or a pending clear (N-6) |
+| [E1](stage-b/e1.md) | active | on / on | lab | GOW3_EOS_DEFERRED, perf_gpu_data_no_waits | End-of-shader fences deferred like end-of-pipe ones (written by the recorder after queued copies) |
+| [frame-cost-dropped-ideas](stage-b/frame-cost-dropped-ideas.md) | rejected | n/a / n/a | - |  | Dropped on analysis (study-frame-cost section 4): mid-frame split submits, idle flush, recorder spin cut, shadow-map rename, shadow flush barrier |
+| [gate2-ordered-fences](stage-b/gate2-ordered-fences.md) | reverted | n/a / n/a | deck-lab | GOW3_GPU_ORDERED_FENCES | GOW3_GPU_ORDERED_FENCES: EOP / EOS reach the guest only once the GPU finished (reverted) |
+| [L4](stage-b/l4.md) | reverted | n/a / n/a | lab |  | Scheduler: keep handing over chunks while waiting for host copies (re-kick; reverted) |
+| [lean-barriers](stage-b/lean-barriers.md) | active | on / on | lab | GOW3_SKIP_READ_BARRIERS, GOW3_DEPTH_SAMPLE_IN_PLACE, perf_lean_barriers | Fewer render pass breaks: skip read-after-read barriers, sample depth in place, re-bind stencil without a barrier |
+| [lineage-constant-ring](stage-b/lineage-constant-ring.md) | active | on / on | - | toggle:ConstantRing | Constant ring for small constant buffers (inherited) |
+| [lineage-draw-pipe](stage-b/lineage-draw-pipe.md) | active | on / on | - | GOW3_DRAW_PIPE, GOW3_PIPE_SPIN_US, GOW3_VK_RECORD_THREAD … | Two-stage draw pipeline: stage A (PM4 decode) and stage B (draw recording), recorder thread |
+| [lineage-draw-preparation](stage-b/lineage-draw-preparation.md) | active | on / on | - | toggle:DrawPreparation, GOW3_PREP_WORKERS | Draw preparation workers and scanner (pipelines, sharps, vertex inputs prepared ahead of stage B) |
+| [lineage-dropped-stage-b](stage-b/lineage-dropped-stage-b.md) | rejected | n/a / n/a | - |  | Lineage stage B ideas built and dropped: batched small copies, no barrier tracking for read-only ranges, futex Commit, shader specialization memo |
+| [lineage-recorder-fences](stage-b/lineage-recorder-fences.md) | active | on / on | - | toggle:RecorderFences | Recorder fences: end-of-pipe labels written by the Vulkan recording thread after queued copies (inherited) |
+| [lineage-texture-set-memo](stage-b/lineage-texture-set-memo.md) | active | on / on | - | toggle:TextureSetMemo, toggle:RenderStateMemo | Texture-set and render-state memos (inherited), keyed per draw |
+| [narrow-image-stages](stage-b/narrow-image-stages.md) | active | on / on | lab | GOW3_NARROW_IMAGE_STAGES, toggle:NarrowImageStages | Image transitions wait for the reading shader stages instead of eAllCommands (N-4) |
+| [O2-O3](stage-b/o2-o3.md) | superseded | off / off | lab | GOW3_OCCLUSION, GOW3_OCCLUSION_SUBMIT_US | Real occlusion query results (O2), submitted when their render pass ends, rate-limited (O3) |
+| [own-target-texsets](stage-b/own-target-texsets.md) | rejected | n/a / n/a | - |  | Texture sets that contain the draw's own target made memoizable (study item 4, not built) |
+| [parallel-recording](stage-b/parallel-recording.md) | rejected | n/a / n/a | - |  | Parallel Vulkan recording (several recorder threads, Bloodborne 0.3-0.4; not built) |
+| [particle-curve-sync-compile](stage-b/particle-curve-sync-compile.md) | active | n/a / n/a | fork-ports |  | Compile UE4 particle curve injection synchronously (torch flames on a cold cache, fork port #52) |
+| [pool-small-copies](stage-b/pool-small-copies.md) | rejected | off / off | - | toggle:PoolSmallCopies | Small host copies off the recorder to the copy threads in batches (toggle bit 19 PoolSmallCopies) |
+| [prep-priority](stage-b/prep-priority.md) | active | off / n/a | lab | GOW3_PREP_PRIORITY | GOW3_PREP_PRIORITY=below: draw-preparation scanner and workers below normal instead of idle (Windows) |
+| [record-skip-identical](stage-b/record-skip-identical.md) | rejected | n/a / n/a | - |  | Skip identical setVertexInputEXT / pushConstants records; one ChunkGuard per block (not built) |
+| [recorder-lean](stage-b/recorder-lean.md) | active | mixed / on | deck-lab | GOW3_RECORDER_LEAN, GOW3_RECORDER_WAKE_US, GOW3_RECORDER_HANDOFF_KB … | Recorder lean mode on <= 8 threads: no spin, polled labels do not wake it |
+| [ring-reuse](stage-b/ring-reuse.md) | active | on / on | lab | GOW3_RING_REUSE, GOW3_CONSTANT_RING_MB, toggle2:RingReuse … | Constant-ring reuse within one guest command buffer; ring 96 MiB; stamp fix; live switch |
+| [S1-delta-draw](stage-b/s1-delta-draw.md) | rejected | n/a / n/a | - |  | S1 delta-draw fast path: a draw equal to the previous reuses descriptors, render state, dynamic state, vertex input (not built) |
+| [S3-split-descriptors](stage-b/s3-split-descriptors.md) | rejected | n/a / n/a | - |  | S3 split descriptor sets: images + samplers in a cached set per memo entry, only buffers pushed (not built) |
+| [sampler-memo](stage-b/sampler-memo.md) | active | on / on | lab | toggle2:SamplerMemo, perf_lean_binding, GOW3_LEAN_BINDING | Sampler handle memo: per-thread direct-mapped memo reuses GetSampler handles within a GC period |
+| [signal-sleep](stage-b/signal-sleep.md) | rejected | off / off | deck-lab | GOW3_SIGNAL_SLEEP, GOW3_SIGNAL_SPIN_US, toggle2:SignalSleepOff | Recorder waits (deferred signals, host copies) as a short spin then a futex sleep |
+| [stage-b-core](stage-b/stage-b-core.md) | rejected | off / off | lab | GOW3_STAGE_B_CORE | Stage B on a dedicated core (SMT sibling kept free), Windows and Linux |
+| [stage-b-spin](stage-b/stage-b-spin.md) | rejected | off / off | deck-lab | GOW3_STAGE_B_SPIN, GOW3_STAGE_B_SPIN_US, toggle2:StageBSpin | Deck #4: stage B spins up to GOW3_STAGE_B_SPIN_US before it blocks |
+| [T1](stage-b/t1.md) | active | on / on | deck-lab | toggle2:NoImageFastPath | Texture binds of stages without images skip the slow path's set-up |
+| [T2](stage-b/t2.md) | active | off / on | deck-lab | GOW3_TEXSET_WIDE, toggle2:TextureSetWide | Wide texture-set memo: sets of 17-32 images and stages without a prepared draw (draws only) |
+| [texset-compact](stage-b/texset-compact.md) | active | on / on | deck-lab | toggle2:TextureSetLegacy | Texture-set memo in a compact layout (64-byte index per slot, images apart) |
+| [texset-region-stamps](stage-b/texset-region-stamps.md) | active | on / on | lab | GOW3_TEXSET_REGIONS, GOW3_TEXSET_TWO_WAY, perf_texture_memo | Texture-set memo valid by 4 MiB region stamps, checked only after a registry change, two slots per key |
+| [texture-helper](stage-b/texture-helper.md) | rejected | off / off | - | GOW3_TEXTURE_HELPER, toggle:TextureBindHelper | Texture binding helper: stage B forks texture binding to a spinning helper (GOW3_TEXTURE_HELPER) |
+| [U5-2](stage-b/u5-2.md) | rejected | off / off | deck-lab | GOW3_GPU_FENCES, GOW3_SUBMIT_AHEAD, GOW3_SUBMIT_LOCK … | GPU-ordered fences under the copy model (Bloodborne 0.7 model, GOW3_GPU_FENCES) |
+| [upstream-barrier-batch-limit](stage-b/upstream-barrier-batch-limit.md) | active | on / on | - |  | Upstream: at most 128 image barriers per call |
+| [upstream-record-data-fix](stage-b/upstream-record-data-fix.md) | active | on / on | - | GOW3_RECORD_DATA_FIX | Upstream SyncWithDrawRecorder: stage A waits for stage B before recording; RecordData waits before copying |
+| [upstream-safe-gpu-mode](stage-b/upstream-safe-gpu-mode.md) | active | off / off | - | GOW3_VULKAN_COMPAT, GOW3_NO_MAINTENANCE5, GOW3_NO_MAINTENANCE8 | Upstream safe GPU mode for older AMD drivers; GPU / driver log line; crash reports list the barrier batch |
+| [V4](stage-b/v4.md) | active | on / on | lab | toggle:StencilPlaneWrites | Stencil plane writes: a compute dispatch that rewrites a whole stencil plane is copied into the image's stencil aspect |
+| [W3](stage-b/w3.md) | rejected | off / off | lab | GOW3_WRITEDATA_DEFERRED | WRITE_DATA "done" flags written after the deferred fences, not waited for (opt-in) |
+| [W3b](stage-b/w3b.md) | rejected | off / off | lab | GOW3_FLIP_DEFERRED | Flip interrupt raised after the deferred fences, not waited for (do not use: boot deadlock) |
+
+## caches
+
+_texture cache, buffer cache, readbacks, page tracking, uploads/downloads_
+
+| ID | Status | W / D | Branch | Switches | Title |
+|---|---|---|---|---|---|
+| [C3](caches/c3.md) | active | on / on | lab | toggle:UndefinedTargets | Images created where a guest unmap freed images are Undefined; a render / depth target binding skips the upload |
+| [C5](caches/c5.md) | active | on / on | deck-lab | toggle2:ReadbackPrecheck | Lock-free readback pre-check in the buffer cache's ResolveReadbacks |
+| [clear-skips-upload](caches/clear-skips-upload.md) | rejected | on / on | lab | GOW3_CLEAR_SKIPS_UPLOAD, GOW3_UNDEFINED_GPU_FREED | Skip the upload when the pass fast-clears the target; new images where a GPU-written image was freed |
+| [D1](caches/d1.md) | active | on / on | lab | toggle:UnmapDiscard | Unmap discard: a guest unmap drops GPU-written buffer data instead of downloading it |
+| [D2](caches/d2.md) | active | on / on | lab | toggle:PreciseCpuWrites, GOW3_PRECISE_WRITE_RELEASE | Precise CPU writes: guest libc memcpy / memset into shader-written pages go through PreciseCpuWrite, no fault (D2 + D2b) |
+| [D3](caches/d3.md) | active | on / on | lab | GOW3_READBACK_QUEUE, perf_gpu_data_no_waits | Buffer downloads on a readback queue, waiting only for the newest GPU write of the page |
+| [driver-memory-off-stage-b](caches/driver-memory-off-stage-b.md) | active | on / on | lab | GOW3_IMAGE_RELEASE_THREAD, GOW3_RESIDENCY_CHUNK_MB | GPU driver memory calls off stage B: image frees on a worker, residency from 32 MB chunks allocated ahead |
+| [fault-page-download](caches/fault-page-download.md) | active | on / on | lab | GOW3_FAULT_PAGE_DOWNLOAD | Write faults without unrelated waits: a finished page downloads alone, a page with no GPU bytes needs none (N-13) |
+| [findimage-generation-misses](caches/findimage-generation-misses.md) | rejected | n/a / n/a | - |  | FindImage generation-only misses served by region stamps (study item 10, not built) |
+| [force-aniso](caches/force-aniso.md) | active | on / on | lab | GOW3_FORCE_ANISO | 16x anisotropic filtering for every filtered, linearly mipmapped, non-depth sampler |
+| [gpu-write-subresources](caches/gpu-write-subresources.md) | rejected | off / off | deck-lab | GOW3_GPU_WRITE_SUBRESOURCES | GPU writes inside an image (not at its base) mark the image GPU dirty (opt-in) |
+| [gpu-write-twins](caches/gpu-write-twins.md) | active | on / on | lab | GOW3_GPU_WRITE_TWINS, GOW3_GPU_WRITE_TWINS_MAX, perf_gpu_data_no_waits | GPU write twins: guest writes into a page with unfinished GPU bytes keep a twin, no download (limit 16 KiB) |
+| [hot-pages](caches/hot-pages.md) | rejected | off / off | - | GOW3_HOT_PAGES, toggle:HotPages | Hot pages: pages written again and again stay writable and count as always CPU-modified (GOW3_HOT_PAGES) |
+| [lineage-deferred-readbacks](caches/lineage-deferred-readbacks.md) | active | mixed / on | - | GOW3_DEFERRED_READBACK, GOW3_STALE_READBACK, GOW3_READBACK_LINEAR … | Deferred GPU readbacks and stale readbacks (image downloads published when the GPU passes them; reads see the last copy) |
+| [micro-mip-targets](caches/micro-mip-targets.md) | active | on / on | lab | GOW3_MICRO_MIP_TARGETS | HZB small mips rendered: a 1D-thin render target for a micro-tiled mip is a view of the parent (N-22) |
+| [new-images-undefined](caches/new-images-undefined.md) | active | on / on | lab | GOW3_NEW_IMAGES_UNDEFINED, toggle:UndefinedTargets | Every new image is Undefined until first use; first use as a render / depth target skips the upload (N-11) |
+| [obtainbuffer-memo](caches/obtainbuffer-memo.md) | rejected | n/a / n/a | - |  | ObtainBuffer memo (S4): (addr, size) -> arena binding for repeated large vertex buffers (not built) |
+| [P2](caches/p2.md) | superseded | off / off | lab | GOW3_IDLE_EOP_SKIP, toggle:IdleEopSkip | Skip the end-of-pipe host-copy wait when there is no readback work (opt-in) |
+| [park-unmapped](caches/park-unmapped.md) | active | on / on | lab | GOW3_PARK_UNMAPPED | Park render / depth targets a guest unmap frees; the next image with the same address and geometry takes them back (N-24) |
+| [R1-readback](caches/r1-readback.md) | active | on / on | lab | GOW3_READBACK_SUBMIT | A readback copy recorded at an end of pipe is submitted once the readback locks are released |
+| [R1-stale-eop](caches/r1-stale-eop.md) | reverted | n/a / n/a | lab | GOW3_STALE_SKIP_COPY_WAIT | In stale-readback mode, skip the host copy wait at end of pipe (reverted: caused V2 black torch boxes) |
+| [R2-residency-bitmap](caches/r2-residency-bitmap.md) | active | on / on | deck-lab | toggle2:ResidencyBitmap | Buffer cache residency check answered from a bitmap of resident blocks |
+| [readback-first-wait](caches/readback-first-wait.md) | rejected | off / off | deck-lab | GOW3_READBACK_FIRST_WAIT | First-copy readback read wait: stale first readbacks as a Mausoleum suspect (off by default) |
+| [S2](caches/s2.md) | active | on / on | lab | GOW3_STREAM_CLEAN, perf_small_buffers | Small read-only buffers the CPU has not rewritten bound from the arena (no copy, no pass break) |
+| [stream-class-table](caches/stream-class-table.md) | active | on / on | lab |  | Buffer cache small-buffer state in a fixed 65,536-entry direct-mapped table (was an unordered_map cleared at 262,144) |
+| [tiny-target-readback](caches/tiny-target-readback.md) | rejected | off / off | deck-lab | GOW3_TINY_TARGET_READBACK | Copy tiny tiled targets back to guest memory in their tiled layout (Mausoleum suspect; off by default) |
+| [trim-vertex-bindings](caches/trim-vertex-bindings.md) | rejected | n/a / n/a | - |  | Trim vertex bindings to the draw's index range (not built) |
+| [U2](caches/u2.md) | active | off / off | deck-lab | GOW3_ARENA_HOST_VISIBLE, toggle2:ArenaDirectWrites | Direct arena writes on unified memory: uploads and precise writes straight into a mapped DEVICE_LOCAL\|HOST_VISIBLE arena |
+| [uffd](caches/uffd.md) | rejected | n/a / off | - | GOW3_UFFD | userfaultfd write protection instead of signals (GOW3_UFFD) |
+| [upstream-texture-gc](caches/upstream-texture-gc.md) | active | on / on | lab | GOW3_GC_BUDGET_MB, GOW3_GC_TOTAL_MB, GOW3_GC_STARTUP_RULE | Upstream texture GC limits from the driver's memory budget; slot reuse and sampler destruction fixes |
+| [upstream-volume-views](caches/upstream-volume-views.md) | active | on / on | lab | GOW3_VOLUME_VIEWS, GOW3_NO_2D_VIEW_OF_3D | Upstream volume 2D-array views and exact ClearVolumeSlices; attachment-only 2D-of-3D without the extension |
+| [V3](caches/v3.md) | active | on / on | lab | toggle:VolumeSliceViews, GOW3_VOLUME_VIEWS | Volumes rendered through attachment-only 2D array views instead of ResolveOverlap rebuilds |
+| [W2](caches/w2.md) | active | on / on | lab | GOW3_EOP_TARGETED, toggle:IdleEopSkip, perf_gpu_data_no_waits | End-of-pipe host-copy wait only for copies reading the ranges the queued readbacks write |
+
+## present
+
+_presentation, frame pacing, limiters, vblank, Reflex, VSync, overlay_
+
+| ID | Status | W / D | Branch | Switches | Title |
+|---|---|---|---|---|---|
+| [display-trace](present/display-trace.md) | rejected | off / off | lab | GOW3_DISPLAY_TRACE | Display times through VK_KHR_present_wait (GOW3_DISPLAY_TRACE) |
+| [frame-limit-parse](present/frame-limit-parse.md) | active | on / on | lab |  | Any frame limit 20-1000 accepted (an unlisted value such as 119 had become unlimited); 119 / 237 in the menus |
+| [frames-queued-2](present/frames-queued-2.md) | rejected | off / off | - | GOW3_FRAMES_AHEAD | Frames queued 2: stage B's flip stops waiting for the GPU to finish the previous frame |
+| [inline-present](present/inline-present.md) | active | on / on | lab | present_inline, GOW3_PRESENT_THREAD | Present on the vblank thread instead of a swap thread (default) |
+| [menu-idle-redraw](present/menu-idle-redraw.md) | active | on / on | deck-lab |  | VideoOut: the in-game menu's idle redraws count from the game's last flip |
+| [newest-frame](present/newest-frame.md) | rejected | off / off | lab | GOW3_NEWEST_FRAME, GOW3_PACER_SPIN_US | Newest-frame mode: show the newest finished frame at each cap slot from a dedicated pacer thread |
+| [one-clock](present/one-clock.md) | rejected | off / off | lab | GOW3_ONE_CLOCK | One-clock limiter: the tick derived from the frame limit, frames released on ticks only (v1, v2 fixed grid) |
+| [precise-limiter](present/precise-limiter.md) | active | mixed / off | lab | GOW3_PRECISE_LIMIT, GOW3_LIMIT_HOLD, GOW3_PRESENT_PRIORITY … | Precise frame limiter: high-resolution timer + 0.7 ms spin, frames released only at their slot; hold; present priority |
+| [precise-tick](present/precise-tick.md) | active | on / off | lab | GOW3_PRECISE_TICK, GOW3_TICK_SPIN_US, present_precise_tick … | Precise vblank tick on a fixed grid (timer + spin), tick rate as a launcher setting (tick = cap rule) |
+| [present-mode-select](present/present-mode-select.md) | active | off / off | lab | GOW3_PRESENT_MODE, present_mode | GOW3_PRESENT_MODE read by Swapchain::FindPresentMode; a forced Immediate the surface lacks falls back to Mailbox |
+| [present-side-limiter](present/present-side-limiter.md) | rejected | off / off | lab | GOW3_LIMIT_IN_PRESENT, GOW3_LIMIT_AFTER_PRESENT | Limiter wait right before / inside / after vkQueuePresentKHR (RTSS-style), spin holding submit_mutex |
+| [reflex](present/reflex.md) | active | mixed / off | lab | GOW3_REFLEX, GOW3_REFLEX_SLEEP_BEFORE_PRESENT, present_limiter | NVIDIA Reflex frame limiter through VK_NV_low_latency2, sleep right before vkQueuePresentKHR, falls back to Precise |
+| [upstream-vsync-limit-rule](present/upstream-vsync-limit-rule.md) | active | on / on | lab |  | Upstream VSync frame-limit rule: VSync on and limit >= refresh - 1 leaves the cap to VSync |
+| [vblank-sync](present/vblank-sync.md) | rejected | off / n/a | lab | GOW3_VBLANK_SYNC | Vblank tick locked to the display's vblank (GOW3_VBLANK_SYNC) |
+| [vrr-auto-limits](present/vrr-auto-limits.md) | active | on / off | lab |  | Auto frame limits for VRR: below refresh (Reflex rule) and below half refresh; refresh / refresh/2 without VRR |
+
+## ue4
+
+_UE4 config overrides, eboot patches, game hooks, particles, render scale, boot resolution_
+
+| ID | Status | W / D | Branch | Switches | Title |
+|---|---|---|---|---|---|
+| [4k-memory](ue4/4k-memory.md) | active | on / off | lab | perf_4k_memory, GOW3_PS4_MEMORY, GOW3_DMEM_MB | 4K memory sizes: 7,104 MB guest memory and the 512 MB framebuffer pool above 1080p (perf_4k_memory) |
+| [early-z-pass-off](ue4/early-z-pass-off.md) | superseded | off / off | lab |  | r.EarlyZPass=0 alone (PS4 depth prepass off) |
+| [effects-resolution](ue4/effects-resolution.md) | active | on / on | lab |  | Effects resolution: r.SeparateTranslucencyScreenPercentage 100 / 75 / 50, live, 75% default |
+| [engine-cap-cvars](ue4/engine-cap-cvars.md) | rejected | off / off | - |  | rhi.SyncInterval=0; t.MaxFPS / the engine frame-rate range as a cap (no effect in this build) |
+| [finer-occlusion-culling](ue4/finer-occlusion-culling.md) | active | mixed / on | deck-lab |  | Finer occlusion culling: HZB at the scene's size (eboot patch), default for scenes up to 1280x800 |
+| [game-update-0102](ue4/game-update-0102.md) | active | on / on | lab |  | MediEvil 01.02 (US update): every 01.00-only hook mapped by masked instruction search; t.MaxFPS 30/60 lifted |
+| [hzb-remap](ue4/hzb-remap.md) | active | on / on | lab | GOW3_HZB_REMAP, perf_hzb_occlusion | HZB occlusion through a remap hook: serve the newest finished HZB readback by (PrimitiveId, CustomIndex) |
+| [I1](ue4/i1.md) | active | on / on | lab | GOW3_UE4_SETRES | Boot at the output size (4K as a PS4 Pro on a 4K TV, other sizes by the boot display rect) instead of a live r.SetRes |
+| [live-graphics-options](ue4/live-graphics-options.md) | active | on / on | lab | GOW3_UE4_PRESET_CVARS | Live graphics options: 13 options through 16 more console variables; Preset restores the boot preset |
+| [movie-suspend](ue4/movie-suspend.md) | active | on / on | lab | GOW3_MOVIE_SUSPEND | Intro movie still playing at a level change is paused (OpenLevel hook, AvPlayer pause) |
+| [nav-purge-nofence](ue4/nav-purge-nofence.md) | rejected | off / off | deck-lab |  | Navigation path purge without the two mfences per refcount read (GOW3_NAV_PURGE_NOFENCE) |
+| [no-decal-prepass](ue4/no-decal-prepass.md) | active | on / on | lab | perf_no_decal_prepass, GOW3_DECAL_PREPASS | r.DBuffer=0 + r.EarlyZPass=1: no forced full depth prepass for invisible DBuffer decals |
+| [occlusion-queries-off](ue4/occlusion-queries-off.md) | active | mixed / mixed | lab | GOW3_HZB_REMAP, perf_hzb_occlusion | Occlusion queries off where the HZB remap cannot run (the port answers queries "visible") |
+| [particle-bounds](ue4/particle-bounds.md) | active | on / on | lab |  | GPU particle bounds: a 40 m box for GPU emitters without fixed bounds (eboot patch) |
+| [particle-flip-guard](ue4/particle-flip-guard.md) | active | off / on | deck-lab | GOW3_PARTICLE_FLIP_GUARD, toggle2:ParticleFlipGuardOff | GPU particle flip guard: one state flip per main-phase simulation (fixes the single pass's torch / crypt floor bug) |
+| [particle-identity-skip](ue4/particle-identity-skip.md) | rejected | n/a / n/a | - |  | Skip identity GPU-particle sim draws (dt = 0, output equals input; not built) |
+| [particle-single-fixed](ue4/particle-single-fixed.md) | rejected | off / off | deck-lab |  | GPU particle fixed step in the single pass (eboot patch, GOW3_PARTICLE_SINGLE_FIXED) |
+| [preshadows-live](ue4/preshadows-live.md) | active | off / on | lab |  | Preshadows (r.Shadow.Preshadows) as a live switch through the game's console variable |
+| [R4a](ue4/r4a.md) | rejected | off / off | - |  | r.NumBufferedOcclusionQueries=2 (rejected) |
+| [S1-streaming](ue4/s1-streaming.md) | rejected | off / off | - |  | r.Streaming.AmortizeCPUToGPUCopy to split the panning bursts (streaming test S1) |
+| [single-particle-pass](ue4/single-particle-pass.md) | active | off / on | lab | perf_particle_single_pass, GOW3_PARTICLE_FIXED_STEP, toggle2:ParticleFixedStep | Single GPU particle pass (r.GPUParticle.FixDeltaSeconds=0): off by default, live switch |
+| [upstream-0102-eu-support](ue4/upstream-0102-eu-support.md) | active | on / on | - | GOW3_UE4_SETRES_CVAR | Upstream 01.02 / EU support: per-version patch profiles, NpToolkit2 no-ops, r.SetRes slot per eboot |
+| [upstream-4k-framebuffer-pool](ue4/upstream-4k-framebuffer-pool.md) | active | on / on | - | GOW3_DMEM_MB | Upstream "Native 4K framebuffer pool (512 MB)" eboot patch with more direct memory (4K crash fix) |
+| [upstream-ue4-setres](ue4/upstream-ue4-setres.md) | active | mixed / mixed | - | GOW3_UE4_SETRES, GOW3_UE4_SETRES_CVAR | Upstream live r.SetRes for native output (1.3.0; per-eboot slot 1ae17cd), kept as the fallback |
+
+## deck
+
+_Linux / Steam Deck specific code, build, launcher Deck preset, power and clocks_
+
+| ID | Status | W / D | Branch | Switches | Title |
+|---|---|---|---|---|---|
+| [copy-thread-backing-view](deck/copy-thread-backing-view.md) | active | n/a / on | deck-lab |  | Linux: copy threads read guest memory through the backing view (crash in CopySparseMemory) |
+| [core-sched](deck/core-sched.md) | rejected | n/a / off | deck-lab | GOW3_STAGE_B_CORE_SCHED | Deck #7: core scheduling cookie on stage B (GOW3_STAGE_B_CORE_SCHED) |
+| [D1-tls](deck/d1-tls.md) | active | n/a / on | deck-lab |  | Linux: initial-exec TLS model for libgow3gpu.so (Deck D1) |
+| [D2-gettid](deck/d2-gettid.md) | active | n/a / on | deck-lab |  | Linux: scePthreadGetthreadid caches the thread id (Deck D2) |
+| [deck-cpu-clock-split](deck/deck-cpu-clock-split.md) | rejected | n/a / off | - |  | Boost stage B's core, cap the other cores (Deck) |
+| [deck-epp-governor](deck/deck-epp-governor.md) | rejected | n/a / off | - |  | EPP performance on every CPU (Deck; proposed via steamosctl, run via deck-cpu-clocks.sh perf) |
+| [deck-preset](deck/deck-preset.md) | active | off / on | deck-lab |  | Launcher Deck Optimized preset (the user's flat 60) with its Steam Deck performance switches and Deck detection |
+| [linux-build-lab](deck/linux-build-lab.md) | active | n/a / on | lab |  | Linux build: lab compiles natively again; AppImage uses the host's libwayland and libgbm |
+| [mausoleum-toggle-bisect](deck/mausoleum-toggle-bisect.md) | rejected | n/a / n/a | - |  | Hilltop Mausoleum lighting: suspects ruled out by toggle bisects (A2, Deck switches, culling, particles, 4K memory, undefined uploads, zerovram) |
+| [prep-workers-2](deck/prep-workers-2.md) | rejected | off / off | - | GOW3_PREP_WORKERS | Two draw-preparation helpers instead of four on the Deck (GOW3_PREP_WORKERS=2) |
+| [S1-v3-build](deck/s1-v3-build.md) | active | n/a / off | deck-lab |  | S1: opt-in x86-64-v3 Linux build flavour (GOW3_CPU_LEVEL=v3) and its AppRun CPU check |
+| [static-gpu-lib](deck/static-gpu-lib.md) | active | n/a / on | deck-lab |  | Linux: the GPU library linked statically into medievil-runtime (GOW3_STATIC_GPU, default ON) |
+| [thread-nice](deck/thread-nice.md) | active | n/a / on | deck-lab | GOW3_THREAD_NICE, toggle2:ThreadNiceOff | Deck #8: nice -10 for stage B and the vblank thread (setpriority or rtkit), live off bit |
+| [upstream-linux-build](deck/upstream-linux-build.md) | active | n/a / on | - | GOW3_DATA_DIR, GOW3_SCREENSHOT_DIR, GOW3_RESTART_COMMAND | Upstream Linux build and AppImage script |
+
+## launcher
+
+_launcher, settings, medievil.ini keys, run.py, packaging, build scripts_
+
+| ID | Status | W / D | Branch | Switches | Title |
+|---|---|---|---|---|---|
+| [cursor-hide](launcher/cursor-hide.md) | active | on / on | lab |  | Hide the mouse cursor in borderless and fullscreen and when idle in a window; shown while unfocused |
+| [extra-env-file](launcher/extra-env-file.md) | active | off / off | deck-lab |  | run.py: extra-env.txt in the data folder sets test environment variables on every start |
+| [launcher-chore](launcher/launcher-chore.md) | chore | n/a / n/a | lab |  | Launcher text fixes with no behaviour of their own |
+| [launcher-graphics-page](launcher/launcher-graphics-page.md) | active | on / on | lab | present_frame_trace | Launcher > Performance: the 13 graphics settings above Frame rate; frame rate on the Display page; new default patches start on |
+| [live-render-scale](launcher/live-render-scale.md) | active | on / on | deck-lab |  | Render scale live in the in-game menu, any whole percent from 50 to 200 |
+| [perf-patches-ini](launcher/perf-patches-ini.md) | active | on / mixed | lab | perf_hzb_occlusion, perf_no_decal_prepass, perf_particle_single_pass … | Performance patches as launcher toggles, stored in medievil.ini and shared with the in-game menu |
+| [pgo-build](launcher/pgo-build.md) | rejected | off / off | - |  | PGO / BOLT / -march=znver2 builds (not built) |
+| [port-identity](launcher/port-identity.md) | active | on / on | lab |  | Fork identity: version 2.0.0, update check and links on BevelTipDrip, new port icon, Start menu shortcut |
+| [presentation-settings](launcher/presentation-settings.md) | active | mixed / on | lab | GOW3_NO_FRAME_CAP, present_no_frame_caps | Launcher Presentation settings: tick rate, present mode, no built-in frame caps, present switches |
+| [thinlto](launcher/thinlto.md) | active | on / on | lab |  | ThinLTO on by default (GOW3_LTO=ON in build.sh), plus toggle A/B and per-draw tools |
+| [upstream-launcher-features](launcher/upstream-launcher-features.md) | active | on / on | - |  | Upstream EU version, languages, voice language, AA option (ue4_aa), 60 FPS default, portable mode |
+| [vsync-control](launcher/vsync-control.md) | active | on / mixed | lab | present_mode, present_limiter, present_no_frame_caps | Launcher: one VSync / present mode control, Frame limiter choice (Reflex default), Engine frame rate with Unlimited |
+
+## tooling
+
+_diagnostics, tracing, capture, stats, research tools (no gameplay effect)_
+
+| ID | Status | W / D | Branch | Switches | Title |
+|---|---|---|---|---|---|
+| [async-log-writer](tooling/async-log-writer.md) | diagnostic | on / on | lab |  | Slow-frame lines and the perf-diag report formatted on a background log writer, not ~30 printf on the flip path |
+| [avplayer-trace](tooling/avplayer-trace.md) | diagnostic | on / on | lab |  | AvPlayer trace: player calls and the frames each player delivered |
+| [deck-test-tooling](tooling/deck-test-tooling.md) | diagnostic | off / off | deck-lab | GOW3_TOGGLE_FILE, GOW3_FLIP_TRACE | Clock push-pull tooling: APU trace beside the flip trace, frame alignment, live frame cap as the toggle file's third word |
+| [draw-classes](tooling/draw-classes.md) | diagnostic | off / off | deck-lab | GOW3_FRAME_STATS | N0: recorded draws per frame by class; particle sim on the previous run's target |
+| [fence-stats](tooling/fence-stats.md) | diagnostic | off / off | deck-lab | GOW3_FRAME_STATS | Deck gate 2 stats: guest fence waits, submission lock, cache actions, faults by PS4 type, fence lag, invalidations |
+| [flip-trace](tooling/flip-trace.md) | diagnostic | off / off | lab | GOW3_FLIP_TRACE, present_frame_trace | GOW3_FLIP_TRACE: per-flip timestamps from submit to the game's flip event, gpu_ready, present_start, WPR clock origin |
+| [frame-stats-lines](tooling/frame-stats-lines.md) | diagnostic | off / off | lab | GOW3_FRAME_STATS | GOW3_FRAME_STATS lines: upload rates, WriteData targets, fault handler time, frame pacing lows |
+| [gpu-profiler-fixes](tooling/gpu-profiler-fixes.md) | diagnostic | off / off | lab | GOW3_GPU_PROFILE | GOW3_GPU_PROFILE fixes: frames end at the display pass, one frame per display pass, timestamps read without waiting, slow passes by growth |
+| [host-map-stats](tooling/host-map-stats.md) | diagnostic | off / n/a | lab | GOW3_HOST_MAP_STATS | GOW3_HOST_MAP_STATS: host mapping counts, table edits (bytes moved, time), lock hold time, pool commit / decommit time |
+| [lineage-toggle-file](tooling/lineage-toggle-file.md) | active | on / on | lab | GOW3_TOGGLE_FILE, toggle:NarrowImageStages | Live toggle file: a decimal mask re-read every 250 ms; a set bit switches a fix off (second and third words) |
+| [mausoleum-diagnostics](tooling/mausoleum-diagnostics.md) | diagnostic | off / off | deck-lab | GOW3_IMAGE_WATCH, GOW3_IMAGE_WATCH_LINES, GOW3_READBACK_LOG … | Image watch and readback logs: every event that can set or lose a watched image's contents, skipped targets, first copies |
+| [perf-diag](tooling/perf-diag.md) | diagnostic | off / off | lab | GOW3_PERF_DIAG, GOW3_LONG_WAITS, GOW3_FRAME_STATS | GOW3_PERF_DIAG additions: write-fault downloads by guest instruction and owner, host copy waits and pass ends by caller, pass-break barriers, long waits |
+| [profiler-support](tooling/profiler-support.md) | diagnostic | off / n/a | lab | GOW3_SAMPLE_FILE, GOW3_SKIP_TOOL_INFO, GOW3_STDOUT_FILE | Profiling support: VkRecorder samples (GOW3_SAMPLE_FILE), Nsight (skip tool info, stdout file, run-game -Nsys / -Ngfx) |
+| [renderdoc-capture](tooling/renderdoc-capture.md) | diagnostic | off / off | lab | GOW3_CAPTURE_ON_TARGET, GOW3_CAPTURE_ON_TARGET_COUNT, GOW3_CAPTURE_TRIGGER … | RenderDoc and frame-map capture helpers: run under renderdoccmd, capture at a pass into a WxH target, texel statistics |
+| [sections](tooling/sections.md) | diagnostic | off / off | lab | GOW3_SECTIONS, GOW3_FRAME_STATS | GOW3_SECTIONS: stage B time per packet by part (rdtsc scopes), Record calls, ordered tasks by function, texture-binding and ObtainBuffer splits |
+| [slow-frames](tooling/slow-frames.md) | diagnostic | off / off | lab | GOW3_SLOW_FRAMES, GOW3_FRAME_STATS | GOW3_SLOW_FRAMES: what slow frames did, against samples; stage A idle, stage B sections, misses and unprepared draws per frame |
+| [stage-b-counters](tooling/stage-b-counters.md) | diagnostic | off / off | lab | GOW3_FRAME_STATS, GOW3_SECTIONS | Stage B counters: texture sets not kept and why, descriptor writes, FindImage time, sleep ms by site, ordered tasks by kind |
+| [texcache-stats](tooling/texcache-stats.md) | diagnostic | off / off | lab | GOW3_TEXCACHE_STATS | GOW3_TEXCACHE_STATS: per 5 s images created / freed, lookups, overlaps, expands, uploads, re-created and re-uploaded images |
+| [ue4-cvars-tool](tooling/ue4-cvars-tool.md) | diagnostic | off / off | lab |  | UE4 override pak: GOW3_UE4_CVARS adds console variables (opt-in test tool) |
+| [upstream-frame-analyzer-fix](tooling/upstream-frame-analyzer-fix.md) | active | on / on | - | GOW3_CAPTURE_TRIGGER, GOW3_CAPTURE_DIR | Upstream frame analyzer crash on flatbuf ring bindings (address 0 passed IsValidGpuMapping) |
+| [upstream-screenshots](tooling/upstream-screenshots.md) | active | on / on | - | GOW3_SCREENSHOT_DIR, GOW3_FRAME_DUMP_TRIGGER, GOW3_FRAME_DUMP_COUNT … | Upstream F12 PNG screenshots (Shift+F12 raw dump) |
+| [wait-sites](tooling/wait-sites.md) | diagnostic | off / off | lab | GOW3_WAIT_SITES | GOW3_WAIT_SITES: every guest wait by call site, requested and actual time (pthread exports, event queues) |

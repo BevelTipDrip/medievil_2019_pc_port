@@ -32,4 +32,6 @@ verified: 2026-11-07
 
 - The launcher texts in `PERF_PATCHES` and the in-game `hints` in `PerfPatchesSection` (gow3_overlay.cpp) are
   written separately. A text fix in one should be checked against the other; no test compares them. (The in-game
-  HZB hint names no version, so this fix had no counterpart there.)
+  HZB hint names no version, so this fix had no counterpart there.) They have already drifted once: `c1db412`
+  rewrote the launcher's "4K memory sizes" text (more direct memory above 1080p, no texture pool cvar), but the
+  in-game hint still reads "More graphics memory and texture pool at 4K native" [code].

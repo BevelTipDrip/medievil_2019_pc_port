@@ -45,7 +45,9 @@ zeroes the pages it gives back (`f74e1a1`).
   medium confidence, fix pending for `lab`).
 - The texture cache's undefined-image paths (C3, new images undefined, park unmapped) skip uploads only for
   render-target first uses; every other first use uploads guest memory, so they depend on this invariant.
-- `GOW3_PS4_MEMORY` (Deck preset, stock 5056 MiB) means more reuse, so the leak showed sooner there.
+- Pool size: the Deck runs ~5,568 MiB DMEM at 720p (`GOW3_PS4_MEMORY` / `perf_4k_memory` only act above 1080p,
+  so the preset's `perf_4k_memory=0` changes nothing there; see 4k-memory). A smaller pool means more reuse, so a
+  leak shows sooner; on Windows above 1080p the extra 1.5 GiB delays the remaining Windows leak.
 
 ## Evidence
 
@@ -60,7 +62,8 @@ zeroes the pages it gives back (`f74e1a1`).
 - The leak existed since the import (`ac900f8`): no patch removed pool zeroing, it never existed. D4 (pool
   locking) is unrelated.
 - About 15 Deck launches went to toggle bisects (A2, fog, scale, sky light) before tooling showed the images
-  held never-written guest memory. `GOW3_POOL_ZERO_DECOMMIT=1` (`b42c0a8`) was the deterministic test: it
-  zeroes on decommit and makes the bug appear every launch.
+  held never-written guest memory. `GOW3_POOL_ZERO_DECOMMIT=1` (`b42c0a8`) was the confirming test: zeroing
+  freed pages on decommit also fixed the room, but cost ~40x the page faults (~231k per 5 s) and throws away an
+  address's own bytes, so kept pages replaced it.
 - `GOW3_POOL_KEEP_PAGES=0` restores the leak. Under memory pressure a recommit can get zeros instead of its own
   bytes (safe, not identical to the PS4); watch `kept_misses` in the "Guest pool faults" line.

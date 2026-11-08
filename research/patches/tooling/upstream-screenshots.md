@@ -11,7 +11,7 @@ class: G
 commits: 8a70032
 files: gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shim/gow3_overlay.cpp, launcher/medievil_launcher.py
 symbols: SaveScreenshot, DumpRaw, screenshot_requested, TakeScreenshotRequest, screenshots_dir
-switches: GOW3_SCREENSHOT_DIR, GOW3_FRAME_DUMP_TRIGGER, GOW3_FRAME_DUMP_COUNT
+switches: GOW3_SCREENSHOT_DIR, GOW3_FRAME_DUMP_TRIGGER, GOW3_FRAME_DUMP_COUNT, GOW3_DUMP_DIR
 tests:
 docs: fix-inventory.md#from-upstream-medievil-133-138-bc160201983-and-contributors-merged-into-lab
 depends_on:
@@ -22,12 +22,14 @@ verified: 2026-11-07
 
 F12 (overlay key handler, no Shift) sets `screenshot_requested`; the presenter's next frame
 (`TakeScreenshotRequest`) copies the game's picture into a host buffer (with the temporal upscaler on, its output
-`display.image` at the output size; otherwise the guest display buffer at its own size; no overlay) and
+`display.image` at the output size; otherwise the guest display buffer at its own size; before FSR 1 / RCAS and
+the post pass, so no overlay, no sharpening, not the window size) and
 `SaveScreenshot` converts it to RGB in a deferred priority operation, then encodes the PNG (miniz) on a detached
 thread into `GOW3_SCREENSHOT_DIR` (default `screenshots`; the launcher sets its screenshots folder) as
 `MediEvil_YYYYMMDD_HHMMSS[_n].png`. Shift+F12 creates the `GOW3_FRAME_DUMP_TRIGGER` file instead: `DumpRaw` writes
-`GOW3_FRAME_DUMP_COUNT` raw frames (default 1, clamped 1-64; the launcher: 8, one folder per session) for bug
-reports. The raw dump and its trigger file are older (inherited); 1.3.3 moved them from F12 to Shift+F12.
+`GOW3_FRAME_DUMP_COUNT` raw frames (default 1, clamped 1-64; the launcher: 8) into `GOW3_DUMP_DIR` (default
+`out/dump`; the launcher: one folder per session): the display buffer (not on the upscaler path) and the
+presented image, for bug reports. The raw dump and its trigger file are older (inherited); 1.3.3 moved them from F12 to Shift+F12.
 
 ## Invariants
 
@@ -57,5 +59,5 @@ reports. The raw dump and its trigger file are older (inherited); 1.3.3 moved th
 ## History and pitfalls
 
 - Upstream `4ec0013` made the 1.3.6 screenshot and scheduler diagnostics build on Linux.
-- The two branches give different sizes: a shot at the render size means the upscaler path was not taken, not
-  that the screenshot is broken.
+- The two branches give different sizes. MediEvil runs with `GOW3_UPSCALER=none` (run.py `setdefault`), so its
+  shots take the guest display buffer branch: the game's output size, not the window size and without FSR 1.

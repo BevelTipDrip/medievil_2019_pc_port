@@ -38,11 +38,15 @@ the particle pass is still a restart change: it went live in `d20f010`); the oth
   start, and toggling the row then writes that wrong state to the ini.
 - `Values::perf[12]` / `startup_perf[12]` are literal 12, not `PerfCount`. There is no static_assert, unlike
   `ue4_live`. A 13th patch needs both arrays and their initialisers changed.
-- The in-game defaults are all `true`. The menu shows the particle pass off only because run.py sets
-  `GOW3_PARTICLE_FIXED_STEP=1` and `Load` reads it through `perf_off`. Every start must go through `run.py`
-  (AppRun `--run` and the launcher both do).
+- The in-game defaults are all `true`. With no `perf_particle_single_pass` key in the ini, the menu shows the
+  particle pass off only because run.py sets `GOW3_PARTICLE_FIXED_STEP=1` and `Load` reads it through `perf_off`.
+  Every start must go through `run.py` (AppRun `--run` and the launcher both do).
 - run.py applies the perf variables with `setdefault`, so any variable already set wins over the ini. That covers
-  extra-env.txt (loaded first), `DECK_SWITCHES` and `run-game.ps1 -Env`.
+  extra-env.txt (loaded first) and `run-game.ps1 -Env` (`DECK_SWITCHES` holds no perf variable).
+- The perf variables are not added to `GOW3_DERIVED`, unlike the present ones. An in-game "Apply and restart"
+  inherits the previous start's environment, so a bundle that started off (its variable set) stays off after the
+  user turns it back on in the menu and restarts: the ini says `1`, the inherited variable still says off, and the
+  menu shows it off again. Turning one off by restart works. A fresh start fixes it [code, not seen in a run].
 - Small buffers: the menu's state is on only when `GOW3_STREAM_CLEAN` starts with `1`. run.py sets it only for UE4
   profile games, so the ini key cannot turn S2 on for another game.
 - Live rows act at once: `PerfOn` is a relaxed load per draw (ring reuse, lean binding); the buffer cache loads
@@ -61,6 +65,10 @@ the particle pass is still a restart change: it went live in `d20f010`); the oth
   E1, W2), 4K memory (4k-memory), lean barriers (lean-barriers), cheaper binding (bulk-descriptor-copy +
   sampler-memo), ring reuse (ring-reuse).
 - deck-preset writes every key (`perf_4k_memory=0`, `perf_particle_single_pass=1`), hence `default_deck: mixed`.
+  `perf_4k_memory=0` sets `GOW3_PS4_MEMORY=1`, which only `output_environment` reads, for outputs above 1080p: at
+  the preset's 1280x720 it changes nothing [code].
+- Some keys act only where run.py turns the patch on at all: HZB occlusion needs an eboot that matches a known
+  profile (`GOW3_HZB_REMAP=1` is set only then), small buffers a UE4 profile game.
 - Cheap frees acts on Windows only: `GOW3_DECOMMIT_KEEP_ACCESS` is read in `host_keep_view`, inside the `_WIN32`
   branch of runtime_memory.c (kept views). On Linux / the Deck the row and the key change nothing [code].
 - extra-env-file overrides any key here without changing the ini (the baseline trap).
@@ -78,3 +86,5 @@ the particle pass is still a restart change: it went live in `d20f010`); the oth
 - The launcher's `collect` still writes every `INI_DEFAULTS` key on Play, so an existing default is frozen into the
   ini at the first launcher save. `8d85929` (particle pass off) has no migration: an install the launcher saved
   before 2026-11-01 keeps `perf_particle_single_pass=1`. This was read from the code, not seen in a run.
+- The in-game "4K memory sizes" hint still says "more graphics memory and texture pool at 4K native". `c1db412`
+  fixed only the launcher text (the pool cvar is gone; it acts above 1080p), see launcher-chore.

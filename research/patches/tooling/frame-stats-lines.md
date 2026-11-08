@@ -16,6 +16,7 @@ tests: T-S1c, Native run 3, Native run 7, N-8, N-23, N-32
 docs: plan-stage-b-split.md#t-s1c--t-w3-texture-memo-two-way-the-write_data-wait-2026-10-20-2331-2345-launched-by-claude-with-the-users-go-builds-2492874-d67ac70-logs-datat-s1c-two-waylog-datat-w3-writedata-targetslog, plan-linux-deck.md#drain-wake-ahead-6-vs-2-live-2026-11-06-build-d2f145f-lows-log-datadeck-wakeahead-1log, plan-linux-deck.md#native-run-3-stage-b-by-part-2026-11-03-appimage-of-56e323b-gow3_frame_stats1-gow3_sections1-gow3_slow_frames14-log-datadeck-native-3log, plan-linux-deck.md#native-run-7-gate-2-stats-2026-11-03-appimage-3efee7a-gow3_frame_stats1-by-file-log-datadeck-native-7-crashlog, plan-frame-pacing.md#n-8-panning-hitches-the-stream-class-table-and-logging-cost-2026-10-28-launched-by-the-user
 depends_on:
 related: W3, B1, drain-wake-ahead-6, slow-frames, fence-stats, async-log-writer, uffd
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -34,10 +35,14 @@ the window's slowest 2% (at least one). `deck_summary.py` `lows()` pools those i
   `WaitDeferredSignals`). The wait itself must not move inside the `if`.
 - The lows are exact only while no window has more than 2% of its frames in the state's slowest 1% / 0.1% (class C).
   A window much worse than the rest drops frames from its list, so the pooled low reads too high. `lows()` returns
-  nan when a log has no slowest lists (builds before 2026-11-06).
+  nan when a log has no slowest lists (builds before 2026-11-06), or when `ceil(frames x share)` is past the pooled
+  list.
 - `pacing_median` is written here and read by the slow-frame line (slow-frames). The pacing report must keep setting
   it, or `GOW3_SLOW_FRAMES` never prints.
-- `NoteWriteData` keeps 16 slots per window: more targets are dropped silently.
+- `NoteWriteData` keeps 16 slots per window: more targets are dropped silently. Its table is a plain `static`
+  (no lock): only one thread may run `RunWriteData` (stage B with the draw pipe, else stage A). Its report is a
+  synchronous `printf` on that thread, at the first WRITE_DATA after 5 s, so with frame stats stage B itself
+  prints [code].
 
 ## Interactions
 
@@ -59,7 +64,8 @@ the window's slowest 2% (at least one). `deck_summary.py` `lows()` pools those i
 - Judge smoothness only from runs without `GOW3_SLOW_FRAMES` / `GOW3_SECTIONS` / `GOW3_PERF_DIAG` (N-8). N-23: the
   8-9 ms view-switch frames disappeared with diagnostics on. N-32: the user saw no spikes "without logging".
 - The 5 s report is still synchronous `printf` on the flip path (stdout unbuffered, `setvbuf` in `probe.c`).
-  Only the slow-frame lines and the perf-diag report go through async-log-writer.
+  Only the slow-frame lines and the `WaitDiagnostics` report go through async-log-writer (perf-diag's
+  "Write-fault downloads" list is still a `printf` in this block).
 - "write faults/s" in the inherited "Frame stats" line counts pages marked CPU-modified, not faults (Deck native
   run 7: ~1 real fault a frame against 44-115k/s "write faults"). `56e323b`'s message ("~760 write faults a frame")
   repeats that misreading. The handler-time line itself is correct.

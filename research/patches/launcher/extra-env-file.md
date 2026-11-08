@@ -44,8 +44,9 @@ happens. Same path on Windows (the port's data folder). On `deck-lab` only (not 
   file can do on every start.
 - Read from the code, not seen in a run: on an in-game "Apply and restart", run.py loads the file and then pops the
   previous start's `GOW3_DERIVED` keys. A key added to the file between the start and the restart is therefore lost
-  for that restart if the previous start had derived it (for example `GOW3_VBLANK_HZ`). A fresh start is not
-  affected.
+  for that restart if the previous start had derived it (for example `GOW3_VBLANK_HZ`). The reverse also holds:
+  the restarted run.py inherits the game's environment, so a key removed from the file between the start and an
+  in-game restart stays set for that restart. A fresh start is not affected.
 
 ## Interactions
 

@@ -40,7 +40,8 @@ four sim pixel shader hashes.
   as "same target" only when it equals the previous run's (`Note`). With the single particle pass it should read
   0.00 (it did with the flip guard); non-zero means a state flip went missing or doubled.
 - Classes come from target shapes seen in PC 4K captures (class M): another game or preset can put a pass in a
-  different class. Dispatches are not counted. Every counter is reset by `Report` (exchange).
+  different class. Dispatches are not counted. Every counter is reset by `Report` (exchange); the four sim
+  shader hashes and `last_run_target` are not, so the hashes are the first four seen in the launch [code].
 
 ## Interactions
 

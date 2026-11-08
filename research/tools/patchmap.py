@@ -430,8 +430,10 @@ def check(list_all=False, only_area=None):
                 e('doc %s not found' % doc)
             elif anchor and doc in anchors and anchor not in anchors[doc]:
                 e('anchor %s not in %s (patchmap.py doc %s lists them)' % (anchor, doc, doc))
-    known = set(ids)
+    known = set(m.get('id', '') for m, _, _ in cs)  # all areas, also when checking one
     for meta, body, _ in cs:
+        if only_area and not meta['_rel'].startswith(only_area + '/'):
+            continue
         for k in ('depends_on', 'conflicts_with', 'supersedes', 'related'):
             for ref in meta.get(k, []):
                 if ref not in known:

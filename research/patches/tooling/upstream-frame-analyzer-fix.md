@@ -32,8 +32,11 @@ the camera-motion constants read (`ring->size == 864 && gbuffer_draw`) against a
 - Every consumer of a ring binding must treat `address == 0` as "flatbuf, data in `FlatUserData()`", never as a
   guest pointer. Today: the capture branch and the `camera_motion->OnConstants` check in `BindBuffers`. A new
   reader of `ring->address` that skips the check faults when a stage binds its flatbuf.
-- `FrameCapture::Buffer` only reads `data` when non-null; `hex` keys on `address == 0`. The byte limit
-  (`min(size, GOW3_CAPTURE_BUFFER_BYTES)`, rounded down to 4) is ours, from mausoleum-diagnostics (`e383f7e`).
+- `FrameCapture::Buffer` only reads `data` when non-null; `hex` keys on `address == 0`. It prints
+  `min(size, limit)` rounded down to 4 bytes: upstream's fixed 1024, made `GOW3_CAPTURE_BUFFER_BYTES` by
+  mausoleum-diagnostics (`e383f7e`).
+- A ring binding with a guest address is dumped from guest memory at stage B's bind, not from the ring copy the
+  command thread made earlier: a range the guest rewrote in between shows its newer bytes [code, inferred].
 - Only active while the frame map is Armed or Recording (`FrameCapture::Active()`), except the camera-motion
   guard, which is on the normal draw path (G-buffer draws with an 864-byte ring binding).
 

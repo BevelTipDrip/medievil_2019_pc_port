@@ -60,7 +60,7 @@ Upstream bc160201983's launcher features, merged into `lab` (1.3.3-1.3.5 in `b7b
 
 ## History and pitfalls
 
-- Upstream's launcher `INI_DEFAULTS` has `stale_readback='0'` while `DEFAULTS` in graphics_options.py (what run.py uses for a missing key) has `'1'`. Ours inherits
-  both, so a launcher save writes 0 while a start without the key uses 1 (read from the code; owned by
-  lineage-deferred-readbacks).
+- Upstream's launcher `INI_DEFAULTS` has `stale_readback='0'` while `DEFAULTS` in graphics_options.py (what run.py
+  uses for a missing key) has `'1'`. Ours inherits both, so a launcher save writes 0 while a start without the key
+  uses 1 (read from the code; owned by lineage-deferred-readbacks). The Deck preset writes `stale_readback=1`.
 - Upstream's update check pointed at its own releases until port-identity (H4).

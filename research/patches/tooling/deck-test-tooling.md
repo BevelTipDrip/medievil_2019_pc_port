@@ -8,8 +8,8 @@ default_windows: off
 default_deck: off
 origin: ours
 class: G
-commits: 5aac2092b7, 5ead84222d, ba3ba76b21, 7379aa005b
-files: research/tools/apu_trace.py, research/tools/frame_clocks.py, research/tools/deck.sh, research/tools/deck_summary.py, research/tools/state_power.py, src/runtime_memory.c, gpu/shim/gow3_toggles.h, gpu/shadps4/core/libraries/videoout/driver.cpp, tests/test_gpu_runtime_stubs.cpp
+commits: 5aac2092b7, 0e54155d74, 7b0eb94654, 1afffd9d20, e3d9f92bed, cd1b1a8644, 6dbd601acf, dba69a23ae, 5ead84222d, ba3ba76b21, 7379aa005b
+files: research/tools/apu_trace.py, research/tools/frame_clocks.py, research/tools/deck.sh, research/tools/deck_summary.py, research/tools/state_power.py, research/tools/deck-cpu-clocks.sh, src/runtime_memory.c, gpu/shim/gow3_toggles.h, gpu/shadps4/core/libraries/videoout/driver.cpp, tests/test_gpu_runtime_stubs.cpp
 symbols: runtime_toggle_frame_cap, toggle_watcher, current_limit, read_flip, NAMES
 switches: GOW3_TOGGLE_FILE, GOW3_FLIP_TRACE
 tests: Launch 14
@@ -27,7 +27,8 @@ alternation, means by frame-time band, lagged correlations. The toggle file take
 cap in FPS (`runtime_toggle_frame_cap`) that replaces the limit live in the present thread's `current_limit` (the
 menu's, or a fixed `GOW3_FPS_LIMIT`); `deck.sh steps PERIOD CYCLES "S1" "S2" ...` cycles states (e.g. `"0 0 70"`) for
 a cap sweep in one launch. Base: `deck.sh` / `deck_summary.py` (`5aac209`: deploy, env, toggle, `ab`, summary per
-toggle state); `7379aa0`: the sampler keeps its files open (pread), `deck.sh power` (`state_power.py`) per state.
+toggle state; then `clocks`, `mem`, `cpu-script` (deck-cpu-clocks.sh), render-scale labels, `--perf` windows);
+`7379aa0`: the sampler keeps its files open (pread), `deck.sh power` (`state_power.py`) per state.
 
 ## Invariants
 

@@ -16,6 +16,7 @@ tests: T-SF1, T-D1b, T-HZ4f, T-HZ4g, T-F1, N-8, Native run 3
 docs: fix-inventory.md#9-diagnostics-worth-taking, plan-frame-pacing.md#t-sf1-what-the-slow-frames-do-2026-10-19-1735-1744-launched-by-claude-with-the-users-go-build-7d3d288-log-datat-sf1-slow-frameslog, plan-stage-b-split.md#t-hz4f--t-hz4g--t-hz4h-where-the-remaining-spikes-come-from-2026-10-20-2157-2225-launched-by-claude-with-the-users-go, plan-stage-b-split.md#t-f1-what-makes-the-fights-frames-slow-2026-10-25-logs-t-p960-gpu-profile-5-t-p960-slow-frames
 depends_on: frame-stats-lines
 related: sections, async-log-writer, prep-priority, D1, stage-b-core, lean-barriers, perf-diag
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -32,13 +33,16 @@ generation-only lookups. With `GOW3_SECTIONS=1` it adds a second line, "stage B 
 
 - The code sits inside `if (frame_stats)` in `VideoOutDriver::Flip`, and most counters it reads (misses, fault
   timers) count only under `Gow3Stats::enabled`. So it needs `GOW3_FRAME_STATS=1` as well; alone it prints nothing.
+  Exactly `1`: the block opens for `y` / `t` too (`EmulatorSettingsImpl::Flag`), but `Gow3Stats::enabled` does not,
+  so those counters would read 0 [code].
 - The threshold is `pacing_median` from the previous 5 s pacing report. No line is printed in the first window, or
   in the frame after a window reset (`window_reset`): those deltas span the reset.
 - Per-frame values are deltas of cumulative counters taken at each flip. A counter that is reset elsewhere breaks
   them (the window-reset counters are why `window_reset` exists).
 - `stage_b_busy_cycles` is added in `DrawPipe` around each packet handler (`vk_draw_pipe.h`). Without the draw
-  pipe, stage B busy reads 0.
-- Only measuring: nothing in the line may wait or take a lock on the flip path except the queue push.
+  pipe, stage B busy reads 0 (inferred from the code, not run).
+- Only measuring: nothing in the line may wait or take a lock on the flip path except the queue push (the first
+  push also starts the writer thread).
 
 ## Interactions
 
@@ -51,7 +55,7 @@ generation-only lookups. With `GOW3_SECTIONS=1` it adds a second line, "stage B 
 
 ## Evidence
 
-- T-SF1 (`1.2`): 3,115 slow frames against 878 samples. Slow frames had a median of 2.5 ms of GPU tick waits (90%
+- T-SF1 (`1.2`, with `GOW3_PERF_DIAG=1`): 3,115 slow frames against 878 samples. Slow frames had a median of 2.5 ms of GPU tick waits (90%
   over 1 ms), samples 0. The waits were `BufferCache::DownloadMemory`, ~40 a second, up to 5.8 ms each. The draws
   and stage A columns read 0 in that build (fixed in `057afc6`).
 - T-HZ4f: stage A waited ~0.03 ms a frame for the game's submits ("the game is never late"). 966 slow frames had

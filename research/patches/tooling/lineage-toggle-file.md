@@ -9,7 +9,7 @@ default_deck: on
 origin: upstream (inherited lineage); second word ours (e0c7566), third word ours (5ead842)
 class: G
 commits: e0c7566, 5ead84222d
-files: src/runtime_memory.c, gpu/shim/gow3_toggles.h, gpu/shim/gow3_overlay.cpp, launcher/medievil_launcher.py, research/tools/toggle-ab.ps1, research/tools/deck.sh, research/tools/deck_summary.py
+files: src/runtime_memory.c, gpu/shim/gow3_toggles.h, gpu/shim/gow3_overlay.cpp, launcher/medievil_launcher.py, research/tools/toggle-ab.ps1, research/tools/run-game.ps1, research/tools/deck.sh, research/tools/deck_summary.py
 symbols: toggle_watcher, runtime_disabled_optimizations, runtime_disabled_optimizations2, runtime_toggle_frame_cap, runtime_memory_set_gpu_hooks, POOL_KEEP_VIEWS, Gow3Toggle, Gow3Toggle2, Disabled, TestLabel
 switches: GOW3_TOGGLE_FILE, toggle:NarrowImageStages
 tests: N-30, N-31, N-32, Launch 14
@@ -38,7 +38,7 @@ variable wins) to `<user>/frame-dumps/toggles.txt`; `toggle-ab.ps1` (`ca5636f`, 
 - Missing words read as 0; a missing or unreadable file reads as all 0 (every optimisation on, no cap). Every writer
   must write all the words it wants kept: `toggle-ab.ps1` writes "N 0" / "0 N", dropping the other word and the cap.
 - Bit 31 of the first word has two meanings: `Gow3Toggle::NarrowImageStages` and Windows' `POOL_KEEP_VIEWS`
-  (M1). Writing 2147483648 switches both off. Bits 20-29 are raw motion / upscaler debug toggles. A new bit must
+  (M1). Writing 2147483648 switches both off on Windows (`pool_keep_views` ignores the bit on Linux). Bits 20-29 are raw motion / upscaler debug toggles. A new bit must
   be checked against both headers (`gow3_toggles.h`, the `#define`s in `src/*.c`).
 - The overlay's `TestLabel` reads the first word only: any non-zero first word shows "TEST" (A-D for four fixed
   sets) on screen at 250% overlay scale; second-word A/Bs show no label.
@@ -69,4 +69,7 @@ variable wins) to `<user>/frame-dumps/toggles.txt`; `toggle-ab.ps1` (`ca5636f`, 
   `<data>/user/frame-dumps/toggles.txt`. The Deck's `extra-env.txt` sets `GOW3_TOGGLE_FILE` to deck.sh's path
   (impl-texset-index.md, impl-u2-direct-arena-writes.md; run.py applies it last, so it wins). Without that line the
   A/B writes go nowhere and every window shows one state.
+- On the PC `toggle-ab.ps1` / `toggle-groups.ps1` write `C:\Users\Ty\MediEvil\research-data\toggles.txt`, the
+  file `run-game.ps1` sets (and resets to "0" at each launch); a launcher-started game watches `frame-dumps`
+  instead, so the scripts change nothing there.
 - study-live-switches.md still names the launcher's file `user/screenshots/toggles.txt`; the code uses `frame-dumps`.

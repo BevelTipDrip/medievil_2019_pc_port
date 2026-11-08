@@ -34,12 +34,15 @@ lives in `traces` under `trace_mutex`.
   behind a switch, or dropping the Init line, silently breaks the movie suspend (the intro decodes into gameplay
   again); deleting before forgetting lets the suspend touch a freed player.
 - Lines are few (a handful per movie); the frame count is a map lookup under a mutex once per delivered frame
-  (~30 a second for a 30 fps movie, inferred), not per game frame. Only `sceAvPlayerGetVideoDataEx` counts frames
+  (~30 a second for the 30 fps intro, plan-frame-pacing's upload audit), not per game frame. Only `sceAvPlayerGetVideoDataEx` counts frames
   (the non-Ex `GetVideoData` does not); `TraceSource` (AddSource / AddSourceEx) replaces the entry and resets the
   count to 0.
 - Lock order: `SuspendPlayersForLevelChange` holds `trace_mutex` while `AvPlayerState::Suspend` takes
-  `m_source_mutex` (shared). Every `Trace*` call runs after the player call returns; one made while holding
-  `m_source_mutex` exclusively could deadlock against a level change [code].
+  `m_source_mutex` (shared). Every `Trace*` call runs outside the player's own calls (`TraceSource` before
+  `AddSource`, the others after it returns); one made while holding `m_source_mutex` exclusively could deadlock
+  against a level change [code].
+- `Trace` and `TraceFrame` insert through `operator[]`: a call on a handle after its `TraceForget` (a game using a
+  closed player) would put the freed handle back in the map for the next suspend [code, not seen].
 
 ## Interactions
 

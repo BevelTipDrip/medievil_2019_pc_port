@@ -15,7 +15,8 @@ switches: GOW3_HOST_MAP_STATS
 tests: T-H1, T-M1, T-M2
 docs: plan-frame-pacing.md#t-h1-result-2026-10-18-1750-1800-launched-by-claude-with-the-users-go-build-2618b9c-log-datat-h1-hostmaplog--times, plan-stage-b-split.md#t-m1-table-stats-what-the-region-table-costs-2026-10-21-2125-launched-by-claude-with-the-users-go-build-c7e128e--nostats-50-gow3_host_map_stats1-log-datat-m1-table-statslog
 depends_on:
-related: M1, decommit-keep-access, lockfree-region-reads, L2, R3, linux-build-lab
+related: M1, decommit-keep-access, lockfree-region-reads, linux-build-lab
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -33,9 +34,10 @@ two "Host map stats (5 s)" lines. `2618b9c` also added `research/tools/etw_procs
 - Measuring only. Off, it costs one cached load per host call and no clock read (`write_lock` reads the clock only
   when enabled).
 - The 5 s report is printed by whichever thread makes the host call that crosses the boundary (a CAS on
-  `host_stats_next`). That can be a game thread inside a pool commit, possibly under the table lock. Its `printf`
-  cost lands there: keep it off for pacing runs.
-- With no host calls no report is printed (the window only ends on a call).
+  `host_stats_next`). That can be a game thread inside a pool commit: `pool_commit_impl` takes `write_lock` before
+  its host mapping, so the report's `printf` can run under the table lock (from reading one caller, not every
+  one). The "slow ..." line is printed the same way, at once. Keep it off for pacing runs.
+- With no host calls no report is printed (the window only ends on a call); the first call only arms the window.
 - The lock hold time covers only the outermost exclusive acquire (`exclusive_depth`); nested writes count once.
 - On Linux (since `8072f54`, linux-build-lab) `host_stats_enabled()` returns 0 and `HOST_STAT_ADD` compiles away:
   the switch does nothing there.
@@ -43,7 +45,10 @@ two "Host map stats (5 s)" lines. `2618b9c` also added `research/tools/etw_procs
 ## Interactions
 
 - T-H1 is the measurement behind M1. T-M1 (table stats) behind decommit-keep-access (`GOW3_DECOMMIT_KEEP_ACCESS`).
-- Its lock-hold numbers sized the region table work (L2, lockfree-region-reads, R3).
+- lockfree-region-reads came first (T-P2 to T-P5, found with samples, not this switch). T-M1 ran after it and showed
+  the sorted-array edits are not the cost (~2.2 us each); the lock-hold time it measured is what T-M2 cut.
+- "T-M1" names two runs: plan-frame-pacing.md's M1 check (pool views kept, also read from these lines: unmaps 0,
+  kept ~= reused) and plan-stage-b-split.md's table stats. This card's evidence is the second.
 
 ## Evidence
 

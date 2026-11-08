@@ -1,11 +1,11 @@
 # file	line	level	anchor	heading  (generated)
 START-HERE.md	1	1	start-here-medievil-port-work	START HERE: MediEvil port work
 START-HERE.md	6	2	read-in-this-order	Read in this order
-START-HERE.md	17	2	rules-the-users-also-in-claudes-memory	Rules (the user's; also in Claude's memory)
-START-HERE.md	38	2	current-state-2026-10-18	Current state (2026-10-18)
-START-HERE.md	56	2	knobs-and-triggers	Knobs and triggers
-START-HERE.md	73	2	document-index	Document index
-START-HERE.md	105	2	elsewhere	Elsewhere
+START-HERE.md	24	2	rules-the-users-also-in-claudes-memory	Rules (the user's; also in Claude's memory)
+START-HERE.md	46	2	current-state-table-last-fully-updated-2026-10-18	Current state (table last fully updated 2026-10-18)
+START-HERE.md	68	2	knobs-and-triggers	Knobs and triggers
+START-HERE.md	85	2	document-index	Document index
+START-HERE.md	118	2	elsewhere	Elsewhere
 building-and-tools.md	1	1	building-and-tools	Building and tools
 building-and-tools.md	5	2	paths	Paths
 building-and-tools.md	16	2	toolchain-installed-2026-10-18	Toolchain (installed 2026-10-18)
@@ -58,6 +58,10 @@ handoff-2026-10-18.md	21	2	how-it-works-files	How it works (files)
 handoff-2026-10-18.md	31	2	traps	Traps
 handoff-2026-10-18.md	37	2	later-the-same-day-to-1300-what-landed-on-lab	Later the same day (to 13:00): what landed on `lab`
 handoff-2026-10-18.md	58	2	next-steps--pending	Next steps / pending
+handoff-2026-11-07-patch-map.md	1	1	handoff-2026-11-07-patch-map-in-progress	Handoff 2026-11-07: patch map in progress
+handoff-2026-11-07-patch-map.md	6	2	what-exists	What exists
+handoff-2026-11-07-patch-map.md	15	2	to-finish-next-session	To finish (next session)
+handoff-2026-11-07-patch-map.md	29	2	other-open-items-from-the-same-session	Other open items from the same session
 impl-cpu-waste.md	1	1	implementation-less-wasted-cpu-on-the-steam-deck-stage-as-drain-wait-the-game-threads-nav-purge	Implementation: less wasted CPU on the Steam Deck (stage A's drain wait, the game thread's nav purge)
 impl-cpu-waste.md	22	2	1-stage-as-drain-wait	1. Stage A's drain wait
 impl-cpu-waste.md	24	3	what-it-does-today-read-in-the-code	What it does today [read in the code]

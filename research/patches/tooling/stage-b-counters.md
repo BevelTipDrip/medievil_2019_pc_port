@@ -31,7 +31,11 @@ and `submit_flush` nested). `513ca7f` holds the N-28 logs and `sections_frames.p
 ## Invariants
 
 - Counting only: every new counter is behind `Gow3Stats::enabled` or a `GOW3_SECTION` scope, except the
-  `texture_set_unkept` increments (a plain array add on the slow path, printed only with stats).
+  `texture_set_unkept` increments (a plain array add on the slow path, printed only with stats; stage B only:
+  the bind helper's calls have no `set_slot` and never reach them).
+- `descriptor_pushes` / `descriptor_writes` count only pushes recorded deferred (after the
+  `IsRecordingDeferred()` return in `vk_pipeline_common.cpp`): a push recorded directly is not counted [code].
+- A site's sleep ms counts only waits over 20 us on stage B (`SleepTimer`); shorter waits are in no site.
 - The "texture sets not kept" line prints at the top of `BeginRendering` (before the memo check) when
   `(hits + misses) & 0x3FFFF == 0x3FFFF`, i.e. every 262,144 render-state calls, not every 5 s, and then resets the
   array: divide by the frames in that span, not by a 5 s window.

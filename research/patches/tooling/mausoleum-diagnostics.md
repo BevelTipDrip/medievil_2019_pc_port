@@ -15,7 +15,7 @@ switches: GOW3_IMAGE_WATCH, GOW3_IMAGE_WATCH_LINES, GOW3_READBACK_LOG, GOW3_SKIP
 tests:
 docs: plan-linux-deck.md#hilltop-mausoleum-lighting-pool-pages-leaked-on-linux-2026-11-0607-fixed-7246f88--f74e1a1
 depends_on:
-related: pool-kept-pages, readback-first-wait, tiny-target-readback, gpu-write-subresources, renderdoc-capture, mausoleum-toggle-bisect, texcache-stats, lineage-deferred-readbacks, new-images-undefined, upstream-frame-analyzer-fix
+related: pool-kept-pages, readback-first-wait, R1-readback, tiny-target-readback, gpu-write-subresources, renderdoc-capture, mausoleum-toggle-bisect, texcache-stats, lineage-deferred-readbacks, new-images-undefined, upstream-frame-analyzer-fix
 verified: 2026-11-07
 ---
 ## What it does
@@ -37,9 +37,11 @@ read). The frame map now ends at a display pass after a scene pass (not at the U
   spec and a width compare) or a static bool test.
 - `WatchNote` takes a line from the budget by CAS, so the cap holds across threads; a new event site must call
   `Watched` first (the format work is not free) and add its own note, or the watch misses that way of losing data.
-- The "read by the CPU" line prints only when a CPU read faults on a pending copy: in stale mode (the default,
-  `stale_readback=1` in the ini) only first copies watch reads, and only with `GOW3_READBACK_FIRST_WAIT=1`
-  (readback-first-wait); without stale mode every pending copy's read prints it. "First copy published" prints in
+- The "read by the CPU" line prints only when a CPU read faults on a pending copy: in stale mode
+  (`GOW3_STALE_READBACK=1` from the ini's `stale_readback`: 1 in run.py's defaults and the Deck preset, but 0 in
+  the launcher's `INI_DEFAULTS`, R1-readback) only first copies watch reads, and only with
+  `GOW3_READBACK_FIRST_WAIT=1` (readback-first-wait); without stale mode every pending copy's read prints it
+  (labelled "first copy" though it may not be one). "First copy published" prints in
   stale mode only. `readback_published` gains one entry per distinct readback address and is never pruned.
 - The linear GPU copy for the log is an extra staging download per first copy, freed in a deferred priority
   operation; it adds GPU and staging work while `GOW3_READBACK_LOG` is on.

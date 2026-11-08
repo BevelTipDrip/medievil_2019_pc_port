@@ -26,8 +26,9 @@ VSync checkbox and the separate present-mode list. `vsync_choice_var` is a deriv
 "Adaptive" set `present_mode=immediate` / `fifo_relaxed`, which fixes the Vulkan mode. "Frame limiter"
 (`present_limiter`: reflex / precise / standard, default reflex) picks a `PRESENT_LIMITERS` bundle. "Engine frame
 rate" (`engine_cap_var`) adds Unlimited, which writes `present_no_frame_caps=1` and `engine_fps=240`. `0c357bc` set
-the T-F27 defaults: Reflex, tick 960, precise tick, inline present, and `fps_limit=-3` (Auto: below half refresh,
-also `Values::fps_limit` in gow3_settings.h). In the same commit Reflex steps aside on a driver without
+the T-F27 defaults: Reflex, tick 960, precise tick, inline present, and `fps_limit=-3` (also `Values::fps_limit`
+in gow3_settings.h). At `0c357bc` -3 was always half the refresh minus 1; since `50290a5` (vrr-auto-limits) the
+minus 1 applies only with `display_vrr=1`. In the same commit Reflex steps aside on a driver without
 `VK_NV_low_latency2` (reflex card).
 
 ## Invariants
@@ -71,6 +72,8 @@ also `Values::fps_limit` in gow3_settings.h). In the same commit Reflex steps as
 - `ebe42c7` first offered the raw present modes. `1b2c5af` dropped Fifo and Mailbox because they duplicated the
   in-game switch, and `49040f1` shortened the labels.
 - Removed from the launcher in `0c357bc` (environment only): newest-frame, the display-vblank tick, the separate
-  precise-limiter switch and the present-wait modes (their cards are rejected).
+  precise-limiter switch and the present-wait modes. newest-frame and vblank-sync are rejected cards; the precise
+  limiter stays active, now chosen through `present_limiter` (precise-limiter); an old `present_precise_limit` key
+  is simply ignored.
 - The user: the offsets below the refresh are for VRR only, and a fixed-refresh display wants the refresh or a
   fraction of it. That is `display_vrr` (vrr-auto-limits), not this list.

@@ -61,6 +61,9 @@ only if `pgo/` holds `.gcda` files.
 ## History and pitfalls
 
 - N-29: "PGO stays out (needs clang profile code, study item 6)".
+- `rejected` here means "not built, gated", not "measured and dropped": the README has no status for that.
+  study-deck-rescore-rejected.md lists C14 as "Open" and C15 as "Never measured", and study-deck-build-optimization
+  ranks S2-S5 as a pending plan. The `GOW3_PGO` CMake / build.sh plumbing is upstream's (already in `upstream/main`).
 - What would make it worth building: stage B still the Deck's wall after the S0 / S1 measurements, and the user's
   go for two training launches (play sessions, labelled `deck-pgo-train-1` / `deck-bolt-train-1`), plus one
   measurement launch each. Judge by stage B us per draw and busy %, not FPS alone (15 W shared budget).

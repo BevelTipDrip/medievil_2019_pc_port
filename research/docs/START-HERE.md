@@ -6,11 +6,18 @@ Entry point for every session. **Keep it current:** when a stage lands, update
 ## Read in this order
 
 1. This page.
-2. [plan-roadmap.md](plan-roadmap.md): the working plan (order of work, Progress table).
-3. The latest handoff: [handoff-2026-10-18.md](handoff-2026-10-18.md).
-4. [building-and-tools.md](building-and-tools.md): toolchain, build, run, profiling. **Do not re-install the
+2. **The patch map: [research/patches/INDEX.md](../patches/INDEX.md)** (one line per patch, 198 cards) and
+   [LANDMINES.md](../patches/LANDMINES.md). **Before editing a file run
+   `python research/tools/patchmap.py file <path>`** and read the invariants of every patch in it. Lookups without
+   reading the big docs: `patchmap.py switch <name>` / `commit <hash>` / `test <id>` / `find <text>` /
+   `doc <file.md>`. After a code change: update the card, then `patchmap.py facts`, `check`, `index`
+   ([README](../patches/README.md)).
+3. [plan-roadmap.md](plan-roadmap.md): the working plan (order of work, Progress table).
+4. The latest handoff: [handoff-2026-11-07-patch-map.md](handoff-2026-11-07-patch-map.md); the Deck work's state is
+   in [plan-linux-deck.md](plan-linux-deck.md) (newest sections at the end: `patchmap.py doc plan-linux-deck.md`).
+5. [building-and-tools.md](building-and-tools.md): toolchain, build, run, profiling. **Do not re-install the
    toolchain or re-derive the build: it is written down there.**
-5. Before touching an area, its reference doc:
+6. Before touching an area, its reference doc:
    [gpu-threading-reference.md](gpu-threading-reference.md) (scheduler, recording, submit) or
    [upscaler-reference.md](upscaler-reference.md) (motion vectors, FSR, DLSS, frame generation).
 
@@ -18,7 +25,8 @@ Entry point for every session. **Keep it current:** when a stage lands, update
 
 - **Every game launch needs the user's explicit go for that launch.** Ask before closing the game.
   One change per launch.
-- **Never push or tag without asking.** `origin` is the public upstream (bc160201983/medievil_2019_pc_port).
+- **Never push or tag without asking.** `origin` is the user's fork (BevelTipDrip/medievil_2019_pc_port); `deck-lab`
+  may be pushed there. `upstream` is bc160201983/medievil_2019_pc_port: never push to it.
 - Never roll back or delete work without asking.
 - Never touch the save folder. Back up `medievil.ini` before editing it.
 - `C:\Users\Ty\MGS2-Lab` is **read only** (reference for the FSR FG / DLSS / DLSS FG work).
@@ -35,7 +43,11 @@ Entry point for every session. **Keep it current:** when a stage lands, update
 
 Open: a private remote for `lab` is not decided yet.
 
-## Current state (2026-10-18)
+## Current state (table last fully updated 2026-10-18)
+
+**Stale in places.** For what is on and off today use the patch map ([INDEX.md](../patches/INDEX.md): status and
+Windows / Deck defaults per patch, checked against the code 2026-11-07). The Deck work since 2026-11-03 is on branch
+`deck-lab` and in [plan-linux-deck.md](plan-linux-deck.md).
 
 | Area | State |
 |---|---|
@@ -74,6 +86,7 @@ Environment variables and settings already in the port that this work uses (full
 
 | Doc | What |
 |---|---|
+| [../patches/INDEX.md](../patches/INDEX.md) | **The patch map:** every patch, its code, switches, defaults, invariants, interactions, evidence ([LANDMINES.md](../patches/LANDMINES.md): problems found building it; [TESTS.md](../patches/TESTS.md): every test ID) |
 | [plan-work-queue.md](plan-work-queue.md) | **The to-do list (2026-10-30):** the user's order, pending fixes from the 2026-10-29 research, small items found on the way |
 | [plan-live-switches.md](plan-live-switches.md) | Graphics settings switched live in the in-game menu: mechanism, done, next |
 | [impl-live-render-scale.md](impl-live-render-scale.md) | Render scale live in 1% steps (menu slider, launcher box): mechanism, live range, what stays restart-only, Deck test |

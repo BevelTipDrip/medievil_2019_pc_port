@@ -16,6 +16,7 @@ tests: Native run 7, Native run 8, Native run 9
 docs: study-fence-waits.md#5-instrumentation-plan-stats-only, plan-linux-deck.md#native-run-7-gate-2-stats-2026-11-03-appimage-3efee7a-gow3_frame_stats1-by-file-log-datadeck-native-7-crashlog, plan-linux-deck.md#native-run-8-gate-2-in-the-graveyard-2026-11-03-appimage-aec1592-67-log-datadeck-native-8log, plan-linux-deck.md#native-run-9-fence-lag-2026-11-03-appimage-579c9d2-67-log-datadeck-native-9log
 depends_on: frame-stats-lines
 related: U5, U5-2, gate2-ordered-fences, wait-sites, early-frame-eop, uffd, copy-thread-backing-view, E1
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -40,8 +41,12 @@ by `Gow3FenceStats::Report` from the frame-stats block (`3efee7a`):
   before the handler's `SignalAfterHostCopies`, or another signal takes its kind.
 - The lag is an upper bound: the tick is the command buffer's, so it includes submission granularity
   (study 5.1 level 1).
-- The probe thread blocks on the timeline semaphore without a timeout; it is detached and never joined.
+- The probe thread is started by the first fence with stats on (`SetGpuWaiter`, from `SignalAfterHostCopies` or
+  `SignalAfterGpu`); the `!wait_gpu_tick` check is not atomic, so two first fences at once could start two probes
+  [code]. It waits through `Semaphore::Wait` (a timed wait in a loop until the tick, no overall timeout), polls every
+  500 us when idle, and is detached and never joined.
 - Its ring holds 4,096 fences. A probe that falls behind skips ahead and loses samples.
+- `pending_fence_kind` is set in the EOP / EOS handlers whether stats are on or not (a thread-local store, harmless).
 - The runtime's fault map has its own `GOW3_FRAME_STATS` check (`runtime_fault_stats_enabled`, `1` only).
 
 ## Interactions
@@ -49,8 +54,11 @@ by `Gow3FenceStats::Report` from the frame-stats block (`3efee7a`):
 - The gate for U5 (rejected). The direct measurement that followed was gate2-ordered-fences (reverted). U5-2 /
   `GOW3_GPU_FENCES` also feed `BeginFence` (vk_gpu_signals.cpp).
 - wait-sites times the same `sceKernelWaitEqueue` calls by guest call site. This card adds filter / ident / thread.
-- Run 7's crash under these stats (pool page read while unmapped in `CopySparseMemory`) led to
-  copy-thread-backing-view. Run 7's fault map corrected the uffd reading ("write faults/s" are pages).
+- Run 7 (with these stats) crashed in `CopySparseMemory` (a pool page read while unmapped, a Linux decommit bug, not
+  caused by the stats), which led to copy-thread-backing-view. Run 7's fault map corrected the uffd reading ("write
+  faults/s" are pages).
+- The equeue timing in `sceKernelWaitEqueue` sits next to wait-sites' own clock reads; both on at once adds both
+  costs to every guest event wait.
 
 ## Evidence
 

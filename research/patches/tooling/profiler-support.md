@@ -16,6 +16,7 @@ tests: N-1, N-2, N-5
 docs: fix-inventory.md#9-diagnostics-worth-taking, building-and-tools.md#profiling-and-crashes, plan-frame-pacing.md#n-1-nsight-systems-gpu-busy-vs-working-hard-in-the-fight-2026-10-27-launched-by-the-user-report-research-datansysnsys-fight-1-1nsys-rep-log-datansys-fight-1log
 depends_on:
 related: narrow-image-stages, ring-reuse, depth-write-effective, perf-diag, renderdoc-capture, reflex
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -29,7 +30,9 @@ related: narrow-image-stages, ring-reuse, depth-write-effective, perf-diag, rend
   and points stderr and the Win32 std handles at it, so a launch under ngfx keeps its log and crash report.
   `run.py` runs the game under Nsight Graphics when `GOW3_NGFX=<dir>` is set (`GOW3_NGFX_CMD`, `GOW3_NGFX_ARGS`).
   `run-game.ps1 -Nsys` sets `GOW3_SKIP_TOOL_INFO=1` and `GOW3_REFLEX=0`, and holds F9 itself around
-  `nsys start` / `nsys stop`. `-Ngfx` needs an administrator shell (GPU counters).
+  `nsys start` / `nsys stop`. `-Ngfx` sets `GOW3_NGFX`, `GOW3_SKIP_TOOL_INFO=1` and `GOW3_STDOUT_FILE`
+  (`<tag>\game.log`), Reflex stays on. Both refuse to start without an administrator shell (GPU counters).
+- The sampler (`gow3_sampler.cpp`, `GOW3_SAMPLE_FILE`) is upstream; only the VkRecorder hookup is ours.
 
 ## Invariants
 
@@ -51,8 +54,9 @@ related: narrow-image-stages, ring-reuse, depth-write-effective, perf-diag, rend
 
 ## Evidence
 
-- N-1 (Nsight Systems, fight): in the dips the GPU works hard, it is not just busy. Tracing overhead was high (median
-  frame 6.4 ms vs ~5 ms normally). Nsight's WDDM trace hung `nsys stop` forever, found with `nsys-bisect.ps1` on a
+- N-1 (Nsight Systems, fight): in the dips the GPU works harder than in ordinary frames (corrected the same day: in
+  absolute terms far from saturated, SMs Active 78%, SM Issue 45%). Tracing overhead was high (median frame 6.4 ms
+  vs ~5 ms normally). Nsight's WDDM trace hung `nsys stop` forever, found with `nsys-bisect.ps1` on a
   dummy program and dropped.
 - N-2 / N-5 (Nsight Graphics GPU Trace): the GPU waits for idle most of each frame; same-spot A/B of
   narrow-image-stages (~9% shorter GPU frame, `d6a1285`'s message).
@@ -60,5 +64,8 @@ related: narrow-image-stages, ring-reuse, depth-write-effective, perf-diag, rend
 ## History and pitfalls
 
 - ngfx's own timeout ended its session and closed the game (`ngfx-narrow-1`): `run.py` passes `--no-timeout`.
-- Nsight's hotkey never reached the game; `run-game.ps1` sends F9 itself.
+- Nsight's hotkey never reached the game; `run-game.ps1` handles F9 itself (a system-wide hotkey that runs
+  `nsys start` / `nsys stop`).
+- `GOW3_SKIP_TOOL_INFO` is also read on Linux (shared `vk_instance.cpp`), harmless there; `GOW3_STDOUT_FILE` is
+  `#ifdef _WIN32` only.
 - Not verified in game: diagnostics only.

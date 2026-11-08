@@ -36,13 +36,17 @@ bound becomes 1002 and `GOW3_FPS_CAP` becomes 1000. This card is the plumbing an
   `run-game.ps1 -Env` and extra-env.txt tests win. Derived keys must be listed in `GOW3_DERIVED`, or a restart from
   the menu keeps the old value.
 - The defaults live in two places, `PRESENT_DEFAULTS` and the launcher's `INI_DEFAULTS`
-  (`test_graphics_defaults_match_the_game` and `test_present_environment` check the main ones). A missing key must
-  mean the tested best (T-F27).
+  (`test_graphics_defaults_match_the_game` checks the launcher's limiter / mode / tick, `test_present_environment`
+  the script's; no test compares the two tables, nor `present_inline` / `present_precise_tick` in `INI_DEFAULTS`).
+  A missing key must mean the tested best (T-F27).
 - `GOW3_NO_FRAME_CAP` matters only with an automatic tick: `GetFrameLimit` already returns 0 when `GOW3_VBLANK_HZ`
-  is above 0, as it is with the default 960 or the Deck's 900. With any explicit tick, the engine bound of 1000 is
-  the part of "Unlimited" that has an effect.
+  is above 0, as it is with the default 960 or the Deck's 900, and the present thread consults it only when the
+  tick is 480 Hz (`fixed_limit` in driver.cpp) or `GOW3_FPS_LIMIT` is set. With any explicit tick, the engine
+  bound of 1000 is the part of "Unlimited" that has an effect.
 - In run.py the present variables are set before the `engine_fps > 60` block, so that block's
-  `setdefault('GOW3_VBLANK_HZ', '0')` never replaces the configured tick.
+  `setdefault('GOW3_VBLANK_HZ', '0')` never replaces the configured tick. That block's `GOW3_VBLANK_HZ=0` and
+  `GOW3_FPS_CAP` are not in `GOW3_DERIVED`: with an automatic tick (`present_tick_hz=0`) an in-game restart that
+  changes Engine frame rate keeps the previous start's values [code, not seen in a run].
 - `fps_limit` (the in-game Frame rate limit) stays in force with no built-in caps. The Deck preset relies on that:
   it is the only clock there.
 
@@ -69,7 +73,9 @@ bound becomes 1002 and `GOW3_FPS_CAP` becomes 1000. This card is the plumbing an
 ## History and pitfalls
 
 - At first every key defaulted to off, and the newest-frame, vblank-sync and separate precise-limiter keys were in
-  the launcher. `0c357bc` removed those (environment only now) and set the T-F27 defaults (vsync-control).
+  the launcher. `0c357bc` removed those (environment only now) and set the T-F27 defaults (vsync-control). Two
+  comments still say "all default off" / "All off by default" (`graphics_options.py` above `PRESENT_MODES`, the
+  launcher above `PRESENT_SWITCHES`): out of date, `present_inline` and `present_precise_tick` default to 1.
 - Before `44994b9`, `GOW3_PRESENT_MODE` existed upstream (`GetPresentMode`) but nothing read it
   (present-mode-select).
 - A tick at or below the frame limit paces the game by itself and rounds slow frames up to whole ticks. That is

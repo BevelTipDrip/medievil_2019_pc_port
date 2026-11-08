@@ -16,6 +16,7 @@ tests: T-F1, N-19, N-20, N-23
 docs: fix-inventory.md#9-diagnostics-worth-taking, plan-stage-b-split.md#t-f1-what-makes-the-fights-frames-slow-2026-10-25-logs-t-p960-gpu-profile-5-t-p960-slow-frames, study-upstream-commits.md#3-conflicts-with-ours, plan-frame-pacing.md#n-19-what-the-fights-slow-frames-are-per-pass-2026-10-29-launched-by-claude-with-the-users-go-t-prof1-fight-burstslog
 depends_on:
 related: effects-resolution, ring-reuse, slow-frames, park-unmapped
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -30,9 +31,12 @@ into slow (>= 1.35x the median of the last 128) and other, and prints the labels
 
 ## Invariants
 
-- `BeginFrame` must run once per game frame on the thread that records draws. Two calls per frame advance the slice
-  ring twice (the second call finds `used == 0` and only steps on). The 4-frame-old read then becomes ~2 frames old:
-  more frames skipped when the GPU lags.
+- `BeginFrame` must run once per profiled frame on the thread that records draws. Two calls back to back (no draw
+  between, see Interactions) do not split or double count a frame: the second finds `used == 0`, closes nothing and
+  only steps on. But only every other slice then holds a frame, so the slice `Collect` reads was closed about one
+  frame earlier instead of three: more frames skipped when the GPU lags (code reading, not run).
+- Even ours fires once per display pass, and study-frame-cost-2026-10-29 found two display passes per flip: a
+  "frame" here is a display pass, not a flip.
 - `Collect` must never block. The draw recording thread can be behind the caller, and the blocking read stalled the
   boot (T-F1, twice).
 - `WriteTimestamp` ends the open render pass (`scheduler.EndRendering`): radv crashed on timestamps inside passes.
@@ -45,8 +49,10 @@ into slow (>= 1.35x the median of the last 128) and other, and prints the labels
   branch, when a draw's display target changes (`display_target`). study-upstream-commits H2 said to keep ours and
   take only the `gpu_frames` increment. `lab` and `deck-lab` both have both: our `in_display_pass` block and upstream's
   branch calling `NoteFrameStart` -> `profiler->BeginFrame()`. Read from the code (not run): two `BeginFrame`
-  calls at the first display draw of each frame (see Invariants). fix-inventory says "ours kept over theirs"; the
-  code does not match. Check before trusting per-frame coverage.
+  calls at the first display draw of each display pass (both trigger when the target turns from non-display to a
+  display buffer; upstream's also on a switch between two display buffers). fix-inventory says "ours kept over
+  theirs"; the code does not match. H2 predicted halved per-frame times; by the code the effect is the slice ring
+  above, not halving (unverified by a run). Check before trusting per-frame coverage.
 - `32586bc` also carries effects-resolution and the ring-reuse stamp fix (`ConstantRing::Stamp`).
 - slow-frames tells CPU-late frames from GPU frames on the CPU side; this profile does it on the GPU side
   ("between submissions: GPU idle" growth = stage B late).

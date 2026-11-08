@@ -38,7 +38,8 @@ with `e383f7e` (mausoleum-diagnostics).
   because a hit needs the render pass already open with the same targets. A watched pass that begins while a
   flip-armed capture is Armed or Recording is not checked, and does not start one later in the same pass.
 - A target-started recording may see no frame boundary during a load: `BeginPass` writes and stops any recording at
-  400 entries. Removing that cap lets a load-time recording grow without bound.
+  400 entries (otherwise at the first display pass after a scene pass, as a flip-armed one). Removing that cap lets
+  a load-time recording grow without bound.
 - `LogTexelStats` copies through a staging buffer and reads the result in a deferred priority operation (no GPU
   wait); only float formats up to 256x256, depth 1, once per (address, format, width), up to 16 mips.
 - Windows: renderdoccmd injection. Deck: injection "kills the runtime"; use the loader variable only.

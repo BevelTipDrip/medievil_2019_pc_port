@@ -15,7 +15,8 @@ switches:
 tests: N-8
 docs: plan-frame-pacing.md#n-8-panning-hitches-the-stream-class-table-and-logging-cost-2026-10-28-launched-by-the-user, fix-inventory.md#9-diagnostics-worth-taking
 depends_on:
-related: slow-frames, perf-diag, stream-class-table, sections, frame-stats-lines, flip-trace
+related: slow-frames, perf-diag, stream-class-table, sections, frame-stats-lines, flip-trace, ring-reuse
+verified: 2026-11-07
 ---
 ## What it does
 
@@ -23,8 +24,10 @@ related: slow-frames, perf-diag, stream-class-table, sections, frame-stats-lines
 thread; `Write` pushes it onto a deque under a mutex and notifies a detached worker thread. The worker swaps the
 whole deque out, `fwrite`s each string to stdout and calls `fflush`. Users: the slow-frame lines (driver.cpp, one
 string per frame with its "stage B ms:" line), `WaitDiagnostics::Report` (one string per report, written by a
-scope guard), `GOW3_LONG_WAITS` (`vk_scheduler.cpp`) and a constant-ring report (`vk_constant_ring.h`). It is
-always compiled in, but only those diagnostics use it (default on/on in that sense; no switch).
+scope guard); later also `GOW3_LONG_WAITS` (`vk_scheduler.cpp`, `464d925`) and the constant-ring pressure report
+(`ConstantRing::ReportPressure`, `4038564`, ring-reuse), which needs no switch: it prints at most every 5 s when the
+ring ran full, so a default run can use the writer too. Always compiled in, no switch (default on/on in that sense).
+The worker thread starts at the first `Write`.
 
 ## Invariants
 
@@ -43,8 +46,11 @@ always compiled in, but only those diagnostics use it (default on/on in that sen
 - slow-frames and perf-diag are its users. Their output must not be judged against the old printf timing (logs
   before `de30a39`).
 - Shares `de30a39` with stream-class-table (the panning hitch fix) and the `obt_*` sections split.
-- Not used by the 5 s frame-stats report (frame-stats-lines), the texture cache report (texcache-stats) or the flip
-  trace (flip-trace, its own `fprintf` under a mutex): those still write on the calling thread.
+- Not used by the 5 s frame-stats report (frame-stats-lines), perf-diag's "Write-fault downloads" list
+  (`ReportDownloadSites`, `printf` in that block), the WriteData targets and "stage B us per packet" lines (stage B /
+  stage A `printf`), the texture cache report (texcache-stats) or the flip trace (flip-trace, its own `fprintf` under
+  a mutex): those still write on the calling thread. The commit's "the GOW3_PERF_DIAG report" means
+  `WaitDiagnostics::Report` only.
 
 ## Evidence
 
