@@ -238,7 +238,7 @@ In game (heavy view; no SSH sampling while `ab` runs):
 4. `deck.sh ab "0 0" "0 3145728" 30 5` (A1 + A2 off vs on; A3 is restart-only since `adfeb67`: a live flip stopped
    draw preparation for the rest of the launch, see the correction below).
 5. One pair per cut, same launch: `deck.sh ab "0 0" "0 1048576" 20 3` (A1), `"0 0" "0 2097152"` (A2), A3 only as a restart pair (`GOW3_REG_HASH_PAIRED=1` vs unset).
-6. CPU and power in their own windows afterwards: `deck.sh toggle "0 7340032"`, ~10 s, `deck.sh threads 5` and
+6. CPU and power in their own windows afterwards: `deck.sh toggle "0 3145728"`, ~10 s, `deck.sh threads 5` and
    `ssh deck python3 ~/MediEvil/apu_power.py`; then `deck.sh toggle "0 0"`, ~10 s, the same; twice each.
 7. `deck.sh pull deck-stagea-1`, `deck.sh summary deck-stagea-1 --min-draws 1000`.
 
