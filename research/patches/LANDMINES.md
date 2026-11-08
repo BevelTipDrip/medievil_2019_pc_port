@@ -63,7 +63,9 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
 10. **Linux crash window in `CopySparseSerial`** ([copy-thread-backing-view](deck/copy-thread-backing-view.md)): if
     `runtime_memory_read_backing` returns 0 after a lock-free lookup said "mapped", the code memcpys from a PROT_NONE
     guest address: the native run 7 SIGSEGV. The Linux branch should zero-fill or retry.
-    **Confirmed in logs, fix built `a4fc572` (2026-11-07), not run:** all three Deck crash logs (native runs 5 and 7, nav-1) died there.
+    **Confirmed in logs, fix built `a4fc572` (2026-11-07), not run:** all three Deck crash logs (native runs 5 and 7, nav-1) died there, and so did the cuts redo (2026-11-07 21:14,
+    `data/deck-cutsredo-crash.log`: `CopySparseSerial` from `BufferCache::UploadCopies` on a copy-pool thread, resolved
+    with nm against the AppImage that ran).
 11. **Texture-set memo ordering** ([texset-region-stamps](stage-b/texset-region-stamps.md)): `RegisterImage` /
     `UnregisterImage` raise `registry_generation` before `BumpRegions`, and the lookup reads the generation first. A
     registration beside a lookup can memo a set with stale stamps. Swapping the two lines removes it.
