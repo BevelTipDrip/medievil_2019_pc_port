@@ -79,6 +79,8 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
 14. **Deck Optimized is not platform-gated** ([deck-preset](deck/deck-preset.md)): chosen on Windows it turns on
     R1 and the other Deck switches there, untested. Changing quality in the game's menu clears the preset but leaves
     `deck_switches` on.
+    **Fix built `af284f9` (2026-11-07), not run:** the switches one by one, Linux-only ones greyed out on Windows,
+    the applied set in the log (the user's design).
 15. **Two defaults for `stale_readback`** ([lineage-deferred-readbacks](caches/lineage-deferred-readbacks.md)): run.py
     and the Deck preset use 1, the launcher's `INI_DEFAULTS` 0. A fresh launcher install runs precise readbacks, a
     mode the user's ini never tests.

@@ -8,9 +8,9 @@ default_windows: off
 default_deck: on
 origin: ours
 class: M
-commits: aec4e33, c4158d1
+commits: aec4e33, c4158d1, af284f9
 files: launcher/medievil_launcher.py, tests/test_deck_preset.py
-symbols: DECK_PRESET, DECK_SWITCHES, DECK_QUALITY, DECK_HINT, steam_deck, deck_preset_offer, apply_deck_preset, offer_deck_preset, quality_choice_var, game_environment, deck_switches, deck_offered
+symbols: DECK_PRESET, DECK_SWITCHES, DECK_QUALITY, DECK_HINT, steam_deck, deck_preset_offer, apply_deck_preset, offer_deck_preset, quality_choice_var, game_environment, deck_switches, deck_offered, DECK_SWITCH_ITEMS, deck_switch_env, deck_switch_rows
 switches:
 tests:
 docs: plan-linux-deck.md#a-flat-60-on-the-deck-the-user-2026-11-05, plan-linux-deck.md#deck-optimized-preset-2026-11-05-launcher-built-not-run, plan-linux-deck.md#thread-nice-live-2026-11-06-build-5ab1a24-nicelive-logs-datadeck-nicelive-1log-datadeck-nicelive-1400log
@@ -67,6 +67,10 @@ present, frames queued 1, every perf patch on but `perf_4k_memory=0`, `perf_part
 
 ## History and pitfalls
 
+- **One by one (fix built `af284f9`, 2026-11-07, LANDMINES item 14), not run:** the checkbox turns them all on;
+  an arrow shows the 11 (`DECK_SWITCH_ITEMS`), unchecked ones in `deck_switches_off`. On Windows A1, thread nice
+  and arena writes off are greyed out and never set (Linux code; U2 off on Windows anyway). run.py logs the
+  applied set (`GOW3_DECK_SWITCHES`). Smoke-tested in a hidden launcher window; not yet used by the user.
 - The checkbox text "Steam Deck performance switches" still lists only the first six switches (no A1-A3, flip
   guard, nice).
 - `quality_choice_var`: a quality changed in the in-game menu clears `graphics_preset` but leaves `deck_switches` on
