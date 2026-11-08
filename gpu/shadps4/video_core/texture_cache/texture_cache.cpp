@@ -2262,8 +2262,12 @@ void TextureCache::RegisterImage(ImageId image_id) {
     ASSERT_MSG(False(image.flags & ImageFlagBits::Registered),
                "Trying to register an already registered image");
     image.flags |= ImageFlagBits::Registered;
-    ++registry_generation;
+    // Region stamps first, then the generation: a memo lookup (BindTexturesFromSetIn) reads the
+    // generation, then the stamps, and confirms a set at the generation it read. Bumped the other
+    // way round, a lookup between the two could confirm a set at the new generation with the old
+    // stamps, and later lookups at that generation skip the stamp check.
     BumpRegions(image.info.guest_address, image.info.guest_size);
+    ++registry_generation;
     total_used_memory += Common::AlignUp(image.info.guest_size, 1024);
     image.lru_id = lru_cache.Insert(image_id, gc_tick);
     image.lru_touched_tick = gc_tick;
@@ -2299,8 +2303,8 @@ void TextureCache::UnregisterImage(ImageId image_id) {
     ASSERT_MSG(True(image.flags & ImageFlagBits::Registered),
                "Trying to unregister an already unregistered image");
     image.flags &= ~ImageFlagBits::Registered;
+    BumpRegions(image.info.guest_address, image.info.guest_size); // before the generation (RegisterImage)
     ++registry_generation;
-    BumpRegions(image.info.guest_address, image.info.guest_size);
     lru_cache.Free(image.lru_id);
     total_used_memory -= Common::AlignUp(image.info.guest_size, 1024);
     ForEachPage(image.info.guest_address, image.info.guest_size, [this, image_id](u64 page) {
