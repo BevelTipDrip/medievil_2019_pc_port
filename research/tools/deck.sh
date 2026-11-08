@@ -69,8 +69,13 @@ deploy)
     ;;
 env)
     comment=${1:?comment}; shift
+    # The launcher's default toggle file is user/frame-dumps/toggles.txt; `toggle` / `ab` / `steps` write
+    # $toggle_file, so every test env names it (a missing line left the 2026-11-07 cap steps unread).
+    toggle_line="GOW3_TOGGLE_FILE=$toggle_file"
+    for kv in "$@"; do [[ $kv == GOW3_TOGGLE_FILE=* ]] && toggle_line=; done
     { echo '# Test settings, read by run.py on every start (written by Claude over SSH).'; echo "# $comment"
-      for kv in "$@"; do echo "$kv"; done; } | remote "cat > ~/$data_dir/extra-env.txt && cat ~/$data_dir/extra-env.txt"
+      for kv in "$@"; do echo "$kv"; done; [[ -n $toggle_line ]] && echo "$toggle_line"; } |
+        remote "cat > ~/$data_dir/extra-env.txt && cat ~/$data_dir/extra-env.txt"
     ;;
 toggle)
     remote "echo '${1:?\"W1 W2\"}' > $toggle_file && cat $toggle_file"

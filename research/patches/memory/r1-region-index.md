@@ -52,6 +52,7 @@ the region they found, its bucket stamp and (since A1, `be214c8`) its backing of
 
 ## Evidence
 
+- Cuts redo (2026-11-07, draw preparation alive): R1/R2/T1/T2 off (983040) +3.8 points of a core at the 60 cap (stage B 50 -> 53%), +0.17 W CPU; uncapped 82.8 -> 81.7 FPS, presents > 15 ms 54 -> 89 a minute, worst 20.4 ms. Launch 15's +14.6 was inflated: with no prepared draws every draw took T2's path.
 - Deck per-draw 1 (AppImage `c71e87c`, R1/R2/T1/T2 all on vs off, `0 0` vs `0 983040`, 30 s x 4): 78.8 vs 78.2 FPS,
   p99 16.4 vs 16.5 ms, stage B busy 86.7 vs 92.6% (~0.75 ms a frame freed); **R1 14.3k index hits a frame** (13.6k
   lock-free searches with it off). Single bits off (20 s x 3): 78.7-79.0 FPS, within noise.

@@ -1765,3 +1765,46 @@ extra-env; `renderdoccmd` injection kills the runtime), remote trigger `research
 `debug_pixel_values.py`, `resource_names.py`, `disasm.py` remote; the frame map past the UI passes,
 `GOW3_CAPTURE_BUFFER_BYTES`, `GOW3_CAPTURE_ON_TARGET=WxH[:Format]` (load-time passes) with texel statistics;
 `GOW3_READBACK_LOG`, `GOW3_SKIPPED_TARGET_LOG`, `GOW3_IMAGE_WATCH=WxH[:min_layers]`.
+
+## Cuts redo with draw preparation alive (2026-11-07, build `4f49400-a3restart`: A3 restart-only)
+
+Launch 15's cut table had no draw preparation after its first A3 flip (caveat above). Redone in one launch, the same
+arena and heavy view, still: the preset's switches + 2 prep helpers + frame stats + flip trace, logging ini (67%,
+uncapped), GPU auto. `steps 30 4` with `"0 0"`, `"0 4096"` (drain hybrid off), `"0 3145728"` (A1 + A2 off; A3 stays
+on), `"0 983040"` (R1/R2/T1/T2 off), first with the cap word 60 beside `trace 540 50`, then uncapped beside
+`trace 520 50`. Log `data/deck-cutsredo.log`; traces `research-data/deck/deck-{cap60,uncap}-cuts2-*`.
+**Draw preparation alive in all 287 windows** (73-97% prepared; the low end is the load).
+
+Setup miss on the way: the first capped steps did nothing. The test env lacked `GOW3_TOGGLE_FILE`, so the game read
+the launcher's default `user/frame-dumps/toggles.txt` while `deck.sh` wrote `toggles.txt` (LANDMINES item 2 on the
+Deck). Fixed live with a link for this run; `deck.sh env` now always writes the line.
+
+**At the 60 cap** (108 s per state; cap held at 60.0 in every state):
+
+| state | process CPU % | stage A % | stage B % | CPU mW | socket mW | present > 17 ms / min |
+|---|---|---|---|---|---|---|
+| all on | 364.6 | 41.4 | 50.2 | 5,198 | 11,454 | 40 |
+| drain hybrid off | 372.2 (+7.6) | 50.1 | 50.1 | 5,409 | 11,656 | 50 |
+| A1 + A2 off | 366.6 (+2.0) | 43.0 | 50.6 | 5,362 | 11,627 | 50 |
+| R1/R2/T1/T2 off | 368.4 (+3.8) | 42.5 | 53.2 | 5,365 | 11,573 | 49 |
+
+**Uncapped** (108 s per state; GPU 97-98% busy, so FPS is GPU-bound):
+
+| state | FPS | process CPU % | stage A % | stage B % | present > 15 ms / min | > 17 ms / min | p99.9 ms | worst ms |
+|---|---|---|---|---|---|---|---|---|
+| all on | 82.8 | 549.2 | 56.3 | 76.2 | 54 | 1.7 | 16.48 | 17.88 |
+| drain hybrid off | 81.9 | 572.9 | 84.7 | 75.5 | 88 | 1.7 | 16.79 | 17.82 |
+| A1 + A2 off | 82.8 | 553.8 | 61.0 | 76.0 | 57 | 2.2 | 16.43 | 17.56 |
+| R1/R2/T1/T2 off | 81.7 | 551.9 | 59.4 | 80.8 | 89 | 3.3 | 16.60 | 20.40 |
+
+Against Launch 15 (dead draw preparation; points of a core at 60): drain hybrid +4.8 -> **+7.6** (larger), A1-A3 +9.9
+-> A1 + A2 **+2.0** (most of the old figure was the dead preparation, and A3 is now unmeasured: restart pair only),
+R1/R2/T1/T2 +14.6 -> **+3.8** (the old figure was inflated: T2 serves unprepared draws, which were all of them).
+Uncapped, drain hybrid and the stage B cuts each keep ~1 FPS and about 35 fewer presents over 15 ms a minute; A1 + A2
+show nothing outside their CPU time. All cuts stay in the preset.
+
+**Different from Launch 15: the APU was not at its 15 W.** At the cap the socket drew 11.5 W, the CPU 5.2 W with cores
+at ~2.96 GHz (Launch 15: 15 W, 7.8 W, ~3.21 GHz), GPU 73% busy at ~1,008 MHz (83-85% at ~1,040). So each cut now
+shows as watts too: +0.12 to +0.20 W socket, +0.16 to +0.21 W CPU. Why the clocks differ is open: EPP reads
+`balance_performance` and `scaling_max_freq` is the full 3.5 GHz now; what Launch 15 had is not recorded (a reboot
+resets any EPP change made with sudo). Uncapped both runs reach ~15 W.

@@ -47,6 +47,7 @@ last + 1)`. Any other answer runs the old search and binds as before.
 
 ## Evidence
 
+- Cuts redo (2026-11-07, draw preparation alive): R1/R2/T1/T2 off (983040) +3.8 points of a core at the 60 cap (stage B 50 -> 53%), +0.17 W CPU; uncapped 82.8 -> 81.7 FPS, presents > 15 ms 54 -> 89 a minute, worst 20.4 ms. Launch 15's +14.6 was inflated: with no prepared draws every draw took T2's path.
 - Study: `obt_resident` 0.32 ms of a heavy Deck frame at ~0.15 us a call, ~2,100 calls. Expected about -0.2 to
   -0.25 ms.
 - deck-perdraw-1 (2026-11-05): all four cuts 78.8 vs 78.2 FPS, stage B busy 86.7 vs 92.6% (~0.75 ms a frame freed),

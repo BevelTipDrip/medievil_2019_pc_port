@@ -58,6 +58,7 @@ Stage B's `Consumed(at)` reads `drain_target` once per packet and wakes only a r
 
 ## Evidence
 
+- Cuts redo (2026-11-07, draw preparation alive, plan-linux-deck.md "Cuts redo"): off costs +7.6 points of a core at the 60 cap (stage A 41 -> 50%), +0.2 W CPU; uncapped 82.8 -> 81.9 FPS, presents > 15 ms 54 -> 88 a minute. Launch 15's +4.8 was measured without draw preparation.
 - Deck (2026-11-05, `d6029de`, live A/B `0 2048` vs `0 6144`): **78.7 vs 77.9 FPS**, stddev 1.32 vs 1.44 ms, stage A
   CPU **76% vs 112%**, `sched_yield` **0 vs 4,540 a frame**, drain wait 3.26 vs 4.16 ms a frame. Verdict: keep.
 - Launch 15 (2026-11-06, 60 cap): switching it off costs +4.8 points of a core in process CPU, but no measurable
