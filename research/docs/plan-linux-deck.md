@@ -1431,6 +1431,12 @@ between two `ab` runs and the log is split at that time. Note the clock with eve
 
 ### Round 1 results, GPU clock auto (2026-11-05, ini logging 67% uncapped; launched by the user)
 
+**Caveat (2026-11-07, found by the patch map, logs re-read):** the first live flip of A3 (second word 4194304, in
+7340032) left draw preparation dead for the rest of the launch: "Draw preparation" 0 prepared from line 2646 of
+`data/deck-stagea-1.log` (= `deck-stagea-1200.log`) to the end, in both states; the scanner is seeded from stage A
+only at the first submission or a rebase (`DrawPreparation::BeginSubmission`). Rounds 1 and 2 below compared A1-A3
+on / off with no prepared draws on either side. See `research/patches/LANDMINES.md` item 1.
+
 | launch | log | change | FPS median | worst (median of 5 s) | p99 ms | verdict |
 |---|---|---|---|---|---|---|
 | 1 | deck-particle-1 | particle single pass (live, vs `0 8192`) | 79.4 vs 77.1 | 17.4 / 18.1 | 16.30 / 16.74 | +2.3 FPS, but the torch / floor glitch (also at 60) |
@@ -1672,6 +1678,15 @@ flip trace + frame stats; logging ini uncapped, the cap by the toggle file; GPU 
 3. Uncapped, one pair (`"0 0" "0 16777216"`, 30 s x 3): what the signal sleep costs in FPS when stage B is the limit.
 
 ### Launch 15 results (2026-11-06 ~20:50-21:28, build `2a6efea-signal`, a new arena with a guaranteed heavy view (the old spot cannot be found under a cap), GPU auto; log `data/deck-launch15.log`, traces `research-data/deck/deck-{cap60-signal,cap60-cuts,uncap-cuts}-*`)
+
+**Caveat (2026-11-07, found by the patch map, logs re-read):** the first live flip of A3 (part of 7340032) left draw
+preparation dead for the rest of each launch segment (`data/deck-launch15.log`: 0 prepared from line 9198 to the
+in-game restart at 17676, and from 20691 to the end). Signal sleep at 60: unaffected (before the flip). The cuts at
+60: only round 1's "all on" and "drain hybrid off" had draw preparation; A1-A3 off, R1/R2/T1/T2 off and rounds 2-4
+had none. **The uncapped table (rounds 2-4): no draw preparation in any state**, so it measures the cuts with stage B
+doing all preparation itself, not the preset as played; R1/R2/T1/T2's share is likely overstated (T2 serves draws
+without a prepared draw). To redo with A3 out of the live set (A1+A2 = 3145728) or A3 restart-only.
+See `research/patches/LANDMINES.md` item 1.
 
 - **Signal sleep at 60** (162 s each): FPS 60 / 60, socket 15.03 / 15.05 W, CPU 7.93 / 7.96 W, process CPU 362 / 363%,
   stage B 49.1 / 50.0%: neutral. It works (1.5 of 2.7 waits a frame slept; wait time 0.38 vs 0.62 ms a frame) but each

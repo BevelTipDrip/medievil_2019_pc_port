@@ -194,8 +194,10 @@ state per step, half the steps. Only the values change. The one-word hash is the
 
 Equivalence: a prepared draw is used only when its checksum equals stage A's and the per-stage checks of
 `TryPreparedPipeline` pass, as before. A live flip can make a worker and stage A hash one submission differently:
-those draws take the unprepared path (correct, slower) until the next submission seeds the workers from stage A's
-checksum. A false match needs a 64-bit collision, as today.
+those draws take the unprepared path (correct, slower). **Correction (2026-11-07): nothing reseeds them.** The scanner
+carries its own checksum chain and is seeded from stage A only at the first submission or a rebase, so after a live
+flip no draw is prepared for the rest of the launch (logs: `deck-stagea-1.log` from line 2646, `deck-launch15.log`
+from 9198 and 20691). A false match needs a 64-bit collision, as today.
 
 Test: `stage-a-hash-test`: the one-word hash equals the old loop (100,000 random packets); both hashes tell apart all
 one-bit flips and neighbour swaps of a packet and 2 million near-identical packet variants (0 collisions);

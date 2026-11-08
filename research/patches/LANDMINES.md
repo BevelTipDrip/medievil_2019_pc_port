@@ -14,15 +14,20 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
    uncapped table) ran mostly without draw preparation in both states. The comment above `PairedRegisterHash` and
    impl-stage-a-decode.md:197 claim it recovers; the code says it does not. Fix: force a rebase when the fold
    changes, or make A3 restart-only.
+   **Confirmed 2026-11-07** (code + logs; the uncapped table had no draw preparation in any state). Caveats added to
+   plan-linux-deck.md (Round 1, Launch 15) and impl-stage-a-decode.md.
 2. **The PC toggle scripts and a launcher-started game watch different files** ([lineage-toggle-file](tooling/lineage-toggle-file.md)).
    `toggle-ab.ps1` / `toggle-groups.ps1` only reach games started by `run-game.ps1`. In a launcher-started game a
-   "no difference" A/B can mean nothing changed. Check which PC A/Bs were launcher-started.
+   "no difference" A/B can mean nothing changed. **Checked 2026-11-07: no past result affected** (T-0102-2 logged
+   every mask it got; N-30 to N-32 show per-state differences). A trap for future runs only.
 3. **Toggle bit 31 is two switches on Windows** ([narrow-image-stages](stage-b/narrow-image-stages.md), [M1](memory/m1.md)):
    narrow image stages and M1's kept pool views. Every Windows bit-31 A/B (N-5 included) also flipped M1. On Linux
-   it is only narrow image stages.
+   it is only narrow image stages. **Confirmed in code** (`POOL_KEEP_VIEWS` = `0x80000000`). Effect on past results
+   small: N-4 / N-5 judged GPU time (and N-16 already corrected it to -0.8%); narrow stages stays on either way.
 4. **A two-word toggle write drops the live frame cap** ([lineage-toggle-file](tooling/lineage-toggle-file.md)):
    any two-word writer (`toggle-ab.ps1`, a two-word `deck.sh ab` / `steps` state) sends the limit back to the menu's.
    A cap at or above the vblank rate is ignored, so the cap word works only with the uncapped (480 Hz tick) presets.
+   **By design** (the third word overrides only while set); Launch 15 used three words in every capped state. Trap only.
 5. **The precise tick likely does nothing under the Windows defaults** ([precise-tick](present/precise-tick.md)):
    with a cap or Reflex the tick is timed by the condition-variable timeout and `PreciseWait` always finds its slot
    passed. Its spin (the patch audit's ~0.65 of a core) is live only uncapped without Reflex. Measure before acting
