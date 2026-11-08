@@ -801,8 +801,10 @@ the same way (copies read through the backing view under the region lock, Linux 
 
 **Correction: "write faults/s" in the frame stats counts pages, not faults.** `Gow3Stats::tracker_faults` is counted
 in `RegionManager::CountWriteFaults` for every protected page marked CPU-modified, from any source: a real fault
-marks a whole fault window (`BufferCache::ExtendWriteFault`), and the runtime's invalidation hooks (pool commits /
-decommits, file reads) and precise CPU writes mark pages too. The new fault map counts actual signals: 59-233/s
+marks its page (`ExtendWriteFault` widens the window without counting: corrected 2026-11-07 from the code), and the
+runtime's hooks mark whole ranges: a guest unmap / pool decommit (`Rasterizer::UnmapMemory` ->
+`BufferCache::InvalidateMemory` -> `InvalidateRegion`), file reads and other invalidations, and precise CPU writes.
+Which source dominates is not measured (no per-cause counter; the "unmaps discarded" path reads 0/s). The new fault map counts actual signals: 59-233/s
 (about **1 per frame**, all Garlic-WC pages) against 44-115k/s "write faults". So the "~760 faults a frame" were ~760
 pages, the signal cost is negligible, and runs 5-6's conclusion is wrong about the mechanism. What uffd did make worse
 is still unexplained. **New suspect:** every invalidation goes through `Rasterizer::InvalidateMemory`

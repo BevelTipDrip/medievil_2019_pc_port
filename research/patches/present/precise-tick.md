@@ -65,6 +65,9 @@ for each vblank, so the tick paces the game's frame starts as well as the presen
 
 ## Evidence
 
+- Code reading (2026-11-07, LANDMINES item 5): with a cap or Reflex (the Windows defaults) the precise tick's wait never
+  sleeps or spins; each pass ends waiting for `tick_deadline` (plain `sleep_until`, or a 100 us spin with the precise
+  limiter). Its 700 us spin runs only uncapped without Reflex. The ~0.65-core cost (T-P960, audit #75) was computed.
 - T-V120 (`AccurateTimer`, 120 Hz tick, VSync): the user, "1% and .1% lows were a solid 118-119 ... We weren't able
   to get a frametime this steady before", then waves of 12.5 / 4.17 ms frames.
 - T-V120p: ticks p1 / p99 8.32 / 8.34 ms. Present calls 7.8-8.9 ms apart. The user: 1% lows in the 80s on the NVIDIA

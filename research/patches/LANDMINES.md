@@ -31,13 +31,24 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
 5. **The precise tick likely does nothing under the Windows defaults** ([precise-tick](present/precise-tick.md)):
    with a cap or Reflex the tick is timed by the condition-variable timeout and `PreciseWait` always finds its slot
    passed. Its spin (the patch audit's ~0.65 of a core) is live only uncapped without Reflex. Measure before acting
-   on Deck plan L1 / audit item 1.
+   on Deck plan L1 / audit item 1. **Confirmed in code 2026-11-07:** with a cap or Reflex each pass ends waiting for
+   `tick_deadline` (now + one tick, set after the precise wait), so the next `PreciseWait` never sleeps or spins; the
+   end wait is a plain `sleep_until` (Reflex, standard) or a 100 us spin (precise limiter). The ~0.65-core cost was
+   computed, not measured. Harmless: Windows defaults (Reflex) do not pay it, the Deck ini has it off.
 6. **The Deck "write faults" are mostly unmaps, not fault windows**: `ExtendWriteFault` never counts; whole
    decommitted ranges marked CPU-modified do (plan-linux-deck.md native run 7's correction is wrong by the code).
+   **Checked 2026-11-07: half right.** `ExtendWriteFault` does not count (doc clause corrected). The counter is every
+   protected page marked CPU-modified by any cause: real faults (~1 a frame by the fault map), guest unmaps via
+   `UnmapMemory` -> `InvalidateMemory` (not the "unmap discard" path, 0/s on the Deck), file reads and other
+   invalidations. Which dominates is unmeasured; a per-cause counter would tell, if the number matters again.
 7. **E1's evidence is W2's**: "T-E1 ordered tasks 0.52 -> 0.23" in fix-inventory.md is E1+W2 against T-S3; T-E1
-   toggled only W2. No E1-only number exists ([E1](stage-b/e1.md)).
+   toggled only W2. No E1-only number exists ([E1](stage-b/e1.md)). **Checked 2026-11-07:** right, but E1 is what
+   lets W2 pay off (without E1, W2 moved the wait into the end-of-shader fence, T-W2); the gain belongs to the pair.
+   fix-inventory.md's row reworded; keeping both stands.
 8. **The rescore's 63% recorder busy on the Deck** predates recorder lean; the A2 / C13 estimates built on it are
-   out of date.
+   out of date. **Checked 2026-11-07:** the recorder is at 41% of a core uncapped (cuts redo), 28% at a 60 cap. Stale,
+   but it strengthens both conclusions (C13 parallel recording and A2 small copies off the recorder gain even less);
+   note added to study-deck-rescore-rejected.md.
 
 ## Latent bugs (code reading)
 

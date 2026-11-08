@@ -32,7 +32,7 @@ Marks: **[V]** seen in a doc, log or the code (file:line given); **[I]** inferre
   it cuts ("S:x4.2" below); threading ideas are judged by contention on 4 cores / 8 threads ("T"); "D" = the Deck's own
   number; "C" = a count from a Deck log times a scaled per-item cost.
 - Contention on the Deck (plan-linux-deck.md:914-919) [V]: `gow3:DrawRec` ~1 core, `shadPS4:GpuComm` ~1 core
-  (yield-spinning 53% of the time), the game's main thread ~1 core, `gow3:VkRecorder` 63%, Wwise 58%, `RHIThread` 42%,
+  (yield-spinning 53% of the time), the game's main thread ~1 core, `gow3:VkRecorder` 63% (before recorder lean `0771a23`; 2026-11-07 cuts redo: 41% uncapped at ~82 FPS, 28% at a 60 cap, so A2 and C13 below have even less to gain), Wwise 58%, `RHIThread` 42%,
   four `gow3:DrawPrep` ~19% each with ~1.7k involuntary switches/s each. There is no idle core; SCHED_IDLE workers
   still share a physical core with stage B through SMT.
 - Every measured fix fires on the Deck as well as or better than on the PC (plan-linux-deck.md:1044-1048) [V]: the
