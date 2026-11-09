@@ -30,6 +30,8 @@ public:
     static constexpr u64 Tonemap = 0x3632d4c4faaa85d2ULL;
     static constexpr u64 FirstUi = 0x4fe20af683865713ULL;
     static constexpr u32 ViewBytes = 3296;     ///< UE 4.21 View uniform buffer
+    static constexpr u32 TaaParamBytes = 176;  ///< TAA's own parameters (binding 1 of its PS)
+    static constexpr u32 EventLines = 40;      ///< cut evidence lines per summary at most
     static constexpr u32 SummaryFrames = 300;  ///< a summary every 300 frames (5 s at 60)
     static constexpr u32 ChangeLines = 10;     ///< change / cut lines per summary at most
 
@@ -51,10 +53,12 @@ public:
         bool display = false;        ///< the target is a display buffer
         VAddr depth = 0;             ///< bound depth buffer (draws)
         std::array<VAddr, 16> reads{}; ///< sampled images
+        std::array<std::array<u32, 2>, 16> read_sizes{};
         u32 num_reads = 0;
         std::array<Image, 4> writes{}; ///< storage images
         u32 num_writes = 0;
         const u8* view = nullptr; ///< a bound ViewBytes buffer; read during OnPass only
+        const u8* taa_params = nullptr; ///< a bound TaaParamBytes buffer; read during OnPass only
         std::array<u32, 8> buffer_sizes{};
         u32 num_buffers = 0;
     };
@@ -81,6 +85,7 @@ private:
         u32 index = 0; ///< StateFrameIndexMod8
         u32 camera_cut = 0;
         float camera_delta = 0; ///< largest |ClipToPrevClip - identity| element
+        float camera_pixels = 0; ///< largest one-frame move of 5 screen points at infinity / 10 m
     };
     struct Frame {
         u32 passes = 0;
@@ -111,6 +116,13 @@ private:
         u32 ui_draws = 0;
         u32 before_ui_other = 0; ///< display draws after the tonemap, before the first UI draw
         std::vector<std::pair<const char*, u64>> readers; ///< passes sampling the velocity
+        // Camera cut evidence (U3): does the first TAA pass read last frame's TAA output (its
+        // history)? 0 unknown (no TAA last frame), 1 yes, 2 no. Its other sampled images.
+        int taa_history = 0;
+        std::array<Image, 8> taa_reads{};
+        u32 taa_num_reads = 0;
+        bool have_params = false;
+        std::array<float, TaaParamBytes / 4> params{};
     };
 
     void Close();
@@ -121,6 +133,9 @@ private:
 
     Sink sink;
     Frame frame{};
+    VAddr last_taa_output = 0; ///< the last frame's TAA output (this frame's TAA history)
+    bool have_last_params = false;
+    std::array<float, TaaParamBytes / 4> last_params{};
     VAddr last_velocity = 0; ///< last frame with a velocity pass: its target and depth
     VAddr last_depth = 0;
     std::string last_signature;
@@ -131,7 +146,9 @@ private:
     u64 frames_total = 0;
     struct Counts {
         u32 frames = 0, velocity = 0, taa = 0, taa_draws = 0, taa_compute = 0, view = 0,
-            tonemap = 0, ui = 0, cuts = 0, gaps = 0, repeats = 0, changes = 0, unshown = 0;
+            tonemap = 0, ui = 0, cuts = 0, gaps = 0, repeats = 0, changes = 0, unshown = 0,
+            history_drops = 0, param_changes = 0, events = 0;
+        float max_camera_pixels = 0;
     } counts{};
 };
 

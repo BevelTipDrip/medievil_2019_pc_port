@@ -33,6 +33,12 @@ The map finds by role or by the captures' shader hashes:
   draws between them;
 - every shader that samples the velocity target (once each, the first time).
 
+Camera cut evidence (added for U3): at the first TAA pass of a frame, whether it samples last frame's TAA output
+(its history; TAA alternates two outputs), its sampled images with sizes, and its 176-byte parameter block. Lines:
+"TAA does not read last frame's output", "TAA parameters changed" (elements 8-24 follow the jitter and are ignored),
+"View frame N after M", each with the View frame and the camera's one-frame move in pixels (five screen points at
+infinity and at 10 m through ClipToPrevClip); at most 40 a summary, counted in it.
+
 Log lines (`UE4 frame map:`): one when the frame's shape changes (roles, hashes, sizes), camera cuts, new velocity
 readers (at most 10 change / cut lines per summary), and every 300 frames a count of frames with each role plus
 the last frame in full. Nothing in the frame changes.

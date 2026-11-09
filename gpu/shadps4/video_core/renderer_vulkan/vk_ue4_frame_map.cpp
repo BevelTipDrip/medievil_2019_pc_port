@@ -95,10 +95,33 @@ Ue4FrameMap::View Ue4FrameMap::ReadView(const u8* data) {
     view.frame_number = Load<u32>(data, OffsetFrameNumber);
     view.index = Load<u32>(data, OffsetFrameIndex);
     view.camera_cut = Load<u32>(data, OffsetCameraCut); // nonzero (1 or 1.0f) is a cut
+    std::array<std::array<float, 4>, 4> m;
     for (u32 i = 0; i < 16; ++i) {
         const float identity = i % 5 == 0 ? 1.0f : 0.0f;
         const float element = Load<float>(data, OffsetClipToPrevClip + i * 4);
+        m[i / 4][i % 4] = element;
         view.camera_delta = std::max(view.camera_delta, std::fabs(element - identity));
+    }
+    // Pixels moved by five screen points at infinity and at 10 m (device Z = near / distance,
+    // reversed Z, infinite far plane), row vector times ClipToPrevClip.
+    const float near_plane = Load<float>(data, OffsetNearPlane);
+    for (const float z : {0.0f, near_plane > 0.0f ? near_plane / 1000.0f : 0.0f}) {
+        for (const auto& p : {std::array{0.0f, 0.0f}, std::array{-0.8f, -0.8f},
+                              std::array{0.8f, -0.8f}, std::array{-0.8f, 0.8f},
+                              std::array{0.8f, 0.8f}}) {
+            std::array<float, 4> prev;
+            for (u32 c = 0; c < 4; ++c) {
+                prev[c] = p[0] * m[0][c] + p[1] * m[1][c] + z * m[2][c] + m[3][c];
+            }
+            if (!(std::fabs(prev[3]) > 1e-6f)) {
+                view.camera_pixels = 1e30f;
+                continue;
+            }
+            const float dx = (p[0] - prev[0] / prev[3]) * view.view_size[0] * 0.5f;
+            const float dy = (p[1] - prev[1] / prev[3]) * view.view_size[1] * 0.5f;
+            const float moved = std::sqrt(dx * dx + dy * dy);
+            view.camera_pixels = std::max(view.camera_pixels, std::isfinite(moved) ? moved : 1e30f);
+        }
     }
     return view;
 }
@@ -142,6 +165,23 @@ void Ue4FrameMap::OnPass(const Pass& pass) {
     const bool taa_draw = !pass.compute && (pass.hash == TaaNormal || pass.hash == TaaResponsive);
     const bool taa_dispatch = pass.compute && pass.hash == TaaCompute;
     if (taa_draw || taa_dispatch) {
+        if (frame.taa_draws + frame.taa_dispatches == 0) {
+            // The first TAA pass of the frame: is its history last frame's output?
+            if (last_taa_output) {
+                const bool reads_last = std::find(pass.reads.begin(),
+                                                  pass.reads.begin() + pass.num_reads,
+                                                  last_taa_output) != pass.reads.begin() + pass.num_reads;
+                frame.taa_history = reads_last ? 1 : 2;
+            }
+            frame.taa_num_reads = std::min<u32>(pass.num_reads, u32(frame.taa_reads.size()));
+            for (u32 i = 0; i < frame.taa_num_reads; ++i) {
+                frame.taa_reads[i] = {pass.reads[i], pass.read_sizes[i][0], pass.read_sizes[i][1]};
+            }
+            if (pass.taa_params) {
+                std::memcpy(frame.params.data(), pass.taa_params, TaaParamBytes);
+                frame.have_params = true;
+            }
+        }
         ++(taa_draw ? frame.taa_draws : frame.taa_dispatches);
         u32 count = frame.taa_hashes[1] ? 2 : frame.taa_hashes[0] ? 1 : 0;
         AddDistinct(frame.taa_hashes, count, pass.hash);
@@ -310,12 +350,74 @@ void Ue4FrameMap::Close() {
             ++counts.unshown;
         }
     };
+    // Camera cut evidence: lines for TAA history drops, TAA parameter changes and View frame
+    // gaps, each with the camera's one-frame move, so they can be matched with the user's cuts.
+    const auto event = [&](const std::string& line) {
+        if (counts.events < EventLines) {
+            ++counts.events;
+            Print(line);
+        } else {
+            ++counts.unshown;
+        }
+    };
+    const auto where = [&] {
+        return frame.view.valid
+                   ? Format("View frame %u, camera moved %.0f px", frame.view.frame_number,
+                            frame.view.camera_pixels)
+                   : std::string("no View");
+    };
+    if (frame.view.valid) {
+        counts.max_camera_pixels = std::max(counts.max_camera_pixels, frame.view.camera_pixels);
+    }
+    if (frame.taa_history == 2) {
+        ++counts.history_drops;
+        std::string reads;
+        for (u32 i = 0; i < frame.taa_num_reads; ++i) {
+            const auto& r = frame.taa_reads[i];
+            reads += Format(" %llx %ux%u", static_cast<unsigned long long>(r.address), r.width,
+                            r.height);
+        }
+        event(Format("UE4 frame map: TAA does not read last frame's output %llx (%s); reads",
+                     static_cast<unsigned long long>(last_taa_output), where().c_str()) +
+              reads);
+    }
+    if (frame.have_params) {
+        if (have_last_params) {
+            std::string changed;
+            u32 count = 0;
+            for (u32 i = 0; i < frame.params.size(); ++i) {
+                // 8-24 follow the jitter every frame (study-taau-frame-map.md section 1).
+                if ((i >= 8 && i <= 24) || frame.params[i] == last_params[i]) {
+                    continue;
+                }
+                if (++count <= 6) {
+                    changed += Format(" [%u] %g -> %g", i, last_params[i], frame.params[i]);
+                }
+            }
+            if (count) {
+                ++counts.param_changes;
+                event(Format("UE4 frame map: TAA parameters changed (%s):", where().c_str()) +
+                      changed + (count > 6 ? Format(" and %u more", count - 6) : std::string()));
+            }
+        } else {
+            std::string all;
+            for (u32 i = 0; i < frame.params.size(); ++i) {
+                all += Format(" %g", frame.params[i]);
+            }
+            Print("UE4 frame map: TAA parameters:" + all);
+        }
+        last_params = frame.params;
+        have_last_params = true;
+    }
+    last_taa_output = frame.taa_draws || frame.taa_dispatches ? frame.taa_output.address : 0;
     if (frame.view.valid) {
         const auto& v = frame.view;
         if (have_frame_number && v.frame_number == last_frame_number) {
             ++counts.repeats;
         } else if (have_frame_number && v.frame_number != last_frame_number + 1) {
             ++counts.gaps;
+            event(Format("UE4 frame map: View frame %u after %u (camera moved %.0f px)",
+                         v.frame_number, last_frame_number, v.camera_pixels));
         }
         have_frame_number = true;
         last_frame_number = v.frame_number;
@@ -345,10 +447,12 @@ void Ue4FrameMap::Close() {
     if (counts.frames >= SummaryFrames) {
         Print(Format("UE4 frame map: %u frames: velocity %u, TAA %u (draws %u, compute %u), "
                      "View %u, tonemap %u, UI %u; camera cuts %u, View frame gaps %u, "
-                     "repeats %u, jitter values %zu; %u lines not shown",
+                     "repeats %u, jitter values %zu; TAA history drops %u, parameter changes %u, "
+                     "largest camera move %.0f px; %u lines not shown",
                      counts.frames, counts.velocity, counts.taa, counts.taa_draws,
                      counts.taa_compute, counts.view, counts.tonemap, counts.ui, counts.cuts,
-                     counts.gaps, counts.repeats, jitters.size(), counts.unshown));
+                     counts.gaps, counts.repeats, jitters.size(), counts.history_drops,
+                     counts.param_changes, counts.max_camera_pixels, counts.unshown));
         Print("UE4 frame map: last frame: " + Describe(frame));
         counts = {};
         jitters.clear();

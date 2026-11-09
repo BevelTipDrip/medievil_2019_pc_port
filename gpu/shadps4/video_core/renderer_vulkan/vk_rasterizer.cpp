@@ -4697,6 +4697,7 @@ bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
                                                       u32(tsharp.height) + 1};
                 }
             } else if (pass.num_reads < pass.reads.size()) {
+                pass.read_sizes[pass.num_reads] = {u32(tsharp.width) + 1, u32(tsharp.height) + 1};
                 pass.reads[pass.num_reads++] = tsharp.Address();
             }
         }
@@ -4721,6 +4722,10 @@ bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
             if (size == Ue4FrameMap::ViewBytes && !pass.view && address &&
                 memory->IsValidGpuMapping(address, size)) {
                 pass.view = reinterpret_cast<const u8*>(address);
+            }
+            if (size == Ue4FrameMap::TaaParamBytes && !pass.taa_params && address &&
+                memory->IsValidGpuMapping(address, size)) {
+                pass.taa_params = reinterpret_cast<const u8*>(address);
             }
         }
     }
