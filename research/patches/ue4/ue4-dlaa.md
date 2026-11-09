@@ -8,7 +8,7 @@ default_windows: off
 default_deck: n/a
 origin: ours
 class: M
-commits: 7b74b91, ef9d584, b0cef35
+commits: 7b74b91, ef9d584, b0cef35, f25a373
 files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shim/gow3_overlay.cpp
 symbols: Ue4Dlss, CameraJumpPixels, OnColorTarget, OnTaaDraw, Running, GetPass, depth_inverted, ue4_dlss, target_rgba16f
 switches: GOW3_UE4_DLSS
@@ -34,6 +34,8 @@ the first frame after UE4's TAA ran, a View frame number that is not the last + 
 
 ## Invariants
 
+- DLSS's copy target gets `FindRenderTarget` (not Undefined, GPU-modified, aliases told) before DLSS writes it,
+  as the skipped draw's colour target would: without it the texture cache can refresh it from guest memory.
 - Skipping a TAA draw returns from `DrawRecord` after `PrepareRenderState`, clearing `bind_prepared` and calling
   `ResetBindings(false)`, before `BindResources`: nothing of the draw is recorded.
 - The second TAA draw of a frame is skipped only when DLSS ran for that View frame number.
@@ -63,7 +65,13 @@ the first frame after UE4's TAA ran, a View frame number that is not the last + 
   quarter of the view width in one frame. Also Ctrl+Alt+F9 switched DLAA off (our F9 ignored modifiers): F9, F10
   and F12 now only without Ctrl / Alt.
 - Run `cut-evidence` (frame map): every camera cut, skip and level load moves the View frame number by more than
-  one, fast pans never; the quarter-width camera rule was replaced by it (this card's third commit). Not run.
+  one, fast pans never; the quarter-width camera rule was replaced by it (this card's third commit).
+- Run `u3-dlaa-2` (build `53df9e6`, `data/u3-dlaa-2.log`): 10 resets in ~84,000 DLAA frames, each at a feature
+  creation, the menu cut, a level load or an F9 switch. Found: after a level load, pans "judder ... like the camera
+  was resetting over and over" until the user switched to UE4's TAA and back; frame pacing stayed flat (median 5.1 ms,
+  p99 < 7.3 ms). Cause [inferred]: the skipped TAA draw's colour target never got a render target's texture cache
+  bookkeeping, so a TAA output made at a load stayed "new" and the tonemap's read refreshed it from guest memory (an
+  old frame) over DLSS's output. Fix built (fourth commit): `FindRenderTarget` on it before DLSS writes. Not run.
 
 ## History and pitfalls
 
