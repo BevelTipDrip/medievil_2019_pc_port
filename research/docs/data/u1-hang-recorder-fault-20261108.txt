@@ -1,0 +1,36 @@
+Hang at "quit to main menu", run u1-frame-map (PC, build ce9a833 = ba013b4 code, 1.0 game, 4K output,
+render scale 80 (TAAU) at the time). Log output stops 21:53:29; UE4's watchdog ends the game at 21:55:29:
+"GameThread timed out waiting for RenderThread after 120.00 secs" -> LowLevelFatalError -> crash dump
+D:\MediEvil-archive\crashdumps\medievil-20261108-215529-41240.dmp (type 0x1065, threads + stacks).
+Stacks: cdb -z <dmp> -c "~* k 30"; offsets symbolized with llvm-symbolizer on out/medievil-runtime.exe
+(ImageBase 0x140000000, return address - 1).
+
+gow3:VkRecorder (thread 26): a replayed small guest copy faults on a protected page and waits for the GPU
+command thread
+  libc++ counting_semaphore<1>::acquire                         (SendCommand<true>, liverpool.h:143)
+  Vulkan::Rasterizer::ReadMemory                                vk_rasterizer.cpp:4086 (-> buffer_cache.ReadMemory)
+  VideoCore::PageManager::Impl::GuestFaultSignalHandler         page_manager.cpp:83 (read fault, is_gpu_thread false)
+  Core::SignalDispatch::DispatchAccessViolation / vectored_fault
+  -- exception --
+  ucrtbase memcpy_repmovs
+  Core::CopySparseSerial / MemoryManager::CopySparseMemory      gow3gpu.cpp:162-172
+  VideoCore::BufferCache::RunGuestCopy                          buffer_cache.cpp:796
+  BufferCache::SmallGuestCopy lambda / Scheduler::RecordHostCopy vk_scheduler.h:905
+  Vulkan::RecordChunk::Execute / Scheduler::RecorderThread      vk_scheduler.cpp:754
+
+gow3:DrawRec (stage B, thread 50): waits for the recorder's deferred signals
+  KERNELBASE SwitchToThread
+  Vulkan::Scheduler::WaitDeferredSignals                        vk_scheduler.cpp:392
+  AmdGpu::RunWriteData                                          liverpool.cpp:708
+  Vulkan::Rasterizer::RunDrawPacket                             vk_rasterizer.cpp:850
+
+shadPS4:GpuCommandProcessor (stage A, thread 7): waits for stage B to drain, so never runs the queued command
+  KERNELBASE SwitchToThread
+  Vulkan::DrawPipe::YieldWait / Drain                           vk_draw_pipe.h:130-187
+  Vulkan::Rasterizer::DrainDrawPipe                             vk_rasterizer.cpp:494
+  AmdGpu::Liverpool::ProcessCommands                            liverpool.cpp:129
+
+Cycle: recorder -> (SendCommand<true>) command thread -> (drain) stage B -> (WaitDeferredSignals) recorder.
+Rasterizer::IsGpuSideThread() is OnStageA() || DrawPipe::OnStageB(): the recorder thread is neither, so its
+fault takes the guest-thread path (assume_locks = false -> SendCommand<true>, buffer_cache.cpp:1037).
+The frame map (GOW3_UE4_FRAME_MAP) is on none of these stacks; it runs on DrawRec and only reads.

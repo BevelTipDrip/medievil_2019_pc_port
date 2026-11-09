@@ -12,7 +12,7 @@ commits: ba013b4
 files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.h, tests/test_ue4_frame_map.cpp, gpu/CMakeLists.txt
 symbols: Ue4FrameMap, ObserveFrameMap, frame_map
 switches: GOW3_UE4_FRAME_MAP
-tests:
+tests: u1-frame-map
 docs: plan-ue4-motion-vectors.md#u1-run-time-frame-map-log-only, study-taau-frame-map.md#5-shader-identity-the-port-can-match-at-run-time
 depends_on:
 related:
@@ -56,7 +56,10 @@ the last frame in full. Nothing in the frame changes.
 ## Evidence
 
 - `ue4-frame-map-test` (synthetic native and TAAU frames, the View buffer, a camera cut, the summary) passes, built
-  standalone with clang 23 (`-Wall -Wextra`, no warnings). Not run in the game.
+  standalone with clang 23 (`-Wall -Wextra`, no warnings).
+- Run `u1-frame-map` (PC, 2026-11-08, `data/u1-frame-map.log`): found every role in native and TAAU frames, 210
+  summaries; results in plan-ue4-motion-vectors.md. The run hung at quit to menu in a recorder-thread fault
+  deadlock not on the map's thread (`data/u1-hang-recorder-fault-20261108.txt`).
 
 ## History and pitfalls
 

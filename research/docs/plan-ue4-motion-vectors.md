@@ -77,6 +77,39 @@ What a run should show (the M1 / U1 check):
 | Menus, pause, a movie, a load | which roles stay; camera cuts | open question 4 |
 | Low quality at 100 | draws or compute | open question 3 |
 
+### U1 run (2026-11-08, PC, `data/u1-frame-map.log`)
+
+Build `ce9a833`, game **1.0** (`run-game.ps1`'s folder), 4K output, console quality; the user: native gameplay, render
+scale 80, pause, main menu, a level load. 210 summaries (63,000 frames). Labels: checked = in this log.
+
+- **Native: the U3 hook holds.** TAA is the two draws `fs e88c8fcbe08ea0b6` / `fs e5588ed466d8f2f3` in every frame
+  with a 3D view (gameplay, intro cutscene, the main menu's 3D background), output 3840x2160, reading velocity and
+  depth; 8 jitter values in every native summary (checked). Same hashes in the 1.0 game as in the captures.
+- **TAAU is the compute dispatch** `cs b373f39908ae979f` (study open question 1, checked without a capture):
+  480x270 groups of 8x8 = the 3840x2160 output, View 3072x1728 at 80%, mip bias -0.62 (= log2(0.8) - 0.3; 92%:
+  -0.42, 86%: -0.52), 12 jitter values in a steady 300-frame window (so `StateFrameIndexMod8` does not index the
+  table: read the jitter itself). The draws never ran under TAAU, and `cs a080f599034de78e` never ran at all.
+- **Live scale change goes through 92% and 86%** with the View smaller than the buffer for a frame (`View 3533x1988 in
+  3840x2160`) and two velocity sizes alternating: render size and sub-rectangle must come from the same frame's View,
+  never from image sizes (checked).
+- **Sub-rectangle at native too:** the intro cutscene renders `View 3812x2160 in 3840x2160` (checked).
+- **CameraCut is never set** (0 in all 63,000 frames, level loads included), while the View frame number restarts at
+  a load (4 gaps; frame 3 after a load, camera delta 5.17). U3's reset: frame number not +1, or a large
+  ClipToPrevClip change; offset 2148 is either unused by this game or not CameraCut [inferred].
+- **Frames without velocity draws** while TAA still samples the velocity target's address (whole summaries in the
+  intro and menus: `velocity 0, TAA 300`). What that image holds then (a clear without draws, or last frame's) is
+  open: U2 must check before trusting it.
+- **Tonemap is not one shader:** the main menu's first display draw is `fs 829b4db85567b8f4`, not
+  `fs 3632d4c4faaa85d2`. Cutscenes draw `fs 2905d487e88259ad`, `fs 2809e28fee22731b` into the display buffer after the
+  tonemap and no `fs 4fe20af683865713`; gameplay sometimes `fs b1ee65f9237db63f` before the UI. The HUD-less point
+  for frame generation needs a role rule, not "before the first UI shader" (open, for FG).
+- **Other velocity readers:** `fs 8e275640edaa7846` (intro cutscene, with TAA), `fs 316cb5d46f2c2e12` (same suffix as
+  the SSR-like `fs f8cfb0056f2c2e12`) and `fs bf9891cbd2f66a01` in a few frames with velocity but no TAA (around
+  loads). Roles not known.
+- Not shown by this run: low quality at 100% (open question 3), a movie.
+- **The run hung at "quit to main menu"** (render scale 80): a recorder-thread read fault deadlock, not the frame map
+  (stacks: `data/u1-hang-recorder-fault-20261108.txt`; plan-work-queue.md "Found on the way").
+
 ## Risks
 
 - PS4 UE4 build may differ (velocity format, compute TAA, View UB layout). M0 decides.
