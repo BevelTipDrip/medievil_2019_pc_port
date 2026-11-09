@@ -8,11 +8,11 @@ default_windows: off
 default_deck: n/a
 origin: ours
 class: M
-commits: 7b74b91, ef9d584, b0cef35, f25a373, 81a1fc9, c91cfd3, 517547f
+commits: 7b74b91, ef9d584, b0cef35, f25a373, 81a1fc9, c91cfd3, 517547f, 4fc3d16
 files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shim/gow3_overlay.cpp
-symbols: Ue4Dlss, CameraJumpPixels, OnColorTarget, OnTaaDraw, OnTaauDispatch, Run, Running, GetPass, depth_inverted, ue4_dlss, target_rgba16f
+symbols: Ue4Dlss, CycleJitterSign, Notice, DlssNotice, CameraJumpPixels, OnColorTarget, OnTaaDraw, OnTaauDispatch, Run, Running, GetPass, depth_inverted, ue4_dlss, target_rgba16f
 switches: GOW3_UE4_DLSS
-tests: u3-dlaa, u3-dlaa-2, u3-dlaa-3, u3-dlaa-4, u4-dlss
+tests: u3-dlaa, u3-dlaa-2, u3-dlaa-3, u3-dlaa-4, u4-dlss, u4-dlss-0102
 docs: plan-ue4-motion-vectors.md#u3-design-dlaa-at-render-scale-100, plan-dlss.md#d0-2026-11-08-bridge-built-support-checked-offline
 depends_on: ue4-motion-vectors
 related: ue4-frame-map
@@ -97,6 +97,14 @@ dispatch's storage output (copied, or blitted when its format is not RGBA16F), a
   no log line, UE4's TAAU at the cap. Cause [inferred]: UE4 compiles a TAAU permutation per upscale ratio and only
   `cs b373f39908ae979f` (80-92%) was matched. Fix built (seventh commit): the TAAU dispatch also by role (writes one
   image, samples the velocity target), its hash remembered and logged once.
+- Run `u4-dlss-0102` (build `1a47075`, **game 01.02**, `data/u4-dlss-0102.log`): the role rule found 01.02's TAAU
+  shaders `cs 9c89e98d32a43b49` (cutscene, 3812x2160 out) and `cs 8996eb8d7eff6a69` (gameplay); DLSS ran ~159,000
+  frames, Quality 2573x1448 -> 3840x2160 at 67%, Performance 1920x1080 -> 3840x2160 at 50%; 7 resets. The user:
+  "DLSS looks much much better. 50% resolution looks like native." The whole run was below 100: 01.02's native TAA
+  draws are not checked yet (the frame map counted none; its own TAA test is by hash only). The F9 log line says
+  "DLAA" for "DLSS on" at any scale (misleading; now "DLSS on" on screen). NVIDIA's Ctrl+Alt+F9 jitter setting cannot
+  be read back (not in the overlay or the watermark): F8 added (eighth commit), the jitter sign handed to DLSS cycled
+  and shown on screen for 3 s, logged, DLSS history reset. Not run.
 - U4 before the fix (sixth commit): DLL: SDK 310.9.16 (DLSS 4.5 generation), preset 0 = driver default; DLAA costs
   ~0.85 ms a frame at 4K on the RTX 4090 (the user: DLSS 4.5 is heavy, ~40 FPS here).
 
