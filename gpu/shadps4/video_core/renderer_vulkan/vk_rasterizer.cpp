@@ -4743,6 +4743,28 @@ bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
         frame_map->OnPass(pass);
     }
     bool skip = false;
+    // U4: the TAAU compute TAA by role, not only by its hash: UE4 compiles a permutation per
+    // upscale ratio (`cs b373f39908ae979f` at 80-92%; at lower scales another shader drew and
+    // nothing ran, run u4-dlss). A dispatch writing one image while sampling the velocity target;
+    // its hash is remembered for frames without velocity draws. (Under TAAU only TAA's dispatch
+    // samples velocity: U1's readers list.)
+    bool taau = pass.compute && pass.hash == Ue4FrameMap::TaaCompute;
+    if (pass.compute && !taau && ue4_motion) {
+        static std::vector<u64> taau_hashes;
+        const VAddr velocity = ue4_motion->VelocityAddress();
+        if (std::ranges::find(taau_hashes, pass.hash) != taau_hashes.end()) {
+            taau = true;
+        } else if (velocity && pass.num_writes == 1 &&
+                   std::find(pass.reads.begin(), pass.reads.begin() + pass.num_reads, velocity) !=
+                       pass.reads.begin() + pass.num_reads) {
+            taau = true;
+            taau_hashes.push_back(pass.hash);
+            std::printf("UE4 motion: TAAU compute shader cs %016llx (samples velocity, writes one "
+                        "%ux%u image)\n",
+                        static_cast<unsigned long long>(pass.hash), pass.writes[0].width,
+                        pass.writes[0].height);
+        }
+    }
     if (ue4_motion) {
         if (!pass.compute && pass.target_rg16 && pass.targets == 1 && pass.depth) {
             ue4_motion->OnVelocityDraw(cb_descs[0].first, pass.target.address, db_desc.first);
@@ -4750,7 +4772,7 @@ bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
             ue4_motion->OnSceneDraw(db_desc.first);
         } else if ((!pass.compute && (pass.hash == Ue4FrameMap::TaaNormal ||
                                       pass.hash == Ue4FrameMap::TaaResponsive)) ||
-                   (pass.compute && pass.hash == Ue4FrameMap::TaaCompute)) {
+                   taau) {
             ue4_motion->OnTaa(pass.view, std::span(pass.reads.data(), pass.num_reads),
                               pass.compute ? VideoCore::ImageId{} : db_desc.first);
             if (ue4_dlss && pass.compute && written_desc && pass.num_writes) {

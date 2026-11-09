@@ -55,6 +55,10 @@ public:
         VideoCore::Image* depth;
     };
     bool GetPass(u32 frame_number, LastPass& pass);
+    /// The velocity target's guest address (its last draw), or 0.
+    [[nodiscard]] VAddr VelocityAddress() const noexcept {
+        return velocity_address;
+    }
     /// Presenter, at a flip, on the draw scheduler's command buffer: after this frame's motion
     /// vectors, the debug view of `display` (in ShaderReadOnlyOptimal for compute) into an image
     /// of the port; its view in `present_format`, to present instead. Null: present as before.
