@@ -8,7 +8,7 @@ default_windows: off
 default_deck: off
 origin: ours
 class: M
-commits:
+commits: daeb5fd
 files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp, gpu/shadps4/video_core/host_shaders/ue4_motion.comp, gpu/shadps4/video_core/host_shaders/ue4_motion_view.comp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shim/gow3_overlay.cpp, gpu/CMakeLists.txt
 symbols: Ue4Motion, OnVelocityDraw, OnTaa, Compose, CycleViewMode, ue4_motion, GetUe4Motion
 switches: GOW3_UE4_MOTION_VIEW

@@ -4,7 +4,7 @@ One line per card. Open a card for invariants, interactions and evidence; look u
 reading: `patchmap.py file <path>` / `switch <name>` / `commit <hash>` / `test <id>`.
 Card format and statuses: [README.md](README.md). W / D = default on Windows / Deck.
 
-201 cards.
+202 cards.
 
 ## memory
 
@@ -203,6 +203,7 @@ _UE4 config overrides, eboot patches, game hooks, particles, render scale, boot 
 | [R4a](ue4/r4a.md) | rejected | off / off | - |  | r.NumBufferedOcclusionQueries=2 (rejected) |
 | [S1-streaming](ue4/s1-streaming.md) | rejected | off / off | - |  | r.Streaming.AmortizeCPUToGPUCopy to split the panning bursts (streaming test S1) |
 | [single-particle-pass](ue4/single-particle-pass.md) | active | off / on | lab | perf_particle_single_pass, GOW3_PARTICLE_FIXED_STEP, toggle2:ParticleFixedStep | Single GPU particle pass (r.GPUParticle.FixDeltaSeconds=0): off by default, live switch |
+| [ue4-motion-vectors](ue4/ue4-motion-vectors.md) | diagnostic | off / off | deck-lab | GOW3_UE4_MOTION_VIEW | UE4 motion vectors (U2): the game's velocity, else camera motion from depth and ClipToPrevClip, with a debug view (F10) |
 | [upstream-0102-eu-support](ue4/upstream-0102-eu-support.md) | active | on / on | - | GOW3_UE4_SETRES_CVAR | Upstream 01.02 / EU support: per-version patch profiles, NpToolkit2 no-ops, r.SetRes slot per eboot |
 | [upstream-4k-framebuffer-pool](ue4/upstream-4k-framebuffer-pool.md) | active | on / on | - | GOW3_DMEM_MB | Upstream "Native 4K framebuffer pool (512 MB)" eboot patch with more direct memory (4K crash fix) |
 | [upstream-ue4-setres](ue4/upstream-ue4-setres.md) | active | mixed / mixed | - | GOW3_UE4_SETRES, GOW3_UE4_SETRES_CVAR | Upstream live r.SetRes for native output (1.3.0; per-eboot slot 1ae17cd), kept as the fallback |
