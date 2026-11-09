@@ -255,7 +255,8 @@ plan-dlss.md	1	1	plan-dlss-sr-on-correct-inputs-then-dlss-frame-generation-ngx-v
 plan-dlss.md	6	2	what-is-known-today-read-2026-10-18	What is known today (read, 2026-10-18)
 plan-dlss.md	20	2	design	Design
 plan-dlss.md	31	2	stages-one-change-per-launch	Stages (one change per launch)
-plan-dlss.md	40	2	risks	Risks
+plan-dlss.md	40	2	d0-2026-11-08-bridge-built-support-checked-offline	D0 (2026-11-08): bridge built, support checked offline
+plan-dlss.md	55	2	risks	Risks
 plan-frame-pacing.md	1	1	plan-frame-pacing-i2-stage-bs-waits-and-syscalls	Plan: frame pacing (I2): stage B's waits and syscalls
 plan-frame-pacing.md	8	2	baseline-build-bc0e1d6-race-fix-l5	Baseline (build `bc0e1d6`, race fix L5)
 plan-frame-pacing.md	17	2	lead-r-render-target-readbacks-first	Lead R: render-target readbacks (first)
@@ -454,6 +455,7 @@ plan-linux-deck.md	1722	2	hilltop-mausoleum-lighting-pool-pages-leaked-on-linux-
 plan-linux-deck.md	1771	2	cuts-redo-with-draw-preparation-alive-2026-11-07-build-4f49400-a3restart-a3-restart-only	Cuts redo with draw preparation alive (2026-11-07, build `4f49400-a3restart`: A3 restart-only)
 plan-linux-deck.md	1825	2	cemetery-hill-heavier-than-before-2026-11-08-the-user-build-e3112f4	Cemetery Hill heavier than before (2026-11-08, the user; build `e3112f4`)
 plan-linux-deck.md	1845	2	deck-freezes-after-quitting-the-user-every-few-runs-capture-2026-11-08-1815-datadeck-quit-freeze-20261108txt	Deck freezes after quitting (the user, "every few runs"; capture 2026-11-08 ~18:15, `data/deck-quit-freeze-20261108.txt`)
+plan-linux-deck.md	1856	3	pacing-with-the-60-cap-still-open-2026-11-08-parked-by-the-user-for-dlss--fsr	Pacing with the 60 cap: still open (2026-11-08, parked by the user for DLSS / FSR)
 plan-live-switches.md	1	1	plan-graphics-settings-switched-live	Plan: graphics settings switched live
 plan-live-switches.md	6	2	scope-the-user-2026-10-30	Scope (the user, 2026-10-30)
 plan-live-switches.md	14	2	mechanism-built	Mechanism (built)
