@@ -4,7 +4,7 @@ One line per card. Open a card for invariants, interactions and evidence; look u
 reading: `patchmap.py file <path>` / `switch <name>` / `commit <hash>` / `test <id>`.
 Card format and statuses: [README.md](README.md). W / D = default on Windows / Deck.
 
-200 cards.
+201 cards.
 
 ## memory
 
@@ -272,6 +272,7 @@ _diagnostics, tracing, capture, stats, research tools (no gameplay effect)_
 | [stage-b-counters](tooling/stage-b-counters.md) | diagnostic | off / off | lab | GOW3_FRAME_STATS, GOW3_SECTIONS | Stage B counters: texture sets not kept and why, descriptor writes, FindImage time, sleep ms by site, ordered tasks by kind |
 | [texcache-stats](tooling/texcache-stats.md) | diagnostic | off / off | lab | GOW3_TEXCACHE_STATS | GOW3_TEXCACHE_STATS: per 5 s images created / freed, lookups, overlaps, expands, uploads, re-created and re-uploaded images |
 | [ue4-cvars-tool](tooling/ue4-cvars-tool.md) | diagnostic | off / off | lab |  | UE4 override pak: GOW3_UE4_CVARS adds console variables (opt-in test tool) |
+| [ue4-frame-map](tooling/ue4-frame-map.md) | diagnostic | off / off | deck-lab | GOW3_UE4_FRAME_MAP | UE4 frame map (U1): logs the velocity pass, TAA (draws or compute), the View buffer, tonemap and first UI draw each frame |
 | [upstream-frame-analyzer-fix](tooling/upstream-frame-analyzer-fix.md) | active | on / on | - | GOW3_CAPTURE_TRIGGER, GOW3_CAPTURE_DIR | Upstream frame analyzer crash on flatbuf ring bindings (address 0 passed IsValidGpuMapping) |
 | [upstream-screenshots](tooling/upstream-screenshots.md) | active | on / on | - | GOW3_SCREENSHOT_DIR, GOW3_FRAME_DUMP_TRIGGER, GOW3_FRAME_DUMP_COUNT … | Upstream F12 PNG screenshots (Shift+F12 raw dump) |
 | [wait-sites](tooling/wait-sites.md) | diagnostic | off / off | lab | GOW3_WAIT_SITES | GOW3_WAIT_SITES: every guest wait by call site, requested and actual time (pthread exports, event queues) |
