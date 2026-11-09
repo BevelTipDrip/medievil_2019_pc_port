@@ -68,8 +68,12 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
     if (Ue4FrameMap::Enabled()) {
         frame_map = std::make_unique<Ue4FrameMap>();
     }
-    if (Ue4Motion::Enabled()) {
+    if (Ue4Motion::Enabled() || Ue4Dlss::Enabled()) {
         ue4_motion = std::make_unique<Ue4Motion>(instance, scheduler, texture_cache, runtime);
+    }
+    if (Ue4Dlss::Enabled()) {
+        ue4_dlss = std::make_unique<Ue4Dlss>(instance, scheduler, texture_cache, runtime,
+                                             *ue4_motion);
     }
     if (!EmulatorSettings.IsNullGPU()) {
         liverpool->BindRasterizer(this);
@@ -1217,7 +1221,12 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
                          UiComposition::NativeViewport(viewport.xscale * 2, viewport.yscale * 2));
     }
     if (frame_map || ue4_motion) [[unlikely]] {
-        ObserveFrameMap(pipeline);
+        if (ObserveFrameMap(pipeline)) {
+            // gow3 U3: DLSS wrote TAA's output; the TAA draw is not recorded.
+            bind_prepared = nullptr;
+            ResetBindings(false);
+            return;
+        }
     }
     const PreparedDraw* draw_prepared = bind_prepared;
     // gow3: vertex and index buffers are resolved while the helper binds textures (their
@@ -4639,7 +4648,7 @@ void Rasterizer::NoteFrameStart() {
     }
 }
 
-void Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
+bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
     Ue4FrameMap::Pass pass;
     const auto& regs = Regs();
     pass.compute = pipeline->IsCompute();
@@ -4654,6 +4663,7 @@ void Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
             const auto& info = cb_descs[0].second.info;
             pass.target = {regs.color_buffers[0].Address(), info.size.width, info.size.height};
             pass.target_rg16 = info.pixel_format == vk::Format::eR16G16Unorm;
+            pass.target_rgba16f = info.pixel_format == vk::Format::eR16G16B16A16Sfloat;
             pass.display = FrameCapture::IsDisplayBuffer(pass.target.address);
         }
         if (db_desc.first) {
@@ -4717,6 +4727,7 @@ void Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
     if (frame_map) {
         frame_map->OnPass(pass);
     }
+    bool skip = false;
     if (ue4_motion) {
         if (!pass.compute && pass.target_rg16 && pass.targets == 1 && pass.depth) {
             ue4_motion->OnVelocityDraw(cb_descs[0].first, pass.target.address, db_desc.first);
@@ -4727,8 +4738,15 @@ void Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
                    (pass.compute && pass.hash == Ue4FrameMap::TaaCompute)) {
             ue4_motion->OnTaa(pass.view, std::span(pass.reads.data(), pass.num_reads),
                               pass.compute ? VideoCore::ImageId{} : db_desc.first);
+            if (ue4_dlss && !pass.compute) {
+                skip = ue4_dlss->OnTaaDraw(pass.view, std::span(pass.reads.data(), pass.num_reads),
+                                           cb_descs[0].first, pass.target.address);
+            }
+        } else if (ue4_dlss && !pass.compute && pass.targets == 1 && pass.target_rgba16f) {
+            ue4_dlss->OnColorTarget(cb_descs[0].first, pass.target.address);
         }
     }
+    return skip;
 }
 
 } // namespace Vulkan

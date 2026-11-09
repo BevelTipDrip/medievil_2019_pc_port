@@ -647,7 +647,8 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
     // gow3: FSR 1, RCAS and its strength come from the in-game menu, every frame.
     const auto& graphics = Gow3Settings::Get();
     fsr_settings.enable = graphics.fsr1;
-    fsr_settings.use_rcas = graphics.rcas;
+    // gow3 U3: no RCAS over DLAA (the user's decision: DLSS on, RCAS off).
+    fsr_settings.use_rcas = graphics.rcas && !Ue4Dlss::Running();
     fsr_settings.rcas_attenuation = Gow3Graphics::RcasAttenuation(graphics.rcas_strength);
     Gow3Settings::Get().image_width = int(image_size.width);
     Gow3Settings::Get().image_height = int(image_size.height);

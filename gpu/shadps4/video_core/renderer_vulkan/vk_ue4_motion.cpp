@@ -267,6 +267,7 @@ void Ue4Motion::OnTaa(const u8* view, std::span<const VAddr> reads, VideoCore::I
     }
     recorded = true;
     recorded_frame = frame_number;
+    pass_depth = Remember(depth_image == Find(depth) ? depth.id : scene_depth.id);
 
     const u32 width = depth_image->info.size.width;
     const u32 height = depth_image->info.size.height;
@@ -356,6 +357,18 @@ void Ue4Motion::OnTaa(const u8* view, std::span<const VAddr> reads, VideoCore::I
                     static_cast<unsigned long long>(passes), width, height, push.view_size[0],
                     push.view_size[1]);
     }
+}
+
+bool Ue4Motion::GetPass(u32 frame_number, LastPass& pass) {
+    if (!recorded || recorded_frame != frame_number || !motion.image.image) {
+        return false;
+    }
+    auto* depth_image = Find(pass_depth);
+    if (!depth_image) {
+        return false;
+    }
+    pass = {vk::Image(motion.image), *motion.view, motion.width, motion.height, depth_image};
+    return true;
 }
 
 vk::ImageView Ue4Motion::Compose(vk::CommandBuffer cmdbuf, VideoCore::Image& display,

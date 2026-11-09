@@ -46,6 +46,15 @@ public:
     /// first one of a frame records the motion vector pass. `depth`: the pass's depth buffer
     /// (draws), if any.
     void OnTaa(const u8* view, std::span<const VAddr> reads, VideoCore::ImageId depth);
+    /// The motion vector pass of View frame `frame_number` (U3), if it ran: its image (General
+    /// layout, written by a compute pass recorded before) and the scene depth it read (General).
+    struct LastPass {
+        vk::Image image;
+        vk::ImageView view;
+        u32 width, height;
+        VideoCore::Image* depth;
+    };
+    bool GetPass(u32 frame_number, LastPass& pass);
     /// Presenter, at a flip, on the draw scheduler's command buffer: after this frame's motion
     /// vectors, the debug view of `display` (in ShaderReadOnlyOptimal for compute) into an image
     /// of the port; its view in `present_format`, to present instead. Null: present as before.
@@ -83,6 +92,7 @@ private:
     vk::UniquePipeline view_pipeline;
 
     Target velocity, depth, scene_depth;
+    Target pass_depth; ///< the depth the last pass read
     VAddr velocity_address = 0;
     bool recorded = false;
     u32 recorded_frame = 0;

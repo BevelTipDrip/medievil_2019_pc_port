@@ -38,6 +38,7 @@ u32 Gow3DisplayRefreshHz(); // gow3gpu.cpp: the display refresh rate
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_frame_capture.h"
 #include "video_core/renderer_vulkan/vk_ue4_motion.h"
+#include "video_core/renderer_vulkan/vk_ue4_dlss.h"
 
 // DejaVu Sans (Cyrillic), embedded (third_party/fonts, Bitstream Vera license).
 #ifdef _WIN32
@@ -1343,6 +1344,11 @@ bool HandleEvent(const SDL_Event& event) {
         }();
         if (down && !event.key.repeat && capture_key && event.key.key == SDLK_F11) {
             Vulkan::FrameCapture::Request();
+            return true;
+        }
+        // F9: DLAA / UE4's TAA (GOW3_UE4_DLSS=1 only).
+        if (down && !event.key.repeat && event.key.key == SDLK_F9 && Vulkan::Ue4Dlss::Enabled()) {
+            Vulkan::Ue4Dlss::Toggle();
             return true;
         }
         // F10: the next UE4 motion vector view (GOW3_UE4_MOTION_VIEW set only).

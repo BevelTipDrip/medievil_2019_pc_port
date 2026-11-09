@@ -47,6 +47,7 @@ public:
         Image target{};              ///< first colour target (draws)
         u32 targets = 0;             ///< colour targets bound
         bool target_rg16 = false;    ///< R16G16_UNORM, UE4's velocity format
+        bool target_rgba16f = false; ///< R16G16B16A16_SFLOAT (scene colour, TAA's output)
         bool display = false;        ///< the target is a display buffer
         VAddr depth = 0;             ///< bound depth buffer (draws)
         std::array<VAddr, 16> reads{}; ///< sampled images

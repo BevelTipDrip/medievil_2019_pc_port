@@ -126,7 +126,7 @@ mode 4 near black while moving. U2 done; the finer check is DLSS's own debug ove
 | 4, panning or moving | mostly black; bright only at edges that were hidden last frame, particles, UI | the whole picture bright (sign, scale or matrix order wrong), or only moving objects bright (velocity wrong) |
 | 4 at render scale 80 | as at 100 | worse than 100: view size / sub-rectangle wrong |
 
-## U3 design: DLAA at render scale 100 (not built)
+## U3 design: DLAA at render scale 100
 
 - **Switch:** `GOW3_UE4_DLSS=1` (off by default), live on / off with a hotkey so the user compares DLAA and UE4's TAA
   on the same frame. Needs `gow3_dlss.dll` + `nvngx_dlss.dll` beside the exe (D0). Native only: under TAAU (the
