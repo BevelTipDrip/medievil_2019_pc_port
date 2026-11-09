@@ -4744,8 +4744,11 @@ bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
             ue4_motion->OnTaa(pass.view, std::span(pass.reads.data(), pass.num_reads),
                               pass.compute ? VideoCore::ImageId{} : db_desc.first);
             if (ue4_dlss && !pass.compute) {
+                const auto& [output_id, output_desc] = cb_descs[0];
                 skip = ue4_dlss->OnTaaDraw(pass.view, std::span(pass.reads.data(), pass.num_reads),
-                                           cb_descs[0].first, pass.target.address);
+                                           output_id, pass.target.address, [&] {
+                                               texture_cache.FindRenderTarget(output_id, output_desc);
+                                           });
             }
         } else if (ue4_dlss && !pass.compute && pass.targets == 1 && pass.target_rgba16f) {
             ue4_dlss->OnColorTarget(cb_descs[0].first, pass.target.address);

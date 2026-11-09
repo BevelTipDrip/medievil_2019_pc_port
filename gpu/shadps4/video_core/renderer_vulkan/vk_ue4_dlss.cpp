@@ -122,7 +122,7 @@ void Ue4Dlss::OnColorTarget(VideoCore::ImageId id, VAddr address) {
 }
 
 bool Ue4Dlss::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore::ImageId output_id,
-                        VAddr output_address) {
+                        VAddr output_address, const std::function<void()>& mark_written) {
     if (!view) {
         return Fail("no View buffer");
     }
@@ -208,6 +208,11 @@ bool Ue4Dlss::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore:
     }
 
     scheduler.EndRendering();
+    // As the skipped draw's colour target: not Undefined, GPU-modified, its aliases told. Without
+    // it a TAA output made at a level load stayed "new" and the tonemap's read refreshed it from
+    // guest memory (an old frame) over DLSS's output: the picture snapped back again and again in
+    // pans until UE4's TAA had drawn into it once (run u3-dlaa-2).
+    mark_written();
     runtime.Transit(color_image, vk::ImageLayout::eGeneral, vk::PipelineStageFlagBits2::eAllCommands,
                     vk::AccessFlagBits2::eShaderRead);
     runtime.Transit(depth_image, vk::ImageLayout::eGeneral, vk::PipelineStageFlagBits2::eAllCommands,

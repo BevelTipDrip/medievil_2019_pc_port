@@ -11,6 +11,7 @@
 #include <array>
 #include <atomic>
 #include <chrono>
+#include <functional>
 #include <span>
 
 #include "common/types.h"
@@ -46,8 +47,10 @@ public:
     void OnColorTarget(VideoCore::ImageId id, VAddr address);
     /// A native TAA draw with the View buffer bound, sampling `reads`, into `output`. True: DLSS
     /// covers it (recorded at the first draw of the frame), so the draw must be skipped.
+    /// `mark_written` gives `output` a render target's texture cache bookkeeping (the skipped
+    /// draw would have): called before DLSS writes it.
     bool OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore::ImageId output,
-                   VAddr output_address);
+                   VAddr output_address, const std::function<void()>& mark_written);
 
 private:
     struct Target {
