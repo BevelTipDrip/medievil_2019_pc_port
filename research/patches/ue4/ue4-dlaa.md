@@ -8,9 +8,9 @@ default_windows: off
 default_deck: n/a
 origin: ours
 class: M
-commits: 7b74b91, ef9d584, b0cef35, f25a373, 81a1fc9, c91cfd3, 517547f, 4fc3d16
-files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shim/gow3_overlay.cpp
-symbols: Ue4Dlss, CycleJitterSign, Notice, DlssNotice, CameraJumpPixels, OnColorTarget, OnTaaDraw, OnTaauDispatch, Run, Running, GetPass, depth_inverted, ue4_dlss, target_rgba16f
+commits: 7b74b91, ef9d584, b0cef35, f25a373, 81a1fc9, c91cfd3, 517547f, 4fc3d16, 3819019
+files: gpu/shim/gow3_settings.h, gpu/shim/gow3_settings.cpp, launcher/medievil_launcher.py, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shim/gow3_overlay.cpp
+symbols: Ue4Dlss, ue4_dlss_available, CycleJitterSign, Notice, DlssNotice, CameraJumpPixels, OnColorTarget, OnTaaDraw, OnTaauDispatch, Run, Running, GetPass, depth_inverted, ue4_dlss, target_rgba16f
 switches: GOW3_UE4_DLSS
 tests: u3-dlaa, u3-dlaa-2, u3-dlaa-3, u3-dlaa-4, u4-dlss, u4-dlss-0102, u4-jitter-0102
 docs: plan-ue4-motion-vectors.md#u3-design-dlaa-at-render-scale-100, plan-dlss.md#d0-2026-11-08-bridge-built-support-checked-offline
@@ -37,6 +37,11 @@ sampling the velocity target: UE4's permutations per upscale ratio; before `Bind
 the View size to the dispatch's output T# size (quality from the ratio, `Dlss::QualityForScale`), into the
 dispatch's storage output (copied, or blitted when its format is not RGBA16F), and the dispatch is skipped
 (`ResetBindings(true)`). The output image is found from the written image's T# (`FindImage`) only while DLSS is on.
+
+**Setting (ninth commit):** ini `ue4_dlss` (default 0; `GOW3_UE4_DLSS=1` sets it), live: the in-game menu (Image tab,
+"NVIDIA DLSS", disabled without DLLs / RTX), the launcher (Graphics, "NVIDIA DLSS"), F9 (saved). The hooks exist
+whenever the DLSS DLLs are beside the exe; the per-draw observation runs only while the setting is on (or the U1
+frame map / U2 view is). Periodic counter lines follow `GOW3_FPS_LOG=0`.
 
 ## Invariants
 
@@ -109,6 +114,10 @@ dispatch's storage output (copied, or blitted when its format is not RGBA16F), a
   pair of draws** (`fs e88c8fcbe08ea0b6` / `fs e5588ed466d8f2f3`, frame map) and DLAA ran there (feature 3840x2160);
   TAAU at 50% Performance. **Jitter sign settled: +x +y** (F8 option 0, the default): the user went through the four
   options three times at 50% and judged +x +y best, as in MGS2. The user: "It works at 100%".
+- The setting (ninth commit): launcher tests 54 OK (test_launcher_controls, test_deck_preset, test_graphics_options,
+  test_prepare, test_upscaler_assets). The user's play setup 2026-11-09: release `nvngx_dlss.dll` back in `out\`,
+  `ue4_dlss=1` in medievil.ini (backup `medievil.ini.bak-before-dlss-setting-20261109`), `extra-env.txt`
+  `GOW3_FPS_LOG=0` (also silences test runs' FPS lines until removed). Not run.
 - U4 before the fix (sixth commit): DLL: SDK 310.9.16 (DLSS 4.5 generation), preset 0 = driver default; DLAA costs
   ~0.85 ms a frame at 4K on the RTX 4090 (the user: DLSS 4.5 is heavy, ~40 FPS here).
 
