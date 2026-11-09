@@ -1,7 +1,7 @@
 # MediEvil (PS4) for PC
 
 A PC port of **MediEvil** (PlayStation 4, 2019, CUSA11227; the European CUSA12982 works too) for
-Windows 10 and 11, built on the
+Windows 10 and 11 and the Steam Deck (Linux), built on the
 [God of War III PC port](https://github.com/FelipePrado0/gow3_pc).
 
 The CPU side is native: the game's original x86-64 executable runs directly on the PC's processor
@@ -10,6 +10,73 @@ The graphics run on the [shadPS4](https://github.com/shadps4-emu/shadPS4) video 
 emulates the PS4 GPU at a high level: it recompiles the game's shaders and translates its GPU
 commands to Vulkan.
 
+## Roadmap
+
+What this fork has done, and what is next. Checked items are in a release or on the default branch.
+
+**Performance and fixes**
+- [x] Menus work at 4K; the game boots at any output size
+- [x] Output resolution and render scale as separate settings; live render scale (50-200%)
+- [x] Unreal's HZB occlusion culling works; the hidden decal prepass is skipped
+- [x] Fights: most render pass breaks gone (120 FPS cap: 1% / 0.1% lows 119.7 / 117.4)
+- [x] Memory sync and draw-translation CPU cuts; no stalls when Windows trims memory
+- [x] Frame pacing above 60 FPS: Reflex limiter, automatic frame limit, precise vblank tick
+- [x] Shadow black boxes, a draw-pipe crash / freeze and vanishing GPU particles fixed
+- [x] Finer occlusion culling at small resolutions
+- [x] Hilltop Mausoleum lighting fixed on Linux / Steam Deck
+- [ ] Hang at "quit to main menu" (found: a deadlock between two GPU threads)
+- [ ] Occasional crash at startup (S1; restarting works)
+
+**Game and platforms**
+- [x] Upstream 1.3.8 merged
+- [x] Game update 01.02 supported
+- [x] Steam Deck / Linux: native AppImage
+- [x] Deck Optimized preset (detects the Deck, 60 FPS in the heaviest view)
+- [ ] Deck: steadier frame times at the 60 FPS cap
+- [ ] Deck: freeze after quitting from Steam
+
+**Graphics**
+- [x] Graphics quality levels (Ultra to Low, Deck Optimized) with 18 individual settings, Console = the PS4's values
+- [x] Real Unreal motion vectors and camera-cut detection for temporal upscalers
+- [x] NVIDIA DLAA (render scale 100) in place of the game's anti-aliasing
+- [x] NVIDIA DLSS upscaling below 100 (Quality / Balanced / Performance)
+- [x] DLSS in the launcher and the in-game menu, F9 in game
+- [ ] DLSS model (preset) per quality mode
+- [ ] AMD FSR 3 upscaling on the same inputs
+- [ ] DLSS frame generation
+- [ ] FSR frame generation
+
+**Launcher and controls**
+- [x] New icon, Start menu shortcut, updates from this fork
+- [x] Mouse cursor hidden while playing
+- [ ] Mouse look and menu mouse, controller button glyphs, camera options
+
+## What's new in 2.1.0
+
+- **NVIDIA DLSS (RTX cards).** It replaces the game's own anti-aliasing:
+  - DLAA at render scale 100;
+  - upscaling below 100. At 50% (Performance) the picture looks close to native at a much higher frame rate.
+  - Turn it on in the launcher (Graphics > NVIDIA DLSS), in the game's menu (Image tab), or with F9 while
+    playing. It is off by default.
+  - NVIDIA's `nvngx_dlss.dll` is not included: copy it into the `bin` folder
+    ([README-Windows.txt](packaging/windows/README-Windows.txt)).
+- **Graphics quality levels.** Ultra, High, Console, Medium and Low each set 18 individual settings, five of them
+  new. Change any one and the level shows Custom. Console uses the PS4's exact values, shadows included.
+- **Steam Deck and Linux.**
+  - The Linux build works again and runs natively on the Deck as an AppImage.
+  - A Deck Optimized preset holds 60 FPS in the heaviest graveyard view.
+  - Finer occlusion culling at small resolutions.
+  - Less CPU work per frame, which leaves the Deck's 15 W power budget to the GPU.
+  - See [packaging/linux/README-Linux.md](packaging/linux/README-Linux.md).
+- **Fixes.**
+  - Hilltop Mausoleum lighting on Linux.
+  - The torch and crypt-floor glitch with the single particle pass.
+  - The in-game menu no longer adds frames while it is open.
+  - A crash during memory copies on Linux.
+  - Launcher settings carry over correctly between quality levels.
+  - The mouse cursor hides while playing.
+- **Live render scale** from 50% to 200% in the in-game menu.
+
 ## This fork
 
 This is BevelTipDrip's fork of [bc160201983's MediEvil port](https://github.com/bc160201983/medievil_2019_pc_port),
@@ -17,7 +84,7 @@ This is BevelTipDrip's fork of [bc160201983's MediEvil port](https://github.com/
 change measured in game. Its releases start at **2.0.0**, and the launcher checks this fork for updates, so it never
 offers upstream's builds in place of this one.
 
-What it changes, in short:
+What 2.0.0 changed, in short:
 
 - **Fights**: kill effects nearly doubled the render passes in a frame (326 to 560–660), each break costing the
   draw-translation thread time, so it saturated; most of those breaks are gone (Performance patches > "Fewer render
@@ -203,6 +270,8 @@ Captured on Windows 11 (RTX 5080) with this port.
    folder with `eboot.bin`.
 4. Choose an **Output resolution** (your display's size for a sharp picture) and a **Render scale** on
    **Home** and press **PLAY**.
+5. Optional, NVIDIA RTX: copy NVIDIA's `nvngx_dlss.dll` into the `bin` folder and turn on **NVIDIA DLSS**
+   (launcher > Graphics). DLAA at render scale 100, DLSS upscaling below it.
 
 `Play MediEvil.exe` starts the game with the saved settings, for shortcuts and Steam.
 **Portable mode**: with an empty file `portable.txt` next to `MediEvil.exe`, the launcher keeps its
