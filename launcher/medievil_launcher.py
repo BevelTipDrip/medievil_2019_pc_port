@@ -52,7 +52,7 @@ MAX_LOG_LINES = 6000
 NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
 # This build. The launcher checks the fork's GitHub releases at start and offers newer versions.
 # The fork's own series starts at 2.0.0 (upstream bc160201983 is at 1.3.x), so it never offers upstream's builds.
-VERSION = '2.0.0'
+VERSION = '2.1.0'
 RELEASES_API = 'https://api.github.com/repos/BevelTipDrip/medievil_2019_pc_port/releases/latest'
 RELEASES_PAGE = 'https://github.com/BevelTipDrip/medievil_2019_pc_port/releases'
 # The port's pages (Home and Advanced), opened in the browser.
@@ -1544,7 +1544,8 @@ class Launcher:
         self.check(f, 'ue4_dlss', 'ini', _('NVIDIA DLSS (replaces the game\'s anti-aliasing)'),
                    _('DLAA at Render scale 100, DLSS upscaling below it (Quality / Balanced / Performance from '
                      'the scale). Sharpening is off while it runs. Needs an NVIDIA RTX GPU and gow3_dlss.dll + '
-                     'nvngx_dlss.dll in the out folder. F9 switches it in the game.'))
+                     'nvngx_dlss.dll next to medievil-runtime.exe (the bin folder; nvngx_dlss.dll is not included: see '
+                     'README-Windows.txt). F9 switches it in the game.'))
         holder = ttk.Frame(f)
         strength = self.var('rcas_strength', 'ini')
         tk.Scale(holder, from_=0, to=100, orient='horizontal', variable=strength, showvalue=False, length=self.px(260),

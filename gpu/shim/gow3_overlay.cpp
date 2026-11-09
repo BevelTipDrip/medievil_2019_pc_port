@@ -440,7 +440,7 @@ void ImageTab() {
                  s.ue4_dlss_available
                      ? "Replaces the game's anti-aliasing: DLAA at Render scale 100, DLSS upscaling below it. "
                        "Sharpening is off while it runs. F9 switches it in the game."
-                     : "Needs an NVIDIA RTX GPU and gow3_dlss.dll + nvngx_dlss.dll beside the game.");
+                     : "Needs an NVIDIA RTX GPU and nvngx_dlss.dll in the bin folder (see README-Windows.txt).");
         ImGui::EndDisabled();
         ImGui::EndTable();
     }
