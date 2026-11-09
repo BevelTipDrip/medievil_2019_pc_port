@@ -54,7 +54,8 @@ infinity or at 10 m moved by more than a quarter of the view width through ClipT
 
 - Run `u3-dlaa` (PC, 2026-11-08, build `3c7f562`, 1.0 game, render scale 100, development `nvngx_dlss.dll`,
   `data/u3-dlaa.log`): DLAA features 3840x2160 and 3812x2160 (cutscene) created, ~45,000 DLAA frames, F9 switched
-  DLAA / UE4 TAA live (the user: it works). The four jitter settings (Ctrl+Alt+F9) looked the same at native, as in
+  DLAA / UE4 TAA live. The user: "DLAA looked much better than native TAA, significantly sharper without
+  over-sharpening. With RCAS off, the difference was even clearer" (with the reset bug below still in). The four jitter settings (Ctrl+Alt+F9) looked the same at native, as in
   MGS2, where the sign was settled only when upscaling (+x +y, as passed here).
 - Found in that run: **2,617 resets**, nearly all "camera jump" at 1.01-1.11 (the rule: a ClipToPrevClip element
   1.0 from identity): ordinary movement crossed it, so DLSS lost its history about every fifth frame while moving.

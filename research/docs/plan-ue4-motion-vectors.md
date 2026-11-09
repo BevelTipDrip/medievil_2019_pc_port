@@ -128,6 +128,13 @@ mode 4 near black while moving. U2 done; the finer check is DLSS's own debug ove
 
 ## U3 design: DLAA at render scale 100
 
+Run `u3-dlaa` (2026-11-08): DLAA ran at 3840x2160 and in the 3812x2160 cutscene; the user: "much better than native
+TAA, significantly sharper without over-sharpening". Resets misfired in ordinary movement (fix `ef9d584`, not run);
+next: cut detection by **coverage** (the share of a screen grid, at several depths, whose ClipToPrevClip position is
+in front of the camera and on screen; reset below ~10-20%), instant on the CPU, with the image difference of
+U2's mode 4 counted on the GPU and logged a few frames late as its check (the user's idea, 2026-11-08: a true cut
+is ~100% different; mouse flicks must not be taken for cuts).
+
 - **Switch:** `GOW3_UE4_DLSS=1` (off by default), live on / off with a hotkey so the user compares DLAA and UE4's TAA
   on the same frame. Needs `gow3_dlss.dll` + `nvngx_dlss.dll` beside the exe (D0). Native only: under TAAU (the
   compute TAA) nothing changes; U4 handles that.
