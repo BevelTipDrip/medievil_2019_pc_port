@@ -163,6 +163,26 @@ is ~100% different; mouse flicks must not be taken for cuts).
 - **Verify:** the user compares DLAA against UE4 TAA (hotkey) standing still, panning and in combat: ghosting on
   Dan and enemies, shimmer on fences and foliage, the HUD unchanged.
 
+## Camera cuts: the game's own signal (run `cut-evidence`, 2026-11-08)
+
+`data/cut-evidence.log` (frame map with cut evidence, build `22e9a9f`, render scale 100). The user: the title's intro
+skip, an in-game cutscene with several camera cuts (played twice: before and after a level reload), fast pans for
+about two minutes. **Every cut moves the View frame number by more than one; nothing else does** (checked):
+
+| Event | View frame number | Camera move that frame |
+|---|---|---|
+| title -> intro swoop; level start; the user's reload | restarts (3499 -> 5, 3345 -> 3, 35678 -> 4) | 0 px |
+| intro skip | +3 | 0 px |
+| cutscene cuts (6, one hidden by the line cap) | +2 each (one +25) | 0-3 px |
+| the same cutscene after the reload | the same cuts at nearly the same numbers (2531, 7433, 7754, 8035, 9081 vs 2493, 7390, 7716, 7997, 9050) | 0-2 px |
+| fast pans, up to 101 px a frame at ~237 FPS | never | |
+
+UE4's TAA never stopped reading last frame's output (0 history drops), so TAA's inputs carry no cut signal. TAA
+parameters 26 / 27 change every moving frame and reset at cuts (role unknown). View.CameraCut (offset 2148) stayed 0.
+Rule for DLSS: reset when the View frame number is not the last one + 1 (cuts, skips, loads), the first frame after
+UE4's TAA ran, a new feature; no camera-motion rule (a mouse flick does not move the frame number). A death /
+respawn was not tested (it would cost the user's save).
+
 ## Risks
 
 - PS4 UE4 build may differ (velocity format, compute TAA, View UB layout). M0 decides.
