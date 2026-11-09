@@ -1346,23 +1346,28 @@ bool HandleEvent(const SDL_Event& event) {
             Vulkan::FrameCapture::Request();
             return true;
         }
-        // F9: DLAA / UE4's TAA (GOW3_UE4_DLSS=1 only).
-        if (down && !event.key.repeat && event.key.key == SDLK_F9 && Vulkan::Ue4Dlss::Enabled()) {
+        // F9: DLAA / UE4's TAA (GOW3_UE4_DLSS=1 only). Not with Ctrl or Alt: NVIDIA's development
+        // DLSS DLL uses Ctrl+Alt+F9 / F10 / F12 for its own debug hotkeys.
+        const bool plain_key = !(event.key.mod & (SDL_KMOD_CTRL | SDL_KMOD_ALT));
+        if (down && !event.key.repeat && plain_key && event.key.key == SDLK_F9 &&
+            Vulkan::Ue4Dlss::Enabled()) {
             Vulkan::Ue4Dlss::Toggle();
             return true;
         }
         // F10: the next UE4 motion vector view (GOW3_UE4_MOTION_VIEW set only).
-        if (down && !event.key.repeat && event.key.key == SDLK_F10 && Vulkan::Ue4Motion::Enabled()) {
+        if (down && !event.key.repeat && plain_key && event.key.key == SDLK_F10 &&
+            Vulkan::Ue4Motion::Enabled()) {
             Vulkan::Ue4Motion::CycleViewMode();
             return true;
         }
         // F12: a PNG screenshot of the game's picture. Shift+F12: raw frames for bug reports
         // (GOW3_FRAME_DUMP_TRIGGER, set by the launcher).
-        if (down && !event.key.repeat && event.key.key == SDLK_F12 && !(event.key.mod & SDL_KMOD_SHIFT)) {
+        if (down && !event.key.repeat && plain_key && event.key.key == SDLK_F12 &&
+            !(event.key.mod & SDL_KMOD_SHIFT)) {
             screenshot_requested.store(true, std::memory_order_release);
             return true;
         }
-        if (down && !event.key.repeat && event.key.key == SDLK_F12) {
+        if (down && !event.key.repeat && plain_key && event.key.key == SDLK_F12) {
             if (const char* trigger = std::getenv("GOW3_FRAME_DUMP_TRIGGER")) {
                 if (std::FILE* f = std::fopen(trigger, "wb")) {
                     std::fclose(f);

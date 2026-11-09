@@ -25,16 +25,46 @@ namespace {
 constexpr u32 OffsetClipToPrevClip = 1824;
 constexpr u32 OffsetJitter = 1888;
 constexpr u32 OffsetViewSize = 1952;
+constexpr u32 OffsetNearPlane = 2112;
 constexpr u32 OffsetFrameNumber = 2140;
-/// Largest |ClipToPrevClip - identity| element of an ordinary frame: moving and turning reach
-/// ~0.55 (U1, U2 logs); level starts 5.2, the title's intro skip 1.4.
-constexpr float CameraJump = 1.0f;
+/// A camera cut moves the picture by more than this share of the view's width in one frame;
+/// ordinary motion, even a fast turn at 60 FPS, moves it a few percent. (The first rule, a
+/// ClipToPrevClip element 1.0 from identity, reset ~6% of gameplay frames: run u3-dlaa.)
+constexpr float CameraJumpShare = 0.25f;
 
 template <typename T>
 T Load(const u8* data, u32 offset) {
     T value;
     std::memcpy(&value, data + offset, sizeof(T));
     return value;
+}
+
+/// The largest one-frame move, in pixels, of five screen points (the centre and four near the
+/// corners) at infinity and at 10 m, through View.ClipToPrevClip (row vector times matrix).
+float CameraJumpPixels(const u8* view, std::array<float, 2> size) {
+    std::array<std::array<float, 4>, 4> m;
+    std::memcpy(m.data(), view + OffsetClipToPrevClip, sizeof(m));
+    // Reversed Z, infinite far plane: device Z = near / view distance (UE units, cm).
+    const float near_plane = Load<float>(view, OffsetNearPlane);
+    const std::array<float, 2> depths{0.0f, near_plane > 0.0f ? near_plane / 1000.0f : 0.0f};
+    static constexpr std::array<std::array<float, 2>, 5> points{
+        {{0.0f, 0.0f}, {-0.8f, -0.8f}, {0.8f, -0.8f}, {-0.8f, 0.8f}, {0.8f, 0.8f}}};
+    float worst = 0.0f;
+    for (const float z : depths) {
+        for (const auto& p : points) {
+            std::array<float, 4> prev;
+            for (u32 c = 0; c < 4; ++c) {
+                prev[c] = p[0] * m[0][c] + p[1] * m[1][c] + z * m[2][c] + m[3][c];
+            }
+            if (!(std::fabs(prev[3]) > 1e-6f)) {
+                return 1e30f;
+            }
+            const float dx = (p[0] - prev[0] / prev[3]) * size[0] * 0.5f;
+            const float dy = (p[1] - prev[1] / prev[3]) * size[1] * 0.5f;
+            worst = std::max(worst, std::sqrt(dx * dx + dy * dy));
+        }
+    }
+    return std::isfinite(worst) ? worst : 1e30f;
 }
 
 } // namespace
@@ -141,16 +171,11 @@ bool Ue4Dlss::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore:
 
     // Reset: the first frame after UE4's TAA ran, a frame number that is not the next one, or
     // a camera jump (this game never sets View.CameraCut: U1, U2).
-    float camera_delta = 0.0f;
-    for (u32 i = 0; i < 16; ++i) {
-        const float identity = i % 5 == 0 ? 1.0f : 0.0f;
-        camera_delta = std::max(camera_delta,
-                                std::fabs(Load<float>(view, OffsetClipToPrevClip + i * 4) - identity));
-    }
-    const char* reset_reason = !was_on                                ? "first frame"
-                               : frame_number != last_frame + 1       ? "frame number"
-                               : camera_delta > CameraJump            ? "camera jump"
-                                                                      : nullptr;
+    const float camera_jump = CameraJumpPixels(view, view_size);
+    const char* reset_reason = !was_on                                 ? "first frame"
+                               : frame_number != last_frame + 1        ? "frame number"
+                               : camera_jump > CameraJumpShare * width ? "camera jump"
+                                                                       : nullptr;
 
     const auto device = instance.GetDevice();
     if (!output.image || output_width != width || output_height != height) {
@@ -305,8 +330,8 @@ bool Ue4Dlss::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore:
     if (reset_reason) {
         ++resets;
         if (resets <= 50) {
-            std::printf("UE4 DLSS: reset (%s, View frame %u, camera delta %.2f)\n", reset_reason,
-                        frame_number, camera_delta);
+            std::printf("UE4 DLSS: reset (%s, View frame %u, camera moved %.0f px)\n",
+                        reset_reason, frame_number, camera_jump);
         }
     }
     if (++evaluations == 1 || evaluations % 3000 == 0) {
