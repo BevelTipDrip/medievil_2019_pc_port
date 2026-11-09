@@ -112,7 +112,10 @@ scale 80, pause, main menu, a level load. 210 summaries (63,000 frames). Labels:
 
 ## U2: motion vectors and their debug view
 
-Built 2026-11-08 (card [ue4-motion-vectors](../patches/ue4/ue4-motion-vectors.md)), not run.
+Built 2026-11-08 (card [ue4-motion-vectors](../patches/ue4/ue4-motion-vectors.md)). Run `u2-motion` (render scale 80):
+the vectors are right by the panning measurements (card Evidence); the camera cut flag stayed 0 through the user's
+intro skip at the title (a real cut), so resets must come from the frame number or a camera jump. Debug colours were
+red / blue swapped and menus had no pass: fix built, not run.
 `GOW3_UE4_MOTION_VIEW=1` (off by default); F10 cycles the views. What the user should see (the M2 / U2 check):
 
 | View | Right | Wrong |

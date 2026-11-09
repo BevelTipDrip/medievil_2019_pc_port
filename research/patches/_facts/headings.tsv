@@ -527,7 +527,7 @@ plan-ue4-motion-vectors.md	55	2	frame-map	Frame map
 plan-ue4-motion-vectors.md	64	2	u1-run-time-frame-map-log-only	U1: run-time frame map, log only
 plan-ue4-motion-vectors.md	80	3	u1-run-2026-11-08-pc-datau1-frame-maplog	U1 run (2026-11-08, PC, `data/u1-frame-map.log`)
 plan-ue4-motion-vectors.md	113	2	u2-motion-vectors-and-their-debug-view	U2: motion vectors and their debug view
-plan-ue4-motion-vectors.md	125	2	risks	Risks
+plan-ue4-motion-vectors.md	128	2	risks	Risks
 plan-upstream-merge.md	1	1	plan-merge-upstream-133-135-into-lab-then-the-next-work-items	Plan: merge upstream 1.3.3-1.3.5 into `lab`, then the next work items
 plan-upstream-merge.md	10	2	1-where-upstream-and-lab-overlap	1. Where upstream and `lab` overlap
 plan-upstream-merge.md	25	2	2-the-five-conflicts-and-how-to-resolve-them	2. The five conflicts and how to resolve them

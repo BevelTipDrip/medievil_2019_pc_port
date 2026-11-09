@@ -8,11 +8,11 @@ default_windows: off
 default_deck: off
 origin: ours
 class: M
-commits: daeb5fd
+commits: daeb5fd, 461f249
 files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp, gpu/shadps4/video_core/host_shaders/ue4_motion.comp, gpu/shadps4/video_core/host_shaders/ue4_motion_view.comp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shim/gow3_overlay.cpp, gpu/CMakeLists.txt
-symbols: Ue4Motion, OnVelocityDraw, OnTaa, Compose, CycleViewMode, ue4_motion, GetUe4Motion
+symbols: Ue4Motion, OnVelocityDraw, OnSceneDraw, OnTaa, Compose, CycleViewMode, ue4_motion, GetUe4Motion
 switches: GOW3_UE4_MOTION_VIEW
-tests:
+tests: u2-motion
 docs: plan-ue4-motion-vectors.md#u2-motion-vectors-and-their-debug-view
 depends_on: ue4-frame-map
 related:
@@ -36,8 +36,9 @@ where the vectors are right). F10 cycles 1-4 and 0.
 
 - The pass runs once per frame: the View's `FrameNumber` of the first TAA pass is remembered and the second draw
   skipped.
-- Velocity and depth come from the velocity pass of the frame (one R16G16_UNORM target with a depth buffer); in a
-  frame without velocity draws, the last frame's velocity image, as UE4's TAA still samples it (U1). Images are kept
+- Velocity is used only when this frame's TAA pass samples the velocity target's address (gameplay frames without
+  velocity draws too, U1; not menus, whose TAA samples none): else camera motion only. Depth: the velocity pass's,
+  else the TAA draws' depth buffer, else the last G-buffer pass's (3+ colour targets). Images are kept
   by id and `image_uid` (`TryGetImage`), so a freed slot is never used.
 - The pass is recorded before the TAA pass binds its resources: `EndRendering`, then `runtime.Transit` of velocity
   and depth to General (tracked, so TAA's own binding moves them back).
@@ -52,7 +53,17 @@ where the vectors are right). F10 cycles 1-4 and 0.
 
 ## Evidence
 
-- Builds (clang 23, PC). Not run.
+- Run `u2-motion` (PC, 2026-11-08, build `357ef5d`, 1.0 game, render scale 80, `data/u2-motion.log`, the user's
+  screenshots): the pass ran every gameplay frame (126,000 passes). Mode 2 panning (camera orbiting Dan), measured
+  in the screenshot: Dan (game velocity) 0.3 / -0.3 px; camera pixels -24.8 px far top left to +8.8 near bottom
+  right, smooth; tombstones (game velocity) +9.8 vs +5.3 / +6.3 beside them and -6.3 vs -12.8 / -18.3 behind: same
+  signs, sizes by depth. Still camera: background exactly 0, only actors, the sword (gradient) and breakables
+  marked. The user: "I believe we're looking at the right data". Mode 4 screenshot (camera still): black but for
+  torch flares and tree edges.
+- Found in that run: the drawn colours came out red / blue swapped (the presenter views the RGBA display buffer as
+  BGRA, `GetFrameViewFormat`); menus and the title have no velocity pass, so the pass was skipped there. Fix built
+  (this card's second commit): `swap_red_blue`, and a camera-only pass when TAA does not sample the velocity target
+  (scene depth from the G-buffer pass). Not run.
 
 ## History and pitfalls
 
