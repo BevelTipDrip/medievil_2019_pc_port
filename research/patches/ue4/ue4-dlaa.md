@@ -8,11 +8,11 @@ default_windows: off
 default_deck: n/a
 origin: ours
 class: M
-commits: 7b74b91
+commits: 7b74b91, ef9d584
 files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shim/gow3_overlay.cpp
-symbols: Ue4Dlss, OnColorTarget, OnTaaDraw, Running, GetPass, depth_inverted, ue4_dlss, target_rgba16f
+symbols: Ue4Dlss, CameraJumpPixels, OnColorTarget, OnTaaDraw, Running, GetPass, depth_inverted, ue4_dlss, target_rgba16f
 switches: GOW3_UE4_DLSS
-tests:
+tests: u3-dlaa
 docs: plan-ue4-motion-vectors.md#u3-design-dlaa-at-render-scale-100, plan-dlss.md#d0-2026-11-08-bridge-built-support-checked-offline
 depends_on: ue4-motion-vectors
 related: ue4-frame-map
@@ -28,8 +28,8 @@ draw (`fs e88c8fcbe08ea0b6`) DLSS runs as DLAA (quality 0, input = output = the 
 - jitter: View `TemporalAAJitter.xy` as pixels (`x * W / 2`, `-y * H / 2`); HDR with auto exposure; sharpness 0.
 
 Its output (an RGBA16F image of the port) is copied into TAA's colour target, and both TAA draws are skipped. Resets:
-the first frame after UE4's TAA ran, a View frame number that is not the last + 1, a ClipToPrevClip element more than
-1.0 from identity, a new feature. F9 switches DLAA and UE4's TAA live. RCAS is off while DLAA ran in the last 100 ms
+the first frame after UE4's TAA ran, a View frame number that is not the last + 1, a camera jump (a screen point at
+infinity or at 10 m moved by more than a quarter of the view width through ClipToPrevClip), a new feature. F9 switches DLAA and UE4's TAA live. RCAS is off while DLAA ran in the last 100 ms
 (the user's decision). Under TAAU (the compute TAA) and without the DLLs nothing changes.
 
 ## Invariants
@@ -52,7 +52,15 @@ the first frame after UE4's TAA ran, a View frame number that is not the last + 
 
 ## Evidence
 
-- Builds (clang 23, PC). Not run.
+- Run `u3-dlaa` (PC, 2026-11-08, build `3c7f562`, 1.0 game, render scale 100, development `nvngx_dlss.dll`,
+  `data/u3-dlaa.log`): DLAA features 3840x2160 and 3812x2160 (cutscene) created, ~45,000 DLAA frames, F9 switched
+  DLAA / UE4 TAA live (the user: it works). The four jitter settings (Ctrl+Alt+F9) looked the same at native, as in
+  MGS2, where the sign was settled only when upscaling (+x +y, as passed here).
+- Found in that run: **2,617 resets**, nearly all "camera jump" at 1.01-1.11 (the rule: a ClipToPrevClip element
+  1.0 from identity): ordinary movement crossed it, so DLSS lost its history about every fifth frame while moving.
+  Fix built (this card's second commit): reset when five screen points, at infinity and at 10 m, move more than a
+  quarter of the view width in one frame. Also Ctrl+Alt+F9 switched DLAA off (our F9 ignored modifiers): F9, F10
+  and F12 now only without Ctrl / Alt. Not run.
 
 ## History and pitfalls
 

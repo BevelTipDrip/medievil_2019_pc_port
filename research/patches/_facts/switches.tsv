@@ -60,11 +60,11 @@ GOW3_FLIP_TRACE	ours	gpu/shim/gow3_flip_trace.h:24
 GOW3_FORCE_ANISO	ours	gpu/shadps4/video_core/texture_cache/sampler.cpp:20
 GOW3_FPS_CAP	upstream	gpu/shim/core/emulator_settings.h:52
 GOW3_FPS_LIMIT	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1478 gpu/shim/core/emulator_settings.h:46
-GOW3_FPS_LOG	upstream	gpu/shim/gow3_overlay.cpp:1535 src/runtime_extra.c:746
+GOW3_FPS_LOG	upstream	gpu/shim/gow3_overlay.cpp:1540 src/runtime_extra.c:746
 GOW3_FRAMES_AHEAD	upstream	gpu/shim/gow3_settings.cpp:357 tests/test_graphics_settings.cpp:104 tests/test_graphics_settings.cpp:113
 GOW3_FRAME_CAPTURE_KEY	upstream	gpu/shim/gow3_overlay.cpp:1342
 GOW3_FRAME_DUMP_COUNT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:501
-GOW3_FRAME_DUMP_TRIGGER	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:497 gpu/shim/gow3_overlay.cpp:1366
+GOW3_FRAME_DUMP_TRIGGER	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:497 gpu/shim/gow3_overlay.cpp:1371
 GOW3_FRAME_STATS	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:400 gpu/shadps4/video_core/renderer_vulkan/vk_draw_prep.cpp:506 gpu/shadps4/video_core/renderer_vulkan/vk_occlusion.cpp:258 gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:495 gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:991 gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:1888 gpu/shadps4/video_core/texture_cache/texture_cache.cpp:2532 gpu/shim/gow3_toggles.h:310 src/runtime_memory.c:2200
 GOW3_FSR1	upstream	gpu/shim/gow3_settings.cpp:356
 GOW3_FSR411_DIR	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_fsr4.cpp:240 gpu/tools/fsr4_bench.cpp:497
@@ -240,7 +240,7 @@ GOW3_TINY_TARGET_READBACK	ours	gpu/shadps4/video_core/texture_cache/texture_cach
 GOW3_TOGGLE_FILE	upstream	src/runtime_memory.c:1763
 GOW3_TRACE_SEMA	upstream	src/runtime_sema.c:75
 GOW3_TRACKER_MERGE_GAP	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_barrier_tracker.cpp:36
-GOW3_UE4_DLSS	ours	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.cpp:53
+GOW3_UE4_DLSS	ours	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.cpp:83
 GOW3_UE4_FRAME_MAP	ours	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.cpp:63
 GOW3_UE4_MOTION_VIEW	ours	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp:101
 GOW3_UE4_SETRES	upstream	src/runtime_extra.c:835
