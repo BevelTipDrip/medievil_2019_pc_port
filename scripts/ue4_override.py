@@ -254,6 +254,24 @@ def debug_menu_config(game, enabled):
     return text.replace('\n', '\r\n').encode('utf-8')
 
 
+# 01.02 binds R3 to the camera's "RecenterCamera" action (BP_InputDelegateActor and the camera
+# areas listen for it); the action binding takes the button, and the debug menu (R3, opened in
+# native code) never opens on 01.02 (plan-0102.md). With the debug menu on, the override pak carries
+# the build's own DefaultInput.ini without that mapping: R3 opens the debug menu again and no longer
+# recenters the camera. 01.00 has no such line: nothing is written.
+INPUT_CONFIG = 'OVERBITE/Config/DefaultInput.ini'
+
+
+def debug_menu_input(game):
+    """DefaultInput.ini without the R3 RecenterCamera mapping, or None when the build has none."""
+    text = read_file(game, INPUT_CONFIG).decode('utf-8-sig').replace('\r\n', '\n')
+    lines = text.split('\n')
+    kept = [l for l in lines if not ('ActionName="RecenterCamera"' in l and 'Key=Gamepad_RightThumbstick' in l)]
+    if len(kept) == len(lines):
+        return None
+    return '\n'.join(kept).replace('\n', '\r\n').encode('utf-8')
+
+
 # The debug menu's widget Blueprint: when it is created it calls SetFrameRateLimit(60) and
 # ApplySettings ("Set FPS Max to 30" off), which capped the game at 60 FPS again; 0 is no limit.
 # Its "Cinematic Mode (1440p)" button (r.SetRes) becomes 4K and a profiling toggle 1440p. Same-length edits only (the Blueprint
@@ -537,6 +555,9 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
         try:
             files[GAME_CONFIG] = debug_menu_config(game, True)
             files[DEBUG_HUD] = debug_hud(game, output, scale > 100)
+            if (inputs := debug_menu_input(game)) is not None:
+                files[INPUT_CONFIG] = inputs
+                print('Debug menu: R3 taken from the camera recenter action (01.02) for the debug menu', flush=True)
         except (ValueError, FileNotFoundError) as error:
             print(f'Debug menu: not available for this game build ({error})', flush=True)
             debug_menu = False
