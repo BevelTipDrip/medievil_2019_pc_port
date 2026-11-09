@@ -1588,7 +1588,11 @@ void Rasterizer::DispatchRecord(const ComputePipeline* pipeline) {
         return;
     }
     if (frame_map || ue4_motion) [[unlikely]] {
-        ObserveFrameMap(pipeline);
+        if (ObserveFrameMap(pipeline)) {
+            // gow3 U4: DLSS wrote the TAAU dispatch's output; the dispatch is not recorded.
+            ResetBindings(true);
+            return;
+        }
     }
 
     if (!BindResources(pipeline)) {
@@ -4670,6 +4674,9 @@ bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
             pass.depth = regs.depth_buffer.DepthAddress();
         }
     }
+    // U4: the first storage image a dispatch writes (the TAAU dispatch's output), to find its
+    // image only when DLSS will replace the dispatch.
+    std::optional<VideoCore::TextureCache::ImageDesc> written_desc;
     for (const auto* stage : pipeline->GetStages()) {
         if (!stage) {
             continue;
@@ -4692,6 +4699,9 @@ bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
                 continue;
             }
             if (desc.is_written) {
+                if (pass.compute && !written_desc && ue4_dlss && Ue4Dlss::On()) {
+                    written_desc.emplace(tsharp, desc);
+                }
                 if (pass.num_writes < pass.writes.size()) {
                     pass.writes[pass.num_writes++] = {tsharp.Address(), u32(tsharp.width) + 1,
                                                       u32(tsharp.height) + 1};
@@ -4743,6 +4753,14 @@ bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
                    (pass.compute && pass.hash == Ue4FrameMap::TaaCompute)) {
             ue4_motion->OnTaa(pass.view, std::span(pass.reads.data(), pass.num_reads),
                               pass.compute ? VideoCore::ImageId{} : db_desc.first);
+            if (ue4_dlss && pass.compute && written_desc && pass.num_writes) {
+                const VideoCore::ImageId output_id = texture_cache.FindImage(*written_desc);
+                skip = ue4_dlss->OnTaauDispatch(
+                    pass.view, std::span(pass.reads.data(), pass.num_reads), output_id,
+                    pass.writes[0].address, pass.writes[0].width, pass.writes[0].height, [&] {
+                        texture_cache.FindTexture(output_id, *written_desc);
+                    });
+            }
             if (ue4_dlss && !pass.compute) {
                 const auto& [output_id, output_desc] = cb_descs[0];
                 skip = ue4_dlss->OnTaaDraw(pass.view, std::span(pass.reads.data(), pass.num_reads),

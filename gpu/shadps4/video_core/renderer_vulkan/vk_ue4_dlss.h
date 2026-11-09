@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-// gow3 U3 (plan-ue4-motion-vectors.md, "U3 design"): DLAA in place of UE4's TAA at render scale
-// 100. At the first of the two native TAA draws, DLSS (DLAA quality, linear HDR with auto
-// exposure, reversed depth) runs on TAA's colour input, the scene depth and U2's motion vectors
-// with the game's jitter; its result is copied into TAA's colour target and both TAA draws are
-// skipped. Under TAAU (the compute TAA) nothing changes. GOW3_UE4_DLSS=1, off by default; F9
-// switches between DLAA and UE4's TAA live. Needs gow3_dlss.dll and nvngx_dlss.dll (Dlss::Get).
+// gow3 U3 / U4 (plan-ue4-motion-vectors.md, "U3 design", "U4 design"): DLSS in place of UE4's TAA.
+// At render scale 100 (U3), at the first of the two native TAA draws, DLSS as DLAA; below it (U4)
+// at the TAAU compute dispatch, DLSS upscaling (quality from the output / render ratio). Linear
+// HDR with auto exposure, reversed depth, on TAA's colour input, the scene depth and U2's motion
+// vectors with the game's jitter; the result goes into TAA's output and UE4's TAA is skipped.
+// GOW3_UE4_DLSS=1, off by default; F9 switches between DLSS and UE4's TAA live. Needs
+// gow3_dlss.dll and nvngx_dlss.dll (Dlss::Get).
 
 #pragma once
 
@@ -51,6 +52,16 @@ public:
     /// draw would have): called before DLSS writes it.
     bool OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore::ImageId output,
                    VAddr output_address, const std::function<void()>& mark_written);
+    /// The TAAU compute dispatch (U4), writing `output` (`output_width` x `output_height` from its
+    /// T#). True: DLSS upscaled into it, so the dispatch must be skipped. `mark_written` gives it
+    /// a storage write's texture cache bookkeeping.
+    bool OnTaauDispatch(const u8* view, std::span<const VAddr> reads, VideoCore::ImageId output,
+                        VAddr output_address, u32 output_width, u32 output_height,
+                        const std::function<void()>& mark_written);
+    /// Enabled and switched on (F9): worth looking up the TAAU output image.
+    static bool On() {
+        return Enabled() && on.load(std::memory_order_relaxed);
+    }
 
 private:
     struct Target {
@@ -59,6 +70,10 @@ private:
         VAddr address = 0;
     };
     bool Fail(const char* why);
+    /// Both hooks: `output_width` 0 = native (DLAA into the draws' colour target).
+    bool Run(const u8* view, std::span<const VAddr> reads, VideoCore::ImageId output_id,
+             VAddr output_address, u32 output_width, u32 output_height,
+             const std::function<void()>& mark_written);
 
     const Instance& instance;
     Scheduler& scheduler;
@@ -72,7 +87,7 @@ private:
     bool was_on = false; ///< DLSS ran in the last frame with TAA draws: else the next one resets
     VideoCore::UniqueImage output;
     vk::UniqueImageView output_view;
-    u32 output_width = 0, output_height = 0;
+    u32 own_width = 0, own_height = 0;
     std::chrono::steady_clock::time_point last_time{};
     u64 evaluations = 0, resets = 0;
     static std::atomic<bool> on;

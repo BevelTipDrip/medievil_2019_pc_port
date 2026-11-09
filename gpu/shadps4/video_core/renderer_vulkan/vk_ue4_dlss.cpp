@@ -124,6 +124,22 @@ void Ue4Dlss::OnColorTarget(VideoCore::ImageId id, VAddr address) {
 
 bool Ue4Dlss::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore::ImageId output_id,
                         VAddr output_address, const std::function<void()>& mark_written) {
+    return Run(view, reads, output_id, output_address, 0, 0, mark_written);
+}
+
+bool Ue4Dlss::OnTaauDispatch(const u8* view, std::span<const VAddr> reads,
+                             VideoCore::ImageId output_id, VAddr output_address, u32 output_width,
+                             u32 output_height, const std::function<void()>& mark_written) {
+    if (output_width == 0 || output_height == 0) {
+        return Fail("TAAU output size unknown");
+    }
+    return Run(view, reads, output_id, output_address, output_width, output_height, mark_written);
+}
+
+bool Ue4Dlss::Run(const u8* view, std::span<const VAddr> reads, VideoCore::ImageId output_id,
+                  VAddr output_address, u32 output_width, u32 output_height,
+                  const std::function<void()>& mark_written) {
+    const bool upscale = output_width != 0;
     if (!view) {
         return Fail("no View buffer");
     }
@@ -154,22 +170,42 @@ bool Ue4Dlss::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore:
         color_image->info.pixel_format != vk::Format::eR16G16B16A16Sfloat) {
         return Fail("TAA's colour input not found");
     }
-    auto* output_image = texture_cache.TryGetImage(output_id, 0);
-    if (!output_image || output_image->info.pixel_format != vk::Format::eR16G16B16A16Sfloat) {
+    auto* output_image = output_id ? texture_cache.TryGetImage(output_id, 0) : nullptr;
+    if (!output_image) {
+        return Fail("TAA's output not found");
+    }
+    // Native: TAA's RGBA16F colour target, copied into. TAAU: the dispatch's storage image; an
+    // other format is blitted into (converted).
+    const vk::Format output_format = output_image->info.pixel_format;
+    const bool same_format = output_format == vk::Format::eR16G16B16A16Sfloat;
+    if (!upscale && !same_format) {
         return Fail("TAA's output not RGBA16F");
+    }
+    static vk::Format reported_format = vk::Format::eUndefined;
+    if (upscale && output_format != reported_format) {
+        reported_format = output_format;
+        std::printf("UE4 DLSS: TAAU output %s %ux%u\n", vk::to_string(output_format).c_str(),
+                    output_image->info.size.width, output_image->info.size.height);
     }
     auto* depth_image = pass.depth;
     // The rendered rectangle, from (0, 0); every input holds it.
     const std::array<float, 2> view_size{Load<float>(view, OffsetViewSize),
                                          Load<float>(view, OffsetViewSize + 4)};
-    const u32 width = std::min({u32(view_size[0]), color_image->info.size.width,
-                                depth_image->info.size.width, pass.width,
-                                output_image->info.size.width});
-    const u32 height = std::min({u32(view_size[1]), color_image->info.size.height,
-                                 depth_image->info.size.height, pass.height,
-                                 output_image->info.size.height});
-    if (width < 64 || height < 64) {
-        return Fail("view too small");
+    u32 width = std::min({u32(view_size[0]), color_image->info.size.width,
+                          depth_image->info.size.width, pass.width});
+    u32 height = std::min({u32(view_size[1]), color_image->info.size.height,
+                           depth_image->info.size.height, pass.height});
+    // DLSS's output rectangle, from (0, 0): native, the input's; TAAU, the dispatch's T# size.
+    u32 out_width = upscale ? std::min(output_width, output_image->info.size.width)
+                            : std::min(width, output_image->info.size.width);
+    u32 out_height = upscale ? std::min(output_height, output_image->info.size.height)
+                             : std::min(height, output_image->info.size.height);
+    if (!upscale) {
+        width = out_width;
+        height = out_height;
+    }
+    if (width < 64 || height < 64 || out_width < width || out_height < height) {
+        return Fail("view too small or output smaller than the input");
     }
 
     // Reset: the first frame after UE4's TAA ran, or a View frame number that is not the next
@@ -182,7 +218,7 @@ bool Ue4Dlss::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore:
                                                                 : nullptr;
 
     const auto device = instance.GetDevice();
-    if (!output.image || output_width != width || output_height != height) {
+    if (!output.image || own_width != out_width || own_height != out_height) {
         if (output.image) {
             struct Old {
                 VideoCore::UniqueImage image;
@@ -195,7 +231,7 @@ bool Ue4Dlss::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore:
         output.Create({
             .imageType = vk::ImageType::e2D,
             .format = vk::Format::eR16G16B16A16Sfloat,
-            .extent = {width, height, 1},
+            .extent = {out_width, out_height, 1},
             .mipLevels = 1,
             .arrayLayers = 1,
             .samples = vk::SampleCountFlagBits::e1,
@@ -209,8 +245,8 @@ bool Ue4Dlss::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore:
             .format = vk::Format::eR16G16B16A16Sfloat,
             .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
         }));
-        output_width = width;
-        output_height = height;
+        own_width = out_width;
+        own_height = out_height;
     }
 
     scheduler.EndRendering();
@@ -244,7 +280,8 @@ bool Ue4Dlss::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore:
     });
 
     const vk::Image output_handle = vk::Image(output);
-    const Dlss::FeatureDesc desc{width, height, width, height, 0 /* DLAA */, true, true};
+    const int quality = upscale ? Dlss::QualityForScale(float(out_width) / float(width)) : 0;
+    const Dlss::FeatureDesc desc{width, height, out_width, out_height, quality, true, true};
     if (!dlss->HasFeature(desc)) {
         // Rare (the first frame, a size change): directly, once the recording thread has run
         // everything recorded (CommandBuffer) and the GPU is done with the old feature.
@@ -252,7 +289,9 @@ bool Ue4Dlss::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore:
         scheduler.WaitSubmitted();
         dlss->ReleaseFeature();
         const bool created = dlss->CreateFeature(cmdbuf, desc);
-        std::printf("UE4 DLSS: DLAA feature %ux%u%s\n", width, height, created ? "" : " failed");
+        std::printf("UE4 DLSS: feature %ux%u -> %ux%u, quality %d (%s)%s\n", width, height,
+                    out_width, out_height, quality, upscale ? "TAAU" : "DLAA",
+                    created ? "" : " failed");
         if (!created) {
             on.store(false, std::memory_order_relaxed);
             return Fail("DLSS feature creation failed");
@@ -277,7 +316,7 @@ bool Ue4Dlss::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore:
         .motion = {pass.image, pass.view, vk::Format::eR16G16B16A16Sfloat,
                    vk::ImageAspectFlagBits::eColor, width, height},
         .output = {output_handle, *output_view, vk::Format::eR16G16B16A16Sfloat,
-                   vk::ImageAspectFlagBits::eColor, width, height},
+                   vk::ImageAspectFlagBits::eColor, out_width, out_height},
         .jitter_x = jitter_x,
         .jitter_y = jitter_y,
         .reset = reset_reason != nullptr,
@@ -289,8 +328,8 @@ bool Ue4Dlss::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore:
     // In order with the frame's other commands, on the recording thread: no CommandBuffer() here,
     // which made the GPU thread wait for that thread to catch up once a frame (U3 runs 1-3; the
     // user saw a small saw-tooth in the frame times once). NGX only records into `cmdbuf`.
-    scheduler.Record([dlss, frame, output_handle, taa_output, motion_image, width,
-                      height](vk::CommandBuffer cmdbuf) {
+    scheduler.Record([dlss, frame, output_handle, taa_output, motion_image, out_width, out_height,
+                      same_format](vk::CommandBuffer cmdbuf) {
         const std::array<vk::ImageMemoryBarrier2, 2> before{{
             {
                 // U2's motion pass wrote the vectors.
@@ -337,13 +376,26 @@ bool Ue4Dlss::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore:
             .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
         };
         cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &to_copy});
-        const vk::ImageCopy region{
-            .srcSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
-            .dstSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
-            .extent = {width, height, 1},
-        };
-        cmdbuf.copyImage(output_handle, vk::ImageLayout::eTransferSrcOptimal, taa_output,
-                         vk::ImageLayout::eTransferDstOptimal, region);
+        if (same_format) {
+            const vk::ImageCopy region{
+                .srcSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
+                .dstSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
+                .extent = {out_width, out_height, 1},
+            };
+            cmdbuf.copyImage(output_handle, vk::ImageLayout::eTransferSrcOptimal, taa_output,
+                             vk::ImageLayout::eTransferDstOptimal, region);
+        } else {
+            const std::array<vk::Offset3D, 2> rect{
+                vk::Offset3D{0, 0, 0}, vk::Offset3D{s32(out_width), s32(out_height), 1}};
+            const vk::ImageBlit region{
+                .srcSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
+                .srcOffsets = rect,
+                .dstSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
+                .dstOffsets = rect,
+            };
+            cmdbuf.blitImage(output_handle, vk::ImageLayout::eTransferSrcOptimal, taa_output,
+                             vk::ImageLayout::eTransferDstOptimal, region, vk::Filter::eNearest);
+        }
     });
 
     if (reset_reason) {
@@ -354,9 +406,10 @@ bool Ue4Dlss::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore:
         }
     }
     if (++evaluations == 1 || evaluations % 3000 == 0) {
-        std::printf("UE4 DLSS: %llu DLAA frames, %llu resets, %ux%u, jitter %.3f %.3f px\n",
+        std::printf("UE4 DLSS: %llu frames, %llu resets, %ux%u -> %ux%u, jitter %.3f %.3f px\n",
                     static_cast<unsigned long long>(evaluations),
-                    static_cast<unsigned long long>(resets), width, height, jitter_x, jitter_y);
+                    static_cast<unsigned long long>(resets), width, height, out_width, out_height,
+                    jitter_x, jitter_y);
     }
     have_frame = true;
     last_frame = frame_number;
