@@ -430,6 +430,10 @@ target_compile_options(readback-queue-test PRIVATE -UNDEBUG -Wall -Wextra -Werro
 add_executable(wait-diagnostics-test EXCLUDE_FROM_ALL ../tests/test_wait_diagnostics.cpp)
 target_include_directories(wait-diagnostics-test PRIVATE shadps4)
 target_compile_options(wait-diagnostics-test PRIVATE -UNDEBUG)
+add_executable(ue4-frame-map-test EXCLUDE_FROM_ALL ../tests/test_ue4_frame_map.cpp
+    shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.cpp)
+target_include_directories(ue4-frame-map-test PRIVATE shadps4)
+target_compile_options(ue4-frame-map-test PRIVATE -UNDEBUG)
 add_executable(graphics-settings-test EXCLUDE_FROM_ALL ../tests/test_graphics_settings.cpp
     shim/gow3_settings.cpp)
 target_include_directories(graphics-settings-test PRIVATE shim)

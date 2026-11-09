@@ -61,6 +61,22 @@ Read [upscaler-reference.md](upscaler-reference.md) before changing anything her
 - TAAU (render scale below 100): **no capture yet**; from the shader cache, most likely one compute dispatch
   `cs 0xb373f39908ae979f` with the responsive split inside the shader (inferred). A TAAU capture (one launch) settles it.
 
+## U1: run-time frame map, log only
+
+Built 2026-11-08 (card [ue4-frame-map](../patches/tooling/ue4-frame-map.md)), not run. `GOW3_UE4_FRAME_MAP=1`
+(off by default) logs `UE4 frame map:` lines: the frame's velocity pass, TAA (draws or the TAAU compute dispatch),
+the View buffer at TAA, the display buffer's draws (tonemap, first UI), and every shader that samples the velocity
+target. Nothing in the frame changes.
+
+What a run should show (the M1 / U1 check):
+
+| Run | Expected | Answers |
+|---|---|---|
+| Native (render scale 100), gameplay | every frame: velocity, TAA draws x2, View 3840x2160, tonemap, UI; jitter values 8 | the hook of U3 holds at run time, not only in two captures |
+| Render scale 80 (TAAU), gameplay | TAA compute `cs b373f39908ae979f`, its groups and output size; View size below the output; mip bias below 0; jitter values (more than 8?) | study-taau-frame-map.md open question 1 without a capture |
+| Menus, pause, a movie, a load | which roles stay; camera cuts | open question 4 |
+| Low quality at 100 | draws or compute | open question 3 |
+
 ## Risks
 
 - PS4 UE4 build may differ (velocity format, compute TAA, View UB layout). M0 decides.

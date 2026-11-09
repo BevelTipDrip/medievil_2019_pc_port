@@ -65,6 +65,9 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
     camera_motion->SetObjectMotion(object_motion.get());
     upscaler = std::make_unique<TemporalUpscaler>(instance, scheduler, texture_cache, runtime,
                                                   *camera_motion, *scene_targets);
+    if (Ue4FrameMap::Enabled()) {
+        frame_map = std::make_unique<Ue4FrameMap>();
+    }
     if (!EmulatorSettings.IsNullGPU()) {
         liverpool->BindRasterizer(this);
     }
@@ -1210,6 +1213,9 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
                          cb_descs[0].first, db_desc.first,
                          UiComposition::NativeViewport(viewport.xscale * 2, viewport.yscale * 2));
     }
+    if (frame_map) [[unlikely]] {
+        ObserveFrameMap(pipeline);
+    }
     const PreparedDraw* draw_prepared = bind_prepared;
     // gow3: vertex and index buffers are resolved while the helper binds textures (their
     // commands are recorded after BeginRendering, as before).
@@ -1443,6 +1449,9 @@ void Rasterizer::DrawIndirectRecord(const GraphicsPipeline* pipeline, bool is_in
                          cb_descs[0].first, db_desc.first,
                          UiComposition::NativeViewport(viewport.xscale * 2, viewport.yscale * 2));
     }
+    if (frame_map) [[unlikely]] {
+        ObserveFrameMap(pipeline);
+    }
     if (!BindResources(pipeline)) {
         return;
     }
@@ -1565,6 +1574,9 @@ void Rasterizer::DispatchRecord(const ComputePipeline* pipeline) {
     }
     if (ExecuteShaderHLE(cs, Regs(), cs_program, *this)) {
         return;
+    }
+    if (frame_map) [[unlikely]] {
+        ObserveFrameMap(pipeline);
     }
 
     if (!BindResources(pipeline)) {
@@ -4622,6 +4634,84 @@ void Rasterizer::NoteFrameStart() {
         std::printf("\n");
         lag_histogram = {};
     }
+}
+
+void Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
+    Ue4FrameMap::Pass pass;
+    const auto& regs = Regs();
+    pass.compute = pipeline->IsCompute();
+    if (pass.compute) {
+        const auto& cs = CsRegs();
+        pass.stage = "cs";
+        pass.groups = {cs.dim_x, cs.dim_y, cs.dim_z};
+    } else {
+        const auto& key = static_cast<const GraphicsPipeline*>(pipeline)->GetGraphicsKey();
+        pass.targets = std::popcount(key.mrt_mask);
+        if ((key.mrt_mask & 1) && cb_descs[0].first) {
+            const auto& info = cb_descs[0].second.info;
+            pass.target = {regs.color_buffers[0].Address(), info.size.width, info.size.height};
+            pass.target_rg16 = info.pixel_format == vk::Format::eR16G16Unorm;
+            pass.display = FrameCapture::IsDisplayBuffer(pass.target.address);
+        }
+        if (db_desc.first) {
+            pass.depth = regs.depth_buffer.DepthAddress();
+        }
+    }
+    for (const auto* stage : pipeline->GetStages()) {
+        if (!stage) {
+            continue;
+        }
+        if (stage->sw_stage == Shader::SwStage::Fragment ||
+            stage->sw_stage == Shader::SwStage::Compute) {
+            pass.hash = stage->pgm_hash;
+        } else if (stage->sw_stage == Shader::SwStage::Vertex && !pass.hash) {
+            pass.stage = "vs";
+            pass.hash = stage->pgm_hash;
+        }
+        if (stage->sw_stage == Shader::SwStage::Fragment) {
+            pass.stage = "fs";
+        }
+        const PreparedStage* prepared = FindPreparedStage(*stage);
+        for (u32 i = 0; i < stage->images.size(); ++i) {
+            const auto& desc = stage->images[i];
+            const auto tsharp = prepared ? prepared->image_sharps[i] : desc.GetSharp(*stage);
+            if (tsharp.Address() == 0) {
+                continue;
+            }
+            if (desc.is_written) {
+                if (pass.num_writes < pass.writes.size()) {
+                    pass.writes[pass.num_writes++] = {tsharp.Address(), u32(tsharp.width) + 1,
+                                                      u32(tsharp.height) + 1};
+                }
+            } else if (pass.num_reads < pass.reads.size()) {
+                pass.reads[pass.num_reads++] = tsharp.Address();
+            }
+        }
+        for (u32 i = 0; i < stage->buffers.size(); ++i) {
+            const auto& desc = stage->buffers[i];
+            if (desc.IsSpecial()) {
+                continue;
+            }
+            VAddr address;
+            u32 size;
+            if (const RingBinding* ring = FindRingBinding(*stage, i)) {
+                address = ring->address;
+                size = ring->size;
+            } else {
+                const auto vsharp = prepared ? prepared->buffer_sharps[i] : desc.GetSharp(*stage);
+                address = vsharp.base_address;
+                size = vsharp.GetSize();
+            }
+            if (pass.num_buffers < pass.buffer_sizes.size()) {
+                pass.buffer_sizes[pass.num_buffers++] = size;
+            }
+            if (size == Ue4FrameMap::ViewBytes && !pass.view && address &&
+                memory->IsValidGpuMapping(address, size)) {
+                pass.view = reinterpret_cast<const u8*>(address);
+            }
+        }
+    }
+    frame_map->OnPass(pass);
 }
 
 } // namespace Vulkan
