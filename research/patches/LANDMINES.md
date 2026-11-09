@@ -62,7 +62,14 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
    if it is above 0, an A/B with the switch on, judged on lows and hitches.
    **Found on Windows 2026-11-09** (the user, Start-menu build `7c4a5cf`, 01.02): purple reflections in the Hall of
    Heroes and the Hilltop Mausoleum's wrong lighting, both on the PC; no setting changed it (DLSS, Reflections,
-   quality level). **Fix built: on by default since then** (`GOW3_POOL_ZERO_FOREIGN=0` turns it off). Not run.
+   quality level). **Fix built: on by default since then** (`GOW3_POOL_ZERO_FOREIGN=0` turns it off).
+   Runs `pool-zero-0102` (~16 level loads, Mausoleum correct) and `hall-heroes-0102` (new game to the Hall of Heroes,
+   no glitch): **0 pages zeroed or handed over in both**, so the leak path did not run there; neither is evidence for
+   or against the fix. Both were `run-game.ps1` runs **without the launcher's 8 Deck switches**, which every
+   Start-menu session on the PC runs ("Windows: untested": early_frame_eop, decode_pacing, drain_hybrid, texset_wide,
+   region_index, pending_filter, reg_hash_paired, particle_flip_guard); the glitch was seen only in such a session,
+   after many hours on earlier builds without it. Non-deterministic. The user (2026-11-09): keep the launcher as it
+   was (switches on) with the zeroing fix on, play on and report a recurrence.
 10. **Linux crash window in `CopySparseSerial`** ([copy-thread-backing-view](deck/copy-thread-backing-view.md)): if
     `runtime_memory_read_backing` returns 0 after a lock-free lookup said "mapped", the code memcpys from a PROT_NONE
     guest address: the native run 7 SIGSEGV. The Linux branch should zero-fill or retry.
