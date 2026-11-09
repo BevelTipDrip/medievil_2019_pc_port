@@ -247,10 +247,10 @@ plan-baseline-issues.md	270	3	t-race-result-2026-10-18-0401-0410-launched-by-cla
 plan-baseline-issues.md	278	3	root-cause-found-2026-10-18-read-only-trace--checked-by-hand	Root cause found (2026-10-18, read-only trace + checked by hand)
 plan-baseline-issues.md	316	2	c1-next-catch-it-when-it-happens	C1 next: catch it when it happens
 plan-baseline-issues.md	340	2	s1-silent-exit-with-code-5-at-startup-2026-10-18-1253-once	S1. Silent exit with code 5 at startup (2026-10-18 12:53, once)
-plan-baseline-issues.md	381	2	v2-fire--torches-broken-more-box-shadows-the-user-2026-10-18-run-perfdiag-heavy	V2. Fire / torches broken, more box shadows (the user, 2026-10-18, run `perfdiag-heavy`)
-plan-baseline-issues.md	394	2	v1-shadows-sometimes-drawn-as-a-big-box-the-user-2026-10-18	V1. Shadows sometimes drawn as a big box (the user, 2026-10-18)
-plan-baseline-issues.md	431	2	v3-effects-wrong-blending-misplaced-missing-at-an-angle-the-user-2026-10-31-play-session-on-3cea271	V3. Effects: wrong blending, misplaced, missing at an angle (the user, 2026-10-31, play session on `3cea271`)
-plan-baseline-issues.md	458	2	tests-one-change-per-launch-the-users-go-each-time	Tests (one change per launch, the user's go each time)
+plan-baseline-issues.md	386	2	v2-fire--torches-broken-more-box-shadows-the-user-2026-10-18-run-perfdiag-heavy	V2. Fire / torches broken, more box shadows (the user, 2026-10-18, run `perfdiag-heavy`)
+plan-baseline-issues.md	399	2	v1-shadows-sometimes-drawn-as-a-big-box-the-user-2026-10-18	V1. Shadows sometimes drawn as a big box (the user, 2026-10-18)
+plan-baseline-issues.md	436	2	v3-effects-wrong-blending-misplaced-missing-at-an-angle-the-user-2026-10-31-play-session-on-3cea271	V3. Effects: wrong blending, misplaced, missing at an angle (the user, 2026-10-31, play session on `3cea271`)
+plan-baseline-issues.md	463	2	tests-one-change-per-launch-the-users-go-each-time	Tests (one change per launch, the user's go each time)
 plan-dlss.md	1	1	plan-dlss-sr-on-correct-inputs-then-dlss-frame-generation-ngx-vulkan	Plan: DLSS SR on correct inputs, then DLSS frame generation (NGX Vulkan)
 plan-dlss.md	6	2	what-is-known-today-read-2026-10-18	What is known today (read, 2026-10-18)
 plan-dlss.md	20	2	design	Design
@@ -529,8 +529,8 @@ plan-ue4-motion-vectors.md	80	3	u1-run-2026-11-08-pc-datau1-frame-maplog	U1 run 
 plan-ue4-motion-vectors.md	113	2	u2-motion-vectors-and-their-debug-view	U2: motion vectors and their debug view
 plan-ue4-motion-vectors.md	129	2	u3-design-dlaa-at-render-scale-100	U3 design: DLAA at render scale 100
 plan-ue4-motion-vectors.md	166	2	u4-design-dlss-below-native-at-the-taau-compute-pass	U4 design: DLSS below native, at the TAAU compute pass
-plan-ue4-motion-vectors.md	189	2	camera-cuts-the-games-own-signal-run-cut-evidence-2026-11-08	Camera cuts: the game's own signal (run `cut-evidence`, 2026-11-08)
-plan-ue4-motion-vectors.md	209	2	risks	Risks
+plan-ue4-motion-vectors.md	191	2	camera-cuts-the-games-own-signal-run-cut-evidence-2026-11-08	Camera cuts: the game's own signal (run `cut-evidence`, 2026-11-08)
+plan-ue4-motion-vectors.md	211	2	risks	Risks
 plan-upstream-merge.md	1	1	plan-merge-upstream-133-135-into-lab-then-the-next-work-items	Plan: merge upstream 1.3.3-1.3.5 into `lab`, then the next work items
 plan-upstream-merge.md	10	2	1-where-upstream-and-lab-overlap	1. Where upstream and `lab` overlap
 plan-upstream-merge.md	25	2	2-the-five-conflicts-and-how-to-resolve-them	2. The five conflicts and how to resolve them

@@ -11,9 +11,9 @@ Run 2	plan-baseline-issues.md	134	run-2-2026-10-18-0222-0226-the-user-crash-whil
 Run 3	plan-baseline-issues.md	163	run-3-2026-10-18-0236-0242-the-user-from-the-launcher	Run 3 (2026-10-18 ~02:36-02:42, the user, from the launcher)
 T-race	plan-baseline-issues.md	270	t-race-result-2026-10-18-0401-0410-launched-by-claude-with-the-users-go	T-race result (2026-10-18 04:01-04:10, launched by Claude with the user's go)
 T-L5	plan-baseline-issues.md	302	root-cause-found-2026-10-18-read-only-trace--checked-by-hand	T-L5 session 1 (2026-10-18 10:29-10:48, the user, from `research\tools\launcher.cmd`):** build `bc0e
-T-V4	plan-baseline-issues.md	499	tests-one-change-per-launch-the-users-go-each-time	T-V4 (2026-10-18 20:15-20:30, build `769de12`, log `data/t-v4-stencil.log`):** the box is gone with 
-T-V4b	plan-baseline-issues.md	503	tests-one-change-per-launch-the-users-go-each-time	T-V4b (2026-10-18 20:45-20:55, build `423efc7`, log `data/t-v4b-stencil.log`):** a rewrite must star
-T-V4	plan-baseline-issues.md	510	tests-one-change-per-launch-the-users-go-each-time	T-V4 RenderDoc (2026-10-18 20:57, build `423efc7`, V4 on; `v4-shadow_frame14784.rdc`, `_frame17750.r
+T-V4	plan-baseline-issues.md	504	tests-one-change-per-launch-the-users-go-each-time	T-V4 (2026-10-18 20:15-20:30, build `769de12`, log `data/t-v4-stencil.log`):** the box is gone with 
+T-V4b	plan-baseline-issues.md	508	tests-one-change-per-launch-the-users-go-each-time	T-V4b (2026-10-18 20:45-20:55, build `423efc7`, log `data/t-v4b-stencil.log`):** a rewrite must star
+T-V4	plan-baseline-issues.md	515	tests-one-change-per-launch-the-users-go-each-time	T-V4 RenderDoc (2026-10-18 20:57, build `423efc7`, V4 on; `v4-shadow_frame14784.rdc`, `_frame17750.r
 T-R23	plan-frame-pacing.md	192	t-r23-result-2026-10-18-1255-1300-launched-by-claude-with-the-users-go-build-2097554	T-R23 result (2026-10-18 12:55-13:00, launched by Claude with the user's go; build `2097554`)
 T-C0	plan-frame-pacing.md	347	t-c0-result-2026-10-18-1510-1515-the-cache-re-creates-and-re-uploads-20-images-per-frame	T-C0 result (2026-10-18 15:10-15:15): the cache re-creates and re-uploads ~20 images per frame
 T-C1	plan-frame-pacing.md	377	t-c1-result-2026-10-18-1520-1530-launched-by-claude-with-the-users-go-build-4035556-log-datat-c1-expandslog	T-C1 result (2026-10-18 15:20-15:30, launched by Claude with the user's go; build `4035556`; log `da
