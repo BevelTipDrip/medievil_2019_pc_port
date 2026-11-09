@@ -1852,3 +1852,16 @@ Python 3.13, run from `/tmp/.mount_MediEv...`) killed by **SIGBUS** right after 
 from code in a FUSE mount fits the AppImage being unmounted while its processes still run. Not confirmed as the
 cause of the freeze (most quits crash, only some freeze). Next: how the user quits (Steam menu "Exit game" or the
 launcher's window), and how AppRun / the AppImage runtime end (who unmounts first).
+
+### Pacing with the 60 cap: still open (2026-11-08, parked by the user for DLSS / FSR)
+
+- Frame stats at a 60 cap (render scale 80%, fog on): the game's own flip intervals were flat, 16.67 ms with a
+  0.12-0.15 ms spread, with the game's limiter or gamescope's; the user's overlay still showed 14.5-20+ ms swings
+  and spikes looking at the ground with headroom and steady clocks. The swing is after the game's flip (GPU
+  completion / gamescope latch), or partly from measuring. VSync on (Fifo) under gamescope's cap halved the flips to
+  ~30/s. Frame stats alone cost ~4.5 ms of stage B uncapped (13.3 -> 17.8 ms, CPU-bound, long frames hidden).
+- The user's settings differ from the measured Deck Optimized: `present_no_frame_caps=0`, GPU auto (some levels need
+  it), limiter switched between gamescope's and the game's.
+- Next, when resumed: the quiet build `f53f76b` (`GOW3_FPS_LOG=0`, no periodic log lines) is deployed with that
+  setting in extra-env; the user's eye in the overlay first, then the flip trace + APU trace (`deck.sh trace`) at
+  the same spot if the swing stays.
