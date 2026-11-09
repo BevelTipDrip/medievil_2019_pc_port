@@ -739,9 +739,17 @@ static int particle_guard_on(void) {
     return !(__atomic_load_n(&runtime_disabled_optimizations2,__ATOMIC_RELAXED)&TOGGLE2_PARTICLE_FLIP_GUARD_OFF);
 }
 static void particle_guard_report(void) {
-    static int last_on=-1;
+    static int last_on=-1, quiet=-1;
     const int on=particle_guard_on();
     if (particle_sims<1200 && on==last_on) return;
+    if (quiet<0) { /* GOW3_FPS_LOG=0: no periodic log lines (gow3_overlay.cpp LogPresent); a switch still prints */
+        const char *fps_log=getenv("GOW3_FPS_LOG");
+        quiet=fps_log && !strcmp(fps_log,"0");
+    }
+    if (quiet && on==last_on) {
+        particle_flips=particle_sims=particle_lone_flips=particle_lone_sims=0;
+        return;
+    }
     printf("GPU particle flips: %llu flips, %llu simulations; %llu flips without a simulation (%s), "
            "%llu simulations without a flip (%s); guard %s\n",
            (unsigned long long)particle_flips,(unsigned long long)particle_sims,

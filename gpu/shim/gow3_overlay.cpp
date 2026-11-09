@@ -1516,9 +1516,13 @@ void SetTextEntry(bool active, const std::string& prompt, const std::string& tex
     text_entry_text = text;
 }
 
-// GOW3_FPS_LOG=1: presented frames per second and the worst frame, every 5 s (benchmarks).
+// GOW3_FPS_LOG=1: presented frames per second and the worst frame, every 5 s (benchmarks). The launcher
+// sets 1; 0 (extra-env.txt) turns it off for a run without periodic log lines.
 void LogPresent() {
-    static const bool fps_log = std::getenv("GOW3_FPS_LOG") != nullptr;
+    static const bool fps_log = [] {
+        const char* value = std::getenv("GOW3_FPS_LOG");
+        return value != nullptr && std::strcmp(value, "0") != 0;
+    }();
     if (!fps_log) {
         return;
     }
