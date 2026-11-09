@@ -452,6 +452,8 @@ plan-linux-deck.md	1656	2	cpu-cuts-at-a-60-cap-2026-11-06-tooling-7379aa0-signal
 plan-linux-deck.md	1682	3	launch-15-results-2026-11-06-2050-2128-build-2a6efea-signal-a-new-arena-with-a-guaranteed-heavy-view-the-old-spot-cannot-be-found-under-a-cap-gpu-auto-log-datadeck-launch15log-traces-research-datadeckdeck-cap60-signalcap60-cutsuncap-cuts-	Launch 15 results (2026-11-06 ~20:50-21:28, build `2a6efea-signal`, a new arena with a guaranteed heavy view (the old spot cannot be found under a cap), GPU auto; log `data/deck-launch15.log`, traces `research-data/deck/deck-{cap60-signal,cap60-cuts,uncap-cuts}-*`)
 plan-linux-deck.md	1722	2	hilltop-mausoleum-lighting-pool-pages-leaked-on-linux-2026-11-0607-fixed-7246f88--f74e1a1	Hilltop Mausoleum lighting: pool pages leaked on Linux (2026-11-06/07; fixed `7246f88` + `f74e1a1`)
 plan-linux-deck.md	1771	2	cuts-redo-with-draw-preparation-alive-2026-11-07-build-4f49400-a3restart-a3-restart-only	Cuts redo with draw preparation alive (2026-11-07, build `4f49400-a3restart`: A3 restart-only)
+plan-linux-deck.md	1825	2	cemetery-hill-heavier-than-before-2026-11-08-the-user-build-e3112f4	Cemetery Hill heavier than before (2026-11-08, the user; build `e3112f4`)
+plan-linux-deck.md	1845	2	deck-freezes-after-quitting-the-user-every-few-runs-capture-2026-11-08-1815-datadeck-quit-freeze-20261108txt	Deck freezes after quitting (the user, "every few runs"; capture 2026-11-08 ~18:15, `data/deck-quit-freeze-20261108.txt`)
 plan-live-switches.md	1	1	plan-graphics-settings-switched-live	Plan: graphics settings switched live
 plan-live-switches.md	6	2	scope-the-user-2026-10-30	Scope (the user, 2026-10-30)
 plan-live-switches.md	14	2	mechanism-built	Mechanism (built)

@@ -8,7 +8,7 @@ default_windows: off
 default_deck: off
 origin: ours
 class: S
-commits:
+commits: f53f76b
 files: gpu/shim/gow3_overlay.cpp, src/runtime_extra.c
 symbols: LogPresent, particle_guard_report
 switches: GOW3_FPS_LOG
@@ -36,7 +36,7 @@ extra-env.txt (run.py's extra-env overrides the launcher's value). Frame stats s
 
 ## Evidence
 
-- Fix built (this card's commit), not run.
+- Fix built `f53f76b`, not run.
 
 ## History and pitfalls
 
