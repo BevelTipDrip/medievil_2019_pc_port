@@ -1164,13 +1164,15 @@ static int pool_take_locked(uint64_t want, uint64_t *phys, uint64_t *pages) {
     return 0;
 }
 static uint64_t kept_foreign_zeroed, view_pages_back, foreign_handed; /* atomic; GOW3_FRAME_STATS */
-/* GOW3_POOL_ZERO_FOREIGN=1 (Windows, opt-in until a PC A/B; LANDMINES item 9): pool pages holding
- * another address's bytes are zeroed before they move, and a kept view takes back only its own.
- * Off (default): as before 8d4607e; the owners are still recorded (one store per page on a
- * decommit) so the frame stats count the pages that moved with another address's bytes. */
+/* GOW3_POOL_ZERO_FOREIGN (Windows, on by default since 2026-11-09; LANDMINES item 9): pool pages
+ * holding another address's bytes are zeroed before they move, and a kept view takes back only its
+ * own. The Windows half of the Hilltop Mausoleum fix: the user saw the Mausoleum's wrong lighting
+ * and purple reflections in the Hall of Heroes on Windows (deck-lab build, 2026-11-09).
+ * GOW3_POOL_ZERO_FOREIGN=0: as before 8d4607e; the owners are still recorded (one store per page
+ * on a decommit) so the frame stats count the pages that moved with another address's bytes. */
 static int pool_zero_foreign(void) {
     static int v=-1;
-    if (v<0) { const char *e=getenv("GOW3_POOL_ZERO_FOREIGN"); v=e && e[0]=='1'; }
+    if (v<0) { const char *e=getenv("GOW3_POOL_ZERO_FOREIGN"); v=!(e && e[0]=='0'); }
     return v;
 }
 static int pool_chunk_of(uint64_t phys, uint64_t *index) {

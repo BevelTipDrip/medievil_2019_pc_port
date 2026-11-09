@@ -60,6 +60,9 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
    run.** Not certain Windows needs it: confirmed in code only; T-M1b's 52 kept-view unmaps in ~10 min suggest free
    pages ran out then (inferred). Next: a normal PC session with frame stats reads "handed over with their bytes";
    if it is above 0, an A/B with the switch on, judged on lows and hitches.
+   **Found on Windows 2026-11-09** (the user, Start-menu build `7c4a5cf`, 01.02): purple reflections in the Hall of
+   Heroes and the Hilltop Mausoleum's wrong lighting, both on the PC; no setting changed it (DLSS, Reflections,
+   quality level). **Fix built: on by default since then** (`GOW3_POOL_ZERO_FOREIGN=0` turns it off). Not run.
 10. **Linux crash window in `CopySparseSerial`** ([copy-thread-backing-view](deck/copy-thread-backing-view.md)): if
     `runtime_memory_read_backing` returns 0 after a lock-free lookup said "mapped", the code memcpys from a PROT_NONE
     guest address: the native run 7 SIGSEGV. The Linux branch should zero-fill or retry.
