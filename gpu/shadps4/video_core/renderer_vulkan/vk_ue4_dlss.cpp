@@ -27,10 +27,6 @@ constexpr u32 OffsetJitter = 1888;
 constexpr u32 OffsetViewSize = 1952;
 constexpr u32 OffsetNearPlane = 2112;
 constexpr u32 OffsetFrameNumber = 2140;
-/// A camera cut moves the picture by more than this share of the view's width in one frame;
-/// ordinary motion, even a fast turn at 60 FPS, moves it a few percent. (The first rule, a
-/// ClipToPrevClip element 1.0 from identity, reset ~6% of gameplay frames: run u3-dlaa.)
-constexpr float CameraJumpShare = 0.25f;
 
 template <typename T>
 T Load(const u8* data, u32 offset) {
@@ -41,6 +37,7 @@ T Load(const u8* data, u32 offset) {
 
 /// The largest one-frame move, in pixels, of five screen points (the centre and four near the
 /// corners) at infinity and at 10 m, through View.ClipToPrevClip (row vector times matrix).
+/// Logged with each reset only: no reset rule uses it.
 float CameraJumpPixels(const u8* view, std::array<float, 2> size) {
     std::array<std::array<float, 4>, 4> m;
     std::memcpy(m.data(), view + OffsetClipToPrevClip, sizeof(m));
@@ -169,13 +166,14 @@ bool Ue4Dlss::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore:
         return Fail("view too small");
     }
 
-    // Reset: the first frame after UE4's TAA ran, a frame number that is not the next one, or
-    // a camera jump (this game never sets View.CameraCut: U1, U2).
+    // Reset: the first frame after UE4's TAA ran, or a View frame number that is not the next
+    // one. The game's camera cuts, skips and level loads all move it by more than one; pans, however
+    // fast, never do (run cut-evidence). View.CameraCut stays 0 in this game; camera-motion rules
+    // misfired (u3-dlaa: a ClipToPrevClip element above 1.0 reset ~6% of moving frames).
     const float camera_jump = CameraJumpPixels(view, view_size);
-    const char* reset_reason = !was_on                                 ? "first frame"
-                               : frame_number != last_frame + 1        ? "frame number"
-                               : camera_jump > CameraJumpShare * width ? "camera jump"
-                                                                       : nullptr;
+    const char* reset_reason = !was_on                          ? "first frame"
+                               : frame_number != last_frame + 1 ? "frame number"
+                                                                : nullptr;
 
     const auto device = instance.GetDevice();
     if (!output.image || output_width != width || output_height != height) {

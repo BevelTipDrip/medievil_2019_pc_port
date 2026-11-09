@@ -386,8 +386,9 @@ void Ue4FrameMap::Close() {
             std::string changed;
             u32 count = 0;
             for (u32 i = 0; i < frame.params.size(); ++i) {
-                // 8-24 follow the jitter every frame (study-taau-frame-map.md section 1).
-                if ((i >= 8 && i <= 24) || frame.params[i] == last_params[i]) {
+                // 8-24 follow the jitter every frame (study-taau-frame-map.md section 1); 26-27
+                // change every moving frame (run cut-evidence).
+                if ((i >= 8 && i <= 24) || i == 26 || i == 27 || frame.params[i] == last_params[i]) {
                     continue;
                 }
                 if (++count <= 6) {
