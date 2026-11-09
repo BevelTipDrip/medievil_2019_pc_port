@@ -12,7 +12,7 @@ commits: daeb5fd, 461f249
 files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp, gpu/shadps4/video_core/host_shaders/ue4_motion.comp, gpu/shadps4/video_core/host_shaders/ue4_motion_view.comp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shim/gow3_overlay.cpp, gpu/CMakeLists.txt
 symbols: Ue4Motion, OnVelocityDraw, OnSceneDraw, OnTaa, Compose, CycleViewMode, ue4_motion, GetUe4Motion
 switches: GOW3_UE4_MOTION_VIEW
-tests: u2-motion
+tests: u2-motion, u2-check
 docs: plan-ue4-motion-vectors.md#u2-motion-vectors-and-their-debug-view
 depends_on: ue4-frame-map
 related:
@@ -63,7 +63,11 @@ where the vectors are right). F10 cycles 1-4 and 0.
 - Found in that run: the drawn colours came out red / blue swapped (the presenter views the RGBA display buffer as
   BGRA, `GetFrameViewFormat`); menus and the title have no velocity pass, so the pass was skipped there. Fix built
   (this card's second commit): `swap_red_blue`, and a camera-only pass when TAA does not sample the velocity target
-  (scene depth from the G-buffer pass). Not run.
+  (scene depth from the G-buffer pass).
+- Run `u2-check` (build `82c88a9`, render scale 80 then 100, `data/u2-check.log`, the user's screenshots): Dan,
+  zombies and breakable gravestones blue-tinted (game velocity), the rest untinted; the title screen's camera swoop
+  has vectors (the user: "largely camera motion ... the screen mostly sky blue"); mode 4 while moving: near black
+  at 80, at 100 bright only on thin fence bars (nearest-pixel warp at x4) and the HUD (not scene geometry).
 
 ## History and pitfalls
 

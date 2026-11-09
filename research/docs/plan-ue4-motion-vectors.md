@@ -115,7 +115,8 @@ scale 80, pause, main menu, a level load. 210 summaries (63,000 frames). Labels:
 Built 2026-11-08 (card [ue4-motion-vectors](../patches/ue4/ue4-motion-vectors.md)). Run `u2-motion` (render scale 80):
 the vectors are right by the panning measurements (card Evidence); the camera cut flag stayed 0 through the user's
 intro skip at the title (a real cut), so resets must come from the frame number or a camera jump. Debug colours were
-red / blue swapped and menus had no pass: fix built, not run.
+red / blue swapped and menus had no pass: fixed in `461f249`, run `u2-check`: tint right, title screen covered,
+mode 4 near black while moving. U2 done; the finer check is DLSS's own debug overlay in U3.
 `GOW3_UE4_MOTION_VIEW=1` (off by default); F10 cycles the views. What the user should see (the M2 / U2 check):
 
 | View | Right | Wrong |
@@ -124,6 +125,36 @@ red / blue swapped and menus had no pass: fix built, not run.
 | 1-2, panning | smooth colour gradients by depth, no seams where the blue (game velocity) and the rest meet | a jump of colour at those edges (sign or scale of one source wrong) |
 | 4, panning or moving | mostly black; bright only at edges that were hidden last frame, particles, UI | the whole picture bright (sign, scale or matrix order wrong), or only moving objects bright (velocity wrong) |
 | 4 at render scale 80 | as at 100 | worse than 100: view size / sub-rectangle wrong |
+
+## U3 design: DLAA at render scale 100 (not built)
+
+- **Switch:** `GOW3_UE4_DLSS=1` (off by default), live on / off with a hotkey so the user compares DLAA and UE4's TAA
+  on the same frame. Needs `gow3_dlss.dll` + `nvngx_dlss.dll` beside the exe (D0). Native only: under TAAU (the
+  compute TAA) nothing changes; U4 handles that.
+- **Hook:** at the first TAA draw (`fs e88c8fcbe08ea0b6`), after the U2 motion pass, record DLSS and skip both TAA
+  draws. DLSS writes an RGBA16F image of the port, copied into TAA's colour target (TAA's output is next frame's
+  history, the SSR-like pass's and bloom / tonemap's input: all keep reading the same image).
+- **Inputs:** colour = TAA draw 1's colour input (the separate translucency composite's target: the last RGBA16F
+  colour target drawn before TAA, accepted only if TAA samples its address); depth = the velocity pass's D32S8
+  (depth aspect); motion = U2's image (render pixels, previous minus current, MV scale 1); layouts General.
+- **Feature:** quality DLAA (input = output = View size), `hdr = 1` (linear HDR, auto exposure; PreExposure is 1),
+  **`depth_inverted = 1`** (a new field in `Dlss::FeatureDesc`; Bloodborne's path keeps 0), sharpness 0 and RCAS off
+  while DLSS runs (the user's decision).
+- **Jitter:** the View's `TemporalAAJitter.xy` in render pixels (`x * W / 2`, `-y * H / 2`); the sign NGX wants is
+  checked with the development DLL's hotkeys (below), not a switch of ours.
+- **Test runs use NVIDIA's development `nvngx_dlss.dll`** (`tools\DLSS\lib\Windows_x86_64\dev`, copied over the
+  release one in `out\` for the run, never in git). DLSS programming guide sections 5 and 8: Ctrl+Alt+F12 cycles
+  debug overlays of DLSS's inputs (motion vectors, depth, jitter), Ctrl+Alt+F11 window / full screen, Ctrl+Alt+F9
+  negates / scales the jitter (configs), Ctrl+Alt+F10 swaps jitter x / y, Ctrl+Alt+F6 accumulation / jitter debug,
+  Ctrl+Alt+Y auto exposure. The production DLL has no overlay. For frame generation, the dev `nvngx_dlssg.dll`
+  (the visualizer the user used for MGS2).
+- **Reset:** the View frame number not last + 1, a large ClipToPrevClip change (the intro skip and level starts
+  show 1.4-5.2 against ~0.5 when moving: threshold to choose from U1 / U2 data), feature (re)creation, View size
+  change. CameraCut is never set by this game (U1, U2).
+- **Sub-rectangle:** View size can be below the image size (cutscenes 3812x2160): DLSS input and output size from the
+  View, offset (0, 0).
+- **Verify:** the user compares DLAA against UE4 TAA (hotkey) standing still, panning and in combat: ghosting on
+  Dan and enemies, shimmer on fences and foliage, the HUD unchanged.
 
 ## Risks
 
