@@ -37,6 +37,21 @@ Parent: [plan-roadmap.md](plan-roadmap.md). Read [upscaler-reference.md](upscale
 | D2 | DLSSG feature create/evaluate, debug visualizer | Visualizer shows correct camera / MVs |
 | D3 | DLSS FG presented through the shared FG path | Displayed frames double; user judges by eye |
 
+## D0 (2026-11-08): bridge built, support checked offline
+
+- SDK: `C:\Users\Ty\MediEvil\tools\DLSS` (shallow clone of github.com/NVIDIA/DLSS, `9981c63`, **DLSS 310.9.16**; outside
+  the repo, its DLLs never go in git).
+- `DLSS_SDK_ROOT=C:/Users/Ty/MediEvil/tools/DLSS bash packaging/windows/build_dlss.sh`: MSVC 19.33 (VS 2022 Build
+  Tools), no warnings; `out/gow3_dlss.dll` + `out/nvngx_dlss.dll`. Built, not loaded by the game yet (D0's "feature
+  created" line needs a launch).
+- `research/tools/ngx_probe` (no game, no NGX init; output `data/ngx-probe-20261108.txt`), RTX 4090, driver
+  0x9a170000, Vulkan 1.4.351: **SR supported** (min arch 0x160), **DLSS-G supported** (min arch 0x190). Both need
+  the instance extension `VK_KHR_get_physical_device_properties2` and the same device extensions:
+  `VK_NVX_binary_import`, `VK_NVX_image_view_handle`, `VK_KHR_buffer_device_address`, `VK_KHR_push_descriptor`,
+  all offered. The port already appends NGX's lists at instance and device creation (`vk_platform.cpp:300`,
+  `vk_instance.cpp:544`), so FG needs no new device extension (study open question 5 answered for this PC).
+- For G2: `build_dlss.sh` copies only `nvngx_dlss.dll`; DLSS-G also needs `nvngx_dlssg.dll` beside the runtime.
+
 ## Risks
 
 - NVIDIA DLLs are not redistributable in git: keep them out of the repo.
