@@ -240,7 +240,7 @@ GOW3_TINY_TARGET_READBACK	ours	gpu/shadps4/video_core/texture_cache/texture_cach
 GOW3_TOGGLE_FILE	upstream	src/runtime_memory.c:1763
 GOW3_TRACE_SEMA	upstream	src/runtime_sema.c:75
 GOW3_TRACKER_MERGE_GAP	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_barrier_tracker.cpp:36
-GOW3_UE4_DLSS	ours	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.cpp:80
+GOW3_UE4_DLSS	ours	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.cpp:81
 GOW3_UE4_FRAME_MAP	ours	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.cpp:63
 GOW3_UE4_MOTION_VIEW	ours	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp:101
 GOW3_UE4_SETRES	upstream	src/runtime_extra.c:835

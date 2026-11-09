@@ -8,7 +8,7 @@ default_windows: off
 default_deck: n/a
 origin: ours
 class: M
-commits: 7b74b91, ef9d584, b0cef35, f25a373
+commits: 7b74b91, ef9d584, b0cef35, f25a373, 81a1fc9
 files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shim/gow3_overlay.cpp
 symbols: Ue4Dlss, CameraJumpPixels, OnColorTarget, OnTaaDraw, Running, GetPass, depth_inverted, ue4_dlss, target_rgba16f
 switches: GOW3_UE4_DLSS
@@ -39,8 +39,11 @@ the first frame after UE4's TAA ran, a View frame number that is not the last + 
 - Skipping a TAA draw returns from `DrawRecord` after `PrepareRenderState`, clearing `bind_prepared` and calling
   `ResetBindings(false)`, before `BindResources`: nothing of the draw is recorded.
 - The second TAA draw of a frame is skipped only when DLSS ran for that View frame number.
-- DLSS is recorded on `scheduler.CommandBuffer()` (direct mode, after U2's recorded motion pass); feature creation
-  waits for submitted work first (`WaitSubmitted`, as Bloodborne's `RecordDlss`).
+- DLSS evaluation and the copy are recorded with `scheduler.Record` (in order, on the recording thread; everything
+  the closure uses is captured by value). Only feature creation (first frame, size change) records directly:
+  `CommandBuffer()` (the recording thread has run everything recorded, so it is not inside `Evaluate`), then
+  `WaitSubmitted`, release, create. A failed evaluation on the recording thread sets `evaluate_failed`; the next
+  TAA draw switches to UE4's TAA.
 - `Dlss::FeatureDesc::depth_inverted` defaults to false: Bloodborne's upscaler path is unchanged.
 - The NVIDIA DLLs never go in git. For testing, NVIDIA's development `nvngx_dlss.dll` replaces the release one in
   `out\` (the release copy kept as `out\nvngx_dlss.dll.release`): Ctrl+Alt+F12 debug overlays, Ctrl+Alt+F9 / F10
@@ -76,6 +79,9 @@ the first frame after UE4's TAA ran, a View frame number that is not the last + 
   the fix covers): no judder (the user: "it didn't come back"; not reproduced in the run before either, so seen
   again or not is not proof). 7 resets, all at the start, the cutscene, loads; then F9 switches. Pacing per 5 s:
   UE4 TAA median 4.22 ms (the 237 FPS cap), stddev 0.20; DLAA median 5.0-5.2 ms, stddev 0.15-0.27, p99 5.3-5.8.
+- Evaluation moved onto the recording thread (fifth commit): the per-frame `CommandBuffer()` made the GPU thread wait
+  for the recording thread once a frame (the user saw a small frame-time saw-tooth once with DLAA, not again). Not
+  run.
 
 ## History and pitfalls
 
