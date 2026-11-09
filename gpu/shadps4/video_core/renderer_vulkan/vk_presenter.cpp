@@ -624,7 +624,18 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
                     vk::ImageLayout::eTransferSrcOptimal, image.info.size.width,
                     image.info.size.height, "display", frame_dump_index);
         }
-        image_view = *image.FindView(view_info).image_view;
+        // gow3 U2: the UE4 motion vector debug view (GOW3_UE4_MOTION_VIEW) reads the display
+        // buffer in a compute pass and is presented in its place.
+        vk::ImageView motion_view{};
+        if (auto* motion = rasterizer->GetUe4Motion()) {
+            runtime.Transit(&image, vk::ImageLayout::eShaderReadOnlyOptimal,
+                            vk::PipelineStageFlagBits2::eFragmentShader |
+                                vk::PipelineStageFlagBits2::eComputeShader,
+                            vk::AccessFlagBits2::eShaderRead);
+            runtime.FlushBarriers();
+            motion_view = motion->Compose(cmdbuf, image, view_info.format);
+        }
+        image_view = motion_view ? motion_view : *image.FindView(view_info).image_view;
         image_size = vk::Extent2D{image.info.size.width, image.info.size.height};
         runtime.Transit(&image, vk::ImageLayout::eShaderReadOnlyOptimal,
                         vk::PipelineStageFlagBits2::eFragmentShader,

@@ -68,6 +68,9 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
     if (Ue4FrameMap::Enabled()) {
         frame_map = std::make_unique<Ue4FrameMap>();
     }
+    if (Ue4Motion::Enabled()) {
+        ue4_motion = std::make_unique<Ue4Motion>(instance, scheduler, texture_cache, runtime);
+    }
     if (!EmulatorSettings.IsNullGPU()) {
         liverpool->BindRasterizer(this);
     }
@@ -1213,7 +1216,7 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
                          cb_descs[0].first, db_desc.first,
                          UiComposition::NativeViewport(viewport.xscale * 2, viewport.yscale * 2));
     }
-    if (frame_map) [[unlikely]] {
+    if (frame_map || ue4_motion) [[unlikely]] {
         ObserveFrameMap(pipeline);
     }
     const PreparedDraw* draw_prepared = bind_prepared;
@@ -1449,7 +1452,7 @@ void Rasterizer::DrawIndirectRecord(const GraphicsPipeline* pipeline, bool is_in
                          cb_descs[0].first, db_desc.first,
                          UiComposition::NativeViewport(viewport.xscale * 2, viewport.yscale * 2));
     }
-    if (frame_map) [[unlikely]] {
+    if (frame_map || ue4_motion) [[unlikely]] {
         ObserveFrameMap(pipeline);
     }
     if (!BindResources(pipeline)) {
@@ -1575,7 +1578,7 @@ void Rasterizer::DispatchRecord(const ComputePipeline* pipeline) {
     if (ExecuteShaderHLE(cs, Regs(), cs_program, *this)) {
         return;
     }
-    if (frame_map) [[unlikely]] {
+    if (frame_map || ue4_motion) [[unlikely]] {
         ObserveFrameMap(pipeline);
     }
 
@@ -4711,7 +4714,18 @@ void Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
             }
         }
     }
-    frame_map->OnPass(pass);
+    if (frame_map) {
+        frame_map->OnPass(pass);
+    }
+    if (ue4_motion) {
+        if (!pass.compute && pass.target_rg16 && pass.targets == 1 && pass.depth) {
+            ue4_motion->OnVelocityDraw(cb_descs[0].first, db_desc.first);
+        } else if ((!pass.compute && (pass.hash == Ue4FrameMap::TaaNormal ||
+                                      pass.hash == Ue4FrameMap::TaaResponsive)) ||
+                   (pass.compute && pass.hash == Ue4FrameMap::TaaCompute)) {
+            ue4_motion->OnTaa(pass.view, pass.compute ? VideoCore::ImageId{} : db_desc.first);
+        }
+    }
 }
 
 } // namespace Vulkan

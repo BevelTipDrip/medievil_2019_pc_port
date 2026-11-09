@@ -19,6 +19,7 @@
 #include "video_core/renderer_vulkan/vk_draw_prep.h"
 #include "video_core/renderer_vulkan/vk_temporal_upscaler.h"
 #include "video_core/renderer_vulkan/vk_ue4_frame_map.h"
+#include "video_core/renderer_vulkan/vk_ue4_motion.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "gow3_draw_classes.h"
 #include "gow3_sections.h"
@@ -55,6 +56,10 @@ public:
         return buffer_cache;
     }
 
+    /// gow3 U2: null unless GOW3_UE4_MOTION_VIEW is set.
+    [[nodiscard]] Ue4Motion* GetUe4Motion() noexcept {
+        return ue4_motion.get();
+    }
     [[nodiscard]] TemporalUpscaler& GetUpscaler() noexcept {
         return *upscaler;
     }
@@ -467,7 +472,8 @@ private:
     /// Display pass: counts the frame (Gow3Stats::gpu_frames) and, with GOW3_BUFFER_STATS, the lag.
     void NoteFrameStart();
     /// gow3 U1 (GOW3_UE4_FRAME_MAP=1): the targets, sampled images and View buffer of this draw
-    /// or dispatch, for the UE4 frame map's log. Reads only; before BindResources.
+    /// or dispatch, for the UE4 frame map's log, and (U2) the UE4 motion vector pass at TAA.
+    /// Before BindResources.
     void ObserveFrameMap(const Pipeline* pipeline);
     /// GOW3_GPU_PROFILE: a timestamp where a render pass starts (vk_gpu_profiler.h).
     void MarkPass(const GraphicsPipeline* pipeline, const RenderState& state);
@@ -511,6 +517,7 @@ private:
     bool gbuffer_draw = false;
     std::unique_ptr<TemporalUpscaler> upscaler; // gow3: FSR (docs/upscaler.md)
     std::unique_ptr<Ue4FrameMap> frame_map;     // gow3 U1: null unless GOW3_UE4_FRAME_MAP=1
+    std::unique_ptr<Ue4Motion> ue4_motion;      // gow3 U2: null unless GOW3_UE4_MOTION_VIEW is set
     std::array<float, 2> draw_jitter{};         ///< viewport offset of the current draw, pixels
     std::array<float, 2> target_scale{1.0f, 1.0f}; ///< pass drawn into the upscaler's output-size images
     const bool host_markers_enabled;

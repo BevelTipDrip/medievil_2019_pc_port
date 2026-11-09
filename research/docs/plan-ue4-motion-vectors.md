@@ -110,6 +110,18 @@ scale 80, pause, main menu, a level load. 210 summaries (63,000 frames). Labels:
 - **The run hung at "quit to main menu"** (render scale 80): a recorder-thread read fault deadlock, not the frame map
   (stacks: `data/u1-hang-recorder-fault-20261108.txt`; plan-work-queue.md "Found on the way").
 
+## U2: motion vectors and their debug view
+
+Built 2026-11-08 (card [ue4-motion-vectors](../patches/ue4/ue4-motion-vectors.md)), not run.
+`GOW3_UE4_MOTION_VIEW=1` (off by default); F10 cycles the views. What the user should see (the M2 / U2 check):
+
+| View | Right | Wrong |
+|---|---|---|
+| 1-2, camera still | grey everywhere, moving enemies / Dan coloured with a blue tint | colour on static walls |
+| 1-2, panning | smooth colour gradients by depth, no seams where the blue (game velocity) and the rest meet | a jump of colour at those edges (sign or scale of one source wrong) |
+| 4, panning or moving | mostly black; bright only at edges that were hidden last frame, particles, UI | the whole picture bright (sign, scale or matrix order wrong), or only moving objects bright (velocity wrong) |
+| 4 at render scale 80 | as at 100 | worse than 100: view size / sub-rectangle wrong |
+
 ## Risks
 
 - PS4 UE4 build may differ (velocity format, compute TAA, View UB layout). M0 decides.
