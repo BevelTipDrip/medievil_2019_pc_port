@@ -378,6 +378,11 @@ from `medievil-runtime.exe+0x519be` called from guest offset `0x5cc9d47`), at bo
 flexible memory is mapped. **This time with a crash dump** (the port's handler: `user/crashdumps/medievil-20261108-011208-1140.dmp`,
 type 0x1065): the mutex and its caller can now be read in WinDbg (research/tools/windbg.ps1).
 
+**Again 2026-11-08 23:49** (PC, deck-lab build `10a15cc`, run `u4-dlss`, 1.0 game): exit code 5 at boot, the log ends
+mid-line right after `Toolkit::NP::Main` and the flexible memory maps (the same boot point); no crash dump (the
+WER dialog did not show either). Log [data/t-s1-20261108-u4.log](data/t-s1-20261108-u4.log) (the U4 run is the
+next launch).
+
 ## V2. Fire / torches broken, more box shadows (the user, 2026-10-18, run `perfdiag-heavy`)
 
 "I loaded into the starting area … It looks like fire/torches were broken, and I saw more of those broken 'shadows'

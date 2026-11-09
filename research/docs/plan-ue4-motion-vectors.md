@@ -183,6 +183,8 @@ size (3072x1728 at 80%), its jitter (12 values at 80%) in render-size NDC, mip b
 - **Jitter sign:** settled here, by eye at 80% or lower with the development DLL (Ctrl+Alt+F9 configurations): a wrong
   sign is visible below native (MGS2: +x +y, the sign passed now).
 - **Resets:** as U3 (View frame number, first frame, feature creation).
+- **Presets (later; the user, 2026-11-08):** a lighter model for DLAA, DLSS 4 (preset K) for Quality, DLSS 4.5
+  (L / M) for Balanced and Performance. Now preset 0 (driver default) everywhere; the bridge's `preset` field exists.
 - **Verify:** the user compares DLSS against UE4's TAAU at the same render scale (F9), at 80 and lower; the
   development overlay's motion vector / depth views line up with the picture.
 
