@@ -76,6 +76,7 @@ private:
     std::chrono::steady_clock::time_point last_time{};
     u64 evaluations = 0, resets = 0;
     static std::atomic<bool> on;
+    static std::atomic<bool> evaluate_failed; ///< set on the recording thread
     static std::atomic<s64> last_run_ns; ///< steady clock
 };
 

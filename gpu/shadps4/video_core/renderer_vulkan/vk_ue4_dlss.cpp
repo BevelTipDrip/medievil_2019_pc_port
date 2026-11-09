@@ -67,6 +67,7 @@ float CameraJumpPixels(const u8* view, std::array<float, 2> size) {
 } // namespace
 
 std::atomic<bool> Ue4Dlss::on{true};
+std::atomic<bool> Ue4Dlss::evaluate_failed{false};
 std::atomic<s64> Ue4Dlss::last_run_ns{0};
 
 bool Ue4Dlss::Running() {
@@ -133,6 +134,11 @@ bool Ue4Dlss::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore:
     }
     if (was_on && have_frame && frame_number == last_frame) {
         return true; // the second TAA draw: DLSS already wrote the output
+    }
+    if (evaluate_failed.exchange(false, std::memory_order_relaxed)) {
+        std::printf("UE4 DLSS: evaluation failed; UE4 TAA from now on\n");
+        on.store(false, std::memory_order_relaxed);
+        return Fail("DLSS failed");
     }
     Dlss* dlss = Dlss::Get();
     if (!dlss || !dlss->Available()) {
@@ -237,45 +243,21 @@ bool Ue4Dlss::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore:
         device.destroyImageView(depth_view);
     });
 
-    // NGX records into a command buffer of its own choosing: recorded directly, in order.
-    const auto cmdbuf = scheduler.CommandBuffer();
     const vk::Image output_handle = vk::Image(output);
-    const std::array<vk::ImageMemoryBarrier2, 2> before{{
-        {
-            // U2's motion pass wrote the vectors.
-            .srcStageMask = vk::PipelineStageFlagBits2::eComputeShader,
-            .srcAccessMask = vk::AccessFlagBits2::eShaderWrite,
-            .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-            .dstAccessMask = vk::AccessFlagBits2::eShaderRead,
-            .oldLayout = vk::ImageLayout::eGeneral,
-            .newLayout = vk::ImageLayout::eGeneral,
-            .image = pass.image,
-            .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
-        },
-        {
-            // Last frame's copy read the output; its contents are not needed.
-            .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-            .srcAccessMask = vk::AccessFlagBits2::eTransferRead,
-            .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-            .dstAccessMask = vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite,
-            .oldLayout = vk::ImageLayout::eUndefined,
-            .newLayout = vk::ImageLayout::eGeneral,
-            .image = output_handle,
-            .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
-        },
-    }};
-    cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = u32(before.size()),
-                             .pImageMemoryBarriers = before.data()});
-
     const Dlss::FeatureDesc desc{width, height, width, height, 0 /* DLAA */, true, true};
-    bool ok = true;
     if (!dlss->HasFeature(desc)) {
-        // The previous feature may still be in use by submitted work; `cmdbuf` stays open.
+        // Rare (the first frame, a size change): directly, once the recording thread has run
+        // everything recorded (CommandBuffer) and the GPU is done with the old feature.
+        const auto cmdbuf = scheduler.CommandBuffer();
         scheduler.WaitSubmitted();
         dlss->ReleaseFeature();
-        ok = dlss->CreateFeature(cmdbuf, desc);
+        const bool created = dlss->CreateFeature(cmdbuf, desc);
+        std::printf("UE4 DLSS: DLAA feature %ux%u%s\n", width, height, created ? "" : " failed");
+        if (!created) {
+            on.store(false, std::memory_order_relaxed);
+            return Fail("DLSS feature creation failed");
+        }
         reset_reason = "feature created";
-        std::printf("UE4 DLSS: DLAA feature %ux%u%s\n", width, height, ok ? "" : " failed");
     }
     const auto now = std::chrono::steady_clock::now();
     float frame_ms = std::chrono::duration<float, std::milli>(now - last_time).count();
@@ -287,48 +269,82 @@ bool Ue4Dlss::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore:
     // (y down). The sign NGX wants is checked with the development DLL (Ctrl+Alt+F9).
     const float jitter_x = Load<float>(view, OffsetJitter) * view_size[0] * 0.5f;
     const float jitter_y = -Load<float>(view, OffsetJitter + 4) * view_size[1] * 0.5f;
-    if (ok) {
-        ok = dlss->Evaluate(cmdbuf, {
-            .color = {color_image->GetImage(), color_view, vk::Format::eR16G16B16A16Sfloat,
-                      vk::ImageAspectFlagBits::eColor, width, height},
-            .depth = {depth_image->GetImage(), depth_view, depth_image->info.pixel_format,
-                      vk::ImageAspectFlagBits::eDepth, width, height},
-            .motion = {pass.image, pass.view, vk::Format::eR16G16B16A16Sfloat,
-                       vk::ImageAspectFlagBits::eColor, width, height},
-            .output = {output_handle, *output_view, vk::Format::eR16G16B16A16Sfloat,
-                       vk::ImageAspectFlagBits::eColor, width, height},
-            .jitter_x = jitter_x,
-            .jitter_y = jitter_y,
-            .reset = reset_reason != nullptr,
-            .frame_ms = frame_ms,
-            .sharpness = 0.0f,
-        });
-    }
-    if (!ok) {
-        std::printf("UE4 DLSS: evaluation failed; UE4 TAA from now on\n");
-        on.store(false, std::memory_order_relaxed);
-        return Fail("DLSS failed");
-    }
-    // Into TAA's colour target: bloom, the tonemap, the SSR-like pass and (with UE4's TAA back)
-    // the next TAA read it there.
-    const vk::ImageMemoryBarrier2 to_copy{
-        .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-        .srcAccessMask = vk::AccessFlagBits2::eShaderWrite,
-        .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
-        .dstAccessMask = vk::AccessFlagBits2::eTransferRead,
-        .oldLayout = vk::ImageLayout::eGeneral,
-        .newLayout = vk::ImageLayout::eTransferSrcOptimal,
-        .image = output_handle,
-        .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
+    const Dlss::Frame frame{
+        .color = {color_image->GetImage(), color_view, vk::Format::eR16G16B16A16Sfloat,
+                  vk::ImageAspectFlagBits::eColor, width, height},
+        .depth = {depth_image->GetImage(), depth_view, depth_image->info.pixel_format,
+                  vk::ImageAspectFlagBits::eDepth, width, height},
+        .motion = {pass.image, pass.view, vk::Format::eR16G16B16A16Sfloat,
+                   vk::ImageAspectFlagBits::eColor, width, height},
+        .output = {output_handle, *output_view, vk::Format::eR16G16B16A16Sfloat,
+                   vk::ImageAspectFlagBits::eColor, width, height},
+        .jitter_x = jitter_x,
+        .jitter_y = jitter_y,
+        .reset = reset_reason != nullptr,
+        .frame_ms = frame_ms,
+        .sharpness = 0.0f,
     };
-    cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &to_copy});
-    const vk::ImageCopy region{
-        .srcSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
-        .dstSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
-        .extent = {width, height, 1},
-    };
-    cmdbuf.copyImage(output_handle, vk::ImageLayout::eTransferSrcOptimal,
-                     output_image->GetImage(), vk::ImageLayout::eTransferDstOptimal, region);
+    const vk::Image taa_output = output_image->GetImage();
+    const vk::Image motion_image = pass.image;
+    // In order with the frame's other commands, on the recording thread: no CommandBuffer() here,
+    // which made the GPU thread wait for that thread to catch up once a frame (U3 runs 1-3; the
+    // user saw a small saw-tooth in the frame times once). NGX only records into `cmdbuf`.
+    scheduler.Record([dlss, frame, output_handle, taa_output, motion_image, width,
+                      height](vk::CommandBuffer cmdbuf) {
+        const std::array<vk::ImageMemoryBarrier2, 2> before{{
+            {
+                // U2's motion pass wrote the vectors.
+                .srcStageMask = vk::PipelineStageFlagBits2::eComputeShader,
+                .srcAccessMask = vk::AccessFlagBits2::eShaderWrite,
+                .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+                .dstAccessMask = vk::AccessFlagBits2::eShaderRead,
+                .oldLayout = vk::ImageLayout::eGeneral,
+                .newLayout = vk::ImageLayout::eGeneral,
+                .image = motion_image,
+                .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
+            },
+            {
+                // Last frame's copy read the output; its contents are not needed.
+                .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+                .srcAccessMask = vk::AccessFlagBits2::eTransferRead,
+                .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+                .dstAccessMask =
+                    vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite,
+                .oldLayout = vk::ImageLayout::eUndefined,
+                .newLayout = vk::ImageLayout::eGeneral,
+                .image = output_handle,
+                .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
+            },
+        }};
+        cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = u32(before.size()),
+                                 .pImageMemoryBarriers = before.data()});
+        if (!dlss->Evaluate(cmdbuf, frame)) {
+            // TAA's output keeps last frame's contents once; the GPU thread switches to UE4's
+            // TAA at the next TAA draw.
+            evaluate_failed.store(true, std::memory_order_relaxed);
+            return;
+        }
+        // Into TAA's colour target: bloom, the tonemap, the SSR-like pass and (with UE4's TAA
+        // back) the next TAA read it there.
+        const vk::ImageMemoryBarrier2 to_copy{
+            .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+            .srcAccessMask = vk::AccessFlagBits2::eShaderWrite,
+            .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
+            .dstAccessMask = vk::AccessFlagBits2::eTransferRead,
+            .oldLayout = vk::ImageLayout::eGeneral,
+            .newLayout = vk::ImageLayout::eTransferSrcOptimal,
+            .image = output_handle,
+            .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
+        };
+        cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &to_copy});
+        const vk::ImageCopy region{
+            .srcSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
+            .dstSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
+            .extent = {width, height, 1},
+        };
+        cmdbuf.copyImage(output_handle, vk::ImageLayout::eTransferSrcOptimal, taa_output,
+                         vk::ImageLayout::eTransferDstOptimal, region);
+    });
 
     if (reset_reason) {
         ++resets;
