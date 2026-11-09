@@ -8,7 +8,7 @@ default_windows: off
 default_deck: n/a
 origin: ours
 class: M
-commits: 7b74b91, ef9d584
+commits: 7b74b91, ef9d584, b0cef35
 files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shim/gow3_overlay.cpp
 symbols: Ue4Dlss, CameraJumpPixels, OnColorTarget, OnTaaDraw, Running, GetPass, depth_inverted, ue4_dlss, target_rgba16f
 switches: GOW3_UE4_DLSS
@@ -28,8 +28,8 @@ draw (`fs e88c8fcbe08ea0b6`) DLSS runs as DLAA (quality 0, input = output = the 
 - jitter: View `TemporalAAJitter.xy` as pixels (`x * W / 2`, `-y * H / 2`); HDR with auto exposure; sharpness 0.
 
 Its output (an RGBA16F image of the port) is copied into TAA's colour target, and both TAA draws are skipped. Resets:
-the first frame after UE4's TAA ran, a View frame number that is not the last + 1, a camera jump (a screen point at
-infinity or at 10 m moved by more than a quarter of the view width through ClipToPrevClip), a new feature. F9 switches DLAA and UE4's TAA live. RCAS is off while DLAA ran in the last 100 ms
+the first frame after UE4's TAA ran, a View frame number that is not the last + 1 (the game's own cut signal: run
+`cut-evidence`, plan-ue4-motion-vectors.md "Camera cuts"), a new feature. No camera-motion rule. F9 switches DLAA and UE4's TAA live. RCAS is off while DLAA ran in the last 100 ms
 (the user's decision). Under TAAU (the compute TAA) and without the DLLs nothing changes.
 
 ## Invariants
@@ -61,7 +61,9 @@ infinity or at 10 m moved by more than a quarter of the view width through ClipT
   1.0 from identity): ordinary movement crossed it, so DLSS lost its history about every fifth frame while moving.
   Fix built (this card's second commit): reset when five screen points, at infinity and at 10 m, move more than a
   quarter of the view width in one frame. Also Ctrl+Alt+F9 switched DLAA off (our F9 ignored modifiers): F9, F10
-  and F12 now only without Ctrl / Alt. Not run.
+  and F12 now only without Ctrl / Alt.
+- Run `cut-evidence` (frame map): every camera cut, skip and level load moves the View frame number by more than
+  one, fast pans never; the quarter-width camera rule was replaced by it (this card's third commit). Not run.
 
 ## History and pitfalls
 
