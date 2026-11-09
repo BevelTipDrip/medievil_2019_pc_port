@@ -4719,11 +4719,14 @@ void Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
     }
     if (ue4_motion) {
         if (!pass.compute && pass.target_rg16 && pass.targets == 1 && pass.depth) {
-            ue4_motion->OnVelocityDraw(cb_descs[0].first, db_desc.first);
+            ue4_motion->OnVelocityDraw(cb_descs[0].first, pass.target.address, db_desc.first);
+        } else if (!pass.compute && pass.targets >= 3 && db_desc.first) {
+            ue4_motion->OnSceneDraw(db_desc.first);
         } else if ((!pass.compute && (pass.hash == Ue4FrameMap::TaaNormal ||
                                       pass.hash == Ue4FrameMap::TaaResponsive)) ||
                    (pass.compute && pass.hash == Ue4FrameMap::TaaCompute)) {
-            ue4_motion->OnTaa(pass.view, pass.compute ? VideoCore::ImageId{} : db_desc.first);
+            ue4_motion->OnTaa(pass.view, std::span(pass.reads.data(), pass.num_reads),
+                              pass.compute ? VideoCore::ImageId{} : db_desc.first);
         }
     }
 }

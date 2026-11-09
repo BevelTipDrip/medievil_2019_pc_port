@@ -10,6 +10,7 @@
 
 #include <array>
 #include <atomic>
+#include <span>
 
 #include "common/types.h"
 #include "video_core/renderer_vulkan/vk_common.h"
@@ -36,11 +37,15 @@ public:
               VideoCore::TextureCache& texture_cache, Runtime& runtime);
     ~Ue4Motion();
 
-    /// A draw into the velocity target (one R16G16_UNORM target with a depth buffer).
-    void OnVelocityDraw(VideoCore::ImageId velocity, VideoCore::ImageId depth);
-    /// A TAA pass with the View buffer bound (`view`, ViewBytes, read now). The first one of a
-    /// frame records the motion vector pass. `depth`: the pass's depth buffer (draws), if any.
-    void OnTaa(const u8* view, VideoCore::ImageId depth);
+    /// A draw into the velocity target (one R16G16_UNORM target at `address`, with a depth buffer).
+    void OnVelocityDraw(VideoCore::ImageId velocity, VAddr address, VideoCore::ImageId depth);
+    /// A G-buffer draw (3+ colour targets): its depth buffer is the scene depth, for frames
+    /// without a velocity pass (menus).
+    void OnSceneDraw(VideoCore::ImageId depth);
+    /// A TAA pass with the View buffer bound (`view`, ViewBytes, read now) sampling `reads`. The
+    /// first one of a frame records the motion vector pass. `depth`: the pass's depth buffer
+    /// (draws), if any.
+    void OnTaa(const u8* view, std::span<const VAddr> reads, VideoCore::ImageId depth);
     /// Presenter, at a flip, on the draw scheduler's command buffer: after this frame's motion
     /// vectors, the debug view of `display` (in ShaderReadOnlyOptimal for compute) into an image
     /// of the port; its view in `present_format`, to present instead. Null: present as before.
@@ -77,7 +82,8 @@ private:
     vk::UniquePipelineLayout view_layout;
     vk::UniquePipeline view_pipeline;
 
-    Target velocity, depth;
+    Target velocity, depth, scene_depth;
+    VAddr velocity_address = 0;
     bool recorded = false;
     u32 recorded_frame = 0;
     bool fresh = false;                ///< motion vectors of a frame not yet presented

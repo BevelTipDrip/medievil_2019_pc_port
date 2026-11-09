@@ -31,6 +31,7 @@ struct MotionPush {
     std::array<float, 16> clip_to_prev_clip;
     std::array<float, 2> view_size;
     std::array<float, 2> image_size;
+    u32 has_velocity;
 };
 
 struct ViewPush {
@@ -38,6 +39,7 @@ struct ViewPush {
     std::array<float, 2> view_size;
     u32 mode;
     u32 history;
+    u32 swap_red_blue;
 };
 
 vk::UniqueDescriptorSetLayout MakeLayout(vk::Device device,
@@ -200,16 +202,24 @@ VideoCore::Image* Ue4Motion::Find(const Target& target) {
     return target.id ? texture_cache.TryGetImage(target.id, target.uid) : nullptr;
 }
 
-void Ue4Motion::OnVelocityDraw(VideoCore::ImageId velocity_id, VideoCore::ImageId depth_id) {
+void Ue4Motion::OnVelocityDraw(VideoCore::ImageId velocity_id, VAddr address,
+                               VideoCore::ImageId depth_id) {
     if (velocity_id != velocity.id || !Find(velocity)) {
         velocity = Remember(velocity_id);
     }
+    velocity_address = address;
     if (depth_id != depth.id || !Find(depth)) {
         depth = Remember(depth_id);
     }
 }
 
-void Ue4Motion::OnTaa(const u8* view, VideoCore::ImageId taa_depth) {
+void Ue4Motion::OnSceneDraw(VideoCore::ImageId depth_id) {
+    if (depth_id && (depth_id != scene_depth.id || !Find(scene_depth))) {
+        scene_depth = Remember(depth_id);
+    }
+}
+
+void Ue4Motion::OnTaa(const u8* view, std::span<const VAddr> reads, VideoCore::ImageId taa_depth) {
     if (!view) {
         return;
     }
@@ -218,13 +228,20 @@ void Ue4Motion::OnTaa(const u8* view, VideoCore::ImageId taa_depth) {
     if (recorded && frame_number == recorded_frame) {
         return; // the second TAA draw of the frame
     }
-    // The velocity target of this frame or, in a frame without velocity draws, the last one
-    // (TAA still samples it: U1); the depth of the velocity pass, else TAA's own.
-    auto* velocity_image = Find(velocity);
+    // The velocity target when this TAA pass samples it (in gameplay frames without velocity
+    // draws too, U1; not in menus): else camera motion only. The depth of the velocity pass,
+    // else TAA's own, else the G-buffer pass's.
+    auto* velocity_image =
+        velocity_address && std::ranges::find(reads, velocity_address) != reads.end()
+            ? Find(velocity)
+            : nullptr;
     auto* depth_image = Find(depth);
     if (!depth_image && taa_depth) {
         depth = Remember(taa_depth);
         depth_image = Find(depth);
+    }
+    if (!depth_image) {
+        depth_image = Find(scene_depth);
     }
     static bool warned = false;
     const auto warn = [&](const char* why) {
@@ -233,23 +250,26 @@ void Ue4Motion::OnTaa(const u8* view, VideoCore::ImageId taa_depth) {
             std::printf("UE4 motion: pass skipped (%s)\n", why);
         }
     };
-    if (!velocity_image || !depth_image) {
-        warn(!velocity_image ? "no velocity target" : "no depth");
+    if (!depth_image) {
+        warn("no depth");
         return;
     }
     const auto depth_format = depth_image->info.pixel_format;
-    if (velocity_image->info.pixel_format != vk::Format::eR16G16Unorm ||
-        (depth_format != vk::Format::eD32Sfloat && depth_format != vk::Format::eD32SfloatS8Uint) ||
-        velocity_image->info.size.width != depth_image->info.size.width ||
-        velocity_image->info.size.height != depth_image->info.size.height) {
-        warn("velocity / depth formats or sizes");
+    if (depth_format != vk::Format::eD32Sfloat && depth_format != vk::Format::eD32SfloatS8Uint) {
+        warn("depth format");
         return;
+    }
+    if (velocity_image && (velocity_image->info.pixel_format != vk::Format::eR16G16Unorm ||
+                           velocity_image->info.size.width != depth_image->info.size.width ||
+                           velocity_image->info.size.height != depth_image->info.size.height)) {
+        warn("velocity format or size");
+        velocity_image = nullptr;
     }
     recorded = true;
     recorded_frame = frame_number;
 
-    const u32 width = velocity_image->info.size.width;
-    const u32 height = velocity_image->info.size.height;
+    const u32 width = depth_image->info.size.width;
+    const u32 height = depth_image->info.size.height;
     MotionPush push;
     std::memcpy(push.clip_to_prev_clip.data(), view + OffsetClipToPrevClip,
                 sizeof(push.clip_to_prev_clip));
@@ -257,28 +277,35 @@ void Ue4Motion::OnTaa(const u8* view, VideoCore::ImageId taa_depth) {
     push.view_size = {std::clamp(push.view_size[0], 1.0f, float(width)),
                       std::clamp(push.view_size[1], 1.0f, float(height))};
     push.image_size = {float(width), float(height)};
+    push.has_velocity = velocity_image ? 1u : 0u;
     view_size = push.view_size;
 
     Ensure(motion, width, height, vk::Format::eR16G16B16A16Sfloat);
     scheduler.EndRendering();
-    runtime.Transit(velocity_image, vk::ImageLayout::eGeneral,
-                    vk::PipelineStageFlagBits2::eComputeShader, vk::AccessFlagBits2::eShaderRead);
+    if (velocity_image) {
+        runtime.Transit(velocity_image, vk::ImageLayout::eGeneral,
+                        vk::PipelineStageFlagBits2::eComputeShader,
+                        vk::AccessFlagBits2::eShaderRead);
+    }
     runtime.Transit(depth_image, vk::ImageLayout::eGeneral,
                     vk::PipelineStageFlagBits2::eComputeShader, vk::AccessFlagBits2::eShaderRead);
     runtime.FlushBarriers();
     const auto device = instance.GetDevice();
-    const vk::ImageView velocity_view = Check(device.createImageView({
-        .image = velocity_image->GetImage(),
-        .viewType = vk::ImageViewType::e2D,
-        .format = vk::Format::eR16G16Unorm,
-        .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
-    }));
     const vk::ImageView depth_view = Check(device.createImageView({
         .image = depth_image->GetImage(),
         .viewType = vk::ImageViewType::e2D,
         .format = depth_format,
         .subresourceRange = {vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1},
     }));
+    // Without velocity the depth view fills the binding; the shader does not read it.
+    const vk::ImageView velocity_view =
+        velocity_image ? Check(device.createImageView({
+                             .image = velocity_image->GetImage(),
+                             .viewType = vk::ImageViewType::e2D,
+                             .format = vk::Format::eR16G16Unorm,
+                             .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
+                         }))
+                       : depth_view;
     const vk::Image motion_image = vk::Image(motion.image);
     const vk::ImageView motion_view = *motion.view;
     const vk::ImageLayout old_layout = motion.layout;
@@ -318,7 +345,9 @@ void Ue4Motion::OnTaa(const u8* view, VideoCore::ImageId taa_depth) {
         cmdbuf.dispatch((width + 7) / 8, (height + 7) / 8, 1);
     });
     scheduler.DeferOperation([device, velocity_view, depth_view] {
-        device.destroyImageView(velocity_view);
+        if (velocity_view != depth_view) {
+            device.destroyImageView(velocity_view);
+        }
         device.destroyImageView(depth_view);
     });
     fresh = true;
@@ -414,6 +443,12 @@ vk::ImageView Ue4Motion::Compose(vk::CommandBuffer cmdbuf, VideoCore::Image& dis
         .view_size = view_size,
         .mode = u32(mode),
         .history = history_valid ? 1u : 0u,
+        // The presenter views an RGBA display buffer as BGRA (A8R8G8B8 guest buffers).
+        .swap_red_blue = (raw == vk::Format::eR8G8B8A8Unorm &&
+                          (present_format == vk::Format::eB8G8R8A8Srgb ||
+                           present_format == vk::Format::eB8G8R8A8Unorm))
+                             ? 1u
+                             : 0u,
     };
     history_valid = true;
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, *view_pipeline);

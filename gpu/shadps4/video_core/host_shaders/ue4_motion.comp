@@ -16,6 +16,7 @@ layout(push_constant) uniform Constants {
     vec4 clip_to_prev_clip[4]; // View.ClipToPrevClip rows (row vector times matrix)
     vec2 view_size;            // View.ViewSizeAndInvSize.xy: the rendered rectangle, from (0, 0)
     vec2 image_size;           // the velocity / depth images
+    uint has_velocity;         // 0: the TAA pass does not sample a velocity target (menus)
 };
 
 void main() {
@@ -25,7 +26,7 @@ void main() {
     }
     // UE4's screen position: x right, y up, -1..1 over the view rectangle.
     const vec2 screen = (vec2(pixel) + 0.5) / view_size * vec2(2.0, -2.0) + vec2(-1.0, 1.0);
-    const vec2 encoded = texelFetch(velocity_tex, pixel, 0).rg;
+    const vec2 encoded = has_velocity != 0u ? texelFetch(velocity_tex, pixel, 0).rg : vec2(0.0);
     const bool written = encoded.x > 0.0;
     vec2 back; // current minus previous screen position (UE4's BackN)
     if (written) {
