@@ -1,6 +1,6 @@
 ---
 id: ue4-dlaa
-title: DLAA in place of UE4's TAA at render scale 100 (U3), F9 switches live
+title: DLSS in place of UE4's TAA - DLAA at render scale 100 (U3), upscaling at the TAAU dispatch below it (U4); F9 switches live
 area: ue4
 status: diagnostic
 platforms: windows
@@ -8,9 +8,9 @@ default_windows: off
 default_deck: n/a
 origin: ours
 class: M
-commits: 7b74b91, ef9d584, b0cef35, f25a373, 81a1fc9
+commits: 7b74b91, ef9d584, b0cef35, f25a373, 81a1fc9, c91cfd3
 files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shim/gow3_overlay.cpp
-symbols: Ue4Dlss, CameraJumpPixels, OnColorTarget, OnTaaDraw, Running, GetPass, depth_inverted, ue4_dlss, target_rgba16f
+symbols: Ue4Dlss, CameraJumpPixels, OnColorTarget, OnTaaDraw, OnTaauDispatch, Run, Running, GetPass, depth_inverted, ue4_dlss, target_rgba16f
 switches: GOW3_UE4_DLSS
 tests: u3-dlaa, u3-dlaa-2, u3-dlaa-3, u3-dlaa-4
 docs: plan-ue4-motion-vectors.md#u3-design-dlaa-at-render-scale-100, plan-dlss.md#d0-2026-11-08-bridge-built-support-checked-offline
@@ -32,8 +32,15 @@ the first frame after UE4's TAA ran, a View frame number that is not the last + 
 `cut-evidence`, plan-ue4-motion-vectors.md "Camera cuts"), a new feature. No camera-motion rule. F9 switches DLAA and UE4's TAA live. RCAS is off while DLAA ran in the last 100 ms
 (the user's decision). Under TAAU (the compute TAA) and without the DLLs nothing changes.
 
+U4 (below render scale 100): at the TAAU dispatch (`cs b373f39908ae979f`, before `BindResources`) DLSS upscales from
+the View size to the dispatch's output T# size (quality from the ratio, `Dlss::QualityForScale`), into the
+dispatch's storage output (copied, or blitted when its format is not RGBA16F), and the dispatch is skipped
+(`ResetBindings(true)`). The output image is found from the written image's T# (`FindImage`) only while DLSS is on.
+
 ## Invariants
 
+- U4: the TAAU output gets `FindTexture` with its storage binding (GPU-modified, aliases told) before DLSS writes
+  it, as the skipped dispatch's storage write would.
 - DLSS's copy target gets `FindRenderTarget` (not Undefined, GPU-modified, aliases told) before DLSS writes it,
   as the skipped draw's colour target would: without it the texture cache can refresh it from guest memory.
 - Skipping a TAA draw returns from `DrawRecord` after `PrepareRenderState`, clearing `bind_prepared` and calling
@@ -84,6 +91,8 @@ the first frame after UE4's TAA ran, a View frame number that is not the last + 
   Run `u3-dlaa-4` (build `7bc6bc8`, `data/u3-dlaa-4.log`): no failed evaluation, 12 resets (feature creations, a load,
   F9 switches); DLAA median 4.9-5.2 ms per 5 s against 5.0-5.2 before, UE4 TAA 4.22 (the cap): the cost is DLSS's GPU
   work, not the sync.
+- U4 built (sixth commit). Not run. DLL: SDK 310.9.16 (DLSS 4.5 generation), preset 0 = driver default; DLAA costs
+  ~0.85 ms a frame at 4K on the RTX 4090 (the user: DLSS 4.5 is heavy, ~40 FPS here).
 
 ## History and pitfalls
 

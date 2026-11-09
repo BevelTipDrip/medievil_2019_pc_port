@@ -163,7 +163,7 @@ is ~100% different; mouse flicks must not be taken for cuts).
 - **Verify:** the user compares DLAA against UE4 TAA (hotkey) standing still, panning and in combat: ghosting on
   Dan and enemies, shimmer on fences and foliage, the HUD unchanged.
 
-## U4 design: DLSS below native, at the TAAU compute pass (not built)
+## U4 design: DLSS below native, at the TAAU compute pass
 
 From U1 (checked): below render scale 100 UE4's TAA is one dispatch of `cs b373f39908ae979f` (8x8 groups over the
 **output** size, e.g. 480x270 for 3840x2160), reading the scene colour, velocity, depth, the stencil and last frame's
