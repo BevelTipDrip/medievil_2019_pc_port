@@ -24,6 +24,7 @@ What this fork has done, and what is next. Checked items are in a release or on 
 - [x] Shadow black boxes, a draw-pipe crash / freeze and vanishing GPU particles fixed
 - [x] Finer occlusion culling at small resolutions
 - [x] Hilltop Mausoleum lighting fixed on Linux / Steam Deck
+- [ ] Hilltop Mausoleum lighting / purple reflections on Windows (memory fix on by default, being confirmed)
 - [ ] Hang at "quit to main menu" (found: a deadlock between two GPU threads)
 - [ ] Occasional crash at startup (S1; restarting works)
 
@@ -69,7 +70,8 @@ What this fork has done, and what is next. Checked items are in a release or on 
   - Less CPU work per frame, which leaves the Deck's 15 W power budget to the GPU.
   - See [packaging/linux/README-Linux.md](packaging/linux/README-Linux.md).
 - **Fixes.**
-  - Hilltop Mausoleum lighting on Linux.
+  - Hilltop Mausoleum lighting on Linux, and on Windows the same kind of fix (reused memory is cleared before it
+    changes hands) against wrong lighting and purple reflections.
   - The torch and crypt-floor glitch with the single particle pass.
   - The in-game menu no longer adds frames while it is open.
   - A crash during memory copies on Linux.
