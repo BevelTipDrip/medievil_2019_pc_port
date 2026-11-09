@@ -54,7 +54,12 @@ Read [upscaler-reference.md](upscaler-reference.md) before changing anything her
 
 ## Frame map
 
-(Fill in at M0.)
+- Native (render scale 100): [study-mgs2-temporal-for-ue4.md](study-mgs2-temporal-for-ue4.md) sections 3.2-3.3 (capture
+  A) and [study-taau-frame-map.md](study-taau-frame-map.md) (a second native capture, 2026-11-08): the TAA pixel
+  shaders `fs 0xe88c8fcbe08ea0b6` (normal) / `fs 0xe5588ed466d8f2f3` (responsive), tonemap `fs 0x3632d4c4faaa85d2`,
+  first UI `fs 0x4fe20af683865713`, same SPIR-V in both captures; View UB offsets hold.
+- TAAU (render scale below 100): **no capture yet**; from the shader cache, most likely one compute dispatch
+  `cs 0xb373f39908ae979f` with the responsive split inside the shader (inferred). A TAAU capture (one launch) settles it.
 
 ## Risks
 
