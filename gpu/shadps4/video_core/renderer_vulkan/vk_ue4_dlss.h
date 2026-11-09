@@ -32,9 +32,10 @@ class Ue4Motion;
 
 class Ue4Dlss {
 public:
-    /// GOW3_UE4_DLSS=1 (read once).
+    /// The DLSS DLLs are beside the exe (Dlss::Get), or GOW3_UE4_DLSS=1: the hooks exist; whether
+    /// DLSS runs is the ue4_dlss setting (menu, F9, ini).
     static bool Enabled();
-    /// F9: DLAA on / off (UE4's TAA).
+    /// F9: the ue4_dlss setting on / off (UE4's TAA). The caller saves the settings.
     static void Toggle();
     /// F8: the next jitter sign handed to DLSS (+x +y, -x +y, +x -y, -x -y), shown on screen and
     /// logged; DLSS's history restarts. NVIDIA's own Ctrl+Alt+F9 setting cannot be read back.
@@ -64,9 +65,7 @@ public:
                         VAddr output_address, u32 output_width, u32 output_height,
                         const std::function<void()>& mark_written);
     /// Enabled and switched on (F9): worth looking up the TAAU output image.
-    static bool On() {
-        return Enabled() && on.load(std::memory_order_relaxed);
-    }
+    static bool On();
 
 private:
     struct Target {
@@ -95,7 +94,6 @@ private:
     u32 own_width = 0, own_height = 0;
     std::chrono::steady_clock::time_point last_time{};
     u64 evaluations = 0, resets = 0;
-    static std::atomic<bool> on;
     static std::atomic<int> jitter_sign;      ///< 0-3, see CycleJitterSign
     static std::atomic<bool> sign_changed;    ///< the next frame resets
     static std::atomic<s64> notice_until_ns;  ///< steady clock

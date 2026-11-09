@@ -10,6 +10,7 @@
 #include <cstring>
 #include <memory>
 
+#include "gow3_settings.h"
 #include "video_core/renderer_vulkan/vk_dlss.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_runtime.h"
@@ -66,7 +67,6 @@ float CameraJumpPixels(const u8* view, std::array<float, 2> size) {
 
 } // namespace
 
-std::atomic<bool> Ue4Dlss::on{true};
 std::atomic<bool> Ue4Dlss::evaluate_failed{false};
 std::atomic<s64> Ue4Dlss::last_run_ns{0};
 
@@ -79,9 +79,13 @@ bool Ue4Dlss::Running() {
 bool Ue4Dlss::Enabled() {
     static const bool enabled = [] {
         const char* value = std::getenv("GOW3_UE4_DLSS");
-        return value && value[0] == '1';
+        return (value && value[0] == '1') || Dlss::Get() != nullptr;
     }();
     return enabled;
+}
+
+bool Ue4Dlss::On() {
+    return Enabled() && Gow3Settings::Get().ue4_dlss.load(std::memory_order_relaxed);
 }
 
 namespace {
@@ -102,9 +106,10 @@ void Ue4Dlss::Toggle() {
     if (!Enabled()) {
         return;
     }
-    const bool now = !on.load(std::memory_order_relaxed);
-    on.store(now, std::memory_order_relaxed);
-    std::printf("UE4 DLSS: %s\n", now ? "DLAA" : "UE4 TAA");
+    auto& setting = Gow3Settings::Get().ue4_dlss;
+    const bool now = !setting.load(std::memory_order_relaxed);
+    setting.store(now, std::memory_order_relaxed);
+    std::printf("UE4 DLSS: %s (F9)\n", now ? "DLSS on" : "UE4 TAA");
     std::fflush(stdout);
     notice.store(now ? "DLSS on" : "UE4 TAA", std::memory_order_relaxed);
     notice_until_ns.store(SteadyNs() + 3'000'000'000LL, std::memory_order_relaxed);
@@ -134,8 +139,11 @@ Ue4Dlss::Ue4Dlss(const Instance& instance_, Scheduler& scheduler_,
     : instance{instance_}, scheduler{scheduler_}, texture_cache{texture_cache_}, runtime{runtime_},
       motion{motion_} {
     const Dlss* dlss = Dlss::Get();
-    std::printf("UE4 DLSS: on (F9 switches DLAA / UE4 TAA)%s\n",
-                dlss ? "" : "; DLSS DLLs not found: UE4 TAA stays");
+    const bool available = dlss && dlss->Available();
+    Gow3Settings::Get().ue4_dlss_available.store(available, std::memory_order_relaxed);
+    std::printf("UE4 DLSS: %s, %s (menu Image tab or F9)\n",
+                available ? "available" : "not available (DLLs or GPU)",
+                Gow3Settings::Get().ue4_dlss.load() ? "on" : "off");
 }
 
 Ue4Dlss::~Ue4Dlss() = default;
@@ -179,7 +187,7 @@ bool Ue4Dlss::Run(const u8* view, std::span<const VAddr> reads, VideoCore::Image
         return Fail("no View buffer");
     }
     const u32 frame_number = Load<u32>(view, OffsetFrameNumber);
-    if (!on.load(std::memory_order_relaxed)) {
+    if (!Gow3Settings::Get().ue4_dlss.load(std::memory_order_relaxed)) {
         was_on = false;
         return false;
     }
@@ -188,7 +196,7 @@ bool Ue4Dlss::Run(const u8* view, std::span<const VAddr> reads, VideoCore::Image
     }
     if (evaluate_failed.exchange(false, std::memory_order_relaxed)) {
         std::printf("UE4 DLSS: evaluation failed; UE4 TAA from now on\n");
-        on.store(false, std::memory_order_relaxed);
+        Gow3Settings::Get().ue4_dlss.store(false, std::memory_order_relaxed);
         return Fail("DLSS failed");
     }
     Dlss* dlss = Dlss::Get();
@@ -331,7 +339,7 @@ bool Ue4Dlss::Run(const u8* view, std::span<const VAddr> reads, VideoCore::Image
                     out_width, out_height, quality, upscale ? "TAAU" : "DLAA",
                     created ? "" : " failed");
         if (!created) {
-            on.store(false, std::memory_order_relaxed);
+            Gow3Settings::Get().ue4_dlss.store(false, std::memory_order_relaxed);
             return Fail("DLSS feature creation failed");
         }
         reset_reason = "feature created";
@@ -446,7 +454,12 @@ bool Ue4Dlss::Run(const u8* view, std::span<const VAddr> reads, VideoCore::Image
                         reset_reason, frame_number, camera_jump);
         }
     }
-    if (++evaluations == 1 || evaluations % 3000 == 0) {
+    // GOW3_FPS_LOG=0 (the user's quiet runs): no periodic lines.
+    static const bool quiet = [] {
+        const char* value = std::getenv("GOW3_FPS_LOG");
+        return value && std::strcmp(value, "0") == 0;
+    }();
+    if (++evaluations == 1 || (!quiet && evaluations % 3000 == 0)) {
         std::printf("UE4 DLSS: %llu frames, %llu resets, %ux%u -> %ux%u, jitter %.3f %.3f px\n",
                     static_cast<unsigned long long>(evaluations),
                     static_cast<unsigned long long>(resets), width, height, out_width, out_height,

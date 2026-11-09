@@ -74,6 +74,11 @@ struct Values {
     /// Set by the presenter: sharpening ran on the last frame (it needs FSR 1 when the game's
     /// image is smaller than the window).
     std::atomic<bool> rcas_applied{false};
+    /// gow3 U3 / U4 (ini ue4_dlss, GOW3_UE4_DLSS): NVIDIA DLSS in place of UE4's TAA, live (menu,
+    /// F9). Needs gow3_dlss.dll and nvngx_dlss.dll beside the exe and an RTX GPU.
+    std::atomic<bool> ue4_dlss{false};
+    /// Set at start: the DLSS DLLs are there and NGX runs on this GPU.
+    std::atomic<bool> ue4_dlss_available{false};
     /// Set by the presenter: the game's image and the window it is shown in, in pixels.
     std::atomic<int> image_width{0}, image_height{0}, window_width{0}, window_height{0};
     std::atomic<int> frames_queued{1};

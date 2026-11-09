@@ -158,7 +158,7 @@ def windows_language():
 # launcher's own settings.json (passed to run.py as environment variables).
 
 INI_FLAGS = {'cheat_menu', 'cheat_infinite_ammo', 'cheat_double_jumps', 'cheat_very_hard', 'show_fps', 'vsync', 'async_shaders', 'deferred_readback',
-             'stale_readback', 'fsr1', 'rcas'}
+             'stale_readback', 'fsr1', 'rcas', 'ue4_dlss'}
 # The graphics keys are also in the in-game menu (Insert / R3+L2); run.py reads the startup ones.
 # The God of War III port's temporal upscaler keys (upscaler, preset, output_res, sharpen, ...)
 # are not set here: run.py turns that upscaler off for MediEvil (its page was removed).
@@ -166,6 +166,7 @@ INI_DEFAULTS = {'show_fps': '1', 'display_mode': 'windowed', 'vsync': '1', 'fps_
                 'async_shaders': '1', 'deferred_readback': '1', 'stale_readback': '1',
                 'output_resolution': '1920x1080', 'render_scale': '100', 'engine_fps': '60', 'fsr1': '0',
                 'rcas': '1', 'rcas_strength': '75', 'frames_queued': '1', 'ue4_quality': 'console',
+                'ue4_dlss': '0',
                 'effects_resolution': '75',
                 'cheat_very_hard': '0', 'cheat_double_jumps': '0', 'cheat_menu': '0', 'cheat_infinite_ammo': '0',
                 'ue4_aa': 'taa', 'ue4_voice': ''}
@@ -1540,6 +1541,10 @@ class Launcher:
                    _('Enlarges a smaller game image to the window. With Render resolution 720p (Performance) '
                      'it raises the FPS; at the size of the window it does nothing.'))
         self.check(f, 'rcas', 'ini', _('Final image sharpening (RCAS)'))
+        self.check(f, 'ue4_dlss', 'ini', _('NVIDIA DLSS (replaces the game\'s anti-aliasing)'),
+                   _('DLAA at Render scale 100, DLSS upscaling below it (Quality / Balanced / Performance from '
+                     'the scale). Sharpening is off while it runs. Needs an NVIDIA RTX GPU and gow3_dlss.dll + '
+                     'nvngx_dlss.dll in the out folder. F9 switches it in the game.'))
         holder = ttk.Frame(f)
         strength = self.var('rcas_strength', 'ini')
         tk.Scale(holder, from_=0, to=100, orient='horizontal', variable=strength, showvalue=False, length=self.px(260),

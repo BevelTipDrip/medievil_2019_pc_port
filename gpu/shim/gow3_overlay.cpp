@@ -435,6 +435,13 @@ void ImageTab() {
         ImGui::BeginDisabled(!s.rcas || rcas_blocked);
         SliderRow("Sharpening strength", s.rcas_strength, 0, 100, "%d%%", "How strong the sharpening is.");
         ImGui::EndDisabled();
+        ImGui::BeginDisabled(!s.ue4_dlss_available);
+        CheckRow("NVIDIA DLSS", s.ue4_dlss,
+                 s.ue4_dlss_available
+                     ? "Replaces the game's anti-aliasing: DLAA at Render scale 100, DLSS upscaling below it. "
+                       "Sharpening is off while it runs. F9 switches it in the game."
+                     : "Needs an NVIDIA RTX GPU and gow3_dlss.dll + nvngx_dlss.dll beside the game.");
+        ImGui::EndDisabled();
         ImGui::EndTable();
     }
     ImGui::SeparatorText("Information");
@@ -446,6 +453,9 @@ void ImageTab() {
         InfoRow("Window", text);
         InfoRow("FSR 1", !s.fsr1 ? "off" : upscaling ? "active" : "no effect (image not smaller than window)");
         InfoRow("Sharpening", s.rcas_applied ? "applied" : "not applied");
+        InfoRow("DLSS", Vulkan::Ue4Dlss::Running() ? "running"
+                        : s.ue4_dlss                ? "on (waiting for the game's TAA)"
+                                                    : "off");
         ImGui::EndTable();
     }
 }
@@ -1374,6 +1384,7 @@ bool HandleEvent(const SDL_Event& event) {
         if (down && !event.key.repeat && plain_key && event.key.key == SDLK_F9 &&
             Vulkan::Ue4Dlss::Enabled()) {
             Vulkan::Ue4Dlss::Toggle();
+            Gow3Settings::Save();
             return true;
         }
         // F10: the next UE4 motion vector view (GOW3_UE4_MOTION_VIEW set only).

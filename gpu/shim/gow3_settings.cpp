@@ -168,6 +168,8 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         v.fsr1 = i != 0;
     } else if (key == "rcas") {
         v.rcas = i != 0;
+    } else if (key == "ue4_dlss") {
+        v.ue4_dlss = i != 0;
     } else if (key == "rcas_strength") {
         v.rcas_strength = Gow3Graphics::ParseRcasStrength(value.empty() ? -1 : i);
     } else if (key == "frames_queued") {
@@ -355,6 +357,7 @@ void Load() {
         {"GOW3_ASYNC_SHADERS", "async_shaders"},      {"GOW3_DEFERRED_READBACK", "deferred_readback"},
         {"GOW3_STALE_READBACK", "stale_readback"},     {"GOW3_FSR1", "fsr1"},
         {"GOW3_RCAS", "rcas"},                        {"GOW3_FRAMES_AHEAD", "frames_queued"},
+        {"GOW3_UE4_DLSS", "ue4_dlss"},
     };
     for (const auto& [env, key] : env_keys) {
         if (const char* value = std::getenv(env); value && value[0]) {
@@ -566,6 +569,7 @@ std::map<std::string, std::string> Serialize(const Values& v) {
            Gow3Graphics::Resolutions[std::clamp(v.render_resolution.load(), 0, int(Gow3Graphics::Resolutions.size()) - 1)].data(),
            v.engine_fps.load(), int(v.deferred_readback.load()), int(v.stale_readback.load()),
            int(v.restart_unconfirmed.load()));
+    Append(out, "ue4_dlss=%d\n", int(v.ue4_dlss.load()));
     // Read by run.sh at start.
     Append(out, "live_resolution=%s\n", v.live_resolution < 0 ? "auto" : v.live_resolution ? "1" : "0");
     for (int p = 0; p < PerfCount; ++p) {

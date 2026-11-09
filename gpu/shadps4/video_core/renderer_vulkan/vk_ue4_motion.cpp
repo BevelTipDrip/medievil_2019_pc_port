@@ -352,7 +352,11 @@ void Ue4Motion::OnTaa(const u8* view, std::span<const VAddr> reads, VideoCore::I
         device.destroyImageView(depth_view);
     });
     fresh = true;
-    if (++passes == 1 || passes % 3000 == 0) {
+    static const bool quiet = [] {
+        const char* value = std::getenv("GOW3_FPS_LOG");
+        return value && std::strcmp(value, "0") == 0;
+    }();
+    if (++passes == 1 || (!quiet && passes % 3000 == 0)) {
         std::printf("UE4 motion: %llu passes, last %ux%u (view %gx%g)\n",
                     static_cast<unsigned long long>(passes), width, height, push.view_size[0],
                     push.view_size[1]);

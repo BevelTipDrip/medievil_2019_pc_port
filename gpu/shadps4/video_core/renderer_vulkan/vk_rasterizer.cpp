@@ -1220,7 +1220,7 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
                          cb_descs[0].first, db_desc.first,
                          UiComposition::NativeViewport(viewport.xscale * 2, viewport.yscale * 2));
     }
-    if (frame_map || ue4_motion) [[unlikely]] {
+    if (frame_map || (ue4_motion && (Ue4Motion::Enabled() || Ue4Dlss::On()))) [[unlikely]] {
         if (ObserveFrameMap(pipeline)) {
             // gow3 U3: DLSS wrote TAA's output; the TAA draw is not recorded.
             bind_prepared = nullptr;
@@ -1461,7 +1461,7 @@ void Rasterizer::DrawIndirectRecord(const GraphicsPipeline* pipeline, bool is_in
                          cb_descs[0].first, db_desc.first,
                          UiComposition::NativeViewport(viewport.xscale * 2, viewport.yscale * 2));
     }
-    if (frame_map || ue4_motion) [[unlikely]] {
+    if (frame_map || (ue4_motion && (Ue4Motion::Enabled() || Ue4Dlss::On()))) [[unlikely]] {
         ObserveFrameMap(pipeline);
     }
     if (!BindResources(pipeline)) {
@@ -1587,7 +1587,7 @@ void Rasterizer::DispatchRecord(const ComputePipeline* pipeline) {
     if (ExecuteShaderHLE(cs, Regs(), cs_program, *this)) {
         return;
     }
-    if (frame_map || ue4_motion) [[unlikely]] {
+    if (frame_map || (ue4_motion && (Ue4Motion::Enabled() || Ue4Dlss::On()))) [[unlikely]] {
         if (ObserveFrameMap(pipeline)) {
             // gow3 U4: DLSS wrote the TAAU dispatch's output; the dispatch is not recorded.
             ResetBindings(true);
