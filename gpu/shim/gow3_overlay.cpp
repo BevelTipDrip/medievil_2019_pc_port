@@ -1102,6 +1102,22 @@ void FpsCounter() {
     ImGui::End();
 }
 
+// F8 / F9 (UE4 DLSS): what the key switched to, large, top centre, for 3 s.
+void DlssNotice(const char* text) {
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x + viewport->WorkSize.x * 0.5f,
+                                   viewport->WorkPos.y + 40.0f * base_scale),
+                            ImGuiCond_Always, ImVec2(0.5f, 0.0f));
+    ImGui::SetNextWindowBgAlpha(0.6f);
+    ImGui::Begin("##dlss_notice", nullptr,
+                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+                     ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoFocusOnAppearing |
+                     ImGuiWindowFlags_NoNav);
+    ImGui::SetWindowFontScale(2.0f);
+    ImGui::TextUnformatted(text);
+    ImGui::End();
+}
+
 void BackgroundLoading() {
     const u32 done = background_done, total = std::max(background_total.load(), 1u);
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -1349,6 +1365,12 @@ bool HandleEvent(const SDL_Event& event) {
         // F9: DLAA / UE4's TAA (GOW3_UE4_DLSS=1 only). Not with Ctrl or Alt: NVIDIA's development
         // DLSS DLL uses Ctrl+Alt+F9 / F10 / F12 for its own debug hotkeys.
         const bool plain_key = !(event.key.mod & (SDL_KMOD_CTRL | SDL_KMOD_ALT));
+        // F8: the next jitter sign handed to DLSS (GOW3_UE4_DLSS=1 only), shown on screen.
+        if (down && !event.key.repeat && plain_key && event.key.key == SDLK_F8 &&
+            Vulkan::Ue4Dlss::Enabled()) {
+            Vulkan::Ue4Dlss::CycleJitterSign();
+            return true;
+        }
         if (down && !event.key.repeat && plain_key && event.key.key == SDLK_F9 &&
             Vulkan::Ue4Dlss::Enabled()) {
             Vulkan::Ue4Dlss::Toggle();
@@ -1501,7 +1523,7 @@ bool Visible() {
     const auto& s = Gow3Settings::Get();
     return initialized && (loading || background_total || menu_open || text_entry_active || choice_active ||
                            runtime_disabled_optimizations != 0 ||
-                           choice_retiring || s.show_fps ||
+                           choice_retiring || s.show_fps || Vulkan::Ue4Dlss::Notice() ||
                            (s.actor_watch_supported && s.enemy_health_bar));
 }
 
@@ -1603,6 +1625,9 @@ void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent) {
     }
     if (background_total && !loading && !menu_open) {
         BackgroundLoading();
+    }
+    if (const char* notice = Vulkan::Ue4Dlss::Notice(); notice && !menu_open) {
+        DlssNotice(notice);
     }
     if (text_entry_active) {
         TextEntryBox();

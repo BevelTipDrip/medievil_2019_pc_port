@@ -36,6 +36,11 @@ public:
     static bool Enabled();
     /// F9: DLAA on / off (UE4's TAA).
     static void Toggle();
+    /// F8: the next jitter sign handed to DLSS (+x +y, -x +y, +x -y, -x -y), shown on screen and
+    /// logged; DLSS's history restarts. NVIDIA's own Ctrl+Alt+F9 setting cannot be read back.
+    static void CycleJitterSign();
+    /// The on-screen notice of the last F8 / F9 press while it should show (3 s), else null.
+    static const char* Notice();
     /// DLAA replaced TAA within the last 100 ms (the presenter keeps RCAS off then).
     static bool Running();
 
@@ -91,6 +96,10 @@ private:
     std::chrono::steady_clock::time_point last_time{};
     u64 evaluations = 0, resets = 0;
     static std::atomic<bool> on;
+    static std::atomic<int> jitter_sign;      ///< 0-3, see CycleJitterSign
+    static std::atomic<bool> sign_changed;    ///< the next frame resets
+    static std::atomic<s64> notice_until_ns;  ///< steady clock
+    static std::atomic<const char*> notice;
     static std::atomic<bool> evaluate_failed; ///< set on the recording thread
     static std::atomic<s64> last_run_ns; ///< steady clock
 };

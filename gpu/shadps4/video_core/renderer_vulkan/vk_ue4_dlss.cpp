@@ -84,6 +84,20 @@ bool Ue4Dlss::Enabled() {
     return enabled;
 }
 
+namespace {
+constexpr const char* JitterSignNames[] = {"DLSS jitter +x +y", "DLSS jitter -x +y",
+                                           "DLSS jitter +x -y", "DLSS jitter -x -y"};
+
+s64 SteadyNs() {
+    return std::chrono::steady_clock::now().time_since_epoch().count();
+}
+} // namespace
+
+std::atomic<int> Ue4Dlss::jitter_sign{0};
+std::atomic<bool> Ue4Dlss::sign_changed{false};
+std::atomic<s64> Ue4Dlss::notice_until_ns{0};
+std::atomic<const char*> Ue4Dlss::notice{nullptr};
+
 void Ue4Dlss::Toggle() {
     if (!Enabled()) {
         return;
@@ -92,6 +106,27 @@ void Ue4Dlss::Toggle() {
     on.store(now, std::memory_order_relaxed);
     std::printf("UE4 DLSS: %s\n", now ? "DLAA" : "UE4 TAA");
     std::fflush(stdout);
+    notice.store(now ? "DLSS on" : "UE4 TAA", std::memory_order_relaxed);
+    notice_until_ns.store(SteadyNs() + 3'000'000'000LL, std::memory_order_relaxed);
+}
+
+void Ue4Dlss::CycleJitterSign() {
+    if (!Enabled()) {
+        return;
+    }
+    const int sign = (jitter_sign.load(std::memory_order_relaxed) + 1) % 4;
+    jitter_sign.store(sign, std::memory_order_relaxed);
+    sign_changed.store(true, std::memory_order_relaxed);
+    std::printf("UE4 DLSS: %s (F8)\n", JitterSignNames[sign]);
+    std::fflush(stdout);
+    notice.store(JitterSignNames[sign], std::memory_order_relaxed);
+    notice_until_ns.store(SteadyNs() + 3'000'000'000LL, std::memory_order_relaxed);
+}
+
+const char* Ue4Dlss::Notice() {
+    return SteadyNs() < notice_until_ns.load(std::memory_order_relaxed)
+               ? notice.load(std::memory_order_relaxed)
+               : nullptr;
 }
 
 Ue4Dlss::Ue4Dlss(const Instance& instance_, Scheduler& scheduler_,
@@ -216,6 +251,9 @@ bool Ue4Dlss::Run(const u8* view, std::span<const VAddr> reads, VideoCore::Image
     const char* reset_reason = !was_on                          ? "first frame"
                                : frame_number != last_frame + 1 ? "frame number"
                                                                 : nullptr;
+    if (sign_changed.exchange(false, std::memory_order_relaxed)) {
+        reset_reason = "jitter sign (F8)";
+    }
 
     const auto device = instance.GetDevice();
     if (!output.image || own_width != out_width || own_height != out_height) {
@@ -305,9 +343,12 @@ bool Ue4Dlss::Run(const u8* view, std::span<const VAddr> reads, VideoCore::Image
     }
     last_time = now;
     // UE4's TemporalAAJitter.xy is the projection's NDC offset: pixels = x * W / 2, -y * H / 2
-    // (y down). The sign NGX wants is checked with the development DLL (Ctrl+Alt+F9).
-    const float jitter_x = Load<float>(view, OffsetJitter) * view_size[0] * 0.5f;
-    const float jitter_y = -Load<float>(view, OffsetJitter + 4) * view_size[1] * 0.5f;
+    // (y down). F8 flips the signs to find the one NGX wants (sign 0: as computed).
+    const int sign = jitter_sign.load(std::memory_order_relaxed);
+    const float jitter_x =
+        (sign & 1 ? -1.0f : 1.0f) * Load<float>(view, OffsetJitter) * view_size[0] * 0.5f;
+    const float jitter_y =
+        (sign & 2 ? 1.0f : -1.0f) * Load<float>(view, OffsetJitter + 4) * view_size[1] * 0.5f;
     const Dlss::Frame frame{
         .color = {color_image->GetImage(), color_view, vk::Format::eR16G16B16A16Sfloat,
                   vk::ImageAspectFlagBits::eColor, width, height},
