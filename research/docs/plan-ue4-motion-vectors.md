@@ -180,8 +180,10 @@ size (3072x1728 at 80%), its jitter (12 values at 80%) in render-size NDC, mip b
 - **Output:** the written image's T# -> `FindImage` + `FindTexture` with a storage binding (`GpuModified`,
   `UpdateImage`, `PublishAliasWrite`): the bookkeeping the skipped dispatch would have given it (U3's lesson).
   Output rectangle: that image's size (3840x2160; 3812x2160 in cutscenes).
-- **Jitter sign:** settled here, by eye at 80% or lower with the development DLL (Ctrl+Alt+F9 configurations): a wrong
-  sign is visible below native (MGS2: +x +y, the sign passed now).
+- **Jitter sign: settled +x +y** (run `u4-jitter-0102`, 01.02, 50%: the user cycled the port's F8 options; NVIDIA's
+  Ctrl+Alt+F9 setting cannot be read back). Same as MGS2.
+- **Results (01.02):** DLSS Quality at 67% and Performance at 50% ("50% resolution looks like native"), DLAA at 100;
+  01.02's TAAU shaders `cs 9c89e98d32a43b49` / `cs 8996eb8d7eff6a69` found by role, native TAA draws as 01.00.
 - **Resets:** as U3 (View frame number, first frame, feature creation).
 - **Presets (later; the user, 2026-11-08):** a lighter model for DLAA, DLSS 4 (preset K) for Quality, DLSS 4.5
   (L / M) for Balanced and Performance. Now preset 0 (driver default) everywhere; the bridge's `preset` field exists.
