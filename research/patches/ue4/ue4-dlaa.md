@@ -12,7 +12,7 @@ commits: 7b74b91, ef9d584, b0cef35, f25a373
 files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shim/gow3_overlay.cpp
 symbols: Ue4Dlss, CameraJumpPixels, OnColorTarget, OnTaaDraw, Running, GetPass, depth_inverted, ue4_dlss, target_rgba16f
 switches: GOW3_UE4_DLSS
-tests: u3-dlaa
+tests: u3-dlaa, u3-dlaa-2, u3-dlaa-3
 docs: plan-ue4-motion-vectors.md#u3-design-dlaa-at-render-scale-100, plan-dlss.md#d0-2026-11-08-bridge-built-support-checked-offline
 depends_on: ue4-motion-vectors
 related: ue4-frame-map
@@ -71,7 +71,11 @@ the first frame after UE4's TAA ran, a View frame number that is not the last + 
   was resetting over and over" until the user switched to UE4's TAA and back; frame pacing stayed flat (median 5.1 ms,
   p99 < 7.3 ms). Cause [inferred]: the skipped TAA draw's colour target never got a render target's texture cache
   bookkeeping, so a TAA output made at a load stayed "new" and the tonemap's read refreshed it from guest memory (an
-  old frame) over DLSS's output. Fix built (fourth commit): `FindRenderTarget` on it before DLSS writes. Not run.
+  old frame) over DLSS's output. Fix built (fourth commit): `FindRenderTarget` on it before DLSS writes.
+- Run `u3-dlaa-3` (build `ac81130`, `data/u3-dlaa-3.log`): DLAA on from the start, no F9 until in a level (the case
+  the fix covers): no judder (the user: "it didn't come back"; not reproduced in the run before either, so seen
+  again or not is not proof). 7 resets, all at the start, the cutscene, loads; then F9 switches. Pacing per 5 s:
+  UE4 TAA median 4.22 ms (the 237 FPS cap), stddev 0.20; DLAA median 5.0-5.2 ms, stddev 0.15-0.27, p99 5.3-5.8.
 
 ## History and pitfalls
 
