@@ -163,6 +163,29 @@ is ~100% different; mouse flicks must not be taken for cuts).
 - **Verify:** the user compares DLAA against UE4 TAA (hotkey) standing still, panning and in combat: ghosting on
   Dan and enemies, shimmer on fences and foliage, the HUD unchanged.
 
+## U4 design: DLSS below native, at the TAAU compute pass (not built)
+
+From U1 (checked): below render scale 100 UE4's TAA is one dispatch of `cs b373f39908ae979f` (8x8 groups over the
+**output** size, e.g. 480x270 for 3840x2160), reading the scene colour, velocity, depth, the stencil and last frame's
+output (output size), writing one storage image at the output size. The View's `ViewSizeAndInvSize` is the render
+size (3072x1728 at 80%), its jitter (12 values at 80%) in render-size NDC, mip bias already negative (-0.62).
+
+- **Same switch** `GOW3_UE4_DLSS=1` and F9: DLAA at 100, DLSS upscaling below it; DLSS quality picked from the
+  output / render ratio (`Dlss::QualityForScale`), the feature recreated when the live render scale changes.
+- **Hook:** `DispatchRecord`, before `BindResources`: the TAAU dispatch is skipped (`ResetBindings(true)`) after DLSS
+  is recorded; DLSS writes the dispatch's storage output (copied from the port's image, output size).
+- **Inputs:** colour = the last RGBA16F single-target draw before the dispatch that the dispatch samples (as U3;
+  history is output-sized and written by the dispatch, so never taken for it); depth = U2's; motion = U2's at render
+  size; input rectangle = the View size from (0, 0) (sub-rectangle during a live scale change and in cutscenes).
+- **Output:** the written image's T# -> `FindImage` + `FindTexture` with a storage binding (`GpuModified`,
+  `UpdateImage`, `PublishAliasWrite`): the bookkeeping the skipped dispatch would have given it (U3's lesson).
+  Output rectangle: that image's size (3840x2160; 3812x2160 in cutscenes).
+- **Jitter sign:** settled here, by eye at 80% or lower with the development DLL (Ctrl+Alt+F9 configurations): a wrong
+  sign is visible below native (MGS2: +x +y, the sign passed now).
+- **Resets:** as U3 (View frame number, first frame, feature creation).
+- **Verify:** the user compares DLSS against UE4's TAAU at the same render scale (F9), at 80 and lower; the
+  development overlay's motion vector / depth views line up with the picture.
+
 ## Camera cuts: the game's own signal (run `cut-evidence`, 2026-11-08)
 
 `data/cut-evidence.log` (frame map with cut evidence, build `22e9a9f`, render scale 100). The user: the title's intro
