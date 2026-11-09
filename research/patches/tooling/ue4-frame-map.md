@@ -8,7 +8,7 @@ default_windows: off
 default_deck: off
 origin: ours
 class: M
-commits: ba013b4
+commits: ba013b4, d61dd6c
 files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.h, tests/test_ue4_frame_map.cpp, gpu/CMakeLists.txt
 symbols: Ue4FrameMap, ObserveFrameMap, frame_map
 switches: GOW3_UE4_FRAME_MAP
