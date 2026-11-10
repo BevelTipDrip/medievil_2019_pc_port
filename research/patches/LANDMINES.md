@@ -70,6 +70,12 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
    region_index, pending_filter, reg_hash_paired, particle_flip_guard); the glitch was seen only in such a session,
    after many hours on earlier builds without it. Non-deterministic. The user (2026-11-09): keep the launcher as it
    was (switches on) with the zeroing fix on, play on and report a recurrence.
+   **Recurred 2026-11-09 ~22:10** (the user, launcher run with the 8 Deck switches on, zeroing fix on, 01.02; also
+   seen on 01.00 the same evening, walls fully white there): Hall of Heroes anteroom lit by a teal light through its
+   walls (round falloff, pillar shadows), on some loads only. Reloading via the debug menu's level select brings it
+   and clears it within a few tries. Screenshots `research-data/hall-heroes-glitch-20261109/` (untracked). The
+   zeroing counters were not printed (no `GOW3_FRAME_STATS`), so the run says nothing about the leak path.
+   Next: a `GOW3_FRAME_STATS=1` repro run, then good / broken frame captures.
 10. **Linux crash window in `CopySparseSerial`** ([copy-thread-backing-view](deck/copy-thread-backing-view.md)): if
     `runtime_memory_read_backing` returns 0 after a lock-free lookup said "mapped", the code memcpys from a PROT_NONE
     guest address: the native run 7 SIGSEGV. The Linux branch should zero-fill or retry.
