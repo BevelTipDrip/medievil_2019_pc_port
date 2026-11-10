@@ -75,7 +75,16 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
    walls (round falloff, pillar shadows), on some loads only. Reloading via the debug menu's level select brings it
    and clears it within a few tries. Screenshots `research-data/hall-heroes-glitch-20261109/` (untracked). The
    zeroing counters were not printed (no `GOW3_FRAME_STATS`), so the run says nothing about the leak path.
-   Next: a `GOW3_FRAME_STATS=1` repro run, then good / broken frame captures.
+   Run `hall-glitch-framestats-0102` (broken load seen): **0 pages zeroed or handed over in all 50 windows**, so
+   not the pool leak. RenderDoc captures (frame 13615 broken, 30045 clean; `research-data/hall-heroes-glitch-20261109/`):
+   the teal is added by the reflection environment pass (`fs_0xd3caef1f45107cdd`, eid 4897); the capture
+   cubemap array (70 slots) and the capture data (positions, radii, slots) are identical in both. The
+   difference: the reflection constants' float at +16, read as `SkyLightCubemapBrightness` [inferred from
+   UE4 4.21's layout], is **0.0 broken and 65535.0 clean**. UE4 divides reflections by an average brightness
+   blended from it (up to a clamp), so 0 floods the walls (teal here, white on 01.00). That value comes from a
+   one-time GPU readback at level load; in stale-readback mode a first copy's read sees bytes no copy wrote
+   (lineage-deferred-readbacks). Suspect: readback-first-wait / tiny-target-readback territory, on Windows.
+   Next: a `GOW3_READBACK_LOG=1` run (which first copies the Hall's load reads, and their values).
 10. **Linux crash window in `CopySparseSerial`** ([copy-thread-backing-view](deck/copy-thread-backing-view.md)): if
     `runtime_memory_read_backing` returns 0 after a lock-free lookup said "mapped", the code memcpys from a PROT_NONE
     guest address: the native run 7 SIGSEGV. The Linux branch should zero-fill or retry.

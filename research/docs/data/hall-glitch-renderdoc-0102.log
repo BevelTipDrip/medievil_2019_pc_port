@@ -1,0 +1,18 @@
+Extra environment (C:\Users\Ty\MediEvil\medievil_2019_pc_port\extra-env.txt): GOW3_FPS_LOG=0
+Deck switches: 8 on: early_frame_eop, decode_pacing, drain_hybrid, texset_wide, region_index, pending_filter, reg_hash_paired, particle_flip_guard; off: backing_copy (Linux only), thread_nice (Linux only), arena_writes_off (already off on Windows); Windows: untested
+Game profile: MediEvil (libc.prx, libSceFios2.prx, libSceNpToolkit2.prx)
+Output resolution: 3840x2160
+Graphics: quality custom; shadow_resolution=dynamic, small_object_shadows=0.01, shadow_distance=ps4, sun_shadow_resolution=2048, shadow_quality=3, view_distance=1, lod_distance=ps4, foliage_density=1, texture_filtering=16, ambient_occlusion=auto, reflections=3, refraction=2, volumetric_fog=1, motion_blur=4, depth_of_field=2, bloom=5, lens_flares=2, chromatic_aberration=1
+Render resolution: 3840x2160 output, render scale 67% (temporal upsampling), console quality, up to 1000 FPS, debug menu (R3; 01.02: L1 + R1 + R3)
+MediEvil | entry=0x2e9da70 | image=96,917,088 bytes
+928 imported symbols; 552,865 relocations; 58 required modules
+Unavailable non-loadable metadata headers: [10]; not a byte-exact ELF reconstruction
+Output: C:\Users\Ty\MediEvil\medievil_2019_pc_port\out
+libc _init_env verified RET: True
+Linked native libc: base=0x5c70000, 162 fallback exports, TLS=1152 bytes; eboot TLS=16 bytes, fs->gs patched=5
+Linked modules: libc.prx@0x5c70000, libSceFios2.prx@0x5da0000, libSceNpToolkit2.prx@0x5f30000; 348 native bindings, 850 imports left to the host runtime, fs->gs patched=5
+AppContent profile: SKU=full (probe setting), user params=[0, 0, 0, 0], mounted add-ons=0
+Patches: CUSA11227; 17 writes from ['Native 4K framebuffer pool (512 MB)', 'GPU particle bounds', 'Finer occlusion culling (low render resolutions, Steam Deck)', '4K display metrics at boot']
+Saves backed up to C:\Users\Ty\MediEvil\medievil_2019_pc_port\user\savedata_backups\20261109-222308
+Launching 'C:\Users\Ty\MediEvil\medievil_2019_pc_port\out\medievil-runtime.exe' with params: C:\Users\Ty\MediEvil\medievil_2019_pc_port\out\boot-linked.bin --content-profile C:\Users\Ty\MediEvil\medievil_2019_pc_port\out\content.bin --patches C:\Users\Ty\MediEvil\medievil_2019_pc_port\out\patches.bin --app0 E:\MediEvil\CUSA11227-0102 --user C:\Users\Ty\MediEvil\medievil_2019_pc_port\user --timeout 0
+'C:\Users\Ty\MediEvil\medievil_2019_pc_port\out\medievil-runtime.exe' finished executing.
