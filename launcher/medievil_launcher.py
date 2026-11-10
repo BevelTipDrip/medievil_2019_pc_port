@@ -1667,10 +1667,11 @@ class Launcher:
                  _('The spoken language: 15 are in the game. "Same as game language" follows the game '
                    'language (English voices for languages without a dub). Applied at start.'), restart=True)
         self.section(f, _('Cheats'))
-        self.check(f, 'cheat_menu', 'ini', _('Developer cheat menu (R3 in the game)'),
+        self.check(f, 'cheat_menu', 'ini', _('Developer cheat menu (R3 in a level)'),
                    _("MediEvil's own debug menu, left in the game by its developers: level select, complete "
                      'level, weapons and items for the level, runes, gold, life bottles and more. Press R3 '
-                     '(click the right stick) during play. Applied at start.'))
+                     '(click the right stick) in a level; on 01.02 hold L1 + R1, then press R3. '
+                     'Applied at start.'))
         self.check(f, 'cheat_infinite_ammo', 'ini', _('Unlimited ammo'),
                    _('Daggers, crossbow and longbow bolts, lightning and the other weapons never run out, and '
                      'weapons and shields do not wear out. Applied at start.'))

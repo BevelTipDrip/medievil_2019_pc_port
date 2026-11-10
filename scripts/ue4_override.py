@@ -241,8 +241,11 @@ SUN_SHADOWS = {'ultra': ('3', '1.5'), 'high': ('3', '1.2'), 'console': ('2', '0.
                'medium': ('2', '0.75'), 'low': ('2', '0.6')}
 
 
-# The developers' debug menu (R3 in the game: level select, complete level, gear and items for
+# The developers' debug menu (R3 in a level: level select, complete level, gear and items for
 # the level, runes, gold, life bottles, invulnerability). OverbiteGameSingleton reads the switch.
+# Dan's Blueprint opens it on R3; on 01.02 only while L1 and R1 are held (its R3 event checks
+# RightShoulderDown and LeftShoulderDown, set by its own shoulder key events). The main menu has
+# no debug menu (research/patches/ue4/debug-menu-0102.md).
 GAME_CONFIG = 'OVERBITE/Config/PS4/PS4Game.ini'
 
 
@@ -252,24 +255,6 @@ def debug_menu_config(game, enabled):
     text = set_section(text, '/Script/OVERBITE.OverbiteGameSingleton',
                        {'AllowDebugMenu': 'true' if enabled else 'false'})
     return text.replace('\n', '\r\n').encode('utf-8')
-
-
-# 01.02 binds R3 to the camera's "RecenterCamera" action (BP_InputDelegateActor and the camera
-# areas listen for it); the action binding takes the button, and the debug menu (R3, opened in
-# native code) never opens on 01.02 (plan-0102.md). With the debug menu on, the override pak carries
-# the build's own DefaultInput.ini without that mapping: R3 opens the debug menu again and no longer
-# recenters the camera. 01.00 has no such line: nothing is written.
-INPUT_CONFIG = 'OVERBITE/Config/DefaultInput.ini'
-
-
-def debug_menu_input(game):
-    """DefaultInput.ini without the R3 RecenterCamera mapping, or None when the build has none."""
-    text = read_file(game, INPUT_CONFIG).decode('utf-8-sig').replace('\r\n', '\n')
-    lines = text.split('\n')
-    kept = [l for l in lines if not ('ActionName="RecenterCamera"' in l and 'Key=Gamepad_RightThumbstick' in l)]
-    if len(kept) == len(lines):
-        return None
-    return '\n'.join(kept).replace('\n', '\r\n').encode('utf-8')
 
 
 # The debug menu's widget Blueprint: when it is created it calls SetFrameRateLimit(60) and
@@ -555,9 +540,6 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
         try:
             files[GAME_CONFIG] = debug_menu_config(game, True)
             files[DEBUG_HUD] = debug_hud(game, output, scale > 100)
-            if (inputs := debug_menu_input(game)) is not None:
-                files[INPUT_CONFIG] = inputs
-                print('Debug menu: R3 taken from the camera recenter action (01.02) for the debug menu', flush=True)
         except (ValueError, FileNotFoundError) as error:
             print(f'Debug menu: not available for this game build ({error})', flush=True)
             debug_menu = False
@@ -580,7 +562,7 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
     write_pak(pak, files)
     return (f'{output} output, render scale {scale}%'
             f'{" (temporal upsampling)" if scale < 100 else " (supersampled)" if scale > 100 else ""}, {quality} quality, '
-            f'{f"up to {fps}" if fps > 60 else 60} FPS{", debug menu (R3)" if debug_menu else ""}'
+            f'{f"up to {fps}" if fps > 60 else 60} FPS{", debug menu (R3; 01.02: L1 + R1 + R3)" if debug_menu else ""}'
             f'{f", anti-aliasing {aa}" if aa_quality is not None else ""}'
             f'{", unlimited ammo" if infinite_ammo else ""}{f", voices {voice}" if voice else ""}'
             f'{"; extra cvars " + ", ".join(f"{k}={v}" for k, v in extra.items()) if extra else ""}')
@@ -593,7 +575,7 @@ if __name__ == '__main__':
     parser.add_argument('--scale', type=int, default=100, help='render scale in percent (25-200)')
     parser.add_argument('--quality', choices=list(QUALITY), default='console')
     parser.add_argument('--fps', type=int, default=60, help='engine frame rate (60 = original)')
-    parser.add_argument('--debug-menu', action='store_true', help='allow the developer debug menu (R3)')
+    parser.add_argument('--debug-menu', action='store_true', help='allow the developer debug menu (R3 in a level; 01.02: hold L1 + R1, then R3)')
     args = parser.parse_args()
     print('Render resolution:', apply(args.game, args.output, args.scale, args.quality, args.fps,
                                       args.debug_menu))

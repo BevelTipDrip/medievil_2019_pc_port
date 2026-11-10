@@ -203,7 +203,8 @@ Captured on Windows 11 (RTX 5080) with this port.
 ### Cheats (launcher > Game > Cheats)
 
 - **Developer cheat menu**: MediEvil's own debug menu, left in the game by its developers and
-  switched on by the override pak. Press **R3** while playing: unlock all levels, level select,
+  switched on by the override pak. Press **R3** in a level (01.02: hold **L1 + R1**, then press
+  **R3**): unlock all levels, level select,
   complete level, unlock all weapons, invincibility, all runes and quest items, life bottles,
   gold, chalices, fly mode and more. Its 60 FPS lock is removed. Enemies pause while the menu is
   open (the developers' design) and carry on when it closes, however it is closed (Complete
@@ -253,8 +254,8 @@ Captured on Windows 11 (RTX 5080) with this port.
   4K native output) finds the game's resolution setting in each version's own code (tested on 01.00;
   the 01.02 address was found by @Porticus in #29). If a game build doesn't have that code, native
   output stays at 1080p and the log says so. On the European 01.02 (CUSA12982) the 4K pool patch,
-  unlimited ammo, the FPS counter edit and the voice option work, but **the developer cheat menu
-  does not open yet** (R3 does nothing). The 01.02 eboot does not export
+  unlimited ammo, the FPS counter edit and the voice option work; the developer cheat menu opens
+  with L1 + R1 + R3 there as on the US 01.02 (not tested on the EU build). The 01.02 eboot does not export
   a few `libSceNpToolkit2` C++ functions the game links; those imports are logged no-ops returning
   0, since the port does not implement that module.
 - **Radeon RX 400/500 and Vega** (older AMD drivers): some crash in `amdvlk64.dll` when the main
