@@ -24,7 +24,8 @@ What this fork has done, and what is next. Checked items are in a release or on 
 - [x] Shadow black boxes, a draw-pipe crash / freeze and vanishing GPU particles fixed
 - [x] Finer occlusion culling at small resolutions
 - [x] Hilltop Mausoleum lighting fixed on Linux / Steam Deck
-- [ ] Hilltop Mausoleum lighting / purple reflections on Windows (memory fix on by default, being confirmed)
+- [x] Wrong lighting / white or teal walls / purple reflections (Hall of Heroes, Hilltop Mausoleum): the sky light's
+  brightness is now read correctly at each level load
 - [ ] Hang at "quit to main menu" (found: a deadlock between two GPU threads)
 - [ ] Occasional crash at startup (S1; restarting works)
 
@@ -51,6 +52,16 @@ What this fork has done, and what is next. Checked items are in a release or on 
 - [x] New icon, Start menu shortcut, updates from this fork
 - [x] Mouse cursor hidden while playing
 - [ ] Mouse look and menu mouse, controller button glyphs, camera options
+
+## What's new in 2.1.1
+
+- **Lighting fix.** Walls that sometimes came up flooded with light after a level load (teal in the Hall of
+  Heroes, white on 01.00, purple reflections) are fixed. Each level load, the game reads one small value back
+  from the GPU, the sky light's average brightness; the port used to hand it leftover memory instead. Levels
+  now also look as intended on good loads: darker corners, less washed out.
+- **Developer cheat menu on 01.02.** It opens with **L1 + R1 + R3** in a level (01.00: R3). The update added
+  that combo; the port's earlier attempts to free up R3 are gone, so R3 still recenters the camera.
+- **Steam Deck build attached** to the release: `MediEvil-x86_64.AppImage`.
 
 ## What's new in 2.1.0
 
