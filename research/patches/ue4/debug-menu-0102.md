@@ -44,6 +44,8 @@ Blueprint function and object (FFrame Node 0x10, Object 0x18) and the result.
 
 - game-update-0102: the other 01.02 differences.
 - 01.02: R3 also recenters the camera when it opens the menu (harmless).
+- The DebugHUD enemy-resume edit (Destruct calls SetAIPaused(false)) was made on 01.00. On 01.02, closing the menu
+  with the combo has not been checked for enemies resuming.
 
 ## Evidence
 
@@ -51,7 +53,8 @@ Blueprint function and object (FFrame Node 0x10, Object 0x18) and the result.
 - `debug-menu-trace-0100.log`: R3 in a level opened the menu, with 4 calls returning 1 from Dan's Blueprint.
 - Disassembly of `ExecuteUbergraph_BP_df_character` (scratch Kismet disassembler): the R3 entry is 0x17eb on 01.00
   (`DebugMenu()`) and 0xacd on 01.02 (the shoulder check, then `DebugMenu()`).
-- In-game check of L1 + R1 + R3 on 01.02: pending.
+- Verified by the user (2026-11-09, 01.02 in a level): L1 + R1 + R3 opens the debug menu
+  (`debug-menu-trace-0102-combo.log`: `GetAllowDebugMenu` calls return 1 from Dan's Blueprint).
 
 ## History and pitfalls
 
