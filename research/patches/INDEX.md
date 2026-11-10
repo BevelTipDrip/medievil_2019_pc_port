@@ -182,7 +182,7 @@ _UE4 config overrides, eboot patches, game hooks, particles, render scale, boot 
 | ID | Status | W / D | Branch | Switches | Title |
 |---|---|---|---|---|---|
 | [4k-memory](ue4/4k-memory.md) | active | on / off | lab | perf_4k_memory, GOW3_PS4_MEMORY, GOW3_DMEM_MB | 4K memory sizes: 7,104 MB guest memory and the 512 MB framebuffer pool above 1080p (perf_4k_memory) |
-| [debug-menu-0102](ue4/debug-menu-0102.md) | active | off / off | deck-lab |  | Debug menu on the touchpad click (01.00 and 01.02): its key renamed in Dan's and the main menu's Blueprints; R3 keeps recentering the camera |
+| [debug-menu-0102](ue4/debug-menu-0102.md) | active | off / off | deck-lab |  | Debug menu on 01.02: the override pak drops 01.02's R3 RecenterCamera mapping while the debug menu is on |
 | [early-z-pass-off](ue4/early-z-pass-off.md) | superseded | off / off | lab |  | r.EarlyZPass=0 alone (PS4 depth prepass off) |
 | [effects-resolution](ue4/effects-resolution.md) | active | on / on | lab |  | Effects resolution: r.SeparateTranslucencyScreenPercentage 100 / 75 / 50, live, 75% default |
 | [engine-cap-cvars](ue4/engine-cap-cvars.md) | rejected | off / off | - |  | rhi.SyncInterval=0; t.MaxFPS / the engine frame-rate range as a cap (no effect in this build) |

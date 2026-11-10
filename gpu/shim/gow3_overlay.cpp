@@ -654,7 +654,7 @@ void PerformanceTab() {
                                        "scene is already drawn larger; more would run out of game memory). Start "
                                        "with Render scale 100% or lower to switch the output size here."
                                      : "Switches the game's output now, until the next start (Output resolution "
-                                       "below is the size it starts at). Use 1080p for the debug menu (touchpad), then "
+                                       "below is the size it starts at). Use 1080p for the debug menu (R3), then "
                                        "switch back.");
         // UE4 console variables switched live (src/runtime_extra.c), kept in medievil.ini.
         ImGui::SeparatorText("Applied now");
