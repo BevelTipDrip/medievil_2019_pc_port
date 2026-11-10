@@ -241,8 +241,9 @@ SUN_SHADOWS = {'ultra': ('3', '1.5'), 'high': ('3', '1.2'), 'console': ('2', '0.
                'medium': ('2', '0.75'), 'low': ('2', '0.6')}
 
 
-# The developers' debug menu (R3 in the game: level select, complete level, gear and items for
-# the level, runes, gold, life bottles, invulnerability). OverbiteGameSingleton reads the switch.
+# The developers' debug menu (the touchpad click in the game, see DEBUG_MENU_KEY; the game's R3
+# before): level select, complete level, gear and items for the level, runes, gold, life bottles,
+# invulnerability. OverbiteGameSingleton reads the switch.
 GAME_CONFIG = 'OVERBITE/Config/PS4/PS4Game.ini'
 
 
@@ -254,22 +255,162 @@ def debug_menu_config(game, enabled):
     return text.replace('\n', '\r\n').encode('utf-8')
 
 
-# 01.02 binds R3 to the camera's "RecenterCamera" action (BP_InputDelegateActor and the camera
-# areas listen for it); the action binding takes the button, and the debug menu (R3, opened in
-# native code) never opens on 01.02 (plan-0102.md). With the debug menu on, the override pak carries
-# the build's own DefaultInput.ini without that mapping: R3 opens the debug menu again and no longer
-# recenters the camera. 01.00 has no such line: nothing is written.
-INPUT_CONFIG = 'OVERBITE/Config/DefaultInput.ini'
+# The debug menu's button: Dan's Blueprint (gameplay) and the main menu's pawn open it on an R3 key
+# event when AllowDebugMenu is set. 01.02 also binds R3 to the camera's "RecenterCamera" action,
+# which takes the button, so the debug menu never opens there (plan-0102.md). With the debug menu
+# on, both assets listen for the touchpad click instead (the Share / Select button; on PC Tab, or
+# Back / View on Xbox pads): the key's name in each package's name map is renamed, so R3 keeps
+# recentering the camera. The same on 01.00 (one button for both builds).
+DEBUG_MENU_KEY_ASSETS = ('OVERBITE/Content/Characters/Dan/BP_df_character.uasset',
+                         'OVERBITE/Content/UI/MainMenu/MainMenuPawn.uasset')
+DEBUG_MENU_KEY = ('Gamepad_RightThumbstick', 'Gamepad_Special_Left')
 
 
-def debug_menu_input(game):
-    """DefaultInput.ini without the R3 RecenterCamera mapping, or None when the build has none."""
-    text = read_file(game, INPUT_CONFIG).decode('utf-8-sig').replace('\r\n', '\n')
-    lines = text.split('\n')
-    kept = [l for l in lines if not ('ActionName="RecenterCamera"' in l and 'Key=Gamepad_RightThumbstick' in l)]
-    if len(kept) == len(lines):
-        return None
-    return '\n'.join(kept).replace('\n', '\r\n').encode('utf-8')
+def _crc_table_msb():
+    table = []
+    for i in range(256):
+        c = i << 24
+        for _ in range(8):
+            c = ((c << 1) ^ 0x04C11DB7) & 0xFFFFFFFF if c & 0x80000000 else (c << 1) & 0xFFFFFFFF
+        table.append(c)
+    return table
+
+
+def _crc_table_lsb():
+    table = []
+    for i in range(256):
+        c = i
+        for _ in range(8):
+            c = (c >> 1) ^ 0xEDB88320 if c & 1 else c >> 1
+        table.append(c)
+    return table
+
+
+_CRC_MSB, _CRC_LSB = _crc_table_msb(), _crc_table_lsb()
+
+
+def name_hashes(name):
+    """The two 16-bit hashes a UE 4.21 name map entry carries: FCrc::Strihash_DEPRECATED of the ANSI
+    name, and FCrc::StrCrc32 (four bytes per character). Checked against every entry of the two
+    assets above (3,851 of 3,851)."""
+    h1 = 0
+    for ch in name:
+        h1 = ((h1 >> 8) & 0x00FFFFFF) ^ _CRC_MSB[(h1 ^ (ord(ch.upper()) & 0xFF)) & 0xFF]
+    crc = 0xFFFFFFFF
+    for ch in name:
+        c = ord(ch)
+        for _ in range(4):
+            crc = (crc >> 8) ^ _CRC_LSB[(crc ^ c) & 0xFF]
+            c >>= 8
+    return h1 & 0xFFFF, (~crc & 0xFFFFFFFF) & 0xFFFF
+
+
+def package_header(data):
+    """Offsets of a UE 4.21 cooked .uasset (FPackageFileSummary, legacy version -7): the summary's
+    offset fields as (name, position, size, value), the name map entries as (name, start, end) and
+    the export map's SerialOffset positions."""
+    pos = 0
+
+    def take(fmt):
+        nonlocal pos
+        value = struct.unpack_from(fmt, data, pos)[0]
+        pos += struct.calcsize(fmt)
+        return value
+
+    def fstr():
+        nonlocal pos
+        n = take('<i')
+        text = data[pos:pos + (-2 * n if n < 0 else n)]
+        pos += -2 * n if n < 0 else n
+        return text.decode('utf-16le' if n < 0 else 'latin1')[:-1]
+    if take('<I') != 0x9E2A83C1 or take('<i') != -7:
+        raise ValueError('not a UE 4.21 package')
+    pos += 12  # legacy UE3 version, UE4 version, licensee version
+    count = take('<i')  # (a separate statement: `pos += take()` reads pos before take moves it)
+    pos += count * 20  # custom versions
+    fields = []
+
+    def field(name, fmt='<i'):
+        fields.append((name, pos, fmt, take(fmt)))
+    field('TotalHeaderSize')
+    fstr()
+    pos += 4  # package flags
+    name_count = take('<i')
+    field('NameOffset')
+    pos += 4
+    field('GatherableTextDataOffset')
+    export_count = take('<i')
+    field('ExportOffset')
+    pos += 4
+    field('ImportOffset')
+    field('DependsOffset')
+    pos += 4
+    field('SoftPackageReferencesOffset')
+    field('SearchableNamesOffset')
+    field('ThumbnailTableOffset')
+    pos += 16
+    count = take('<i')
+    pos += count * 8  # generations
+    for _ in range(2):  # saved by / compatible with engine version
+        pos += 10
+        fstr()
+    pos += 4
+    count = take('<i')
+    pos += count * 16  # compressed chunks
+    pos += 4
+    for _ in range(take('<i')):
+        fstr()
+    field('AssetRegistryDataOffset')
+    field('BulkDataStartOffset', '<q')
+    field('WorldTileInfoDataOffset')
+    count = take('<i')
+    pos += count * 4  # chunk ids
+    pos += 4
+    field('PreloadDependencyOffset')
+    values = {f[0]: f[3] for f in fields}
+    pos = values['NameOffset']
+    entries = []
+    for _ in range(name_count):
+        start = pos
+        entries.append((fstr(), start, pos + 4))
+        pos += 4  # the two hashes
+    serial = [values['ExportOffset'] + i * 104 + 36 for i in range(export_count)]  # FObjectExport.SerialOffset
+    return fields, entries, serial
+
+
+def rename_package_name(data, old, new):
+    """`data` (a cooked .uasset) with name map entry `old` renamed to `new` (an ASCII name), hashes
+    recomputed, and every summary offset and export SerialOffset behind the name map shifted."""
+    fields, entries, serial = package_header(data)
+    hits = [e for e in entries if e[0] == old]
+    if len(hits) != 1:
+        raise ValueError(f'{old}: {len(hits)} name map entries')
+    _, start, end = hits[0]
+    entry = fstring(new) + struct.pack('<HH', *name_hashes(new))
+    delta = len(entry) - (end - start)
+    name_end = entries[-1][2]
+    out = bytearray(data[:start] + entry + data[end:])
+    for _name, field_pos, fmt, value in fields:
+        if value > start:
+            struct.pack_into(fmt, out, field_pos, value + delta)
+    for pos in serial:
+        struct.pack_into('<q', out, pos + delta, struct.unpack_from('<q', out, pos + delta)[0] + delta)
+    # Check: the edited header reads back with the new name, the name map ends where the next table
+    # starts, and the exports still begin right after the header, one after another.
+    new_fields, new_entries, new_serial = package_header(bytes(out))
+    values = {f[0]: f[3] for f in new_fields}
+    names = [e[0] for e in new_entries]
+    offsets = [struct.unpack_from('<qq', out, p - 8) for p in new_serial]  # (SerialSize, SerialOffset)
+    if (names.count(new) != 1 or old in names or new_entries[-1][2] != name_end + delta or
+            values['TotalHeaderSize'] != len(out) or offsets[0][1] != len(out) or
+            any(offsets[i][1] + offsets[i][0] != offsets[i + 1][1] for i in range(len(offsets) - 1))):
+        raise ValueError(f'{old} -> {new}: the edited header does not read back')
+    return bytes(out)
+
+
+def debug_menu_key_assets(game):
+    """{asset: data} with the debug menu on the touchpad click (DEBUG_MENU_KEY)."""
+    return {name: rename_package_name(read_file(game, name), *DEBUG_MENU_KEY) for name in DEBUG_MENU_KEY_ASSETS}
 
 
 # The debug menu's widget Blueprint: when it is created it calls SetFrameRateLimit(60) and
@@ -555,9 +696,7 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
         try:
             files[GAME_CONFIG] = debug_menu_config(game, True)
             files[DEBUG_HUD] = debug_hud(game, output, scale > 100)
-            if (inputs := debug_menu_input(game)) is not None:
-                files[INPUT_CONFIG] = inputs
-                print('Debug menu: R3 taken from the camera recenter action (01.02) for the debug menu', flush=True)
+            files.update(debug_menu_key_assets(game))
         except (ValueError, FileNotFoundError) as error:
             print(f'Debug menu: not available for this game build ({error})', flush=True)
             debug_menu = False
@@ -580,7 +719,7 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
     write_pak(pak, files)
     return (f'{output} output, render scale {scale}%'
             f'{" (temporal upsampling)" if scale < 100 else " (supersampled)" if scale > 100 else ""}, {quality} quality, '
-            f'{f"up to {fps}" if fps > 60 else 60} FPS{", debug menu (R3)" if debug_menu else ""}'
+            f'{f"up to {fps}" if fps > 60 else 60} FPS{", debug menu (touchpad)" if debug_menu else ""}'
             f'{f", anti-aliasing {aa}" if aa_quality is not None else ""}'
             f'{", unlimited ammo" if infinite_ammo else ""}{f", voices {voice}" if voice else ""}'
             f'{"; extra cvars " + ", ".join(f"{k}={v}" for k, v in extra.items()) if extra else ""}')
@@ -593,7 +732,7 @@ if __name__ == '__main__':
     parser.add_argument('--scale', type=int, default=100, help='render scale in percent (25-200)')
     parser.add_argument('--quality', choices=list(QUALITY), default='console')
     parser.add_argument('--fps', type=int, default=60, help='engine frame rate (60 = original)')
-    parser.add_argument('--debug-menu', action='store_true', help='allow the developer debug menu (R3)')
+    parser.add_argument('--debug-menu', action='store_true', help='allow the developer debug menu (touchpad click)')
     args = parser.parse_args()
     print('Render resolution:', apply(args.game, args.output, args.scale, args.quality, args.fps,
                                       args.debug_menu))
