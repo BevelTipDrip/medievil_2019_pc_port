@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include <time.h>
 #include "runtime.h"
 #include "orb_hook.h"
 #include "hzb_hook.h"
@@ -632,6 +633,69 @@ static void install_level_hook(Segment *segments, uint64_t count, uint64_t size)
            sites == medievil_level_builds ? "01.00" : "01.02");
 }
 
+/* MediEvil debug menu trace (research, plan-work-queue.md item 6): Dan's Blueprint opens the debug
+ * menu on R3 after the native GetAllowDebugMenu (01.00 works, 01.02 does not). Its exec function is
+ * wrapped through its FNameNativePtrPair slot (read when the class registers its natives, after
+ * this). Each call logs the calling Blueprint function and object (FFrame: Node 0x10, Object 0x18;
+ * UObject: ClassPrivate 0x10, NamePrivate 0x18) and the result; a caller already logged is logged
+ * again after a second. Opt-in, GOW3_DEBUG_MENU_TRACE=1. */
+typedef struct { uint32_t slot, exec; const char *build; } MedievilDebugMenuSite;
+static const MedievilDebugMenuSite medievil_debug_menu_sites[] = {
+    {0x4ed1818, 0x6639c0, "01.00"},
+    {0x4ed1818, 0x665ca0, "01.02"},
+};
+static const unsigned char medievil_debug_menu_exec_bytes[] = {
+    0x55,0x48,0x89,0xe5,0x53,0x50,0x48,0x8b,0x46,0x20,0x48,0x89,0xd3 /* push rbp .. mov rbx, rdx */
+};
+typedef ABI void (*Ue4Native)(void *context, void *stack, void *result);
+static Ue4Native debug_menu_exec;
+static int32_t ue4_name_index(const void *object) {
+    return object ? *(const int32_t *)((const char *)object + 0x18) : -1;
+}
+static ABI void debug_menu_trace(void *context, void *stack, void *result) {
+    debug_menu_exec(context, stack, result);
+    static uint64_t calls, last_ms;
+    static void *last_object;
+    static int last_result = -1;
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    const uint64_t ms = (uint64_t)now.tv_sec * 1000 + (uint64_t)now.tv_nsec / 1000000;
+    void *node = *(void **)((char *)stack + 0x10), *object = *(void **)((char *)stack + 0x18);
+    void *cls = object ? *(void **)((char *)object + 0x10) : NULL;
+    const int value = *(const unsigned char *)result;
+    ++calls;
+    if (object == last_object && value == last_result && ms - last_ms < 1000) return;
+    printf("Debug menu trace: GetAllowDebugMenu call %" PRIu64 " -> %d (function %p name %d, object %p "
+           "name %d, class %p name %d, context %p)\n", calls, value, node, ue4_name_index(node), object,
+           ue4_name_index(object), cls, ue4_name_index(cls), context);
+    fflush(stdout);
+    last_object = object;
+    last_result = value;
+    last_ms = ms;
+}
+static void install_debug_menu_trace(Segment *segments, uint64_t count, uint64_t size) {
+    const char *env = getenv("GOW3_DEBUG_MENU_TRACE");
+    if (!env || env[0] != '1') return;
+    for (size_t i = 0; i < sizeof(medievil_debug_menu_sites) / sizeof(medievil_debug_menu_sites[0]); ++i) {
+        const MedievilDebugMenuSite *s = &medievil_debug_menu_sites[i];
+        if (!mapped(segments, count, s->slot, 8) || size < s->exec + sizeof(medievil_debug_menu_exec_bytes) ||
+            memcmp(image + s->exec, medievil_debug_menu_exec_bytes, sizeof(medievil_debug_menu_exec_bytes)))
+            continue;
+        uint64_t slot;
+        memcpy(&slot, image + s->slot, 8);
+        if (slot != (uint64_t)(uintptr_t)(image + s->exec)) {
+            printf("Debug menu trace: unavailable (game build %s, native slot holds %#" PRIx64 ")\n", s->build, slot);
+            return;
+        }
+        debug_menu_exec = (Ue4Native)(uintptr_t)(image + s->exec);
+        const uint64_t wrapper = (uint64_t)(uintptr_t)debug_menu_trace;
+        memcpy(image + s->slot, &wrapper, 8);
+        printf("Debug menu trace: GetAllowDebugMenu wrapped (game build %s)\n", s->build);
+        return;
+    }
+    printf("Debug menu trace: unavailable (not an analysed MediEvil eboot: 01.00 or 01.02)\n");
+}
+
 /* MediEvil GPU particle flip guard (src/particle_hook.h, runtime_extra.c): opt-in,
  * GOW3_PARTICLE_FLIP_GUARD=1; the toggle file's second word 16384 turns the guard off live. */
 static void install_particle_flip_guard(Segment *segments, uint64_t count, uint64_t size) {
@@ -1052,6 +1116,7 @@ int main(int argc, char **argv) {
     if (game_hooks) install_stat_multipliers(app0, segments, ns, size);
     if (gpu_enabled) install_hzb_remap(segments, ns, size);
     if (gpu_enabled) install_level_hook(segments, ns, size);
+    if (gpu_enabled) install_debug_menu_trace(segments, ns, size);
     if (gpu_enabled) install_particle_flip_guard(segments, ns, size);
 #ifdef _WIN32
     printf("Guest TCB loads redirected to the TEB TLS slot: %" PRIu64 "\n", patch_tcb_loads(segments, ns));
