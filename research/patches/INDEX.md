@@ -141,7 +141,7 @@ _texture cache, buffer cache, readbacks, page tracking, uploads/downloads_
 | [R1-readback](caches/r1-readback.md) | active | on / on | lab | GOW3_READBACK_SUBMIT | A readback copy recorded at an end of pipe is submitted once the readback locks are released |
 | [R1-stale-eop](caches/r1-stale-eop.md) | reverted | n/a / n/a | lab | GOW3_STALE_SKIP_COPY_WAIT | In stale-readback mode, skip the host copy wait at end of pipe (reverted: caused V2 black torch boxes) |
 | [R2-residency-bitmap](caches/r2-residency-bitmap.md) | active | on / on | deck-lab | toggle2:ResidencyBitmap | Buffer cache residency check answered from a bitmap of resident blocks |
-| [readback-first-wait](caches/readback-first-wait.md) | rejected | off / off | deck-lab | GOW3_READBACK_FIRST_WAIT | First-copy readback read wait: stale first readbacks as a Mausoleum suspect (off by default) |
+| [readback-first-wait](caches/readback-first-wait.md) | active | on / on | deck-lab | GOW3_READBACK_FIRST_WAIT | "First-copy readback read wait: a stale first readback fed UE4's sky light brightness (Hall of Heroes / white walls); on by default" |
 | [S2](caches/s2.md) | active | on / on | lab | GOW3_STREAM_CLEAN, perf_small_buffers | Small read-only buffers the CPU has not rewritten bound from the arena (no copy, no pass break) |
 | [stream-class-table](caches/stream-class-table.md) | active | on / on | lab |  | Buffer cache small-buffer state in a fixed 65,536-entry direct-mapped table (was an unordered_map cleared at 262,144) |
 | [tiny-target-readback](caches/tiny-target-readback.md) | rejected | off / off | deck-lab | GOW3_TINY_TARGET_READBACK | Copy tiny tiled targets back to guest memory in their tiled layout (Mausoleum suspect; off by default) |

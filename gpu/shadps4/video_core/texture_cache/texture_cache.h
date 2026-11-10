@@ -570,17 +570,18 @@ private:
     /// gow3 (plan-linux-deck.md "Mausoleum lighting"): in stale mode a CPU read of a range whose
     /// first copy is still pending sees bytes no copy wrote (nothing was published there yet).
     /// GOW3_READBACK_LOG=1 logs each first copy (queued, published, read by the CPU);
-    /// GOW3_READBACK_FIRST_WAIT=1: CPU reads of first copies are watched too, so such a read
+    /// First copies' CPU reads are watched too (GOW3_READBACK_FIRST_WAIT=0: not), so such a read
     /// waits for the GPU as without stale mode. Later copies stay stale (frame pacing unchanged).
-    /// A copy read once at a level's load (UE4's sky light lighting) is a first copy. Off by
-    /// default: diagnostics for the Mausoleum lighting (plan-linux-deck.md).
+    /// A copy read once at a level's load is a first copy: UE4's sky light average brightness
+    /// (a 1x1 target at a new address each load) read as leftover bytes, 0 flooded the walls with
+    /// reflections (Hall of Heroes teal, 01.00 white; research/patches/caches/readback-first-wait.md).
     const bool readback_log = [] {
         const char* value = std::getenv("GOW3_READBACK_LOG");
         return value && value[0] == '1';
     }();
     const bool readback_first_wait = stale_readbacks && [] {
         const char* value = std::getenv("GOW3_READBACK_FIRST_WAIT");
-        return value && value[0] == '1';
+        return !(value && value[0] == '0');
     }();
     /// gow3 GOW3_TINY_TARGET_READBACK=1: tiny color targets and storage images (at most 64
     /// texels) are copied back to guest memory in their tiled layout too (texture_cache.cpp

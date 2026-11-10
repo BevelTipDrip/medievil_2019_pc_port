@@ -84,7 +84,8 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
    blended from it (up to a clamp), so 0 floods the walls (teal here, white on 01.00). That value comes from a
    one-time GPU readback at level load; in stale-readback mode a first copy's read sees bytes no copy wrote
    (lineage-deferred-readbacks). Suspect: readback-first-wait / tiny-target-readback territory, on Windows.
-   Next: a `GOW3_READBACK_LOG=1` run (which first copies the Hall's load reads, and their values).
+   **Fix built, verified by the user (2026-11-09):** the readback log showed the 1x1 sky brightness read as a
+   first copy at a new address every load; `GOW3_READBACK_FIRST_WAIT` (readback-first-wait) on by default.
 10. **Linux crash window in `CopySparseSerial`** ([copy-thread-backing-view](deck/copy-thread-backing-view.md)): if
     `runtime_memory_read_backing` returns 0 after a lock-free lookup said "mapped", the code memcpys from a PROT_NONE
     guest address: the native run 7 SIGSEGV. The Linux branch should zero-fill or retry.

@@ -8,7 +8,7 @@ default_windows: off
 default_deck: off
 origin: ours
 class: M
-commits: 4ba06ad, 90255b8, d8d5d5a, 9597d52
+commits: 4ba06ad, 90255b8, d8d5d5a, 9597d52, 22d3d72
 files: scripts/ue4_override.py, src/probe.c, launcher/medievil_launcher.py, README.md
 symbols: install_debug_menu_trace, debug_menu_trace, medievil_debug_menu_sites
 switches: GOW3_DEBUG_MENU_TRACE

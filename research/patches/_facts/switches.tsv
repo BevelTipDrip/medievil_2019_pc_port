@@ -176,9 +176,9 @@ GOW3_REACTIVE_MAX	upstream	gpu/shim/gow3_settings.cpp:355
 GOW3_REACTIVE_SCALE	upstream	gpu/shim/gow3_settings.cpp:354
 GOW3_REACTIVE_THRESHOLD	upstream	gpu/shim/gow3_settings.cpp:355
 GOW3_READBACKS	upstream	gpu/shim/core/emulator_settings.h:30
-GOW3_READBACK_FIRST_WAIT	ours	gpu/shadps4/video_core/texture_cache/texture_cache.h:582
+GOW3_READBACK_FIRST_WAIT	ours	gpu/shadps4/video_core/texture_cache/texture_cache.h:583
 GOW3_READBACK_LINEAR	upstream	gpu/shim/core/emulator_settings.h:65
-GOW3_READBACK_LOG	ours	gpu/shadps4/video_core/texture_cache/texture_cache.h:578
+GOW3_READBACK_LOG	ours	gpu/shadps4/video_core/texture_cache/texture_cache.h:579
 GOW3_READBACK_QUEUE	ours	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:215 gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:520 gpu/shim/gow3_settings.cpp:396
 GOW3_READBACK_SUBMIT	ours	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:4115
 GOW3_RECORDER_HANDOFF_KB	ours	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp:549
@@ -237,7 +237,7 @@ GOW3_TEXTURE_HELPER	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterize
 GOW3_THREAD_NICE	ours	gpu/shim/gow3_linux_sched.cpp:61
 GOW3_TICK_SPIN_US	ours	gpu/shadps4/core/libraries/videoout/driver.cpp:1567
 GOW3_TIMER_RES	upstream	src/compat_win.c:123
-GOW3_TINY_TARGET_READBACK	ours	gpu/shadps4/video_core/texture_cache/texture_cache.h:591
+GOW3_TINY_TARGET_READBACK	ours	gpu/shadps4/video_core/texture_cache/texture_cache.h:592
 GOW3_TOGGLE_FILE	upstream	src/runtime_memory.c:1765
 GOW3_TRACE_SEMA	upstream	src/runtime_sema.c:75
 GOW3_TRACKER_MERGE_GAP	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_barrier_tracker.cpp:36
