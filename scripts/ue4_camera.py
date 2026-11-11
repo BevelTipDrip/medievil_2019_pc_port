@@ -9,6 +9,9 @@ variant per game version (01.02, then 01.00); a move whose bytes are not found i
 """
 from ue4_override import apply_edits
 
+# The switch (double quotes: research/tools/patchmap.py finds switches in "..." literals).
+SWITCH = "GOW3_CAMERA_OFF"
+
 FREE = 'OVERBITE/Content/Blueprints/Camera/BP_CameraAreaFree.uexp'
 # FreeSimple (one area, 06_PG StartingCam; a copy of 01.00's Free, the same file in 01.00 and 01.02)
 # lives in a pak mounted at OVERBITE/Content/: read under its short name, written under the full one.

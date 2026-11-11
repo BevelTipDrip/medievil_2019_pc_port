@@ -573,12 +573,12 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
             print(f'Button prompts: not available for this game build ({error})', flush=True)
             glyphs = ''
     # The camera's automatic moves turned off (GOW3_CAMERA_OFF, ue4_camera.py): free areas only.
+    import ue4_camera
     camera = []
-    if os.environ.get('GOW3_CAMERA_OFF', '').strip():
-        import ue4_camera
+    if os.environ.get(ue4_camera.SWITCH, '').strip():
         try:
             camera_files, camera = ue4_camera.files(lambda name: read_file(game, name),
-                                                    ue4_camera.parse(os.environ['GOW3_CAMERA_OFF']))
+                                                    ue4_camera.parse(os.environ[ue4_camera.SWITCH]))
             files.update(camera_files)
         except ValueError as error:
             print(f'Camera: {error}', flush=True)
