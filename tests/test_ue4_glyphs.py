@@ -2,15 +2,16 @@
 import struct
 import unittest
 
+from PIL import Image
+
 import paths  # noqa: F401
 from game_ui_assets import decode, detile, texture, tile
 import ue4_glyphs
 
 
-def fake_uexp(width, height, payload):
-    """The bytes of a cooked B8G8R8A8 Texture2D that texture() reads: sizes, format name, bulk
-    element count / size / offset, payload, then a tail."""
-    name = b'PF_B8G8R8A8\0'
+def fake_uexp(width, height, payload, name=b'PF_B8G8R8A8\0'):
+    """The bytes of a cooked Texture2D that texture() reads: sizes, format name, bulk element
+    count / size / offset, payload, then a tail."""
     return (bytes(20) + struct.pack('<iiii', width, height, 1, len(name)) + name + bytes(12)
             + struct.pack('<iiq', len(payload), len(payload), 0) + payload + b'tail')
 
@@ -56,6 +57,21 @@ class GlyphTests(unittest.TestCase):
         before = ue4_glyphs.strip(uexp)[0]
         self.assertEqual(picture.getpixel((8, 8)), (255, 200, 0, 255))
         self.assertEqual(picture.crop((0, 137, 88, 144)).tobytes(), before.crop((0, 137, 88, 144)).tobytes())
+
+    def test_dxt5_texture(self):
+        try:
+            ue4_glyphs.bc3(Image.new('RGBA', (4, 4)))
+        except ValueError:
+            self.skipTest('this Pillow cannot encode DXT5')
+        # 100x100 DXT5: 25x25 blocks padded to 32x32, 16 bytes each.
+        uexp = fake_uexp(100, 100, bytes(32 * 32 * 16), b'PF_DXT5\0')
+        edited = ue4_glyphs.small(uexp, 'test', 19)
+        self.assertEqual(len(edited), len(uexp))
+        self.assertTrue(edited.endswith(b'tail'))
+        picture = decode(edited)
+        self.assertEqual(picture.size, (100, 100))
+        red, green, blue, alpha = picture.getpixel((12, 12))
+        self.assertTrue(red > 240 and 180 < green < 220 and blue < 16 and alpha == 255, picture.getpixel((12, 12)))
 
     def test_playstation_and_unknown_styles_write_nothing(self):
         self.assertEqual(ue4_glyphs.files(lambda name: b'', 'playstation'), {})

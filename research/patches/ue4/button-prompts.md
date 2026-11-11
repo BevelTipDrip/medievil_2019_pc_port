@@ -10,9 +10,9 @@ origin: ours
 class: M
 commits: 4bfd053951, 5ebcaa16ec
 files: scripts/ue4_glyphs.py, scripts/game_ui_assets.py, scripts/ue4_override.py, run.py, tests/test_ue4_glyphs.py
-symbols: files, atlas, small, strip, with_strip, test_cells, test_square, texture, detile, tile, ATLAS_CELLS, SMALL, STYLES
+symbols: files, atlas, small, whole, with_whole, bc3, strip, with_strip, test_cells, test_square, texture, detile, tile, ATLAS_CELLS, SMALL, BONE, STYLES
 switches:
-tests: T-G1, T-G1b
+tests: T-G1, T-G1b, T-G2
 docs: study-glyphs.md#4-step-plan-smallest-first-every-launch-needs-the-users-go, study-glyphs.md#21-format-of-the-cooked-texture-what-a-patch-must-write-v
 depends_on: game-ui-cache
 related: debug-menu-0102
@@ -25,7 +25,8 @@ style. For a style other than PlayStation, `ue4_override.apply` puts edited copi
 the override pak: today the 16 64x64 cells in the top row of `InventoryButtonAtlas` (the `SP_PS4_*` sprites),
 which `test` fills with numbered yellow squares (00 Circle ... 15 StickRight, `ATLAS_CELLS`), and the three small
 textures of the Button Layout page and the inventory / bestiary tabs, `L1_Active`, `R1_Active`, `Options_Active`
-(16, 17, 18, `SMALL`). Step G1 of
+(16, 17, 18, `SMALL`), and the three pearl DXT5 prompts of the inventory, Daring Dash and tutorial box,
+`PS4_Cross`, `PS4_Triangle`, `PS4_R1` (19, 20, 21, `BONE`). Step G1 of
 study-glyphs.md; the Xbox and keyboard sets (G3, G4) and the bone textures (G2) come next.
 
 ## Invariants
@@ -36,6 +37,8 @@ study-glyphs.md; the Xbox and keyboard sets (G3, G4) and the bone textures (G2) 
   are the first 256 KiB of the payload and are re-tiled alone (`strip` / `with_strip`). The rest of the atlas (HUD
   art) stays byte-identical.
 - `detile` / `tile` (game_ui_assets.py) are exact inverses; the game UI cache's `decode` uses the same code.
+- DXT5 is encoded by Pillow (11 or later; `bc3` takes the blocks from a DDS save after its 128-byte header). With an
+  older Pillow only the `BONE` textures stay PlayStation, with a start-log line; the rest of the style applies.
 - An unknown style counts as `playstation`. A game build whose atlas does not parse prints "Button prompts: not
   available for this game build" and the pak is written without it.
 
@@ -57,6 +60,8 @@ study-glyphs.md; the Xbox and keyboard sets (G3, G4) and the bone textures (G2) 
   own textures, next step); the HUD's weapon swap prompt shows 02. Clean exit.
 - T-G1b (PC, 01.02): run. With the three small textures, the Button Layout page and the bestiary tabs show only
   squares; the user: "everything looks correct". Clean exit.
+- T-G2 (PC, 01.02): run. The inventory's pearl Cross / Triangle show 19 / 20; the user: "everything appears to be
+  working". Offline: DXT5 differs from the drawn picture in about 30 of 10 000 pixels (edges). Clean exit.
 
 ## History and pitfalls
 

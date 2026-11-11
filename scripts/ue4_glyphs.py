@@ -9,9 +9,11 @@ and three 100x100 DXT5 "bone" prompts. Their .uexp holds the pixels already in t
 written over the payload and the edited .uexp goes into the override pak; the .uasset header stays
 the game's.
 
-Styles: "playstation" (the game's own, no files), "test" (numbered squares in the 16 atlas cells
-and the three small textures, for checking that the patch reaches the screen: study-glyphs.md G1).
+Styles: "playstation" (the game's own, no files), "test" (numbered squares in the 16 atlas cells,
+the three small textures and the three bone prompts, for checking that the patch reaches the
+screen: study-glyphs.md G1, G2).
 """
+import io
 import sys
 from pathlib import Path
 
@@ -29,6 +31,11 @@ ATLAS_CELLS = ('Circle', 'Cross', 'Triangle', 'Square', 'DpadUp', 'DpadDown', 'D
 SMALL = {'OVERBITE/Content/UI/Sprites/HUD/L1_Active.uexp': 16,
          'OVERBITE/Content/UI/Sprites/HUD/R1_Active.uexp': 17,
          'OVERBITE/Content/UI/Sprites/HUD/Options_Active.uexp': 18}
+# The pearl "bone" prompts (100x100 DXT5): inventory, Daring Dash (Classic: Triangle, Modern: R1),
+# the tutorial prompt's default.
+BONE = {'OVERBITE/Content/UI/Textures/ButtonPrompts/PS4_Cross.uexp': 19,
+        'OVERBITE/Content/UI/Textures/ButtonPrompts/PS4_Triangle.uexp': 20,
+        'OVERBITE/Content/UI/Textures/ButtonPrompts/PS4_R1.uexp': 21}
 STYLES = ('playstation', 'test')
 
 
@@ -52,6 +59,46 @@ def with_strip(uexp, picture, at, pitch):
     """uexp with the top rows of its payload replaced by picture (as made by strip)."""
     element = FORMATS['PF_B8G8R8A8'][1]
     raw = tile(picture.tobytes('raw', 'BGRA'), pitch, picture.height, element)
+    return uexp[:at] + raw + uexp[at + len(raw):]
+
+
+def whole(uexp):
+    """A B8G8R8A8 or DXT5 texture as an RGBA picture of its padded surface, with
+    (payload offset, pitch, rows, pixel format)."""
+    from PIL import Image
+    info = texture(uexp)
+    if not info or info[0] not in ('PF_B8G8R8A8', 'PF_DXT5'):
+        raise ValueError('not a B8G8R8A8 or DXT5 texture of this layout')
+    pixel_format, _width, _height, at, pitch, rows = info
+    side, element, bcn = FORMATS[pixel_format]
+    linear = detile(uexp[at:at + pitch * rows * element], pitch, rows, element)
+    if bcn:
+        picture = Image.frombytes('RGBA', (pitch * side, rows * side), linear, 'bcn', bcn)
+    else:
+        picture = Image.frombytes('RGBA', (pitch, rows), linear, 'raw', 'BGRA')
+    return picture, (at, pitch, rows, pixel_format)
+
+
+def bc3(picture):
+    """DXT5 blocks of an RGBA picture, row by row (Pillow 11 or later encodes DXT5)."""
+    out = io.BytesIO()
+    try:
+        picture.save(out, 'DDS', pixel_format='DXT5')
+    except (KeyError, OSError, ValueError, TypeError) as error:
+        raise ValueError(f'this Pillow cannot encode DXT5 ({error})') from error
+    size = (picture.width // 4) * (picture.height // 4) * 16
+    data = out.getvalue()
+    if data[84:88] != b'DXT5' or len(data) < size:
+        raise ValueError('this Pillow cannot encode DXT5')
+    return data[-size:]
+
+
+def with_whole(uexp, picture, layout):
+    """uexp with its payload made from picture (as made by whole)."""
+    at, pitch, rows, pixel_format = layout
+    element = FORMATS[pixel_format][1]
+    linear = bc3(picture) if pixel_format == 'PF_DXT5' else picture.tobytes('raw', 'BGRA')
+    raw = tile(linear, pitch, rows, element)
     return uexp[:at] + raw + uexp[at + len(raw):]
 
 
@@ -84,12 +131,13 @@ def atlas(uexp, style):
 
 
 def small(uexp, style, number):
-    """A small prompt texture's .uexp in the given style (the whole texture; the padding stays)."""
+    """A small or bone prompt texture's .uexp in the given style (the whole texture; the padding
+    keeps its pixels)."""
     _format, width, height, *_rest = texture(uexp) or (None, 0, 0)
-    picture, at, pitch = strip(uexp)
+    picture, layout = whole(uexp)
     if style == 'test':
         test_square(picture, (0, 0, width, height), number)
-    return with_strip(uexp, picture, at, pitch)
+    return with_whole(uexp, picture, layout)
 
 
 def files(read, style):
@@ -99,6 +147,13 @@ def files(read, style):
     result = {ATLAS: atlas(read(ATLAS), style)}
     for name, number in SMALL.items():
         result[name] = small(read(name), style, number)
+    try:
+        for name, number in BONE.items():
+            result[name] = small(read(name), style, number)
+    except ValueError as error:  # the rest of the style still applies
+        for name in BONE:
+            result.pop(name, None)
+        print(f'Button prompts: the inventory / tutorial prompts stay PlayStation ({error})', flush=True)
     return result
 
 
@@ -111,5 +166,5 @@ if __name__ == '__main__':
         if name == ATLAS:
             strip(data, CELL)[0].crop((0, 0, CELL * len(ATLAS_CELLS), CELL)).save(out / 'atlas_row.png')
         else:
-            strip(data)[0].save(out / (Path(name).stem + '.png'))
+            whole(data)[0].save(out / (Path(name).stem + '.png'))
     print(f'{style}: written to {out}')

@@ -217,6 +217,16 @@ Offline: each `.uexp` keeps its size, only the payload changes, the pak reads ba
 user's screenshots of Options > Button Layout and the bestiary: "everything looks correct" (no PS4 button left on
 the Button Layout page; the bestiary's L1 / R1 tabs show 16 / 17). Clean exit.
 
+## T-G2: the DXT5 bone prompts (2026-11-11, launched by Claude with the user's go, log `data/glyphs-g2-0102.log`)
+
+The test style also fills the pearl prompts `PS4_Cross` (19), `PS4_Triangle` (20) and `PS4_R1` (21), 100x100 DXT5
+padded to 32x32 blocks. Encoder: Pillow's DXT5 (`DDS` save, 128-byte header dropped), in Pillow 11 or later: the
+launcher's Python has 12.3, the AppImage pins 13.0, the Windows package installs the latest. With an older Pillow
+(10.4 here) only these three stay PlayStation and the start log says so. Offline: each `.uexp` keeps its size, only
+the payload changes, the pak reads back identically; the decoded result differs from the drawn picture in about 30
+of 10 000 pixels (square and digit edges, at most 50 of 255: DXT5 is lossy). In game, the user's screenshot of the
+inventory: "everything appears to be working" (19 and 20). Clean exit.
+
 Also to do (the user): the port's own Load list (runtime/load-list-details) draws the game's `PS4_Cross` / `Circle` /
 `Square` prompts from the game UI cache; with another style it must use that style's glyphs.
 
