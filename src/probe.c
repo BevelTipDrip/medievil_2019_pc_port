@@ -14,6 +14,7 @@
 #include "cheat_hook.h"
 #include "actor_hook.h"
 #include "damage_hook.h"
+#include "camera_hook.h"
 #include "mouse_hook.h"
 #include "gpu/gow3gpu.h"
 #if !defined(__x86_64__) || !defined(__GNUC__)
@@ -829,6 +830,169 @@ static void install_mouse_yaw(Segment *segments, uint64_t count, uint64_t size) 
            (double)mouse_yaw_degrees);
 }
 
+/* MediEvil camera moves (src/camera_hook.h; study-camera-moves.md): the menu's Controls tab turns each
+ * automatic move of the free camera off or on, live. ComputeCameraSimple's exec is wrapped; on each call
+ * (the game thread, once a tick in a free area) camera classes not seen yet are searched for the edits'
+ * original bytes, and every edit found is written or put back when the menu's choice changes
+ * (gow3_camera_off_mask, a bit per move). An edit found more than once in its class is left alone. */
+extern uint32_t gow3_camera_off_mask(void);
+extern void gow3_camera_status(int installed, uint32_t found);
+typedef struct {
+    unsigned char *at;
+    unsigned char old[4], edit[4], length;
+    int move;
+} CameraSite;
+static Ue4Native camera_simple_exec;
+static CameraSite camera_sites[32];
+static int camera_site_count;
+static struct { const char *cls; int where; } camera_searched[64];
+static int camera_searched_count;
+static uint32_t camera_found;
+static const char *const camera_move_names[MEDIEVIL_CAMERA_MOVES] = {"follow", "swing", "suggest", "keepout",
+                                                                      "run_zoom", "pitch_return"};
+
+/* The first visit of (class, where); later visits and a full table return 0. */
+static int camera_first_visit(const char *cls, int where) {
+    for (int i = 0; i < camera_searched_count; ++i)
+        if (camera_searched[i].cls == cls && camera_searched[i].where == where) return 0;
+    if (camera_searched_count == (int)(sizeof(camera_searched) / sizeof(camera_searched[0]))) return 0;
+    camera_searched[camera_searched_count].cls = cls;
+    camera_searched[camera_searched_count++].where = where;
+    return 1;
+}
+
+/* The class's own script functions (Children whose class is `function_class`, the UFunction class)
+ * searched for the edits of `where`; each one found exactly once becomes a site. The edit that names
+ * the camera manager's InputRotation gives its class (*manager). Returns the sites added. */
+static int camera_search(const char *cls, const char *function_class, int where, const char **manager) {
+    unsigned char *found[MEDIEVIL_CAMERA_EDITS] = {0}, *script_of[MEDIEVIL_CAMERA_EDITS] = {0};
+    int count[MEDIEVIL_CAMERA_EDITS] = {0}, size_of[MEDIEVIL_CAMERA_EDITS] = {0}, other[MEDIEVIL_CAMERA_EDITS] = {0};
+    const char *field = *(const char *const *)(cls + 0x38);
+    for (int fields = 0; field && fields < 8192; field = *(const char *const *)(field + 0x28), ++fields) {
+        if (*(const char *const *)(field + 0x10) != function_class) continue;
+        unsigned char *script = *(unsigned char *const *)(field + 0x48);
+        const int32_t size = *(const int32_t *)(field + 0x50);
+        if (!script || size <= 0 || size > (1 << 20)) continue;
+        for (int e = 0; e < MEDIEVIL_CAMERA_EDITS; ++e) {
+            const MedievilCameraEdit *d = &medievil_camera_edits[e];
+            if (d->where != where) continue;
+            for (int32_t p = 0; p + d->length <= size; ++p) {
+                if (script[p] != d->pattern[0] || memcmp(script + p, d->pattern, d->length)) continue;
+                if (!count[e]++) {
+                    found[e] = script + p;
+                    script_of[e] = script;
+                    size_of[e] = size;
+                    if (d->manager) {
+                        const uint64_t ir = medievil_camera_input_rotation(script, size, p);
+                        if (!ir) other[e] = 1; /* not the InputRotation statement: leave it */
+                        else if (manager) *manager = *(const char *const *)((uintptr_t)ir + 0x20);
+                    }
+                }
+            }
+        }
+    }
+    /* A move whose "together" edits are not all found once here takes none of them (SplineConstraint
+     * multiplies InputRotation by 2.0 too, but has no chase test: not a free camera). */
+    int incomplete[MEDIEVIL_CAMERA_MOVES] = {0};
+    for (int e = 0; e < MEDIEVIL_CAMERA_EDITS; ++e) {
+        const MedievilCameraEdit *d = &medievil_camera_edits[e];
+        if (d->where == where && d->together && (count[e] != 1 || other[e])) incomplete[d->move] = 1;
+    }
+    int added = 0;
+    for (int e = 0; e < MEDIEVIL_CAMERA_EDITS; ++e) {
+        const MedievilCameraEdit *d = &medievil_camera_edits[e];
+        if (!count[e] || (d->together && incomplete[d->move])) continue;
+        if (count[e] > 1 || other[e]) {
+            printf("Camera: %s edit %d left alone (%s in class %p)\n", camera_move_names[d->move], e,
+                   other[e] ? "not the InputRotation statement" : "its bytes found more than once", (const void *)cls);
+            continue;
+        }
+        unsigned char *at = found[e] + d->at;
+        int known = 0;
+        for (int i = 0; i < camera_site_count; ++i) known |= camera_sites[i].at == at;
+        if (known || camera_site_count == (int)(sizeof(camera_sites) / sizeof(camera_sites[0]))) continue;
+        CameraSite *site = &camera_sites[camera_site_count++];
+        site->at = at;
+        site->length = d->edit_length;
+        site->move = d->move;
+        memcpy(site->old, at, d->edit_length);
+        memcpy(site->edit, d->edit, d->edit_length);
+        camera_found |= 1u << d->move;
+        ++added;
+        printf("Camera: %s edit %d found (class %p, a %d-byte function, +%#x)\n", camera_move_names[d->move], e,
+               (const void *)cls, size_of[e], (unsigned)(at - script_of[e]));
+    }
+    fflush(stdout);
+    return added;
+}
+
+static void camera_update(const void *stack) {
+    static const char *last_area, *last_object_class;
+    static uint32_t applied = UINT32_MAX, reported = UINT32_MAX;
+    const char *frame = stack;
+    const char *node = *(const char *const *)(frame + 0x10), *object = *(const char *const *)(frame + 0x18);
+    if (!node || !object) return;
+    const char *area = *(const char *const *)(node + 0x20); /* the class that owns this ComputeCamera */
+    const char *object_class = *(const char *const *)(object + 0x10);
+    const char *function_class = *(const char *const *)(node + 0x10);
+    int added = 0;
+    if (area && object_class && (area != last_area || object_class != last_object_class)) {
+        last_area = area;
+        last_object_class = object_class;
+        const char *manager = NULL;
+        if (camera_first_visit(area, MEDIEVIL_CAMERA_IN_AREA))
+            added += camera_search(area, function_class, MEDIEVIL_CAMERA_IN_AREA, &manager);
+        if (manager && camera_first_visit(manager, MEDIEVIL_CAMERA_IN_MANAGER))
+            added += camera_search(manager, function_class, MEDIEVIL_CAMERA_IN_MANAGER, NULL);
+        int depth = 0;
+        for (const char *c = *(const char *const *)(area + 0x30); c && depth < 16; c = *(const char *const *)(c + 0x30), ++depth)
+            if (camera_first_visit(c, MEDIEVIL_CAMERA_IN_PARENTS))
+                added += camera_search(c, function_class, MEDIEVIL_CAMERA_IN_PARENTS, NULL);
+        /* The area's own class when it derives from the one that owns ComputeCamera (FreeSuggestDirection). */
+        depth = 0;
+        for (const char *c = object_class; c && c != area && depth < 16; c = *(const char *const *)(c + 0x30), ++depth)
+            if (camera_first_visit(c, MEDIEVIL_CAMERA_IN_SUBCLASS))
+                added += camera_search(c, function_class, MEDIEVIL_CAMERA_IN_SUBCLASS, NULL);
+    }
+    const uint32_t off = gow3_camera_off_mask();
+    if (off != applied || added) {
+        for (int i = 0; i < camera_site_count; ++i) {
+            const CameraSite *site = &camera_sites[i];
+            memcpy(site->at, (off >> site->move) & 1 ? site->edit : site->old, site->length);
+        }
+        if (off != applied) {
+            char names[128] = "";
+            for (int m = 0; m < MEDIEVIL_CAMERA_MOVES; ++m)
+                if ((off >> m) & 1)
+                    snprintf(names + strlen(names), sizeof(names) - strlen(names), "%s%s", names[0] ? ", " : "",
+                             camera_move_names[m]);
+            printf("Camera: moves off: %s\n", names[0] ? names : "none");
+            fflush(stdout);
+        }
+        applied = off;
+    }
+    if (camera_found != reported) {
+        reported = camera_found;
+        gow3_camera_status(1, camera_found);
+    }
+}
+static ABI void camera_simple(void *context, void *stack, void *result) {
+    camera_update(stack);
+    camera_simple_exec(context, stack, result);
+}
+static void install_camera_moves(Segment *segments, uint64_t count, uint64_t size) {
+    const MedievilCameraSites *s = medievil_camera_find(image, size);
+    if (!s || !mapped(segments, count, s->slot, 8)) {
+        printf("Camera moves: unavailable (not an analysed MediEvil eboot: 01.00 or 01.02)\n");
+        return;
+    }
+    camera_simple_exec = (Ue4Native)(uintptr_t)(image + s->exec);
+    const uint64_t wrapper = (uint64_t)(uintptr_t)camera_simple;
+    memcpy(image + s->slot, &wrapper, 8);
+    gow3_camera_status(1, 0);
+    printf("Camera moves: ComputeCameraSimple wrapped (game build %s; the menu's Controls tab)\n", s->build);
+}
+
 /* MediEvil GPU particle flip guard (src/particle_hook.h, runtime_extra.c): opt-in,
  * GOW3_PARTICLE_FLIP_GUARD=1; the toggle file's second word 16384 turns the guard off live. */
 static void install_particle_flip_guard(Segment *segments, uint64_t count, uint64_t size) {
@@ -1251,6 +1415,7 @@ int main(int argc, char **argv) {
     if (gpu_enabled) install_level_hook(segments, ns, size);
     if (gpu_enabled) install_debug_menu_trace(segments, ns, size);
     if (gpu_enabled) install_mouse_yaw(segments, ns, size);
+    if (gpu_enabled) install_camera_moves(segments, ns, size);
     if (gpu_enabled) install_particle_flip_guard(segments, ns, size);
 #ifdef _WIN32
     printf("Guest TCB loads redirected to the TEB TLS slot: %" PRIu64 "\n", patch_tcb_loads(segments, ns));

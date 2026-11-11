@@ -21,6 +21,10 @@ namespace Gow3Settings {
 
 namespace {
 
+// medievil.ini keys of the camera moves, in src/camera_hook.h's order (1 = the game's move on).
+constexpr const char* CameraMoveKeys[CameraMoveCount] = {"camera_follow",   "camera_swing",    "camera_suggest",
+                                                         "camera_keepout",  "camera_run_zoom", "camera_pitch_return"};
+
 const char* Path() {
     const char* env = std::getenv("GOW3_CONFIG");
     return env && env[0] ? env : "medievil.ini";
@@ -115,8 +119,14 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         return;
     }
     if (key == "menu_tab") {
-        v.menu_tab = i >= 0 && i <= 3 ? i : 0;
+        v.menu_tab = i >= 0 && i <= 4 ? i : 0;
         return;
+    }
+    for (int move = 0; move < CameraMoveCount; ++move) {
+        if (key == CameraMoveKeys[move]) {
+            v.camera_moves[move] = i != 0;
+            return;
+        }
     }
     const char* cheat_keys[] = {"cheat_health", "cheat_magic", "cheat_item", "cheat_rage", "cheat_orbs",
                                 "cheat_very_hard", "cheat_double_jumps"};
@@ -550,6 +560,9 @@ std::map<std::string, std::string> Serialize(const Values& v) {
            int(v.cheats[3].load()), int(v.cheats[4].load()),
            int(v.cheats[5].load()), int(v.cheats[6].load()));
     Append(out, "enemy_health_bar=%d\n", int(v.enemy_health_bar.load()));
+    for (int move = 0; move < CameraMoveCount; ++move) {
+        Append(out, "%s=%d\n", CameraMoveKeys[move], int(v.camera_moves[move].load()));
+    }
     Append(out,
            "overlay_fps=%d\noverlay_frametime=%d\noverlay_upscaler=%d\noverlay_gpu=%d\n"
            "overlay_cpu=%d\noverlay_ram=%d\noverlay_vram=%d\noverlay_scale=%d\noverlay_corner=%d\n"
@@ -674,3 +687,22 @@ const char* UpscalerName(int upscaler) {
 }
 
 } // namespace Gow3Settings
+
+// The camera hook (src/probe.c, src/camera_hook.h): the moves the menu turned off, a bit per move, read on
+// the game thread once a tick in a free camera area; and what the hook has found.
+extern "C" uint32_t gow3_camera_off_mask(void) {
+    const auto& s = Gow3Settings::Get();
+    uint32_t off = 0;
+    for (int move = 0; move < Gow3Settings::CameraMoveCount; ++move) {
+        if (!s.camera_moves[move].load(std::memory_order_relaxed)) {
+            off |= 1u << move;
+        }
+    }
+    return off;
+}
+
+extern "C" void gow3_camera_status(int installed, uint32_t found) {
+    auto& s = Gow3Settings::Get();
+    s.camera_hook = installed != 0;
+    s.camera_found = found;
+}

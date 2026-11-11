@@ -28,6 +28,8 @@ inline constexpr int OutputWidths[] = {1280, 1920, 2560, 3840};
 inline constexpr int OutputHeights[] = {720, 1080, 1440, 2160};
 inline constexpr int OutputCount = 4;
 inline constexpr int OutputDefault = 1; ///< 1920x1080, the game's own size
+/// The free camera's automatic moves, in src/camera_hook.h's order.
+inline constexpr int CameraMoveCount = 6;
 
 struct Values {
     std::atomic<int> upscaler{UpscalerFsr3};
@@ -60,6 +62,11 @@ struct Values {
     /// Damage hook (src/actor_hook.h): enemy health bar, off by default.
     std::atomic<bool> enemy_health_bar{false};
     std::atomic<bool> actor_watch_supported{false};
+    /// The free camera's automatic moves (src/camera_hook.h, the Controls tab), each on (the game's) or
+    /// off, live: follow, swing, suggest, keepout, run_zoom, pitch_return (medievil.ini camera_*).
+    std::atomic<bool> camera_moves[CameraMoveCount]{true, true, true, true, true, true};
+    std::atomic<bool> camera_hook{false};      ///< ComputeCameraSimple wrapped (an analysed eboot)
+    std::atomic<uint32_t> camera_found{0};     ///< moves whose bytecode has been found so far
     // Graphics (gow3_graphics.h). Live: applied on the next frame.
     std::atomic<int> display_mode{0};
     std::atomic<bool> vsync{true};

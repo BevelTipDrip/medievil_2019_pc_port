@@ -423,6 +423,44 @@ void GameTab() {
     }
 }
 
+// Controls: the free camera's automatic moves (src/camera_hook.h), each live. Ticked = the game's camera.
+void ControlsTab() {
+    auto& s = Gow3Settings::Get();
+    ImGui::SeparatorText("Advanced camera");
+    const uint32_t found = s.camera_found.load();
+    ImGui::PushTextWrapPos(0.0f);
+    if (!s.camera_hook.load()) {
+        ImGui::TextDisabled("Not available for this game build (the camera hook knows MediEvil 01.00 and 01.02).");
+    } else {
+        ImGui::TextDisabled("Untick a move to turn it off; changes apply at once. Only the free camera changes: fixed, "
+                            "rail and boss cameras keep the game's moves.");
+        if (!found) {
+            ImGui::TextDisabled("Not seen yet: the moves are found once Dan is in a free camera area.");
+        }
+    }
+    ImGui::PopTextWrapPos();
+    static const char* const titles[Gow3Settings::CameraMoveCount] = {
+        "Camera follows Dan", "Sideways swing", "Suggested directions",
+        "Turn around posts", "Run zoom and tilt", "Vertical look re-centres"};
+    static const char* const hints[Gow3Settings::CameraMoveCount] = {
+        "While Dan moves, the camera turns toward where he is going. Off: only you turn it (mouse or right "
+        "stick), at the same speed standing or moving.",
+        "Running sideways swings the camera up to about 20 degrees.",
+        "Entering some areas turns the camera toward the way ahead for up to a second (13 areas).",
+        "Near a few posts the camera turns so the post does not block the view (2 areas).",
+        "The camera pulls in or out and tilts when Dan starts running.",
+        "While Dan moves or attacks, the up / down angle eases back to the middle."};
+    if (BeginRows("##camera")) {
+        for (int move = 0; move < Gow3Settings::CameraMoveCount; ++move) {
+            const bool seen = (found >> move) & 1;
+            CheckRow(titles[move], s.camera_moves[move],
+                     seen || !s.camera_hook.load() ? hints[move]
+                                                   : "Not found yet: applies once its camera area has been used.");
+        }
+        ImGui::EndTable();
+    }
+}
+
 void ImageTab() {
     namespace G = Gow3Graphics;
     auto& s = Gow3Settings::Get();
@@ -865,7 +903,7 @@ void Menu() {
         return;
     }
     footer_help = nullptr;
-    constexpr int TabCount = 4;
+    constexpr int TabCount = 5;
     const ImGuiIO& io = ImGui::GetIO();
     if (!io.WantTextInput) {
         const int step = ImGui::IsKeyPressed(ImGuiKey_GamepadR1, false) || ImGui::IsKeyPressed(ImGuiKey_E, false) ? 1
@@ -878,7 +916,7 @@ void Menu() {
     }
     const float footer = ImGui::GetFrameHeightWithSpacing() * 2.0f + ImGui::GetTextLineHeightWithSpacing() * 2.0f;
     if (ImGui::BeginTabBar("##tabs")) {
-        static const char* const tabs[TabCount] = {"Game", "Image", "Performance", "Overlay"};
+        static const char* const tabs[TabCount] = {"Game", "Controls", "Image", "Performance", "Overlay"};
         for (int tab = 0; tab < TabCount; ++tab) {
             const ImGuiTabItemFlags flags = requested_tab == tab ? ImGuiTabItemFlags_SetSelected : 0;
             if (!ImGui::BeginTabItem(tabs[tab], nullptr, flags)) {
@@ -891,8 +929,9 @@ void Menu() {
             if (ImGui::BeginChild("##body", ImVec2(0, -footer))) {
                 switch (tab) {
                 case 0: GameTab(); break;
-                case 1: ImageTab(); break;
-                case 2: PerformanceTab(); break;
+                case 1: ControlsTab(); break;
+                case 2: ImageTab(); break;
+                case 3: PerformanceTab(); break;
                 default: OverlayTab(); break;
                 }
             }

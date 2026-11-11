@@ -572,16 +572,6 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
         except (ValueError, FileNotFoundError) as error:
             print(f'Button prompts: not available for this game build ({error})', flush=True)
             glyphs = ''
-    # The camera's automatic moves turned off (GOW3_CAMERA_OFF, ue4_camera.py): free areas only.
-    import ue4_camera
-    camera = []
-    if os.environ.get(ue4_camera.SWITCH, '').strip():
-        try:
-            camera_files, camera = ue4_camera.files(lambda name: read_file(game, name),
-                                                    ue4_camera.parse(os.environ[ue4_camera.SWITCH]))
-            files.update(camera_files)
-        except ValueError as error:
-            print(f'Camera: {error}', flush=True)
     if fps > 60:
         instance = files.get(GAME_INSTANCE) or read_file(game, GAME_INSTANCE)
         if any(command in instance for command in MAX_FPS_COMMANDS):
@@ -593,7 +583,6 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
             f'{f", anti-aliasing {aa}" if aa_quality is not None else ""}'
             f'{", unlimited ammo" if infinite_ammo else ""}{f", voices {voice}" if voice else ""}'
             f'{f", button prompts {glyphs}" if glyphs else ""}'
-            f'{", camera moves off: " + ", ".join(camera) if camera else ""}'
             f'{"; extra cvars " + ", ".join(f"{k}={v}" for k, v in extra.items()) if extra else ""}')
 
 
