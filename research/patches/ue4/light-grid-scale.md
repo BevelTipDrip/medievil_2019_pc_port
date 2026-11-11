@@ -50,7 +50,8 @@ fragment variant that multiplies the position by full / small per axis before th
 - RenderDoc at 75% / 100% (study-light-grid-scale.md): edges on 64-px lines, the shader's grid lookup, the 31x17 of
   41x23 cells read at 75%.
 - T-LG1 (PC, 01.02): verified. The user, at 50, 75 and 100 live: "Yes, all 3 now look correct!". Six shaders matched,
-  scaled variants at 2.0008 x 2.0000 and 1.3339 / 1.3335 x 1.3333.
+  scaled variants at 2.0008 x 2.0000 and 1.3339 / 1.3335 x 1.3333. Also the map menu: "our effect resolution fix also
+  corrected some visual glitches on the map menu".
 
 ## History and pitfalls
 

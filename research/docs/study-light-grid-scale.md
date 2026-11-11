@@ -47,5 +47,7 @@ effects-resolution size of that view a variant that multiplies the position by f
 - Six fragment shaders have the lookup: `e3b625eaec7fca55` (the water), `3aa786c1b5a3882f`, `591c5d142a39fbaf`,
   `6237d71f64d79c68`, `c32da5c3a0033c75`, `f1eef25b0c2ae13a`. Scaled variants compiled at 50% (2.0008 x 2.0000)
   and 75% (1.3339 / 1.3335 x 1.3333) for the water and three of the others.
+- Later the same evening (75%): the user, "our effect resolution fix also corrected some visual glitches on the map
+  menu".
 - Not checked: the cauldron fog in the forest level (the user suspects the same cause), which effects the other
   five shaders draw.
