@@ -2,7 +2,10 @@
 import struct
 import unittest
 
-from PIL import Image
+try:
+    from PIL import Image
+except ImportError:  # the launcher's Python and both packages have Pillow; a bare system Python may not
+    raise unittest.SkipTest('needs Pillow')
 
 import paths  # noqa: F401
 import sys

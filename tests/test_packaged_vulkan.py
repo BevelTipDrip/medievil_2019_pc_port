@@ -3,12 +3,17 @@ from paths import ROOT
 import importlib.util
 import json
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 
 spec = importlib.util.spec_from_file_location("vulkan_check", ROOT / "launcher/vulkan_check.py")
 vulkan = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(vulkan)
+
+# vulkan_check runs in the Linux AppImage only. These tests put real temporary paths into
+# ":"-separated library path lists and need POSIX absolute paths (/nix/store), so they run on Linux.
+LINUX_PATHS = unittest.skipIf(sys.platform == 'win32', 'Linux path lists (":") and POSIX paths: run on Linux / WSL')
 
 
 class PackagedVulkanTests(unittest.TestCase):
@@ -54,6 +59,7 @@ class PackagedVulkanTests(unittest.TestCase):
                 self.assertEqual(self.env, before)
                 del self.env[key]
 
+    @LINUX_PATHS
     def test_host_nvidia_and_compiler_are_exposed_without_host_libc(self):
         driver = self.library("libGLX_nvidia.so.580.1")
         (self.libs / "libGLX_nvidia.so.0").symlink_to(driver.name)
@@ -97,6 +103,7 @@ class PackagedVulkanTests(unittest.TestCase):
         self.assertEqual(self.env["VK_DRIVER_FILES"],
                          "/user/extra.json:/bundled/radeon.json:/bundled/intel.json")
 
+    @LINUX_PATHS
     def test_host_driver_can_be_supplied_outside_hidden_nix_store(self):
         self.library("libGLX_nvidia.so.0")
         self.manifest("/nix/store/hidden/lib/libGLX_nvidia.so.0")
