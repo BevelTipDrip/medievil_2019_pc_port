@@ -12,7 +12,7 @@ commits: f4f13b8, e27103e, 870f584, 88bf535, a7c91f7, b4d9e6f, 5bb45d0
 files: src/runtime_mouse.c, src/mouse_hook.h, src/probe.c, src/runtime_services.c, gpu/shim/window.cpp, gpu/shim/sdl_window.h, scripts/ue4_override.py
 symbols: runtime_mouse_enabled, runtime_mouse_start, runtime_mouse_capture, runtime_mouse_take, drain, reader_thread, mouse_init, mouse_read, SetMouseCapture, mouse_captured, runtime_mouse_take_camera, medievil_mouse_yaw_find, medievil_mouse_yaw_script_ok, mouse_yaw, install_mouse_yaw
 switches: GOW3_MOUSE, GOW3_MOUSE_BUTTONS, GOW3_MOUSE_YAW
-tests: T-MS1, T-MS2, T-MS3, T-MS4, T-MS5, T-MS6
+tests: T-MS1, T-MS2, T-MS3, T-MS4, T-MS5, T-MS6, T-MS7
 docs: study-mouse-input.md#t-ms1-ps4enablemouse-from-the-paks-ini-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-step1-enablelog
 depends_on:
 related: cursor-hide
@@ -41,7 +41,8 @@ after Dan's TurnRate handler writes `CameraManager.InputRotation`, the wrapper a
   (T-MS2). `GOW3_MOUSE_BUTTONS=1` is for the menu-focus research only.
 - No release key: alt-tab, the Windows key and the Insert menu release it (the user, 2026-11-11, after T-MS6).
 - A window only takes the mouse on a click, so its title bar stays usable.
-- Auto capture: fix built `5bb45d0`, not run.
+- T-MS7 (2026-11-11, PC, `5bb45d0`, run): auto capture in borderless; the user: "Yup, it works". Log: captured at start,
+  released and captured again on focus changes (data/mouse-auto-capture-t-ms7.log).
 - Capture changes run on the window thread on events, never per frame.
 - The yaw wrapper must call the original exec first (it consumes the FFrame argument), act only when Stack.Code
   is Dan's handler's end offset and the script size matches, and stay off after any failed bytecode or
