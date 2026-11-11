@@ -997,6 +997,7 @@ study-save-slots.md	38	2	t-sv2-load-a-slot-that-is-not-the-newest-2026-11-10-lau
 study-save-slots.md	44	2	t-sv3-the-date-fix-2026-11-10-launched-by-claude-with-the-users-go-log-datasave-trace-3-0102log	T-SV3: the date fix (2026-11-10, launched by Claude with the user's go, log `data/save-trace-3-0102.log`)
 study-save-slots.md	51	2	also-found	Also found
 study-save-slots.md	57	2	t-sv4-continue-and-slot-numbers-in-the-load-list-2026-11-10-launched-by-claude-with-the-users-go-log-datasave-continue-1-0102log	T-SV4: "Continue" and slot numbers in the Load list (2026-11-10, launched by Claude with the user's go, log `data/save-continue-1-0102.log`)
+study-save-slots.md	66	2	t-sv5-details-level-pictures-and-the-games-menu-look-2026-11-10-launched-by-claude-with-the-users-go-logs-dataload-details-1-0102log-dataload-style-1-0102log-dataload-style-2-0102log	T-SV5: details, level pictures and the game's menu look (2026-11-10, launched by Claude with the user's go, logs `data/load-details-1-0102.log`, `data/load-style-1-0102.log`, `data/load-style-2-0102.log`)
 study-stage-b-native.md	1	1	study-native--hle-work-to-unload-stage-b-2026-10-20	Study: native / HLE work to unload stage B (2026-10-20)
 study-stage-b-native.md	20	2	1-how-the-game-builds-gpu-work	1. How the game builds GPU work
 study-stage-b-native.md	42	2	2-hot-patterns-and-redundancy-measured	2. Hot patterns and redundancy (measured)

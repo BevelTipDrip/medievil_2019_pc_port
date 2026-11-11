@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: ours
 class: M
-commits:
+commits: 3cbd9ffeca
 files: src/runtime_saveinfo.c, src/runtime_services.c, src/runtime_savedata.c, src/runtime.h, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3gpu.cpp, gpu/gow3gpu.h, tests/test_services.c
 symbols: runtime_saveinfo_read, runtime_saveinfo_text, runtime_saveinfo_level_name, runtime_saveinfo_picture, runtime_savedata_dir, save_entry, gow3gpu_choice_style, SetChoiceStyle, StyledChoiceBox, DetailedChoiceBox, ChoiceStep
 switches:

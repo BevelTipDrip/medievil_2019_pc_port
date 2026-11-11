@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: ours
 class: M
-commits:
+commits: 50a5bef491
 files: scripts/game_ui_assets.py, run.py
 symbols: build, decode, levels, Paks
 switches:

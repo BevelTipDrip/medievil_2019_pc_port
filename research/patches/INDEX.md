@@ -4,7 +4,7 @@ One line per card. Open a card for invariants, interactions and evidence; look u
 reading: `patchmap.py file <path>` / `switch <name>` / `commit <hash>` / `test <id>`.
 Card format and statuses: [README.md](README.md). W / D = default on Windows / Deck.
 
-209 cards.
+211 cards.
 
 ## memory
 
@@ -36,6 +36,7 @@ _loader, HLE libraries, threads, locks, files, audio, input (src/ outside memory
 | [avplayer-join-hang](runtime/avplayer-join-hang.md) | active | on / on | fork-ports |  | Fix the game hanging after the first movie (AvPlayer thread joins, upstream PR #68) |
 | [crash-dump](runtime/crash-dump.md) | active | on / n/a | lab | GOW3_CRASH_DUMP | Minidump on any fatal fault, with fallbacks to smaller dump types and faults inside winpthreads |
 | [load-list-continue](runtime/load-list-continue.md) | active | on / on | deck-lab |  | Load list: "Continue" (the newest save) in place of the dead "New save" entry; "Slot N" on every save |
+| [load-list-details](runtime/load-list-details.md) | active | on / on | deck-lab |  | Load list: per-save details, level picture and level list (Square), in the game's Options menu look |
 | [pad-hotplug](runtime/pad-hotplug.md) | active | on / on | fork-ports |  | Pads plugged in after start: SDL hotplug hints (fork port, #64) |
 | [quiet-log](runtime/quiet-log.md) | active | off / off | deck-lab | GOW3_FPS_LOG | GOW3_FPS_LOG=0 turns off the periodic log lines (FPS line, particle guard summary) |
 | [R2](runtime/r2.md) | active | on / on | lab |  | Runtime: rwlock handles validated through an open-addressing hash set, not a list walk |
@@ -243,6 +244,7 @@ _launcher, settings, medievil.ini keys, run.py, packaging, build scripts_
 |---|---|---|---|---|---|
 | [cursor-hide](launcher/cursor-hide.md) | active | on / on | lab |  | Hide the mouse cursor in borderless and fullscreen and when idle in a window; shown while unfocused |
 | [extra-env-file](launcher/extra-env-file.md) | active | off / off | deck-lab |  | run.py: extra-env.txt in the data folder sets test environment variables on every start |
+| [game-ui-cache](launcher/game-ui-cache.md) | active | on / on | deck-lab |  | Game UI cache: level names, loading screens, menu frame, button prompts and fonts from the player's paks |
 | [launcher-chore](launcher/launcher-chore.md) | chore | n/a / n/a | lab |  | Launcher text fixes with no behaviour of their own |
 | [launcher-graphics-page](launcher/launcher-graphics-page.md) | active | on / on | lab | present_frame_trace | Launcher > Performance: the 13 graphics settings above Frame rate; frame rate on the Display page; new default patches start on |
 | [live-render-scale](launcher/live-render-scale.md) | active | on / on | deck-lab |  | Render scale live in the in-game menu, any whole percent from 50 to 200 |
