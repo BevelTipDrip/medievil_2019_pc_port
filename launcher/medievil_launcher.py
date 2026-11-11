@@ -2413,6 +2413,19 @@ class Launcher:
             log.close()
         self.output.put((code,))
 
+    def reload_ini(self):
+        """The game's menu writes medievil.ini too (Controls' camera_* keys, live graphics options): once it has
+        exited, take the file as it is now. Without this the next save (Play, closing the launcher) wrote
+        the launcher's copy from before the game back, dropping keys only the game writes (T-CM2)."""
+        try:
+            self.ini, self.ini_lines = load_ini()
+        except OSError:
+            return
+        self.ini.update(graphics_options.graphics_migration(self.ini))
+        for key, var in self.vars.items():
+            if var.store == 'ini' and key in self.ini:
+                var.set(self.ini[key] == '1' if key in INI_FLAGS else self.ini[key])
+
     def drain_output(self):
         while not self.ui_calls.empty():
             self.ui_calls.get_nowait()()
@@ -2424,6 +2437,7 @@ class Launcher:
                     self.process = None
                     if self.job:
                         self.job.close()
+                    self.reload_ini()
                     self.refresh_status()
                 else:
                     if 'Entering original x86-64 code' in item:
