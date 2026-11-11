@@ -4,7 +4,7 @@ One line per card. Open a card for invariants, interactions and evidence; look u
 reading: `patchmap.py file <path>` / `switch <name>` / `commit <hash>` / `test <id>`.
 Card format and statuses: [README.md](README.md). W / D = default on Windows / Deck.
 
-208 cards.
+209 cards.
 
 ## memory
 
@@ -35,6 +35,7 @@ _loader, HLE libraries, threads, locks, files, audio, input (src/ outside memory
 |---|---|---|---|---|---|
 | [avplayer-join-hang](runtime/avplayer-join-hang.md) | active | on / on | fork-ports |  | Fix the game hanging after the first movie (AvPlayer thread joins, upstream PR #68) |
 | [crash-dump](runtime/crash-dump.md) | active | on / n/a | lab | GOW3_CRASH_DUMP | Minidump on any fatal fault, with fallbacks to smaller dump types and faults inside winpthreads |
+| [load-list-continue](runtime/load-list-continue.md) | active | on / on | deck-lab |  | Load list: "Continue" (the newest save) in place of the dead "New save" entry; "Slot N" on every save |
 | [pad-hotplug](runtime/pad-hotplug.md) | active | on / on | fork-ports |  | Pads plugged in after start: SDL hotplug hints (fork port, #64) |
 | [quiet-log](runtime/quiet-log.md) | active | off / off | deck-lab | GOW3_FPS_LOG | GOW3_FPS_LOG=0 turns off the periodic log lines (FPS line, particle guard summary) |
 | [R2](runtime/r2.md) | active | on / on | lab |  | Runtime: rwlock handles validated through an open-addressing hash set, not a list walk |

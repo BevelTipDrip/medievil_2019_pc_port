@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: ours
 class: M
-commits:
+commits: 3c7271aba8
 files: src/runtime_services.c, src/runtime_savedata.c
 symbols: save_open, save_status, save_label, slot_name, save_time, runtime_savedata_icon
 switches:
