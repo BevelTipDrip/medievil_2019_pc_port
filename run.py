@@ -314,6 +314,12 @@ def main():
                 print(f'Saves backed up to {made}', flush=True)
         except OSError as error:
             print(f'Save backup failed, starting anyway: {error}', flush=True)
+        # The game's UI pieces for the overlay (Load list, button glyphs), from its own paks.
+        try:
+            from game_ui_assets import build as build_game_ui
+            build_game_ui(game, user_dir, log=lambda line: print(line, flush=True))
+        except Exception as error:  # the overlay then uses its plain look
+            print(f'Game UI files skipped: {error}', flush=True)
         this = ['--run'] if getattr(sys, 'frozen', False) else [str(Path(__file__).resolve())]
         if WINDOWS:
             restart = [sys.executable, *this, '--after', str(os.getpid()), *args]
