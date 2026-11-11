@@ -199,18 +199,12 @@ bool WindowSDL::PollEvents() {
             continue;
         }
         switch (event.type) {
-        case SDL_EVENT_MOUSE_BUTTON_UP: // a whole click in the game window takes the mouse
-            // Not while the menu, the save list or a text entry has the cursor: there a click is
-            // theirs (it took the mouse and UpdateCursor let it go again, the cursor snapped to the
-            // window's centre: T-MS3).
+        case SDL_EVENT_MOUSE_BUTTON_UP: // in a window, a whole click in the game takes the mouse
+            // (borderless and fullscreen take it in UpdateCursor). Not while the menu, the save list
+            // or a text entry has the cursor: there a click is theirs (it took the mouse and
+            // UpdateCursor let it go again, the cursor snapped to the window's centre: T-MS3).
             if (mouse_enabled && !mouse_captured && !Gow3Overlay::CapturesInput()) {
                 SetMouseCapture(true);
-            }
-            break;
-        case SDL_EVENT_KEY_DOWN: // plain F1 gives it back; with a modifier it is left alone (Alt+F1: NVIDIA)
-            if (mouse_captured && event.key.key == SDLK_F1 && !event.key.repeat &&
-                (event.key.mod & (SDL_KMOD_ALT | SDL_KMOD_SHIFT | SDL_KMOD_CTRL | SDL_KMOD_GUI)) == 0) {
-                SetMouseCapture(false);
             }
             break;
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
@@ -239,7 +233,7 @@ bool WindowSDL::PollEvents() {
 // The game's mouse (GOW3_MOUSE=1, src/runtime_mouse.c; study-mouse-input.md 4.4): while captured,
 // the Raw Input reader passes counts and buttons to sceMouse, and the hidden cursor is held in a
 // 2x2 pen at the window's centre so it cannot leave the window or click its frame. Changes only on
-// events (a click, F1, focus loss, the menu), never per frame.
+// events (focus, a click in a window, the menu), never per frame.
 void WindowSDL::SetMouseCapture(bool on) {
     if (on) {
         int w = 0, h = 0;
@@ -259,15 +253,20 @@ void WindowSDL::SetMouseCapture(bool on) {
 // fullscreen, and in a window after 3 s without moving the mouse; always shown while the menu,
 // the save list or a text entry is open. Without input focus (alt-tab, another window clicked)
 // the cursor is left shown; it hides again once the player is back in the game window. A
-// captured game mouse is let go without focus or under the menu, and hides the cursor meanwhile.
+// captured game mouse is let go without focus or under the menu, and hides the cursor meanwhile;
+// borderless and fullscreen take it back by themselves with focus and no menu (the user, T-MS6: no
+// click needed; a window still needs one, so its frame stays usable).
 void WindowSDL::UpdateCursor() {
     const SDL_WindowFlags flags = SDL_GetWindowFlags(window);
     const bool focused = (flags & SDL_WINDOW_INPUT_FOCUS) != 0;
     const bool fullscreen = (flags & SDL_WINDOW_FULLSCREEN) != 0;
-    if (mouse_captured && (!focused || Gow3Overlay::CapturesInput())) {
+    const bool menu = Gow3Overlay::CapturesInput();
+    if (mouse_captured && (!focused || menu)) {
         SetMouseCapture(false);
+    } else if (mouse_enabled && !mouse_captured && focused && fullscreen && !menu) {
+        SetMouseCapture(true);
     }
-    const bool hide = focused && !Gow3Overlay::CapturesInput() &&
+    const bool hide = focused && !menu &&
                       (mouse_captured || fullscreen || SDL_GetTicks() - last_mouse_motion_ms > 3000);
     if (hide != cursor_hidden) {
         cursor_hidden = hide;
