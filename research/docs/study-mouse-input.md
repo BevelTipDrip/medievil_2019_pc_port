@@ -361,6 +361,49 @@ clicks on the Load list leave the cursor where it is; a click in the game takes 
 Log: one capture before the list, one release when it opened, no capture / release pairs while it was open
 (T-MS3 had five); 7355 reports a second at 8000 Hz with 681 reader wake-ups a second.
 
+### Step 5 research: the yaw and pitch sites, and what really turns the camera (2026-11-11, no launch)
+
+A research agent read both eboots (01.02 = `out/eboot.elf`, sha256 `310748698af4...`; 01.00 rebuilt from
+`Game Files\CUSA11227\eboot.bin` as prepare.py does) and decoded the camera Blueprints' Kismet bytecode (4.21
+package reader, scratchpad tools). The site bytes were checked again independently (scratchpad `verify_yaw.py`).
+
+| Item | 01.02 | 01.00 |
+|---|---|---|
+| Exec-pointer slot (FNameNativePtrPair + 8), Yaw / Pitch | 0x525bc48 / 0x525bc28 | 0x525b6c8 / 0x525b6a8 |
+| Exec thunk, Yaw / Pitch | 0x2a290e0 / 0x2a28fa0 | 0x2a26320 / 0x2a261e0 |
+| APawn::AddControllerYawInput / PitchInput (pawn vtable +0x730 / +0x728) | 0x23de8f0 / 0x23de890 | 0x23dbb20 / 0x23dbac0 |
+| APlayerController::AddYawInput / AddPitchInput (PC vtable +0xb78 / +0xb70) | 0x24927b0 / 0x2492760 | 0x248f9e0 / 0x248f990 |
+
+Signature (both builds, checked): slot -> thunk and slot - 8 -> `"AddControllerYawInput"`; thunk +0x72:
+`49 8b 06 c5 fa 10 45 dc ff 90 30 07 00 00` (`call [rax+0x730]`; pitch `... 28 07 00 00`). The thunk prologue
+alone is not unique (3003 functions start with the same 13 bytes): never match on it alone.
+
+Read:
+
+- The thunk reads the float through `FFrame::Step` (Blueprint calls), then calls vtable +0x730. APawn's body is
+  UE4's: `Val != 0`, a local player controller, then `PC->AddYawInput`, which adds `Val x InputYawScale (2.5,
+  BaseGame.ini; nothing in the game changes it)` to `RotationInput.Yaw` (+0x52c) unless `IgnoreLookInput`. A slot
+  wrapper sees every call, zero values included.
+- **Only `BP_df_character` calls AddControllerYawInput / PitchInput** (all 26,791 packages of 01.02), from its
+  TurnRate handler: `InputRotation = select(AllowUserCameraControl, Axis x dt x BaseTurnRate (45) x CameraTurnRate,
+  0)` on `BP_CameraManager`, then `AddControllerYawInput` with the same value. The axis event fires with 0 at rest
+  (inferred from UE4 4.21: every tick, not while paused); no call while the camera area is invalid, `CameraCanRotate`
+  is false or another listener consumes the axis.
+- **The camera mostly ignores control yaw.** `BP_CameraManager` (a plain actor, not UE4's PlayerCameraManager)
+  ticks `ComputeCamera` on the current camera area and then `SetControlRotation(0, 0, cameraYaw)`. In
+  `BP_CameraAreaFree`: `yaw = (horizontal distance < 400 or TestInputBits(256)) ? control yaw : atan2(camera ->
+  focus)`, plus `InputRotation x 2`. In the follow branch, extra control yaw is overwritten every tick (inferred
+  from the bytecode). The free, spline, cylinder, suggest-direction and Kardok areas integrate `InputRotation`.
+- **Pitch is not control rotation:** control pitch is overwritten with 0 each tick and never used. Camera pitch
+  comes from Dan's `LookUpAxisValue` (stick position) and the area's eased `UserPitchMin -65 / Max -5`: the
+  virtual-stick path of 4.1 stands.
+
+Consequences for step 5: adding mouse yaw through `AddControllerYawInput` (4.1 b as written) would likely turn the
+camera only in the near / `TestInputBits(256)` branch. Mouse yaw must reach `BP_CameraManager.InputRotation` (the
+value the areas integrate), whose offset is a Blueprint property (resolved at runtime by name). Open: which branch
+is typical per level; whether auto-recentring fights a mouse that never sets `IsCameraRotating` / `IsYawing`;
+`AllowUserCameraControl` = false looks like a stick at rest to a slot wrapper.
+
 ## 8. Open questions
 
 1. Does `[SystemSettings]` reach `PS4.EnableMouse` before the PS4 application and the pad opens read it (step 1)? **Yes (T-MS1).**
