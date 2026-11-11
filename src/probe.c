@@ -698,21 +698,25 @@ static void install_debug_menu_trace(Segment *segments, uint64_t count, uint64_t
 }
 
 /* MediEvil mouse yaw (src/mouse_hook.h; study-mouse-input.md, step 5): with GOW3_MOUSE=1 the mouse's
- * x counts x GOW3_MOUSE_YAW degrees (default 0.022; negative turns the other way, 0 off) are added to
- * the camera manager's InputRotation right after Dan's TurnRate handler wrote it (the camera areas
- * add InputRotation x 2 degrees a tick). Nothing is added while the handler's AllowUserCameraControl
- * is false, and counts are dropped when the handler was not called for 100 ms (menus, cutscenes,
- * pauses). A bytecode check that fails turns it off with one log line. Logs every 5 s. */
+ * x counts x GOW3_MOUSE_YAW degrees (default 0.022; negative turns the other way, 0 off) go where the
+ * stick's turn goes, in Dan's TurnRate handler: into the stick-turn local the AddControllerYawInput call
+ * reads (/ InputYawScale 2.5: control yaw, which turns the camera while Dan stands), put back after the
+ * call, and into the camera manager's InputRotation (/ 2: the camera areas add InputRotation x 2 degrees
+ * a tick while Dan moves). Nothing is added while the handler's AllowUserCameraControl is false, and
+ * counts are dropped when the handler was not called for 100 ms (menus, cutscenes, pauses). A bytecode
+ * check that fails turns it off with one log line. Logs every 5 s. */
 static Ue4Native mouse_yaw_exec;
 static const MedievilMouseYawSites *mouse_yaw_site;
 static float mouse_yaw_degrees = 0.022f;
+#define MOUSE_YAW_INPUT_SCALE 2.5f /* APlayerController::InputYawScale (BaseGame.ini; the game keeps it) */
 static int32_t ue4_property_offset(const unsigned char *script, uint32_t at) {
     const char *property;
     memcpy(&property, script + at, 8);
     return *(const int32_t *)(property + 0x44); /* UProperty::Offset_Internal */
 }
-static ABI void mouse_yaw(void *context, void *stack, void *result) {
-    mouse_yaw_exec(context, stack, result);
+/* Before the original exec: the stick-turn local and InputRotation to add to and the degrees, or 0
+ * (not Dan's call, a check failed, no mouse, camera locked). Statistics and the 5 s log line. */
+static float mouse_yaw_take(void *stack, float **turn, float **input_rotation) {
     static const unsigned char *checked_script;
     static const char *checked_manager;
     static int off; /* a check failed: the hook stays out of the way */
@@ -721,39 +725,43 @@ static ABI void mouse_yaw(void *context, void *stack, void *result) {
     const MedievilMouseYawSites *s = mouse_yaw_site;
     const char *frame = stack;
     const char *node = *(const char *const *)(frame + 0x10);
-    if (off || !node) return;
+    if (off || !node) return 0.0f;
     const unsigned char *script = *(const unsigned char *const *)(node + 0x48);
     if (!script || *(const int32_t *)(node + 0x50) != s->script_size ||
-        *(const unsigned char *const *)(frame + 0x20) != script + s->code)
-        return; /* not Dan's TurnRate handler */
+        *(const unsigned char *const *)(frame + 0x20) != script + s->call_at + 0x0d)
+        return 0.0f; /* not Dan's TurnRate handler */
     if (script != checked_script) {
-        if (!medievil_mouse_yaw_script_ok(script, s)) {
+        /* and the stick-turn local is a 4-byte local of this ubergraph (UProperty: Outer +0x20,
+         * ElementSize +0x34) */
+        const char *local = NULL;
+        if (medievil_mouse_yaw_script_ok(script, s)) memcpy(&local, script + s->call_at + 0x31, 8);
+        if (!local || *(const char *const *)(local + 0x20) != node || *(const int32_t *)(local + 0x34) != 4) {
             off = 1;
             printf("Mouse yaw: off (Dan's TurnRate bytecode differs from game build %s)\n", s->build);
             fflush(stdout);
-            return;
+            return 0.0f;
         }
         checked_script = script;
     }
     const char *locals = *(const char *const *)(frame + 0x28);
     const char *manager = *(const char *const *)(locals + ue4_property_offset(script, s->let_at + 0x0b));
-    if (!manager) return;
-    const char *input_rotation;
-    memcpy(&input_rotation, script + s->let_at + 0x20, 8);
+    if (!manager) return 0.0f;
+    const char *property;
+    memcpy(&property, script + s->let_at + 0x20, 8);
     if (manager != checked_manager) {
         /* InputRotation is a 4-byte property of the camera manager's class or one of its parents
-         * (UProperty: Outer +0x20, ElementSize +0x34; UObject: Class +0x10; UStruct: SuperStruct +0x30). */
-        const char *owner = *(const char *const *)(input_rotation + 0x20);
+         * (UObject: Class +0x10; UStruct: SuperStruct +0x30). */
+        const char *owner = *(const char *const *)(property + 0x20);
         const char *cls = *(const char *const *)(manager + 0x10);
         for (int depth = 0; cls && cls != owner && depth < 16; ++depth) cls = *(const char *const *)(cls + 0x30);
-        if (cls != owner || *(const int32_t *)(input_rotation + 0x34) != 4) {
+        if (cls != owner || *(const int32_t *)(property + 0x34) != 4) {
             off = 1;
             printf("Mouse yaw: off (InputRotation does not belong to the camera manager %p)\n", (const void *)manager);
             fflush(stdout);
-            return;
+            return 0.0f;
         }
         printf("Mouse yaw: Dan's camera input found (camera manager %p, InputRotation at +%#x)\n",
-               (const void *)manager, *(const int32_t *)(input_rotation + 0x44));
+               (const void *)manager, *(const int32_t *)(property + 0x44));
         fflush(stdout);
         checked_manager = manager;
     }
@@ -767,12 +775,7 @@ static ABI void mouse_yaw(void *context, void *stack, void *result) {
     last_ms = ms;
     const unsigned char allowed = *(const unsigned char *)(locals + ue4_property_offset(script, s->call_at + 0x15));
     if (!allowed && x) { ++gated; x = 0; }
-    float *value = (float *)(manager + *(const int32_t *)(input_rotation + 0x44));
-    if (x) {
-        *value += (float)x * mouse_yaw_degrees * 0.5f;
-        ++moved;
-        counts += x;
-    }
+    float *value = (float *)(manager + *(const int32_t *)(property + 0x44));
     if (ms - log_ms >= 5000) {
         if (log_ms) {
             printf("Mouse yaw: last %.1f s: %" PRIu64 " handler calls, %" PRIu64 " with mouse, %lld counts = %.1f degrees; "
@@ -785,6 +788,25 @@ static ABI void mouse_yaw(void *context, void *stack, void *result) {
         calls = moved = gated = dropped = 0;
         counts = 0;
     }
+    if (!x) return 0.0f;
+    ++moved;
+    counts += x;
+    *turn = (float *)(locals + ue4_property_offset(script, s->call_at + 0x31));
+    *input_rotation = value;
+    return (float)x * mouse_yaw_degrees;
+}
+static ABI void mouse_yaw(void *context, void *stack, void *result) {
+    float *turn = NULL, *input_rotation = NULL;
+    const float degrees = mouse_yaw_take(stack, &turn, &input_rotation);
+    if (degrees == 0.0f) {
+        mouse_yaw_exec(context, stack, result);
+        return;
+    }
+    const float stick = *turn;
+    *turn = stick + degrees / MOUSE_YAW_INPUT_SCALE;
+    mouse_yaw_exec(context, stack, result);
+    *turn = stick;
+    *input_rotation += degrees * 0.5f;
 }
 static void install_mouse_yaw(Segment *segments, uint64_t count, uint64_t size) {
     if (!runtime_mouse_enabled()) return;
