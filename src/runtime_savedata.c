@@ -102,6 +102,24 @@ static int read_param(const char *meta, Param *p) {
     size_t n=fread(p,sizeof(*p),1,f); fclose(f);
     struct stat st;
     if (!stat(path,&st)) p->mtime=st.st_mtime;
+    /* The save's date is its last write, as on the PS4: param.bin or any file in the save,
+     * whichever is newer. MediEvil saves into the newest slot of a date-ordered search and
+     * makes a loaded slot the newest by writing its file back at load (no SetParam). With
+     * param.bin's time alone the loaded slot stayed old and the next save went into another
+     * slot (research/docs/data/save-trace-2-0102.log). */
+    char host[700];
+    size_t m=strlen(meta);
+    if (m>8 && m-8<sizeof(host) && !strcmp(meta+m-8,".sce_sys")) {
+        snprintf(host,sizeof(host),"%.*s",(int)(m-8),meta);
+        DIR *d=opendir(host);
+        for (struct dirent *e; d && (e=readdir(d));) {
+            char file[960];
+            if (e->d_name[0]=='.') continue;
+            snprintf(file,sizeof(file),"%s/%s",host,e->d_name);
+            if (!stat(file,&st) && S_ISREG(st.st_mode) && st.st_mtime>p->mtime) p->mtime=st.st_mtime;
+        }
+        if (d) closedir(d);
+    }
     return n==1 ? 0 : -1;
 }
 #ifdef _WIN32
@@ -128,6 +146,14 @@ int runtime_savedata_icon(int32_t user, const char *dir, char *out, size_t size)
     root(user,NULL,base,sizeof(base));
     snprintf(out,size,"%s/%s.sce_sys/icon0.png",base,dir);
     return 0;
+}
+/* Save trace: every call that picks, reads, writes or deletes a save is logged with the game code
+ * that made it, so the game's slot logic can be followed in a log (which slot a load, a new game
+ * or an autosave writes). Saves are rare: the lines are always on. */
+void runtime_save_trace_caller(void *return_address, char *out, size_t size) {
+    const uintptr_t image=(uintptr_t)runtime_image_base(), at=(uintptr_t)return_address;
+    if (image && at-image<0x20000000) snprintf(out,size," from guest+0x%llx",(unsigned long long)(at-image));
+    else if (size) out[0]=0;
 }
 static ABI int32_t save_initialize(const void *param) { (void)param; initialized=1; return 0; }
 static ABI int32_t save_terminate(void) {
@@ -170,13 +196,23 @@ static int32_t mount(int32_t user, const char *title, const DirName *dir, uint32
            exists ? "existing" : "created",(mode & MODE_RDONLY) ? ", read-only" : "");
     return 0;
 }
+static void trace_mount(const DirName *dir, uint32_t mode, uint64_t blocks, int32_t r, void *caller) {
+    char from[48]; runtime_save_trace_caller(caller,from,sizeof(from));
+    printf("Save trace: mount '%.31s' mode 0x%x blocks %llu -> %s%s\n",dir ? dir->data : "",mode,
+           (unsigned long long)blocks,r ? "failed" : "ok",from);
+    if (r) printf("Save trace:   error 0x%08x\n",(uint32_t)r);
+}
 static ABI int32_t save_mount(const Mount1 *m, MountResult *result) {
     if (!m) return ERR_PARAMETER;
-    return mount(m->user,m->title ? m->title->data : NULL,m->dir,m->mode,result);
+    int32_t r=mount(m->user,m->title ? m->title->data : NULL,m->dir,m->mode,result);
+    trace_mount(m->dir,m->mode,m->blocks,r,__builtin_return_address(0));
+    return r;
 }
 static ABI int32_t save_mount2(const Mount2 *m, MountResult *result) {
     if (!m) return ERR_PARAMETER;
-    return mount(m->user,NULL,m->dir,m->mode,result);
+    int32_t r=mount(m->user,NULL,m->dir,m->mode,result);
+    trace_mount(m->dir,m->mode,m->blocks,r,__builtin_return_address(0));
+    return r;
 }
 static int slot_of(const MountPoint *point) {
     if (!point || strncmp(point->data,"/savedata",9)) return -1;
@@ -187,7 +223,11 @@ static ABI int32_t save_umount(const MountPoint *point) {
     if (!initialized) return ERR_NOT_INITIALIZED;
     pthread_mutex_lock(&lock);
     int slot=slot_of(point);
-    if (slot>=0) { runtime_file_unmount(point->data); slots[slot].used=0; }
+    if (slot>=0) {
+        const char *name=strrchr(slots[slot].host,'/');
+        printf("Save trace: unmount %s ('%s')\n",point->data,name ? name+1 : slots[slot].host);
+        runtime_file_unmount(point->data); slots[slot].used=0;
+    }
     pthread_mutex_unlock(&lock);
     return slot>=0 ? 0 : ERR_NOT_FOUND;
 }
@@ -207,6 +247,10 @@ static ABI int32_t save_set_param(const MountPoint *point, uint32_t type, const 
     default: goto bad;
     }
     write_param(slots[slot].meta,&p);
+    const char *name=strrchr(slots[slot].host,'/');
+    char from[48]; runtime_save_trace_caller(__builtin_return_address(0),from,sizeof(from));
+    printf("Save trace: set param %u on '%s': '%.60s'%s\n",type,name ? name+1 : "",
+           type==1 ? p.title : type==2 ? p.subtitle : type==3 ? p.detail : "",from);
     pthread_mutex_unlock(&lock);
     return 0;
 bad:
@@ -224,6 +268,7 @@ static ABI int32_t save_icon(const MountPoint *point, const Icon *icon) {
         FILE *f=fopen(path,"wb");
         r=f && fwrite(icon->buffer,1,icon->data_size,f)==icon->data_size ? 0 : ERR_INTERNAL;
         if (f) fclose(f);
+        printf("Save trace: icon written (%llu bytes)\n",(unsigned long long)icon->data_size);
     }
     pthread_mutex_unlock(&lock);
     return r;
@@ -239,7 +284,8 @@ static ABI int32_t save_delete(const Delete *d) {
     if (stat(host,&st)) return ERR_NOT_FOUND;
     remove_tree(host);
     remove_tree(meta);
-    printf("Runtime: save data '%s' deleted\n",d->dir->data);
+    char from[48]; runtime_save_trace_caller(__builtin_return_address(0),from,sizeof(from));
+    printf("Runtime: save data '%s' deleted%s\n",d->dir->data,from);
     return 0;
 }
 /* SQL-LIKE pattern: % any run, _ one character. */
@@ -285,6 +331,19 @@ static ABI int32_t save_search(const SearchCond *cond, SearchResult *result) {
         if (result->infos) { memset(&result->infos[i],0,sizeof(SearchInfo)); result->infos[i].blocks=32768; result->infos[i].free_blocks=16384; }
     }
     result->set_count=set;
+    char from[48]; runtime_save_trace_caller(__builtin_return_address(0),from,sizeof(from));
+    printf("Save trace: search '%.31s' key %u order %u capacity %u -> %zu found, %u returned%s\n",
+           cond->dir ? cond->dir->data : "",cond->key,cond->order,result->names_capacity,count,set,from);
+    for (uint32_t i=0;i<set;++i) {
+        char when[32]; time_t t=(time_t)entries[i].param.mtime; struct tm tm;
+#ifdef _WIN32
+        localtime_s(&tm,&t);
+#else
+        localtime_r(&t,&tm);
+#endif
+        strftime(when,sizeof(when),"%Y-%m-%d %H:%M:%S",&tm);
+        printf("Save trace:   %u: %s  %s  %.40s\n",i,entries[i].name,when,entries[i].param.subtitle);
+    }
     free(entries);
     return 0;
 }

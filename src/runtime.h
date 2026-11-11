@@ -102,6 +102,8 @@ void runtime_savedata_report(void);
 #define RUNTIME_SAVE_PARAM_SIZE 1328
 int runtime_savedata_param(int32_t user, const char *dir, void *param);
 int runtime_savedata_icon(int32_t user, const char *dir, char *out, size_t size);
+/* Save trace ("Save trace:" log lines): " from guest+0x..." for a guest return address, else "". */
+void runtime_save_trace_caller(void *return_address, char *out, size_t size);
 void runtime_thread_attach_host(const char *name);
 /* Name of a guest thread handle, or NULL when it is not a live thread. */
 const char *runtime_thread_name(void *handle);

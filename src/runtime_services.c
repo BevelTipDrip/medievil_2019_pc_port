@@ -246,7 +246,21 @@ static int32_t dialog_open_mode(int i, const unsigned char *param, size_t mode_o
     return mode==progress_mode ? dialog_open_progress(i) : dialog_open(i);
 }
 static ABI int32_t msg_init(void) { return dialog_init(1); }
-static ABI int32_t msg_open(const unsigned char *p) { return dialog_open_mode(1,p,56,2); }
+static ABI int32_t msg_open(const unsigned char *p) {
+    /* Save trace: a message the game shows (an overwrite or delete question is answered YES). */
+    if (p) {
+        uint32_t mode; const unsigned char *user_msg, *sys_msg;
+        memcpy(&mode,p+56,4); memcpy(&user_msg,p+64,8); memcpy(&sys_msg,p+80,8);
+        if (mode==1 && user_msg) {
+            uint32_t buttons; const char *text; memcpy(&buttons,user_msg,4); memcpy(&text,user_msg+8,8);
+            printf("Save trace: message dialog (buttons %u): '%.120s'\n",buttons,text ? text : "");
+        } else if (mode==3 && sys_msg) {
+            uint32_t type; memcpy(&type,sys_msg,4);
+            printf("Save trace: message dialog, system message %u\n",type);
+        }
+    }
+    return dialog_open_mode(1,p,56,2);
+}
 static ABI int32_t msg_status(void) { return dialog_status(1); }
 static ABI int32_t msg_term(void) { return dialog_term(1); }
 static ABI int32_t msg_close(void) { return dialog_close(1); }
@@ -295,6 +309,30 @@ static ABI int32_t save_open(const unsigned char *p) {
         for (uint32_t i=0;dirs && i<count && save_dialog.dir_count<32;++i)
             if (dirs[i*32]) memcpy(save_dialog.dirs[save_dialog.dir_count++],dirs+i*32,31);
         save_dialog.has_new=new_item!=NULL;
+    }
+    {   /* Save trace (runtime_savedata.c): what the game asks the dialog for. */
+        uint32_t disp; memcpy(&disp,p+56,4);
+        char from[48]; runtime_save_trace_caller(__builtin_return_address(0),from,sizeof(from));
+        printf("Save trace: dialog open, mode %u, type %u, %d saves listed%s%s\n",save_dialog.mode,disp,
+               save_dialog.dir_count,save_dialog.has_new ? ", with a new-save item" : "",from);
+        if (items) {
+            uint32_t focus; const char *focus_dir; const char *const *new_item;
+            memcpy(&focus,items+40,4); memcpy(&focus_dir,items+48,8); memcpy(&new_item,items+32,8);
+            printf("Save trace:   focus %u%s%.31s%s\n",focus,focus_dir ? " on '" : "",focus_dir ? focus_dir : "",
+                   focus_dir ? "'" : "");
+            if (new_item && new_item[0]) printf("Save trace:   new-save item '%.60s'\n",new_item[0]);
+            for (int i=0;i<save_dialog.dir_count;++i) printf("Save trace:   %d: %s\n",i,save_dialog.dirs[i]);
+        }
+        /* User and system messages: the text or message type the game shows (answered OK below). */
+        const unsigned char *user_msg, *sys_msg; memcpy(&user_msg,p+80,8); memcpy(&sys_msg,p+88,8);
+        if (save_dialog.mode==2 && user_msg) {
+            uint32_t buttons; const char *text; memcpy(&buttons,user_msg,4); memcpy(&text,user_msg+8,8);
+            printf("Save trace:   user message (buttons %u): '%.120s'\n",buttons,text ? text : "");
+        }
+        if (save_dialog.mode==3 && sys_msg) {
+            uint32_t type; uint64_t value; memcpy(&type,sys_msg,4); memcpy(&value,sys_msg+8,8);
+            printf("Save trace:   system message %u, value %llu\n",type,(unsigned long long)value);
+        }
     }
     if (save_dialog.mode!=SAVE_MODE_LIST) return dialog_open_mode(2,p,52,5);
     const char *labels[33], *icons[33]; int n=0;
@@ -353,6 +391,8 @@ static ABI int32_t save_result(unsigned char *out) {
     if (dir) { memset(dir,0,32); memcpy(dir,name,strnlen(name,31)); }
     if (param && name[0]) runtime_savedata_param(USER_ID,name,param);
     memcpy(out+32,&save_dialog.user_data,8);
+    printf("Save trace: dialog result: mode %u, result %u, button %u, save '%s'%s%s\n",save_dialog.mode,
+           save_dialog.result,dialogs[2].button,name,dir ? "" : " (no name buffer)",param ? ", param filled" : "");
     return 0;
 }
 static ABI int32_t save_ready(void) { return 1; }

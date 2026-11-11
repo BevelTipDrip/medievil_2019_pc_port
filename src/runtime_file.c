@@ -198,6 +198,8 @@ static int game_path(const char *p) {
     return (!strncmp(p,"/app0",5) && (!p[5] || p[5]=='/')) ||
            (!strncmp(p,"/hostapp",8) && (!p[8] || p[8]=='/'));
 }
+/* Save trace (runtime_savedata.c): files the game opens, removes or renames under a save mount. */
+static int save_path(const char *p) { return p && !strncmp(p,"/savedata",9); }
 /* All operations return >=0 or -(host errno); wrappers adapt the convention. */
 static int64_t do_open(const char *guest,int flags,int mode) {
     if (game_path(guest) && (flags & (3|0x8|0x200|0x400|0x800))) return -EROFS;
@@ -241,6 +243,9 @@ static int64_t do_open(const char *guest,int flags,int mode) {
     static int file_trace=-1;
     if (file_trace<0) { const char *t=getenv("GOW3_FILE_TRACE"); file_trace=t && t[0]=='1'; }
     if (file_trace) printf("Runtime: open(%s)%s\n",guest,dir ? " [directory]" : "");
+    if (save_path(guest) && !dir)
+        printf("Save trace: open %s for %s, %lld bytes\n",guest,
+               !(flags&3) ? "reading" : flags&0x400 ? "writing (truncated)" : "writing",(long long)s.st_size);
     pthread_mutex_lock(&lock);
     int fd=-1;
     for (int i=3;i<MAX_FILES;++i) if (!files[i].used) { fd=i; break; }
@@ -403,6 +408,7 @@ static int64_t path_op(const char *guest,int op,int mode) {
     int e=translate(guest,path,sizeof(path));
     if (e) return -e;
     int r= op==0 ? mkdir(path,mode ? mode : 0755) : op==1 ? rmdir(path) : unlink(path);
+    if (save_path(guest) && op) printf("Save trace: %s %s -> %d\n",op==1 ? "rmdir" : "unlink",guest,r ? errno : 0);
     return r ? -errno : 0;
 }
 static int64_t do_rename(const char *from,const char *to) {
@@ -411,6 +417,7 @@ static int64_t do_rename(const char *from,const char *to) {
     int e=translate(from,a,sizeof(a));
     if (!e) e=translate(to,b,sizeof(b));
     if (e) return -e;
+    if (save_path(from) || save_path(to)) printf("Save trace: rename %s -> %s\n",from,to);
 #ifdef _WIN32
     /* POSIX rename replaces an existing target; the CRT's fails. */
     return MoveFileExA(a,b,MOVEFILE_REPLACE_EXISTING) ? 0 : -compat_errno_from_win32(GetLastError());
