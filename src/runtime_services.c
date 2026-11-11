@@ -12,6 +12,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <time.h>
+#include <stdatomic.h>
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -641,10 +642,34 @@ static ABI int32_t discmap_7c98(const char *path,int64_t offset,int64_t size,int
 }
 
 /* ---- Devices that are absent: mouse, microphone, voice chat ---- */
-/* A mouse port opens but never reports a connected device. */
-static ABI int32_t mouse_open(int32_t user,int32_t type,int32_t index,const void *param) { (void)user; (void)type; (void)index; (void)param; return new_id(); }
+/* A mouse port opens but never reports a connected device. UE4 calls these only with the cvar
+ * PS4.EnableMouse=1 (research/docs/study-mouse-input.md); the log lines show whether and how often
+ * (step 1: init once, an open after each scePadOpen, a read per input poll). */
+static ABI int32_t mouse_init(void) {
+    char from[48]; runtime_save_trace_caller(__builtin_return_address(0),from,sizeof(from));
+    printf("Mouse: sceMouseInit%s\n",from); fflush(stdout);
+    return 0;
+}
+static ABI int32_t mouse_open(int32_t user,int32_t type,int32_t index,const void *param) {
+    const int32_t id=new_id();
+    char from[48]; runtime_save_trace_caller(__builtin_return_address(0),from,sizeof(from));
+    printf("Mouse: sceMouseOpen user %d type %d index %d param %d -> %d%s\n",user,type,index,
+           param ? *(const unsigned char *)param : -1,id,from);
+    fflush(stdout);
+    return id;
+}
 static ABI int32_t mouse_read(int32_t handle,unsigned char *data,int32_t count) {
-    (void)handle;
+    static atomic_uint_fast64_t reads; static struct timespec first;
+    const uint64_t n=atomic_fetch_add(&reads,1)+1;
+    if (n==1) clock_gettime(CLOCK_MONOTONIC,&first);
+    if (n<=3 || n%1000==0) {
+        struct timespec now; clock_gettime(CLOCK_MONOTONIC,&now);
+        const double s=(double)(now.tv_sec-first.tv_sec)+(now.tv_nsec-first.tv_nsec)/1e9;
+        char from[48]; runtime_save_trace_caller(__builtin_return_address(0),from,sizeof(from));
+        printf("Mouse: sceMouseRead #%llu handle %d count %d, %.1f reads/s%s\n",(unsigned long long)n,handle,count,
+               s>0 ? (double)(n-1)/s : 0.0,from);
+        fflush(stdout);
+    }
     if (!data || count<1) return (int32_t)0x80DF0001;
     memset(data,0,40); return 1; /* timestamp 0, connected=false */
 }
@@ -810,7 +835,7 @@ static const RuntimeExport exports[]={
     {"scePlayGoGetLocus",playgo_locus}, {"scePlayGoSetInstallSpeed",playgo_speed},
     {"scePlayGoGetInstallSpeed",playgo_get_speed}, {"scePlayGoGetProgress",playgo_progress},
     {"scePlayGoSetToDoList",playgo_todo}, {"scePlayGoClose",playgo_close}, {"scePlayGoTerminate",playgo_terminate},
-    {"sceMouseInit",ok_void}, {"sceMouseOpen",mouse_open}, {"sceMouseRead",mouse_read}, {"sceMouseClose",mouse_close},
+    {"sceMouseInit",mouse_init}, {"sceMouseOpen",mouse_open}, {"sceMouseRead",mouse_read}, {"sceMouseClose",mouse_close},
     {"sceAudioInOpen",audio_in_open},
     {"sceDiscMapIsRequestOnHDD",discmap_on_hdd}, {"sceDiscMap_8A828CAEE7EDD5E9",discmap_8a82},
     {"sceDiscMap_7C980FFB0AA27E7A",discmap_7c98},

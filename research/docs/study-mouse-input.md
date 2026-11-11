@@ -281,9 +281,28 @@ puts it in the corner, then a known move puts it under the host cursor.
 | 7 | Settings: `mouse_look`, sensitivity, invert Y, mouse button map, in `medievil.ini` and the launcher; mode switch from the hook signal. | One launch per setting change, as usual. |
 | Optional | The no-hook experiment of 3.3 (`MouseX -> TurnRate`, smoothing off, dt compensation). | Compare with step 5 if the hook is ever not available (another eboot). |
 
+## 7b. Step results
+
+### T-MS1: PS4.EnableMouse from the pak's ini (2026-11-11, launched by Claude with the user's go, log data/mouse-step1-enable.log)
+
+Change: log lines in the runtime's `sceMouseInit` / `sceMouseOpen` / `sceMouseRead` stubs (caller, handle, read
+rate; `src/runtime_services.c`), the stubs still report no mouse. Run: `GOW3_UE4_CVARS=PS4.EnableMouse=1` in
+`extra-env.txt` (written into the override pak's `[SystemSettings]`), game build 01.02, 4K output at 75%, Reflex cap
+141, main menu -> Load -> a level, mouse moved.
+
+| Check | Result |
+|---|---|
+| `sceMouseInit` | once, from guest+0xb71388 |
+| `sceMouseOpen` | right after the runtime's pad open for user 1: `user 1 type 0 index 0 param 1` -> handle 15, from guest+0xb74afc (the call at +0xb74af7 read in 2.2) |
+| `sceMouseRead` | handle 15, count 8, from guest+0xb7599c; 134-141 reads a second over ~19000 reads = the frame rate (cap 141): once per game-thread frame |
+| Game | unchanged (the stub answers "no mouse"); the user saw nothing different |
+
+**Confirmed:** `[SystemSettings]` is applied early enough; no `[ConsoleVariables]` or memory poke is needed (open
+question 1). The read rate confirms one read per frame (2.3), so step 2's accumulator is read once a frame.
+
 ## 8. Open questions
 
-1. Does `[SystemSettings]` reach `PS4.EnableMouse` before the PS4 application and the pad opens read it (step 1)?
+1. Does `[SystemSettings]` reach `PS4.EnableMouse` before the PS4 application and the pad opens read it (step 1)? **Yes (T-MS1).**
 2. Does the camera follow control rotation for yaw, and how much lag does its spring add to an exact input?
 3. Pitch: control rotation or the stick-position offset?
 4. Does the character call `AddControllerYawInput` every gameplay frame, including with the stick at rest (needed
