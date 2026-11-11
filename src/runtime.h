@@ -53,6 +53,7 @@ int runtime_mouse_enabled(void);
 void runtime_mouse_start(void);
 void runtime_mouse_capture(int on);
 int runtime_mouse_take(int32_t *x, int32_t *y, int32_t *wheel, uint32_t *buttons);
+void runtime_mouse_take_camera(int32_t *x, int32_t *y);
 typedef struct { const char *name; void *function; } RuntimeExport;
 #define RUNTIME_LOOKUP(table, nid) runtime_lookup(table, sizeof(table)/sizeof(*(table)), nid)
 const char *runtime_symbol(const char *nid);

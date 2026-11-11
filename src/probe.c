@@ -14,6 +14,7 @@
 #include "cheat_hook.h"
 #include "actor_hook.h"
 #include "damage_hook.h"
+#include "mouse_hook.h"
 #include "gpu/gow3gpu.h"
 #if !defined(__x86_64__) || !defined(__GNUC__)
 #error This prototype requires x86-64 GCC or Clang (including MinGW).
@@ -696,6 +697,116 @@ static void install_debug_menu_trace(Segment *segments, uint64_t count, uint64_t
     printf("Debug menu trace: unavailable (not an analysed MediEvil eboot: 01.00 or 01.02)\n");
 }
 
+/* MediEvil mouse yaw (src/mouse_hook.h; study-mouse-input.md, step 5): with GOW3_MOUSE=1 the mouse's
+ * x counts x GOW3_MOUSE_YAW degrees (default 0.022; negative turns the other way, 0 off) are added to
+ * the camera manager's InputRotation right after Dan's TurnRate handler wrote it (the camera areas
+ * add InputRotation x 2 degrees a tick). Nothing is added while the handler's AllowUserCameraControl
+ * is false, and counts are dropped when the handler was not called for 100 ms (menus, cutscenes,
+ * pauses). A bytecode check that fails turns it off with one log line. Logs every 5 s. */
+static Ue4Native mouse_yaw_exec;
+static const MedievilMouseYawSites *mouse_yaw_site;
+static float mouse_yaw_degrees = 0.022f;
+static int32_t ue4_property_offset(const unsigned char *script, uint32_t at) {
+    const char *property;
+    memcpy(&property, script + at, 8);
+    return *(const int32_t *)(property + 0x44); /* UProperty::Offset_Internal */
+}
+static ABI void mouse_yaw(void *context, void *stack, void *result) {
+    mouse_yaw_exec(context, stack, result);
+    static const unsigned char *checked_script;
+    static const char *checked_manager;
+    static int off; /* a check failed: the hook stays out of the way */
+    static uint64_t last_ms, log_ms, calls, moved, gated, dropped;
+    static long long counts;
+    const MedievilMouseYawSites *s = mouse_yaw_site;
+    const char *frame = stack;
+    const char *node = *(const char *const *)(frame + 0x10);
+    if (off || !node) return;
+    const unsigned char *script = *(const unsigned char *const *)(node + 0x48);
+    if (!script || *(const int32_t *)(node + 0x50) != s->script_size ||
+        *(const unsigned char *const *)(frame + 0x20) != script + s->code)
+        return; /* not Dan's TurnRate handler */
+    if (script != checked_script) {
+        if (!medievil_mouse_yaw_script_ok(script, s)) {
+            off = 1;
+            printf("Mouse yaw: off (Dan's TurnRate bytecode differs from game build %s)\n", s->build);
+            fflush(stdout);
+            return;
+        }
+        checked_script = script;
+    }
+    const char *locals = *(const char *const *)(frame + 0x28);
+    const char *manager = *(const char *const *)(locals + ue4_property_offset(script, s->let_at + 0x0b));
+    if (!manager) return;
+    const char *input_rotation;
+    memcpy(&input_rotation, script + s->let_at + 0x20, 8);
+    if (manager != checked_manager) {
+        /* InputRotation is a 4-byte property of the camera manager's class or one of its parents
+         * (UProperty: Outer +0x20, ElementSize +0x34; UObject: Class +0x10; UStruct: SuperStruct +0x30). */
+        const char *owner = *(const char *const *)(input_rotation + 0x20);
+        const char *cls = *(const char *const *)(manager + 0x10);
+        for (int depth = 0; cls && cls != owner && depth < 16; ++depth) cls = *(const char *const *)(cls + 0x30);
+        if (cls != owner || *(const int32_t *)(input_rotation + 0x34) != 4) {
+            off = 1;
+            printf("Mouse yaw: off (InputRotation does not belong to the camera manager %p)\n", (const void *)manager);
+            fflush(stdout);
+            return;
+        }
+        printf("Mouse yaw: Dan's camera input found (camera manager %p, InputRotation at +%#x)\n",
+               (const void *)manager, *(const int32_t *)(input_rotation + 0x44));
+        fflush(stdout);
+        checked_manager = manager;
+    }
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    const uint64_t ms = (uint64_t)now.tv_sec * 1000 + (uint64_t)now.tv_nsec / 1000000;
+    int32_t x, y;
+    runtime_mouse_take_camera(&x, &y);
+    ++calls;
+    if (ms - last_ms > 100 && x) { ++dropped; x = 0; }
+    last_ms = ms;
+    const unsigned char allowed = *(const unsigned char *)(locals + ue4_property_offset(script, s->call_at + 0x15));
+    if (!allowed && x) { ++gated; x = 0; }
+    float *value = (float *)(manager + *(const int32_t *)(input_rotation + 0x44));
+    if (x) {
+        *value += (float)x * mouse_yaw_degrees * 0.5f;
+        ++moved;
+        counts += x;
+    }
+    if (ms - log_ms >= 5000) {
+        if (log_ms) {
+            printf("Mouse yaw: last %.1f s: %" PRIu64 " handler calls, %" PRIu64 " with mouse, %lld counts = %.1f degrees; "
+                   "%" PRIu64 " dropped (stale), %" PRIu64 " camera locked; InputRotation %.3f\n",
+                   (double)(ms - log_ms) / 1000.0, calls, moved, counts, (double)counts * mouse_yaw_degrees, dropped,
+                   gated, (double)*value);
+            fflush(stdout);
+        }
+        log_ms = ms;
+        calls = moved = gated = dropped = 0;
+        counts = 0;
+    }
+}
+static void install_mouse_yaw(Segment *segments, uint64_t count, uint64_t size) {
+    if (!runtime_mouse_enabled()) return;
+    const char *env = getenv("GOW3_MOUSE_YAW");
+    if (env && env[0]) mouse_yaw_degrees = strtof(env, NULL);
+    if (mouse_yaw_degrees == 0.0f) {
+        printf("Mouse yaw: off (GOW3_MOUSE_YAW=0)\n");
+        return;
+    }
+    const MedievilMouseYawSites *s = medievil_mouse_yaw_find(image, size);
+    if (!s || !mapped(segments, count, s->slot, 8)) {
+        printf("Mouse yaw: unavailable (not an analysed MediEvil eboot: 01.00 or 01.02)\n");
+        return;
+    }
+    mouse_yaw_site = s;
+    mouse_yaw_exec = (Ue4Native)(uintptr_t)(image + s->exec);
+    const uint64_t wrapper = (uint64_t)(uintptr_t)mouse_yaw;
+    memcpy(image + s->slot, &wrapper, 8);
+    printf("Mouse yaw: AddControllerYawInput wrapped (game build %s, %.4f degrees per count)\n", s->build,
+           (double)mouse_yaw_degrees);
+}
+
 /* MediEvil GPU particle flip guard (src/particle_hook.h, runtime_extra.c): opt-in,
  * GOW3_PARTICLE_FLIP_GUARD=1; the toggle file's second word 16384 turns the guard off live. */
 static void install_particle_flip_guard(Segment *segments, uint64_t count, uint64_t size) {
@@ -1117,6 +1228,7 @@ int main(int argc, char **argv) {
     if (gpu_enabled) install_hzb_remap(segments, ns, size);
     if (gpu_enabled) install_level_hook(segments, ns, size);
     if (gpu_enabled) install_debug_menu_trace(segments, ns, size);
+    if (gpu_enabled) install_mouse_yaw(segments, ns, size);
     if (gpu_enabled) install_particle_flip_guard(segments, ns, size);
 #ifdef _WIN32
     printf("Guest TCB loads redirected to the TEB TLS slot: %" PRIu64 "\n", patch_tcb_loads(segments, ns));

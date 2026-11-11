@@ -34,6 +34,7 @@ int runtime_mouse_enabled(void) {
 static atomic_int captured;               /* the window thread: the game has the mouse */
 static atomic_uint capture_serial;        /* +1 at each capture: the reader blocks held buttons */
 static atomic_llong total_x, total_y, total_wheel; /* counts not yet read, wheel in WHEEL_DELTA units */
+static atomic_llong camera_x, camera_y;   /* the same counts for the camera hook (probe.c, mouse_hook.h) */
 static atomic_uint shown_buttons;         /* buttons the game sees */
 static atomic_ullong reports, wakes, batches; /* statistics for the log */
 static HWND reader_window;
@@ -86,6 +87,7 @@ static void drain(void) {
     if (now!=serial) { serial=now; blocked=MOUSE_BUTTONS; }
     if (atomic_load(&captured)) {
         atomic_fetch_add(&total_x,dx); atomic_fetch_add(&total_y,dy); atomic_fetch_add(&total_wheel,wheel);
+        atomic_fetch_add(&camera_x,dx); atomic_fetch_add(&camera_y,dy);
         atomic_store(&shown_buttons,held&~blocked);
     } else {
         atomic_store(&shown_buttons,0);
@@ -150,6 +152,7 @@ void runtime_mouse_capture(int on) {
     atomic_store(&captured,on);
     if (!on) {
         atomic_store(&total_x,0); atomic_store(&total_y,0); atomic_store(&total_wheel,0);
+        atomic_store(&camera_x,0); atomic_store(&camera_y,0);
         atomic_store(&shown_buttons,0);
     }
     const ULONGLONG now=GetTickCount64();
@@ -167,6 +170,11 @@ void runtime_mouse_capture(int on) {
     since=now; last_reports=r; last_wakes=w; last_batches=b;
 }
 
+/* The camera hook's share: the counts since its last take (only counted while captured). */
+void runtime_mouse_take_camera(int32_t *x,int32_t *y) {
+    *x=(int32_t)atomic_exchange(&camera_x,0); *y=(int32_t)atomic_exchange(&camera_y,0);
+}
+
 int runtime_mouse_take(int32_t *x,int32_t *y,int32_t *wheel,uint32_t *buttons) {
     if (!runtime_mouse_enabled()) return 0;
     const long long dx=atomic_exchange(&total_x,0), dy=atomic_exchange(&total_y,0);
@@ -179,6 +187,7 @@ int runtime_mouse_take(int32_t *x,int32_t *y,int32_t *wheel,uint32_t *buttons) {
 #else
 void runtime_mouse_start(void) {}
 void runtime_mouse_capture(int on) { (void)on; }
+void runtime_mouse_take_camera(int32_t *x,int32_t *y) { *x=0; *y=0; }
 int runtime_mouse_take(int32_t *x,int32_t *y,int32_t *wheel,uint32_t *buttons) {
     (void)x; (void)y; (void)wheel; (void)buttons; return 0;
 }
