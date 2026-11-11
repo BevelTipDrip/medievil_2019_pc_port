@@ -6,6 +6,8 @@ medievil.ini
 fsr4_shaders/
 pgo/
 *.png
+# ...except the button prompt icons the port ships (CC0, scripts/ue4_glyphs.py).
+!third_party/input-prompts/**/*.png
 last_run.log
 dist/
 packaging/runtime-paths.nix

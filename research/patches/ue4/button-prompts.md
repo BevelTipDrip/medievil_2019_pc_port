@@ -71,5 +71,8 @@ study-glyphs.md; the Xbox and keyboard sets (G3, G4) and the bone textures (G2) 
 
 ## History and pitfalls
 
+- The repo's `.gitignore` ignores `*.png` (screenshots): the icons need its `!third_party/input-prompts/**/*.png`
+  exception, or a commit leaves them out (the Xbox commit did; added in the next one).
+
 - The game has no Xbox, keyboard or PC glyphs (study-glyphs.md 1.4): the new art comes from the CC0 pack the user
   chose (study-glyphs.md, Decisions).
