@@ -182,6 +182,7 @@ T-R2	plan-stage-b-split.md	1007	t-r1--t-r2-booting-at-the-output-resolution-2026
 T-R3	plan-stage-b-split.md	1036	resolution-split-output-resolution--render-scale-2026-10-25	T-R3** (2026-10-25, launched by Claude with the user's go; log `data/t-r3-1800p-67.log`): `output_re
 run 1	study-fork-spacepepperoni.md	211	32-what-run-1-shows-datadeck-proton-1log-plan-linux-deckmd-proton-run-1	3.2 What run 1 shows (`data/deck-proton-1.log`, plan-linux-deck.md "Proton run 1")
 N-5	study-frame-cost-2026-10-29.md	22	gpu-work-goal-1	N-5 correction.** In ngfx-ab-1, narrow image stages changed GPU active time from 4.876 to 4.836 ms (
+T-G1	study-glyphs.md	204	t-g1-test-squares-in-the-atlas-2026-11-11-launched-by-claude-with-the-users-go-log-dataglyphs-g1-0102log	T-G1: test squares in the atlas (2026-11-11, launched by Claude with the user's go, log `data/glyphs
 Run 2	study-heavy-frame-map.md	65	2-h3-gpu-particle-double-run	Run 2 is a bit-exact copy.** Texture dumps after each step (`h3-tiles-*.txt`): run 2's output equals
 T-LG1	study-light-grid-scale.md	41	t-lg1-the-fix-in-game-2026-11-10-launched-by-claude-with-the-users-go-log-datacrypt-light-grid-fix-0102log	T-LG1: the fix in game (2026-11-10, launched by Claude with the user's go, log `data/crypt-light-gri
 T-SV1	study-save-slots.md	31	t-sv1-first-trace-2026-11-10-launched-by-claude-with-the-users-go-log-datasave-trace-1-0102log	T-SV1: first trace (2026-11-10, launched by Claude with the user's go, log `data/save-trace-1-0102.l

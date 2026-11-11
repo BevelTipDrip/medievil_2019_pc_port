@@ -8,7 +8,7 @@ default_windows: off
 default_deck: off
 origin: ours
 class: M
-commits:
+commits: 4bfd053951
 files: scripts/ue4_glyphs.py, scripts/game_ui_assets.py, scripts/ue4_override.py, run.py, tests/test_ue4_glyphs.py
 symbols: files, atlas, strip, with_strip, test_cells, texture, detile, tile, ATLAS_CELLS, STYLES
 switches:
