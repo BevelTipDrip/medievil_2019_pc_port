@@ -8,7 +8,7 @@ default_windows: n/a
 default_deck: n/a
 origin: ours
 class: G
-commits: 4e5696e9a8, d75c1c8c30
+commits: 4e5696e9a8, d75c1c8c30, e8a9d16af2
 files: tests/test_patches.py, tests/test_packaged_vulkan.py, tests/test_ue4_glyphs.py, tests/test_launcher_controls.py, packaging/windows/package.sh
 symbols: rules_file, LINUX_PATHS
 switches:
