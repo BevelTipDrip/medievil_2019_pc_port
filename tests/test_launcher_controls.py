@@ -198,6 +198,28 @@ class ControlMapTest(unittest.TestCase):
         self.assertEqual(launcher.game_environment({**settings, 'parallel_warmup': False})['GOW3_PARALLEL_WARMUP'], '0')
         self.assertEqual(launcher.game_environment({**settings, 'background_warmup': False})['GOW3_BACKGROUND_WARMUP'], '0')
 
+    def test_menu_key_and_mouse(self):
+        settings = dict(launcher.APP_DEFAULTS)
+        own = lambda env: {k for k in env if k not in __import__('os').environ}
+        env = launcher.game_environment(settings)
+        self.assertFalse({'GOW3_MENU_KEY', 'GOW3_MOUSE', 'GOW3_MOUSE_YAW', 'GOW3_MOUSE_MAP'} & own(env))
+        # The menu key: any capturable key or Insert; a bad saved value falls back to Insert.
+        self.assertEqual(launcher.menu_key_name('Insert'), 'Insert')
+        self.assertEqual(launcher.menu_key_name('Delete'), 'Delete')
+        self.assertIsNone(launcher.menu_key_name('F12'))
+        self.assertEqual(launcher.game_environment({**settings, 'menu_key': 'Delete'})['GOW3_MENU_KEY'], 'Delete')
+        for bad in ('', 'a,b', 'x=y', 5):
+            self.assertEqual(launcher.menu_key({'menu_key': bad}), 'Insert')
+        # Mouse buttons: every chosen one is kept (no defaults); unknown names are dropped.
+        mouse = {b: '' for b, _k, _p in launcher.CONTROLS}
+        mouse.update(square='left', cross='x2', circle='wheel')
+        self.assertEqual(launcher.control_changes(mouse, 'mouse'), {'cross': 'x2', 'square': 'left'})
+        env = launcher.game_environment({**settings, 'mouse': True, 'mouse_yaw': '0.033',
+                                         'controls': {'mouse': {'square': 'left', 'cross': 'x2'}}})
+        self.assertEqual((env['GOW3_MOUSE'], env['GOW3_MOUSE_YAW'], env['GOW3_MOUSE_MAP']),
+                         ('1', '0.033', 'cross=x2,square=left'))
+        self.assertNotIn('GOW3_MOUSE_YAW', own(launcher.game_environment({**settings, 'mouse': True})))
+
     def test_new_default_patches_start_on(self):
         from patches import game_profile
         profile = game_profile('CUSA11227', '01.02')

@@ -181,6 +181,7 @@ APP_DEFAULTS = {'ui_language': 'en', 'game_dir': os.environ.get('GOW3_GAME_DIR',
                 'background_warmup': True, 'parallel_warmup': True, 'pipeline_binary_cache': True, 'perf_diag': False, 'frame_capture_key': False, 'frame_stats': False, 'gpu_profile': False,
                 'vk_validation': False, 'close_on_play': False, 'prep_workers': '', 'stage_b_core': False,
                 'update_check': True, 'game_patches': {}, 'game_patches_seen': {}, 'controls': {}, 'pad_style': 'playstation', 'stick_range': '',
+                'menu_key': 'Insert', 'mouse': False, 'mouse_yaw': '0.022',
                 'last_pkg': '', 'graphics_preset': '', 'deck_switches': False, 'deck_switches_off': '',
                 'deck_offered': False}
 
@@ -214,7 +215,11 @@ PAD_STYLES = {
 
 
 def control_changes(values, kind):
-    """The buttons whose chosen key or SDL gamepad name differs from the default."""
+    """The buttons whose chosen key or SDL gamepad name differs from the default (mouse: every chosen one,
+    there are no default mouse buttons)."""
+    if kind == 'mouse':
+        return {row[0]: values[row[0]].strip() for row in CONTROLS
+                if isinstance(values.get(row[0]), str) and values[row[0]].strip() in MOUSE_BUTTON_NAMES}
     column = 1 if kind == 'key' else 2
     return {row[0]: values[row[0]].strip() for row in CONTROLS
             if row[column] and values.get(row[0], '').strip()
@@ -243,6 +248,29 @@ def sdl_key_name(keysym):
     if re.fullmatch(r'KP_[0-9]', keysym):
         return f'Keypad {keysym[3]}'
     return TK_KEYS.get(keysym)
+
+
+def menu_key_name(keysym):
+    """The SDL name of a key for the port's menu: Insert (the default) or any key a game button could take."""
+    return 'Insert' if keysym == 'Insert' else sdl_key_name(keysym)
+
+
+def menu_key(settings):
+    """The port menu's keyboard key (GOW3_MENU_KEY, gpu/shim/gow3_overlay.cpp MenuKey): the saved SDL key
+    name, else Insert."""
+    name = settings.get('menu_key') if isinstance(settings.get('menu_key'), str) else ''
+    return name.strip() if name.strip() and not set(name) & set(',=') else 'Insert'
+
+
+# Mouse buttons a game button can take (GOW3_MOUSE_MAP, src/runtime_pad.c), next to its key: the names the
+# runtime reads and their labels.
+MOUSE_BUTTONS = [('', ('None',)), ('left', ('Left button',)), ('right', ('Right button',)),
+                 ('middle', ('Middle button',)), ('x1', ('Side button (back)',)), ('x2', ('Side button (forward)',))]
+MOUSE_BUTTON_NAMES = {name for name, _label in MOUSE_BUTTONS if name}
+# Mouse look speed in degrees per mouse count (GOW3_MOUSE_YAW); 0.022 is the usual PC shooter default.
+MOUSE_SPEEDS = [('0.011', ('Slow (0.011 degrees per count)',)), ('0.016', ('0.016 degrees per count',)),
+                ('0.022', ('Default (0.022 degrees per count)',)), ('0.033', ('0.033 degrees per count',)),
+                ('0.044', ('Fast (0.044 degrees per count)',))]
 
 
 def control_map(controls, kind):
@@ -534,9 +562,16 @@ def game_environment(s):
             env[name] = '1'
     if s.get('stick_range'):
         env['GOW3_STICK_RANGE'] = s['stick_range']
-    for kind, name in (('key', 'GOW3_KEY_MAP'), ('pad', 'GOW3_PAD_MAP')):
+    for kind, name in (('key', 'GOW3_KEY_MAP'), ('pad', 'GOW3_PAD_MAP'), ('mouse', 'GOW3_MOUSE_MAP')):
         if value := control_map(s.get('controls', {}), kind):
             env[name] = value
+    if (key := menu_key(s)) != 'Insert':
+        env['GOW3_MENU_KEY'] = key
+    # The mouse (Windows: the Raw Input reader, mouse look, mouse buttons): Controls > Mouse.
+    if s.get('mouse'):
+        env['GOW3_MOUSE'] = '1'
+        if str(s.get('mouse_yaw', '0.022')) != '0.022':
+            env['GOW3_MOUSE_YAW'] = str(s['mouse_yaw'])
     env.setdefault('GOW3_FPS_LOG', '1')  # FPS and worst frame every 5 s in the log (diagnostics)
     # Frame statistics (draws, compiles, stalls every 5 s) only with Advanced > Frame statistics:
     # part of them is printed by the draw recording thread and costs frame time stability (T-S2b).
@@ -1334,10 +1369,15 @@ class Launcher:
             self.nav[name] = item
         tk.Frame(side, bg=BG).pack(fill='both', expand=True)
         self.update_box = None
-        self.side_note = tk.Label(side, text=_('In the game: Insert or R3+L2\nopens the port\'s menu.',
-                                               'В игре: Insert или R3+L2\nоткрывает меню порта.'),
-                                  bg=BG, fg=MUTED, font=self.f('body', 9), justify='left', wraplength=self.px(210))
+        side_text = _('In the game: Insert or R3+L2\nopens the port\'s menu.', 'В игре: Insert или R3+L2\nоткрывает меню порта.')
+        self.side_note = tk.Label(side, bg=BG, fg=MUTED, font=self.f('body', 9), justify='left', wraplength=self.px(210))
         self.side_note.pack(anchor='w', padx=22, pady=(0, 18))
+
+        def side_key(*_args):  # the chosen menu key (Controls) in place of Insert, in every language
+            self.side_note.configure(text=side_text.replace('Insert', menu_key({'menu_key': menu_var.get()})))
+        menu_var = self.var('menu_key', 'app')
+        menu_var.trace_add('write', side_key)
+        side_key()
 
         right = tk.Frame(self.root, bg=PANEL)
         right.pack(side='left', fill='both', expand=True)
@@ -1917,11 +1957,26 @@ class Launcher:
         self.row(f, _('Stick range'), self.choice(f, 'stick_range', 'app', STICK_RANGES),
                  _('How far the sticks must tilt for a full push. Lower it if your character moves slowly '
                    'with the stick pushed all the way (some hall-effect sticks never reach the edge).'))
+        self.row(f, _('Menu key'), self.key_capture(f, self.var('menu_key', 'app'), menu=True),
+                 _('The keyboard key that opens the port\'s menu in the game (R3+L2 on the gamepad). It cannot be '
+                   'a game button\'s key too. Applied when the game starts.'))
+        self.section(f, _('Mouse'))
+        self.check(f, 'mouse', 'app', _('Mouse look and buttons'),
+                   _('Windows. The game takes the mouse while its window has focus (borderless and fullscreen) or '
+                     'after a click (window); alt-tab or the menu let it go. Moving it turns the camera; the MOUSE '
+                     'column below presses game buttons. Applied when the game starts.'))
+        self.row(f, _('Mouse look speed'), self.choice(f, 'mouse_yaw', 'app', MOUSE_SPEEDS,
+                                                         custom=lambda v: f'{v} degrees per count'),
+                 _('How far the camera turns per mouse count (at 1600 DPI, 0.022 is about 35 degrees per inch).'))
+        self.section(f, _('Buttons'))
         table = ttk.Frame(f)
-        table.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(16, 0))
-        for column, span, title in ((0, 2, _('GAME BUTTON')), (2, 1, _('KEYBOARD')), (3, 2, _('GAMEPAD'))):
+        table.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(8, 0))
+        for column, span, title in ((0, 2, _('GAME BUTTON')), (2, 1, _('KEYBOARD')), (3, 1, _('MOUSE')),
+                                    (4, 2, _('GAMEPAD'))):
             ttk.Label(table, text=title, style='Section.TLabel').grid(row=0, column=column, columnspan=span, sticky='w')
-        self.control_vars, self.pad_boxes, self.pad_icons = {'key': {}, 'pad': {}}, {}, {}
+        self.control_vars, self.pad_boxes, self.pad_icons = {'key': {}, 'pad': {}, 'mouse': {}}, {}, {}
+        self.mouse_boxes = {}
+        mouse_labels = {name: _(*label) for name, label in MOUSE_BUTTONS}
         size = self.px(28)
         labels = PAD_STYLES[style]
 
@@ -1935,11 +1990,22 @@ class Launcher:
             key_var = tk.StringVar(value=saved.get('key', {}).get(button) or key)
             self.control_vars['key'][button] = key_var
             self.key_capture(table, key_var).grid(row=r, column=2, sticky='w', padx=(0, 18))
+            mouse_name = saved.get('mouse', {}).get(button, '')
+            mouse_var = tk.StringVar(value=mouse_name if mouse_name in MOUSE_BUTTON_NAMES else '')
+            self.control_vars['mouse'][button] = mouse_var
+            mouse_box = ttk.Combobox(table, state='readonly', width=20, values=list(mouse_labels.values()))
+            mouse_box.set(mouse_labels[mouse_var.get()])
+
+            def mouse_chosen(_e, b=mouse_box, v=mouse_var):
+                v.set(next((n for n, label in mouse_labels.items() if label == b.get()), ''))
+            mouse_box.bind('<<ComboboxSelected>>', mouse_chosen)
+            mouse_box.grid(row=r, column=3, sticky='w', padx=(0, 18))
+            self.mouse_boxes[button] = mouse_box
             pad_name = saved.get('pad', {}).get(button) or pad
             pad_var = tk.StringVar(value=pad_name or '')
             self.control_vars['pad'][button] = pad_var
             pad_icon = icon_canvas(table)
-            pad_icon.grid(row=r, column=3, sticky='w', padx=(0, 6))
+            pad_icon.grid(row=r, column=4, sticky='w', padx=(0, 6))
             self.pad_icons[button] = pad_icon
             if pad:
                 box = ttk.Combobox(table, state='readonly', width=22, values=list(labels.values()))
@@ -1952,16 +2018,26 @@ class Launcher:
                 self.pad_boxes[button] = box
             else:
                 box = ttk.Label(table, text=_('{} trigger').format(PS_BUTTON_NAMES[button]), style='Muted.TLabel')
-            box.grid(row=r, column=4, sticky='w')
+            box.grid(row=r, column=5, sticky='w')
             self.draw_pad_icon(button)
-        self.note(f, _('Click a key box, then press the key for that button (click elsewhere to cancel). Insert and '
-                       'R3+L2 always open the port\'s menu and F12 takes screenshots, so those keys cannot be chosen. '
-                       'L2/R2 on the gamepad stay on the triggers. Applied when the game starts.'))
+        self.note(f, _('Click a key box, then press the key for that button (click elsewhere to cancel). The menu '
+                       'key and F12 (screenshots) cannot be chosen. A mouse button works together with the key, '
+                       'with Mouse look and buttons on. L2/R2 on the gamepad stay on the triggers. Applied when the '
+                       'game starts.'))
         self.ttk.Button(f, text=_('Reset to defaults'), command=self.reset_controls).grid(
             row=self.next_row(f), column=0, sticky='w', pady=(14, 0))
 
-    def key_capture(self, parent, var):
-        """A key box: click it, then press the key (sdl_key_name), which is stored in var."""
+    def key_taken(self, name, menu):
+        """Who already has a key: for the menu key, a game button's name; for a game button, the menu. None if free."""
+        if menu:
+            return next((PS_BUTTON_NAMES[b] for b, v in getattr(self, 'control_vars', {}).get('key', {}).items()
+                         if v.get().casefold() == name.casefold()), None)
+        return _('the menu') if name.casefold() == menu_key({'menu_key': self.var('menu_key', 'app').get()}).casefold() \
+            else None
+
+    def key_capture(self, parent, var, menu=False):
+        """A key box: click it, then press the key (sdl_key_name; the menu key may also be Insert), which is
+        stored in var. A key the menu or a game button already has is refused."""
         box = self.ttk.Button(parent, width=16)
         box.capturing = False
 
@@ -1976,9 +2052,12 @@ class Launcher:
         def pressed(event):
             if not box.capturing:
                 return None  # Space / Return on a focused box start a capture as a click does
-            name = sdl_key_name(event.keysym)
+            name = menu_key_name(event.keysym) if menu else sdl_key_name(event.keysym)
             if name is None:
                 box.configure(text=_('Not this key, another?'))
+                return 'break'
+            if (owner := self.key_taken(name, menu)) and name.casefold() != var.get().casefold():
+                box.configure(text=_('Used by {}').format(owner))
                 return 'break'
             box.capturing = False
             var.set(name)
@@ -2014,9 +2093,12 @@ class Launcher:
             self.draw_pad_icon(button)
 
     def reset_controls(self):
+        self.var('menu_key', 'app').set('Insert')
         for button, key, pad in CONTROLS:
             self.control_vars['key'][button].set(key)
             self.control_vars['pad'][button].set(pad or '')
+            self.control_vars['mouse'][button].set('')
+            self.mouse_boxes[button].set(_(*MOUSE_BUTTONS[0][1]))
         self.relabel_pad_controls()
 
     def build_advanced(self):

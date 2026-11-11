@@ -130,7 +130,10 @@ static int current_gamepads(void) {
  * changed per PS4 button with GOW3_PAD_MAP (gamepad) and GOW3_KEY_MAP (keyboard), e.g.
  * GOW3_KEY_MAP="cross=Q,square=Left Shift" or GOW3_PAD_MAP="cross=b,circle=a": comma-separated
  * <ps4 button>=<SDL key or gamepad button name>. A mapped PS4 button loses its default sources.
- * Sticks, triggers and the overlay shortcuts are not remapped. */
+ * Sticks, triggers and the overlay shortcuts are not remapped. GOW3_MOUSE_MAP (the launcher's MOUSE
+ * column, e.g. "square=left,cross=x2") adds mouse buttons (left, right, middle, x1, x2) next to the
+ * keys, read while the game has the mouse (GOW3_MOUSE=1, runtime_mouse_buttons); there are none by
+ * default. */
 static const struct { const char *name; uint32_t ps; } ps_names[]={
     {"cross",BTN_CROSS}, {"circle",BTN_CIRCLE}, {"square",BTN_SQUARE}, {"triangle",BTN_TRIANGLE},
     {"l1",BTN_L1}, {"r1",BTN_R1}, {"l2",BTN_L2}, {"r2",BTN_R2}, {"l3",BTN_L3}, {"r3",BTN_R3},
@@ -156,6 +159,14 @@ static ButtonMap key_map={{
     {SDL_SCANCODE_RETURN,BTN_OPTIONS},
     {SDL_SCANCODE_I,BTN_UP}, {SDL_SCANCODE_K,BTN_DOWN}, {SDL_SCANCODE_J,BTN_LEFT}, {SDL_SCANCODE_L,BTN_RIGHT},
 },15};
+static ButtonMap mouse_map; /* source: the sceMouse button bit (0 left .. 4 x2) */
+enum { MAP_PAD, MAP_KEYS, MAP_MOUSE };
+
+static int mouse_button_from_name(const char *name) {
+    static const char *const names[]={"left","right","middle","x1","x2"};
+    for (int i=0;i<5;++i) if (!SDL_strcasecmp(name,names[i])) return i;
+    return -1;
+}
 
 static char *trim(char *text) {
     while (*text==' ' || *text=='\t') ++text;
@@ -164,9 +175,9 @@ static char *trim(char *text) {
     return text;
 }
 
-/* Applies a GOW3_PAD_MAP/GOW3_KEY_MAP value; returns how many entries were used. Bad entries are
- * logged and skipped, so their PS4 button keeps its default. */
-static int apply_button_map(ButtonMap *map, const char *spec, bool keyboard) {
+/* Applies a GOW3_PAD_MAP/GOW3_KEY_MAP/GOW3_MOUSE_MAP value (kind MAP_*); returns how many entries were
+ * used. Bad entries are logged and skipped, so their PS4 button keeps its default. */
+static int apply_button_map(ButtonMap *map, const char *spec, int kind) {
     if (!spec || !*spec) return 0;
     char copy[1024];
     snprintf(copy,sizeof(copy),"%s",spec);
@@ -186,8 +197,10 @@ static int apply_button_map(ButtonMap *map, const char *spec, bool keyboard) {
         entry=next;
         uint32_t ps=0;
         for (size_t i=0;i<sizeof(ps_names)/sizeof(*ps_names);++i) if (!SDL_strcasecmp(button,ps_names[i].name)) ps=ps_names[i].ps;
-        const int source=!*name ? -1 : keyboard ? (int)SDL_GetScancodeFromName(name) : (int)SDL_GetGamepadButtonFromString(name);
-        if (!ps || source<=(keyboard ? (int)SDL_SCANCODE_UNKNOWN : (int)SDL_GAMEPAD_BUTTON_INVALID)) {
+        const int source=!*name ? -1 : kind==MAP_KEYS ? (int)SDL_GetScancodeFromName(name)
+                         : kind==MAP_MOUSE ? mouse_button_from_name(name) : (int)SDL_GetGamepadButtonFromString(name);
+        if (!ps || source<=(kind==MAP_KEYS ? (int)SDL_SCANCODE_UNKNOWN : kind==MAP_MOUSE ? -1
+                            : (int)SDL_GAMEPAD_BUTTON_INVALID)) {
             printf("Runtime: pad map: ignored '%s=%s'\n",button,name);
             continue;
         }
@@ -204,9 +217,20 @@ static void load_button_maps(void) {
     static bool loaded;
     if (loaded) return;
     loaded=true;
-    const int pad=apply_button_map(&pad_map,getenv("GOW3_PAD_MAP"),false);
-    const int keys=apply_button_map(&key_map,getenv("GOW3_KEY_MAP"),true);
-    if (pad || keys) printf("Runtime: pad map: %d gamepad and %d keyboard buttons remapped\n",pad,keys);
+    const int pad=apply_button_map(&pad_map,getenv("GOW3_PAD_MAP"),MAP_PAD);
+    const int keys=apply_button_map(&key_map,getenv("GOW3_KEY_MAP"),MAP_KEYS);
+    const int mouse=runtime_mouse_enabled() ? apply_button_map(&mouse_map,getenv("GOW3_MOUSE_MAP"),MAP_MOUSE) : 0;
+    if (pad || keys || mouse)
+        printf("Runtime: pad map: %d gamepad and %d keyboard buttons remapped, %d mouse buttons\n",pad,keys,mouse);
+}
+
+/* The PS4 buttons the held mouse buttons press (GOW3_MOUSE_MAP), while the game has the mouse. */
+static uint32_t mouse_map_buttons(void) {
+    if (!mouse_map.count) return 0;
+    const uint32_t held=runtime_mouse_buttons();
+    uint32_t buttons=0;
+    for (size_t i=0;i<mouse_map.count;++i) if ((held>>mouse_map.entries[i].source)&1) buttons|=mouse_map.entries[i].ps;
+    return buttons;
 }
 
 static void key_axis(uint8_t *axis, bool negative, bool positive) {
@@ -290,6 +314,7 @@ static void sample_host(PadData *d) {
      * follows the keys only while one of them is held. */
     if (!k) return;
     for (size_t i=0;i<key_map.count;++i) if (k[key_map.entries[i].source]) d->buttons|=key_map.entries[i].ps;
+    d->buttons|=mouse_map_buttons();
     if (k[SDL_SCANCODE_TAB]) touch_click(d,0);
     if ((d->buttons & BTN_TOUCHPAD) && !d->touch_count) touch_click(d,0); /* a remapped touchpad key */
     if (k[SDL_SCANCODE_BACKSPACE]) touch_click(d,1);
@@ -424,7 +449,7 @@ static uint32_t host_buttons(void) {
     if (current_gamepads()) buttons|=gamepad_buttons();
     const bool *k=SDL_WasInit(SDL_INIT_VIDEO) ? SDL_GetKeyboardState(NULL) : NULL;
     if (k) for (size_t i=0;i<key_map.count;++i) if (k[key_map.entries[i].source]) buttons|=key_map.entries[i].ps;
-    return buttons;
+    return buttons|mouse_map_buttons();
 }
 /* Buttons for the port's save list (sceSaveDataDialog), polled by the overlay every frame while
  * it is open: the game stops reading the pad during the dialog. Gamepad and keyboard as mapped,

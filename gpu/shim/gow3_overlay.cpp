@@ -144,6 +144,17 @@ void SetOpen(bool value) {
     }
 }
 
+// The keyboard key that opens the menu: GOW3_MENU_KEY (an SDL key name, the launcher's Controls page),
+// Insert without it or for a name SDL does not know.
+SDL_Keycode MenuKey() {
+    static const SDL_Keycode key = [] {
+        const char* name = std::getenv("GOW3_MENU_KEY");
+        const SDL_Keycode chosen = name && name[0] ? SDL_GetKeyFromName(name) : SDLK_UNKNOWN;
+        return chosen != SDLK_UNKNOWN ? chosen : SDLK_INSERT;
+    }();
+    return key;
+}
+
 ImGuiKey KeyFromSdl(SDL_Keycode key) {
     switch (key) {
     case SDLK_TAB: return ImGuiKey_Tab;
@@ -896,7 +907,7 @@ void Menu() {
     // gow3: the game's own title (param.sfo), not a fixed one.
     static const std::string heading = [] {
         const std::string_view title = Common::ElfInfo::Instance().Title();
-        return std::string(title.empty() ? "MediEvil" : title) + "  (Insert / R3+L2)";
+        return std::string(title.empty() ? "MediEvil" : title) + "  (" + SDL_GetKeyName(MenuKey()) + " / R3+L2)";
     }();
     if (!ImGui::Begin(heading.c_str(), &keep_open, ImGuiWindowFlags_NoCollapse)) {
         ImGui::End();
@@ -1497,7 +1508,7 @@ void Init(const Vulkan::Instance& instance, vk::Format format, u32 image_count) 
     }
     overlay_instance = &instance;
     initialized = true;
-    std::printf("Overlay: menu ready (Insert or R3+L2)\n");
+    std::printf("Overlay: menu ready (%s or R3+L2)\n", SDL_GetKeyName(MenuKey()));
 }
 
 void UpdateTextInput(SDL_Window* window) {
@@ -1722,8 +1733,8 @@ bool HandleEvent(const SDL_Event& event) {
             return true;
         }
         if (down && !event.key.repeat &&
-            (event.key.key == SDLK_INSERT || (is_open && event.key.key == SDLK_ESCAPE))) {
-            SetOpen(event.key.key == SDLK_INSERT ? !is_open : false);
+            (event.key.key == MenuKey() || (is_open && event.key.key == SDLK_ESCAPE))) {
+            SetOpen(event.key.key == MenuKey() ? !is_open : false);
             return true;
         }
         if (!is_open) {

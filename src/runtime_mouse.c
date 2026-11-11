@@ -175,6 +175,12 @@ void runtime_mouse_take_camera(int32_t *x,int32_t *y) {
     *x=(int32_t)atomic_exchange(&camera_x,0); *y=(int32_t)atomic_exchange(&camera_y,0);
 }
 
+/* The buttons held while the game has the mouse, without the click that took it (sceMouse bits: 1 left,
+ * 2 right, 4 middle, 8 x1, 16 x2): GOW3_MOUSE_MAP presses pad buttons with them (runtime_pad.c). */
+uint32_t runtime_mouse_buttons(void) {
+    return atomic_load_explicit(&shown_buttons,memory_order_relaxed);
+}
+
 int runtime_mouse_take(int32_t *x,int32_t *y,int32_t *wheel,uint32_t *buttons) {
     if (!runtime_mouse_enabled()) return 0;
     const long long dx=atomic_exchange(&total_x,0), dy=atomic_exchange(&total_y,0);
@@ -188,6 +194,7 @@ int runtime_mouse_take(int32_t *x,int32_t *y,int32_t *wheel,uint32_t *buttons) {
 void runtime_mouse_start(void) {}
 void runtime_mouse_capture(int on) { (void)on; }
 void runtime_mouse_take_camera(int32_t *x,int32_t *y) { *x=0; *y=0; }
+uint32_t runtime_mouse_buttons(void) { return 0; }
 int runtime_mouse_take(int32_t *x,int32_t *y,int32_t *wheel,uint32_t *buttons) {
     (void)x; (void)y; (void)wheel; (void)buttons; return 0;
 }
