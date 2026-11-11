@@ -248,7 +248,7 @@ _launcher, settings, medievil.ini keys, run.py, packaging, build scripts_
 | [cursor-hide](launcher/cursor-hide.md) | active | on / on | lab |  | Hide the mouse cursor in borderless and fullscreen and when idle in a window; shown while unfocused |
 | [extra-env-file](launcher/extra-env-file.md) | active | off / off | deck-lab |  | run.py: extra-env.txt in the data folder sets test environment variables on every start |
 | [game-ui-cache](launcher/game-ui-cache.md) | active | on / on | deck-lab |  | Game UI cache: level names, loading screens, menu frame, button prompts and fonts from the player's paks |
-| [key-capture](launcher/key-capture.md) | active | on / on | deck-lab |  | Launcher key capture: a Controls key box takes the next key pressed (Tk keysym to SDL scancode name) |
+| [key-capture](launcher/key-capture.md) | active | on / on | deck-lab | GOW3_MENU_KEY, GOW3_MOUSE_MAP | Launcher key capture: a Controls key box takes the next key pressed (Tk keysym to SDL scancode name); menu key and mouse buttons |
 | [launcher-chore](launcher/launcher-chore.md) | chore | n/a / n/a | lab |  | Launcher text fixes with no behaviour of their own |
 | [launcher-graphics-page](launcher/launcher-graphics-page.md) | active | on / on | lab | present_frame_trace | Launcher > Performance: the 13 graphics settings above Frame rate; frame rate on the Display page; new default patches start on |
 | [live-render-scale](launcher/live-render-scale.md) | active | on / on | deck-lab |  | Render scale live in the in-game menu, any whole percent from 50 to 200 |

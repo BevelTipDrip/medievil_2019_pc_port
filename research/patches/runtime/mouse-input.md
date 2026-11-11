@@ -40,6 +40,8 @@ after Dan's TurnRate handler writes `CameraManager.InputRotation`, the wrapper a
 - No mouse buttons to the game by default: a click the game received left the main menu deaf to keyboard and pad
   (T-MS2). `GOW3_MOUSE_BUTTONS=1` is for the menu-focus research only.
 - No release key: alt-tab, the Windows key and the Insert menu release it (the user, 2026-11-11, after T-MS6).
+- Launcher (8f381ab): Controls > Mouse sets `GOW3_MOUSE=1` and `GOW3_MOUSE_YAW`; mouse buttons press game buttons
+  through the pad (`GOW3_MOUSE_MAP`, card launcher/key-capture), not through sceMouse.
 - A window only takes the mouse on a click, so its title bar stays usable.
 - T-MS7 (2026-11-11, PC, `5bb45d0`, run): auto capture in borderless; the user: "Yup, it works". Log: captured at start,
   released and captured again on focus changes (data/mouse-auto-capture-t-ms7.log).
