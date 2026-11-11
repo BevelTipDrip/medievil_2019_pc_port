@@ -382,6 +382,24 @@ original, puts the local back and adds `degrees / 2` to InputRotation. Standing 
 EX_False / EX_True / EX_LocalVariable at call + 0x1d / 0x2b / 0x30, the same local at let + 0x4c, and the local a
 4-byte property of the ubergraph (layout checked in 01.00 and 01.02).
 
+### T-MS6: mouse yaw through both paths (2026-11-11, launched by the user, log data/mouse-yaw-t-ms6.log)
+
+Build `b4d9e6f`, `GOW3_MOUSE=1`, frame limit 141. The user: "Everything appears to work". Log: the handler ran
+once a frame, the mouse was added on up to 660 of 705 calls per 5 s, one stale drop, no camera locks. The user's
+notes for the next steps:
+
+1. The mouse must be clicked first before the game takes it; the final build should not need that (menus work
+   after the click now).
+2. The automatic centring while Dan moves suits a stick but feels wrong with a mouse: find how to turn it off.
+3. The near-camera speed (both paths) was not found in play; the camera's other forced moves likely add to it.
+   Removing the forced camera moves, for mouse and stick, is part of this work (work queue item 4).
+4. Agreed: the forced movement / centring while Dan moves is the issue.
+
+Automatic camera moves seen so far in the bytecode (to map fully before a change): the follow yaw `atan2(camera ->
+Dan)` while Dan moves and the camera is 400+ away; `BP_CameraManager.GetVelocityYaw` (Dan's sideways velocity x
+the area's `VelocityYawWeight`, eased, added to the yaw every tick); `CheckMovingState`'s boom length and pitch goals
+at run start / end and while yawing. `RecenterCamera` is the R3 action (manual), with a fade.
+
 ### Step 5 research: the yaw and pitch sites, and what really turns the camera (2026-11-11, no launch)
 
 A research agent read both eboots (01.02 = `out/eboot.elf`, sha256 `310748698af4...`; 01.00 rebuilt from

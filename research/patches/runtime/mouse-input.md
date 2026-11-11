@@ -12,7 +12,7 @@ commits: f4f13b8, e27103e, 870f584, 88bf535, a7c91f7, b4d9e6f
 files: src/runtime_mouse.c, src/mouse_hook.h, src/probe.c, src/runtime_services.c, gpu/shim/window.cpp, gpu/shim/sdl_window.h, scripts/ue4_override.py
 symbols: runtime_mouse_enabled, runtime_mouse_start, runtime_mouse_capture, runtime_mouse_take, drain, reader_thread, mouse_init, mouse_read, SetMouseCapture, mouse_captured, runtime_mouse_take_camera, medievil_mouse_yaw_find, medievil_mouse_yaw_script_ok, mouse_yaw, install_mouse_yaw
 switches: GOW3_MOUSE, GOW3_MOUSE_BUTTONS, GOW3_MOUSE_YAW
-tests: T-MS1, T-MS2, T-MS3, T-MS4, T-MS5
+tests: T-MS1, T-MS2, T-MS3, T-MS4, T-MS5, T-MS6
 docs: study-mouse-input.md#t-ms1-ps4enablemouse-from-the-paks-ini-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-step1-enablelog
 depends_on:
 related: cursor-hide
@@ -69,6 +69,9 @@ after Dan's TurnRate handler writes `CameraManager.InputRotation`, the wrapper a
   with Dan still (`IsPlayerControlActive` = movement input < 0.22), BP_CameraAreaFree keeps control yaw, which
   only AddControllerYawInput turns. Fix built `b4d9e6f`: the mouse also goes into the stick-turn local
   the AddControllerYawInput call reads (/ InputYawScale 2.5), put back after the call.
+- T-MS6 (2026-11-11, PC, `b4d9e6f`, run): the user: "Everything appears to work" (standing and walking; menus
+  work after a click). Wanted next: no click needed to take the mouse; no automatic camera moves while Dan
+  moves, for mouse and stick (work queue item 4); the near-camera speed was not found in play.
 - T-MS4 (2026-11-11, PC, `88bf535`, run): the user: "it all works as expected" (no snap on the Load list, a click
   in the game hides the cursor). Log: no capture / release pairs while the list was open.
 
