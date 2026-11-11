@@ -234,6 +234,11 @@ Plain F1 releases it (with Alt / Shift / Ctrl / Win held it is ignored: Alt+F1 i
 2026-11-11); focus loss and the Insert menu release it. While captured the cursor is hidden and held in a 2x2
 rectangle at the window's centre (`SDL_SetWindowMouseRect`). Counts reach `sceMouse` only while captured.
 
+**Revised after T-MS6 (the user, 2026-11-11):** no click needed in borderless and fullscreen: the game takes the
+mouse whenever its window has focus and the Insert menu, the save list and text entry are closed (checked in
+`UpdateCursor`, acting on a change only). A window still takes it on a click so its frame stays usable. F1 is
+gone: alt-tab, the Windows key (focus loss) and the Insert menu release it.
+
 Rules taken from Bloodborne (`bloodborne_pc/gpu/shim/window.cpp:126-147` `CaptureMouse`, `198-219`, `236-241`):
 a click in the window takes the mouse and is not passed on; F1 releases it (free in this port: Insert opens the
 overlay, F9 / F11 / F12 are taken, `gow3_overlay.cpp:1231-1253`, `runtime_pad.c:362`); focus loss releases it;

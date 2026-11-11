@@ -8,7 +8,7 @@ default_windows: off
 default_deck: n/a
 origin: ours
 class: M
-commits: f4f13b8, e27103e, 870f584, 88bf535, a7c91f7, b4d9e6f
+commits: f4f13b8, e27103e, 870f584, 88bf535, a7c91f7, b4d9e6f, 5bb45d0
 files: src/runtime_mouse.c, src/mouse_hook.h, src/probe.c, src/runtime_services.c, gpu/shim/window.cpp, gpu/shim/sdl_window.h, scripts/ue4_override.py
 symbols: runtime_mouse_enabled, runtime_mouse_start, runtime_mouse_capture, runtime_mouse_take, drain, reader_thread, mouse_init, mouse_read, SetMouseCapture, mouse_captured, runtime_mouse_take_camera, medievil_mouse_yaw_find, medievil_mouse_yaw_script_ok, mouse_yaw, install_mouse_yaw
 switches: GOW3_MOUSE, GOW3_MOUSE_BUTTONS, GOW3_MOUSE_YAW
@@ -24,8 +24,8 @@ checked:
 (T-MS1). `src/runtime_mouse.c` reads the mouse on its own thread with MGS2's method: a message-only window
 (`RIDEV_INPUTSINK`), normal priority, at most one wake-up a millisecond, every queued report in one
 `GetRawInputBuffer` batch, totals in atomics. `mouse_read` reports a connected mouse with the counts, buttons and
-wheel notches since the last read (buttons only with `GOW3_MOUSE_BUTTONS=1`). The window thread decides capture: a click takes the mouse, plain F1 / focus loss
-/ the Insert menu give it back. Yaw (step 5): `AddControllerYawInput`'s exec is wrapped through its native slot;
+wheel notches since the last read (buttons only with `GOW3_MOUSE_BUTTONS=1`). The window thread decides capture: borderless and fullscreen take the mouse with focus and no
+menu, a window takes it on a click; focus loss / the Insert menu give it back (F1 dropped, T-MS6). Yaw (step 5): `AddControllerYawInput`'s exec is wrapped through its native slot;
 after Dan's TurnRate handler writes `CameraManager.InputRotation`, the wrapper adds x counts x `GOW3_MOUSE_YAW`
 (degrees per count, default 0.022) / 2, finding both from Dan's loaded bytecode (src/mouse_hook.h).
 
@@ -39,7 +39,9 @@ after Dan's TurnRate handler writes `CameraManager.InputRotation`, the wrapper a
 - Buttons held at a capture stay blocked until let go (the click that took the mouse is never half seen).
 - No mouse buttons to the game by default: a click the game received left the main menu deaf to keyboard and pad
   (T-MS2). `GOW3_MOUSE_BUTTONS=1` is for the menu-focus research only.
-- F1 releases only without Alt / Shift / Ctrl / Win (Alt+F1 is NVIDIA's overlay; the user, 2026-11-11).
+- No release key: alt-tab, the Windows key and the Insert menu release it (the user, 2026-11-11, after T-MS6).
+- A window only takes the mouse on a click, so its title bar stays usable.
+- Auto capture: fix built `5bb45d0`, not run.
 - Capture changes run on the window thread on events, never per frame.
 - The yaw wrapper must call the original exec first (it consumes the FFrame argument), act only when Stack.Code
   is Dan's handler's end offset and the script size matches, and stay off after any failed bytecode or
