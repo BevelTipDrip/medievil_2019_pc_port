@@ -191,7 +191,7 @@ _UE4 config overrides, eboot patches, game hooks, particles, render scale, boot 
 | [graphics-quality-sync](ue4/graphics-quality-sync.md) | active | on / on | deck-lab |  | Graphics quality and its 18 settings in sync; Console is the PS4's exactly (shadows included) |
 | [hzb-remap](ue4/hzb-remap.md) | active | on / on | lab | GOW3_HZB_REMAP, perf_hzb_occlusion | HZB occlusion through a remap hook: serve the newest finished HZB readback by (PrimitiveId, CustomIndex) |
 | [I1](ue4/i1.md) | active | on / on | lab | GOW3_UE4_SETRES | Boot at the output size (4K as a PS4 Pro on a 4K TV, other sizes by the boot display rect) instead of a live r.SetRes |
-| [light-grid-scale](ue4/light-grid-scale.md) | active | on / on | - |  | UE4 forward light grid lookup scaled in separate translucency below 100% (Dan's Crypt water) |
+| [light-grid-scale](ue4/light-grid-scale.md) | active | on / on | deck-lab |  | UE4 forward light grid lookup scaled in separate translucency below 100% (Dan's Crypt water) |
 | [live-graphics-options](ue4/live-graphics-options.md) | active | on / on | lab |  | Live graphics options: the settings switched in the game through their console variables (Preset removed 2026-11-08) |
 | [movie-suspend](ue4/movie-suspend.md) | active | on / on | lab | GOW3_MOVIE_SUSPEND | Intro movie still playing at a level change is paused (OpenLevel hook, AvPlayer pause) |
 | [nav-purge-nofence](ue4/nav-purge-nofence.md) | rejected | off / off | deck-lab |  | Navigation path purge without the two mfences per refcount read (GOW3_NAV_PURGE_NOFENCE) |

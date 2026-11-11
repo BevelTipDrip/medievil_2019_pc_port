@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: ours
 class: C
-commits:
+commits: 7a61656a33
 files: gpu/shadps4/shader_recompiler/ir/passes/light_grid_scale_pass.cpp, gpu/shadps4/shader_recompiler/recompiler.cpp, gpu/shadps4/shader_recompiler/runtime_info.h, gpu/shadps4/shader_recompiler/info.h, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h, gpu/shadps4/video_core/renderer_vulkan/vk_draw_prep.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_draw_prep.h, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_serialization.cpp
 symbols: LightGridScalePass, FragCoordComponent, uses_light_grid, light_grid_scale_x, light_grid_scale_y, light_grid_scale, light_grid_scene, LightGridScale, LightGridViewport, RecordLightGridScene, g_light_grid_scene
 switches:
