@@ -8,11 +8,11 @@ default_windows: off
 default_deck: off
 origin: ours
 class: M
-commits: e1a220b, 36deef0, 10beddc
+commits: e1a220b, 36deef0, 10beddc, c81de2c
 files: src/camera_hook.h, src/probe.c, gpu/shim/gow3_settings.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_overlay.cpp
 symbols: medievil_camera_edits, medievil_camera_input_rotation, medievil_camera_find, camera_search, camera_update, camera_simple, install_camera_moves, gow3_camera_off_mask, gow3_camera_status, ControlsTab, CameraMoveKeys
 switches:
-tests: T-CM1
+tests: T-CM1, T-CM2
 docs: study-camera-moves.md
 depends_on:
 related: mouse-input
@@ -59,7 +59,14 @@ behaviour. The research and offsets: `study-camera-moves.md`.
 
 - T-CM1 (2026-11-11, PC, 01.02, override-pak version `36deef0`, all six off): the user: "everything seems to work
   great" (log `data/camera-moves-t-cm1.log`).
-- Live version: fix built `10beddc`, not run.
+- T-CM2 (2026-11-11, PC, 01.02, `8f381ab`, log `data/camera-moves-t-cm2.log`): every edit found at the research's
+  in-memory offsets (follow +0x4cd / +0x24f, run_zoom +0x344, pitch_return +0x250, swing +0x23, keepout +0xaf,
+  suggest +0x37); the user switched each one live: "I was able to identify the change in behavior for each and test
+  it was disabled, other than suggested directions" (not identified in play: 13 areas). The user's recommended
+  baseline: suggested directions and turn around posts on, the rest off; "everything feels great".
+- Found: the launcher did not re-read medievil.ini after the game exited; closing it wrote its copy from before
+  the game back, dropping the camera_* keys the menu had saved (T-CM2). Fix built: `reload_ini` when the game
+  exits (`c81de2c`).
 
 ## History and pitfalls
 

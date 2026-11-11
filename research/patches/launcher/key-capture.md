@@ -55,7 +55,9 @@ Added 2026-11-11 (the user: "my main keyboard has no insert key"; mouse buttons 
 ## Evidence
 
 - T-G4c (PC): the user: "The Key capture works, and it properly differentiates between left and right alt."
-- Menu key, Mouse section and MOUSE column: fix built `8f381ab`, not run.
+- Menu key, Mouse section and MOUSE column (2026-11-11, `8f381ab`, run, log `data/camera-moves-t-cm2.log`): the menu
+  opened on Home ("Overlay: menu ready (Home or R3+L2)"); "pad map: ... 3 mouse buttons". The user:
+  "everything feels great".
 
 ## History and pitfalls
 

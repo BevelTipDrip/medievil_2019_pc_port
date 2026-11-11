@@ -231,3 +231,22 @@ The user asked for the switches live in the in-game menu, in a new Controls tab.
   "together" rule for the two follow edits.
 - Settings: `medievil.ini` `camera_follow` ... `camera_pitch_return`, 1 = the game's move (default); the launcher keeps
   unknown keys. Fix built, not run.
+
+**T-CM2** (2026-11-11, PC, 01.02, `8f381ab`, log `data/camera-moves-t-cm2.log`): all seven edits found at the
+research's in-memory offsets; every switch toggled live. The user identified each change except suggested directions
+and recommends suggested directions and turn around posts on, the rest off. Found on the way: the launcher wrote its
+pre-game copy of medievil.ini back when closed, dropping the menu's camera_* keys (fix: re-read on game exit).
+
+## 8. Vertical look (pitch), read for the mouse (2026-11-11)
+
+BP_CameraAreaFree's ubergraph tick (export 7, 01.02, in-memory offsets) [B]:
+- `LookUpAxisValue == 0` (Dan's stick value): if moving or attacking, `TargetLookUpAxisValue = 0` (pitch_return);
+  `SmoothedLookUpAxisValue = FInterpTo(Smoothed, Target, dt, UserPitchAutoInterpolationSpeed 0.5)`.
+- Else: `Target = clamp(Target + dt x LookUpAxisValue x UserPitchWeight + PitchEffective, UserPitchMin -65,
+  UserPitchMax -5) - PitchEffective`; `Smoothed = FInterpTo_Constant(Smoothed, Target, dt, UserPitchInterpolationSpeed
+  100)`.
+- ComputeCamera: camera pitch = `SmoothedLookUpAxisValue + PitchEffective`.
+
+So the stick is a rate, the pitch an angle offset clamped to [-65, -5] in total, followed at up to 100 degrees a
+second. For the mouse [I]: add counts x sensitivity x ratio to Target and Smoothed together (no rate limit), with the
+same clamp, on the area (offsets from the bytecode, as for the yaw edits).
