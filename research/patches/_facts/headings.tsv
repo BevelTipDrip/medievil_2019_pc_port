@@ -970,17 +970,17 @@ study-mouse-input.md	136	3	33-what-a-pak-edit-could-and-could-not-do	3.3 What a 
 study-mouse-input.md	151	2	4-design-options	4. Design options
 study-mouse-input.md	153	3	41-where-the-mouse-enters-the-game	4.1 Where the mouse enters the game
 study-mouse-input.md	173	3	42-capture-sdl-not-a-dedicated-8000-hz-thread	4.2 Capture: SDL, not a dedicated 8000 Hz thread
-study-mouse-input.md	198	3	43-sensitivity-invert-acceleration-coexistence	4.3 Sensitivity, invert, acceleration, coexistence
-study-mouse-input.md	213	3	44-cursor-and-capture-rules-with-the-cursor-hide-work-in-the-main-session	4.4 Cursor and capture rules (with the cursor-hide work in the main session)
-study-mouse-input.md	233	3	45-menu-navigation	4.5 Menu navigation
-study-mouse-input.md	245	2	5-lessons-from-mgs2-read-cuserstymgs2-labmgshdfixresearchdocsmouse-inputmd	5. Lessons from MGS2 (read: `C:\Users\Ty\MGS2-Lab\MGSHDFix\research\docs\mouse-input.md`)
-study-mouse-input.md	261	2	6-bloodbornes-mouse-look-compared-read-bloodborne_pc-at-3c57da4	6. Bloodborne's mouse look, compared (read, `bloodborne_pc` at 3c57da4)
-study-mouse-input.md	271	2	7-step-plan-smallest-first-each-step-one-change-one-launch-with-the-users-go	7. Step plan (smallest first; each step one change, one launch with the user's go)
-study-mouse-input.md	284	2	7b-step-results	7b. Step results
-study-mouse-input.md	286	3	t-ms1-ps4enablemouse-from-the-paks-ini-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-step1-enablelog	T-MS1: PS4.EnableMouse from the pak's ini (2026-11-11, launched by Claude with the user's go, log data/mouse-step1-enable.log)
-study-mouse-input.md	303	2	8-open-questions	8. Open questions
-study-mouse-input.md	315	2	method-notes	Method notes
-study-mouse-input.md	324	2	decision-the-user-2026-11-03	Decision (the user, 2026-11-03)
+study-mouse-input.md	206	3	43-sensitivity-invert-acceleration-coexistence	4.3 Sensitivity, invert, acceleration, coexistence
+study-mouse-input.md	221	3	44-cursor-and-capture-rules-with-the-cursor-hide-work-in-the-main-session	4.4 Cursor and capture rules (with the cursor-hide work in the main session)
+study-mouse-input.md	247	3	45-menu-navigation	4.5 Menu navigation
+study-mouse-input.md	259	2	5-lessons-from-mgs2-read-cuserstymgs2-labmgshdfixresearchdocsmouse-inputmd	5. Lessons from MGS2 (read: `C:\Users\Ty\MGS2-Lab\MGSHDFix\research\docs\mouse-input.md`)
+study-mouse-input.md	275	2	6-bloodbornes-mouse-look-compared-read-bloodborne_pc-at-3c57da4	6. Bloodborne's mouse look, compared (read, `bloodborne_pc` at 3c57da4)
+study-mouse-input.md	285	2	7-step-plan-smallest-first-each-step-one-change-one-launch-with-the-users-go	7. Step plan (smallest first; each step one change, one launch with the user's go)
+study-mouse-input.md	298	2	7b-step-results	7b. Step results
+study-mouse-input.md	300	3	t-ms1-ps4enablemouse-from-the-paks-ini-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-step1-enablelog	T-MS1: PS4.EnableMouse from the pak's ini (2026-11-11, launched by Claude with the user's go, log data/mouse-step1-enable.log)
+study-mouse-input.md	317	2	8-open-questions	8. Open questions
+study-mouse-input.md	329	2	method-notes	Method notes
+study-mouse-input.md	338	2	decision-the-user-2026-11-03	Decision (the user, 2026-11-03)
 study-native-render-paths.md	1	1	study-native-render-paths-or-cutting-out-the-middle-man-2026-11-04	Study: native render paths, or "cutting out the middle man" (2026-11-04)
 study-native-render-paths.md	15	2	answer	Answer
 study-native-render-paths.md	41	2	1-the-heavy-frame-by-class-question-1	1. The heavy frame by class (question 1)

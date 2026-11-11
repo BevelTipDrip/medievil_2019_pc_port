@@ -74,7 +74,7 @@ GOW3_FSR4_OPT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_fsr4.cpp:125 gp
 GOW3_FSR4_PROFILE	upstream	gpu/patches/fsr-vulkan/0001-FSR-4-v07-provider-GOW3_FSR4_PROFILE-pass-timings-GOW3_F.patch:172 gpu/shadps4/video_core/renderer_vulkan/fsr411/fsr411.cpp:258 gpu/tools/fsr4_bench.cpp:279
 GOW3_FSR4_STATS	upstream	gpu/patches/fsr-vulkan/0001-FSR-4-v07-provider-GOW3_FSR4_PROFILE-pass-timings-GOW3_F.patch:87 gpu/tools/fsr4_bench.cpp:281
 GOW3_FSR_SHARPNESS	upstream	gpu/shim/gow3_settings.cpp:353
-GOW3_FULLSCREEN	upstream	gpu/shim/window.cpp:64
+GOW3_FULLSCREEN	upstream	gpu/shim/window.cpp:68
 GOW3_FUTEX_COND	upstream	src/runtime_mutex.c:207
 GOW3_GC_BUDGET_MB	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:2450
 GOW3_GC_STARTUP_RULE	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:2454
@@ -115,6 +115,7 @@ GOW3_MICRO_MIP_TARGETS	upstream	gpu/shadps4/video_core/texture_cache/image_info.
 GOW3_MODS_DIR	upstream	src/runtime_file.c:258
 GOW3_MOD_TRACE	upstream	src/runtime_file.c:258
 GOW3_MOTION_SELECT_LOG	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp:980
+GOW3_MOUSE	ours	src/runtime_mouse.c:19
 GOW3_MOVIE_SUSPEND	upstream	src/probe.c:616
 GOW3_NARROW_IMAGE_STAGES	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:2610
 GOW3_NEO	upstream	src/runtime_extra.c:173
@@ -266,7 +267,7 @@ GOW3_VULKAN_COMPAT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.c
 GOW3_WAIT_REG_MEM_GIVEUP_MS	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:846
 GOW3_WAIT_SITES	upstream	src/runtime_waitsites.c:38
 GOW3_WARN_META_TEXTURE	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:2724
-GOW3_WINDOW_ICON	upstream	gpu/shim/window.cpp:37
+GOW3_WINDOW_ICON	upstream	gpu/shim/window.cpp:41
 GOW3_WORK_RETIRED	upstream	gpu/shadps4/video_core/amdgpu/liverpool.h:126
 GOW3_WRITEDATA_DEFERRED	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:677
 GOW3_WRITE_LOG	upstream	gpu/shim/gow3_write_log.cpp:41
