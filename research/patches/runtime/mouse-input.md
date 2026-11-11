@@ -8,11 +8,11 @@ default_windows: off
 default_deck: n/a
 origin: ours
 class: M
-commits: f4f13b8, e27103e, 870f584, 88bf535, a7c91f7
+commits: f4f13b8, e27103e, 870f584, 88bf535, a7c91f7, b4d9e6f
 files: src/runtime_mouse.c, src/mouse_hook.h, src/probe.c, src/runtime_services.c, gpu/shim/window.cpp, gpu/shim/sdl_window.h, scripts/ue4_override.py
 symbols: runtime_mouse_enabled, runtime_mouse_start, runtime_mouse_capture, runtime_mouse_take, drain, reader_thread, mouse_init, mouse_read, SetMouseCapture, mouse_captured, runtime_mouse_take_camera, medievil_mouse_yaw_find, medievil_mouse_yaw_script_ok, mouse_yaw, install_mouse_yaw
 switches: GOW3_MOUSE, GOW3_MOUSE_BUTTONS, GOW3_MOUSE_YAW
-tests: T-MS1, T-MS2, T-MS3, T-MS4
+tests: T-MS1, T-MS2, T-MS3, T-MS4, T-MS5
 docs: study-mouse-input.md#t-ms1-ps4enablemouse-from-the-paks-ini-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-step1-enablelog
 depends_on:
 related: cursor-hide
@@ -64,7 +64,11 @@ after Dan's TurnRate handler writes `CameraManager.InputRotation`, the wrapper a
 - T-MS3 (2026-11-11, PC, `870f584`, run): the user: "all the inputs work" (main menu, Load list, level). Found: a
   click on the Load list snapped the cursor to the centre (capture then release). Fix built `88bf535`: no capture while the
   overlay has the cursor.
-- Yaw hook: fix built `a7c91f7`, not run.
+- T-MS5 (2026-11-11, PC, `a7c91f7`, run): the user: the mouse turns the camera (x only) only while Dan walks.
+  Log: the hook ran once a frame (705 calls / 5 s) and added the mouse at rest too. Confirmed in the bytecode:
+  with Dan still (`IsPlayerControlActive` = movement input < 0.22), BP_CameraAreaFree keeps control yaw, which
+  only AddControllerYawInput turns. Fix built `b4d9e6f`: the mouse also goes into the stick-turn local
+  the AddControllerYawInput call reads (/ InputYawScale 2.5), put back after the call.
 - T-MS4 (2026-11-11, PC, `88bf535`, run): the user: "it all works as expected" (no snap on the Load list, a click
   in the game hides the cursor). Log: no capture / release pairs while the list was open.
 

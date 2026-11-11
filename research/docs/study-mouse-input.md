@@ -361,6 +361,27 @@ clicks on the Load list leave the cursor where it is; a click in the game takes 
 Log: one capture before the list, one release when it opened, no capture / release pairs while it was open
 (T-MS3 had five); 7355 reports a second at 8000 Hz with 681 reader wake-ups a second.
 
+### T-MS5: mouse yaw into InputRotation (2026-11-11, launched by Claude with the user's go, log data/mouse-yaw-t-ms5.log)
+
+Build `a7c91f7`, `GOW3_MOUSE=1`, 0.022 degrees per count. The user: "it does work (on the X axis only right now),
+but it only accepts input when I am giving input to another key (like walking with WASD)". Log: "Dan's camera input
+found (InputRotation at +0x430)"; the handler ran 705 times every 5 s (once a frame) whether Dan moved or not, and
+the mouse was added on 222-656 of them while moving it; no stale drops, no camera locks.
+
+Confirmed (bytecode, BP_CameraAreaFree.ComputeCamera and BP_CameraManager.TickCamera / IsPlayerControlActive):
+the yaw is `SelectFloat((near or TestInputBits(256) ? PreviousYaw : atan2) + InputRotation x 2, PreviousYaw,
+playerControlsActive)`, PreviousYaw being control yaw and `playerControlsActive` = |AnalogMovementInput|^2 >= 0.0484.
+Standing, InputRotation is ignored and only control yaw (AddControllerYawInput x InputYawScale 2.5) turns the camera.
+For the stick the rates therefore differ: 2.5 x Val standing, 2 x Val moving far, 4.5 x Val moving near (inferred:
+control yaw already holds this frame's input when TickCamera reads it).
+
+Fix built `b4d9e6f`: the wrapper runs before the original exec (Stack.Code = call + 0xd, the argument), adds
+`degrees / 2.5` to the stick-turn local the call's select reads when AllowUserCameraControl is true, calls the
+original, puts the local back and adds `degrees / 2` to InputRotation. Standing and moving far then both turn by
+`counts x GOW3_MOUSE_YAW`; moving near (both paths) about twice that, like the stick's 1.8x. Bytecode checks added:
+EX_False / EX_True / EX_LocalVariable at call + 0x1d / 0x2b / 0x30, the same local at let + 0x4c, and the local a
+4-byte property of the ubergraph (layout checked in 01.00 and 01.02).
+
 ### Step 5 research: the yaw and pitch sites, and what really turns the camera (2026-11-11, no launch)
 
 A research agent read both eboots (01.02 = `out/eboot.elf`, sha256 `310748698af4...`; 01.00 rebuilt from
