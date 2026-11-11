@@ -53,3 +53,12 @@ own bytes. The user: "It looks like it worked."
 - The launcher's save backups (`scripts/save_backup.py`) keep the 10 newest **by name**: hand-made backups named with
   letters sorted first and the automatic ones were deleted as soon as they were made. The hand-made ones now live
   in `user/savedata_backups_manual/`.
+
+## T-SV4: "Continue" and slot numbers in the Load list (2026-11-10, launched by Claude with the user's go, log `data/save-continue-1-0102.log`)
+
+The Load list's dead "New save" entry became "Continue" (the newest save, with its slot, level and date), each
+save shows "Slot N" from its folder number, and missing save pictures are no longer looked up. The user chose
+Continue (`@MediEvil0006`), then loaded the older `@MediEvil0001`: its save went into `@MediEvil0001` (log line
+528) and it became the newest. The launcher's backup of this start (`savedata_backups/20261110-230059`) stayed. The
+user: "Continue is the most recently loaded save, and the top slot is the most recent slot, all slots have their
+name, I loaded an older save, nothing was deleted, and the loaded save got recognized as the newest one".

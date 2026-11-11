@@ -139,13 +139,15 @@ int runtime_savedata_param(int32_t user, const char *dir, void *param) {
     snprintf(meta,sizeof(meta),"%s/%s.sce_sys",base,dir);
     return read_param(meta,(Param *)param);
 }
-/* Host path of a save's icon0.png (the location picture in the save dialog); 0 when named. */
+/* Host path of a save's icon0.png (the location picture in the save dialog); 0 when it exists
+ * (MediEvil never saves one: no warning per slot for a missing file). */
 int runtime_savedata_icon(int32_t user, const char *dir, char *out, size_t size) {
     if (!valid_name(dir,32)) return -1;
     char base[600];
     root(user,NULL,base,sizeof(base));
     snprintf(out,size,"%s/%s.sce_sys/icon0.png",base,dir);
-    return 0;
+    struct stat st;
+    return stat(out,&st) ? -1 : 0;
 }
 /* Save trace: every call that picks, reads, writes or deletes a save is logged with the game code
  * that made it, so the game's slot logic can be followed in a log (which slot a load, a new game
