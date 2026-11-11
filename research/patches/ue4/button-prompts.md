@@ -1,0 +1,60 @@
+---
+id: button-prompts
+title: Button prompts: the game's PS4 prompt textures re-drawn in the override pak (medievil.ini button_prompts)
+area: ue4
+status: active
+platforms: all
+default_windows: off
+default_deck: off
+origin: ours
+class: M
+commits:
+files: scripts/ue4_glyphs.py, scripts/game_ui_assets.py, scripts/ue4_override.py, run.py, tests/test_ue4_glyphs.py
+symbols: files, atlas, strip, with_strip, test_cells, texture, detile, tile, ATLAS_CELLS, STYLES
+switches:
+tests: T-G1
+docs: study-glyphs.md#4-step-plan-smallest-first-every-launch-needs-the-users-go, study-glyphs.md#21-format-of-the-cooked-texture-what-a-patch-must-write-v
+depends_on: game-ui-cache
+related: debug-menu-0102
+checked:
+---
+## What it does
+
+The ini key `button_prompts` (`playstation`, the default, writes nothing; `test`) picks the button prompt
+style. For a style other than PlayStation, `ue4_override.apply` puts edited copies of the game's prompt textures in
+the override pak: today the 16 64x64 cells in the top row of `InventoryButtonAtlas` (the `SP_PS4_*` sprites),
+which `test` fills with numbered yellow squares (00 Circle ... 15 StickRight, `ATLAS_CELLS`). Step G1 of
+study-glyphs.md; the Xbox and keyboard sets (G3, G4) and the bone textures (G2) come next.
+
+## Invariants
+
+- Same size and format as the game's texture: only payload bytes change, so the `.uasset` header (export size,
+  bulk offsets, `PF_*` names) stays the game's. Never write another size or format.
+- The atlas is B8G8R8A8 in 1D thin tiling; tile rows are stored one after another, so the cells' top 64 pixel rows
+  are the first 256 KiB of the payload and are re-tiled alone (`strip` / `with_strip`). The rest of the atlas (HUD
+  art) stays byte-identical.
+- `detile` / `tile` (game_ui_assets.py) are exact inverses; the game UI cache's `decode` uses the same code.
+- An unknown style counts as `playstation`. A game build whose atlas does not parse prints "Button prompts: not
+  available for this game build" and the pak is written without it.
+
+## Interactions
+
+- load-list-details: the port's Load list draws the game's PS4 prompts from the game UI cache; it must follow the
+  style too (to do).
+- game-ui-cache: shares the texture reader and tiling code (`texture`, `detile`, `tile`); its decode output did not
+  change (22 textures compared with the previous decoder).
+- The pak is rewritten at every start, so the style changes with a restart.
+
+## Evidence
+
+- 2026-11-11, offline (01.02): the test atlas `.uexp` keeps its size (4 194 628 bytes); bytes change only from
+  payload +48 to +262 095; the HUD art below row 64 decodes identically; the file reads back identically from a
+  written pak. `apply` with `test` puts the atlas in the pak, with `playstation` or no key it does not.
+  tests/test_ue4_glyphs.py passes.
+- T-G1 (PC, 01.02): run. The Button Layout page shows the squares for every button but Start, L1 and R1 (their
+  own textures, next step); the HUD's weapon swap prompt shows 02. Clean exit.
+
+## History and pitfalls
+
+- The game has no Xbox, keyboard or PC glyphs (study-glyphs.md 1.4): the new art comes from the CC0 pack the user
+  chose (study-glyphs.md, Decisions).

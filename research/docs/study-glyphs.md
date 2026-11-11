@@ -201,6 +201,18 @@ pixel data of the same format and size; no mips to generate (all have one).
 | G5 | Optional: Xbox controller picture for the Button Layout page; "L3" label text | Launch 5: the page lines point at the right buttons |
 | G6 | Optional runtime switch (b): device tracking in `runtime_pad.c`, address capture + payload swap in the texture cache, behind a setting | Launch 6: on the HUD, press a key then a pad button; prompts switch within a frame or two; log shows each switch; test across a level load (textures reloaded at new addresses) and in the inventory |
 
+## T-G1: test squares in the atlas (2026-11-11, launched by Claude with the user's go, log `data/glyphs-g1-0102.log`)
+
+`button_prompts=test` (scripts/ue4_glyphs.py, card [ue4/button-prompts](../patches/ue4/button-prompts.md)): the 16
+atlas cells as numbered yellow squares (00 Circle ... 15 StickRight). Offline: the `.uexp` keeps its 4 194 628
+bytes, only payload +48 to +262 095 changes, the HUD art below row 64 decodes identically, the pak reads back
+identically. In game: the Options > Button Layout page shows squares for every button except **Start (Options), L1
+(swap target) and R1 (block)**, which are `Options_Active` / `L1_Active` / `R1_Active` (1.3); the HUD's weapon swap
+prompt (Triangle in this layout) shows 02. Clean exit.
+
+Also to do (the user): the port's own Load list (runtime/load-list-details) draws the game's `PS4_Cross` / `Circle` /
+`Square` prompts from the game UI cache; with another style it must use that style's glyphs.
+
 ## Open questions
 
 - Does any prompt not go through the atlas or the six small textures (for example the book's `<INVENTORY>` text, the

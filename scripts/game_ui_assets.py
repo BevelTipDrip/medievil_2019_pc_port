@@ -88,9 +88,9 @@ def screen_names(index, code):
 FORMATS = {'PF_DXT1': (4, 8, 1), 'PF_DXT5': (4, 16, 3), 'PF_B8G8R8A8': (1, 4, None)}
 
 
-def decode(uexp):
-    """A texture's RGBA picture (single mip, 1D thin tiling), or None for any other format."""
-    from PIL import Image
+def texture(uexp):
+    """(pixel format, width, height, payload offset, pitch, rows) of a single-mip texture in a
+    format of FORMATS, or None. pitch and rows: the padded surface in elements."""
     at = uexp.find(b'PF_')
     end = uexp.find(b'\0', at)
     if at < 16 or end < 0:
@@ -99,7 +99,7 @@ def decode(uexp):
     if pixel_format not in FORMATS:
         return None
     width, height = struct.unpack_from('<ii', uexp, at - 16)  # SizeX, SizeY, packed slices, name length
-    side, element, bcn = FORMATS[pixel_format]
+    side, element, _bcn = FORMATS[pixel_format]
     if width <= 0 or height <= 0:
         return None
     # The surface is padded to whole 8x8-element micro tiles.
@@ -108,21 +108,49 @@ def decode(uexp):
     mark = uexp.find(struct.pack('<ii', size, size), end)
     if mark < 0 or mark + 16 + size > len(uexp):
         return None
-    raw = uexp[mark + 16:mark + 16 + size]
-    linear = bytearray(size)
+    return pixel_format, width, height, mark + 16, pitch, rows
+
+
+def _tiled_order(pitch, rows):
+    """For each element of a linear surface, its index in the tiled one. Tiles go row by row, so
+    any run of whole tile rows (rows a multiple of 8) is a surface of its own."""
     tiles_per_row = pitch // 8
     for y in range(rows):
         ybits = (y & 1) << 1 | ((y >> 1) & 1) << 3 | ((y >> 2) & 1) << 5
-        row, tile_row = y * pitch, (y >> 3) * tiles_per_row
+        tile_row = (y >> 3) * tiles_per_row
         for x in range(pitch):
-            p = (x & 1) | ((x >> 1) & 1) << 2 | ((x >> 2) & 1) << 4 | ybits
-            src = ((tile_row + (x >> 3)) * 64 + p) * element
-            dst = (row + x) * element
-            linear[dst:dst + element] = raw[src:src + element]
+            yield (tile_row + (x >> 3)) * 64 + ((x & 1) | ((x >> 1) & 1) << 2 | ((x >> 2) & 1) << 4 | ybits)
+
+
+def detile(raw, pitch, rows, element):
+    """1D thin tiled elements to linear (row by row)."""
+    linear = bytearray(pitch * rows * element)
+    for dst, src in enumerate(_tiled_order(pitch, rows)):
+        linear[dst * element:(dst + 1) * element] = raw[src * element:(src + 1) * element]
+    return bytes(linear)
+
+
+def tile(linear, pitch, rows, element):
+    """Linear elements to 1D thin tiling: the inverse of detile."""
+    raw = bytearray(pitch * rows * element)
+    for src, dst in enumerate(_tiled_order(pitch, rows)):
+        raw[dst * element:(dst + 1) * element] = linear[src * element:(src + 1) * element]
+    return bytes(raw)
+
+
+def decode(uexp):
+    """A texture's RGBA picture (single mip, 1D thin tiling), or None for any other format."""
+    from PIL import Image
+    info = texture(uexp)
+    if not info:
+        return None
+    pixel_format, width, height, at, pitch, rows = info
+    side, element, bcn = FORMATS[pixel_format]
+    linear = detile(uexp[at:at + pitch * rows * element], pitch, rows, element)
     if bcn:
-        picture = Image.frombytes('RGBA', (pitch * side, rows * side), bytes(linear), 'bcn', bcn)
+        picture = Image.frombytes('RGBA', (pitch * side, rows * side), linear, 'bcn', bcn)
     else:
-        picture = Image.frombytes('RGBA', (pitch, rows), bytes(linear), 'raw', 'BGRA')
+        picture = Image.frombytes('RGBA', (pitch, rows), linear, 'raw', 'BGRA')
     return picture.crop((0, 0, width, height))
 
 

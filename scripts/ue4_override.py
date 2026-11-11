@@ -460,8 +460,9 @@ def preset_cvars(game, quality):
 
 
 def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_menu=False,
-          infinite_ammo=False, hzb=False, effects='75', aa='taa', voice='', graphics=None):
+          infinite_ammo=False, hzb=False, effects='75', aa='taa', voice='', graphics=None, glyphs=''):
     """Writes or removes the override pak. Returns a short description of the active state.
+    `glyphs`: the button prompt style (medievil.ini button_prompts, ue4_glyphs.STYLES).
     `graphics`: the graphics settings' console variables (graphics_options.graphics_cvars, run.py), which
     replace the quality preset's; a diagnostic preset (diag_*) still adds its own on top."""
     pak = paks_dir(game) / PAK_NAME
@@ -528,7 +529,10 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
             extra[name.strip()] = value.strip()
     values.update(extra)
     engine = frame_rate_range(fps) if fps > 60 else {}
-    if not values and not engine and not debug_menu and not infinite_ammo and not voice:
+    import ue4_glyphs
+    if glyphs not in ue4_glyphs.STYLES or glyphs == 'playstation':
+        glyphs = ''
+    if not values and not engine and not debug_menu and not infinite_ammo and not voice and not glyphs:
         pak.unlink(missing_ok=True)
         return '1920x1080 output, render scale 100%, console quality, 60 FPS'
     files = {CONFIG: set_values(read_file(game, CONFIG), values, engine)}
@@ -555,6 +559,13 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
         except (ValueError, FileNotFoundError) as error:
             print(f'Voice language: not available for this game build ({error})', flush=True)
             voice = ''
+    # Button prompts: the game's PS4 textures with other pixels (study-glyphs.md).
+    if glyphs:
+        try:
+            files.update(ue4_glyphs.files(lambda name: read_file(game, name), glyphs))
+        except (ValueError, FileNotFoundError) as error:
+            print(f'Button prompts: not available for this game build ({error})', flush=True)
+            glyphs = ''
     if fps > 60:
         instance = files.get(GAME_INSTANCE) or read_file(game, GAME_INSTANCE)
         if any(command in instance for command in MAX_FPS_COMMANDS):
@@ -565,6 +576,7 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
             f'{f"up to {fps}" if fps > 60 else 60} FPS{", debug menu (R3; 01.02: L1 + R1 + R3)" if debug_menu else ""}'
             f'{f", anti-aliasing {aa}" if aa_quality is not None else ""}'
             f'{", unlimited ammo" if infinite_ammo else ""}{f", voices {voice}" if voice else ""}'
+            f'{f", button prompts {glyphs}" if glyphs else ""}'
             f'{"; extra cvars " + ", ".join(f"{k}={v}" for k, v in extra.items()) if extra else ""}')
 
 

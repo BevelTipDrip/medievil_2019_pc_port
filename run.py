@@ -239,7 +239,8 @@ def main():
                                                            ini.get('effects_resolution', '75'),
                                                            ini.get('ue4_aa', 'taa'),
                                                            ini.get('ue4_voice', ''),
-                                                           graphics_options.graphics_cvars(choices)), flush=True)
+                                                           graphics_options.graphics_cvars(choices),
+                                                           ini.get('button_prompts', '')), flush=True)
         except (OSError, ValueError) as error:
             print(f'Render resolution: unchanged ({error})', flush=True)
     original_game = game.resolve()
