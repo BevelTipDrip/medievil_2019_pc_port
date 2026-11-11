@@ -8,7 +8,7 @@ default_windows: off
 default_deck: off
 origin: ours
 class: M
-commits: 4bfd053951, 5ebcaa16ec, f82291a28b
+commits: 4bfd053951, 5ebcaa16ec, f82291a28b, 2598c44c39
 files: scripts/ue4_glyphs.py, scripts/game_ui_assets.py, scripts/ue4_override.py, run.py, tests/test_ue4_glyphs.py, third_party/input-prompts/README.md, packaging/windows/package.sh, packaging/linux/appimage.sh
 symbols: files, atlas, small, place, XBOX_CELLS, ART, whole, with_whole, bc3, strip, with_strip, test_cells, test_square, texture, detile, tile, ATLAS_CELLS, SMALL, BONE, STYLES
 switches:

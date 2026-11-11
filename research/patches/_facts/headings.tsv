@@ -845,8 +845,10 @@ study-glyphs.md	193	2	4-step-plan-smallest-first-every-launch-needs-the-users-go
 study-glyphs.md	204	2	t-g1-test-squares-in-the-atlas-2026-11-11-launched-by-claude-with-the-users-go-log-dataglyphs-g1-0102log	T-G1: test squares in the atlas (2026-11-11, launched by Claude with the user's go, log `data/glyphs-g1-0102.log`)
 study-glyphs.md	213	2	t-g1b-the-three-small-textures-2026-11-11-launched-by-claude-with-the-users-go-log-dataglyphs-g1b-0102log	T-G1b: the three small textures (2026-11-11, launched by Claude with the user's go, log `data/glyphs-g1b-0102.log`)
 study-glyphs.md	220	2	t-g2-the-dxt5-bone-prompts-2026-11-11-launched-by-claude-with-the-users-go-log-dataglyphs-g2-0102log	T-G2: the DXT5 bone prompts (2026-11-11, launched by Claude with the user's go, log `data/glyphs-g2-0102.log`)
-study-glyphs.md	233	2	open-questions	Open questions
-study-glyphs.md	243	2	decisions-the-user-2026-11-03	Decisions (the user, 2026-11-03)
+study-glyphs.md	230	2	t-g3-the-xbox-set-2026-11-11-launched-by-claude-with-the-users-go-log-dataglyphs-g3-xbox-0102log	T-G3: the Xbox set (2026-11-11, launched by Claude with the user's go, log `data/glyphs-g3-xbox-0102.log`)
+study-glyphs.md	245	2	open-questions	Open questions
+study-glyphs.md	255	2	decisions-the-user-2026-11-03	Decisions (the user, 2026-11-03)
+study-glyphs.md	266	2	decisions-the-user-2026-11-11	Decisions (the user, 2026-11-11)
 study-guest-memory-direct.md	1	1	study-could-the-gpu-use-guest-memory-directly-no-vram-copy	Study: could the GPU use guest memory directly (no VRAM copy)?
 study-guest-memory-direct.md	8	2	answer	Answer
 study-guest-memory-direct.md	19	2	1-what-the-bloodborne-port-actually-does	1. What the Bloodborne port actually does
