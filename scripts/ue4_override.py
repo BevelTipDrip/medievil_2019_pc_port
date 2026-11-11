@@ -522,6 +522,10 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
     # study-heavy-frame-map.md, T-H3b). GOW3_PARTICLE_FIXED_STEP=1: the fixed step.
     if os.environ.get('GOW3_PARTICLE_FIXED_STEP') != '1':
         values['r.GPUParticle.FixDeltaSeconds'] = '0'
+    # The game's own mouse path (study-mouse-input.md): with GOW3_MOUSE=1 the runtime reports a mouse
+    # (src/runtime_mouse.c, Windows); the cvar is read once at start-up, so it goes into the pak.
+    if os.environ.get('GOW3_MOUSE') == '1':
+        values['PS4.EnableMouse'] = '1'
     # Extra console variables for experiments, "name=value;name=value" (GOW3_UE4_CVARS); they win
     # over the presets above.
     extra = {}

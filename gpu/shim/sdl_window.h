@@ -46,6 +46,9 @@ private:
     void UpdateCursor();
     u64 last_mouse_motion_ms{}; ///< SDL_GetTicks of the last mouse motion (UpdateCursor)
     bool cursor_hidden{};
+    void SetMouseCapture(bool on);
+    bool mouse_enabled{};  ///< GOW3_MOUSE=1: the game's sceMouse gets the mouse while captured
+    bool mouse_captured{}; ///< window thread only
     int text_state{};
     std::string text, text_prompt, base_title;
     void UpdateTextTitle();

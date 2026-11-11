@@ -172,6 +172,14 @@ smooths it.
 
 ### 4.2 Capture: SDL, not a dedicated 8000 Hz thread
 
+**Revised 2026-11-11 (the user: MGS2's first reader hurt frame times): our own batched Raw Input reader, not SDL.**
+SDL3's raw input thread (`src/video/windows/SDL_windowsrawinput.c`, read in MGS2-Lab's SDL 3.5 copy) runs at
+`THREAD_PRIORITY_TIME_CRITICAL` and wakes for each arriving report (`MsgWaitForMultipleObjects(..., QS_RAWINPUT)`),
+then every report becomes a queued SDL event: the per-report wake-up pattern MGS2 dropped (MGS2 3.11). Step 2 uses
+MGS2's reader instead (`src/runtime_mouse.c`): message-only window, `RIDEV_INPUTSINK`, normal priority, at most one
+wake-up a millisecond, one `GetRawInputBuffer` batch; SDL relative mode stays off (one raw mouse registration per
+process). The table below is the original comparison.
+
 | | SDL3 relative mode + event watch (recommended) | Own Raw Input thread (MGS2 pattern) |
 |---|---|---|
 | Source | SDL 3.4.18 (`C:\msys64\clang64\include\SDL3\SDL_version.h`) relative mode: raw counts, no Windows acceleration (`SDL_HINT_MOUSE_RELATIVE_SYSTEM_SCALE` off by default) | `RegisterRawInputDevices(INPUTSINK)` on a message-only window, `GetRawInputBuffer` |
@@ -219,6 +227,12 @@ Two modes, switched on the window thread (`gpu/shim/window.cpp:146-212`):
 | Look | the window has focus, the overlay is closed, the game is in gameplay | SDL relative mode (cursor hidden and held), counts -> camera hook; buttons -> pad buttons per a mouse map |
 | Cursor | the overlay is open (`gow3_overlay.cpp:98-110`, `1309-1336` already feed ImGui only while open), the save list or text dialog, focus lost, or the game is in a menu | relative mode off; outside the overlay, deltas and buttons go to `sceMouse` so the game's Slate cursor follows, and the overlay draws a cursor where it is |
 | Off | `mouse_look=0` | nothing taken; today's behaviour |
+
+**Step 2 as built (2026-11-11):** one mode so far: captured or not. A whole click (button up) in the game window
+takes the mouse; the buttons held at that moment are blocked until let go, so the game never sees half a click.
+Plain F1 releases it (with Alt / Shift / Ctrl / Win held it is ignored: Alt+F1 is NVIDIA's overlay, the user,
+2026-11-11); focus loss and the Insert menu release it. While captured the cursor is hidden and held in a 2x2
+rectangle at the window's centre (`SDL_SetWindowMouseRect`). Counts reach `sceMouse` only while captured.
 
 Rules taken from Bloodborne (`bloodborne_pc/gpu/shim/window.cpp:126-147` `CaptureMouse`, `198-219`, `236-241`):
 a click in the window takes the mouse and is not passed on; F1 releases it (free in this port: Insert opens the
@@ -273,7 +287,7 @@ puts it in the corner, then a known move puts it under the host cursor.
 | Step | Change | Test (what proves it) |
 |---|---|---|
 | 1 | No code: launch with `GOW3_UE4_CVARS=PS4.EnableMouse=1` (the pak builder already writes extra cvars into `[SystemSettings]`, `scripts/ue4_override.py:513-519`) and a log line in the existing `mouse_open` / `mouse_read` stubs is the only code (counts, handle, caller). | The log shows `sceMouseOpen` (user 1, type 0, param 1) and `sceMouseRead(..., 8)` once per frame (count vs `pad reads`). If not, the ini is applied too late: try `[ConsoleVariables]`, or poke guest+0x5b1d2b0 = 1 (01.02) before the game runs. |
-| 2 | `mouse_read` reports a connected mouse with counts from SDL relative motion (accumulated in an event watch, reset per read), buttons, wheel; capture rules of 4.4 (click / F1 / focus / overlay). | Nothing in gameplay should change (no binding uses the mouse). Log counts per read. With an 8000 Hz mouse: window-thread CPU, game-thread time and frame-time graph moving vs still (the MGS2 3.11 check). |
+| 2 | `mouse_read` reports a connected mouse with counts from our batched Raw Input reader (4.2, revised 2026-11-11), buttons, wheel; capture rules of 4.4 (click / plain F1 / focus / overlay). Switch `GOW3_MOUSE=1` (also writes `PS4.EnableMouse=1`). | Nothing in gameplay should change (no binding uses the mouse). Log counts per read. With an 8000 Hz mouse: window-thread CPU, game-thread time and frame-time graph moving vs still (the MGS2 3.11 check). |
 | 3 | Cursor mode in menus: deltas to `sceMouse`, the overlay draws a cursor at the guest position. | User: does hovering highlight, does a click press the button (main menu, pause, options, inventory, pop-ups)? Note the cursor's coordinate space and clamps (4.5). |
 | 4 | Timing log (key-triggered): every read's time, counts, and the frame's `eSimulationStart`. | Counts per frame for a steady pan at 1000 and 8000 Hz; read time within the frame. Decide whether a fixed cut is needed. |
 | 5 | Yaw hook (4.1 b), byte-checked site, off by default, sensitivity in degrees per count. Plus a verify key: inject N counts, log the control-rotation yaw before and after. | Turn = N x setting at 60 and 120 FPS; the user's feel vs the stick; whether the hook runs every gameplay frame and stops in menus, pauses and cutscenes. |

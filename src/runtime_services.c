@@ -641,13 +641,16 @@ static ABI int32_t discmap_7c98(const char *path,int64_t offset,int64_t size,int
     return ORBIS_OK;
 }
 
-/* ---- Devices that are absent: mouse, microphone, voice chat ---- */
-/* A mouse port opens but never reports a connected device. UE4 calls these only with the cvar
- * PS4.EnableMouse=1 (research/docs/study-mouse-input.md); the log lines show whether and how often
- * (step 1: init once, an open after each scePadOpen, a read per input poll). */
+/* ---- The mouse; devices that are absent: microphone, voice chat ---- */
+/* UE4 calls these only with the cvar PS4.EnableMouse=1 (research/docs/study-mouse-input.md): init
+ * once, an open after each scePadOpen, a read per input poll (once a frame, T-MS1). With GOW3_MOUSE=1
+ * (Windows) a read reports a connected mouse with the counts since the last read (runtime_mouse.c);
+ * otherwise the port opens but never reports a connected device. */
 static ABI int32_t mouse_init(void) {
     char from[48]; runtime_save_trace_caller(__builtin_return_address(0),from,sizeof(from));
-    printf("Mouse: sceMouseInit%s\n",from); fflush(stdout);
+    printf("Mouse: sceMouseInit%s%s\n",from,runtime_mouse_enabled() ? " (GOW3_MOUSE=1: Raw Input reader)" : "");
+    fflush(stdout);
+    runtime_mouse_start();
     return 0;
 }
 static ABI int32_t mouse_open(int32_t user,int32_t type,int32_t index,const void *param) {
@@ -658,20 +661,35 @@ static ABI int32_t mouse_open(int32_t user,int32_t type,int32_t index,const void
     fflush(stdout);
     return id;
 }
+/* One 40-byte SceMouseData entry a read (study 2.2): +0x00 timestamp, +0x08 connected, +0x0c buttons,
+ * +0x10 / +0x14 x / y counts, +0x18 wheel. Every 1000th read logs the counts of the last 1000. */
 static ABI int32_t mouse_read(int32_t handle,unsigned char *data,int32_t count) {
     static atomic_uint_fast64_t reads; static struct timespec first;
+    static long long sum_x, sum_y, moving, peak; /* the game thread only */
     const uint64_t n=atomic_fetch_add(&reads,1)+1;
     if (n==1) clock_gettime(CLOCK_MONOTONIC,&first);
+    if (!data || count<1) return (int32_t)0x80DF0001;
+    memset(data,0,40); /* timestamp 0, connected=false */
+    int32_t x=0, y=0, wheel=0; uint32_t buttons=0;
+    if (runtime_mouse_take(&x,&y,&wheel,&buttons)) {
+        struct timespec now; clock_gettime(CLOCK_MONOTONIC,&now);
+        const uint64_t us=(uint64_t)now.tv_sec*1000000u+(uint64_t)now.tv_nsec/1000u;
+        memcpy(data,&us,8); data[8]=1;
+        memcpy(data+0x0c,&buttons,4); memcpy(data+0x10,&x,4); memcpy(data+0x14,&y,4); memcpy(data+0x18,&wheel,4);
+        sum_x+=llabs(x); sum_y+=llabs(y);
+        if (x || y) { moving++; const long long size=llabs(x)>llabs(y) ? llabs(x) : llabs(y); if (size>peak) peak=size; }
+    }
     if (n<=3 || n%1000==0) {
         struct timespec now; clock_gettime(CLOCK_MONOTONIC,&now);
         const double s=(double)(now.tv_sec-first.tv_sec)+(now.tv_nsec-first.tv_nsec)/1e9;
         char from[48]; runtime_save_trace_caller(__builtin_return_address(0),from,sizeof(from));
-        printf("Mouse: sceMouseRead #%llu handle %d count %d, %.1f reads/s%s\n",(unsigned long long)n,handle,count,
-               s>0 ? (double)(n-1)/s : 0.0,from);
+        printf("Mouse: sceMouseRead #%llu handle %d count %d, %.1f reads/s; %lld reads moved, |x| %lld |y| %lld, "
+               "largest %lld%s\n",(unsigned long long)n,handle,count,s>0 ? (double)(n-1)/s : 0.0,moving,sum_x,sum_y,
+               peak,from);
         fflush(stdout);
+        sum_x=sum_y=moving=peak=0;
     }
-    if (!data || count<1) return (int32_t)0x80DF0001;
-    memset(data,0,40); return 1; /* timestamp 0, connected=false */
+    return 1;
 }
 static ABI int32_t mouse_close(int32_t handle) { (void)handle; return 0; }
 static ABI int32_t audio_in_open(void) { return AUDIO_IN_NOT_OPENED; }

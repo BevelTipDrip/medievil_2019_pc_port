@@ -11,9 +11,13 @@
 #include "gow3_graphics.h"
 #include "gow3_settings.h"
 
+extern "C" int runtime_mouse_enabled(void);     // src/runtime_mouse.c: GOW3_MOUSE=1 (Windows)
+extern "C" void runtime_mouse_capture(int on);  // the game has the mouse or not
+
 namespace Frontend {
 
-WindowSDL::WindowSDL(s32 width_, s32 height_, const char* title) : width{width_}, height{height_} {
+WindowSDL::WindowSDL(s32 width_, s32 height_, const char* title)
+    : width{width_}, height{height_}, mouse_enabled{runtime_mouse_enabled() != 0} {
     // Gamepads are sampled by runtime_pad.c; their events are pumped here with the window's.
     // They keep working while another window has the focus (the launcher, a second screen):
     // without this a pad stayed silent until the game window was clicked (issue #25).
@@ -195,12 +199,26 @@ bool WindowSDL::PollEvents() {
             continue;
         }
         switch (event.type) {
+        case SDL_EVENT_MOUSE_BUTTON_UP: // a whole click in the game window takes the mouse
+            if (mouse_enabled && !mouse_captured) {
+                SetMouseCapture(true);
+            }
+            break;
+        case SDL_EVENT_KEY_DOWN: // plain F1 gives it back; with a modifier it is left alone (Alt+F1: NVIDIA)
+            if (mouse_captured && event.key.key == SDLK_F1 && !event.key.repeat &&
+                (event.key.mod & (SDL_KMOD_ALT | SDL_KMOD_SHIFT | SDL_KMOD_CTRL | SDL_KMOD_GUI)) == 0) {
+                SetMouseCapture(false);
+            }
+            break;
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
         case SDL_EVENT_WINDOW_RESIZED: {
             int w = 0, h = 0;
             SDL_GetWindowSizeInPixels(window, &w, &h);
             width = w;
             height = h;
+            if (mouse_captured) {
+                SetMouseCapture(true); // the cursor's pen moves to the new centre
+            }
             break;
         }
         case SDL_EVENT_QUIT:
@@ -215,16 +233,39 @@ bool WindowSDL::PollEvents() {
     return is_open;
 }
 
+// The game's mouse (GOW3_MOUSE=1, src/runtime_mouse.c; study-mouse-input.md 4.4): while captured,
+// the Raw Input reader passes counts and buttons to sceMouse, and the hidden cursor is held in a
+// 2x2 pen at the window's centre so it cannot leave the window or click its frame. Changes only on
+// events (a click, F1, focus loss, the menu), never per frame.
+void WindowSDL::SetMouseCapture(bool on) {
+    if (on) {
+        int w = 0, h = 0;
+        SDL_GetWindowSize(window, &w, &h);
+        const SDL_Rect pen{w / 2 - 1, h / 2 - 1, 2, 2};
+        SDL_SetWindowMouseRect(window, &pen);
+    } else {
+        SDL_SetWindowMouseRect(window, nullptr);
+    }
+    if (on != mouse_captured) {
+        mouse_captured = on;
+        runtime_mouse_capture(on ? 1 : 0);
+    }
+}
+
 // The OS cursor over the game (from the Bloodborne port, 4d4d208): hidden in borderless and
 // fullscreen, and in a window after 3 s without moving the mouse; always shown while the menu,
 // the save list or a text entry is open. Without input focus (alt-tab, another window clicked)
-// the cursor is left shown; it hides again once the player is back in the game window.
+// the cursor is left shown; it hides again once the player is back in the game window. A
+// captured game mouse is let go without focus or under the menu, and hides the cursor meanwhile.
 void WindowSDL::UpdateCursor() {
     const SDL_WindowFlags flags = SDL_GetWindowFlags(window);
     const bool focused = (flags & SDL_WINDOW_INPUT_FOCUS) != 0;
     const bool fullscreen = (flags & SDL_WINDOW_FULLSCREEN) != 0;
+    if (mouse_captured && (!focused || Gow3Overlay::CapturesInput())) {
+        SetMouseCapture(false);
+    }
     const bool hide = focused && !Gow3Overlay::CapturesInput() &&
-                      (fullscreen || SDL_GetTicks() - last_mouse_motion_ms > 3000);
+                      (mouse_captured || fullscreen || SDL_GetTicks() - last_mouse_motion_ms > 3000);
     if (hide != cursor_hidden) {
         cursor_hidden = hide;
         hide ? SDL_HideCursor() : SDL_ShowCursor();

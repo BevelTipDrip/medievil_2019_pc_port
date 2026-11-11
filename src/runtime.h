@@ -48,6 +48,11 @@ uintptr_t runtime_time_resolve(const char *name);
 void runtime_content_configure(const uint32_t values[5]);
 uintptr_t runtime_content_resolve(const char *name);
 void runtime_content_report(void);
+/* runtime_mouse.c: the mouse for sceMouse (GOW3_MOUSE=1, Windows) */
+int runtime_mouse_enabled(void);
+void runtime_mouse_start(void);
+void runtime_mouse_capture(int on);
+int runtime_mouse_take(int32_t *x, int32_t *y, int32_t *wheel, uint32_t *buttons);
 typedef struct { const char *name; void *function; } RuntimeExport;
 #define RUNTIME_LOOKUP(table, nid) runtime_lookup(table, sizeof(table)/sizeof(*(table)), nid)
 const char *runtime_symbol(const char *nid);
