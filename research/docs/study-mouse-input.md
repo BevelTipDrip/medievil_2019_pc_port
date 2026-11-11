@@ -400,7 +400,9 @@ Read:
 
 Consequences for step 5: adding mouse yaw through `AddControllerYawInput` (4.1 b as written) would likely turn the
 camera only in the near / `TestInputBits(256)` branch. Mouse yaw must reach `BP_CameraManager.InputRotation` (the
-value the areas integrate), whose offset is a Blueprint property (resolved at runtime by name). Open: which branch
+value the areas integrate), whose offset is a Blueprint property (resolved at runtime by name). The user chose this (option A, 2026-11-11);
+fix built `a7c91f7`: the slot wrapper adds `counts x GOW3_MOUSE_YAW / 2` to InputRotation, with the camera manager
+and InputRotation read from Dan's loaded bytecode (`src/mouse_hook.h`). Open: which branch
 is typical per level; whether auto-recentring fights a mouse that never sets `IsCameraRotating` / `IsYawing`;
 `AllowUserCameraControl` = false looks like a stick at rest to a slot wrapper.
 

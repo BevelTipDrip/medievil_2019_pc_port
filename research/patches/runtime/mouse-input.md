@@ -8,10 +8,10 @@ default_windows: off
 default_deck: n/a
 origin: ours
 class: M
-commits: f4f13b8, e27103e, 870f584, 88bf535
-files: src/runtime_mouse.c, src/runtime_services.c, gpu/shim/window.cpp, gpu/shim/sdl_window.h, scripts/ue4_override.py
-symbols: runtime_mouse_enabled, runtime_mouse_start, runtime_mouse_capture, runtime_mouse_take, drain, reader_thread, mouse_init, mouse_read, SetMouseCapture, mouse_captured
-switches: GOW3_MOUSE, GOW3_MOUSE_BUTTONS
+commits: f4f13b8, e27103e, 870f584, 88bf535, a7c91f7
+files: src/runtime_mouse.c, src/mouse_hook.h, src/probe.c, src/runtime_services.c, gpu/shim/window.cpp, gpu/shim/sdl_window.h, scripts/ue4_override.py
+symbols: runtime_mouse_enabled, runtime_mouse_start, runtime_mouse_capture, runtime_mouse_take, drain, reader_thread, mouse_init, mouse_read, SetMouseCapture, mouse_captured, runtime_mouse_take_camera, medievil_mouse_yaw_find, medievil_mouse_yaw_script_ok, mouse_yaw, install_mouse_yaw
+switches: GOW3_MOUSE, GOW3_MOUSE_BUTTONS, GOW3_MOUSE_YAW
 tests: T-MS1, T-MS2, T-MS3, T-MS4
 docs: study-mouse-input.md#t-ms1-ps4enablemouse-from-the-paks-ini-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-step1-enablelog
 depends_on:
@@ -25,7 +25,9 @@ checked:
 (`RIDEV_INPUTSINK`), normal priority, at most one wake-up a millisecond, every queued report in one
 `GetRawInputBuffer` batch, totals in atomics. `mouse_read` reports a connected mouse with the counts, buttons and
 wheel notches since the last read (buttons only with `GOW3_MOUSE_BUTTONS=1`). The window thread decides capture: a click takes the mouse, plain F1 / focus loss
-/ the Insert menu give it back. Step 2 of the study; no camera or menu use yet (steps 3-7).
+/ the Insert menu give it back. Yaw (step 5): `AddControllerYawInput`'s exec is wrapped through its native slot;
+after Dan's TurnRate handler writes `CameraManager.InputRotation`, the wrapper adds x counts x `GOW3_MOUSE_YAW`
+(degrees per count, default 0.022) / 2, finding both from Dan's loaded bytecode (src/mouse_hook.h).
 
 ## Invariants
 
@@ -39,6 +41,10 @@ wheel notches since the last read (buttons only with `GOW3_MOUSE_BUTTONS=1`). Th
   (T-MS2). `GOW3_MOUSE_BUTTONS=1` is for the menu-focus research only.
 - F1 releases only without Alt / Shift / Ctrl / Win (Alt+F1 is NVIDIA's overlay; the user, 2026-11-11).
 - Capture changes run on the window thread on events, never per frame.
+- The yaw wrapper must call the original exec first (it consumes the FFrame argument), act only when Stack.Code
+  is Dan's handler's end offset and the script size matches, and stay off after any failed bytecode or
+  property-owner check. Mouse yaw goes to InputRotation (degrees / 2), not control yaw: the camera areas
+  overwrite control yaw (study, step 5 research). No yaw while AllowUserCameraControl is false.
 - A click takes the mouse only while `Gow3Overlay::CapturesInput()` is false; otherwise the capture is undone at
   once and the cursor is left at the window's centre (T-MS3).
 
@@ -58,6 +64,7 @@ wheel notches since the last read (buttons only with `GOW3_MOUSE_BUTTONS=1`). Th
 - T-MS3 (2026-11-11, PC, `870f584`, run): the user: "all the inputs work" (main menu, Load list, level). Found: a
   click on the Load list snapped the cursor to the centre (capture then release). Fix built `88bf535`: no capture while the
   overlay has the cursor.
+- Yaw hook: fix built `a7c91f7`, not run.
 - T-MS4 (2026-11-11, PC, `88bf535`, run): the user: "it all works as expected" (no snap on the Load list, a click
   in the game hides the cursor). Log: no capture / release pairs while the list was open.
 
