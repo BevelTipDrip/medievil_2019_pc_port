@@ -11,7 +11,7 @@ GOW3_BACKGROUND_WARMUP	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presen
 GOW3_BACKING_COPY	upstream	src/runtime_memory.c:2107 tests/test_runtime.c:483
 GOW3_BARRIER_MERGE	upstream	gpu/shadps4/video_core/texture_cache/image.cpp:643
 GOW3_BUFFER_STATS	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:1184 gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:4626
-GOW3_BUNDLED_VK_DRIVER_FILES	upstream	launcher/vulkan_check.py:64 tests/test_packaged_vulkan.py:24 tests/test_packaged_vulkan.py:44 tests/test_packaged_vulkan.py:92
+GOW3_BUNDLED_VK_DRIVER_FILES	upstream	launcher/vulkan_check.py:64 tests/test_packaged_vulkan.py:29 tests/test_packaged_vulkan.py:49 tests/test_packaged_vulkan.py:98
 GOW3_CAPTURE_BUFFER_BYTES	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.cpp:367
 GOW3_CAPTURE_DIR	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.cpp:99
 GOW3_CAPTURE_ON_TARGET	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.cpp:229
@@ -25,7 +25,7 @@ GOW3_COPY_GPU_BUFFERS	upstream	gpu/shim/core/emulator_settings.h:57
 GOW3_COPY_MERGE_KB	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_shader_hle.cpp:176
 GOW3_COPY_THREADS	upstream	gpu/shim/gow3_copy.cpp:30
 GOW3_CRASH_DUMP	upstream	src/probe.c:158
-GOW3_DATA_DIR	upstream	launcher/vulkan_check.py:80 tests/test_mods.py:147 tests/test_packaged_vulkan.py:23
+GOW3_DATA_DIR	upstream	launcher/vulkan_check.py:80 tests/test_mods.py:147 tests/test_packaged_vulkan.py:28
 GOW3_DCB_STATS	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:1276
 GOW3_DEBUG_MENU_TRACE	upstream	src/probe.c:677
 GOW3_DEBUG_MOTION	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_camera_motion.cpp:54
@@ -125,7 +125,7 @@ GOW3_NO_FRAME_CAP	upstream	gpu/shim/core/emulator_settings.h:50
 GOW3_NO_MAINTENANCE5	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:336
 GOW3_NO_MAINTENANCE8	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:342
 GOW3_NULL_GPU	upstream	gpu/shim/core/emulator_settings.h:61
-GOW3_NVIDIA_LIB_DIR	upstream	launcher/vulkan_check.py:67 tests/test_packaged_vulkan.py:103
+GOW3_NVIDIA_LIB_DIR	upstream	launcher/vulkan_check.py:67 tests/test_packaged_vulkan.py:110
 GOW3_OBJECT_MOTION	upstream	gpu/shim/gow3_settings.cpp:356
 GOW3_OBJECT_MOTION_ALL	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp:1001 gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:1276
 GOW3_OCCLUSION	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_occlusion.cpp:25
