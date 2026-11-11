@@ -4,12 +4,17 @@
 
 run.py makes one before every start; the launcher lists them and restores one. A restore
 first backs up the current saves, so it can always be undone.
+
+None are deleted: a backup is about 100-600 KB, and the game's slot order follows file times
+(research/docs/study-save-slots.md), so an old good state must stay available. Copies keep the
+file times (copytree uses copy2). Any future limit must go by age or size and count only the
+date-named folders: a count of all folders by name deleted every automatic backup once ten
+hand-made ones (letter names sort first) existed.
 """
 import datetime
 from pathlib import Path
 import shutil
 
-KEEP = 10
 STAMP = '%Y%m%d-%H%M%S'
 
 
@@ -27,11 +32,6 @@ def _has_saves(savedata):
     return savedata.is_dir() and any(p.is_file() for p in savedata.rglob('*'))
 
 
-def _prune(user_dir, keep=KEEP):
-    for name in list_backups(user_dir)[keep:]:
-        shutil.rmtree(backups_dir(user_dir) / name, ignore_errors=True)
-
-
 def _copy(user_dir, now):
     savedata = Path(user_dir) / 'savedata'
     if not _has_saves(savedata):
@@ -46,12 +46,9 @@ def _copy(user_dir, now):
     return target
 
 
-def backup(user_dir, now=None, keep=KEEP):
+def backup(user_dir, now=None):
     """Copies savedata; returns the new folder, or None when there is nothing to save."""
-    made = _copy(user_dir, now)
-    if made:
-        _prune(user_dir, keep)
-    return made
+    return _copy(user_dir, now)
 
 
 def restore(user_dir, name, now=None):
@@ -60,13 +57,11 @@ def restore(user_dir, name, now=None):
         raise ValueError(f'No save backup named {name!r}')
     source = backups_dir(user_dir) / name
     savedata = Path(user_dir) / 'savedata'
-    # Pruning waits until the copy is done: the restored backup may be the oldest one.
     safety = _copy(user_dir, now)
     staging = Path(user_dir) / 'savedata.restoring'
     shutil.rmtree(staging, ignore_errors=True)
     shutil.copytree(source, staging)
     shutil.rmtree(savedata, ignore_errors=True)
     staging.rename(savedata)
-    _prune(user_dir)
     return safety
 

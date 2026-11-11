@@ -1,4 +1,5 @@
 import datetime
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -45,14 +46,25 @@ class SaveBackupTest(unittest.TestCase):
         self.assertNotEqual(first, second)
         self.assertEqual(len(save_backup.list_backups(self.user)), 2)
 
-    def test_keeps_newest_ten(self):
+    def test_keeps_every_backup(self):
         write(self.save, 'v')
+        # A hand-made backup (letter name) once crowded every automatic one out of a count by name.
+        (self.user / 'savedata_backups' / 'manual-before-test').mkdir(parents=True)
         made = [save_backup.backup(self.user, now=self.tick()) for _ in range(12)]
         kept = save_backup.list_backups(self.user)
-        self.assertEqual(len(kept), save_backup.KEEP)
-        self.assertEqual(kept[0], made[-1].name)  # newest first
-        self.assertFalse(made[0].exists())
-        self.assertFalse(made[1].exists())
+        self.assertEqual(len(kept), 13)
+        self.assertTrue(all(m.exists() for m in made))
+        self.assertIn(made[-1].name, kept)
+
+    def test_keeps_file_times(self):
+        # The game's save slot order follows file times (study-save-slots.md).
+        write(self.save, 'v')
+        os.utime(self.save, (1_700_000_000, 1_700_000_000))
+        made = save_backup.backup(self.user, now=self.tick())
+        copy = made / self.save.relative_to(self.user / 'savedata')
+        self.assertEqual(int(copy.stat().st_mtime), 1_700_000_000)
+        save_backup.restore(self.user, made.name, now=self.tick())
+        self.assertEqual(int(self.save.stat().st_mtime), 1_700_000_000)
 
     def test_restore_backs_up_current_first(self):
         write(self.save, 'old')
@@ -64,15 +76,15 @@ class SaveBackupTest(unittest.TestCase):
         self.assertFalse((self.save.parent / 'extra.bin').exists())
         self.assertEqual((safety / self.save.relative_to(self.user / 'savedata')).read_text(), 'new')
 
-    def test_restore_oldest_when_full(self):
+    def test_restore_oldest_keeps_all(self):
         write(self.save, 'oldest')
         oldest = save_backup.backup(self.user, now=self.tick())
         write(self.save, 'later')
-        for _ in range(save_backup.KEEP - 1):
+        for _ in range(11):
             save_backup.backup(self.user, now=self.tick())
         save_backup.restore(self.user, oldest.name, now=self.tick())
         self.assertEqual(self.save.read_text(), 'oldest')
-        self.assertEqual(len(save_backup.list_backups(self.user)), save_backup.KEEP)
+        self.assertEqual(len(save_backup.list_backups(self.user)), 13)  # 12 + the restore's own backup
 
     def test_restore_rejects_unknown_or_unsafe_names(self):
         write(self.save, 'v')

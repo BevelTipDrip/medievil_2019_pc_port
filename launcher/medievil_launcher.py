@@ -1764,8 +1764,8 @@ class Launcher:
         ttk.Button(holder, text=_('Restore', 'Восстановить'), command=self.restore_backup).pack(side='left', padx=(6, 0))
         ttk.Button(holder, text=_('Refresh', 'Обновить'), command=self.refresh_backups).pack(side='left', padx=(6, 0))
         self.row(f, _('Save backups', 'Резервные копии'), holder,
-                 _('Made before every start, newest first; the last {} are kept. Restoring backs up the '
-                   'current saves first.').format(save_backup.KEEP))
+                 _('Made before every start, newest first; none are deleted. Restoring backs up the '
+                   'current saves first.'))
         self.refresh_backups()
 
     def refresh_backups(self):
