@@ -1,0 +1,12 @@
+The icons in this folder are from "Free Input Prompts" by Julio Cacko
+(https://juliocacko.itch.io/free-input-prompts), released by the author under
+
+    CC0 1.0 Universal (CC0 1.0) Public Domain Dedication
+    https://creativecommons.org/publicdomain/zero/1.0/
+    Full legal code: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+The author's statement on the pack's page: "CC0 1.0 Universal. Free to use in any project, commercial or
+non-commercial. No attribution required."
+
+To the extent possible under law, the author has waived all copyright and related or neighboring rights to these
+works. They are not covered by the port's GPL license.

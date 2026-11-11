@@ -227,6 +227,18 @@ the payload changes, the pak reads back identically; the decoded result differs 
 of 10 000 pixels (square and digit edges, at most 50 of 255: DXT5 is lossy). In game, the user's screenshot of the
 inventory: "everything appears to be working" (19 and 20). Clean exit.
 
+## T-G3: the Xbox set (2026-11-11, launched by Claude with the user's go, log `data/glyphs-g3-xbox-0102.log`)
+
+`button_prompts=xbox`: the 16 icons of the pack's `XGamepad/Default` set, copied unchanged and renamed after the
+button into `third_party/input-prompts/xbox/` (README and CC0 notice there; both packages copy the folder). Each
+icon is cropped to its visible part, scaled (premultiplied) to fit its box less 2 px, centred on a cleared box:
+atlas cells B A Y X, D-pad, RB LB RT LT, Menu (Options), View (Touchpad: the pad's View / back button opens the
+inventory), L R; `L1_Active` / `R1_Active` LB / RB; `Options_Active` Menu (a disc in the 88x137 capsule's place);
+pearl Cross / Triangle / R1 A / Y / RB. Offline: all 7 files keep their size, change only payload bytes and read
+back identically; the atlas below the cells is unchanged. The preview showed the dark Default icons low in contrast
+on dark brown (D-pad, LT / RT). In game, the user's screenshots of the menus: "Everything looks fine, it seems to be
+working well." Clean exit.
+
 Also to do (the user): the port's own Load list (runtime/load-list-details) draws the game's `PS4_Cross` / `Circle` /
 `Square` prompts from the game UI cache; with another style it must use that style's glyphs.
 
@@ -250,3 +262,13 @@ Also to do (the user): the port's own Load list (runtime/load-list-details) draw
   priority: the user usually overrides an automatic setting anyway.
 - **Styles:** the pack's "Default" set for Xbox (and Switch, if offered) and its "vintage" (retro) set for keyboard /
   mouse (slight metallic outline, closest to the game's HUD). Used as they are; textures can be replaced later.
+
+## Decisions (the user, 2026-11-11)
+
+- The pack is downloaded: "Texture Files 1.4" (`Source.zip`, 1 633 PNG / SVG files) in the untracked folder
+  `C:\Users\Ty\MediEvil\glyph-pack-download\`. 1.4 has both a "Vintage" keyboard set (round keys in a steel ring:
+  the 2026-11-03 "slight metallic outline") and a "Retro" one (parchment keys, serif letters); Vintage is the one.
+- **Xbox: the pack's `XGamepad/Default` set** (flat dark discs, coloured letters), chosen next to the game's atlas
+  row and the glossy `Retro` set.
+- **The pearl prompts (inventory, Daring Dash, tutorial box) show the same pack icon** as the HUD (A, Y, RB), not a
+  letter drawn on the game's pearl disc.

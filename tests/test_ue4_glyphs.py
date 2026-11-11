@@ -73,6 +73,23 @@ class GlyphTests(unittest.TestCase):
         red, green, blue, alpha = picture.getpixel((12, 12))
         self.assertTrue(red > 240 and 180 < green < 220 and blue < 16 and alpha == 255, picture.getpixel((12, 12)))
 
+    def test_xbox_art_is_complete(self):
+        names = set(ue4_glyphs.XBOX_CELLS) | {icon for _n, icon in ue4_glyphs.SMALL.values()} | \
+            {icon for _n, icon in ue4_glyphs.BONE.values()}
+        self.assertEqual(len(ue4_glyphs.XBOX_CELLS), len(ue4_glyphs.ATLAS_CELLS))
+        for name in names:
+            self.assertTrue((ue4_glyphs.ART / 'xbox' / f'{name}.png').is_file(), name)
+
+    def test_xbox_cells_replace_the_old_art(self):
+        payload = bytes([0xff]) * (1024 * 72 * 4)  # opaque white everywhere
+        uexp = fake_uexp(1024, 72, payload)
+        picture = decode(ue4_glyphs.atlas(uexp, 'xbox'))
+        self.assertEqual(picture.getpixel((0, 0))[3], 0)  # the cell's corner is cleared
+        self.assertEqual(picture.getpixel((32, 32))[3], 255)  # the B disc
+        self.assertEqual(picture.getpixel((32, 68)), (255, 255, 255, 255))  # below the cells: unchanged
+        edited = ue4_glyphs.small(fake_uexp(64, 64, bytes([0xff]) * (64 * 64 * 4)), 'xbox', 16, 'LB')
+        self.assertEqual(decode(edited).getpixel((0, 0))[3], 0)
+
     def test_playstation_and_unknown_styles_write_nothing(self):
         self.assertEqual(ue4_glyphs.files(lambda name: b'', 'playstation'), {})
         self.assertEqual(ue4_glyphs.files(lambda name: b'', 'nonsense'), {})

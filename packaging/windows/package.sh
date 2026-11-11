@@ -61,6 +61,8 @@ ldd "$dest/bin/medievil-runtime.exe" "$dest/bin/medievil-gpu-check.exe" |
         cp -u "$dll" "$dest/bin/"
     done
 cp -r scripts patches "$dest/"
+# Button prompt icons (CC0) for scripts/ue4_glyphs.py.
+mkdir -p "$dest/third_party" && cp -r third_party/input-prompts "$dest/third_party/"
 cp run.py LICENSE README.md packaging/windows/README-Windows.txt "$dest/"
 find "$dest" -name __pycache__ -prune -exec rm -r {} +
 # No game files and nothing a player made (saves, shader caches built from the game's shaders,

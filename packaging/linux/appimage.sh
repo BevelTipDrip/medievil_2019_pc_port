@@ -148,6 +148,8 @@ mkdir -p "$share/bin" "$lib/compat" "$app/usr/share/fonts" "$app/usr/share/appli
 cp -r run.py scripts launcher patches LICENSE README.md "$share/"
 [[ -d docs ]] && cp -r docs "$share/"
 mkdir -p "$share/gpu/third_party" && cp -r gpu/third_party/fonts "$share/gpu/third_party/"
+# Button prompt icons (CC0) for scripts/ue4_glyphs.py.
+mkdir -p "$share/third_party" && cp -r third_party/input-prompts "$share/third_party/"
 mkdir -p "$share/packaging/linux" && cp packaging/linux/README-Linux.md "$share/packaging/linux/" 2>/dev/null || true
 find "$share" -name '__pycache__' -prune -exec rm -rf {} +
 # Native programs: run.py finds bin/medievil-runtime; with a shared GPU library its RUNPATH has
