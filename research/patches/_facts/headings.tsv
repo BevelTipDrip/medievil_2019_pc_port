@@ -980,9 +980,10 @@ study-mouse-input.md	298	2	7b-step-results	7b. Step results
 study-mouse-input.md	300	3	t-ms1-ps4enablemouse-from-the-paks-ini-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-step1-enablelog	T-MS1: PS4.EnableMouse from the pak's ini (2026-11-11, launched by Claude with the user's go, log data/mouse-step1-enable.log)
 study-mouse-input.md	317	3	t-ms2-the-batched-raw-input-reader-feeds-scemouse-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-step2-raw-readerlog	T-MS2: the batched Raw Input reader feeds sceMouse (2026-11-11, launched by Claude with the user's go, log data/mouse-step2-raw-reader.log)
 study-mouse-input.md	345	3	t-ms3-no-mouse-buttons-to-the-game-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-buttons-withheldlog	T-MS3: no mouse buttons to the game (2026-11-11, launched by Claude with the user's go, log data/mouse-buttons-withheld.log)
-study-mouse-input.md	357	2	8-open-questions	8. Open questions
-study-mouse-input.md	369	2	method-notes	Method notes
-study-mouse-input.md	378	2	decision-the-user-2026-11-03	Decision (the user, 2026-11-03)
+study-mouse-input.md	357	3	t-ms4-no-capture-from-clicks-on-the-save-list-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-capture-checklog	T-MS4: no capture from clicks on the save list (2026-11-11, launched by Claude with the user's go, log data/mouse-capture-check.log)
+study-mouse-input.md	364	2	8-open-questions	8. Open questions
+study-mouse-input.md	376	2	method-notes	Method notes
+study-mouse-input.md	385	2	decision-the-user-2026-11-03	Decision (the user, 2026-11-03)
 study-native-render-paths.md	1	1	study-native-render-paths-or-cutting-out-the-middle-man-2026-11-04	Study: native render paths, or "cutting out the middle man" (2026-11-04)
 study-native-render-paths.md	15	2	answer	Answer
 study-native-render-paths.md	41	2	1-the-heavy-frame-by-class-question-1	1. The heavy frame by class (question 1)

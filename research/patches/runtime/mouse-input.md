@@ -12,7 +12,7 @@ commits: f4f13b8, e27103e, 870f584, 88bf535
 files: src/runtime_mouse.c, src/runtime_services.c, gpu/shim/window.cpp, gpu/shim/sdl_window.h, scripts/ue4_override.py
 symbols: runtime_mouse_enabled, runtime_mouse_start, runtime_mouse_capture, runtime_mouse_take, drain, reader_thread, mouse_init, mouse_read, SetMouseCapture, mouse_captured
 switches: GOW3_MOUSE, GOW3_MOUSE_BUTTONS
-tests: T-MS1, T-MS2, T-MS3
+tests: T-MS1, T-MS2, T-MS3, T-MS4
 docs: study-mouse-input.md#t-ms1-ps4enablemouse-from-the-paks-ini-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-step1-enablelog
 depends_on:
 related: cursor-hide
@@ -57,7 +57,9 @@ wheel notches since the last read (buttons only with `GOW3_MOUSE_BUTTONS=1`). Th
   received stopped the main menu taking keyboard and pad input. Buttons withheld since (`870f584`).
 - T-MS3 (2026-11-11, PC, `870f584`, run): the user: "all the inputs work" (main menu, Load list, level). Found: a
   click on the Load list snapped the cursor to the centre (capture then release). Fix built `88bf535`: no capture while the
-  overlay has the cursor; not run.
+  overlay has the cursor.
+- T-MS4 (2026-11-11, PC, `88bf535`, run): the user: "it all works as expected" (no snap on the Load list, a click
+  in the game hides the cursor). Log: no capture / release pairs while the list was open.
 
 ## History and pitfalls
 

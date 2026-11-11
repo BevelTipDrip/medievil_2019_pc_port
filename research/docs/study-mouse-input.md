@@ -354,6 +354,13 @@ Build `870f584`, `GOW3_MOUSE=1` (buttons off), same settings as T-MS2. Main menu
 Fix built after T-MS3: a click takes the mouse only while `Gow3Overlay::CapturesInput()` is false (the menu, the
 save list and text entry closed), the check `UpdateCursor` already uses.
 
+### T-MS4: no capture from clicks on the save list (2026-11-11, launched by Claude with the user's go, log data/mouse-capture-check.log)
+
+Build `88bf535`, `GOW3_MOUSE=1`, frame limit 237 (the user's new setting). The user: "it all works as expected":
+clicks on the Load list leave the cursor where it is; a click in the game takes the mouse and hides the cursor.
+Log: one capture before the list, one release when it opened, no capture / release pairs while it was open
+(T-MS3 had five); 7355 reports a second at 8000 Hz with 681 reader wake-ups a second.
+
 ## 8. Open questions
 
 1. Does `[SystemSettings]` reach `PS4.EnableMouse` before the PS4 application and the pad opens read it (step 1)? **Yes (T-MS1).**
