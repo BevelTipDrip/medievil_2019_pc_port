@@ -5,7 +5,7 @@ Julio Cacko, https://juliocacko.itch.io/free-input-prompts, "Texture Files" vers
 under **CC0 1.0 Universal** (public domain dedication, https://creativecommons.org/publicdomain/zero/1.0/): "Free to
 use in any project, commercial or non-commercial. No attribution required." Credited here anyway, with thanks.
 
-Copied unchanged (128x128 RGBA PNG), renamed after the button:
+Copied unchanged (128x128 RGBA PNG), renamed after the button or key:
 
 ## xbox/ (the pack's `XGamepad/Default` set)
 
@@ -27,3 +27,9 @@ Copied unchanged (128x128 RGBA PNG), renamed after the button:
 | `View.png` | `XGamepad/Default/T_X_Share.png` |
 | `LS.png` | `XGamepad/Default/T_X_L.png` |
 | `RS.png` | `XGamepad/Default/T_X_R.png` |
+
+## keyboard/ (the pack's `Keyboard_Mouse/Vintage` set)
+
+Every key icon of the set (84 files; not the mouse icons, the cursor or the sprite sheet):
+`Keyboard_Mouse/Vintage/T_<name>_Key_Vintage.png` is `keyboard/<name>.png`, e.g. `T_Space_Key_Vintage.png` is
+`Space.png`. The pack spells Ctrl `Crtl`.

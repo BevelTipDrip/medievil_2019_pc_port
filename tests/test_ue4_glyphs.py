@@ -5,6 +5,9 @@ import unittest
 from PIL import Image
 
 import paths  # noqa: F401
+import sys
+
+sys.path.insert(0, str(paths.ROOT / 'launcher'))
 from game_ui_assets import decode, detile, texture, tile
 import ue4_glyphs
 
@@ -73,17 +76,55 @@ class GlyphTests(unittest.TestCase):
         red, green, blue, alpha = picture.getpixel((12, 12))
         self.assertTrue(red > 240 and 180 < green < 220 and blue < 16 and alpha == 255, picture.getpixel((12, 12)))
 
-    def test_xbox_art_is_complete(self):
-        names = set(ue4_glyphs.XBOX_CELLS) | {icon for _n, icon in ue4_glyphs.SMALL.values()} | \
-            {icon for _n, icon in ue4_glyphs.BONE.values()}
-        self.assertEqual(len(ue4_glyphs.XBOX_CELLS), len(ue4_glyphs.ATLAS_CELLS))
+    def test_art_is_complete(self):
+        for style in ('xbox', 'keyboard'):
+            chosen = ue4_glyphs.icons(style, log=self.fail)  # the defaults: every button has a picture
+            for button in ue4_glyphs.ATLAS_CELLS:
+                self.assertIn(button, chosen, (style, button))
+            for icon in chosen.values():
+                for name in icon if isinstance(icon, tuple) else (icon,):
+                    self.assertTrue((ue4_glyphs.ART / style / f'{name}.png').is_file(), (style, name))
+        names = set(ue4_glyphs.PAD_ICONS.values()) | set(ue4_glyphs.PAD_FIXED.values())
+        names |= {ue4_glyphs.key_icon(n) for n in ue4_glyphs.KEY_ICONS}
         for name in names:
-            self.assertTrue((ue4_glyphs.ART / 'xbox' / f'{name}.png').is_file(), name)
+            style = 'xbox' if name in set(ue4_glyphs.PAD_ICONS.values()) | set(ue4_glyphs.PAD_FIXED.values()) else 'keyboard'
+            self.assertTrue((ue4_glyphs.ART / style / f'{name}.png').is_file(), name)
+
+    def test_defaults_match_the_launcher(self):
+        import medievil_launcher  # launcher/, on the path above
+        for button, key, pad in medievil_launcher.CONTROLS:
+            self.assertEqual(ue4_glyphs.DEFAULT_KEYS[button], key)
+            self.assertEqual(ue4_glyphs.DEFAULT_PAD.get(button), pad)
+
+    def test_remaps_pick_the_icon(self):
+        xbox = ue4_glyphs.icons('xbox', pad_map='cross=b,circle=a')
+        self.assertEqual((xbox['cross'], xbox['circle'], xbox['l2']), ('B', 'A', 'LT'))
+        keys = ue4_glyphs.icons('keyboard', key_map='cross=Q,triangle=left ctrl,options=F5')
+        self.assertEqual((keys['cross'], keys['triangle'], keys['options'], keys['circle']), ('Q', 'Crtl', 'F5', 'Shift'))
+        self.assertEqual(keys['stick_left'], ('W', 'A', 'S', 'D'))
+        lines = []
+        keys = ue4_glyphs.icons('keyboard', key_map='square=Keypad 7', log=lines.append)
+        self.assertNotIn('square', keys)  # no picture: the cell keeps the PS4 art
+        self.assertEqual(len(lines), 1)
+
+    def test_icons_are_cropped_to_what_is_visible(self):
+        # The pack's keys fade to alpha 1-2 out to the 128 px edge: that border is not drawn.
+        self.assertEqual(ue4_glyphs.load_icon('keyboard', 'Q').size, (96, 96))
+        self.assertEqual(ue4_glyphs.load_icon('keyboard', 'Space').size, (128, 64))
+
+    def test_stretched_textures_get_narrower_icons(self):
+        def visible_width(stretch):
+            picture = Image.new('RGBA', (64, 64), (0, 0, 0, 0))
+            ue4_glyphs.place(picture, (0, 0, 64, 64), '1', 'keyboard', stretch)
+            box = picture.getchannel('A').point(lambda a: 255 if a > 128 else 0).getbbox()
+            return (box[2] - box[0]) / (box[3] - box[1])
+        self.assertAlmostEqual(visible_width(1.0), 1.0, delta=0.05)
+        self.assertAlmostEqual(visible_width(1.45), 1 / 1.45, delta=0.05)  # 1.45x on screen: round
 
     def test_xbox_cells_replace_the_old_art(self):
         payload = bytes([0xff]) * (1024 * 72 * 4)  # opaque white everywhere
         uexp = fake_uexp(1024, 72, payload)
-        picture = decode(ue4_glyphs.atlas(uexp, 'xbox'))
+        picture = decode(ue4_glyphs.atlas(uexp, 'xbox', ue4_glyphs.icons('xbox')))
         self.assertEqual(picture.getpixel((0, 0))[3], 0)  # the cell's corner is cleared
         self.assertEqual(picture.getpixel((32, 32))[3], 255)  # the B disc
         self.assertEqual(picture.getpixel((32, 68)), (255, 255, 255, 255))  # below the cells: unchanged

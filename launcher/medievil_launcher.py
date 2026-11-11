@@ -185,8 +185,8 @@ APP_DEFAULTS = {'ui_language': 'en', 'game_dir': os.environ.get('GOW3_GAME_DIR',
                 'deck_offered': False}
 
 # The game's button prompt pictures (medievil.ini button_prompts, scripts/ue4_glyphs.py): written into
-# the override pak at start; the port's Load list follows. Until chosen, the Gamepad names style.
-BUTTON_PROMPTS = [('playstation', ('PlayStation',)), ('xbox', ('Xbox',))]
+# the override pak at start; the port's Load list follows. Until chosen, the Controller type.
+BUTTON_PROMPTS = [('playstation', ('PlayStation',)), ('xbox', ('Xbox',)), ('keyboard', ('Keyboard',))]
 
 # PS4 button, default key, default gamepad button (SDL names; src/runtime_pad.c). L2/R2 come
 # from the analog triggers and are not remapped on the gamepad.
@@ -1884,12 +1884,12 @@ class Launcher:
         for value, label in (('playstation', 'PlayStation'), ('xbox', 'Xbox')):
             ttk.Radiobutton(names, text=label, value=value, variable=self.pad_style,
                             command=self.relabel_pad_controls).pack(side='left', padx=(0, 14))
-        self.row(f, _('Gamepad names'), names)
+        self.row(f, _('Controller type'), names)
         if self.ini.get('button_prompts') not in [v for v, _t in BUTTON_PROMPTS]:
             self.ini['button_prompts'] = style
         self.row(f, _('In-game button prompts'), self.choice(f, 'button_prompts', 'ini', BUTTON_PROMPTS),
-                 _('The button pictures the game shows (HUD, menus, inventory) and the Load list. '
-                   'Applied when the game starts.'))
+                 _('The button pictures the game shows (HUD, menus, inventory) and the Load list, with your '
+                   'remaps below. Applied when the game starts.'))
         self.row(f, _('Stick range'), self.choice(f, 'stick_range', 'app', STICK_RANGES),
                  _('How far the sticks must tilt for a full push. Lower it if your character moves slowly '
                    'with the stick pushed all the way (some hall-effect sticks never reach the edge).'))

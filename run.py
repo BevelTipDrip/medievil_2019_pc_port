@@ -240,7 +240,9 @@ def main():
                                                            ini.get('ue4_aa', 'taa'),
                                                            ini.get('ue4_voice', ''),
                                                            graphics_options.graphics_cvars(choices),
-                                                           ini.get('button_prompts', '')), flush=True)
+                                                           ini.get('button_prompts', ''),
+                                                           (env.get('GOW3_KEY_MAP', ''), env.get('GOW3_PAD_MAP', ''))),
+                  flush=True)
         except (OSError, ValueError) as error:
             print(f'Render resolution: unchanged ({error})', flush=True)
     original_game = game.resolve()
@@ -321,7 +323,8 @@ def main():
             cache = build_game_ui(game, user_dir, log=lambda line: print(line, flush=True))
             # The Load list's prompts in the button style the game gets (medievil.ini button_prompts).
             from ue4_glyphs import overlay_prompts
-            overlay_prompts(graphics_options.read_ini(env['GOW3_CONFIG']).get('button_prompts', ''), cache)
+            overlay_prompts(graphics_options.read_ini(env['GOW3_CONFIG']).get('button_prompts', ''), cache,
+                            env.get('GOW3_KEY_MAP', ''), env.get('GOW3_PAD_MAP', ''))
         except Exception as error:  # the overlay then uses its plain look
             print(f'Game UI files skipped: {error}', flush=True)
         this = ['--run'] if getattr(sys, 'frozen', False) else [str(Path(__file__).resolve())]

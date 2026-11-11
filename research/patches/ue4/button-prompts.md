@@ -10,9 +10,9 @@ origin: ours
 class: M
 commits: 4bfd053951, 5ebcaa16ec, f82291a28b, 2598c44c39, aa5e865248, 396cc55a8a
 files: scripts/ue4_glyphs.py, scripts/game_ui_assets.py, scripts/ue4_override.py, run.py, tests/test_ue4_glyphs.py, third_party/input-prompts/README.md, packaging/windows/package.sh, packaging/linux/appimage.sh, launcher/medievil_launcher.py, gpu/shim/gow3gpu.cpp, gpu/gow3gpu.h
-symbols: files, atlas, small, place, overlay_prompts, OVERLAY, BUTTON_PROMPTS, gow3gpu_choice_style, XBOX_CELLS, ART, whole, with_whole, bc3, strip, with_strip, test_cells, test_square, texture, detile, tile, ATLAS_CELLS, SMALL, BONE, STYLES
+symbols: files, atlas, small, place, icons, key_icon, button_map, load_icon, visible, fit, STRETCH, DEFAULT_KEYS, DEFAULT_PAD, PAD_ICONS, KEY_ICONS, overlay_prompts, OVERLAY, BUTTON_PROMPTS, gow3gpu_choice_style, ART, whole, with_whole, bc3, strip, with_strip, test_cells, test_square, texture, detile, tile, ATLAS_CELLS, SMALL, BONE, STYLES
 switches:
-tests: T-G1, T-G1b, T-G2, T-G3, T-G3b
+tests: T-G1, T-G1b, T-G2, T-G3, T-G3b, T-G4
 docs: study-glyphs.md#4-step-plan-smallest-first-every-launch-needs-the-users-go, study-glyphs.md#21-format-of-the-cooked-texture-what-a-patch-must-write-v
 depends_on: game-ui-cache
 related: debug-menu-0102
@@ -20,8 +20,9 @@ checked:
 ---
 ## What it does
 
-The ini key `button_prompts` (`playstation`, the default, writes nothing; `xbox`; `test`) picks the button prompt
-style. `xbox` draws the CC0 Free Input Prompts pack's Default Xbox icons (`third_party/input-prompts/xbox/`).
+The ini key `button_prompts` (`playstation`, the default, writes nothing; `xbox`; `keyboard`; `test`) picks the
+button prompt style. Xbox and keyboard show what each PS4 button is mapped to (the launcher's remaps,
+`GOW3_PAD_MAP` / `GOW3_KEY_MAP`; keyboard: the pack's Vintage keys, the sticks as WASD / arrow clusters). `xbox` draws the CC0 Free Input Prompts pack's Default Xbox icons (`third_party/input-prompts/xbox/`).
 Launcher > Controls > "In-game button prompts" sets it (until chosen: the Gamepad names style). The port's Load
 list follows: `run.py` writes `prompts/style/Cross|Circle|Square.png` into the game UI cache at each start
 (`overlay_prompts`) and `gow3gpu_choice_style` reads them. For a style other than PlayStation, `ue4_override.apply` puts edited copies of the game's prompt textures in
@@ -46,6 +47,12 @@ study-glyphs.md; the Xbox and keyboard sets (G3, G4) and the bone textures (G2) 
   module's folder is `_internal\`, whose parent is the install folder, the same rule as `patches.py`'s `patches/`.
   A missing icon raises ValueError: the style is not applied (the pearl ones: only they stay PlayStation).
 - `place` clears the whole box before drawing, so none of the PS4 art shows around a smaller icon.
+- Icons are cropped at alpha > `VISIBLE` (16): the pack's keys fade to 1-2 out to the canvas edge.
+- `STRETCH`: `L1_Active` / `R1_Active` are shown 1.45x wider than tall (inventory, Button Layout, bestiary
+  Friendlies), so their icons are drawn that much narrower. The bestiary's Enemies / Bosses pages show them about
+  square: there they look narrow (open, T-G4).
+- `DEFAULT_KEYS` / `DEFAULT_PAD` must equal the launcher's `CONTROLS` and `runtime_pad.c` (a test compares the
+  launcher's).
 - An unknown style counts as `playstation`. A game build whose atlas does not parse prints "Button prompts: not
   available for this game build" and the pak is written without it.
 
@@ -73,6 +80,8 @@ study-glyphs.md; the Xbox and keyboard sets (G3, G4) and the bone textures (G2) 
   fine, it seems to be working well." Clean exit.
 - T-G3b (PC, 01.02): run by the user from the launcher, Xbox then PlayStation: "everything looks good, the load
   menu also works".
+- T-G4 (PC, 01.02): run by the user from the launcher. Keyboard and remaps work; after the crop and squeeze fixes
+  "Everything looks good" except the bestiary's Enemies / Bosses tabs (narrow keys, see Invariants).
 
 ## History and pitfalls
 

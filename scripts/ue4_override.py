@@ -460,9 +460,11 @@ def preset_cvars(game, quality):
 
 
 def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_menu=False,
-          infinite_ammo=False, hzb=False, effects='75', aa='taa', voice='', graphics=None, glyphs=''):
+          infinite_ammo=False, hzb=False, effects='75', aa='taa', voice='', graphics=None, glyphs='',
+          controls=('', '')):
     """Writes or removes the override pak. Returns a short description of the active state.
-    `glyphs`: the button prompt style (medievil.ini button_prompts, ue4_glyphs.STYLES).
+    `glyphs`: the button prompt style (medievil.ini button_prompts, ue4_glyphs.STYLES); `controls`: the
+    launcher's (GOW3_KEY_MAP, GOW3_PAD_MAP), so the prompts show the mapped key or pad button.
     `graphics`: the graphics settings' console variables (graphics_options.graphics_cvars, run.py), which
     replace the quality preset's; a diagnostic preset (diag_*) still adds its own on top."""
     pak = paks_dir(game) / PAK_NAME
@@ -562,7 +564,7 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
     # Button prompts: the game's PS4 textures with other pixels (study-glyphs.md).
     if glyphs:
         try:
-            files.update(ue4_glyphs.files(lambda name: read_file(game, name), glyphs))
+            files.update(ue4_glyphs.files(lambda name: read_file(game, name), glyphs, *controls))
         except (ValueError, FileNotFoundError) as error:
             print(f'Button prompts: not available for this game build ({error})', flush=True)
             glyphs = ''

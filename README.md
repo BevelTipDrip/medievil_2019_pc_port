@@ -168,9 +168,11 @@ Captured on Windows 11 (RTX 5080) with this port.
   the game's 7.1 output down itself (SDL's downmix played it about 13 dB too quietly).
 - Controller (DualSense, Xbox and others, through SDL3) and keyboard, both remappable. Every
   connected controller is read, also while another window has the focus, and the log names each
-  one. Controls > Gamepad names (PlayStation / Xbox) only relabels the launcher; the game keeps its
-  PS4 button prompts. Controls > Stick range (90% to 70%) counts less tilt as a full push, for
-  sticks that never reach the edge (some hall-effect pads).
+  one. Controls > Controller type (PlayStation / Xbox) labels the launcher's buttons; Controls >
+  In-game button prompts (PlayStation / Xbox / Keyboard) changes the game's own prompts and the
+  Load list's, showing your remapped buttons and keys (Xbox and keyboard icons: Julio Cacko's Free
+  Input Prompts, CC0, third_party/input-prompts). Controls > Stick range (90% to 70%) counts less
+  tilt as a full push, for sticks that never reach the edge (some hall-effect pads).
 - Saving and loading; save backups before every start.
 - **All the game's languages** (launcher > Game > Language): every PS4 system language can be
   picked, Polish included, whatever region your copy is from (a language the game has no text

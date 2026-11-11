@@ -249,6 +249,30 @@ the cache's `PS4_*`. The in-game menu keeps the key (it rewrites only its own li
 then with PlayStation: "everything looks good, the load menu also works". The log kept is the last start's
 (Xbox, 05:40; the Load list's 8 entries in the styled look).
 
+## T-G4: keyboard, remaps, sizes (2026-11-11, launched by the user from the launcher, with Claude's build, logs `data/glyphs-g4-keyboard-0102.log`, `data/glyphs-g4b-keyboard-0102.log`)
+
+Launcher > Controls: "Gamepad names" is now "Controller type" (the user); "In-game button prompts" gains Keyboard.
+Each prompt now shows what the PS4 button is mapped to: Xbox follows the pad remaps (`GOW3_PAD_MAP`: Cross on b
+shows B), Keyboard the key remaps (`GOW3_KEY_MAP`) with the pack's Vintage key caps (84 keys copied into
+`third_party/input-prompts/keyboard/`); the sticks are fixed WASD / arrow keys (`runtime_pad.c`), drawn as an
+inverted-T cluster. A key without a picture keeps the PS4 art and the start log names it. The defaults equal the
+launcher's `CONTROLS` (a test checks).
+
+First run (user's screenshots, NVIDIA 05:59-06:01): remaps worked (one key remapped, Cross on X), but
+- `L1_Active` / `R1_Active` are shown 1.45x wider than tall (measured from the T-G1b test squares: 107x73 in the
+  inventory, 53x37 in the bestiary and on Button Layout): round keys became ovals, LB / RB wider plates (the user:
+  "Xbox is also stretched, it's just harder to tell");
+- the pack's keys fade to alpha 1-2 out to the 128 px edge, so the crop to "visible" kept a 16 px empty border: every
+  key drew at 75 % and the WASD cluster had gaps (the user: "close the gap more").
+Fixes: icons are cropped at alpha > 16, and the two tab textures get icons drawn 1.45x narrower (`STRETCH`). The
+user chose to keep the pack's wide caps for Space / Shift / Enter / Tab (a round label-cap prototype was dropped) and
+the inverted T over a 2x2 cluster.
+
+Second run (screenshots 06:21-06:22): "Everything looks good", except the bestiary: the Friendlies page shows the
+tab keys round, the Enemies and Bosses pages narrow (ring 41x36 px on Friendlies, 41x54 on Enemies / Bosses): the
+bestiary draws `L1_Active` in a 1.45:1 box on one page and about square on the others; one texture cannot be right
+on both. Open: what in `BestiaryMenu` sets the two shapes.
+
 Done (was "also to do"): the port's own Load list (runtime/load-list-details) draws the game's `PS4_Cross` / `Circle` /
 `Square` prompts from the game UI cache; with another style it must use that style's glyphs.
 
