@@ -188,7 +188,7 @@ _UE4 config overrides, eboot patches, game hooks, particles, render scale, boot 
 |---|---|---|---|---|---|
 | [4k-memory](ue4/4k-memory.md) | active | on / off | lab | perf_4k_memory, GOW3_PS4_MEMORY, GOW3_DMEM_MB | 4K memory sizes: 7,104 MB guest memory and the 512 MB framebuffer pool above 1080p (perf_4k_memory) |
 | [button-prompts](ue4/button-prompts.md) | active | off / off | deck-lab |  | Button prompts: the game's PS4 prompt textures re-drawn in the override pak (medievil.ini button_prompts) |
-| [camera-moves](ue4/camera-moves.md) | active | off / off | deck-lab | GOW3_CAMERA_OFF | The free camera's automatic moves, each switchable off (GOW3_CAMERA_OFF, override pak) |
+| [camera-moves](ue4/camera-moves.md) | active | off / off | deck-lab |  | The free camera's automatic moves, each switchable live (menu Controls tab, medievil.ini camera_*) |
 | [debug-menu-0102](ue4/debug-menu-0102.md) | active | off / off | deck-lab | GOW3_DEBUG_MENU_TRACE | "Debug menu on 01.02: L1 + R1 + R3 (the game's own combo); no input edit; GetAllowDebugMenu trace probe" |
 | [early-z-pass-off](ue4/early-z-pass-off.md) | superseded | off / off | lab |  | r.EarlyZPass=0 alone (PS4 depth prepass off) |
 | [effects-resolution](ue4/effects-resolution.md) | active | on / on | lab |  | Effects resolution: r.SeparateTranslucencyScreenPercentage 100 / 75 / 50, live, 75% default |

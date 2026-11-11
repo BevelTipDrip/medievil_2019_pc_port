@@ -189,7 +189,7 @@ hiding objects only for its view, and the free area's `ActiveTime` / blends.
 - Not covered: camera shakes (`CameraShake_*`, separate from yaw), FOV changes (Kardok), sequences (`isSequencePlaying`
   stops TickCamera), `ComputeStickyZ` (height only).
 
-## 6. Built: `GOW3_CAMERA_OFF` (scripts/ue4_camera.py, override pak, 2026-11-11)
+## 6. First build: `GOW3_CAMERA_OFF` (override pak, 2026-11-11; replaced by section 7)
 
 Comma-separated moves to turn off; each is a same-size `.uexp` edit (count-checked, one variant per build where they
 differ), all or nothing per move, a move whose bytes are missing is skipped with a log line. Checked against both
@@ -207,3 +207,27 @@ builds' files (E:\MediEvil\CUSA11227 = 01.00, CUSA11227-0102): every move applie
 FreeSimple (the same file in both builds, a copy of 01.00's Free; the research's FreeSimple uexp offsets were wrong)
 and 01.00's `pitch_return` / `keepout` sites were found by the same bytes and the same jump targets, not
 disassembled [I]. F3 (recentre latch) is not built: the user will judge it in play.
+
+**T-CM1** (2026-11-11, PC, 01.02, `36deef0`, all six moves off through the pak, log `data/camera-moves-t-cm1.log`):
+the user: "everything seems to work great". The launcher line confirmed "camera moves off: follow, swing, suggest,
+keepout, run_zoom, pitch_return".
+
+## 7. Built: live switches in the menu's Controls tab (`10beddc`, 2026-11-11)
+
+The user asked for the switches live in the in-game menu, in a new Controls tab. The override-pak route was removed
+(pak-edited bytes would hide the originals from the live hook). `src/camera_hook.h` / `probe.c`:
+
+- Hook: `UMedievilSpringArm::ComputeCameraSimple`'s exec, slot 0x4ecc7f8 in both builds (name string 0x3c5627a /
+  0x3c5967a, thunk 0x65b290 / 0x65d570 for 01.00 / 01.02; checked: slot -> thunk, slot - 8 -> name, thunk prologue).
+  Callers (camera package name tables): Free, FreeSimple, FreeSuggestDirection (through Free's), Kardok, DanCam,
+  SplineConstraint.
+- From the call's FFrame: Node = the calling ComputeCamera (Outer = area class), Object = the area. Searched once
+  each: the area class's own functions (follow, run_zoom, pitch_return), its parent chain (keepout), the area's class
+  below it (suggest), the camera manager class = Outer of the InputRotation property in the x 2.0 statement (swing).
+  UStruct Children +0x38, UField Next +0x28 (inferred from the 4.21 layout; Script +0x48 and SuperStruct +0x30 were
+  already used by the mouse hook).
+- The patterns are the pak ones (jump targets are in-memory offsets on disk too); counted in every extracted camera
+  package: unique in their target classes. SplineConstraint has the x 2.0 bytes once and no 400 test, hence the
+  "together" rule for the two follow edits.
+- Settings: `medievil.ini` `camera_follow` ... `camera_pitch_return`, 1 = the game's move (default); the launcher keeps
+  unknown keys. Fix built, not run.

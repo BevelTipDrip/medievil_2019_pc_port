@@ -605,7 +605,8 @@ study-camera-moves.md	135	3	24-one-shot-control-rotation-writes-outside-the-came
 study-camera-moves.md	143	2	3-recommended-intervention-sets	3. Recommended intervention sets
 study-camera-moves.md	160	2	4-free-mode-in-scripted-areas-design-not-yet-researched-in-depth	4. Free mode in scripted areas (design, not yet researched in depth)
 study-camera-moves.md	171	2	5-risks-and-unknowns	5. Risks and unknowns
-study-camera-moves.md	192	2	6-built-gow3_camera_off-scriptsue4_camerapy-override-pak-2026-11-11	6. Built: `GOW3_CAMERA_OFF` (scripts/ue4_camera.py, override pak, 2026-11-11)
+study-camera-moves.md	192	2	6-first-build-gow3_camera_off-override-pak-2026-11-11-replaced-by-section-7	6. First build: `GOW3_CAMERA_OFF` (override pak, 2026-11-11; replaced by section 7)
+study-camera-moves.md	215	2	7-built-live-switches-in-the-menus-controls-tab-10beddc-2026-11-11	7. Built: live switches in the menu's Controls tab (`10beddc`, 2026-11-11)
 study-deck-apu-deep-dive.md	1	1	study-the-decks-apu-and-linux-platform-in-depth-for-stage-b	Study: the Deck's APU and Linux platform, in depth, for stage B
 study-deck-apu-deep-dive.md	19	2	answer	Answer
 study-deck-apu-deep-dive.md	65	2	1-the-core-and-memory-seen-from-stage-b	1. The core and memory, seen from stage B
