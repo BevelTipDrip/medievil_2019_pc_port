@@ -335,6 +335,6 @@ if __name__ == '__main__':
         (out / Path(name).name).write_bytes(data)
         if name == ATLAS:
             strip(data, CELL)[0].crop((0, 0, CELL * len(ATLAS_CELLS), CELL)).save(out / 'atlas_row.png')
-        else:
+        elif texture(data):  # the menus' size edits are not pictures
             whole(data)[0].save(out / (Path(name).stem + '.png'))
     print(f'{style}: written to {out}')

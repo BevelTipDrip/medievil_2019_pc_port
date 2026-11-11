@@ -10,16 +10,33 @@ cd -- "$(dirname -- "$0")/../.."
 source ./msys2-env.sh
 [[ -f out/medievil-runtime.exe && -f out/medievil-gpu-check.exe && -f out/medievil-play.exe ]] || { echo 'Build first: bash build.sh' >&2; exit 1; }
 
-# A Windows Python (not MSYS2's) for PyInstaller.
+# A Windows Python (not MSYS2's) for PyInstaller: the newest 3.10+ installed. The frozen MediEvil.exe
+# runs the launcher, run.py and the scripts with it, and they use 3.9 / 3.10 features; Python 3.8
+# also caps Pillow at 10.4, which cannot encode the DXT5 button prompts (2.2.0 shipped 3.8 by mistake).
+version_of() { "$1" -c 'import sys; print("%d%03d" % sys.version_info[:2])' 2>/dev/null | tr -d '\r'; }
 python=${WINPYTHON:-}
 if [[ -z $python ]]; then
-    for candidate in /c/Python3*/python.exe "${LOCALAPPDATA:-/c/Users/$USER/AppData/Local}"/Programs/Python/Python3*/python.exe; do
-        [[ -x $candidate ]] && python=$candidate
+    local_appdata=$(cygpath -u "${LOCALAPPDATA:-C:\\Users\\$(id -un)\\AppData\\Local}")
+    best=0
+    for candidate in /c/Python3*/python.exe "/c/Program Files"/Python3*/python.exe \
+                     "$local_appdata"/Programs/Python/Python3*/python.exe "$local_appdata"/Python/pythoncore-3*/python.exe; do
+        [[ -x $candidate ]] || continue
+        version=$(version_of "$candidate")
+        if [[ -n $version ]] && (( version > best )); then
+            best=$version
+            python=$candidate
+        fi
     done
 fi
-[[ -n $python ]] || { echo 'Need a Windows Python 3 (python.org) or WINPYTHON=path\to\python.exe' >&2; exit 1; }
+[[ -n $python ]] || { echo 'Need a Windows Python 3.10+ (python.org) or WINPYTHON=path\to\python.exe' >&2; exit 1; }
+(( $(version_of "$python") >= 3010 )) || { echo "Need Windows Python 3.10 or newer, not $python" >&2; exit 1; }
+echo "Freezing with $python ($("$python" --version | tr -d '\r'))"
 # Windows Python needs USERPROFILE (some MSYS2 shells start without it).
 export USERPROFILE=${USERPROFILE:-$(cygpath -w "/c/Users/$(id -un)")}
+# A venv made from another Python version is made again.
+if [[ -x out/pyenv/Scripts/python.exe && $(version_of out/pyenv/Scripts/python.exe) != "$(version_of "$python")" ]]; then
+    rm -rf out/pyenv
+fi
 if [[ ! -x out/pyenv/Scripts/python.exe ]]; then
     "$python" -m venv out/pyenv
 fi

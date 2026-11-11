@@ -1,6 +1,6 @@
 ---
 id: python-test-upkeep
-title: Python test suite upkeep: stale God of War III tests moved to MediEvil, Linux-only and Pillow-less skips, version pin
+title: Python upkeep: test suite (stale GoW3 tests, Linux-only and Pillow-less skips, version pin) and the Windows package's Python (3.10+)
 area: tooling
 status: chore
 platforms: all
@@ -9,7 +9,7 @@ default_deck: n/a
 origin: ours
 class: G
 commits: 4e5696e9a8, d75c1c8c30
-files: tests/test_patches.py, tests/test_packaged_vulkan.py, tests/test_ue4_glyphs.py, tests/test_launcher_controls.py
+files: tests/test_patches.py, tests/test_packaged_vulkan.py, tests/test_ue4_glyphs.py, tests/test_launcher_controls.py, packaging/windows/package.sh
 symbols: rules_file, LINUX_PATHS
 switches:
 tests:
@@ -37,3 +37,12 @@ WSL's Python 3.13 (158 OK), 2026-11-11.
 ## Evidence
 
 - 2026-11-11: before, 8 failures with Python 3.14 (6 GoW3 profile tests, 2 Linux-path tests); after, none.
+
+## History and pitfalls
+
+- 2026-11-11: the Windows packages up to 2.2.0 were frozen with Python 3.8 (`package.sh` took the last
+  `Python3*` folder in name order: Python38 after Python310), so the shipped launcher and scripts ran on 3.8 and
+  Pillow 10.4: `mods.py`'s `Path.is_relative_to` failed, the DXT5 prompts fell back to PlayStation. `package.sh`
+  now takes the newest Python 3.10+ (also the Python install manager's `pythoncore-3.*`), refuses older ones and
+  rebuilds `out/pyenv` when its version differs; 2.2.1 is frozen with 3.14 (checked inside the frozen exe: Pillow
+  13 encodes DXT5, both prompt styles build all 11 files).

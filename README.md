@@ -54,6 +54,13 @@ What this fork has done, and what is next. Checked items are in a release or on 
 - [x] Xbox and keyboard button prompts in the game, following your remaps; keys set by pressing them
 - [ ] Mouse look and menu mouse, camera options
 
+## What's new in 2.2.1
+
+- **Windows build fix.** 2.2.0's `MediEvil.exe` (and the 2.1 releases') was built with an old Python 3.8 by
+  mistake: mods that replace game files failed to start, and with Xbox / Keyboard prompts the inventory's and
+  tutorials' button pictures stayed PlayStation. It is now built with Python 3.14. The Linux / Deck AppImage was
+  not affected.
+
 ## What's new in 2.2.0
 
 - **Xbox and keyboard button prompts.** Launcher > Controls > **In-game button prompts**: PlayStation (the game's
