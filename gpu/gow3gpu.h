@@ -31,12 +31,18 @@ void gow3gpu_dump_recording_barriers(void);
 int gow3gpu_text_input_begin(const char *initial_utf8, const char *prompt_utf8);
 int gow3gpu_text_input_poll(char *out_utf8, uint64_t size);
 /* A list for the player to choose from, drawn over the game (save list). images: a PNG path per
- * item drawn beside it (NULL array or entry: none). begin: 0 when no window exists.
- * poll: -1 while open, -2 cancelled, else the chosen index. */
-int gow3gpu_choice_begin(const char *title, const char *const *items, const char *const *images, int count, int focus);
+ * item (NULL array or entry: none). details / more: per item, the text beside the list and the
+ * text Square switches to (NULL: the list alone, each picture beside its item). begin: 0 when no
+ * window exists. poll: -1 while open, -2 cancelled, else the chosen index. */
+int gow3gpu_choice_begin(const char *title, const char *const *items, const char *const *images,
+                         const char *const *details, const char *const *more, int count, int focus);
 int gow3gpu_choice_poll(void);
+/* The game's menu look for lists with details: `dir` is the game UI cache
+ * (scripts/game_ui_assets.py: menu/frame_options.png, prompts/PS4_Cross / Circle / Square.png,
+ * fonts/title.ttf, fonts/text.ttf). Loaded once; a missing file leaves the plain look. */
+void gow3gpu_choice_style(const char *dir);
 /* The save list reads its buttons (PS4 button bits: up 0x10, down 0x40, circle 0x2000,
- * cross 0x4000) from this function every frame while it is open. */
+ * cross 0x4000, square 0x8000) from this function every frame while it is open. */
 void gow3gpu_choice_set_input(uint32_t (*buttons)(void));
 /* 1 while the in-game settings menu is open: the game's pad input is held neutral. */
 int gow3gpu_overlay_captures_input(void);

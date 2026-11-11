@@ -15,6 +15,7 @@
 #include <boost/asio/io_context.hpp>
 #include "common/polyfill_thread.h"
 #include "video_core/renderdoc.h"
+#include <cstdio>
 #include <cstring>
 #include <mutex>
 #include <string>
@@ -417,7 +418,7 @@ extern "C" int gow3gpu_text_input_begin(const char* initial, const char* prompt)
 }
 
 extern "C" int gow3gpu_choice_begin(const char* title, const char* const* items, const char* const* images,
-                                    int count, int focus) {
+                                    const char* const* details, const char* const* more, int count, int focus) {
     if (!g_window || count <= 0) return 0;
     // Pictures are decoded here, on the game's thread, before the list is shown.
     std::vector<Gow3Png::Image> pictures(count);
@@ -426,9 +427,45 @@ extern "C" int gow3gpu_choice_begin(const char* title, const char* const* items,
             LOG_WARNING(Lib_SaveDataDialog, "save list: no picture from {}", images[i]);
         }
     }
+    const auto texts = [count](const char* const* list) {
+        std::vector<std::string> out;
+        for (int i = 0; list && i < count; ++i) {
+            out.emplace_back(list[i] ? list[i] : "");
+        }
+        return out;
+    };
     Gow3Overlay::BeginChoice(title ? title : "", std::vector<std::string>(items, items + count),
-                             std::move(pictures), focus);
+                             std::move(pictures), texts(details), texts(more), focus);
     return 1;
+}
+
+extern "C" void gow3gpu_choice_style(const char* dir) {
+    static std::once_flag once;
+    std::call_once(once, [dir = std::string(dir ? dir : "")] {
+        Gow3Overlay::ChoiceStyleFiles files;
+        const char* const images[] = {"menu/frame_options.png", "prompts/PS4_Cross.png", "prompts/PS4_Circle.png",
+                                      "prompts/PS4_Square.png"};
+        for (int i = 0; i < 4; ++i) {
+            if (!Gow3Png::LoadRgba((dir + "/" + images[i]).c_str(), files.images[i])) {
+                LOG_INFO(Lib_SaveDataDialog, "save list: plain look (no {} in {})", images[i], dir);
+                return;
+            }
+        }
+        const char* const fonts[] = {"fonts/title.ttf", "fonts/text.ttf"};
+        for (int i = 0; i < 2; ++i) {
+            FILE* f = std::fopen((dir + "/" + fonts[i]).c_str(), "rb");
+            if (!f) {
+                LOG_INFO(Lib_SaveDataDialog, "save list: plain look (no {} in {})", fonts[i], dir);
+                return;
+            }
+            unsigned char chunk[65536];
+            for (size_t got; (got = std::fread(chunk, 1, sizeof(chunk), f)) > 0;) {
+                files.fonts[i].insert(files.fonts[i].end(), chunk, chunk + got);
+            }
+            std::fclose(f);
+        }
+        Gow3Overlay::SetChoiceStyle(std::move(files));
+    });
 }
 
 extern "C" int gow3gpu_choice_poll(void) {

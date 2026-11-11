@@ -10,10 +10,21 @@ int64_t runtime_file_open(const char *path, int flags, int mode) { (void)path; (
 int64_t runtime_file_read(int fd, void *buffer, uint64_t size) { (void)fd; (void)buffer; (void)size; return -1; }
 int64_t runtime_file_close(int fd) { (void)fd; return 0; }
 static int choice_next=-1;
-int gow3gpu_choice_begin(const char *title, const char *const *items, const char *const *images, int count, int focus) { (void)title; (void)items; (void)images; (void)focus; return count>0; }
+int gow3gpu_choice_begin(const char *title, const char *const *items, const char *const *images, const char *const *details,
+                         const char *const *more, int count, int focus) { (void)title; (void)items; (void)images; (void)details; (void)more; (void)focus; return count>0; }
 int gow3gpu_choice_poll(void) { return choice_next; }
+void gow3gpu_choice_style(const char *dir) { (void)dir; }
+const char *runtime_file_user_dir(void) { return "."; }
 int runtime_savedata_param(int32_t user, const char *dir, void *param) { (void)user; (void)dir; (void)param; return -1; }
 int runtime_savedata_icon(int32_t user, const char *dir, char *out, size_t size) { (void)user; (void)dir; (void)out; (void)size; return -1; }
+void runtime_save_trace_caller(void *return_address, char *out, size_t size) { (void)return_address; if (size) out[0]=0; }
+int runtime_saveinfo_read(int32_t user, const char *dir, RuntimeSaveInfo *info) { (void)user; (void)dir; (void)info; return -1; }
+int runtime_saveinfo_level_index(const char *name) { (void)name; return -1; }
+int runtime_saveinfo_picture(int index, char *out, size_t size) { (void)index; (void)out; (void)size; return -1; }
+void runtime_saveinfo_text(const RuntimeSaveInfo *info, int level, char *line, size_t line_size,
+                           char *details, size_t details_size, char *more, size_t more_size) {
+    (void)info; (void)level; (void)line; (void)line_size; (void)details; (void)details_size; (void)more; (void)more_size;
+}
 
 int main(void) {
     unsigned char param[128]={0}, result[64]={0}; /* the game zeroes the pointers it does not want */
@@ -48,19 +59,26 @@ int main(void) {
     /* Save list: the player's choice comes back as the save directory. */
     char names[2][32]={"SAVE0001","SAVE0002"}, chosen[32];
     unsigned char items[64]={0}, list[128]={0}, out[64]={0};
-    const char *names_ptr=names[0]; uint32_t name_count=2; const char *new_title="New";
-    memcpy(items+16,&names_ptr,8); memcpy(items+24,&name_count,4); memcpy(items+32,&new_title,8);
+    /* newItem points to OrbisSaveDataDialogNewItem (title first), not to the title itself. */
+    const char *names_ptr=names[0]; uint32_t name_count=2; const char *new_item[4]={"New",0,0,0};
+    const char **new_item_ptr=new_item;
+    memcpy(items+16,&names_ptr,8); memcpy(items+24,&name_count,4); memcpy(items+32,&new_item_ptr,8);
     unsigned char *items_ptr=items; char *chosen_ptr=chosen;
     list[52]=1; list[56]=2; memcpy(list+72,&items_ptr,8);
     memcpy(out+16,&chosen_ptr,8);
     assert(save_init()==0 && save_open(list)==0 && save_status()==DIALOG_RUNNING);
-    choice_next=2; /* entries: New save, SAVE0001, SAVE0002 */
+    choice_next=2; /* Load list entries: Continue, SAVE0001, SAVE0002 */
     assert(save_status()==DIALOG_FINISHED && save_result(out)==0 && !strcmp(chosen,"SAVE0002"));
     memcpy(&value,out+4,4); assert(value==0);
     memcpy(&value,out+8,4); assert(value==1);
     assert(save_open(list)==0);
+    choice_next=0; /* Continue: the newest save (no dates here: the first listed) */
+    assert(save_status()==DIALOG_FINISHED && save_result(out)==0 && !strcmp(chosen,"SAVE0001"));
+    list[56]=1; /* a save list keeps the game's new-save item */
+    assert(save_open(list)==0);
     choice_next=0;
-    assert(save_status()==DIALOG_FINISHED && save_result(out)==0 && chosen[0]==0); /* new save */
+    assert(save_status()==DIALOG_FINISHED && save_result(out)==0 && chosen[0]==0);
+    list[56]=2;
     assert(save_open(list)==0);
     choice_next=-2;
     assert(save_status()==DIALOG_FINISHED && save_result(out)==0);

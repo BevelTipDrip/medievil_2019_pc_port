@@ -104,6 +104,21 @@ int runtime_savedata_param(int32_t user, const char *dir, void *param);
 int runtime_savedata_icon(int32_t user, const char *dir, char *out, size_t size);
 /* Save trace ("Save trace:" log lines): " from guest+0x..." for a guest return address, else "". */
 void runtime_save_trace_caller(void *return_address, char *out, size_t size);
+/* Host directory of a save (its files); 0 when the name is valid. */
+int runtime_savedata_dir(int32_t user, const char *dir, char *out, size_t size);
+/* MediEvil save details for the Load list (runtime_saveinfo.c). Bit N = LevelsEnum level N. */
+#define RUNTIME_SAVE_LEVELS 32
+typedef struct {
+    uint32_t levels_seen, unlocked, completed, chalices;
+    int32_t gold, life_bottles, bestiary, last_level, found;
+    float play_seconds;
+} RuntimeSaveInfo;
+int runtime_saveinfo_read(int32_t user, const char *dir, RuntimeSaveInfo *info);
+const char *runtime_saveinfo_level_name(int index);
+int runtime_saveinfo_level_index(const char *name);
+int runtime_saveinfo_picture(int index, char *out, size_t size);
+void runtime_saveinfo_text(const RuntimeSaveInfo *info, int level, char *line, size_t line_size,
+                           char *details, size_t details_size, char *more, size_t more_size);
 void runtime_thread_attach_host(const char *name);
 /* Name of a guest thread handle, or NULL when it is not a live thread. */
 const char *runtime_thread_name(void *handle);

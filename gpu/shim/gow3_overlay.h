@@ -58,10 +58,21 @@ void PollChoiceInput();
 void SetTextEntry(bool active, const std::string& prompt, const std::string& text);
 
 /// The game's save list: shown until the player chooses (arrows/D-pad, Enter/Cross) or
-/// cancels (Esc/Circle). `pictures`: one per item (empty = none), drawn beside its text.
-/// PollChoice: -1 while open, -2 cancelled, else the chosen index.
+/// cancels (Esc/Circle). `pictures`: one per item (empty = none). With `details` (per item, may
+/// be empty), the list is drawn on the left and the chosen item's picture and details on the
+/// right; Square / Tab switches the right side to its `more` text. Without, each picture is drawn
+/// beside its item. PollChoice: -1 while open, -2 cancelled, else the chosen index.
 void BeginChoice(const std::string& title, const std::vector<std::string>& items,
-                 std::vector<Gow3Png::Image> pictures, int focus);
+                 std::vector<Gow3Png::Image> pictures, std::vector<std::string> details,
+                 std::vector<std::string> more, int focus);
 int PollChoice();
+
+/// The game's menu look for the save list with details (scripts/game_ui_assets.py): the
+/// Options menu frame, the Cross / Circle / Square prompts, the title and text fonts.
+struct ChoiceStyleFiles {
+    Gow3Png::Image images[4]; ///< frame, cross, circle, square
+    std::vector<unsigned char> fonts[2]; ///< title, text (TrueType / OpenType)
+};
+void SetChoiceStyle(ChoiceStyleFiles files);
 
 } // namespace Gow3Overlay

@@ -281,7 +281,7 @@ static struct {
     int lead;         /* entries before the saves: "New save" or "Continue" (0 / 1) */
     int continue_dir; /* the save "Continue" loads (the newest), or -1 */
 } save_dialog;
-static char save_labels[33][200], save_icons[33][720];
+static char save_labels[33][256], save_icons[33][720], save_details[33][512], save_more[33][2048];
 /* A save's slot is its folder number (@MediEvil0003 = slot 3): it never changes, while the
  * list order follows the dates (the game saves into the newest, study-save-slots.md). */
 static void slot_name(char *out, size_t size, const char *dir, const char *title) {
@@ -313,6 +313,27 @@ static void save_label(char *out, size_t size, const char *dir, const char *head
      * heading line. The game's own title is "SLOT DATA" on every save. */
     snprintf(out,size,"%s%s%s%s%.60s%s%s",heading,heading[0] ? "\n" : "",slot,heading[0] && subtitle[0] ? " - " : "\n",
              subtitle,subtitle[0] ? "\n" : "",when);
+}
+/* List entry `n` for save `dir`: its label (plus a line of what it holds), the details beside the
+ * list, the full level list (Square) and the picture of the level it was saved in
+ * (runtime_saveinfo.c; the pictures come from the game's loading screens). */
+static void save_entry(int n, const char *dir, const char *heading, const char **labels, const char **icons,
+                       const char **details, const char **more) {
+    save_label(save_labels[n],sizeof(save_labels[n]),dir,heading);
+    labels[n]=save_labels[n]; details[n]=more[n]=NULL;
+    icons[n]=runtime_savedata_icon(USER_ID,dir,save_icons[n],sizeof(save_icons[n])) ? NULL : save_icons[n];
+    RuntimeSaveInfo info;
+    if (runtime_saveinfo_read(USER_ID,dir,&info)) return;
+    unsigned char param[RUNTIME_SAVE_PARAM_SIZE];
+    const int level_in=runtime_savedata_param(USER_ID,dir,param) ? -1 : runtime_saveinfo_level_index((const char *)param+128);
+    const int level=level_in>=0 ? level_in : info.last_level;
+    char line[96];
+    runtime_saveinfo_text(&info,level,line,sizeof(line),save_details[n],sizeof(save_details[n]),
+                          save_more[n],sizeof(save_more[n]));
+    const size_t used=strlen(save_labels[n]);
+    snprintf(save_labels[n]+used,sizeof(save_labels[n])-used,"\n%s",line);
+    details[n]=save_details[n]; more[n]=save_more[n];
+    if (!icons[n] && !runtime_saveinfo_picture(level,save_icons[n],sizeof(save_icons[n]))) icons[n]=save_icons[n];
 }
 static ABI int32_t save_init(void) { return dialog_init(2); }
 static ABI int32_t save_open(const unsigned char *p) {
@@ -355,7 +376,7 @@ static ABI int32_t save_open(const unsigned char *p) {
     }
     if (save_dialog.mode!=SAVE_MODE_LIST) return dialog_open_mode(2,p,52,5);
     uint32_t type; memcpy(&type,p+56,4);
-    const char *labels[33], *icons[33]; int n=0;
+    const char *labels[33], *icons[33], *details[33], *more[33]; int n=0;
     /* Load (type 2): MediEvil passes a new-save item here too, but loading it returns no save and
      * the game reopens the list (T-SV1). It becomes "Continue": the newest save. */
     save_dialog.continue_dir=-1;
@@ -367,19 +388,19 @@ static ABI int32_t save_open(const unsigned char *p) {
         }
     }
     if (save_dialog.continue_dir>=0) {
-        save_label(save_labels[n],sizeof(save_labels[n]),save_dialog.dirs[save_dialog.continue_dir],"Continue");
-        labels[n]=save_labels[n]; icons[n]=NULL; ++n;
+        save_entry(n,save_dialog.dirs[save_dialog.continue_dir],"Continue",labels,icons,details,more); ++n;
     } else if (save_dialog.has_new && type!=2) {
-        snprintf(save_labels[n],sizeof(save_labels[n]),"New save"); labels[n]=save_labels[n]; icons[n]=NULL; ++n;
+        snprintf(save_labels[n],sizeof(save_labels[n]),"New save");
+        labels[n]=save_labels[n]; icons[n]=details[n]=more[n]=NULL; ++n;
     }
     save_dialog.lead=n;
-    for (int i=0;i<save_dialog.dir_count;++i) {
-        save_label(save_labels[n],sizeof(save_labels[n]),save_dialog.dirs[i],""); labels[n]=save_labels[n];
-        icons[n]=runtime_savedata_icon(USER_ID,save_dialog.dirs[i],save_icons[n],sizeof(save_icons[n])) ? NULL : save_icons[n];
-        ++n;
-    }
+    for (int i=0;i<save_dialog.dir_count;++i) { save_entry(n,save_dialog.dirs[i],"",labels,icons,details,more); ++n; }
     const char *title=type==1 ? "Save game" : type==2 ? "Load game" : "Delete save";
-    if (!n || !gow3gpu_choice_begin(title,labels,icons,n,0)) {
+    { /* The game's menu look (scripts/game_ui_assets.py); loaded once, missing files: plain. */
+        char style[720]; snprintf(style,sizeof(style),"%s/cache/game_ui",runtime_file_user_dir());
+        gow3gpu_choice_style(style);
+    }
+    if (!n || !gow3gpu_choice_begin(title,labels,icons,details,more,n,0)) {
         printf("Runtime: SaveDataDialog list (%s): %s\n",title,n ? "no window, cancelled" : "no saves, cancelled");
         save_dialog.result=SAVE_RESULT_CANCELED;
         dialogs[2].status=DIALOG_FINISHED; dialogs[2].button=0;

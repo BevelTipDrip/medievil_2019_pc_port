@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cctype>
 #include <cfloat>
 #include <chrono>
 #include <cmath>
@@ -10,6 +11,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <mutex>
+#include <string_view>
 #include <vector>
 
 #include <SDL3/SDL.h>
@@ -85,6 +87,19 @@ std::string text_entry_prompt, text_entry_text;
 std::atomic<bool> choice_active{false};
 std::string choice_title;
 std::vector<std::string> choice_items;
+std::vector<std::string> choice_details, choice_more; // per item; empty: the plain list
+bool choice_expanded = false;                           // Square: `more` in place of `details`
+// The game's menu look for the list with details (SetChoiceStyle): images become textures on the
+// present thread (UpdateChoiceTextures); both fonts and all textures, or the plain look.
+struct ChoiceStyle {
+    Gow3Png::Image pending[4]; // frame, cross, circle, square
+    ImTextureData* textures[4] = {};
+    ImFont* title = nullptr;
+    ImFont* text = nullptr;
+    bool Ready() const {
+        return title && text && textures[0] && textures[1] && textures[2] && textures[3];
+    }
+} choice_style;
 int choice_index = 0;
 std::atomic<int> choice_result{-1}; // -1 open, -2 cancelled, else the chosen index
 // Save pictures: decoded by BeginChoice, made textures on the present thread (null = none).
@@ -996,7 +1011,245 @@ void TextEntryBox() {
     ImGui::End();
 }
 
+std::vector<std::string_view> SplitLines(const std::string& text) {
+    std::vector<std::string_view> lines;
+    const std::string_view all(text);
+    for (size_t begin = 0;;) {
+        const size_t end = all.find('\n', begin);
+        lines.push_back(all.substr(begin, end == std::string_view::npos ? std::string_view::npos : end - begin));
+        if (end == std::string_view::npos) {
+            return lines;
+        }
+        begin = end + 1;
+    }
+}
+
+// The save list in MediEvil's Options menu look (frame, fonts and button prompts from the game,
+// scripts/game_ui_assets.py): the saves on the left, the chosen one's level picture and details
+// on the right, the prompts under the frame. Drawn directly, in the frame's own pixels (1181x870)
+// so it keeps its proportions. The texts come from runtime_saveinfo.c: an entry's first line is
+// its name ("Continue" or "Slot N"); details are "Label: value" lines; the level list is
+// "Name: state[, chalice]" lines under a heading.
+void StyledChoiceBox() {
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImDrawList* draw = ImGui::GetForegroundDrawList();
+    constexpr float FrameW = 1181.0f, FrameH = 870.0f;
+    // 76% of the height from 6% down: the prompts under the frame end at about 88%, above the title
+    // screen's copyright line (about 89%).
+    float width = viewport->WorkSize.y * 0.76f * FrameW / FrameH;
+    width = std::min(width, viewport->WorkSize.x * 0.94f);
+    const float height = width * FrameH / FrameW, u = height / FrameH;
+    const ImVec2 at(viewport->WorkPos.x + (viewport->WorkSize.x - width) * 0.5f,
+                    viewport->WorkPos.y + viewport->WorkSize.y * 0.06f);
+    const auto P = [&](float x, float y) { return ImVec2(at.x + x * u, at.y + y * u); };
+    constexpr ImU32 Cream = IM_COL32(240, 234, 220, 255), Gold = IM_COL32(245, 196, 30, 255),
+                    Green = IM_COL32(72, 226, 42, 255), Dim = IM_COL32(176, 166, 150, 255),
+                    White = IM_COL32(250, 248, 242, 255);
+    ImFont* const title_font = choice_style.title;
+    ImFont* const font = choice_style.text;
+    const auto text = [&](ImFont* face, float px, ImVec2 pos, ImU32 color, std::string_view s) {
+        draw->AddText(face, px * u, pos, color, s.data(), s.data() + s.size());
+    };
+    const auto text_width = [&](ImFont* face, float px, std::string_view s) {
+        return face->CalcTextSizeA(px * u, FLT_MAX, 0.0f, s.data(), s.data() + s.size()).x;
+    };
+
+    // The frame's transparent middle is filled as in the Options menu (opaque: the title screen's
+    // logo showed through), then the frame drawn over it.
+    draw->AddRectFilled(P(20, 106), P(1161, 768), IM_COL32(28, 19, 13, 255), 34.0f * u);
+    draw->AddImage(choice_style.textures[0]->GetTexRef(), at, ImVec2(at.x + width, at.y + height));
+    std::string heading = "-" + choice_title + "-";
+    std::transform(heading.begin(), heading.end(), heading.begin(),
+                   [](unsigned char c) { return char(std::toupper(c)); });
+    text(title_font, 66.0f, ImVec2(at.x + (width - text_width(title_font, 66.0f, heading)) * 0.5f, P(0, 112).y),
+         White, heading);
+
+    // Left: the saves, scrolled to keep the chosen one in view.
+    constexpr float ListX = 70.0f, ListTop = 205.0f, ListBottom = 742.0f, ListW = 450.0f;
+    constexpr float Big = 38.0f, Small = 25.0f, Line = 1.18f, Gap = 20.0f;
+    std::vector<float> tops, heights;
+    float total = 0.0f;
+    for (const std::string& item : choice_items) {
+        const float h = Big * Line + Small * Line * float(SplitLines(item).size() - 1);
+        tops.push_back(total);
+        heights.push_back(h);
+        total += h + Gap;
+    }
+    static float scroll = 0.0f;
+    const float view = ListBottom - ListTop;
+    if (!tops.empty()) {
+        const int i = std::clamp(choice_index, 0, int(tops.size()) - 1);
+        scroll = std::min(scroll, tops[i]);
+        scroll = std::max(scroll, tops[i] + heights[i] - view);
+        scroll = std::clamp(scroll, 0.0f, std::max(total - Gap - view, 0.0f));
+    }
+    draw->PushClipRect(P(ListX - 16, ListTop - 4), P(ListX + ListW, ListBottom), true);
+    for (int i = 0; i < int(choice_items.size()); ++i) {
+        const bool chosen = i == choice_index;
+        float y = ListTop + tops[i] - scroll;
+        if (y + heights[i] < ListTop - 4 || y > ListBottom) {
+            continue;
+        }
+        if (chosen) {
+            draw->AddRectFilled(P(ListX - 14, y - 4), P(ListX + ListW - 6, y + heights[i] + 4),
+                                IM_COL32(255, 214, 120, 26), 10.0f * u);
+        }
+        const auto lines = SplitLines(choice_items[i]);
+        for (size_t l = 0; l < lines.size(); ++l) {
+            const bool first = l == 0;
+            const ImU32 color = chosen && l < 2 ? Gold
+                                : first     ? (lines[0] == "Continue" ? Green : Cream)
+                                : l == 1    ? Cream
+                                            : Dim;
+            text(font, first ? Big : Small, P(ListX, y), color, lines[l]);
+            y += (first ? Big : Small) * Line;
+        }
+    }
+    draw->PopClipRect();
+    if (total - Gap > view) { // more saves than fit: a thin scroll bar
+        const float bar = view * view / (total - Gap), top = ListTop + (view - bar) * scroll / (total - Gap - view);
+        draw->AddRectFilled(P(ListX + ListW + 2, top), P(ListX + ListW + 7, top + bar), IM_COL32(200, 196, 190, 120),
+                            3.0f * u);
+    }
+
+    // Right: the chosen save's level picture and details, or (Square) every level in it.
+    constexpr float RightX = 548.0f, RightW = 552.0f;
+    const int i = choice_index;
+    float y = ListTop;
+    if (choice_expanded && !choice_more[i].empty()) {
+        constexpr float Size = 24.0f;
+        const auto lines = SplitLines(choice_more[i]);
+        const std::string_view header = "-LEVELS-";
+        text(font, 32.0f, P(RightX + (RightW - text_width(font, 32.0f, header) / u) * 0.5f, y), Green, header);
+        y += 32.0f * Line + 6.0f;
+        for (size_t l = 1; l < lines.size(); ++l) {
+            const std::string_view line = lines[l];
+            if (line.empty()) {
+                continue;
+            }
+            const size_t colon = line.find(": ");
+            const std::string_view name = line.substr(0, colon), state = colon == std::string_view::npos ? "" : line.substr(colon + 2);
+            text(font, Size, P(RightX, y), Cream, name);
+            const bool done = state.starts_with("completed");
+            text(font, Size, P(RightX + RightW * 0.64f, y), done ? White : Dim, done ? "Completed" : "Open");
+            if (state.find("chalice") != std::string_view::npos) {
+                text(font, Size, P(RightX + RightW * 0.84f, y), Gold, "Chalice");
+            }
+            y += Size * Line;
+        }
+    } else {
+        // The details sit under the picture: labels from its left edge (a small margin in), values
+        // from its middle (the user, 2026-11-10).
+        constexpr float PictureW = 448.0f, PictureH = PictureW * 9.0f / 16.0f;
+        const float picture_x = RightX + (RightW - PictureW) * 0.5f;
+        const float label_x = picture_x + 8.0f, value_x = picture_x + PictureW * 0.48f;
+        if (ImTextureData* tex = i < int(choice_textures.size()) ? choice_textures[i] : nullptr) {
+            draw->AddImage(tex->GetTexRef(), P(picture_x, y), P(picture_x + PictureW, y + PictureH));
+            draw->AddRect(P(picture_x - 2, y - 2), P(picture_x + PictureW + 2, y + PictureH + 2),
+                          IM_COL32(186, 186, 192, 255), 4.0f * u, 0, 2.5f * u);
+            y += PictureH + 18.0f;
+        }
+        constexpr float Size = 25.0f;
+        const std::string& details = choice_details[i];
+        for (const std::string_view line : SplitLines(details.empty() ? std::string("No details for this entry.") : details)) {
+            if (line.empty()) {
+                y += 10.0f;
+                continue;
+            }
+            const size_t colon = line.find(": ");
+            if (colon == std::string_view::npos) {
+                text(font, Size, P(label_x, y), Cream, line);
+            } else {
+                text(font, Size, P(label_x, y), Cream, line.substr(0, colon));
+                text(font, Size, P(value_x, y), Gold, line.substr(colon + 2));
+            }
+            y += Size * Line;
+        }
+    }
+
+    // The game's button prompts under the frame, as in its Options menu.
+    struct Prompt {
+        ImTextureData* icon;
+        const char* label;
+    };
+    const Prompt prompts[] = {{choice_style.textures[1], "SELECT"},
+                              {choice_style.textures[2], "GO BACK"},
+                              {choice_style.textures[3], choice_expanded ? "SUMMARY" : "DETAILS"}};
+    constexpr float Icon = 50.0f, Label = 36.0f, Space = 70.0f;
+    float row = 0.0f;
+    for (const Prompt& prompt : prompts) {
+        row += Icon + 12.0f + text_width(font, Label, prompt.label) / u + Space;
+    }
+    float x = (FrameW - (row - Space)) * 0.5f;
+    const float top = FrameH + 8.0f;
+    for (const Prompt& prompt : prompts) {
+        draw->AddImage(prompt.icon->GetTexRef(), P(x, top), P(x + Icon, top + Icon));
+        x += Icon + 12.0f;
+        text(font, Label, P(x, top + (Icon - Label) * 0.5f - 2.0f), White, prompt.label);
+        x += text_width(font, Label, prompt.label) / u + Space;
+    }
+}
+
+// The save list with details: the saves on the left (scrolling with the selection), the chosen
+// one's level picture and what it holds on the right; Square / Tab shows every level in it.
+void DetailedChoiceBox() {
+    if (choice_style.Ready()) {
+        StyledChoiceBox();
+        return;
+    }
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x + viewport->WorkSize.x * 0.5f,
+                                   viewport->WorkPos.y + viewport->WorkSize.y * 0.5f),
+                            ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(viewport->WorkSize.x * 0.62f, viewport->WorkSize.y * 0.72f), ImGuiCond_Always);
+    ImGui::SetNextWindowBgAlpha(0.94f);
+    constexpr ImGuiWindowFlags passive =
+        ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoFocusOnAppearing;
+    ImGui::Begin("##choice", nullptr, ImGuiWindowFlags_NoDecoration | passive);
+    ImGui::TextColored(ImVec4(0.85f, 0.72f, 0.45f, 1.0f), "%s", choice_title.c_str());
+    ImGui::Separator();
+    const float footer = ImGui::GetTextLineHeightWithSpacing() + ImGui::GetStyle().ItemSpacing.y * 2.0f;
+    const float body = std::max(ImGui::GetContentRegionAvail().y - footer, 1.0f);
+    ImGui::BeginChild("##choice_list", ImVec2(ImGui::GetContentRegionAvail().x * 0.42f, body), ImGuiChildFlags_None,
+                      passive);
+    for (int i = 0; i < int(choice_items.size()); ++i) {
+        if (i == choice_index) {
+            ImGui::TextColored(ImVec4(1.0f, 0.9f, 0.55f, 1.0f), "> %s", choice_items[i].c_str());
+            ImGui::SetScrollHereY(0.5f);
+        } else {
+            ImGui::Text("  %s", choice_items[i].c_str());
+        }
+        ImGui::Spacing();
+    }
+    ImGui::EndChild();
+    ImGui::SameLine();
+    ImGui::BeginChild("##choice_details", ImVec2(0.0f, body), ImGuiChildFlags_None, passive);
+    const int i = choice_index;
+    const std::string& more = choice_more[i];
+    if (choice_expanded && !more.empty()) {
+        ImGui::TextWrapped("%s", more.c_str());
+    } else {
+        if (ImTextureData* tex = i < int(choice_textures.size()) ? choice_textures[i] : nullptr) {
+            const float width = ImGui::GetContentRegionAvail().x;
+            const float height = std::min(width * 9.0f / 16.0f, body * 0.55f);
+            ImGui::Image(tex->GetTexRef(), ImVec2(height * 16.0f / 9.0f, height));
+            ImGui::Spacing();
+        }
+        const std::string& details = choice_details[i];
+        ImGui::TextWrapped("%s", details.empty() ? "No details for this entry." : details.c_str());
+    }
+    ImGui::EndChild();
+    ImGui::Separator();
+    ImGui::TextDisabled("Up/Down: choose   Cross (A) / Enter: load   Circle (B) / Esc: cancel   Square (X) / Tab: %s",
+                        choice_expanded ? "summary" : "all levels");
+    ImGui::End();
+}
+
 void ChoiceBox() {
+    if (!choice_details.empty()) {
+        DetailedChoiceBox();
+        return;
+    }
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x + viewport->WorkSize.x * 0.5f,
                                    viewport->WorkPos.y + viewport->WorkSize.y * 0.5f),
@@ -1238,6 +1491,18 @@ void RetireChoiceTextures() {
 
 // imgui_mutex held, before NewFrame: new pictures become textures, destroyed ones are freed.
 void UpdateChoiceTextures() {
+    for (int i = 0; i < 4; ++i) {
+        Gow3Png::Image& image = choice_style.pending[i];
+        if (image.rgba.empty() || choice_style.textures[i]) {
+            continue;
+        }
+        ImTextureData* tex = IM_NEW(ImTextureData)();
+        tex->Create(ImTextureFormat_RGBA32, image.width, image.height);
+        std::memcpy(tex->GetPixels(), image.rgba.data(), image.rgba.size());
+        ImGui::RegisterUserTexture(tex);
+        choice_style.textures[i] = tex;
+        image = {};
+    }
     if (!choice_pictures.empty()) {
         choice_textures.assign(choice_pictures.size(), nullptr);
         for (size_t i = 0; i < choice_pictures.size(); ++i) {
@@ -1267,9 +1532,12 @@ void UpdateChoiceTextures() {
 // The save list takes the keys and buttons that move and confirm; the rest stays with the game
 // (held neutral by CapturesInput).
 // Moves or closes the list (lock held). finish: 1 accept, 2 cancel.
-void ChoiceStep(int move, int finish) {
+void ChoiceStep(int move, int finish, bool toggle = false) {
     if (!choice_active) {
         return;
+    }
+    if (toggle) {
+        choice_expanded = !choice_expanded;
     }
     const int count = int(choice_items.size());
     if (move && count) {
@@ -1307,7 +1575,7 @@ void PollChoiceInput() {
         previous = buttons;
         return;
     }
-    constexpr uint32_t Up = 0x10, Down = 0x40, Circle = 0x2000, Cross = 0x4000;
+    constexpr uint32_t Up = 0x10, Down = 0x40, Circle = 0x2000, Cross = 0x4000, Square = 0x8000;
     const uint32_t pressed = buttons & ~previous;
     previous = buttons;
     int move = (pressed & Up) ? -1 : (pressed & Down) ? 1 : 0;
@@ -1318,16 +1586,19 @@ void PollChoiceInput() {
         repeat_at = now + std::chrono::milliseconds(120);
     }
     const int finish = (pressed & Cross) ? 1 : (pressed & Circle) ? 2 : 0;
-    if (move || finish) {
+    const bool toggle = (pressed & Square) != 0;
+    if (move || finish || toggle) {
         std::scoped_lock lock{imgui_mutex};
-        ChoiceStep(move, finish);
+        ChoiceStep(move, finish, toggle);
     }
 }
 
 bool HandleChoiceEvent(const SDL_Event& event) {
     int move = 0, finish = 0; // finish: 1 accept, 2 cancel
+    bool toggle = false;      // Square / Tab: the details' other page
     if (event.type == SDL_EVENT_KEY_DOWN) {
         const SDL_Keycode key = event.key.key;
+        toggle = key == SDLK_TAB;
         move = key == SDLK_UP || key == SDLK_W ? -1 : key == SDLK_DOWN || key == SDLK_S ? 1 : 0;
         finish = key == SDLK_RETURN || key == SDLK_KP_ENTER || key == SDLK_SPACE ? 1
                  : key == SDLK_ESCAPE || key == SDLK_BACKSPACE                   ? 2
@@ -1339,10 +1610,11 @@ bool HandleChoiceEvent(const SDL_Event& event) {
         const u8 button = event.gbutton.button;
         move = button == SDL_GAMEPAD_BUTTON_DPAD_UP ? -1 : button == SDL_GAMEPAD_BUTTON_DPAD_DOWN ? 1 : 0;
         finish = button == SDL_GAMEPAD_BUTTON_SOUTH ? 1 : button == SDL_GAMEPAD_BUTTON_EAST ? 2 : 0;
+        toggle = button == SDL_GAMEPAD_BUTTON_WEST;
     } else {
         return event.type == SDL_EVENT_KEY_UP || event.type == SDL_EVENT_GAMEPAD_BUTTON_UP;
     }
-    ChoiceStep(move, finish);
+    ChoiceStep(move, finish, toggle);
     return true;
 }
 
@@ -1543,13 +1815,21 @@ bool CapturesInput() {
 }
 
 void BeginChoice(const std::string& title, const std::vector<std::string>& items,
-                 std::vector<Gow3Png::Image> pictures, int focus) {
+                 std::vector<Gow3Png::Image> pictures, std::vector<std::string> details,
+                 std::vector<std::string> more, int focus) {
     std::scoped_lock lock{imgui_mutex};
     RetireChoiceTextures();
     choice_pictures = std::move(pictures);
     choice_pictures.resize(items.size());
     choice_title = title;
     choice_items = items;
+    choice_details = std::move(details);
+    choice_more = std::move(more);
+    if (!choice_details.empty()) {
+        choice_details.resize(items.size());
+        choice_more.resize(items.size());
+    }
+    choice_expanded = false;
     choice_index = focus >= 0 && focus < int(items.size()) ? focus : 0;
     choice_result = -1;
     choice_active = true;
@@ -1557,6 +1837,30 @@ void BeginChoice(const std::string& title, const std::vector<std::string>& items
 
 int PollChoice() {
     return choice_result;
+}
+
+void SetChoiceStyle(ChoiceStyleFiles files) {
+    std::scoped_lock lock{imgui_mutex};
+    if (!initialized || choice_style.title) {
+        return;
+    }
+    ImFont* fonts[2] = {};
+    for (int i = 0; i < 2; ++i) {
+        // The atlas owns (and frees) a copy made with its allocator.
+        void* data = IM_ALLOC(files.fonts[i].size());
+        std::memcpy(data, files.fonts[i].data(), files.fonts[i].size());
+        ImFontConfig config;
+        config.FontDataOwnedByAtlas = true;
+        fonts[i] = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(data, int(files.fonts[i].size()), 32.0f, &config);
+    }
+    if (!fonts[0] || !fonts[1]) {
+        return;
+    }
+    choice_style.title = fonts[0];
+    choice_style.text = fonts[1];
+    for (int i = 0; i < 4; ++i) {
+        choice_style.pending[i] = std::move(files.images[i]);
+    }
 }
 
 void SetTextEntry(bool active, const std::string& prompt, const std::string& text) {

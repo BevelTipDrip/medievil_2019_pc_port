@@ -62,3 +62,25 @@ Continue (`@MediEvil0006`), then loaded the older `@MediEvil0001`: its save went
 528) and it became the newest. The launcher's backup of this start (`savedata_backups/20261110-230059`) stayed. The
 user: "Continue is the most recently loaded save, and the top slot is the most recent slot, all slots have their
 name, I loaded an older save, nothing was deleted, and the loaded save got recognized as the newest one".
+
+## T-SV5: details, level pictures and the game's menu look (2026-11-10, launched by Claude with the user's go, logs `data/load-details-1-0102.log`, `data/load-style-1-0102.log`, `data/load-style-2-0102.log`)
+
+The Load list shows, per save, what it holds (runtime_saveinfo.c reads the GVAS save: LevelData's per-level
+Unlocked / Completed / ChaliceCollected, Gold, HealthVials, PlayTime, LastLevelPlayed, BestiaryData), the loading
+screen of the level it was saved in, and on Square every level with its state. The level names, pictures, the
+Options menu frame, the PS4 button prompts and the two menu fonts come from the player's own paks at start
+(scripts/game_ui_assets.py, `user/cache/game_ui/`); the list is drawn in the Options menu's look.
+
+Found on the way:
+- The save field `HealthVials` is the life bottle count (the user: "I currently have 5 Life bottles", the save
+  says 5); the per-level `LifeBottleCollected` is 0 in every save seen and is not shown. Health vials (pick-ups)
+  are not shown (the user).
+- `LastLevelPlayed` is a ByteProperty with an enum name (UE4 4.21), not an EnumProperty.
+- LevelsEnum's order (Level_NN_CODE) gives the save's NewEnumerator numbers: 0 Dan's Crypt ... 11 The Enchanted
+  Earth, 12 The Ant Caves ... 22 Hall of Heroes; names from LevelDataTable.
+- The UI textures are single-mip DXT1 / DXT5 / B8G8R8A8 in PS4 1D thin micro tiling (8x8 elements per tile,
+  Morton order), padded to whole tiles; all 23 loading screens, the frame and 19 prompts decode.
+
+Runs: the first (plain overlay look) showed life bottles from the wrong field; the second (game look) showed the
+title screen through the panel and the prompts over the copyright line; the third, with an opaque fill, the panel
+at 76% from 6% down and the details aligned under the picture: the user, "Yes, everything looks correct".
