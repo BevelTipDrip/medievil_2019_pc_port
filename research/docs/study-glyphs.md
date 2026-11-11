@@ -210,6 +210,13 @@ identically. In game: the Options > Button Layout page shows squares for every b
 (swap target) and R1 (block)**, which are `Options_Active` / `L1_Active` / `R1_Active` (1.3); the HUD's weapon swap
 prompt (Triangle in this layout) shows 02. Clean exit.
 
+## T-G1b: the three small textures (2026-11-11, launched by Claude with the user's go, log `data/glyphs-g1b-0102.log`)
+
+The test style also fills `L1_Active` (16), `R1_Active` (17) and `Options_Active` (18, 88x137, padding rows kept).
+Offline: each `.uexp` keeps its size, only the payload changes, the pak reads back identically. In game, the
+user's screenshots of Options > Button Layout and the bestiary: "everything looks correct" (no PS4 button left on
+the Button Layout page; the bestiary's L1 / R1 tabs show 16 / 17). Clean exit.
+
 Also to do (the user): the port's own Load list (runtime/load-list-details) draws the game's `PS4_Cross` / `Circle` /
 `Square` prompts from the game UI cache; with another style it must use that style's glyphs.
 

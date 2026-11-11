@@ -10,9 +10,9 @@ origin: ours
 class: M
 commits: 4bfd053951
 files: scripts/ue4_glyphs.py, scripts/game_ui_assets.py, scripts/ue4_override.py, run.py, tests/test_ue4_glyphs.py
-symbols: files, atlas, strip, with_strip, test_cells, texture, detile, tile, ATLAS_CELLS, STYLES
+symbols: files, atlas, small, strip, with_strip, test_cells, test_square, texture, detile, tile, ATLAS_CELLS, SMALL, STYLES
 switches:
-tests: T-G1
+tests: T-G1, T-G1b
 docs: study-glyphs.md#4-step-plan-smallest-first-every-launch-needs-the-users-go, study-glyphs.md#21-format-of-the-cooked-texture-what-a-patch-must-write-v
 depends_on: game-ui-cache
 related: debug-menu-0102
@@ -23,7 +23,9 @@ checked:
 The ini key `button_prompts` (`playstation`, the default, writes nothing; `test`) picks the button prompt
 style. For a style other than PlayStation, `ue4_override.apply` puts edited copies of the game's prompt textures in
 the override pak: today the 16 64x64 cells in the top row of `InventoryButtonAtlas` (the `SP_PS4_*` sprites),
-which `test` fills with numbered yellow squares (00 Circle ... 15 StickRight, `ATLAS_CELLS`). Step G1 of
+which `test` fills with numbered yellow squares (00 Circle ... 15 StickRight, `ATLAS_CELLS`), and the three small
+textures of the Button Layout page and the inventory / bestiary tabs, `L1_Active`, `R1_Active`, `Options_Active`
+(16, 17, 18, `SMALL`). Step G1 of
 study-glyphs.md; the Xbox and keyboard sets (G3, G4) and the bone textures (G2) come next.
 
 ## Invariants
@@ -53,6 +55,8 @@ study-glyphs.md; the Xbox and keyboard sets (G3, G4) and the bone textures (G2) 
   tests/test_ue4_glyphs.py passes.
 - T-G1 (PC, 01.02): run. The Button Layout page shows the squares for every button but Start, L1 and R1 (their
   own textures, next step); the HUD's weapon swap prompt shows 02. Clean exit.
+- T-G1b (PC, 01.02): run. With the three small textures, the Button Layout page and the bestiary tabs show only
+  squares; the user: "everything looks correct". Clean exit.
 
 ## History and pitfalls
 

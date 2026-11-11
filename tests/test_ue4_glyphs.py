@@ -46,6 +46,17 @@ class GlyphTests(unittest.TestCase):
         picture, at, pitch = ue4_glyphs.strip(uexp, 64)
         self.assertEqual(ue4_glyphs.with_strip(uexp, picture, at, pitch), uexp)
 
+    def test_small_texture_keeps_padding(self):
+        # 88x137 pads to 88x144 elements: the square covers the texture, the padding rows stay.
+        payload = bytes((i * 5) & 0xff for i in range(88 * 144 * 4))
+        uexp = fake_uexp(88, 137, payload)
+        edited = ue4_glyphs.small(uexp, 'test', 18)
+        self.assertEqual(len(edited), len(uexp))
+        picture, at, pitch = ue4_glyphs.strip(edited)
+        before = ue4_glyphs.strip(uexp)[0]
+        self.assertEqual(picture.getpixel((8, 8)), (255, 200, 0, 255))
+        self.assertEqual(picture.crop((0, 137, 88, 144)).tobytes(), before.crop((0, 137, 88, 144)).tobytes())
+
     def test_playstation_and_unknown_styles_write_nothing(self):
         self.assertEqual(ue4_glyphs.files(lambda name: b'', 'playstation'), {})
         self.assertEqual(ue4_glyphs.files(lambda name: b'', 'nonsense'), {})
