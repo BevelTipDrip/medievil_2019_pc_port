@@ -8,11 +8,11 @@ default_windows: off
 default_deck: n/a
 origin: ours
 class: M
-commits: f4f13b8, e27103e
+commits: f4f13b8, e27103e, 870f584
 files: src/runtime_mouse.c, src/runtime_services.c, gpu/shim/window.cpp, gpu/shim/sdl_window.h, scripts/ue4_override.py
 symbols: runtime_mouse_enabled, runtime_mouse_start, runtime_mouse_capture, runtime_mouse_take, drain, reader_thread, mouse_init, mouse_read, SetMouseCapture, mouse_captured
-switches: GOW3_MOUSE
-tests: T-MS1
+switches: GOW3_MOUSE, GOW3_MOUSE_BUTTONS
+tests: T-MS1, T-MS2
 docs: study-mouse-input.md#t-ms1-ps4enablemouse-from-the-paks-ini-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-step1-enablelog
 depends_on:
 related: cursor-hide
@@ -24,7 +24,7 @@ checked:
 (T-MS1). `src/runtime_mouse.c` reads the mouse on its own thread with MGS2's method: a message-only window
 (`RIDEV_INPUTSINK`), normal priority, at most one wake-up a millisecond, every queued report in one
 `GetRawInputBuffer` batch, totals in atomics. `mouse_read` reports a connected mouse with the counts, buttons and
-wheel notches since the last read. The window thread decides capture: a click takes the mouse, plain F1 / focus loss
+wheel notches since the last read (buttons only with `GOW3_MOUSE_BUTTONS=1`). The window thread decides capture: a click takes the mouse, plain F1 / focus loss
 / the Insert menu give it back. Step 2 of the study; no camera or menu use yet (steps 3-7).
 
 ## Invariants
@@ -35,6 +35,8 @@ wheel notches since the last read. The window thread decides capture: a click ta
   replace ours. The capture log line reports who holds the registration.
 - Counts and buttons reach the game only while captured; a release drops what was not read.
 - Buttons held at a capture stay blocked until let go (the click that took the mouse is never half seen).
+- No mouse buttons to the game by default: a click the game received left the main menu deaf to keyboard and pad
+  (T-MS2). `GOW3_MOUSE_BUTTONS=1` is for the menu-focus research only.
 - F1 releases only without Alt / Shift / Ctrl / Win (Alt+F1 is NVIDIA's overlay; the user, 2026-11-11).
 - Capture changes run on the window thread on events, never per frame.
 
@@ -48,9 +50,14 @@ wheel notches since the last read. The window thread decides capture: a click ta
 
 - T-MS1 (2026-11-11, PC, 01.02, run): init once; open right after the pad open with `user 1 type 0 index 0
   param 1`; reads with count 8, 134-141 a second at a 141 cap (= once a frame).
-- Step 2: fix built `e27103e`, not run.
+- T-MS2 (2026-11-11, PC, `e27103e`, run): registration kept; ~930 reports/s moving at 1000 Hz, ~7100 at 8000 Hz,
+  700 reader wake-ups a second either way; the user: no frame-time spikes at either rate. Found: a click the game
+  received stopped the main menu taking keyboard and pad input. Buttons withheld since: fix built `870f584`, not run.
 
 ## History and pitfalls
+
+- Found, low priority, left as is: the reader polls ~700 times a second with the mouse still (MGS2's verified
+  "Every 1 ms" wait, line for line). Change only with an 8000 Hz A/B (study T-MS2).
 
 - Planned first with SDL relative mode; changed before coding because SDL's reader wakes per report at
   TIME_CRITICAL, the pattern that made MGS2's frame starts wobble with an 8000 Hz mouse (study 4.2, revised).

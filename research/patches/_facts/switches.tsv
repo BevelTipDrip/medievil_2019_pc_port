@@ -116,6 +116,7 @@ GOW3_MODS_DIR	upstream	src/runtime_file.c:258
 GOW3_MOD_TRACE	upstream	src/runtime_file.c:258
 GOW3_MOTION_SELECT_LOG	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp:980
 GOW3_MOUSE	ours	src/runtime_mouse.c:19
+GOW3_MOUSE_BUTTONS	ours	src/runtime_mouse.c:137
 GOW3_MOVIE_SUSPEND	upstream	src/probe.c:616
 GOW3_NARROW_IMAGE_STAGES	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:2610
 GOW3_NEO	upstream	src/runtime_extra.c:173

@@ -37,7 +37,7 @@ _loader, HLE libraries, threads, locks, files, audio, input (src/ outside memory
 | [crash-dump](runtime/crash-dump.md) | active | on / n/a | lab | GOW3_CRASH_DUMP | Minidump on any fatal fault, with fallbacks to smaller dump types and faults inside winpthreads |
 | [load-list-continue](runtime/load-list-continue.md) | active | on / on | deck-lab |  | Load list: "Continue" (the newest save) in place of the dead "New save" entry; "Slot N" on every save |
 | [load-list-details](runtime/load-list-details.md) | active | on / on | deck-lab |  | Load list: per-save details, level picture and level list (Square), in the game's Options menu look |
-| [mouse-input](runtime/mouse-input.md) | active | off / n/a | deck-lab | GOW3_MOUSE | Mouse input through the game's own sceMouse path, from a batched Raw Input reader (GOW3_MOUSE=1, Windows) |
+| [mouse-input](runtime/mouse-input.md) | active | off / n/a | deck-lab | GOW3_MOUSE, GOW3_MOUSE_BUTTONS | Mouse input through the game's own sceMouse path, from a batched Raw Input reader (GOW3_MOUSE=1, Windows) |
 | [pad-hotplug](runtime/pad-hotplug.md) | active | on / on | fork-ports |  | Pads plugged in after start: SDL hotplug hints (fork port, #64) |
 | [quiet-log](runtime/quiet-log.md) | active | off / off | deck-lab | GOW3_FPS_LOG | GOW3_FPS_LOG=0 turns off the periodic log lines (FPS line, particle guard summary) |
 | [R2](runtime/r2.md) | active | on / on | lab |  | Runtime: rwlock handles validated through an open-addressing hash set, not a list walk |
