@@ -80,6 +80,9 @@ struct PreparedDraw {
     enum : u32 { Pending = 0, Ready = 1, Unavailable = 2 };
     std::atomic<u32> state{Pending};
     u64 reg_checksum{};
+    /// MediEvil: the full view the key's light grid variants were picked for (not in the
+    /// registers: TryPreparedPipeline compares it).
+    u32 light_grid_scene{};
     GraphicsPipelineKey key{};
     u32 num_stages{};
     std::array<PreparedStage, MaxShaderStages> stages{};

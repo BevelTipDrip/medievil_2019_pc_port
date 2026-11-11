@@ -75,6 +75,8 @@ struct InfoPersistent {
     bool has_fetch_shader{};
     bool has_bitwise_xor{};
     bool uses_dma{};
+    /// MediEvil: looks up UE4's forward light grid by pixel position (LightGridScalePass).
+    bool uses_light_grid{};
 
     InfoPersistent() = default;
     InfoPersistent(HwStage hw_stage_, SwStage sw_stage_, u64 pgm_hash_)

@@ -887,6 +887,11 @@ study-intro-movie.md	174	2	3-what-the-intro-and-the-skip-do-the-games-blueprints
 study-intro-movie.md	201	2	4-the-port-compared	4. The port compared
 study-intro-movie.md	216	2	5-recommended-fix	5. Recommended fix
 study-intro-movie.md	252	2	6-open-questions	6. Open questions
+study-light-grid-scale.md	1	1	dans-crypt-water-at-effects-resolution-below-100-ue4s-light-grid-lookup	Dan's Crypt water at effects resolution below 100: UE4's light grid lookup
+study-light-grid-scale.md	6	2	the-glitch	The glitch
+study-light-grid-scale.md	14	2	cause-renderdoc-2026-11-10	Cause (RenderDoc, 2026-11-10)
+study-light-grid-scale.md	33	2	the-fix	The fix
+study-light-grid-scale.md	41	2	t-lg1-the-fix-in-game-2026-11-10-launched-by-claude-with-the-users-go-log-datacrypt-light-grid-fix-0102log	T-LG1: the fix in game (2026-11-10, launched by Claude with the user's go, log `data/crypt-light-grid-fix-0102.log`)
 study-live-settings.md	1	1	study-which-restart-only-settings-can-become-live	Study: which restart-only settings can become live
 study-live-settings.md	13	2	short-answer	Short answer
 study-live-settings.md	42	3	top-5-conversions-user-value--effort--risk	Top 5 conversions (user value × effort × risk)

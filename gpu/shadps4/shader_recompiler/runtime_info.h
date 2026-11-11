@@ -229,6 +229,11 @@ struct HwFragmentRuntimeInfo {
     bool clip_distance_emulation{false};
     /// gow3: writes the object motion vector to MotionVectors::Output.
     bool motion_vectors{false};
+    /// MediEvil: scale of the pixel position in UE4's forward light grid lookup, per axis
+    /// (float bits; 0: unscaled). A draw at effects resolution looks up the grid built for the
+    /// full view (LightGridScalePass).
+    u32 light_grid_scale_x{0};
+    u32 light_grid_scale_y{0};
 
     bool operator==(const HwFragmentRuntimeInfo& other) const noexcept {
         return std::ranges::equal(color_buffers, other.color_buffers) &&
@@ -239,6 +244,8 @@ struct HwFragmentRuntimeInfo {
                dual_source_blending == other.dual_source_blending &&
                clip_distance_emulation == other.clip_distance_emulation &&
                motion_vectors == other.motion_vectors &&
+               light_grid_scale_x == other.light_grid_scale_x &&
+               light_grid_scale_y == other.light_grid_scale_y &&
                std::ranges::equal(inputs.begin(), inputs.begin() + num_inputs, other.inputs.begin(),
                                   other.inputs.begin() + num_inputs);
     }

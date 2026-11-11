@@ -25,6 +25,8 @@ void LowerPhisToRegsPass(IR::Program& program);
 void DeadCodeEliminationPass(IR::Program& program);
 /// gow3: exact integers from interpolated float varyings on GPUs without manual interpolation.
 void InterpolatedIntegerPass(IR::Program& program);
+/// MediEvil: UE4's forward light grid lookup at effects resolution (separate translucency).
+void LightGridScalePass(IR::Program& program, const RuntimeInfo& runtime_info);
 void ConstantPropagationPass(IR::BlockList& program);
 void FlattenExtendedUserdataPass(IR::Program& program);
 void ReadLaneEliminationPass(IR::Program& program);

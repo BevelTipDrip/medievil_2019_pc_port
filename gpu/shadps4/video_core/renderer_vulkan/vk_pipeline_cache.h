@@ -100,6 +100,10 @@ struct PipelineSelection {
     std::optional<Shader::Gcn::FetchShaderData> fetch_shader{};
     GraphicsPipelineKey graphics_key{};
     bool motion = false;
+    /// MediEvil: light grid scale of this draw's fragment variant (float bits per axis; 0: none)
+    /// and the full view (width | height << 16) it was computed from (LightGridScalePass).
+    std::array<u32, 2> light_grid_scale{};
+    u32 light_grid_scene = 0;
     bool compilation_pending = false;
     DrawIndirectParams draw_indirect_params{};
     struct PrepWorker* worker{}; ///< set: read-only selection for a draw-preparation worker

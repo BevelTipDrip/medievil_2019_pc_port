@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <atomic>
+#include <bit>
 #include <chrono>
+#include <cmath>
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -39,6 +41,66 @@ namespace Vulkan {
 using Shader::HwStage;
 using Shader::Output;
 using Shader::SwStage;
+
+namespace {
+/// MediEvil: the full view's size (width | height << 16), from the latest G-buffer draw on the GPU
+/// thread: the view UE4's forward light grid is built for (LightGridScalePass).
+std::atomic<u32> g_light_grid_scene{0};
+
+/// A draw's viewport size (width | height << 16; 0: none).
+u32 LightGridViewport(const AmdGpu::Regs& regs) {
+    if (!regs.viewport_control.xscale_enable || !regs.viewport_control.yscale_enable) {
+        return 0;
+    }
+    const auto& viewport = regs.viewports[0];
+    const long width = std::lround(std::abs(viewport.xscale) * 2.f);
+    const long height = std::lround(std::abs(viewport.yscale) * 2.f);
+    if (width <= 0 || height <= 0 || width > 65535 || height > 65535) {
+        return 0;
+    }
+    return static_cast<u32>(width) | (static_cast<u32>(height) << 16);
+}
+
+/// The light grid scale (float bits per axis) of a draw at effects resolution: the full view over
+/// this draw's viewport. UE4 sizes separate translucency at the percentage of each side, rounded
+/// down; any other viewport (a full-size pass, a scene capture) gets none.
+std::array<u32, 2> LightGridScale(const AmdGpu::Regs& regs, u32 scene) {
+    const int index = Gow3Settings::Get().effects_resolution;
+    constexpr int count = static_cast<int>(std::size(Gow3Settings::UE4EffectsKeys));
+    const int percent = index >= 0 && index < count ? std::atoi(Gow3Settings::UE4EffectsKeys[index])
+                                                    : 100;
+    const u32 view = LightGridViewport(regs);
+    if (percent <= 0 || percent >= 100 || scene == 0 || view == 0) {
+        return {};
+    }
+    const int full_w = static_cast<int>(scene & 0xffff), full_h = static_cast<int>(scene >> 16);
+    const int w = static_cast<int>(view & 0xffff), h = static_cast<int>(view >> 16);
+    if (std::abs(w - full_w * percent / 100) > 2 || std::abs(h - full_h * percent / 100) > 2) {
+        return {};
+    }
+    return {std::bit_cast<u32>(static_cast<float>(full_w) / static_cast<float>(w)),
+            std::bit_cast<u32>(static_cast<float>(full_h) / static_cast<float>(h))};
+}
+
+/// GPU thread, every draw (prepared ones skip RefreshGraphicsKey): a G-buffer draw (five or more
+/// colour targets and depth) records the full view's size.
+void RecordLightGridScene(const AmdGpu::Regs& regs) {
+    if (regs.color_control.mode == AmdGpu::ColorControl::OperationMode::Disable ||
+        !regs.depth_buffer.DepthValid()) {
+        return;
+    }
+    u32 bound = 0;
+    for (s32 cb = 0; cb < AmdGpu::NUM_COLOR_BUFFERS; ++cb) {
+        bound += (regs.color_buffers[cb] && regs.color_target_mask.GetMask(cb)) ? 1 : 0;
+    }
+    if (bound < 5) {
+        return;
+    }
+    if (const u32 view = LightGridViewport(regs)) {
+        g_light_grid_scene.store(view, std::memory_order_relaxed);
+    }
+}
+} // namespace
 
 struct AsyncShaderCompilation {
     AsyncJob<std::shared_ptr<AsyncShaderCompilation>> job;
@@ -229,6 +291,8 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(PipelineSelection& se
                 : 1;
         info.hw.fs.z_export_format = regs.z_export_format;
         info.hw.fs.motion_vectors = sel.motion;
+        info.hw.fs.light_grid_scale_x = sel.light_grid_scale[0];
+        info.hw.fs.light_grid_scale_y = sel.light_grid_scale[1];
         u8 stencil_ref_export_enable = regs.depth_shader_control.stencil_op_val_export_enable |
                                        regs.depth_shader_control.stencil_test_val_export_enable;
         info.hw.fs.mrtz_mask = regs.depth_shader_control.z_export_enable |
@@ -675,7 +739,8 @@ bool PipelineCache::PrepareGraphicsPipeline(PipelineSelection& worker_sel) {
 
 const GraphicsPipeline* PipelineCache::TryPreparedPipeline(const PreparedDraw& prepared) {
     if (prepared.state.load(std::memory_order_acquire) != PreparedDraw::Ready ||
-        prepared.reg_checksum != liverpool->gfx_reg_checksum) {
+        prepared.reg_checksum != liverpool->gfx_reg_checksum ||
+        prepared.light_grid_scene != g_light_grid_scene.load(std::memory_order_relaxed)) {
         return nullptr;
     }
     // Same registers; the stage programs and their flattened user data (which also covers
@@ -713,6 +778,7 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline(const DrawIndirectPar
     PublishGraphics();
     PumpWarmUp();
     used_prepared = nullptr;
+    RecordLightGridScene(liverpool->regs);
     if (prepared) {
         if (const auto* pipeline = TryPreparedPipeline(*prepared)) {
             used_prepared = prepared;
@@ -865,6 +931,10 @@ bool PipelineCache::RefreshGraphicsKey(PipelineSelection& sel) {
                           regs.stage_enable.raw == AmdGpu::ShaderStageEnable::VgtStages::Vs;
     }
     sel.motion = false;
+    sel.light_grid_scale = {};
+    // MediEvil: the full view as last recorded (RecordLightGridScene); a worker's prepared draw
+    // keeps it for TryPreparedPipeline's check.
+    sel.light_grid_scene = g_light_grid_scene.load(std::memory_order_relaxed);
 
     // First pass to fill render target information needed by shader recompiler
     for (s32 cb = 0; cb < AmdGpu::NUM_COLOR_BUFFERS && !skip_cb_binding; ++cb) {
@@ -935,6 +1005,15 @@ bool PipelineCache::RefreshGraphicsKey(PipelineSelection& sel) {
             sel.motion = true;
         }
         if (sel.motion && !RefreshGraphicsStages(sel)) {
+            return false;
+        }
+    }
+    // MediEvil: a fragment shader that looks up UE4's forward light grid, drawn at effects
+    // resolution, gets the variant that scales its pixel position to the full view's grid.
+    if (const auto* fs = sel.infos[static_cast<u32>(Shader::SwStage::Fragment)];
+        fs && fs->uses_light_grid) {
+        sel.light_grid_scale = LightGridScale(regs, sel.light_grid_scene);
+        if (sel.light_grid_scale[0] != 0 && !RefreshGraphicsStages(sel)) {
             return false;
         }
     }
