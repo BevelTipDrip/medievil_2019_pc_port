@@ -184,3 +184,6 @@ run 1	study-fork-spacepepperoni.md	211	32-what-run-1-shows-datadeck-proton-1log-
 N-5	study-frame-cost-2026-10-29.md	22	gpu-work-goal-1	N-5 correction.** In ngfx-ab-1, narrow image stages changed GPU active time from 4.876 to 4.836 ms (
 Run 2	study-heavy-frame-map.md	65	2-h3-gpu-particle-double-run	Run 2 is a bit-exact copy.** Texture dumps after each step (`h3-tiles-*.txt`): run 2's output equals
 T-LG1	study-light-grid-scale.md	41	t-lg1-the-fix-in-game-2026-11-10-launched-by-claude-with-the-users-go-log-datacrypt-light-grid-fix-0102log	T-LG1: the fix in game (2026-11-10, launched by Claude with the user's go, log `data/crypt-light-gri
+T-SV1	study-save-slots.md	31	t-sv1-first-trace-2026-11-10-launched-by-claude-with-the-users-go-log-datasave-trace-1-0102log	T-SV1: first trace (2026-11-10, launched by Claude with the user's go, log `data/save-trace-1-0102.l
+T-SV2	study-save-slots.md	38	t-sv2-load-a-slot-that-is-not-the-newest-2026-11-10-launched-by-claude-with-the-users-go-log-datasave-trace-2-0102log	T-SV2: load a slot that is not the newest (2026-11-10, launched by Claude with the user's go, log `d
+T-SV3	study-save-slots.md	44	t-sv3-the-date-fix-2026-11-10-launched-by-claude-with-the-users-go-log-datasave-trace-3-0102log	T-SV3: the date fix (2026-11-10, launched by Claude with the user's go, log `data/save-trace-3-0102.

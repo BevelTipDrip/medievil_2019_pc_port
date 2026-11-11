@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: ours
 class: M
-commits:
+commits: 0061d7b06c
 files: src/runtime_savedata.c
 symbols: read_param
 switches:

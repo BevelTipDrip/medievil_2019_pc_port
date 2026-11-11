@@ -4,7 +4,7 @@ One line per card. Open a card for invariants, interactions and evidence; look u
 reading: `patchmap.py file <path>` / `switch <name>` / `commit <hash>` / `test <id>`.
 Card format and statuses: [README.md](README.md). W / D = default on Windows / Deck.
 
-205 cards.
+208 cards.
 
 ## memory
 
@@ -38,6 +38,8 @@ _loader, HLE libraries, threads, locks, files, audio, input (src/ outside memory
 | [pad-hotplug](runtime/pad-hotplug.md) | active | on / on | fork-ports |  | Pads plugged in after start: SDL hotplug hints (fork port, #64) |
 | [quiet-log](runtime/quiet-log.md) | active | off / off | deck-lab | GOW3_FPS_LOG | GOW3_FPS_LOG=0 turns off the periodic log lines (FPS line, particle guard summary) |
 | [R2](runtime/r2.md) | active | on / on | lab |  | Runtime: rwlock handles validated through an open-addressing hash set, not a list walk |
+| [save-date-last-write](runtime/save-date-last-write.md) | active | on / on | deck-lab |  | A save's date is its last write (param.bin or any save file), so MediEvil saves into the slot it loaded |
+| [save-trace](runtime/save-trace.md) | diagnostic | on / on | deck-lab |  | "Save trace:" log lines for every save call (search, mount, file writes, set param, dialogs) with the guest caller |
 | [upstream-audio-input](runtime/upstream-audio-input.md) | active | on / on | - | GOW3_AUDIO_SDL_DOWNMIX, GOW3_STICK_RANGE | Upstream audio and input: 7.1 -> stereo downmix, every controller merged, background pad events, stick range |
 | [upstream-hitch-work](runtime/upstream-hitch-work.md) | active | on / mixed | - | GOW3_TIMER_RES, GOW3_POWER_THROTTLE, GOW3_SPARE_IMAGE_BLOCK … | Upstream hitch work: 1 ms timer, no power throttling, spare GPU block, pageable memory, futex condvars, merged barrier ranges |
 
@@ -247,6 +249,7 @@ _launcher, settings, medievil.ini keys, run.py, packaging, build scripts_
 | [pgo-build](launcher/pgo-build.md) | rejected | off / off | - |  | PGO / BOLT / -march=znver2 builds (not built) |
 | [port-identity](launcher/port-identity.md) | active | on / on | lab |  | Fork identity: version 2.0.0, update check and links on BevelTipDrip, new port icon, Start menu shortcut |
 | [presentation-settings](launcher/presentation-settings.md) | active | mixed / on | lab | GOW3_NO_FRAME_CAP, present_no_frame_caps | Launcher Presentation settings: tick rate, present mode, no built-in frame caps, present switches |
+| [save-backup-keep-all](launcher/save-backup-keep-all.md) | active | on / on | deck-lab |  | Launcher save backups are never deleted (no keep-10 pruning) |
 | [thinlto](launcher/thinlto.md) | active | on / on | lab |  | ThinLTO on by default (GOW3_LTO=ON in build.sh), plus toggle A/B and per-draw tools |
 | [upstream-launcher-features](launcher/upstream-launcher-features.md) | active | on / on | - |  | Upstream EU version, languages, voice language, AA option (ue4_aa), 60 FPS default, portable mode |
 | [vsync-control](launcher/vsync-control.md) | active | on / mixed | lab | present_mode, present_limiter, present_no_frame_caps | Launcher: one VSync / present mode control, Frame limiter choice (Reflex default), Engine frame rate with Unlimited |

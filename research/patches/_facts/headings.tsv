@@ -989,6 +989,13 @@ study-particle-fixed-step.md	106	3	why-the-copy-pass-makes-the-default-immune-in
 study-particle-fixed-step.md	114	2	the-change	The change
 study-particle-fixed-step.md	156	2	test-deck-or-pc-needs-the-users-go	Test (Deck or PC, needs the user's go)
 study-particle-fixed-step.md	175	2	unverified	Unverified
+study-save-slots.md	1	1	save-slots-why-a-save-went-into-another-slot	Save slots: why a save went into another slot
+study-save-slots.md	6	2	the-problem	The problem
+study-save-slots.md	13	2	how-medievil-picks-the-slot-it-saves-into	How MediEvil picks the slot it saves into
+study-save-slots.md	31	2	t-sv1-first-trace-2026-11-10-launched-by-claude-with-the-users-go-log-datasave-trace-1-0102log	T-SV1: first trace (2026-11-10, launched by Claude with the user's go, log `data/save-trace-1-0102.log`)
+study-save-slots.md	38	2	t-sv2-load-a-slot-that-is-not-the-newest-2026-11-10-launched-by-claude-with-the-users-go-log-datasave-trace-2-0102log	T-SV2: load a slot that is not the newest (2026-11-10, launched by Claude with the user's go, log `data/save-trace-2-0102.log`)
+study-save-slots.md	44	2	t-sv3-the-date-fix-2026-11-10-launched-by-claude-with-the-users-go-log-datasave-trace-3-0102log	T-SV3: the date fix (2026-11-10, launched by Claude with the user's go, log `data/save-trace-3-0102.log`)
+study-save-slots.md	51	2	also-found	Also found
 study-stage-b-native.md	1	1	study-native--hle-work-to-unload-stage-b-2026-10-20	Study: native / HLE work to unload stage B (2026-10-20)
 study-stage-b-native.md	20	2	1-how-the-game-builds-gpu-work	1. How the game builds GPU work
 study-stage-b-native.md	42	2	2-hot-patterns-and-redundancy-measured	2. Hot patterns and redundancy (measured)

@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: ours
 class: G
-commits:
+commits: d99acfc575
 files: scripts/save_backup.py, launcher/medievil_launcher.py, tests/test_save_backup.py
 symbols: backup, restore, test_keeps_every_backup, test_keeps_file_times
 switches:
