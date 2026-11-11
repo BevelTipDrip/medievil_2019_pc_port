@@ -342,6 +342,18 @@ Follow-ups:
   `MWMO_INPUTAVAILABLE`, keeping the 1 ms gate) would be its own A/B launch at 8000 Hz (the user, 2026-11-11: check
   MGS2's history before changing the reader).
 
+### T-MS3: no mouse buttons to the game (2026-11-11, launched by Claude with the user's go, log data/mouse-buttons-withheld.log)
+
+Build `870f584`, `GOW3_MOUSE=1` (buttons off), same settings as T-MS2. Main menu, Load list (slot 6), a level.
+
+| Check | Result |
+|---|---|
+| Keyboard and pad | **the user: "all the inputs work"** on the main menu, the Load list and in the level, with clicks, movement and the wheel used freely |
+| Load list | the cursor shows while it is open (cursor-hide's rule, as intended). **Found:** a click there snapped the cursor to the window's centre. Log: each click "captured", then "released" in the same instant (5 times): the click took the mouse (`SetMouseCapture`: the 2x2 rectangle at the centre), then `UpdateCursor` let it go because the list has the cursor |
+
+Fix built after T-MS3: a click takes the mouse only while `Gow3Overlay::CapturesInput()` is false (the menu, the
+save list and text entry closed), the check `UpdateCursor` already uses.
+
 ## 8. Open questions
 
 1. Does `[SystemSettings]` reach `PS4.EnableMouse` before the PS4 application and the pad opens read it (step 1)? **Yes (T-MS1).**

@@ -200,7 +200,10 @@ bool WindowSDL::PollEvents() {
         }
         switch (event.type) {
         case SDL_EVENT_MOUSE_BUTTON_UP: // a whole click in the game window takes the mouse
-            if (mouse_enabled && !mouse_captured) {
+            // Not while the menu, the save list or a text entry has the cursor: there a click is
+            // theirs (it took the mouse and UpdateCursor let it go again, the cursor snapped to the
+            // window's centre: T-MS3).
+            if (mouse_enabled && !mouse_captured && !Gow3Overlay::CapturesInput()) {
                 SetMouseCapture(true);
             }
             break;
