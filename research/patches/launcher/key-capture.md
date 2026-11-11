@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: ours
 class: G
-commits:
+commits: 29d3782e05
 files: launcher/medievil_launcher.py, tests/test_launcher_controls.py
 symbols: sdl_key_name, TK_KEYS, key_capture
 switches:

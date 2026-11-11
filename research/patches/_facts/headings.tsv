@@ -848,9 +848,10 @@ study-glyphs.md	220	2	t-g2-the-dxt5-bone-prompts-2026-11-11-launched-by-claude-w
 study-glyphs.md	230	2	t-g3-the-xbox-set-2026-11-11-launched-by-claude-with-the-users-go-log-dataglyphs-g3-xbox-0102log	T-G3: the Xbox set (2026-11-11, launched by Claude with the user's go, log `data/glyphs-g3-xbox-0102.log`)
 study-glyphs.md	242	2	t-g3b-launcher-setting-and-the-load-lists-prompts-2026-11-11-launched-by-the-user-from-the-launcher-with-claudes-build-log-dataglyphs-g3b-0102log	T-G3b: launcher setting and the Load list's prompts (2026-11-11, launched by the user from the launcher, with Claude's build, log `data/glyphs-g3b-0102.log`)
 study-glyphs.md	252	2	t-g4-keyboard-remaps-sizes-2026-11-11-launched-by-the-user-from-the-launcher-with-claudes-build-logs-dataglyphs-g4-keyboard-0102log-dataglyphs-g4b-keyboard-0102log	T-G4: keyboard, remaps, sizes (2026-11-11, launched by the user from the launcher, with Claude's build, logs `data/glyphs-g4-keyboard-0102.log`, `data/glyphs-g4b-keyboard-0102.log`)
-study-glyphs.md	279	2	open-questions	Open questions
-study-glyphs.md	289	2	decisions-the-user-2026-11-03	Decisions (the user, 2026-11-03)
-study-glyphs.md	300	2	decisions-the-user-2026-11-11	Decisions (the user, 2026-11-11)
+study-glyphs.md	276	2	t-g4c-square-tab-boxes-key-capture-2026-11-11-launched-by-the-user-from-the-launcher-with-claudes-build-log-dataglyphs-g4c-square-tabs-0102log	T-G4c: square tab boxes, key capture (2026-11-11, launched by the user from the launcher, with Claude's build, log `data/glyphs-g4c-square-tabs-0102.log`)
+study-glyphs.md	300	2	open-questions	Open questions
+study-glyphs.md	310	2	decisions-the-user-2026-11-03	Decisions (the user, 2026-11-03)
+study-glyphs.md	321	2	decisions-the-user-2026-11-11	Decisions (the user, 2026-11-11)
 study-guest-memory-direct.md	1	1	study-could-the-gpu-use-guest-memory-directly-no-vram-copy	Study: could the GPU use guest memory directly (no VRAM copy)?
 study-guest-memory-direct.md	8	2	answer	Answer
 study-guest-memory-direct.md	19	2	1-what-the-bloodborne-port-actually-does	1. What the Bloodborne port actually does

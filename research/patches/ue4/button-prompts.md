@@ -8,7 +8,7 @@ default_windows: off
 default_deck: off
 origin: ours
 class: M
-commits: 4bfd053951, 5ebcaa16ec, f82291a28b, 2598c44c39, aa5e865248, 396cc55a8a, 175941cf62
+commits: 4bfd053951, 5ebcaa16ec, f82291a28b, 2598c44c39, aa5e865248, 396cc55a8a, 175941cf62, 29d3782e05
 files: scripts/ue4_glyphs.py, scripts/game_ui_assets.py, scripts/ue4_override.py, run.py, tests/test_ue4_glyphs.py, third_party/input-prompts/README.md, packaging/windows/package.sh, packaging/linux/appimage.sh, launcher/medievil_launcher.py, gpu/shim/gow3gpu.cpp, gpu/gow3gpu.h
 symbols: files, atlas, small, place, icons, key_icon, button_map, load_icon, visible, fit, SQUARE_TABS, SIZE_32x22, INVENTORY_SLOT, DEFAULT_KEYS, DEFAULT_PAD, PAD_ICONS, KEY_ICONS, overlay_prompts, OVERLAY, BUTTON_PROMPTS, gow3gpu_choice_style, ART, whole, with_whole, bc3, strip, with_strip, test_cells, test_square, texture, detile, tile, ATLAS_CELLS, SMALL, BONE, STYLES
 switches:
