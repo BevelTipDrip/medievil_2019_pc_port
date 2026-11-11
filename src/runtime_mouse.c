@@ -37,6 +37,10 @@ static atomic_llong total_x, total_y, total_wheel; /* counts not yet read, wheel
 static atomic_uint shown_buttons;         /* buttons the game sees */
 static atomic_ullong reports, wakes, batches; /* statistics for the log */
 static HWND reader_window;
+/* Mouse buttons reach the game only with GOW3_MOUSE_BUTTONS=1: a click the game received moved its
+ * focus off the main menu, which then ignored the keyboard and pad (step 2 run, 2026-11-11). Menu
+ * clicks wait for the cursor work (study step 3); gameplay buttons go through the pad (step 7). */
+static int buttons_on;
 
 /* Raw Input button flags -> sceMouse bits: down / up pairs in RI_MOUSE_BUTTON_1..5 order. */
 static unsigned apply_buttons(unsigned held,USHORT flags) {
@@ -130,6 +134,10 @@ static DWORD WINAPI reader_thread(void *unused) {
 void runtime_mouse_start(void) {
     static atomic_int started;
     if (!runtime_mouse_enabled() || atomic_exchange(&started,1)) return;
+    const char *v=getenv("GOW3_MOUSE_BUTTONS");
+    buttons_on=v && strcmp(v,"1")==0;
+    printf("Mouse: buttons to the game %s\n",buttons_on ? "on (GOW3_MOUSE_BUTTONS=1)" : "off (movement and wheel only)");
+    fflush(stdout);
     HANDLE thread=CreateThread(NULL,0,reader_thread,NULL,0,NULL);
     if (thread) CloseHandle(thread);
 }
@@ -165,7 +173,7 @@ int runtime_mouse_take(int32_t *x,int32_t *y,int32_t *wheel,uint32_t *buttons) {
     const long long w=atomic_exchange(&total_wheel,0), notches=w/WHEEL_DELTA;
     if (w-notches*WHEEL_DELTA) atomic_fetch_add(&total_wheel,w-notches*WHEEL_DELTA);
     *x=(int32_t)dx; *y=(int32_t)dy; *wheel=(int32_t)notches;
-    *buttons=atomic_load(&shown_buttons);
+    *buttons=buttons_on ? atomic_load(&shown_buttons) : 0;
     return 1;
 }
 #else

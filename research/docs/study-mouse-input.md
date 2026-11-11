@@ -314,6 +314,34 @@ rate; `src/runtime_services.c`), the stubs still report no mouse. Run: `GOW3_UE4
 **Confirmed:** `[SystemSettings]` is applied early enough; no `[ConsoleVariables]` or memory poke is needed (open
 question 1). The read rate confirms one read per frame (2.3), so step 2's accumulator is read once a frame.
 
+### T-MS2: the batched Raw Input reader feeds sceMouse (2026-11-11, launched by Claude with the user's go, log data/mouse-step2-raw-reader.log)
+
+Build `e27103e`, `GOW3_MOUSE=1`, game build 01.02, borderless 4K at 75%, Reflex cap 141. The user stayed on the
+main menu (skipped the intro movies with the pad after the first capture), moved the mouse at 1000 Hz, then
+switched the mouse to 8000 Hz and moved it again.
+
+| Check | Result |
+|---|---|
+| Registration | "registered to the reader" at every capture change: nothing replaced it |
+| Counts to the game | up to ~430 counts in one read moving fast, 0 still; counts only while captured |
+| Reports per second moving | ~930 at 1000 Hz (12089 in ~13 s of moving reads), ~7100 at 8000 Hz (69114 in ~10 s) |
+| Reader wake-ups | 690-704 a second at both rates **and with the mouse still** (batches = wake-ups); ~10 reports a wake-up at 8000 Hz |
+| Frame times | the user: no spikes from mouse input that they could see, at 1000 or 8000 Hz |
+| Menu | **found:** after a click reached the game, the main menu took no keyboard or pad input. The capturing click (blocked) and movement did not do it (the intro was skipped with the pad after the first capture). Likely (inferred, UE4 4.21 behaviour): the click moved Slate's focus off the menu widget and the console-only game never puts it back |
+
+Follow-ups:
+
+- **Buttons withheld** (fix built after T-MS2): the game gets movement and wheel only; `GOW3_MOUSE_BUTTONS=1`
+  passes clicks again for the menu work (step 3, with a focus fix). Gameplay buttons go through the pad (step 7).
+- **Idle polling, found, low priority, left as is:** the wait (`MsgWaitForMultipleObjectsEx(..., QS_ALLINPUT,
+  MWMO_INPUTAVAILABLE)`, then the 1 ms timer) returns at once even with no input, so the reader polls ~700 times a
+  second. It is MGS2's "Every 1 ms" mode line for line, the one verified "rock steady" there (MGS2 commits
+  `18fcef2`, `7ca83ac`) and here at 8000 Hz. MGS2's history: per-report wake-ups (the original, frame starts ~3x as
+  uneven at 8000 Hz) -> every 1 ms (default) -> once a frame at Present (`4e282c1`, Present waited 0.2-0.3 ms:
+  jitter at 8000 Hz). Changing only the idle wait (SDL's `GetQueueStatus` then a wait without
+  `MWMO_INPUTAVAILABLE`, keeping the 1 ms gate) would be its own A/B launch at 8000 Hz (the user, 2026-11-11: check
+  MGS2's history before changing the reader).
+
 ## 8. Open questions
 
 1. Does `[SystemSettings]` reach `PS4.EnableMouse` before the PS4 application and the pad opens read it (step 1)? **Yes (T-MS1).**
