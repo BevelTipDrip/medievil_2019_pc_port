@@ -443,10 +443,15 @@ extern "C" void gow3gpu_choice_style(const char* dir) {
     static std::once_flag once;
     std::call_once(once, [dir = std::string(dir ? dir : "")] {
         Gow3Overlay::ChoiceStyleFiles files;
-        const char* const images[] = {"menu/frame_options.png", "prompts/PS4_Cross.png", "prompts/PS4_Circle.png",
-                                      "prompts/PS4_Square.png"};
+        // The prompts in the chosen button style (prompts/style/, written at each start by
+        // scripts/ue4_glyphs.py overlay_prompts), else the game's own PS4 ones.
+        const char* const images[] = {"menu/frame_options.png", "prompts/style/Cross.png", "prompts/style/Circle.png",
+                                      "prompts/style/Square.png"};
+        const char* const fallbacks[] = {nullptr, "prompts/PS4_Cross.png", "prompts/PS4_Circle.png",
+                                         "prompts/PS4_Square.png"};
         for (int i = 0; i < 4; ++i) {
-            if (!Gow3Png::LoadRgba((dir + "/" + images[i]).c_str(), files.images[i])) {
+            if (!Gow3Png::LoadRgba((dir + "/" + images[i]).c_str(), files.images[i]) &&
+                (!fallbacks[i] || !Gow3Png::LoadRgba((dir + "/" + fallbacks[i]).c_str(), files.images[i]))) {
                 LOG_INFO(Lib_SaveDataDialog, "save list: plain look (no {} in {})", images[i], dir);
                 return;
             }

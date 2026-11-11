@@ -90,6 +90,22 @@ class GlyphTests(unittest.TestCase):
         edited = ue4_glyphs.small(fake_uexp(64, 64, bytes([0xff]) * (64 * 64 * 4)), 'xbox', 16, 'LB')
         self.assertEqual(decode(edited).getpixel((0, 0))[3], 0)
 
+    def test_overlay_prompts_follow_the_style(self):
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as cache:
+            (Path(cache) / 'prompts').mkdir()
+            for button in ue4_glyphs.OVERLAY:  # the game's prompts, as the game UI cache holds them
+                Image.new('RGBA', (100, 100), (10, 20, 30, 255)).save(Path(cache) / 'prompts' / f'PS4_{button}.png')
+            ue4_glyphs.overlay_prompts('playstation', cache)
+            with Image.open(Path(cache) / 'prompts' / 'style' / 'Cross.png') as image:
+                self.assertEqual(image.getpixel((50, 50)), (10, 20, 30, 255))
+            ue4_glyphs.overlay_prompts('xbox', cache)
+            with Image.open(Path(cache) / 'prompts' / 'style' / 'Cross.png') as image:
+                self.assertEqual(image.size, (100, 100))
+                self.assertEqual(image.getpixel((0, 0))[3], 0)
+                self.assertNotEqual(image.getpixel((50, 50)), (10, 20, 30, 255))
+
     def test_playstation_and_unknown_styles_write_nothing(self):
         self.assertEqual(ue4_glyphs.files(lambda name: b'', 'playstation'), {})
         self.assertEqual(ue4_glyphs.files(lambda name: b'', 'nonsense'), {})

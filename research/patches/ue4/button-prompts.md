@@ -9,10 +9,10 @@ default_deck: off
 origin: ours
 class: M
 commits: 4bfd053951, 5ebcaa16ec, f82291a28b, 2598c44c39, aa5e865248
-files: scripts/ue4_glyphs.py, scripts/game_ui_assets.py, scripts/ue4_override.py, run.py, tests/test_ue4_glyphs.py, third_party/input-prompts/README.md, packaging/windows/package.sh, packaging/linux/appimage.sh
-symbols: files, atlas, small, place, XBOX_CELLS, ART, whole, with_whole, bc3, strip, with_strip, test_cells, test_square, texture, detile, tile, ATLAS_CELLS, SMALL, BONE, STYLES
+files: scripts/ue4_glyphs.py, scripts/game_ui_assets.py, scripts/ue4_override.py, run.py, tests/test_ue4_glyphs.py, third_party/input-prompts/README.md, packaging/windows/package.sh, packaging/linux/appimage.sh, launcher/medievil_launcher.py, gpu/shim/gow3gpu.cpp, gpu/gow3gpu.h
+symbols: files, atlas, small, place, overlay_prompts, OVERLAY, BUTTON_PROMPTS, gow3gpu_choice_style, XBOX_CELLS, ART, whole, with_whole, bc3, strip, with_strip, test_cells, test_square, texture, detile, tile, ATLAS_CELLS, SMALL, BONE, STYLES
 switches:
-tests: T-G1, T-G1b, T-G2, T-G3
+tests: T-G1, T-G1b, T-G2, T-G3, T-G3b
 docs: study-glyphs.md#4-step-plan-smallest-first-every-launch-needs-the-users-go, study-glyphs.md#21-format-of-the-cooked-texture-what-a-patch-must-write-v
 depends_on: game-ui-cache
 related: debug-menu-0102
@@ -21,7 +21,10 @@ checked:
 ## What it does
 
 The ini key `button_prompts` (`playstation`, the default, writes nothing; `xbox`; `test`) picks the button prompt
-style. `xbox` draws the CC0 Free Input Prompts pack's Default Xbox icons (`third_party/input-prompts/xbox/`). For a style other than PlayStation, `ue4_override.apply` puts edited copies of the game's prompt textures in
+style. `xbox` draws the CC0 Free Input Prompts pack's Default Xbox icons (`third_party/input-prompts/xbox/`).
+Launcher > Controls > "In-game button prompts" sets it (until chosen: the Gamepad names style). The port's Load
+list follows: `run.py` writes `prompts/style/Cross|Circle|Square.png` into the game UI cache at each start
+(`overlay_prompts`) and `gow3gpu_choice_style` reads them. For a style other than PlayStation, `ue4_override.apply` puts edited copies of the game's prompt textures in
 the override pak: today the 16 64x64 cells in the top row of `InventoryButtonAtlas` (the `SP_PS4_*` sprites),
 which `test` fills with numbered yellow squares (00 Circle ... 15 StickRight, `ATLAS_CELLS`), and the three small
 textures of the Button Layout page and the inventory / bestiary tabs, `L1_Active`, `R1_Active`, `Options_Active`
@@ -48,8 +51,8 @@ study-glyphs.md; the Xbox and keyboard sets (G3, G4) and the bone textures (G2) 
 
 ## Interactions
 
-- load-list-details: the port's Load list draws the game's PS4 prompts from the game UI cache; it must follow the
-  style too (to do).
+- load-list-details: the Load list's prompts come from `prompts/style/` (this card), else the cache's `PS4_*`
+  (an older cache, or `overlay_prompts` failed: "Game UI files skipped" in the log).
 - game-ui-cache: shares the texture reader and tiling code (`texture`, `detile`, `tile`); its decode output did not
   change (22 textures compared with the previous decoder).
 - The pak is rewritten at every start, so the style changes with a restart.
@@ -68,6 +71,8 @@ study-glyphs.md; the Xbox and keyboard sets (G3, G4) and the bone textures (G2) 
   working". Offline: DXT5 differs from the drawn picture in about 30 of 10 000 pixels (edges). Clean exit.
 - T-G3 (PC, 01.02): run. `xbox` on the HUD and menus; the user, with screenshots of the menus: "Everything looks
   fine, it seems to be working well." Clean exit.
+- T-G3b (PC, 01.02): run by the user from the launcher, Xbox then PlayStation: "everything looks good, the load
+  menu also works".
 
 ## History and pitfalls
 

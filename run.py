@@ -318,7 +318,10 @@ def main():
         # The game's UI pieces for the overlay (Load list, button glyphs), from its own paks.
         try:
             from game_ui_assets import build as build_game_ui
-            build_game_ui(game, user_dir, log=lambda line: print(line, flush=True))
+            cache = build_game_ui(game, user_dir, log=lambda line: print(line, flush=True))
+            # The Load list's prompts in the button style the game gets (medievil.ini button_prompts).
+            from ue4_glyphs import overlay_prompts
+            overlay_prompts(graphics_options.read_ini(env['GOW3_CONFIG']).get('button_prompts', ''), cache)
         except Exception as error:  # the overlay then uses its plain look
             print(f'Game UI files skipped: {error}', flush=True)
         this = ['--run'] if getattr(sys, 'frozen', False) else [str(Path(__file__).resolve())]

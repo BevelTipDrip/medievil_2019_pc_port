@@ -239,7 +239,17 @@ back identically; the atlas below the cells is unchanged. The preview showed the
 on dark brown (D-pad, LT / RT). In game, the user's screenshots of the menus: "Everything looks fine, it seems to be
 working well." Clean exit.
 
-Also to do (the user): the port's own Load list (runtime/load-list-details) draws the game's `PS4_Cross` / `Circle` /
+## T-G3b: launcher setting and the Load list's prompts (2026-11-11, launched by the user from the launcher, with Claude's build, log `data/glyphs-g3b-0102.log`)
+
+Launcher > Controls: "In-game button prompts" (PlayStation / Xbox) under "Gamepad names", stored as
+`medievil.ini` `button_prompts`; until chosen it shows the Gamepad names style. At each start `run.py` writes the
+Load list's prompts for that style (`ue4_glyphs.overlay_prompts`: `prompts/style/Cross|Circle|Square.png` in the
+game UI cache, the game's PS4 ones or the Xbox A / B / X at 100x100); `gow3gpu_choice_style` reads them, else
+the cache's `PS4_*`. The in-game menu keeps the key (it rewrites only its own lines). The user started with Xbox,
+then with PlayStation: "everything looks good, the load menu also works". The log kept is the last start's
+(Xbox, 05:40; the Load list's 8 entries in the styled look).
+
+Done (was "also to do"): the port's own Load list (runtime/load-list-details) draws the game's `PS4_Cross` / `Circle` /
 `Square` prompts from the game UI cache; with another style it must use that style's glyphs.
 
 ## Open questions

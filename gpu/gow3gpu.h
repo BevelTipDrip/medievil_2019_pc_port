@@ -38,8 +38,9 @@ int gow3gpu_choice_begin(const char *title, const char *const *items, const char
                          const char *const *details, const char *const *more, int count, int focus);
 int gow3gpu_choice_poll(void);
 /* The game's menu look for lists with details: `dir` is the game UI cache
- * (scripts/game_ui_assets.py: menu/frame_options.png, prompts/PS4_Cross / Circle / Square.png,
- * fonts/title.ttf, fonts/text.ttf). Loaded once; a missing file leaves the plain look. */
+ * (scripts/game_ui_assets.py: menu/frame_options.png, fonts/title.ttf, fonts/text.ttf; the
+ * prompts from prompts/style/Cross / Circle / Square.png, the chosen button style written by
+ * scripts/ue4_glyphs.py, else prompts/PS4_*.png). Loaded once; a missing file leaves the plain look. */
 void gow3gpu_choice_style(const char *dir);
 /* The save list reads its buttons (PS4 button bits: up 0x10, down 0x40, circle 0x2000,
  * cross 0x4000, square 0x8000) from this function every frame while it is open. */

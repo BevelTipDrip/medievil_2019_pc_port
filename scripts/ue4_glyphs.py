@@ -171,6 +171,26 @@ def small(uexp, style, number, icon=''):
     return with_whole(uexp, picture, layout)
 
 
+# The port's Load list prompts (gow3gpu_choice_style): the PS4 button and its Xbox icon.
+OVERLAY = {'Cross': 'A', 'Circle': 'B', 'Square': 'X'}
+
+
+def overlay_prompts(style, cache):
+    """Writes <cache>/prompts/style/Cross|Circle|Square.png for the port's Load list in the given
+    style; the game's own PS4 prompts (game UI cache) for playstation, test or an unknown style."""
+    from PIL import Image
+    out = Path(cache) / 'prompts' / 'style'
+    out.mkdir(parents=True, exist_ok=True)
+    for button, icon in OVERLAY.items():
+        if style == 'xbox':
+            picture = Image.new('RGBA', (100, 100), (0, 0, 0, 0))  # the size of the game's prompts
+            place(picture, (0, 0, 100, 100), icon, style)
+        else:
+            with Image.open(Path(cache) / 'prompts' / f'PS4_{button}.png') as image:
+                picture = image.convert('RGBA')
+        picture.save(out / f'{button}.png')
+
+
 def files(read, style):
     """{pak path: edited .uexp} for a style; read(name) gives the game's file."""
     if style not in STYLES or style == 'playstation':
