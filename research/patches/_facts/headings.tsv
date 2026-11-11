@@ -5,7 +5,7 @@ START-HERE.md	24	2	rules-the-users-also-in-claudes-memory	Rules (the user's; als
 START-HERE.md	46	2	current-state-table-last-fully-updated-2026-10-18	Current state (table last fully updated 2026-10-18)
 START-HERE.md	68	2	knobs-and-triggers	Knobs and triggers
 START-HERE.md	85	2	document-index	Document index
-START-HERE.md	118	2	elsewhere	Elsewhere
+START-HERE.md	119	2	elsewhere	Elsewhere
 building-and-tools.md	1	1	building-and-tools	Building and tools
 building-and-tools.md	5	2	paths	Paths
 building-and-tools.md	19	2	toolchain-installed-2026-10-18	Toolchain (installed 2026-10-18)
@@ -595,6 +595,17 @@ study-boot-resolution.md	186	3	ui-scale-dpi-and-aspect-ratio	UI scale (DPI) and 
 study-boot-resolution.md	207	2	4-fixing-the-live-rsetres-instead	4. Fixing the live r.SetRes instead
 study-boot-resolution.md	219	2	5-other-versions	5. Other versions
 study-boot-resolution.md	232	2	recommendation-ranked	Recommendation (ranked)
+study-camera-moves.md	1	1	medievil-camera-every-automatic-move-per-area-class-research-2026-11-11-no-launch	MediEvil camera: every automatic move, per area class (research, 2026-11-11, no launch)
+study-camera-moves.md	16	2	1-how-the-camera-works-and-which-area-is-active	1. How the camera works, and which area is active
+study-camera-moves.md	43	2	2-area-classes	2. Area classes
+study-camera-moves.md	76	3	21-free-family-bp_cameraareafree-freesuggestdirection-inherits-it-freesimple-is-a-near-copy	2.1 Free family (BP_CameraAreaFree; FreeSuggestDirection inherits it; FreeSimple is a near copy)
+study-camera-moves.md	110	3	22-kardok-zarok-arena-free-derived-own-computecamera-export-16-b	2.2 Kardok (Zarok arena, Free-derived, own ComputeCamera, export 16) [B]
+study-camera-moves.md	119	3	23-fixed--scripted-classes-b	2.3 Fixed / scripted classes [B]
+study-camera-moves.md	135	3	24-one-shot-control-rotation-writes-outside-the-camera-classes-b	2.4 One-shot control-rotation writes outside the camera classes [B]
+study-camera-moves.md	143	2	3-recommended-intervention-sets	3. Recommended intervention sets
+study-camera-moves.md	160	2	4-free-mode-in-scripted-areas-design-not-yet-researched-in-depth	4. Free mode in scripted areas (design, not yet researched in depth)
+study-camera-moves.md	171	2	5-risks-and-unknowns	5. Risks and unknowns
+study-camera-moves.md	192	2	6-built-gow3_camera_off-scriptsue4_camerapy-override-pak-2026-11-11	6. Built: `GOW3_CAMERA_OFF` (scripts/ue4_camera.py, override pak, 2026-11-11)
 study-deck-apu-deep-dive.md	1	1	study-the-decks-apu-and-linux-platform-in-depth-for-stage-b	Study: the Deck's APU and Linux platform, in depth, for stage B
 study-deck-apu-deep-dive.md	19	2	answer	Answer
 study-deck-apu-deep-dive.md	65	2	1-the-core-and-memory-seen-from-stage-b	1. The core and memory, seen from stage B

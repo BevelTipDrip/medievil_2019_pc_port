@@ -12,6 +12,7 @@ GOW3_BACKING_COPY	upstream	src/runtime_memory.c:2107 tests/test_runtime.c:483
 GOW3_BARRIER_MERGE	upstream	gpu/shadps4/video_core/texture_cache/image.cpp:643
 GOW3_BUFFER_STATS	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:1184 gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:4626
 GOW3_BUNDLED_VK_DRIVER_FILES	upstream	launcher/vulkan_check.py:64 tests/test_packaged_vulkan.py:29 tests/test_packaged_vulkan.py:49 tests/test_packaged_vulkan.py:98
+GOW3_CAMERA_OFF	ours	scripts/ue4_camera.py:13
 GOW3_CAPTURE_BUFFER_BYTES	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.cpp:367
 GOW3_CAPTURE_DIR	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.cpp:99
 GOW3_CAPTURE_ON_TARGET	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.cpp:229
