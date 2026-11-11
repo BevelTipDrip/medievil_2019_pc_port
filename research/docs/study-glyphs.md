@@ -273,6 +273,27 @@ tab keys round, the Enemies and Bosses pages narrow (ring 41x36 px on Friendlies
 bestiary draws `L1_Active` in a 1.45:1 box on one page and about square on the others; one texture cannot be right
 on both. Open: what in `BestiaryMenu` sets the two shapes.
 
+## T-G4c: square tab boxes, key capture (2026-11-11, launched by the user from the launcher, with Claude's build, log `data/glyphs-g4c-square-tabs-0102.log`)
+
+Why the bestiary differed (a read-only study of `BestiaryMenu`, verified statically): each bestiary page has its
+own title box with its own L1 / R1 Image widgets. Friendlies (`TitleTab`: `Image_1` / `Image_2`) stores
+`Brush.ImageSize (32, 22)`; Enemies (`HorizontalBox_10`: `Image_315` / `Image_316`) and Bosses
+(`HorizontalBox_3`: `Image_297` / `Image_298`) store none, so UE4's 32x32 applies. No blueprint touches them; each
+title box sits in an auto-sized CanvasPanelSlot; the sprites cover the whole 64x64. The other users: Button Layout
+and the Options manager's copy (32, 22), the inventory a 64x44 CanvasPanelSlot. Every widget is stored twice (the
+class's WidgetTree and the WidgetArchetype). At 4K the UI scale is about 1.67: 32x22 = 53x37, 64x44 = 107x73,
+32x32 = 53-55 square, as measured.
+
+Fix chosen (the user: "the simplest and safest fix"): for xbox / keyboard all those boxes become square, same-size
+float edits (ImageSize Y 22 -> 32 at 4 + 4 + 2 places; the inventory's slot height 44 -> 64, top -39 -> -49), and
+the icons are drawn without the 1.45 narrowing. PlayStation keeps the game's boxes. The fallback (Enemies / Bosses
+made 1.45:1 by inserting a brush size, the file grows) is on the card.
+
+Launcher > Controls: the key boxes became key capture (the user): click, then press the key; Tk key names become
+SDL scancode names (`sdl_key_name`); Insert, F12, `,` and `=` are refused. The user: "the bestiary all looks
+correct, as do the rest of the prompts", "The Key capture works, and it properly differentiates between left and
+right alt."
+
 Done (was "also to do"): the port's own Load list (runtime/load-list-details) draws the game's `PS4_Cross` / `Circle` /
 `Square` prompts from the game UI cache; with another style it must use that style's glyphs.
 

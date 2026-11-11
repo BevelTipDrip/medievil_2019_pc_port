@@ -34,11 +34,22 @@ ATLAS_CELLS = ('circle', 'cross', 'triangle', 'square', 'up', 'down', 'left', 'r
 SMALL = {'OVERBITE/Content/UI/Sprites/HUD/L1_Active.uexp': (16, 'l1'),
          'OVERBITE/Content/UI/Sprites/HUD/R1_Active.uexp': (17, 'r1'),
          'OVERBITE/Content/UI/Sprites/HUD/Options_Active.uexp': (18, 'options')}
-# How much wider than its pixels the game shows a texture (measured from the T-G1b test squares:
-# the inventory, bestiary and Button Layout page show L1_Active / R1_Active at 107x73, 53x37 px).
-# Icons are drawn that much narrower, so they look right on screen.
-STRETCH = {'OVERBITE/Content/UI/Sprites/HUD/L1_Active.uexp': 1.45,
-           'OVERBITE/Content/UI/Sprites/HUD/R1_Active.uexp': 1.45}
+# The menus that show L1_Active / R1_Active (the SP_PS4_*1_New sprites, the whole 64x64) draw them
+# in a 1.45:1 box (brush 32x22; the inventory's slot 64x44), except the bestiary's Enemies and
+# Bosses pages (no stored size: 32x32), so no one picture fit all (T-G4). For the xbox and keyboard
+# styles the boxes are made square, same-size float edits: brush ImageSize Y 22 -> 32, the
+# inventory's slot height 44 -> 64 with its top -39 -> -49 (centred). Every widget is stored twice
+# (the class's WidgetTree and the WidgetArchetype). PlayStation keeps the game's boxes: its wide
+# L1 / R1 plate was drawn for them.
+SIZE_32x22 = (bytes.fromhex('000000420000b041'), bytes.fromhex('0000004200000042'))
+INVENTORY_SLOT = (bytes.fromhex('00001cc22a04000000000000ae020000000000000400000000000000000000804'
+                                '2a000000000000000ae0200000000000004000000000000000000003042'),
+                  bytes.fromhex('000044c22a04000000000000ae020000000000000400000000000000000000804'
+                                '2a000000000000000ae0200000000000004000000000000000000008042'))
+SQUARE_TABS = {'OVERBITE/Content/UI/BestiaryMenu.uexp': [(*SIZE_32x22, 4)],  # Friendlies page
+               'OVERBITE/Content/UI/OptionsMenu/WidgetButtonLayout.uexp': [(*SIZE_32x22, 4)],
+               'OVERBITE/Content/UI/OptionsMenu/WidgetOptionsmanager.uexp': [(*SIZE_32x22, 2)],
+               'OVERBITE/Content/UI/InventoryMenu.uexp': [(*INVENTORY_SLOT, 4)]}
 # The pearl "bone" prompts (100x100 DXT5): inventory, Daring Dash (Classic: Triangle, Modern: R1),
 # the tutorial prompt's default.
 BONE = {'OVERBITE/Content/UI/Textures/ButtonPrompts/PS4_Cross.uexp': (19, 'cross'),
@@ -174,6 +185,8 @@ def key_icon(key):
         return name.upper()
     if name[:1] == 'f' and name[1:].isdigit() and 1 <= int(name[1:]) <= 12:
         return name.upper()
+    if name.startswith('keypad ') and name[7:].isdigit():  # the pack has no keypad: the digit's key
+        return name[7:]
     return KEY_ICONS.get(name)
 
 
@@ -222,19 +235,11 @@ def fit(icon, w, h):
     return icon.convert('RGBa').resize(size, Image.LANCZOS).convert('RGBA')
 
 
-def place(picture, box, name, style, stretch=1.0):
+def place(picture, box, name, style):
     """The style's icon `name` scaled to fit box (left, top, width, height) less MARGIN, centred
-    on a cleared box. A tuple of four names is a key cluster: the first above the other three.
-    stretch: how much wider the game shows the box (STRETCH); the icon is drawn that much narrower."""
-    from PIL import Image
+    on a cleared box. A tuple of four names is a key cluster: the first above the other three."""
     x, y, w, h = box
     picture.paste((0, 0, 0, 0), (x, y, x + w, y + h))
-    if stretch != 1.0:  # drawn at the shape seen on screen, then narrowed to the texture
-        wide = Image.new('RGBA', (round(w * stretch), h), (0, 0, 0, 0))
-        place(wide, (0, 0, wide.width, h), name, style)
-        narrow = wide.convert('RGBa').resize((w, h), Image.LANCZOS).convert('RGBA')
-        picture.alpha_composite(narrow, (x, y))
-        return
     if isinstance(name, tuple):
         side = min((w - 2 * MARGIN) // 3, (h - 2 * MARGIN) // 2)
         left, top = x + (w - 3 * side) // 2, y + (h - 2 * side) // 2
@@ -260,16 +265,15 @@ def atlas(uexp, style, chosen=None):
     return with_strip(uexp, picture, at, pitch)
 
 
-def small(uexp, style, number, icon=None, stretch=1.0):
+def small(uexp, style, number, icon=None):
     """A small or bone prompt texture's .uexp in the given style (the whole texture; the padding
-    keeps its pixels). number: the test style's; icon: the other styles' icon (none: unchanged);
-    stretch: STRETCH."""
+    keeps its pixels). number: the test style's; icon: the other styles' icon (none: unchanged)."""
     _format, width, height, *_rest = texture(uexp) or (None, 0, 0)
     picture, layout = whole(uexp)
     if style == 'test':
         test_square(picture, (0, 0, width, height), number)
     elif icon:
-        place(picture, (0, 0, width, height), icon, style, stretch)
+        place(picture, (0, 0, width, height), icon, style)
     return with_whole(uexp, picture, layout)
 
 
@@ -304,7 +308,14 @@ def files(read, style, key_map='', pad_map=''):
     result = {ATLAS: atlas(read(ATLAS), style, chosen)}
     for name, (number, button) in SMALL.items():
         if style == 'test' or chosen.get(button):
-            result[name] = small(read(name), style, number, chosen.get(button), STRETCH.get(name, 1.0))
+            result[name] = small(read(name), style, number, chosen.get(button))
+    if style in ('xbox', 'keyboard'):
+        from ue4_override import apply_edits
+        for name, edits in SQUARE_TABS.items():
+            try:
+                result[name] = apply_edits(name, read(name), edits)
+            except (ValueError, FileNotFoundError) as error:  # this game build: the 1.45:1 box stays
+                print(f'Button prompts: the L1 / R1 tabs keep their shape here ({error})', flush=True)
     try:
         for name, (number, button) in BONE.items():
             if style == 'test' or chosen.get(button):

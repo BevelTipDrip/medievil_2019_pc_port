@@ -102,8 +102,10 @@ class GlyphTests(unittest.TestCase):
         keys = ue4_glyphs.icons('keyboard', key_map='cross=Q,triangle=left ctrl,options=F5')
         self.assertEqual((keys['cross'], keys['triangle'], keys['options'], keys['circle']), ('Q', 'Crtl', 'F5', 'Shift'))
         self.assertEqual(keys['stick_left'], ('W', 'A', 'S', 'D'))
+        self.assertEqual(ue4_glyphs.key_icon('Keypad 7'), '7')
+        self.assertEqual(ue4_glyphs.key_icon('Right Shift'), 'Shift')
         lines = []
-        keys = ue4_glyphs.icons('keyboard', key_map='square=Keypad 7', log=lines.append)
+        keys = ue4_glyphs.icons('keyboard', key_map='square=Keypad .', log=lines.append)
         self.assertNotIn('square', keys)  # no picture: the cell keeps the PS4 art
         self.assertEqual(len(lines), 1)
 
@@ -112,14 +114,23 @@ class GlyphTests(unittest.TestCase):
         self.assertEqual(ue4_glyphs.load_icon('keyboard', 'Q').size, (96, 96))
         self.assertEqual(ue4_glyphs.load_icon('keyboard', 'Space').size, (128, 64))
 
-    def test_stretched_textures_get_narrower_icons(self):
-        def visible_width(stretch):
-            picture = Image.new('RGBA', (64, 64), (0, 0, 0, 0))
-            ue4_glyphs.place(picture, (0, 0, 64, 64), '1', 'keyboard', stretch)
-            box = picture.getchannel('A').point(lambda a: 255 if a > 128 else 0).getbbox()
-            return (box[2] - box[0]) / (box[3] - box[1])
-        self.assertAlmostEqual(visible_width(1.0), 1.0, delta=0.05)
-        self.assertAlmostEqual(visible_width(1.45), 1 / 1.45, delta=0.05)  # 1.45x on screen: round
+    def test_square_tab_edits_keep_sizes(self):
+        for name, edits in ue4_glyphs.SQUARE_TABS.items():
+            for old, new, _count in edits:
+                self.assertEqual(len(old), len(new), name)
+        # A menu whose sizes are found as often as in 01.02 is edited; any other count (another
+        # game build) leaves it alone, and only the xbox / keyboard styles touch the menus.
+        fake = {ue4_glyphs.ATLAS: fake_uexp(1024, 64, bytes(1024 * 64 * 4))}
+        for name in {**ue4_glyphs.SMALL, **ue4_glyphs.BONE}:
+            fake[name] = fake_uexp(64, 64, bytes(64 * 64 * 4))
+        two = bytes(8) + ue4_glyphs.SIZE_32x22[0] + bytes(8) + ue4_glyphs.SIZE_32x22[0]
+        for name in ue4_glyphs.SQUARE_TABS:
+            fake[name] = two
+        result = ue4_glyphs.files(fake.get, 'keyboard')
+        options = 'OVERBITE/Content/UI/OptionsMenu/WidgetOptionsmanager.uexp'  # 2 in 01.02
+        self.assertEqual(result[options], two.replace(*ue4_glyphs.SIZE_32x22))
+        self.assertEqual([n for n in ue4_glyphs.SQUARE_TABS if n in result], [options])
+        self.assertFalse(set(ue4_glyphs.SQUARE_TABS) & set(ue4_glyphs.files(fake.get, 'test')))
 
     def test_xbox_cells_replace_the_old_art(self):
         payload = bytes([0xff]) * (1024 * 72 * 4)  # opaque white everywhere

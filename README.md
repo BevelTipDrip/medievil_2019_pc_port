@@ -51,7 +51,27 @@ What this fork has done, and what is next. Checked items are in a release or on 
 **Launcher and controls**
 - [x] New icon, Start menu shortcut, updates from this fork
 - [x] Mouse cursor hidden while playing
-- [ ] Mouse look and menu mouse, controller button glyphs, camera options
+- [x] Xbox and keyboard button prompts in the game, following your remaps; keys set by pressing them
+- [ ] Mouse look and menu mouse, camera options
+
+## What's new in 2.2.0
+
+- **Xbox and keyboard button prompts.** Launcher > Controls > **In-game button prompts**: PlayStation (the game's
+  own), Xbox or Keyboard. The game's HUD, menus, inventory, bestiary and Button Layout page show the button or key
+  you play with, including your remaps (Cross on B shows B; Cross on Q shows Q). The icons are Julio Cacko's
+  [Free Input Prompts](https://juliocacko.itch.io/free-input-prompts) (CC0). "Gamepad names" is now
+  **Controller type**.
+- **Key capture.** To remap a key, click its box on the Controls page and press the key: no more typing
+  "Left Shift". Left and right Shift / Ctrl / Alt are told apart.
+- **A new Load list**, in the game's own menu style:
+  - **Continue** loads your newest save; every save shows its **Slot** number.
+  - Beside the list: the level's loading screen, chalices, levels completed, life bottles, gold, bestiary entries
+    and play time. Square / Tab lists every level in the save.
+  - The names, pictures and fonts come from your own copy of the game at start; nothing of the game is shipped.
+- **Saves stay in their slot.** Loading an older slot and playing on used to save into a different slot. A
+  save's date is now its last write, so the game saves where you loaded. Save backups made at each start are
+  no longer deleted (they are small).
+- **Dan's Crypt water** at effects resolution below 100% looked wrong (and the map screen had glitches): fixed.
 
 ## What's new in 2.1.1
 

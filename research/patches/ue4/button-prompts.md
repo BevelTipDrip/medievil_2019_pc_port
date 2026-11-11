@@ -10,9 +10,9 @@ origin: ours
 class: M
 commits: 4bfd053951, 5ebcaa16ec, f82291a28b, 2598c44c39, aa5e865248, 396cc55a8a, 175941cf62
 files: scripts/ue4_glyphs.py, scripts/game_ui_assets.py, scripts/ue4_override.py, run.py, tests/test_ue4_glyphs.py, third_party/input-prompts/README.md, packaging/windows/package.sh, packaging/linux/appimage.sh, launcher/medievil_launcher.py, gpu/shim/gow3gpu.cpp, gpu/gow3gpu.h
-symbols: files, atlas, small, place, icons, key_icon, button_map, load_icon, visible, fit, STRETCH, DEFAULT_KEYS, DEFAULT_PAD, PAD_ICONS, KEY_ICONS, overlay_prompts, OVERLAY, BUTTON_PROMPTS, gow3gpu_choice_style, ART, whole, with_whole, bc3, strip, with_strip, test_cells, test_square, texture, detile, tile, ATLAS_CELLS, SMALL, BONE, STYLES
+symbols: files, atlas, small, place, icons, key_icon, button_map, load_icon, visible, fit, SQUARE_TABS, SIZE_32x22, INVENTORY_SLOT, DEFAULT_KEYS, DEFAULT_PAD, PAD_ICONS, KEY_ICONS, overlay_prompts, OVERLAY, BUTTON_PROMPTS, gow3gpu_choice_style, ART, whole, with_whole, bc3, strip, with_strip, test_cells, test_square, texture, detile, tile, ATLAS_CELLS, SMALL, BONE, STYLES
 switches:
-tests: T-G1, T-G1b, T-G2, T-G3, T-G3b, T-G4
+tests: T-G1, T-G1b, T-G2, T-G3, T-G3b, T-G4, T-G4c
 docs: study-glyphs.md#4-step-plan-smallest-first-every-launch-needs-the-users-go, study-glyphs.md#21-format-of-the-cooked-texture-what-a-patch-must-write-v
 depends_on: game-ui-cache
 related: debug-menu-0102
@@ -48,9 +48,11 @@ study-glyphs.md; the Xbox and keyboard sets (G3, G4) and the bone textures (G2) 
   A missing icon raises ValueError: the style is not applied (the pearl ones: only they stay PlayStation).
 - `place` clears the whole box before drawing, so none of the PS4 art shows around a smaller icon.
 - Icons are cropped at alpha > `VISIBLE` (16): the pack's keys fade to 1-2 out to the canvas edge.
-- `STRETCH`: `L1_Active` / `R1_Active` are shown 1.45x wider than tall (inventory, Button Layout, bestiary
-  Friendlies), so their icons are drawn that much narrower. The bestiary's Enemies / Bosses pages show them about
-  square: there they look narrow (open, T-G4).
+- `SQUARE_TABS` (xbox / keyboard only): the menus that show `L1_Active` / `R1_Active` get square boxes (BestiaryMenu
+  Friendlies, WidgetButtonLayout, WidgetOptionsmanager: ImageSize (32, 22) -> (32, 32); InventoryMenu: slot height
+  44 -> 64, top -39 -> -49), so one square picture fits every screen. Each edit needs its 01.02 count (4 / 4 / 2 /
+  4, both widget trees); another count leaves that menu as it is, with a start-log line. PlayStation keeps the
+  game's boxes (its wide plate was drawn for 1.45:1).
 - `DEFAULT_KEYS` / `DEFAULT_PAD` must equal the launcher's `CONTROLS` and `runtime_pad.c` (a test compares the
   launcher's).
 - An unknown style counts as `playstation`. A game build whose atlas does not parse prints "Button prompts: not
@@ -81,9 +83,21 @@ study-glyphs.md; the Xbox and keyboard sets (G3, G4) and the bone textures (G2) 
 - T-G3b (PC, 01.02): run by the user from the launcher, Xbox then PlayStation: "everything looks good, the load
   menu also works".
 - T-G4 (PC, 01.02): run by the user from the launcher. Keyboard and remaps work; after the crop and squeeze fixes
-  "Everything looks good" except the bestiary's Enemies / Bosses tabs (narrow keys, see Invariants).
+  "Everything looks good" except the bestiary's Enemies / Bosses tabs (narrow keys: the 1.45 narrowing, since removed).
+- T-G4c (PC, 01.02): square boxes. The user: "the bestiary all looks correct, as do the rest of the prompts".
 
 ## History and pitfalls
+
+- The L1 / R1 tab boxes (T-G4): the menus show `L1_Active` / `R1_Active` 1.45:1 (brush 32x22; the inventory's slot
+  64x44), except the bestiary's Enemies / Bosses pages (no stored brush size: 32x32). Drawing the icons 1.45x
+  narrower fixed every screen but those two. Chosen (the user, 2026-11-11): **square everywhere** for xbox / keyboard
+  (`SQUARE_TABS`, same-size float edits in BestiaryMenu, WidgetButtonLayout, WidgetOptionsmanager, InventoryMenu).
+  **Future option, if the square tabs look off:** make Enemies / Bosses 1.45:1 instead: insert the 57-byte
+  `ImageSize (32, 22)` tag (copied from the Friendlies `Image_1`, same name table) into the 8 Enemies / Bosses brushes
+  of `BestiaryMenu.uexp` (both widget trees), brush tag size 37 -> 94; the `.uexp` grows by 456 bytes, so
+  `BestiaryMenu.uasset` needs `SerialSize` +57 for those 8 exports, every later export's `SerialOffset` moved and
+  `BulkDataStartOffset` updated. Built and re-parsed in scratch on 2026-11-11 (not run in game); then the icons go back
+  to being drawn 1.45x narrower (git history: `STRETCH` in `175941c`). Cause and widget names: `study-glyphs.md` T-G4c.
 
 - The repo's `.gitignore` ignores `*.png` (screenshots): the icons need its `!third_party/input-prompts/**/*.png`
   exception, or a commit leaves them out (the Xbox commit did; added in the next one).

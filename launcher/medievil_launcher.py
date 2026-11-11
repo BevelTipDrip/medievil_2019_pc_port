@@ -52,7 +52,7 @@ MAX_LOG_LINES = 6000
 NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
 # This build. The launcher checks the fork's GitHub releases at start and offers newer versions.
 # The fork's own series starts at 2.0.0 (upstream bc160201983 is at 1.3.x), so it never offers upstream's builds.
-VERSION = '2.1.1'
+VERSION = '2.2.0'
 RELEASES_API = 'https://api.github.com/repos/BevelTipDrip/medievil_2019_pc_port/releases/latest'
 RELEASES_PAGE = 'https://github.com/BevelTipDrip/medievil_2019_pc_port/releases'
 # The port's pages (Home and Advanced), opened in the browser.
@@ -219,6 +219,30 @@ def control_changes(values, kind):
     return {row[0]: values[row[0]].strip() for row in CONTROLS
             if row[column] and values.get(row[0], '').strip()
             and values[row[0]].strip().casefold() != row[column].casefold()}
+
+
+# Tk key names (keysyms) as SDL scancode names, which the runtime reads (runtime_pad.c,
+# SDL_GetScancodeFromName); letters, digits, F1-F11 and keypad digits are converted in sdl_key_name.
+TK_KEYS = {'space': 'Space', 'Return': 'Return', 'KP_Enter': 'Keypad Enter', 'Tab': 'Tab', 'BackSpace': 'Backspace',
+           'Escape': 'Escape', 'Shift_L': 'Left Shift', 'Shift_R': 'Right Shift', 'Control_L': 'Left Ctrl',
+           'Control_R': 'Right Ctrl', 'Alt_L': 'Left Alt', 'Alt_R': 'Right Alt', 'Up': 'Up', 'Down': 'Down',
+           'Left': 'Left', 'Right': 'Right', 'Delete': 'Delete', 'Home': 'Home', 'End': 'End', 'Prior': 'PageUp',
+           'Next': 'PageDown', 'Caps_Lock': 'CapsLock', 'minus': '-', 'period': '.', 'slash': '/',
+           'semicolon': ';', 'apostrophe': "'", 'grave': '`', 'bracketleft': '[', 'bracketright': ']',
+           'backslash': '\\', 'KP_Add': 'Keypad +', 'KP_Subtract': 'Keypad -', 'KP_Multiply': 'Keypad *',
+           'KP_Divide': 'Keypad /', 'KP_Decimal': 'Keypad .'}
+
+
+def sdl_key_name(keysym):
+    """The SDL name of a key pressed in the launcher (a Tk keysym), or None: unknown, a separator
+    of the saved map (',' '='), or a key the port keeps (Insert opens its menu, F12 screenshots)."""
+    if len(keysym) == 1 and keysym.isascii() and keysym.isalnum():
+        return keysym.upper()
+    if re.fullmatch(r'F([1-9]|1[01])', keysym):
+        return keysym
+    if re.fullmatch(r'KP_[0-9]', keysym):
+        return f'Keypad {keysym[3]}'
+    return TK_KEYS.get(keysym)
 
 
 def control_map(controls, kind):
@@ -1910,7 +1934,7 @@ class Launcher:
             ttk.Label(table, text=PS_BUTTON_NAMES[button], width=14).grid(row=r, column=1, sticky='w', padx=(0, 12))
             key_var = tk.StringVar(value=saved.get('key', {}).get(button) or key)
             self.control_vars['key'][button] = key_var
-            ttk.Entry(table, textvariable=key_var, width=16, font=self.f('body', 10)).grid(row=r, column=2, sticky='w', padx=(0, 18))
+            self.key_capture(table, key_var).grid(row=r, column=2, sticky='w', padx=(0, 18))
             pad_name = saved.get('pad', {}).get(button) or pad
             pad_var = tk.StringVar(value=pad_name or '')
             self.control_vars['pad'][button] = pad_var
@@ -1930,12 +1954,46 @@ class Launcher:
                 box = ttk.Label(table, text=_('{} trigger').format(PS_BUTTON_NAMES[button]), style='Muted.TLabel')
             box.grid(row=r, column=4, sticky='w')
             self.draw_pad_icon(button)
-        self.note(f, _('Keys use SDL names: letters, digits, Space, Return, Tab, Left Shift, Left Ctrl, Left Alt, '
-                       'Backspace, Up, Down, Left, Right, F1 to F12. A name the game does not know keeps the default '
-                       '(the log says which). L2/R2 on the gamepad stay on the triggers. Insert and R3+L2 always open '
-                       'the port\'s menu. Applied when the game starts.'))
+        self.note(f, _('Click a key box, then press the key for that button (click elsewhere to cancel). Insert and '
+                       'R3+L2 always open the port\'s menu and F12 takes screenshots, so those keys cannot be chosen. '
+                       'L2/R2 on the gamepad stay on the triggers. Applied when the game starts.'))
         self.ttk.Button(f, text=_('Reset to defaults'), command=self.reset_controls).grid(
             row=self.next_row(f), column=0, sticky='w', pady=(14, 0))
+
+    def key_capture(self, parent, var):
+        """A key box: click it, then press the key (sdl_key_name), which is stored in var."""
+        box = self.ttk.Button(parent, width=16)
+        box.capturing = False
+
+        def show(*_args):
+            box.configure(text=var.get())
+
+        def start():
+            box.capturing = True
+            box.configure(text=_('Press a key...'))
+            box.focus_set()
+
+        def pressed(event):
+            if not box.capturing:
+                return None  # Space / Return on a focused box start a capture as a click does
+            name = sdl_key_name(event.keysym)
+            if name is None:
+                box.configure(text=_('Not this key, another?'))
+                return 'break'
+            box.capturing = False
+            var.set(name)
+            parent.focus_set()
+            return 'break'  # Tab, Space and the rest stay with the capture
+
+        def stop(_event):
+            box.capturing = False
+            show()
+        var.trace_add('write', show)
+        show()
+        box.configure(command=start)
+        box.bind('<KeyPress>', pressed)
+        box.bind('<FocusOut>', stop)
+        return box
 
     def draw_pad_icon(self, button):
         """The gamepad column's icon of a game button, in the chosen style (L2/R2: the triggers)."""

@@ -161,6 +161,19 @@ class ControlMapTest(unittest.TestCase):
         pads.update(cross='b', l2='a')
         self.assertEqual(launcher.control_changes(pads, 'pad'), {'cross': 'b'})  # L2/R2: triggers only
 
+    def test_captured_keys_get_sdl_names(self):
+        names = {'a': 'A', '5': '5', 'space': 'Space', 'Shift_L': 'Left Shift', 'Control_R': 'Right Ctrl',
+                 'Return': 'Return', 'BackSpace': 'Backspace', 'Prior': 'PageUp', 'F11': 'F11', 'KP_7': 'Keypad 7'}
+        for keysym, name in names.items():
+            self.assertEqual(launcher.sdl_key_name(keysym), name)
+        # The port's own keys and the saved map's separators cannot be chosen.
+        for keysym in ('Insert', 'F12', 'comma', 'equal', 'udiaeresis'):
+            self.assertIsNone(launcher.sdl_key_name(keysym))
+        # Every default key is one the capture can produce.
+        produced = {launcher.sdl_key_name(k) for k in (*launcher.TK_KEYS, 'e', 'q', '1', '3', 'r', 'f', 'z', 'c',
+                                                         'i', 'k', 'j', 'l')}
+        self.assertTrue({k for _b, k, _p in launcher.CONTROLS} <= produced)
+
     def test_both_styles_name_every_default_gamepad_button(self):
         for labels in launcher.PAD_STYLES.values():
             self.assertTrue(all(p in labels for _b, _k, p in launcher.CONTROLS if p))
