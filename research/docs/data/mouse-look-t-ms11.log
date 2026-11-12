@@ -1,0 +1,895 @@
+Extra environment (C:\Users\Ty\MediEvil\medievil_2019_pc_port\extra-env.txt): GOW3_FPS_LOG=0
+Deck switches: 8 on: early_frame_eop, decode_pacing, drain_hybrid, texset_wide, region_index, pending_filter, reg_hash_paired, particle_flip_guard; off: backing_copy (Linux only), thread_nice (Linux only), arena_writes_off (already off on Windows); Windows: untested
+Game profile: MediEvil (libc.prx, libSceFios2.prx, libSceNpToolkit2.prx)
+Output resolution: 3840x2160
+Graphics: quality custom; shadow_resolution=dynamic, small_object_shadows=0.01, shadow_distance=ps4, sun_shadow_resolution=2048, shadow_quality=3, view_distance=1, lod_distance=ps4, foliage_density=1, texture_filtering=16, ambient_occlusion=auto, reflections=3, refraction=2, volumetric_fog=1, motion_blur=4, depth_of_field=2, bloom=5, lens_flares=2, chromatic_aberration=1
+Render resolution: 3840x2160 output, render scale 75% (temporal upsampling), console quality, up to 1000 FPS, debug menu (R3; 01.02: L1 + R1 + R3), button prompts keyboard
+MediEvil | entry=0x2e9da70 | image=96,917,088 bytes
+928 imported symbols; 552,865 relocations; 58 required modules
+Unavailable non-loadable metadata headers: [10]; not a byte-exact ELF reconstruction
+Output: C:\Users\Ty\MediEvil\medievil_2019_pc_port\out
+libc _init_env verified RET: True
+Linked native libc: base=0x5c70000, 162 fallback exports, TLS=1152 bytes; eboot TLS=16 bytes, fs->gs patched=5
+Linked modules: libc.prx@0x5c70000, libSceFios2.prx@0x5da0000, libSceNpToolkit2.prx@0x5f30000; 348 native bindings, 850 imports left to the host runtime, fs->gs patched=5
+AppContent profile: SKU=full (probe setting), user params=[0, 0, 0, 0], mounted add-ons=0
+Patches: CUSA11227; 17 writes from ['Native 4K framebuffer pool (512 MB)', 'GPU particle bounds', 'Finer occlusion culling (low render resolutions, Steam Deck)', '4K display metrics at boot']
+Saves backed up to C:\Users\Ty\MediEvil\medievil_2019_pc_port\user\savedata_backups\20261111-233007
+Host scheduling: 1 ms timer resolution (GOW3_TIMER_RES=0 keeps 15.6 ms)
+Host scheduling: power throttling off (GOW3_POWER_THROTTLE=1 keeps it)
+Settings: C:\Users\Ty\MediEvil\medievil_2019_pc_port\medievil.ini
+Window: windowed size 3771x2121 pixels for a 3840x2160 game image
+Window: Borderless
+Decode pacing: on (GOW3_DECODE_PACING=1): lead 2 frame(s), 2 submissions of a frame ahead (GOW3_SUBMIT_AHEAD), GPU idle in stream order
+Mouse: captured; last 0.0 s: 0 reports (0/s), 0 wake-ups (0/s), 0 batches; raw mouse reader not running
+GPU: NVIDIA GeForce RTX 4090, driver NVIDIA 616.92.0.0, Vulkan 1.4.351
+Vulkan: NVIDIA Reflex (VK_NV_low_latency2) enabled
+GPU: pageable video memory on (when the card is full, the driver moves memory to system RAM)
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_AMD_shader_explicit_vertex_parameter unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_EXT_shader_stencil_export unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_AMD_shader_image_load_store_lod unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_AMD_gcn_shader unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_AMD_shader_trinary_minmax unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_AMD_mixed_attachment_samples unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_EXT_shader_atomic_float2 unavailable.
+GPU: maintenance5 on, maintenance8 on, feedback loop layouts on, 2D views of 3D on
+DLSS: ready
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=1, number_format=9 is not fully supported (vk_format=R8Srgb, missing features={ ColorAttachment })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=3, number_format=9 is not fully supported (vk_format=R8G8Srgb, missing features={ SampledImage | ColorAttachment | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=9, number_format=1 is not fully supported (vk_format=A2B10G10R10SnormPack32, missing features={ SampledImage | StorageImage | ColorAttachment | TransferSrc | TransferDst | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=9, number_format=5 is not fully supported (vk_format=A2B10G10R10SintPack32, missing features={ SampledImage | StorageImage | ColorAttachment | TransferSrc | TransferDst | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=13, number_format=4 is not fully supported (vk_format=R32G32B32Uint, missing features={ SampledImage | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=13, number_format=5 is not fully supported (vk_format=R32G32B32Sint, missing features={ SampledImage | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=13, number_format=7 is not fully supported (vk_format=R32G32B32Sfloat, missing features={ SampledImage | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=16, number_format=0 is not fully supported (vk_format=R5G6B5UnormPack16, missing features={ StorageImage | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=17, number_format=0 is not fully supported (vk_format=A1R5G5B5UnormPack16, missing features={ StorageImage | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=18, number_format=0 is not fully supported (vk_format=R5G5B5A1UnormPack16, missing features={ StorageImage | ColorAttachment | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=19, number_format=0 is not fully supported (vk_format=B4G4R4A4UnormPack16, missing features={ StorageImage | ColorAttachment | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:981 CollectImageFormatInfo: Depth format z_format=1, stencil_format=1 is not fully supported (vk_format=D16UnormS8Uint, missing features={ DepthStencilAttachment })
+Swapchain: VSync on (Fifo)
+Swapchain: Reflex sleep mode, minimum interval 0 us (Success)
+GPU memory types: 0: 0 heap 1 (32571 MiB) (not for the arena); 1: DEVICE_LOCAL heap 0 (24138 MiB); 2: HOST_VISIBLE|HOST_COHERENT heap 1 (32571 MiB) (not for the arena); 3: HOST_VISIBLE|HOST_COHERENT|HOST_CACHED heap 1 (32571 MiB) (not for the arena); 4: DEVICE_LOCAL|HOST_VISIBLE|HOST_COHERENT heap 0 (24138 MiB) (not for the arena)
+Buffer residency: 32 MB chunk 1 allocated at start
+Buffer arena: memory type 1 (DEVICE_LOCAL, heap 0), 64 KiB blocks; direct arena writes (U2) off (GOW3_ARENA_HOST_VISIBLE=0 or no suitable memory type)
+Scheduler 000000001349ACC0: commands recorded from thread '' (caller medievil-runtime.exe+0x1b1fd5)
+GPU: deferred image readback enabled (64 copies, 64 MiB pending limit); CPU reads use the previous frame's copy
+GPU: draw preparation workers: 8 (+1 scanner, 16 hardware threads)
+Texture-set memo: compact layout, 44.0 MB (index 2.1, images 25.2, region data 16.8 MB; the table as before: 52.2 MB); transparent huge pages: n/a (system: n/a)
+Object motion: off (enable in menu or GOW3_OBJECT_MOTION=1)
+UE4 motion: on, view 0 (F10 cycles)
+UE4 DLSS: available, on (menu Image tab or F9)
+Runtime: disabled optimizations mask=0
+Overlay: menu ready (Home or R3+L2)
+Pipeline startup: on demand, no bulk warm-up
+GPU: window and Vulkan presenter ready; SDK 0x05050001, 327 HLE symbols
+VideoOut: vblank thread priority time-critical, MMCSS Games (high)
+VideoOut: precise vblank tick (spin 700 us)
+GPU: vblank follows the display refresh rate, 240 Hz
+Swapchain: Reflex sleep mode, minimum interval 4219 us (Success)
+VideoOut: vblank 960 Hz, frame limit 0 FPS
+Patches: 17 writes, 59 bytes applied, 0 pointers rebased
+HZB remap: MapResults and Submit hooks ready (game build 01.02; results served by occlusion history key, no GPU wait)
+Movies: playing movies are suspended at each level change (OpenLevel hook, game build 01.02)
+Mouse yaw: AddControllerYawInput wrapped (game build 01.02; the camera lock for mouse look)
+Camera moves: ComputeCameraSimple wrapped (game build 01.02; the menu's Controls tab)
+GPU particle flip guard: PreInitViews and PreRender hooks ready (game build 01.02; one state flip per simulation; toggle file second word 16384: guard off)
+Guest TCB loads redirected to the TEB TLS slot: 5
+Mapped 100602208 bytes, 12 segments; applied 555435 relocations
+Starting linked module 0 at image offset 0x5c70000; native bindings=348
+Runtime: application heap API registered
+Runtime: direct allocation offset=0x0, size=536870912 bytes, type=3
+Runtime: mapped direct memory 0000004000000000, size=536870912, prot=0x32
+Runtime: direct allocation offset=0x20000000, size=6912147456 bytes, type=0
+Runtime: memory pool expanded by 6912147456 bytes at 0x20000000
+Runtime: reserved virtual range 0000001000000000, size=8589934592
+Runtime: reserved virtual range 0000002000000000, size=8589934592
+Runtime: reserved virtual range 0000003000000000, size=1073741824
+Module 0 initializer returned 0
+Starting linked module 1 at image offset 0x5da0000; native bindings=348
+Module 1 initializer returned 0
+Starting linked module 2 at image offset 0x5f30000; native bindings=348
+Module 2 initializer returned 0
+Entering original x86-64 code at guest offset 0x2e9da70
+Runtime: _init_env returned (verified libc implementation: RET)
+AdditionalArgs before fixup = ../../../OVERBITE/OVERBITE.uproject 
+AdditionalArgs after fixup = ../../../OVERBITE/OVERBITE.uproject -pak
+File root is /app0/!
+Runtime: open(/app0/symbols/shipping-symbols.bin) -> not found
+Runtime: open(/app0/build/ps4/symbols/shipping-symbols.bin) -> not found
+Runtime: open(/app0/overbite/symbols/shipping-symbols.bin) -> not found
+Failed to locate symbol files on /app0 or /app0/overbite/symbols s!
+Runtime: open(shipping-symbols.bin) -> not found
+Failed to load symbols from shipping-symbols.bin!
+Runtime: open(shipping-symbolmetadata.txt) -> not found
+Used memory before allocating anything was 524.56MB
+FIOS2: built with SDK version 0x06008001
+Runtime: guest thread 'SceFiosCallback' created (stack=65536, prio=260)
+Runtime: guest thread 'SceFiosIO' created (stack=81920, prio=260)
+Runtime: internal system module 0xd7 loaded (host implementation)
+Runtime: guest thread 'SceFiosIO /' created (stack=81920, prio=260)
+Runtime: AppContent host provider loaded; references=1
+Runtime: AppContent initialized; offline base-game profile, no mounted add-ons
+Runtime: temporary data mounted at /temp0 -> C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/temp0
+Runtime: open(/app0/deepfiles) -> not found
+Runtime: system module 0x83 loaded (host implementation)
+Runtime: PlayGo initialized; 23 chunks, all installed locally
+Runtime: open(/app0/overbite/saved/paks) -> not found
+Runtime: open(/app0/engine/content/paks) -> not found
+Runtime: open(/app0/overbite/saved/paks) -> not found
+Runtime: open(/app0/engine/content/paks) -> not found
+Runtime: guest thread 'TaskGraphThreadNP 0' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadNP 1' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadNP 2' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadNP 3' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 4' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 5' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 6' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 7' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 8' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 9' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 10' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 11' created (stack=393216, prio=700)
+Runtime: guest thread 'PoolThread 0' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 1' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 2' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 3' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 4' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 5' created (stack=262144, prio=700)
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/res_index.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/plurals.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/lang/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/lang/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/lang/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/region/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/region/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/region/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/zoneinfo64.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/numberingsystems.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/curr/supplementaldata.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/curr/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/curr/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/curr/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/likelysubtags.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/supplementaldata.res) -> not found
+Runtime: UserService initialized (user 1 logged in)
+Runtime: open(/app0/engine/saved/config/ps4/editorsettings.ini) -> not found
+Runtime: guest thread 'HttpManagerThread' created (stack=262144, prio=700)
+Runtime: system module 0x9c loaded (host implementation)
+Runtime: system module 0x85 loaded (host implementation)
+Runtime: UserService initialized (user 1 logged in)
+Runtime: system module 0xa6 loaded (host implementation)
+Runtime: system module 0xd3 loaded (host implementation)
+Runtime: system module 0x81 loaded (host implementation)
+Runtime: UserService initialized (user 1 logged in)
+Runtime: guest thread 'OnlineAsyncTaskThreadPS4 Defau' created (stack=262144, prio=700)
+Runtime: system module 0x102 loaded (host implementation)
+Runtime: system module 0x19 loaded (host implementation)
+Runtime: mapped flexible memory 0000001200000000, size=16777216, prot=0x2
+Runtime: mapped flexible memory 0000001201000000, size=6291456, prot=0x2
+Runtime: guest thread 'Toolkit::NP::Main' created (stack=262144, prio=700)
+Runtime: guest thread 'Toolkit::NP::Notifications' created (stack=65536, prio=700)
+Runtime: guest thread 'Toolkit::NP::AbortThread' created (stack=65536, prio=700)
+Runtime: system module 0xe4 loaded (host implementation)
+Runtime: system module 0xa8 loaded (host implementation)
+Runtime: system module 0xe7 loaded (host implementation)
+Runtime: system module 0xb2 loaded (host implementation)
+Runtime: system module 0xab loaded (host implementation)
+Runtime: system module 0xa2 loaded (host implementation)
+Runtime: system module 0xac loaded (host implementation)
+Runtime: system module 0xb8 loaded (host implementation)
+Runtime: system module 0xad loaded (host implementation)
+Runtime: system module 0x2c loaded (host implementation)
+Runtime: system module 0x1b loaded (host implementation)
+Runtime: guest thread 'PoolThread 6' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 7' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 8' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 9' created (stack=262144, prio=700)
+Runtime: open(/app0/overbite/intermediate/shaders/tmp) -> not found
+Runtime: open(/app0/overbite/intermediate/shaders/workingdirectory) -> not found
+Runtime: UserService initialized (user 1 logged in)
+Runtime: system module 0xa9 loaded (host implementation)
+Mouse: sceMouseInit from guest+0xb71388 (GOW3_MOUSE=1: Raw Input reader)
+Mouse: buttons to the game off (movement and wheel only)
+Runtime: system module 0x96 loaded (host implementation)
+Runtime: guest thread 'SystemEventGatherThreadPS4' created (stack=262144, prio=700)
+Mouse: Raw Input reader running (batched, at most one wake-up a millisecond, normal priority)
+Runtime: open(/app0/overbite/saved/preferences/editorkeybindings.txt) -> not found
+Runtime: guest thread 'SubmitDoneAsyncTaskThreadPS4' created (stack=262144, prio=700)
+Runtime: guest thread 'SubmitGPUCommandsAsyncTaskThre' created (stack=262144, prio=700)
+Runtime: open(/app0/overbite/content/shaderarchive-global-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/shaderarchive-paper2d-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/shaderarchive-paper2d_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/content/shaderarchive-paper2d-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/content/shaderarchive-paper2d_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/shaderarchive-cryptokeys-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/shaderarchive-cryptokeys_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/content/shaderarchive-cryptokeys-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/content/shaderarchive-cryptokeys_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/shaderarchive-mesheditor-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/shaderarchive-mesheditor_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/content/shaderarchive-mesheditor-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/content/shaderarchive-mesheditor_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/shaderarchive-datasmithcontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/shaderarchive-datasmithcontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/content/shaderarchive-datasmithcontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/content/shaderarchive-datasmithcontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/shaderarchive-variantmanagercontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/shaderarchive-variantmanagercontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/content/shaderarchive-variantmanagercontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/content/shaderarchive-variantmanagercontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/shaderarchive-mediacompositing-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/shaderarchive-mediacompositing_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/content/shaderarchive-mediacompositing-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/content/shaderarchive-mediacompositing_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/shaderarchive-wwise-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/shaderarchive-wwise_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/content/shaderarchive-wwise-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/content/shaderarchive-wwise_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: guest thread 'RHIThread' created (stack=524288, prio=700)
+Scheduler 000000001349ACC0: commands recorded from thread 'gow3:DrawRec' (caller medievil-runtime.exe+0x273b6d)
+OnSubmit on stage B: on (GOW3_ONSUBMIT_STAGE_B unset, with GOW3_DECODE_PACING): fault buffer, image downloads, collectors, staging trim and the frame's Flush in stream order
+Runtime: guest thread 'RenderThread 0' created (stack=262144, prio=700)
+Runtime: guest thread 'RTHeartBeat 0' created (stack=262144, prio=700)
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/brkitr/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/brkitr/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Texture cache: shared image memory on (NVIDIA GeForce RTX 4090)
+Runtime: guest thread 'RHIFrameOffsetThread' created (stack=262144, prio=700)
+Runtime: guest thread 'RHIFrameFlipThread' created (stack=262144, prio=700)
+Runtime: pad opened for user 1 (SDL gamepad or keyboard)
+Mouse: sceMouseOpen user 1 type 0 index 0 param 1 -> 15 from guest+0xb74afc
+Runtime: SystemService: splash screen hidden
+Runtime: SystemService: splash screen hidden
+Runtime: open(/app0/overbite/content/shaderarchive-overbite-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/overbite/content/shaderarchive-overbite_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/download0/installedcontent/overbite/content/shaderarchive-overbite-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/download0/installedcontent/overbite/content/shaderarchive-overbite_sc-sf_ps4.ushaderbytecode) -> not found
+GPU: spare image memory block ready (type 1, 1 ms)
+Runtime: system module 0xa5 loaded (host implementation)
+Runtime: system module 0xcf loaded (host implementation)
+Runtime: system module 0x88 loaded (host implementation)
+Runtime: system module 0xa5 loaded (host implementation)
+Runtime: guest thread 'SlateLoadingThread1' created (stack=262144, prio=700)
+Runtime: SystemService: splash screen hidden
+Runtime: guest thread 'AK::IOThread' created (stack=131072, prio=256)
+Runtime: guest thread 'AK::BankManager' created (stack=131072, prio=700)
+Runtime: guest thread 'AK Suspended' created (stack=131072, prio=256)
+Runtime: Ajm context initialized (ATRAC9 via LibAtrac9, MP3 via FFmpeg)
+Runtime: guest thread 'AK::EventManager' created (stack=131072, prio=256)
+GPU [Render.Vulkan] <Warning> emit_spirv.cpp:459 operator(): Float32 denorm flushing is not supported by the GPU
+Runtime: guest thread 'FImgMediaSchedulerThread 0' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 1' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 2' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 3' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 4' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 5' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 6' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 7' created (stack=262144, prio=700)
+Runtime: guest thread 'FMediaTicker' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 10' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 11' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 12' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 13' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 14' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 15' created (stack=262144, prio=700)
+Runtime: system module 0xb loaded (host implementation)
+Runtime: Ajm context initialized (ATRAC9 via LibAtrac9, MP3 via FFmpeg)
+Runtime: guest thread 'Ngs2AudioRenderingThread' created (stack=262144, prio=700)
+Runtime: NGS2 system created (silent renderer)
+Runtime: audio backend wasapi
+Runtime: audio port 0 opened (type 0, 8 ch, float, 256 frames, downmixed to stereo)
+Runtime: guest thread 'AudioThread' created (stack=262144, prio=700)
+GPU: spare image memory block ready (type 1, 1 ms)
+Buffer residency: 32 MB chunk 2 allocated ahead
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/lang/root.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/region/root.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: audio port 1 opened (type 0, 8 ch, float, 512 frames, downmixed to stereo)
+Runtime: guest thread 'AK::LibAudioOut' created (stack=131072, prio=256)
+Runtime: system module 0xa0 loaded (host implementation)
+Save trace: search '@%' key 3 order 1 capacity 1024 -> 7 found, 7 returned from guest+0x6cce73
+Save trace:   0: @MediEvil0006  2026-11-11 22:01:35  The Graveyard
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   3: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   6: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+Runtime: save data '@MediEvil0006' mounted at /savedata0 (existing, read-only)
+Save trace: mount '@MediEvil0006' mode 0x1 blocks 96 -> ok from guest+0x6cd29e
+Save trace: open /savedata0/ue4savegame.ps4.sav for reading, 22677 bytes
+Save trace: unmount /savedata0 ('@MediEvil0006')
+Runtime: pad map: 1 gamepad and 5 keyboard buttons remapped, 5 mouse buttons
+Mouse: sceMouseRead #1 handle 15 count 8, 0.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Runtime: guest thread 'RenderThread 1' created (stack=262144, prio=700)
+Runtime: guest thread 'RTHeartBeat 1' created (stack=262144, prio=700)
+GPU particle flips: 0 flips, 1 simulations; 1 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #2 handle 15 count 8, 123.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #3 handle 15 count 8, 228.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Buffer residency: 32 MB chunk 3 allocated ahead
+UE4 motion: pass skipped (no depth)
+UE4 DLSS: UE4 TAA this frame (no motion vectors)
+Slow image create: 6.3 ms, 2880x1620, 36.6 MiB
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x492000 (known plane 0x2019800000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x492000 (known plane 0x2019800000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x492000 (known plane 0x2019800000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x492000 (known plane 0x2019800000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x492000 (known plane 0x2019800000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x492000 (known plane 0x2019800000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x492000 (known plane 0x2019800000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x492000 (known plane 0x2019800000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x492000 (known plane 0x2019800000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x492000 (known plane 0x2019800000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x492000 (known plane 0x2019800000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane-sized write by shader 0x19d3f95ae106783d at 0x201e800000 +0x492000 (known plane 0x2019800000)
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 2880x1620), stencil plane 0x2019800000 (5111808 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2019800000 +0x4e0000
+AvPlayer 0.000 s: 0000000013598670 Init -> 0 (no source, 0 frames delivered)
+AvPlayer 0.007 s: 0000000013598670 AddSource -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 0 frames delivered)
+AvPlayer 0.037 s: 0000000013598670 SetLooping off -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 0 frames delivered)
+AvPlayer 0.038 s: 0000000013598670 Start -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 0 frames delivered)
+Mouse: sceMouseRead #1000 handle 15 count 8, 222.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+[aac @ 0000000063bff2c0] Could not update timestamps for discarded samples.
+Mouse: sceMouseRead #2000 handle 15 count 8, 229.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+HLE thread: join failed (thread::join failed: No such device or address); waiting for it to finish
+Mouse: sceMouseRead #3000 handle 15 count 8, 232.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #4000 handle 15 count 8, 233.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU [Lib.AvPlayer] <Warning> avplayer_source.cpp:308 Stop: Could not stop playback: already stopped.
+AvPlayer 16.376 s: 0000000013598670 Stop -> -2140536830 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 149 frames delivered)
+AvPlayer 16.376 s: 0000000013598670 Close -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 149 frames delivered)
+GPU [Lib.AvPlayer] <Warning> avplayer_source.cpp:308 Stop: Could not stop playback: already stopped.
+Runtime: guest thread 'TAsync 0' created (stack=262144, prio=700)
+AvPlayer 16.380 s: 000000014DB1CEC0 Init -> 0 (no source, 0 frames delivered)
+AvPlayer 16.574 s: 000000014DB1CEC0 AddSource -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 0 frames delivered)
+AvPlayer 16.582 s: 000000014DB1CEC0 SetLooping off -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 0 frames delivered)
+AvPlayer 16.583 s: 000000014DB1CEC0 Start -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 0 frames delivered)
+Mouse: sceMouseRead #5000 handle 15 count 8, 233.9 reads/s; 14 reads moved, |x| 614 |y| 288, largest 89 from guest+0xb7599c
+AvPlayer 17.675 s: 000000014DB1CEC0 suspended at a level change (file://../../../overbite/Content/Movies/gameintro.mp4, 41 frames delivered)
+Runtime: guest thread 'SlateLoadingThread2' created (stack=262144, prio=700)
+Buffer residency: 32 MB chunk 4 allocated ahead
+Save trace: mount 'GameDataUE1' mode 0x1 blocks 96 -> failed from guest+0x6c97e1
+Save trace:   error 0x809f0008
+Save trace: search '@%' key 3 order 1 capacity 1024 -> 7 found, 7 returned from guest+0x6ce574
+Save trace:   0: @MediEvil0006  2026-11-11 22:01:35  The Graveyard
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   3: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   6: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+GPU [Render.Vulkan] <Warning> emit_spirv.cpp:516 operator(): Float64 denorm preserving is not supported by the GPU
+Shader: light grid lookup in e3b625eaec7fca55 (2), scale 1.0000 x 1.0000
+Shader: light grid lookup in f1eef25b0c2ae13a (2), scale 1.0000 x 1.0000
+Barriers: 3696 image barriers in one batch (largest so far)
+UE4 motion: 1 passes, last 2880x1620 (view 2859x1620)
+UE4 DLSS: TAAU output R16G16B16A16Sfloat 3812x2160
+DLSS: DLSS 2859x1620 -> 3812x2160, quality 1, preset 0, HDR input
+UE4 DLSS: feature 2859x1620 -> 3812x2160, quality 1 (TAAU)
+UE4 DLSS: reset (feature created, View frame 5, camera moved 0 px)
+UE4 DLSS: 1 frames, 1 resets, 2859x1620 -> 3812x2160, jitter 0.062 -0.463 px
+Buffer residency: 32 MB chunk 5 allocated ahead
+Buffer residency: 32 MB chunk 6 allocated ahead
+Constant ring (5 s): 1 allocations found it full (left to stage B), 4 retirement scans; held epochs 108, open epoch holds from 14160, position 202433232, completed 131595776
+Save trace: mount 'GameDataUE1' mode 0x1 blocks 96 -> failed from guest+0x6c97e1
+Save trace:   error 0x809f0008
+Save trace: search '@%' key 3 order 1 capacity 1024 -> 7 found, 7 returned from guest+0x6ce574
+Save trace:   0: @MediEvil0006  2026-11-11 22:01:35  The Graveyard
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   3: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   6: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+UE4 motion: TAAU compute shader cs a080f599034de78e (samples velocity, writes one 3812x2160 image)
+Mouse: sceMouseRead #6000 handle 15 count 8, 224.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Save trace: search '@%' key 3 order 1 capacity 1024 -> 7 found, 7 returned from guest+0x6ce574
+Save trace:   0: @MediEvil0006  2026-11-11 22:01:35  The Graveyard
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   3: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   6: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+Save trace: search '@%' key 3 order 1 capacity 1024 -> 7 found, 7 returned from guest+0x6cce73
+Save trace:   0: @MediEvil0006  2026-11-11 22:01:35  The Graveyard
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   3: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   6: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+Save trace: dialog open, mode 1, type 2, 7 saves listed, with a new-save item from guest+0x6ca900
+Save trace:   focus 0
+Save trace:   0: @MediEvil0006
+Save trace:   1: @MediEvil0002
+Save trace:   2: @MediEvil0001
+Save trace:   3: @MediEvil0007
+Save trace:   4: @MediEvil0005
+Save trace:   5: @MediEvil0004
+Save trace:   6: @MediEvil0003
+Runtime: SaveDataDialog list (Load game): 8 entries shown
+Mouse: released; last 31.1 s: 52 reports (2/s), 6359 wake-ups (204/s), 6359 batches; raw mouse registered to the reader
+Mouse: captured; last 1.0 s: 0 reports (0/s), 712 wake-ups (712/s), 712 batches; raw mouse registered to the reader
+Runtime: SaveDataDialog list: chose @MediEvil0006
+Save trace: dialog result: mode 1, result 0, button 1, save '@MediEvil0006', param filled
+Runtime: save data '@MediEvil0006' mounted at /savedata0 (existing)
+Save trace: mount '@MediEvil0006' mode 0x2 blocks 96 -> ok from guest+0x6cd29e
+Save trace: open /savedata0/ue4savegame.ps4.sav for reading, 22677 bytes
+Save trace: open /savedata0/ue4savegame.ps4.sav for writing, 22677 bytes
+Save trace: unmount /savedata0 ('@MediEvil0006')
+Mouse: sceMouseRead #7000 handle 15 count 8, 218.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Runtime: guest thread 'SlateLoadingThread3' created (stack=262144, prio=700)
+Buffer residency: 32 MB chunk 7 allocated ahead
+Shader: light grid lookup in 591c5d142a39fbaf (2), scale 1.0000 x 1.0000
+DLSS: DLSS 2880x1620 -> 3840x2160, quality 1, preset 0, HDR input
+UE4 DLSS: feature 2880x1620 -> 3840x2160, quality 1 (TAAU)
+UE4 DLSS: reset (feature created, View frame 1, camera moved 0 px)
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 1 and destination layers 2 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 2 and destination layers 3 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 3 and destination layers 4 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 4 and destination layers 5 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 5 and destination layers 6 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 6 and destination layers 8 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 1 and destination layers 2 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 2 and destination layers 3 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 3 and destination layers 4 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 4 and destination layers 5 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 5 and destination layers 6 to minimum.
+Scheduler 000000001349ACC0: commands recorded from thread 'shadPS4:GpuCommandProcessor' (caller medievil-runtime.exe+0x1b77c5)
+Buffer residency: 32 MB chunk 8 allocated ahead
+Mouse: sceMouseRead #8000 handle 15 count 8, 215.6 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #9000 handle 15 count 8, 217.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #10000 handle 15 count 8, 219.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #11000 handle 15 count 8, 221.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #12000 handle 15 count 8, 222.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #13000 handle 15 count 8, 223.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Slow image create: 4.4 ms, 512x512, 3.0 MiB
+Mouse: sceMouseRead #14000 handle 15 count 8, 224.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #15000 handle 15 count 8, 225.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #16000 handle 15 count 8, 225.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #17000 handle 15 count 8, 226.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #18000 handle 15 count 8, 226.9 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #19000 handle 15 count 8, 227.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #20000 handle 15 count 8, 227.9 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #21000 handle 15 count 8, 228.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #22000 handle 15 count 8, 228.6 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #23000 handle 15 count 8, 229.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #24000 handle 15 count 8, 229.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #25000 handle 15 count 8, 229.6 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #26000 handle 15 count 8, 229.9 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #27000 handle 15 count 8, 230.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #28000 handle 15 count 8, 230.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #29000 handle 15 count 8, 230.6 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #30000 handle 15 count 8, 230.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #31000 handle 15 count 8, 230.9 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #32000 handle 15 count 8, 231.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #33000 handle 15 count 8, 231.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #34000 handle 15 count 8, 231.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #35000 handle 15 count 8, 231.6 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #36000 handle 15 count 8, 231.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #37000 handle 15 count 8, 231.9 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #38000 handle 15 count 8, 232.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #39000 handle 15 count 8, 232.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #40000 handle 15 count 8, 232.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #41000 handle 15 count 8, 232.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #42000 handle 15 count 8, 232.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #43000 handle 15 count 8, 232.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #44000 handle 15 count 8, 232.6 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #45000 handle 15 count 8, 232.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #46000 handle 15 count 8, 232.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #47000 handle 15 count 8, 232.9 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #48000 handle 15 count 8, 233.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+HLE thread: join failed (thread::join failed: No such device or address); waiting for it to finish
+HLE thread: join failed (thread::join failed: No such device or address); waiting for it to finish
+HLE thread: join failed (thread::join failed: No such device or address); waiting for it to finish
+AvPlayer 203.489 s: 000000014DB1CEC0 Stop -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 41 frames delivered)
+Buffer residency: 32 MB chunk 9 allocated ahead
+Mouse: sceMouseRead #49000 handle 15 count 8, 233.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #50000 handle 15 count 8, 233.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #51000 handle 15 count 8, 233.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #52000 handle 15 count 8, 233.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #53000 handle 15 count 8, 233.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #54000 handle 15 count 8, 233.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #55000 handle 15 count 8, 233.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #56000 handle 15 count 8, 233.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #57000 handle 15 count 8, 233.6 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #58000 handle 15 count 8, 233.6 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #59000 handle 15 count 8, 233.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #60000 handle 15 count 8, 233.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #61000 handle 15 count 8, 233.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #62000 handle 15 count 8, 233.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #63000 handle 15 count 8, 233.9 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #64000 handle 15 count 8, 233.9 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #65000 handle 15 count 8, 234.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #66000 handle 15 count 8, 234.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #67000 handle 15 count 8, 234.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #68000 handle 15 count 8, 234.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #69000 handle 15 count 8, 234.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #70000 handle 15 count 8, 234.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #71000 handle 15 count 8, 234.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #72000 handle 15 count 8, 234.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #73000 handle 15 count 8, 234.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #74000 handle 15 count 8, 234.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #75000 handle 15 count 8, 234.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #76000 handle 15 count 8, 234.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #77000 handle 15 count 8, 234.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #78000 handle 15 count 8, 234.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #79000 handle 15 count 8, 234.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #80000 handle 15 count 8, 234.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #81000 handle 15 count 8, 234.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #82000 handle 15 count 8, 234.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #83000 handle 15 count 8, 234.6 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #84000 handle 15 count 8, 234.6 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #85000 handle 15 count 8, 234.6 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #86000 handle 15 count 8, 234.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #87000 handle 15 count 8, 234.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #88000 handle 15 count 8, 234.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #89000 handle 15 count 8, 234.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #90000 handle 15 count 8, 234.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #91000 handle 15 count 8, 234.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #92000 handle 15 count 8, 234.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #93000 handle 15 count 8, 234.8 reads/s; 37 reads moved, |x| 1021 |y| 432, largest 99 from guest+0xb7599c
+Save trace: search '@%' key 3 order 1 capacity 1024 -> 7 found, 7 returned from guest+0x6cb95c
+Save trace:   0: @MediEvil0006  2026-11-11 23:30:43  The Graveyard
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   3: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   6: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+Save trace: mount '@MediEvil0006' mode 0x16 blocks 101 -> failed from guest+0x6cbc2b
+Save trace:   error 0x809f0007
+Runtime: save data '@MediEvil0006' mounted at /savedata0 (existing)
+Save trace: mount '@MediEvil0006' mode 0x2 blocks 101 -> ok from guest+0x6cbc62
+Save trace: open /savedata0/ue4savegame.ps4.sav for writing, 22677 bytes
+Save trace: set param 1 on '@MediEvil0006': 'SLOT DATA' from guest+0x6cc4e4
+Save trace: set param 2 on '@MediEvil0006': 'The Graveyard' from guest+0x6cc522
+Save trace: unmount /savedata0 ('@MediEvil0006')
+Runtime: guest thread 'SlateLoadingThread4' created (stack=262144, prio=700)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Save trace: mount 'GameData' mode 0x1 blocks 96 -> ok from guest+0x6c97e1
+Save trace: unmount /savedata0 ('GameData')
+Save trace: search '' key 0 order 0 capacity 1024 -> 8 found, 8 returned from guest+0x6ccf16
+Save trace:   0: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+Save trace:   3: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0006  2026-11-11 23:36:54  The Graveyard
+Save trace:   6: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   7: GameData  2026-11-11 22:04:45  
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Save trace: mount 'GameData' mode 0x1 blocks 96 -> ok from guest+0x6cd29e
+Save trace: open /savedata0/ue4savegame.ps4.sav for reading, 1724 bytes
+Save trace: unmount /savedata0 ('GameData')
+Runtime: system module 0xad loaded (host implementation)
+Mouse yaw: Dan's camera lock found (game build 01.02)
+Buffer residency: 32 MB chunk 10 allocated ahead
+UE4 DLSS: reset (frame number, View frame 1, camera moved 0 px)
+Pipeline binary cache: 256 hits, 0 compiled, 0 rejected, 0 saved, 0 cache errors (restore 2.291 ms, compile 0.000 ms each)
+Buffer residency: 32 MB chunk 11 allocated ahead
+Mouse: sceMouseRead #94000 handle 15 count 8, 233.9 reads/s; 23 reads moved, |x| 527 |y| 447, largest 128 from guest+0xb7599c
+Mouse look: pitch found (class 000000101e332c40: target +0x388, shown +0x38c, base +0x3a4, max +0x3c4, min +0x3c8)
+Camera: follow edit 0 found (class 000000101e332c40, a 3009-byte function, +0x4cd)
+Camera: follow edit 1 found (class 000000101e332c40, a 3009-byte function, +0x24f)
+Camera: run_zoom edit 2 found (class 000000101e332c40, a 4533-byte function, +0x344)
+Camera: pitch_return edit 3 found (class 000000101e332c40, a 1650-byte function, +0x250)
+Camera: swing edit 7 found (class 0000001021ef3f80, a 488-byte function, +0x23)
+Camera: keepout edit 6 found (class 000000101e333740, a 618-byte function, +0xaf)
+Camera: suggest edit 5 found (class 000000100867e740, a 1393-byte function, +0x37)
+Camera: moves off: follow, swing, run_zoom, pitch_return
+Buffer residency: 32 MB chunk 12 allocated ahead
+Mouse: sceMouseRead #95000 handle 15 count 8, 234.0 reads/s; 35 reads moved, |x| 558 |y| 241, largest 89 from guest+0xb7599c
+Mouse: sceMouseRead #96000 handle 15 count 8, 234.0 reads/s; 170 reads moved, |x| 4885 |y| 933, largest 153 from guest+0xb7599c
+Mouse look: last 5.0 s: 1184 camera ticks, 163 with mouse; x -835 counts = -18.4 degrees, y -11 counts, pitch moved 0.2 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+GPU [Render] <Warning> page_manager.cpp:121 UpdatePageWatchers: Tracking memory region 0x2046c00000 - 0x2046c01000 which is not fully GPU mapped.
+Mouse: sceMouseRead #97000 handle 15 count 8, 234.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse look: last 5.0 s: 1184 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Shader: light grid lookup in 6237d71f64d79c68 (2), scale 1.0000 x 1.0000
+Buffer residency: 32 MB chunk 13 allocated ahead
+Mouse: sceMouseRead #98000 handle 15 count 8, 234.0 reads/s; 351 reads moved, |x| 8243 |y| 3318, largest 157 from guest+0xb7599c
+Mouse look: last 5.0 s: 1163 camera ticks, 836 with mouse; x -6607 counts = -145.4 degrees, y -1377 counts, pitch moved 11.6 degrees (138 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Buffer residency: 32 MB chunk 14 allocated ahead
+Mouse: sceMouseRead #99000 handle 15 count 8, 234.0 reads/s; 987 reads moved, |x| 21077 |y| 1640, largest 47 from guest+0xb7599c
+Mouse look: last 5.0 s: 1183 camera ticks, 593 with mouse; x 7035 counts = 154.8 degrees, y -87 counts, pitch moved 0.3 degrees (44 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #100000 handle 15 count 8, 234.0 reads/s; 313 reads moved, |x| 6773 |y| 400, largest 69 from guest+0xb7599c
+Mouse look: last 5.0 s: 1180 camera ticks, 1062 with mouse; x -675 counts = -14.8 degrees, y -296 counts, pitch moved 2.1 degrees (29 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #101000 handle 15 count 8, 234.1 reads/s; 990 reads moved, |x| 25507 |y| 1649, largest 200 from guest+0xb7599c
+Mouse: sceMouseRead #102000 handle 15 count 8, 234.1 reads/s; 985 reads moved, |x| 22653 |y| 900, largest 56 from guest+0xb7599c
+Mouse look: last 5.0 s: 1184 camera ticks, 1168 with mouse; x -3927 counts = -86.4 degrees, y 24 counts, pitch moved -2.4 degrees (81 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #103000 handle 15 count 8, 234.1 reads/s; 925 reads moved, |x| 33110 |y| 1899, largest 213 from guest+0xb7599c
+Mouse look: last 5.0 s: 1185 camera ticks, 1107 with mouse; x 10427 counts = 229.4 degrees, y -761 counts, pitch moved 2.9 degrees (236 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #104000 handle 15 count 8, 234.1 reads/s; 994 reads moved, |x| 21987 |y| 1778, largest 64 from guest+0xb7599c
+Mouse look: last 5.0 s: 1184 camera ticks, 1182 with mouse; x -3253 counts = -71.6 degrees, y -1102 counts, pitch moved -4.4 degrees (710 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #105000 handle 15 count 8, 234.1 reads/s; 869 reads moved, |x| 14594 |y| 2509, largest 93 from guest+0xb7599c
+Mouse look: last 5.0 s: 1150 camera ticks, 946 with mouse; x -1560 counts = -34.3 degrees, y -2259 counts, pitch moved 4.6 degrees (233 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #106000 handle 15 count 8, 234.1 reads/s; 733 reads moved, |x| 3932 |y| 3189, largest 45 from guest+0xb7599c
+Mouse look: last 5.0 s: 1169 camera ticks, 621 with mouse; x -2024 counts = -44.5 degrees, y 1338 counts, pitch moved -23.9 degrees (19 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #107000 handle 15 count 8, 234.1 reads/s; 417 reads moved, |x| 2564 |y| 1557, largest 31 from guest+0xb7599c
+Buffer residency: 32 MB chunk 15 allocated ahead
+Mouse look: last 5.0 s: 1185 camera ticks, 241 with mouse; x -1563 counts = -34.4 degrees, y -129 counts, pitch moved 2.3 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #108000 handle 15 count 8, 234.1 reads/s; 286 reads moved, |x| 2777 |y| 247, largest 47 from guest+0xb7599c
+Mouse look: last 5.0 s: 1079 camera ticks, 848 with mouse; x -2000 counts = -44.0 degrees, y -1270 counts, pitch moved 15.2 degrees (19 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #109000 handle 15 count 8, 233.9 reads/s; 770 reads moved, |x| 8053 |y| 8493, largest 83 from guest+0xb7599c
+Mouse look: Dan-cam found (class 000000101e332980: yaw local +0x8, past local +0x78, stick +0x378, pitch +0x364)
+Mouse: sceMouseRead #110000 handle 15 count 8, 233.9 reads/s; 917 reads moved, |x| 21459 |y| 6587, largest 172 from guest+0xb7599c
+Buffer residency: 32 MB chunk 16 allocated ahead
+Mouse look: last 5.0 s: 1144 camera ticks, 1060 with mouse; x 55 counts = 1.2 degrees, y -563 counts, pitch moved -0.7 degrees (75 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 876 with mouse, 1 new, 46 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Buffer residency: 32 MB chunk 17 allocated ahead
+GPU: spare image memory block ready (type 1, 1 ms)
+Mouse: sceMouseRead #111000 handle 15 count 8, 233.7 reads/s; 949 reads moved, |x| 29699 |y| 3088, largest 126 from guest+0xb7599c
+Mouse look: last 5.0 s: 1109 camera ticks, 1056 with mouse; x 1151 counts = 25.3 degrees, y 427 counts, pitch moved -7.5 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 1056 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #112000 handle 15 count 8, 233.7 reads/s; 993 reads moved, |x| 21782 |y| 2743, largest 74 from guest+0xb7599c
+Mouse look: last 5.0 s: 1181 camera ticks, 1173 with mouse; x -1296 counts = -28.5 degrees, y -390 counts, pitch moved 6.9 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 1173 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #113000 handle 15 count 8, 233.8 reads/s; 998 reads moved, |x| 15265 |y| 2397, largest 44 from guest+0xb7599c
+Mouse look: last 5.0 s: 1185 camera ticks, 1112 with mouse; x -1710 counts = -37.6 degrees, y -154 counts, pitch moved 2.7 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 1112 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #114000 handle 15 count 8, 233.8 reads/s; 850 reads moved, |x| 9081 |y| 856, largest 39 from guest+0xb7599c
+Mouse look: last 5.0 s: 1141 camera ticks, 781 with mouse; x -742 counts = -16.3 degrees, y 100 counts, pitch moved -1.8 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 12 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #115000 handle 15 count 8, 233.7 reads/s; 652 reads moved, |x| 5217 |y| 809, largest 47 from guest+0xb7599c
+Mouse look: last 5.0 s: 1183 camera ticks, 830 with mouse; x -7594 counts = -167.1 degrees, y -375 counts, pitch moved 3.8 degrees (74 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #116000 handle 15 count 8, 233.8 reads/s; 642 reads moved, |x| 7519 |y| 675, largest 46 from guest+0xb7599c
+Mouse: sceMouseRead #117000 handle 15 count 8, 233.8 reads/s; 592 reads moved, |x| 3941 |y| 319, largest 31 from guest+0xb7599c
+Mouse look: last 5.0 s: 1182 camera ticks, 664 with mouse; x 4445 counts = 97.8 degrees, y 203 counts, pitch moved -3.6 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #118000 handle 15 count 8, 233.8 reads/s; 538 reads moved, |x| 6990 |y| 834, largest 73 from guest+0xb7599c
+Mouse look: last 5.0 s: 1184 camera ticks, 616 with mouse; x 4656 counts = 102.4 degrees, y 209 counts, pitch moved -3.7 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Buffer residency: 32 MB chunk 18 allocated ahead
+Mouse: sceMouseRead #119000 handle 15 count 8, 233.8 reads/s; 593 reads moved, |x| 5732 |y| 567, largest 48 from guest+0xb7599c
+Mouse look: last 5.0 s: 1182 camera ticks, 739 with mouse; x -5919 counts = -130.2 degrees, y -269 counts, pitch moved 4.7 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #120000 handle 15 count 8, 233.8 reads/s; 638 reads moved, |x| 2853 |y| 348, largest 35 from guest+0xb7599c
+Mouse look: last 5.0 s: 1118 camera ticks, 552 with mouse; x 232 counts = 5.1 degrees, y -108 counts, pitch moved 1.9 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+GPU [Render] <Warning> page_manager.cpp:121 UpdatePageWatchers: Tracking memory region 0x206dc00000 - 0x206dc01000 which is not fully GPU mapped.
+Mouse: sceMouseRead #121000 handle 15 count 8, 233.7 reads/s; 258 reads moved, |x| 657 |y| 153, largest 18 from guest+0xb7599c
+Mouse look: last 5.0 s: 1183 camera ticks, 452 with mouse; x -416 counts = -9.2 degrees, y 229 counts, pitch moved -4.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #122000 handle 15 count 8, 233.8 reads/s; 549 reads moved, |x| 8603 |y| 810, largest 69 from guest+0xb7599c
+Mouse look: last 5.0 s: 1174 camera ticks, 692 with mouse; x -7676 counts = -168.9 degrees, y -260 counts, pitch moved 4.6 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #123000 handle 15 count 8, 233.8 reads/s; 547 reads moved, |x| 7220 |y| 581, largest 60 from guest+0xb7599c
+Mouse: sceMouseRead #124000 handle 15 count 8, 233.8 reads/s; 381 reads moved, |x| 296 |y| 605, largest 8 from guest+0xb7599c
+Mouse look: last 5.0 s: 1178 camera ticks, 390 with mouse; x 201 counts = 4.4 degrees, y 463 counts, pitch moved -8.1 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #125000 handle 15 count 8, 233.8 reads/s; 232 reads moved, |x| 301 |y| 260, largest 19 from guest+0xb7599c
+Mouse look: last 6.1 s: 749 camera ticks, 167 with mouse; x -68 counts = -1.5 degrees, y -135 counts, pitch moved 2.4 degrees (0 ticks at a limit); 1 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Runtime: guest thread 'SlateLoadingThread5' created (stack=262144, prio=700)
+Buffer residency: 32 MB chunk 19 allocated ahead
+UE4 DLSS: reset (frame number, View frame 1, camera moved 0 px)
+Mouse: sceMouseRead #126000 handle 15 count 8, 233.6 reads/s; 36 reads moved, |x| 48 |y| 86, largest 5 from guest+0xb7599c
+Buffer residency: 32 MB chunk 20 allocated ahead
+Mouse: sceMouseRead #127000 handle 15 count 8, 233.5 reads/s; 88 reads moved, |x| 27 |y| 79, largest 2 from guest+0xb7599c
+Mouse: sceMouseRead #128000 handle 15 count 8, 233.4 reads/s; 174 reads moved, |x| 72 |y| 171, largest 3 from guest+0xb7599c
+Save trace: search '@%' key 3 order 1 capacity 1024 -> 7 found, 7 returned from guest+0x6cb95c
+Save trace:   0: @MediEvil0006  2026-11-11 23:36:54  The Graveyard
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   3: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   6: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+Save trace: mount '@MediEvil0006' mode 0x16 blocks 101 -> failed from guest+0x6cbc2b
+Save trace:   error 0x809f0007
+Runtime: save data '@MediEvil0006' mounted at /savedata0 (existing)
+Save trace: mount '@MediEvil0006' mode 0x2 blocks 101 -> ok from guest+0x6cbc62
+Save trace: open /savedata0/ue4savegame.ps4.sav for writing, 22677 bytes
+Save trace: set param 1 on '@MediEvil0006': 'SLOT DATA' from guest+0x6cc4e4
+Save trace: set param 2 on '@MediEvil0006': 'The Hilltop Mausoleum' from guest+0x6cc522
+Save trace: unmount /savedata0 ('@MediEvil0006')
+Runtime: guest thread 'SlateLoadingThread6' created (stack=262144, prio=700)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Save trace: mount 'GameData' mode 0x1 blocks 96 -> ok from guest+0x6c97e1
+Save trace: unmount /savedata0 ('GameData')
+Save trace: search '' key 0 order 0 capacity 1024 -> 8 found, 8 returned from guest+0x6ccf16
+Save trace:   0: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+Save trace:   3: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0006  2026-11-11 23:39:24  The Hilltop Mausoleum
+Save trace:   6: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   7: GameData  2026-11-11 22:04:45  
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Save trace: mount 'GameData' mode 0x1 blocks 96 -> ok from guest+0x6cd29e
+Save trace: open /savedata0/ue4savegame.ps4.sav for reading, 1724 bytes
+Save trace: unmount /savedata0 ('GameData')
+UE4 DLSS: reset (frame number, View frame 1, camera moved 0 px)
+Shader: light grid lookup in d3caef1f45107cdd (2), scale 1.0000 x 1.0000
+Shader: light grid lookup in 5619f6192e4586f4 (2), scale 1.0000 x 1.0000
+Barriers: 4758 image barriers in one batch (largest so far)
+Buffer residency: 32 MB chunk 21 allocated ahead
+Pipeline binary cache: 512 hits, 0 compiled, 0 rejected, 0 saved, 0 cache errors (restore 2.961 ms, compile 0.000 ms each)
+Pipeline binary cache: 512 hits, 0 compiled, 0 rejected, 0 saved, 0 cache errors (restore 2.961 ms, compile 0.000 ms each)
+Mouse: sceMouseRead #129000 handle 15 count 8, 232.5 reads/s; 720 reads moved, |x| 34529 |y| 7312, largest 261 from guest+0xb7599c
+GPU: spare image memory block ready (type 1, 1 ms)
+Mouse: sceMouseRead #130000 handle 15 count 8, 232.5 reads/s; 536 reads moved, |x| 23153 |y| 5525, largest 265 from guest+0xb7599c
+Mouse: sceMouseRead #131000 handle 15 count 8, 232.4 reads/s; 109 reads moved, |x| 31 |y| 92, largest 2 from guest+0xb7599c
+Mouse: sceMouseRead #132000 handle 15 count 8, 232.4 reads/s; 519 reads moved, |x| 1084 |y| 1072, largest 12 from guest+0xb7599c
+Mouse: sceMouseRead #133000 handle 15 count 8, 232.4 reads/s; 272 reads moved, |x| 491 |y| 717, largest 14 from guest+0xb7599c
+Mouse: sceMouseRead #134000 handle 15 count 8, 232.4 reads/s; 152 reads moved, |x| 148 |y| 105, largest 4 from guest+0xb7599c
+Mouse: sceMouseRead #135000 handle 15 count 8, 232.4 reads/s; 34 reads moved, |x| 14 |y| 29, largest 2 from guest+0xb7599c
+Buffer residency: 32 MB chunk 22 allocated ahead
+Mouse: sceMouseRead #136000 handle 15 count 8, 232.4 reads/s; 269 reads moved, |x| 134 |y| 222, largest 2 from guest+0xb7599c
+Mouse: sceMouseRead #137000 handle 15 count 8, 232.4 reads/s; 550 reads moved, |x| 796 |y| 673, largest 11 from guest+0xb7599c
+Mouse: sceMouseRead #138000 handle 15 count 8, 232.4 reads/s; 421 reads moved, |x| 329 |y| 448, largest 4 from guest+0xb7599c
+Mouse: sceMouseRead #139000 handle 15 count 8, 232.3 reads/s; 346 reads moved, |x| 192 |y| 260, largest 3 from guest+0xb7599c
+Mouse: sceMouseRead #140000 handle 15 count 8, 232.3 reads/s; 217 reads moved, |x| 124 |y| 164, largest 3 from guest+0xb7599c
+Mouse: sceMouseRead #141000 handle 15 count 8, 232.3 reads/s; 209 reads moved, |x| 429 |y| 194, largest 24 from guest+0xb7599c
+Mouse: sceMouseRead #142000 handle 15 count 8, 232.3 reads/s; 305 reads moved, |x| 226 |y| 156, largest 2 from guest+0xb7599c
+Mouse: sceMouseRead #143000 handle 15 count 8, 232.3 reads/s; 275 reads moved, |x| 356 |y| 143, largest 5 from guest+0xb7599c
+Mouse: sceMouseRead #144000 handle 15 count 8, 232.2 reads/s; 277 reads moved, |x| 804 |y| 277, largest 30 from guest+0xb7599c
+Mouse: sceMouseRead #145000 handle 15 count 8, 232.3 reads/s; 236 reads moved, |x| 63 |y| 264, largest 4 from guest+0xb7599c
+Mouse: sceMouseRead #146000 handle 15 count 8, 232.3 reads/s; 62 reads moved, |x| 22 |y| 52, largest 2 from guest+0xb7599c
+Mouse: sceMouseRead #147000 handle 15 count 8, 232.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #148000 handle 15 count 8, 232.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #149000 handle 15 count 8, 232.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #150000 handle 15 count 8, 232.4 reads/s; 29 reads moved, |x| 31 |y| 8, largest 2 from guest+0xb7599c
+Mouse: sceMouseRead #151000 handle 15 count 8, 232.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Runtime: guest thread 'SlateLoadingThread7' created (stack=262144, prio=700)
+UE4 DLSS: reset (frame number, View frame 1, camera moved 0 px)
+Mouse: sceMouseRead #152000 handle 15 count 8, 232.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Buffer residency: 32 MB chunk 23 allocated ahead
+Mouse: released; last 629.3 s: 341190 reports (542/s), 439088 wake-ups (698/s), 439088 batches; raw mouse registered to the reader
+Mouse: sceMouseRead #153000 handle 15 count 8, 232.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #154000 handle 15 count 8, 232.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #155000 handle 15 count 8, 232.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #156000 handle 15 count 8, 231.9 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #157000 handle 15 count 8, 231.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #158000 handle 15 count 8, 231.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #159000 handle 15 count 8, 231.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #160000 handle 15 count 8, 231.6 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #161000 handle 15 count 8, 231.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #162000 handle 15 count 8, 231.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #163000 handle 15 count 8, 231.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #164000 handle 15 count 8, 231.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #165000 handle 15 count 8, 231.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #166000 handle 15 count 8, 231.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: captured; last 62.5 s: 40755 reports (653/s), 43381 wake-ups (695/s), 43381 batches; raw mouse registered to the reader
+Mouse: sceMouseRead #167000 handle 15 count 8, 231.0 reads/s; 35 reads moved, |x| 8 |y| 38, largest 2 from guest+0xb7599c
+Save trace: search '@%' key 3 order 1 capacity 1024 -> 7 found, 7 returned from guest+0x6cb95c
+Save trace:   0: @MediEvil0006  2026-11-11 23:39:24  The Hilltop Mausoleum
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   3: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   6: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+Save trace: mount '@MediEvil0006' mode 0x16 blocks 101 -> failed from guest+0x6cbc2b
+Save trace:   error 0x809f0007
+Runtime: save data '@MediEvil0006' mounted at /savedata0 (existing)
+Save trace: mount '@MediEvil0006' mode 0x2 blocks 101 -> ok from guest+0x6cbc62
+Save trace: open /savedata0/ue4savegame.ps4.sav for writing, 22677 bytes
+Save trace: set param 1 on '@MediEvil0006': 'SLOT DATA' from guest+0x6cc4e4
+Save trace: set param 2 on '@MediEvil0006': 'The Hilltop Mausoleum' from guest+0x6cc522
+Save trace: unmount /savedata0 ('@MediEvil0006')
+Runtime: guest thread 'SlateLoadingThread8' created (stack=262144, prio=700)
+Save trace: mount 'GameDataUE1' mode 0x1 blocks 96 -> failed from guest+0x6c97e1
+Save trace:   error 0x809f0008
+Save trace: search '@%' key 3 order 1 capacity 1024 -> 7 found, 7 returned from guest+0x6ce574
+Save trace:   0: @MediEvil0006  2026-11-11 23:42:19  The Hilltop Mausoleum
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   3: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   6: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+UE4 DLSS: reset (frame number, View frame 1, camera moved 0 px)
+DLSS: DLSS 2859x1620 -> 3812x2160, quality 1, preset 0, HDR input
+UE4 DLSS: feature 2859x1620 -> 3812x2160, quality 1 (TAAU)
+UE4 DLSS: reset (feature created, View frame 3, camera moved 0 px)
+Mouse: sceMouseRead #168000 handle 15 count 8, 230.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #169000 handle 15 count 8, 230.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Buffer residency: 32 MB chunk 24 allocated ahead
+Save trace: mount 'GameDataUE1' mode 0x1 blocks 96 -> failed from guest+0x6c97e1
+Save trace:   error 0x809f0008
+Save trace: search '@%' key 3 order 1 capacity 1024 -> 7 found, 7 returned from guest+0x6ce574
+Save trace:   0: @MediEvil0006  2026-11-11 23:42:19  The Hilltop Mausoleum
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   3: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   6: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+Mouse: sceMouseRead #170000 handle 15 count 8, 230.8 reads/s; 65 reads moved, |x| 167 |y| 79, largest 9 from guest+0xb7599c
+Mouse: sceMouseRead #171000 handle 15 count 8, 230.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Save trace: search '@%' key 3 order 1 capacity 1024 -> 7 found, 7 returned from guest+0x6ce574
+Save trace:   0: @MediEvil0006  2026-11-11 23:42:19  The Hilltop Mausoleum
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   3: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   6: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+Save trace: search '@%' key 3 order 1 capacity 1024 -> 7 found, 7 returned from guest+0x6cce73
+Save trace:   0: @MediEvil0006  2026-11-11 23:42:19  The Hilltop Mausoleum
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   3: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   6: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+Save trace: dialog open, mode 1, type 2, 7 saves listed, with a new-save item from guest+0x6ca900
+Save trace:   focus 0
+Save trace:   0: @MediEvil0006
+Save trace:   1: @MediEvil0002
+Save trace:   2: @MediEvil0001
+Save trace:   3: @MediEvil0007
+Save trace:   4: @MediEvil0005
+Save trace:   5: @MediEvil0004
+Save trace:   6: @MediEvil0003
+Runtime: SaveDataDialog list (Load game): 8 entries shown
+Mouse: released; last 22.3 s: 291 reports (13/s), 15512 wake-ups (697/s), 15512 batches; raw mouse registered to the reader
+Mouse: captured; last 10.9 s: 1229 reports (113/s), 7729 wake-ups (709/s), 7729 batches; raw mouse registered to the reader
+Runtime: SaveDataDialog list: cancelled
+Save trace: dialog result: mode 1, result 1, button 0, save '', param filled
+Mouse: sceMouseRead #172000 handle 15 count 8, 227.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Save trace: search '@%' key 3 order 1 capacity 1024 -> 7 found, 7 returned from guest+0x6ce574
+Save trace:   0: @MediEvil0006  2026-11-11 23:42:19  The Hilltop Mausoleum
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   3: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   6: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+Save trace: search '@%' key 3 order 1 capacity 1024 -> 7 found, 7 returned from guest+0x6cce73
+Save trace:   0: @MediEvil0006  2026-11-11 23:42:19  The Hilltop Mausoleum
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   3: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   6: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+Save trace: dialog open, mode 1, type 2, 7 saves listed, with a new-save item from guest+0x6ca900
+Save trace:   focus 0
+Save trace:   0: @MediEvil0006
+Save trace:   1: @MediEvil0002
+Save trace:   2: @MediEvil0001
+Save trace:   3: @MediEvil0007
+Save trace:   4: @MediEvil0005
+Save trace:   5: @MediEvil0004
+Save trace:   6: @MediEvil0003
+Runtime: SaveDataDialog list (Load game): 8 entries shown
+Mouse: released; last 5.0 s: 0 reports (0/s), 3504 wake-ups (694/s), 3504 batches; raw mouse registered to the reader
+Mouse: captured; last 29.4 s: 5161 reports (176/s), 20804 wake-ups (707/s), 20804 batches; raw mouse registered to the reader
+Runtime: SaveDataDialog list: chose @MediEvil0006
+Save trace: dialog result: mode 1, result 0, button 1, save '@MediEvil0006', param filled
+Runtime: save data '@MediEvil0006' mounted at /savedata0 (existing)
+Save trace: mount '@MediEvil0006' mode 0x2 blocks 96 -> ok from guest+0x6cd29e
+Save trace: open /savedata0/ue4savegame.ps4.sav for reading, 22677 bytes
+Save trace: open /savedata0/ue4savegame.ps4.sav for writing, 22677 bytes
+Save trace: unmount /savedata0 ('@MediEvil0006')
+Mouse: sceMouseRead #173000 handle 15 count 8, 219.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+
+The game exited (code 0).

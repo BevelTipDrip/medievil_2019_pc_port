@@ -67,6 +67,9 @@ own object detaches.
 
 ## History and pitfalls
 
+- T-UP1 (2026-11-12, `upstream-ports`, PC): logo, intro, a level end, world map, restart and quit to map; 0 "HLE
+  thread: join failed" lines (every earlier log had 1-4); the user: no stalls. Verified on Windows; the Deck not run.
+
 - PC logs show `HLE thread: join failed (... No such device or address)`, then a wait of up to 5 s: one at the
   logo's end (impl-fork-ports.md §1.1), and in `research/docs/data` 260 of 337 logs carry 1-7 such lines (the rest
   are Deck runs, excerpts and runs that never got through the logo movie). It should be gone with this patch: that line is the cheap check on Windows.

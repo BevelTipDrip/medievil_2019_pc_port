@@ -59,6 +59,11 @@ compiled that way.
 
 ## History and pitfalls
 
+- T-UP1 (2026-11-12, `upstream-ports`, PC, shader cache renamed away; log research/docs/data/upstream-ports-t-up1.log):
+  both programs "ready synchronously" at 0.3 ms each; the user: the crypt torch has its flame, the main menu's
+  torches have flames on the first start (before, only after returning to the menu), and the firefly that follows
+  Dan has its trail of small stars again (missing in almost all earlier runs). Verified.
+
 - spacepepperoni took it (`c758207`) and reverted it (`7f69812`, 2026-10-28) with no reason given. The inference
   is that it was one of an evening's reverts while they hunted stale GPU data, whose cause was their buffer path.
   The six runtime commits reverted with it were reapplied; this one was not.

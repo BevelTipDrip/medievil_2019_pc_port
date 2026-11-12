@@ -1,0 +1,648 @@
+Extra environment (C:\Users\Ty\MediEvil\medievil_2019_pc_port\extra-env.txt): GOW3_FPS_LOG=0
+Deck switches: 8 on: early_frame_eop, decode_pacing, drain_hybrid, texset_wide, region_index, pending_filter, reg_hash_paired, particle_flip_guard; off: backing_copy (Linux only), thread_nice (Linux only), arena_writes_off (already off on Windows); Windows: untested
+Game profile: MediEvil (libc.prx, libSceFios2.prx, libSceNpToolkit2.prx)
+Output resolution: 3840x2160
+Graphics: quality custom; shadow_resolution=dynamic, small_object_shadows=0.01, shadow_distance=ps4, sun_shadow_resolution=2048, shadow_quality=3, view_distance=1, lod_distance=ps4, foliage_density=1, texture_filtering=16, ambient_occlusion=auto, reflections=3, refraction=2, volumetric_fog=1, motion_blur=4, depth_of_field=2, bloom=5, lens_flares=2, chromatic_aberration=1
+Render resolution: 3840x2160 output, render scale 67% (temporal upsampling), console quality, up to 1000 FPS, debug menu (R3; 01.02: L1 + R1 + R3)
+MediEvil | entry=0x2e9da70 | image=96,917,088 bytes
+928 imported symbols; 552,865 relocations; 58 required modules
+Unavailable non-loadable metadata headers: [10]; not a byte-exact ELF reconstruction
+Output: C:\Users\Ty\MediEvil\medievil_2019_pc_port\out
+libc _init_env verified RET: True
+Linked native libc: base=0x5c70000, 162 fallback exports, TLS=1152 bytes; eboot TLS=16 bytes, fs->gs patched=5
+Linked modules: libc.prx@0x5c70000, libSceFios2.prx@0x5da0000, libSceNpToolkit2.prx@0x5f30000; 348 native bindings, 850 imports left to the host runtime, fs->gs patched=5
+AppContent profile: SKU=full (probe setting), user params=[0, 0, 0, 0], mounted add-ons=0
+Patches: CUSA11227; 17 writes from ['Native 4K framebuffer pool (512 MB)', 'GPU particle bounds', 'Finer occlusion culling (low render resolutions, Steam Deck)', '4K display metrics at boot']
+Saves backed up to C:\Users\Ty\MediEvil\medievil_2019_pc_port\user\savedata_backups\20261109-225958
+Host scheduling: 1 ms timer resolution (GOW3_TIMER_RES=0 keeps 15.6 ms)
+Host scheduling: power throttling off (GOW3_POWER_THROTTLE=1 keeps it)
+Settings: C:\Users\Ty\MediEvil\medievil_2019_pc_port\medievil.ini
+Window: windowed size 3771x2121 pixels for a 3840x2160 game image
+Window: Borderless
+Decode pacing: on (GOW3_DECODE_PACING=1): lead 2 frame(s), 2 submissions of a frame ahead (GOW3_SUBMIT_AHEAD), GPU idle in stream order
+GPU: NVIDIA GeForce RTX 4090, driver NVIDIA 616.92.0.0, Vulkan 1.4.351
+Vulkan: NVIDIA Reflex (VK_NV_low_latency2) enabled
+GPU: pageable video memory on (when the card is full, the driver moves memory to system RAM)
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_AMD_shader_explicit_vertex_parameter unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_EXT_shader_stencil_export unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_AMD_shader_image_load_store_lod unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_AMD_gcn_shader unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_AMD_shader_trinary_minmax unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_AMD_mixed_attachment_samples unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_EXT_shader_atomic_float2 unavailable.
+GPU: maintenance5 on, maintenance8 on, feedback loop layouts on, 2D views of 3D on
+DLSS: ready
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=1, number_format=9 is not fully supported (vk_format=R8Srgb, missing features={ ColorAttachment })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=3, number_format=9 is not fully supported (vk_format=R8G8Srgb, missing features={ SampledImage | ColorAttachment | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=9, number_format=1 is not fully supported (vk_format=A2B10G10R10SnormPack32, missing features={ SampledImage | StorageImage | ColorAttachment | TransferSrc | TransferDst | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=9, number_format=5 is not fully supported (vk_format=A2B10G10R10SintPack32, missing features={ SampledImage | StorageImage | ColorAttachment | TransferSrc | TransferDst | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=13, number_format=4 is not fully supported (vk_format=R32G32B32Uint, missing features={ SampledImage | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=13, number_format=5 is not fully supported (vk_format=R32G32B32Sint, missing features={ SampledImage | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=13, number_format=7 is not fully supported (vk_format=R32G32B32Sfloat, missing features={ SampledImage | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=16, number_format=0 is not fully supported (vk_format=R5G6B5UnormPack16, missing features={ StorageImage | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=17, number_format=0 is not fully supported (vk_format=A1R5G5B5UnormPack16, missing features={ StorageImage | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=18, number_format=0 is not fully supported (vk_format=R5G5B5A1UnormPack16, missing features={ StorageImage | ColorAttachment | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=19, number_format=0 is not fully supported (vk_format=B4G4R4A4UnormPack16, missing features={ StorageImage | ColorAttachment | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:981 CollectImageFormatInfo: Depth format z_format=1, stencil_format=1 is not fully supported (vk_format=D16UnormS8Uint, missing features={ DepthStencilAttachment })
+Swapchain: VSync on (Fifo)
+Swapchain: Reflex sleep mode, minimum interval 0 us (Success)
+GPU memory types: 0: 0 heap 1 (32571 MiB) (not for the arena); 1: DEVICE_LOCAL heap 0 (24138 MiB); 2: HOST_VISIBLE|HOST_COHERENT heap 1 (32571 MiB) (not for the arena); 3: HOST_VISIBLE|HOST_COHERENT|HOST_CACHED heap 1 (32571 MiB) (not for the arena); 4: DEVICE_LOCAL|HOST_VISIBLE|HOST_COHERENT heap 0 (24138 MiB) (not for the arena)
+Buffer residency: 32 MB chunk 1 allocated at start
+Buffer arena: memory type 1 (DEVICE_LOCAL, heap 0), 64 KiB blocks; direct arena writes (U2) off (GOW3_ARENA_HOST_VISIBLE=0 or no suitable memory type)
+Scheduler 0000000012E8E040: commands recorded from thread '' (caller medievil-runtime.exe+0x1a6e65)
+GPU: deferred image readback enabled (64 copies, 64 MiB pending limit); CPU reads use the previous frame's copy
+GPU: draw preparation workers: 8 (+1 scanner, 16 hardware threads)
+Texture-set memo: compact layout, 44.0 MB (index 2.1, images 25.2, region data 16.8 MB; the table as before: 52.2 MB); transparent huge pages: n/a (system: n/a)
+Object motion: off (enable in menu or GOW3_OBJECT_MOTION=1)
+UE4 motion: on, view 0 (F10 cycles)
+UE4 DLSS: available, off (menu Image tab or F9)
+Runtime: disabled optimizations mask=0
+Overlay: menu ready (Insert or R3+L2)
+Pipeline startup: on demand, no bulk warm-up
+GPU: window and Vulkan presenter ready; SDK 0x05050001, 327 HLE symbols
+VideoOut: vblank thread priority time-critical, MMCSS Games (high)
+VideoOut: precise vblank tick (spin 700 us)
+GPU: vblank follows the display refresh rate, 240 Hz
+Swapchain: Reflex sleep mode, minimum interval 7092 us (Success)
+VideoOut: vblank 960 Hz, frame limit 0 FPS
+Patches: 17 writes, 59 bytes applied, 0 pointers rebased
+HZB remap: MapResults and Submit hooks ready (game build 01.02; results served by occlusion history key, no GPU wait)
+Movies: playing movies are suspended at each level change (OpenLevel hook, game build 01.02)
+GPU particle flip guard: PreInitViews and PreRender hooks ready (game build 01.02; one state flip per simulation; toggle file second word 16384: guard off)
+Guest TCB loads redirected to the TEB TLS slot: 5
+Mapped 100602208 bytes, 12 segments; applied 555435 relocations
+Starting linked module 0 at image offset 0x5c70000; native bindings=348
+Runtime: application heap API registered
+Runtime: direct allocation offset=0x0, size=536870912 bytes, type=3
+Runtime: mapped direct memory 0000004000000000, size=536870912, prot=0x32
+Runtime: direct allocation offset=0x20000000, size=6912147456 bytes, type=0
+Runtime: memory pool expanded by 6912147456 bytes at 0x20000000
+Runtime: reserved virtual range 0000001000000000, size=8589934592
+Runtime: reserved virtual range 0000002000000000, size=8589934592
+Runtime: reserved virtual range 0000003000000000, size=1073741824
+Module 0 initializer returned 0
+Starting linked module 1 at image offset 0x5da0000; native bindings=348
+Module 1 initializer returned 0
+Starting linked module 2 at image offset 0x5f30000; native bindings=348
+Module 2 initializer returned 0
+Entering original x86-64 code at guest offset 0x2e9da70
+Runtime: _init_env returned (verified libc implementation: RET)
+AdditionalArgs before fixup = ../../../OVERBITE/OVERBITE.uproject 
+AdditionalArgs after fixup = ../../../OVERBITE/OVERBITE.uproject -pak
+File root is /app0/!
+Runtime: open(/app0/symbols/shipping-symbols.bin) -> not found
+Runtime: open(/app0/build/ps4/symbols/shipping-symbols.bin) -> not found
+Runtime: open(/app0/overbite/symbols/shipping-symbols.bin) -> not found
+Failed to locate symbol files on /app0 or /app0/overbite/symbols s!
+Runtime: open(shipping-symbols.bin) -> not found
+Failed to load symbols from shipping-symbols.bin!
+Runtime: open(shipping-symbolmetadata.txt) -> not found
+Used memory before allocating anything was 524.56MB
+FIOS2: built with SDK version 0x06008001
+Runtime: guest thread 'SceFiosCallback' created (stack=65536, prio=260)
+Runtime: guest thread 'SceFiosIO' created (stack=81920, prio=260)
+Runtime: internal system module 0xd7 loaded (host implementation)
+Runtime: guest thread 'SceFiosIO /' created (stack=81920, prio=260)
+Runtime: AppContent host provider loaded; references=1
+Runtime: AppContent initialized; offline base-game profile, no mounted add-ons
+Runtime: temporary data mounted at /temp0 -> C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/temp0
+Runtime: open(/app0/deepfiles) -> not found
+Runtime: system module 0x83 loaded (host implementation)
+Runtime: PlayGo initialized; 23 chunks, all installed locally
+Runtime: open(/app0/overbite/saved/paks) -> not found
+Runtime: open(/app0/engine/content/paks) -> not found
+Runtime: open(/app0/overbite/saved/paks) -> not found
+Runtime: open(/app0/engine/content/paks) -> not found
+Runtime: guest thread 'TaskGraphThreadNP 0' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadNP 1' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadNP 2' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadNP 3' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 4' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 5' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 6' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 7' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 8' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 9' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 10' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 11' created (stack=393216, prio=700)
+Runtime: guest thread 'PoolThread 0' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 1' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 2' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 3' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 4' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 5' created (stack=262144, prio=700)
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/res_index.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/plurals.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/lang/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/lang/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/lang/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/region/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/region/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/region/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/zoneinfo64.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/numberingsystems.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/curr/supplementaldata.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/curr/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/curr/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/curr/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/likelysubtags.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/supplementaldata.res) -> not found
+Runtime: UserService initialized (user 1 logged in)
+Runtime: open(/app0/engine/saved/config/ps4/editorsettings.ini) -> not found
+Runtime: guest thread 'HttpManagerThread' created (stack=262144, prio=700)
+Runtime: system module 0x9c loaded (host implementation)
+Runtime: system module 0x85 loaded (host implementation)
+Runtime: UserService initialized (user 1 logged in)
+Runtime: system module 0xa6 loaded (host implementation)
+Runtime: system module 0xd3 loaded (host implementation)
+Runtime: system module 0x81 loaded (host implementation)
+Runtime: UserService initialized (user 1 logged in)
+Runtime: guest thread 'OnlineAsyncTaskThreadPS4 Defau' created (stack=262144, prio=700)
+Runtime: system module 0x102 loaded (host implementation)
+Runtime: system module 0x19 loaded (host implementation)
+Runtime: mapped flexible memory 0000001200000000, size=16777216, prot=0x2
+Runtime: mapped flexible memory 0000001201000000, size=6291456, prot=0x2
+Runtime: guest thread 'Toolkit::NP::Main' created (stack=262144, prio=700)
+Runtime: guest thread 'Toolkit::NP::Notifications' created (stack=65536, prio=700)
+Runtime: guest thread 'Toolkit::NP::AbortThread' created (stack=65536, prio=700)
+Runtime: system module 0xe4 loaded (host implementation)
+Runtime: system module 0xa8 loaded (host implementation)
+Runtime: system module 0xe7 loaded (host implementation)
+Runtime: system module 0xb2 loaded (host implementation)
+Runtime: system module 0xab loaded (host implementation)
+Runtime: system module 0xa2 loaded (host implementation)
+Runtime: system module 0xac loaded (host implementation)
+Runtime: system module 0xb8 loaded (host implementation)
+Runtime: system module 0xad loaded (host implementation)
+Runtime: system module 0x2c loaded (host implementation)
+Runtime: system module 0x1b loaded (host implementation)
+Runtime: guest thread 'PoolThread 6' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 7' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 8' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 9' created (stack=262144, prio=700)
+Runtime: open(/app0/overbite/intermediate/shaders/tmp) -> not found
+Runtime: open(/app0/overbite/intermediate/shaders/workingdirectory) -> not found
+Runtime: UserService initialized (user 1 logged in)
+Runtime: system module 0x96 loaded (host implementation)
+Runtime: guest thread 'SystemEventGatherThreadPS4' created (stack=262144, prio=700)
+Runtime: open(/app0/overbite/saved/preferences/editorkeybindings.txt) -> not found
+Runtime: guest thread 'SubmitDoneAsyncTaskThreadPS4' created (stack=262144, prio=700)
+Runtime: guest thread 'SubmitGPUCommandsAsyncTaskThre' created (stack=262144, prio=700)
+Runtime: open(/app0/overbite/content/shaderarchive-global-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/shaderarchive-paper2d-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/shaderarchive-paper2d_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/content/shaderarchive-paper2d-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/content/shaderarchive-paper2d_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/shaderarchive-cryptokeys-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/shaderarchive-cryptokeys_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/content/shaderarchive-cryptokeys-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/content/shaderarchive-cryptokeys_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/shaderarchive-mesheditor-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/shaderarchive-mesheditor_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/content/shaderarchive-mesheditor-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/content/shaderarchive-mesheditor_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/shaderarchive-datasmithcontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/shaderarchive-datasmithcontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/content/shaderarchive-datasmithcontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/content/shaderarchive-datasmithcontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/shaderarchive-variantmanagercontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/shaderarchive-variantmanagercontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/content/shaderarchive-variantmanagercontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/content/shaderarchive-variantmanagercontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/shaderarchive-mediacompositing-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/shaderarchive-mediacompositing_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/content/shaderarchive-mediacompositing-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/content/shaderarchive-mediacompositing_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/shaderarchive-wwise-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/shaderarchive-wwise_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/content/shaderarchive-wwise-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/content/shaderarchive-wwise_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: guest thread 'RHIThread' created (stack=524288, prio=700)
+Scheduler 0000000012E8E040: commands recorded from thread 'gow3:DrawRec' (caller medievil-runtime.exe+0x26876d)
+OnSubmit on stage B: on (GOW3_ONSUBMIT_STAGE_B unset, with GOW3_DECODE_PACING): fault buffer, image downloads, collectors, staging trim and the frame's Flush in stream order
+Runtime: guest thread 'RenderThread 0' created (stack=262144, prio=700)
+Runtime: guest thread 'RTHeartBeat 0' created (stack=262144, prio=700)
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/brkitr/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/brkitr/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Texture cache: shared image memory on (NVIDIA GeForce RTX 4090)
+Runtime: guest thread 'RHIFrameOffsetThread' created (stack=262144, prio=700)
+Runtime: guest thread 'RHIFrameFlipThread' created (stack=262144, prio=700)
+Runtime: pad opened for user 1 (SDL gamepad or keyboard)
+Runtime: SystemService: splash screen hidden
+Runtime: SystemService: splash screen hidden
+Runtime: open(/app0/overbite/content/shaderarchive-overbite-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/overbite/content/shaderarchive-overbite_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/download0/installedcontent/overbite/content/shaderarchive-overbite-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/download0/installedcontent/overbite/content/shaderarchive-overbite_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: system module 0xa5 loaded (host implementation)
+Runtime: system module 0xcf loaded (host implementation)
+Runtime: system module 0x88 loaded (host implementation)
+Runtime: system module 0xa5 loaded (host implementation)
+Runtime: guest thread 'SlateLoadingThread1' created (stack=262144, prio=700)
+Runtime: SystemService: splash screen hidden
+Runtime: guest thread 'AK::IOThread' created (stack=131072, prio=256)
+Runtime: guest thread 'AK::BankManager' created (stack=131072, prio=700)
+Runtime: guest thread 'AK Suspended' created (stack=131072, prio=256)
+GPU: spare image memory block ready (type 1, 1 ms)
+Runtime: Ajm context initialized (ATRAC9 via LibAtrac9, MP3 via FFmpeg)
+Runtime: guest thread 'AK::EventManager' created (stack=131072, prio=256)
+GPU [Render.Vulkan] <Warning> emit_spirv.cpp:459 operator(): Float32 denorm flushing is not supported by the GPU
+Readback first copy queued: 0x2001600000 (512 bytes), image 1x1 32 bits R8G8B8A8Unorm, tick 3; CPU reads wait for it
+Readback first copy queued: 0x2001608000 (512 bytes), image 1x1 32 bits R8G8B8A8Unorm, tick 3; CPU reads wait for it
+Readback first copy queued: 0x2001610000 (512 bytes), image 1x1 32 bits R8G8B8A8Unorm, tick 3; CPU reads wait for it
+Readback first copy queued: 0x2001618000 (512 bytes), image 1x1 32 bits R8G8B8A8Unorm, tick 3; CPU reads wait for it
+Readback first copy queued: 0x2001620000 (512 bytes), image 1x1 32 bits R8G8B8A8Unorm, tick 3; CPU reads wait for it
+Readback first copy queued: 0x2001640000 (1024 bytes), image 1x1 64 bits R16G16B16A16Sfloat, tick 3; CPU reads wait for it
+Readback first copy queued: 0x20013e8000 (16384 bytes), image 16x16 32 bits R8G8B8A8Uint, tick 3; CPU reads wait for it
+Runtime: guest thread 'FImgMediaSchedulerThread 0' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 1' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 2' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 3' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 4' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 5' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 6' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 7' created (stack=262144, prio=700)
+Runtime: guest thread 'FMediaTicker' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 10' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 11' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 12' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 13' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 14' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 15' created (stack=262144, prio=700)
+Readback first copy published: 0x2001600000 (512 bytes); non-zero 8-byte groups: +0:(-nan -nan 0 0)
+Readback first copy published: 0x2001608000 (512 bytes); non-zero 8-byte groups: all zero
+Readback first copy published: 0x2001610000 (512 bytes); non-zero 8-byte groups: +0:(0 -nan 0 0)
+Readback first copy published: 0x2001618000 (512 bytes); non-zero 8-byte groups: +0:(-nan -nan 0 0)
+Readback first copy published: 0x2001620000 (512 bytes); non-zero 8-byte groups: +0:(-7.6294e-06 -nan 0 0)
+Readback first copy published: 0x2001640000 (1024 bytes); non-zero 8-byte groups: +0:(64992 64992 64992 64992)
+Readback first copy published: 0x20013e8000 (16384 bytes); non-zero 8-byte groups: all zero
+Runtime: system module 0xb loaded (host implementation)
+Runtime: Ajm context initialized (ATRAC9 via LibAtrac9, MP3 via FFmpeg)
+Runtime: guest thread 'Ngs2AudioRenderingThread' created (stack=262144, prio=700)
+Runtime: NGS2 system created (silent renderer)
+Runtime: audio backend wasapi
+Runtime: audio port 0 opened (type 0, 8 ch, float, 256 frames, downmixed to stereo)
+Runtime: guest thread 'AudioThread' created (stack=262144, prio=700)
+GPU: spare image memory block ready (type 1, 1 ms)
+Buffer residency: 32 MB chunk 2 allocated ahead
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/lang/root.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/region/root.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: audio port 1 opened (type 0, 8 ch, float, 512 frames, downmixed to stereo)
+Runtime: guest thread 'AK::LibAudioOut' created (stack=131072, prio=256)
+Runtime: system module 0xa0 loaded (host implementation)
+Runtime: save data '@MediEvil0006' mounted at /savedata0 (existing, read-only)
+Readback first copy queued: 0x2001120000 (1024 bytes), image 2x2 32 bits R8G8B8A8Srgb, tick 126; CPU reads wait for it
+Readback first copy published: 0x2001120000 (1024 bytes); non-zero 8-byte groups: +0:(0 -nan 0 -nan) +512:(0 -nan 0 -nan)
+Runtime: gamepad connected: DualSense Wireless Controller (USB 054c:0ce6, 1 open)
+Runtime: guest thread 'RenderThread 1' created (stack=262144, prio=700)
+Runtime: guest thread 'RTHeartBeat 1' created (stack=262144, prio=700)
+GPU particle flips: 0 flips, 1 simulations; 1 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Buffer residency: 32 MB chunk 3 allocated ahead
+Readback first copy queued: 0x2029555500 (128 bytes), image 8x4 16 bits R16Sfloat, tick 143; CPU reads wait for it
+Readback first copy published: 0x2029555500 (128 bytes); non-zero 8-byte groups: all zero
+Readback first copy queued: 0x2029555600 (64 bytes), image 4x2 16 bits R16Sfloat, tick 144; CPU reads wait for it
+Readback first copy published: 0x2029555600 (64 bytes); non-zero 8-byte groups: all zero
+Readback first copy queued: 0x2029555700 (32 bytes), image 2x1 16 bits R16Sfloat, tick 145; CPU reads wait for it
+Readback first copy queued: 0x2000a50000 (1024 bytes), image 1x1 64 bits R32G32Sfloat, tick 145; CPU reads wait for it
+Scheduler 0000000012E8E040: commands recorded from thread 'shadPS4:GpuCommandProcessor' (caller medievil-runtime.exe+0x73e20)
+Readback first copy queued: 0x2029555700 (32 bytes), image 2x1 16 bits R16Sfloat, tick 147; CPU reads wait for it
+Readback first copy published: 0x2029555700 (32 bytes); non-zero 8-byte groups: all zero
+Readback first copy published: 0x2000a50000 (1024 bytes); non-zero 8-byte groups: +0:(0 1.875 0 1.875)
+Readback first copy queued: 0x200cac0000 (1024 bytes), image 1x1 64 bits R32G32Sfloat, tick 148; CPU reads wait for it
+Readback first copy queued: 0x200cac0000 (1024 bytes), image 1x1 64 bits R32G32Sfloat, tick 152; CPU reads wait for it
+Readback first copy published: 0x200cac0000 (1024 bytes); non-zero 8-byte groups: +0:(0 1.875 0 1.875)
+GPU: spare image memory block ready (type 1, 1 ms)
+AvPlayer 0.000 s: 00000000795052C0 Init -> 0 (no source, 0 frames delivered)
+AvPlayer 0.001 s: 00000000795052C0 AddSource -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 0 frames delivered)
+AvPlayer 0.028 s: 00000000795052C0 SetLooping off -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 0 frames delivered)
+AvPlayer 0.029 s: 00000000795052C0 Start -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 0 frames delivered)
+UE4: r.SeparateTranslucencyScreenPercentage 75 (live)
+[aac @ 0000000064f1f1c0] Could not update timestamps for discarded samples.
+HLE thread: join failed (thread::join failed: No such device or address); waiting for it to finish
+GPU [Lib.AvPlayer] <Warning> avplayer_source.cpp:308 Stop: Could not stop playback: already stopped.
+AvPlayer 43.751 s: 00000000795052C0 Stop -> -2140536830 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 149 frames delivered)
+AvPlayer 43.751 s: 00000000795052C0 Close -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 149 frames delivered)
+GPU [Lib.AvPlayer] <Warning> avplayer_source.cpp:308 Stop: Could not stop playback: already stopped.
+Runtime: guest thread 'TAsync 0' created (stack=262144, prio=700)
+AvPlayer 43.753 s: 000000014B8F2FF0 Init -> 0 (no source, 0 frames delivered)
+AvPlayer 43.830 s: 000000014B8F2FF0 AddSource -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 0 frames delivered)
+AvPlayer 43.843 s: 000000014B8F2FF0 SetLooping off -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 0 frames delivered)
+AvPlayer 43.844 s: 000000014B8F2FF0 Start -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 0 frames delivered)
+AvPlayer 46.637 s: 000000014B8F2FF0 suspended at a level change (file://../../../overbite/Content/Movies/gameintro.mp4, 92 frames delivered)
+Runtime: guest thread 'SlateLoadingThread2' created (stack=262144, prio=700)
+Buffer residency: 32 MB chunk 4 allocated ahead
+Readback first copy queued: 0x200ca40000 (262144 bytes), image 256x256 32 bits R8G8B8A8Unorm, tick 14436; CPU reads wait for it
+GPU [Render.Vulkan] <Warning> emit_spirv.cpp:516 operator(): Float64 denorm preserving is not supported by the GPU
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Readback first copy queued: 0x2024ffaa00 (256 bytes), image 8x8 16 bits R16Sfloat, tick 14436; CPU reads wait for it
+Readback first copy published: 0x200ca40000 (262144 bytes); non-zero 8-byte groups: all zero
+Readback first copy published: 0x2024ffaa00 (256 bytes); non-zero 8-byte groups: all zero
+Readback first copy queued: 0x2024ffab00 (128 bytes), image 4x4 16 bits R16Sfloat, tick 14437; CPU reads wait for it
+Readback first copy published: 0x2024ffab00 (128 bytes); non-zero 8-byte groups: all zero
+Readback first copy queued: 0x2024ffac00 (64 bytes), image 2x2 16 bits R16Sfloat, tick 14438; CPU reads wait for it
+Readback first copy queued: 0x20176f0000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 14438; CPU reads wait for it
+Readback first copy queued: 0x2017700000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 14438; CPU reads wait for it
+Readback first copy queued: 0x20176e0000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 14438; CPU reads wait for it
+Readback first copy queued: 0x2017700000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 14438; CPU reads wait for it
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Readback first copy published: 0x2024ffac00 (64 bytes); non-zero 8-byte groups: +0:(0 0 0 1.875)
+Readback first copy published: 0x20176f0000 (32768 bytes); non-zero 8-byte groups: +0:(3.5763e-07 1.1265e-05 2.4974e-05 0) +8:(3.5763e-07 1.1265e-05 2.4974e-05 0) +16:(3.5763e-07 1.1265e-05 2.4974e-05 0) +24:(3.5763e-07 1.1265e-05 2.4974e-05 0) +32:(3.5763e-07 1.1265e-05 2.4974e-05 0) +40:(3.5763e-07 1.1265e-05 2.4974e-05 0) +48:(3.5763e-07 1.1265e-05 2.4974e-05 0) +56:(3.5763e-07 1.1265e-05 2.4974e-05 0) +64:(3.5763e-07 1.1265e-05 2.4974e-05 0) +72:(3.5763e-07 1.1265e-05 2.4974e-05 0) +80:(3.5763e-07 1.1265e-05 2.4974e-05 0) +88:(3.5763e-07 1.1265e-05 2.4974e-05 0) +96:(3.5763e-07 1.1265e-05 2.4974e-05 0) +104:(3.5763e-07 1.1265e-05 2.4974e-05 0) +112:(3.5763e-07 1.1265e-05 2.4974e-05 0) +120:(3.5763e-07 1.1265e-05 2.4974e-05 0)
+Readback first copy published: 0x2017700000 (32768 bytes); non-zero 8-byte groups: +0:(1.5497e-06 2.2054e-06 2.5034e-06 4.7684e-07) +8:(1.9073e-06 2.6822e-06 3.0994e-06 5.9605e-07) +16:(2.3246e-06 3.2783e-06 3.8147e-06 7.1526e-07) +24:(2.861e-06 3.9935e-06 4.6492e-06 8.9407e-07) +32:(3.5167e-06 4.8876e-06 5.722e-06 1.0729e-06) +40:(4.2915e-06 6.0201e-06 6.9737e-06 1.3113e-06) +48:(5.2452e-06 7.3314e-06 8.5235e-06 1.6689e-06) +56:(6.4373e-06 9.0003e-06 1.0431e-05 2.0266e-06) +64:(1.5497e-06 2.2054e-06 2.5034e-06 4.7684e-07) +72:(1.9073e-06 2.6822e-06 3.0994e-06 5.9605e-07) +80:(2.3246e-06 3.2783e-06 3.8147e-06 7.1526e-07) +88:(2.861e-06 3.9935e-06 4.6492e-06 8.9407e-07) +96:(3.5167e-06 4.8876e-06 5.722e-06 1.0729e-06) +104:(4.2915e-06 6.0201e-06 6.9737e-06 1.3113e-06) +112:(5.2452e-06 7.3314e-06 8.5235e-06 1.6689e-06) +120:(6.4373e-06 9.0003e-06 1.0431e-05 2.0266e-06)
+Readback first copy published: 0x20176e0000 (32768 bytes); non-zero 8-byte groups: +0:(3.5763e-07 1.1265e-05 2.4974e-05 2.5034e-06) +8:(3.5763e-07 1.1265e-05 2.4974e-05 3.0398e-06) +16:(3.5763e-07 1.1265e-05 2.4974e-05 3.7551e-06) +24:(3.5763e-07 1.1265e-05 2.4974e-05 4.5896e-06) +32:(3.5763e-07 1.1265e-05 2.4974e-05 5.6028e-06) +40:(3.5763e-07 1.1265e-05 2.4974e-05 6.9141e-06) +48:(3.5763e-07 1.1265e-05 2.4974e-05 8.4639e-06) +56:(3.5763e-07 1.1265e-05 2.4974e-05 1.0371e-05) +64:(3.5763e-07 1.1265e-05 2.4974e-05 2.5034e-06) +72:(3.5763e-07 1.1265e-05 2.4974e-05 3.0398e-06) +80:(3.5763e-07 1.1265e-05 2.4974e-05 3.7551e-06) +88:(3.5763e-07 1.1265e-05 2.4974e-05 4.5896e-06) +96:(3.5763e-07 1.1265e-05 2.4974e-05 5.6028e-06) +104:(3.5763e-07 1.1265e-05 2.4974e-05 6.9141e-06) +112:(3.5763e-07 1.1265e-05 2.4974e-05 8.4639e-06) +120:(3.5763e-07 1.1265e-05 2.4974e-05 1.0371e-05)
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Readback first copy queued: 0x2054eaaa00 (256 bytes), image 8x8 16 bits R16Sfloat, tick 14444; CPU reads wait for it
+Readback first copy published: 0x2054eaaa00 (256 bytes); non-zero 8-byte groups: all zero
+Readback first copy queued: 0x2054eaab00 (128 bytes), image 4x4 16 bits R16Sfloat, tick 14445; CPU reads wait for it
+Readback first copy published: 0x2054eaab00 (128 bytes); non-zero 8-byte groups: all zero
+Readback first copy queued: 0x2054eaac00 (64 bytes), image 2x2 16 bits R16Sfloat, tick 14446; CPU reads wait for it
+Readback first copy queued: 0x20105b0000 (1024 bytes), image 1x1 64 bits R32G32Sfloat, tick 14446; CPU reads wait for it
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Buffer residency: 32 MB chunk 5 allocated ahead
+Readback first copy published: 0x2054eaac00 (64 bytes); non-zero 8-byte groups: +8:(3.5763e-07 1.1265e-05 2.4974e-05 0) +16:(3.5763e-07 1.1265e-05 2.4974e-05 0) +24:(3.5763e-07 1.1265e-05 2.4974e-05 0) +40:(3.5763e-07 1.1265e-05 2.4974e-05 0) +48:(3.5763e-07 1.1265e-05 2.4974e-05 0) +56:(3.5763e-07 1.1265e-05 2.4974e-05 0)
+Readback first copy published: 0x20105b0000 (1024 bytes); non-zero 8-byte groups: +0:(0 1.875 0 1.875)
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Slow image create: 6.3 ms, 4096x4096, 32.0 MiB
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Barriers: 3696 image barriers in one batch (largest so far)
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Stencil plane copy: depth 0x201a000000 (image 0x201a000000 2576x1448), stencil plane 0x2018800000 (4325376 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2018800000 +0x420000
+Constant ring (5 s): 1 allocations found it full (left to stage B), 6 retirement scans; held epochs 46, open epoch holds from 0, position 303934608, completed 240449920
+Buffer residency: 32 MB chunk 6 allocated ahead
+Buffer residency: 32 MB chunk 7 allocated ahead
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:426 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0006.sce_sys/icon0.png
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:426 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0007.sce_sys/icon0.png
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:426 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0004.sce_sys/icon0.png
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:426 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0005.sce_sys/icon0.png
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:426 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0003.sce_sys/icon0.png
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:426 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0002.sce_sys/icon0.png
+GPU [Lib.SaveDataDialog] <Warning> gow3gpu.cpp:426 gow3gpu_choice_begin: save list: no picture from C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/savedata/1/CUSA11227/@MediEvil0001.sce_sys/icon0.png
+Runtime: SaveDataDialog list (Load game): 8 entries shown
+Runtime: SaveDataDialog list: chose @MediEvil0006
+Runtime: save data '@MediEvil0006' mounted at /savedata0 (existing)
+Runtime: guest thread 'SlateLoadingThread3' created (stack=262144, prio=700)
+Buffer residency: 32 MB chunk 8 allocated ahead
+Buffer residency: 32 MB chunk 9 allocated ahead
+Readback first copy queued: 0x20066faa00 (256 bytes), image 8x8 16 bits R16Sfloat, tick 20794; CPU reads wait for it
+Readback first copy published: 0x20066faa00 (256 bytes); non-zero 8-byte groups: +0:(-289.25 -0.00046897 -21456 -2432) +8:(-26.297 -7076 -5.3438 -201.38) +16:(3.5763e-07 1.1265e-05 2.4974e-05 0) +24:(3.5763e-07 1.1265e-05 2.4974e-05 0) +32:(-0.013367 -46752 -0.0002228 -21.031) +40:(-1.041 -1.2451 -217.75 -0.11627) +48:(3.5763e-07 1.1265e-05 2.4974e-05 0) +56:(3.5763e-07 1.1265e-05 2.4974e-05 0) +64:(-44640 -0.033813 -0.002882 -0.4231) +72:(-15776 -4.0412e-05 -1769 -0.1272) +80:(3.5763e-07 1.1265e-05 2.4974e-05 0) +88:(3.5763e-07 1.1265e-05 2.4974e-05 0) +96:(-21936 -4588 -169.75 -0.00020683) +104:(-15208 -0.026611 -241.62 0.0036182) +112:(3.5763e-07 1.1265e-05 2.4974e-05 0) +120:(3.5763e-07 1.1265e-05 2.4974e-05 0)
+Readback first copy queued: 0x20066fab00 (128 bytes), image 4x4 16 bits R16Sfloat, tick 20795; CPU reads wait for it
+Readback first copy published: 0x20066fab00 (128 bytes); non-zero 8-byte groups: +0:(-21456 -7076 -46752 -217.75) +64:(-44640 -15776 -21936 -15208)
+Readback first copy queued: 0x20066fac00 (64 bytes), image 2x2 16 bits R16Sfloat, tick 20796; CPU reads wait for it
+Readback first copy queued: 0x2017070000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 20796; CPU reads wait for it
+Readback first copy queued: 0x20181c0000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 20796; CPU reads wait for it
+Readback first copy queued: 0x2016fb8000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 20796; CPU reads wait for it
+Readback first copy queued: 0x20181c0000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 20796; CPU reads wait for it
+Readback first copy queued: 0x20066fac00 (64 bytes), image 2x2 16 bits R16Sfloat, tick 20796; CPU reads wait for it
+Readback first copy queued: 0x2017070000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 20796; CPU reads wait for it
+Readback first copy queued: 0x20181c0000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 20796; CPU reads wait for it
+Readback first copy queued: 0x2016fb8000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 20796; CPU reads wait for it
+Readback first copy queued: 0x20181c0000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 20796; CPU reads wait for it
+Readback first copy published: 0x20066fac00 (64 bytes); non-zero 8-byte groups: +0:(-46752 0 -0.069092 1.8721)
+Readback first copy published: 0x2017070000 (32768 bytes); non-zero 8-byte groups: all zero
+Readback first copy published: 0x20181c0000 (32768 bytes); non-zero 8-byte groups: +0:(5.0068e-06 5.0068e-06 5.0068e-06 0) +8:(6.4969e-06 6.4969e-06 6.4969e-06 0) +16:(8.4043e-06 8.4043e-06 8.4043e-06 0) +24:(1.0908e-05 1.0908e-05 1.0908e-05 0) +32:(1.4126e-05 1.4126e-05 1.4126e-05 0) +40:(1.8299e-05 1.8299e-05 1.8299e-05 0) +48:(2.3723e-05 2.3723e-05 2.3723e-05 0) +56:(3.0756e-05 3.0756e-05 3.0756e-05 0) +64:(5.0068e-06 5.0068e-06 5.0068e-06 0) +72:(6.4969e-06 6.4969e-06 6.4969e-06 0) +80:(8.4043e-06 8.4043e-06 8.4043e-06 0) +88:(1.0908e-05 1.0908e-05 1.0908e-05 0) +96:(1.4126e-05 1.4126e-05 1.4126e-05 0) +104:(1.8299e-05 1.8299e-05 1.8299e-05 0) +112:(2.3723e-05 2.3723e-05 2.3723e-05 0) +120:(3.0756e-05 3.0756e-05 3.0756e-05 0)
+Readback first copy published: 0x2016fb8000 (32768 bytes); non-zero 8-byte groups: +0:(1.1921e-07 1.1921e-07 1.1921e-07 4.9472e-06) +8:(1.1921e-07 1.1921e-07 1.7881e-07 6.4373e-06) +16:(1.7881e-07 1.7881e-07 2.3842e-07 8.4043e-06) +24:(2.3842e-07 2.3842e-07 2.9802e-07 1.0908e-05) +32:(2.9802e-07 2.9802e-07 3.5763e-07 1.4126e-05) +40:(3.5763e-07 3.5763e-07 4.7684e-07 1.8239e-05) +48:(4.7684e-07 4.7684e-07 5.9605e-07 2.3723e-05) +56:(5.9605e-07 5.9605e-07 7.7486e-07 3.0756e-05) +64:(1.1921e-07 1.1921e-07 1.1921e-07 4.9472e-06) +72:(1.1921e-07 1.1921e-07 1.7881e-07 6.4373e-06) +80:(1.7881e-07 1.7881e-07 2.3842e-07 8.4043e-06) +88:(2.3842e-07 2.3842e-07 2.9802e-07 1.0908e-05) +96:(2.9802e-07 2.9802e-07 3.5763e-07 1.4126e-05) +104:(3.5763e-07 3.5763e-07 4.7684e-07 1.8239e-05) +112:(4.7684e-07 4.7684e-07 5.9605e-07 2.3723e-05) +120:(5.9605e-07 5.9605e-07 7.7486e-07 3.0756e-05)
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 1 and destination layers 2 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 2 and destination layers 3 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 3 and destination layers 4 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 4 and destination layers 5 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 5 and destination layers 6 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 6 and destination layers 8 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 1 and destination layers 2 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 2 and destination layers 3 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 3 and destination layers 4 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 4 and destination layers 5 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 5 and destination layers 6 to minimum.
+Pipeline binary cache: 256 hits, 0 compiled, 0 rejected, 0 saved, 0 cache errors (restore 0.548 ms, compile 0.000 ms each)
+Buffer residency: 32 MB chunk 10 allocated ahead
+Runtime: save data '@MediEvil0006' mounted at /savedata0 (existing)
+Runtime: guest thread 'SlateLoadingThread4' created (stack=262144, prio=700)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Runtime: system module 0xad loaded (host implementation)
+Buffer residency: 32 MB chunk 11 allocated ahead
+Readback first copy queued: 0x201de50000 (1024 bytes), image 1x1 64 bits R16G16B16A16Sfloat, tick 23693; CPU reads wait for it
+Readback first copy read by the CPU: 0x201de50000 (8 bytes), GPU not done yet: waiting
+Readback first copy published: 0x201de50000 (1024 bytes); non-zero 8-byte groups: +0:(3332 3332 3332 3332) +64:(-44640 -15776 -21936 -15208)
+Readback first copy queued: 0x205d2aaa00 (256 bytes), image 8x8 16 bits R16Sfloat, tick 23694; CPU reads wait for it
+Readback first copy published: 0x205d2aaa00 (256 bytes); non-zero 8-byte groups: +0:(0.00012183 0.062042 0.00010324 0.046631) +8:(0.058624 0.058624 0.058624 0.058624) +32:(0.0078583 0.057861 0.028931 0.031036) +40:(0.055603 0.055603 0.055603 0.055603) +64:(0.086182 0.078247 0.070129 0.062225) +72:(0.062225 0.062225 0.062225 0.062225) +96:(0.086975 0.079102 0.070129 0.062469) +104:(0.062469 0.062469 0.062469 0.062469) +128:(0.08783 0.079285 0.070129 0.062683) +136:(0.062683 0.062683 0.062683 0.062683) +160:(0.08783 0.079285 0.070129 0.062683) +168:(0.062683 0.062683 0.062683 0.062683) +192:(0.08783 0.079285 0.070129 0.062683) +200:(0.062683 0.062683 0.062683 0.062683) +224:(0.08783 0.079285 0.070129 0.062683) +232:(0.062683 0.062683 0.062683 0.062683)
+Readback first copy queued: 0x205d2aab00 (128 bytes), image 4x4 16 bits R16Sfloat, tick 23695; CPU reads wait for it
+Readback first copy published: 0x205d2aab00 (128 bytes); non-zero 8-byte groups: +0:(0.00012183 0.00010324 0.055603 0.055603) +8:(-26.297 -7076 -5.3438 -201.38) +32:(0.078247 0.062225 0.062225 0.062225) +40:(-1.041 -1.2451 -217.75 -0.11627) +64:(0.079285 0.062683 0.062683 0.062683) +72:(-15776 -4.0412e-05 -1769 -0.1272) +96:(0.079285 0.062683 0.062683 0.062683) +104:(-15208 -0.026611 -241.62 0.0036182)
+Readback first copy queued: 0x205d2aac00 (64 bytes), image 2x2 16 bits R16Sfloat, tick 23696; CPU reads wait for it
+Readback first copy queued: 0x201dec0000 (1024 bytes), image 1x1 64 bits R32G32Sfloat, tick 23696; CPU reads wait for it
+Buffer residency: 32 MB chunk 12 allocated ahead
+Readback first copy published: 0x205d2aac00 (64 bytes); non-zero 8-byte groups: +0:(0.00010324 0.055603 3332 3332) +32:(0.062683 0.062683 0 0)
+Readback first copy published: 0x201dec0000 (1024 bytes); non-zero 8-byte groups: +0:(0 1.875 0 1.875) +8:(0.058624 0.058624 0.058624 0.058624) +32:(0.0078583 0.057861 0.028931 0.031036) +40:(0.055603 0.055603 0.055603 0.055603) +64:(0.086182 0.078247 0.070129 0.062225) +72:(0.062225 0.062225 0.062225 0.062225) +96:(0.086975 0.079102 0.070129 0.062469) +104:(0.062469 0.062469 0.062469 0.062469) +128:(0.08783 0.079285 0.070129 0.062683) +136:(0.062683 0.062683 0.062683 0.062683) +160:(0.08783 0.079285 0.070129 0.062683) +168:(0.062683 0.062683 0.062683 0.062683) +192:(0.08783 0.079285 0.070129 0.062683) +200:(0.062683 0.062683 0.062683 0.062683) +224:(0.08783 0.079285 0.070129 0.062683) +232:(0.062683 0.062683 0.062683 0.062683)
+Buffer residency: 32 MB chunk 13 allocated ahead
+Buffer residency: 32 MB chunk 14 allocated ahead
+Buffer residency: 32 MB chunk 15 allocated ahead
+Runtime: guest thread 'SlateLoadingThread5' created (stack=262144, prio=700)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Readback first copy queued: 0x201053aa00 (256 bytes), image 8x8 16 bits R16Sfloat, tick 33385; CPU reads wait for it
+Readback first copy published: 0x201053aa00 (256 bytes); non-zero 8-byte groups: +0:(0.025436 0.025436 0.025497 0.025497) +8:(0.027237 0.027374 0.027359 0.027634) +32:(0.025513 0.025497 0.025787 0.025955) +40:(0.027374 0.027359 0.027634 0.02771) +64:(0.025848 0.025787 0.025787 0.026276) +72:(0.027649 0.02771 0.028 0.02829) +96:(0.025848 0.025787 0.026169 0.026169) +104:(0.027802 0.028015 0.02829 0.028015) +128:(0.028015 0.028183 0.028564 0.028488) +136:(0.026184 0.026489 0.026489 0.026596) +160:(0.028015 0.028198 0.21521 0.21521) +168:(0.026184 0.026489 0.026489 0.026489) +192:(0.060181 0.060242 0.060211 0.060089) +200:(0.026917 0.026886 0.027145 0.026886) +224:(0.060242 0.060089 0.060242 0.06012) +232:(0.026917 0.026886 0.027145 0.027237)
+Readback first copy queued: 0x201053ab00 (128 bytes), image 4x4 16 bits R16Sfloat, tick 33386; CPU reads wait for it
+Readback first copy published: 0x201053ab00 (128 bytes); non-zero 8-byte groups: +0:(0.025436 0.027237 0.025497 0.027359) +8:(0.058624 0.058624 0.058624 0.058624) +40:(0.055603 0.055603 0.055603 0.055603) +64:(0.025787 0.027649 0.025787 0.027802) +72:(0.062225 0.062225 0.062225 0.062225) +104:(0.062469 0.062469 0.062469 0.062469)
+Readback first copy queued: 0x201053ac00 (64 bytes), image 2x2 16 bits R16Sfloat, tick 33387; CPU reads wait for it
+Readback first copy queued: 0x2016f70000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 33387; CPU reads wait for it
+Readback first copy queued: 0x20069b0000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 33387; CPU reads wait for it
+Readback first copy queued: 0x2017640000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 33387; CPU reads wait for it
+Readback first copy queued: 0x20069b0000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 33387; CPU reads wait for it
+Readback first copy published: 0x201053ac00 (64 bytes); non-zero 8-byte groups: +0:(0.025436 0.058624 0 1.875) +8:(-26.297 -7076 -5.3438 -201.38) +32:(0 0 0.062225 0.062225) +40:(-1.041 -1.2451 -217.75 -0.11627)
+Readback first copy published: 0x2016f70000 (32768 bytes); non-zero 8-byte groups: all zero
+Readback first copy published: 0x20069b0000 (32768 bytes); non-zero 8-byte groups: +24:(1.7285e-06 1.7285e-06 1.7285e-06 0) +32:(0.00031114 0.00031114 0.00031114 0) +40:(0.055298 0.055298 0.055298 0) +48:(9.8203 9.8203 9.8203 0) +56:(1745 1745 1745 0) +88:(1.7285e-06 1.7285e-06 1.7285e-06 0) +96:(0.00031114 0.00031114 0.00031114 0) +104:(0.055298 0.055298 0.055298 0) +112:(9.8203 9.8203 9.8203 0) +120:(1745 1745 1745 0) +152:(1.7285e-06 1.7285e-06 1.7285e-06 0) +160:(0.00031114 0.00031114 0.00031114 0) +168:(0.055298 0.055298 0.055298 0) +176:(9.8203 9.8203 9.8203 0) +184:(1745 1745 1745 0) +216:(1.7285e-06 1.7285e-06 1.7285e-06 0)
+Readback first copy published: 0x2017640000 (32768 bytes); non-zero 8-byte groups: +24:(0 0 0 1.7285e-06) +32:(3.3975e-06 5.4836e-06 7.8678e-06 0.00031114) +40:(0.00059319 0.0009532 0.0013618 0.055267) +48:(0.10236 0.16443 0.23499 9.8203) +56:(17.766 28.547 40.781 1744) +88:(0 0 0 1.7285e-06) +96:(3.3975e-06 5.4836e-06 7.8678e-06 0.00031114) +104:(0.00058937 0.000947 0.0013533 0.055267) +112:(0.1015 0.16309 0.23303 9.8203) +120:(17.609 28.281 40.406 1744) +152:(0 0 0 1.7285e-06) +160:(3.3975e-06 5.4836e-06 7.8678e-06 0.00031114) +168:(0.00058603 0.00094175 0.0013456 0.055267) +176:(0.10077 0.16187 0.2312 9.8203) +184:(17.469 28.062 40.094 1744) +216:(0 0 0 1.7285e-06)
+Readback first copy queued: 0x2002ed0000 (1024 bytes), image 1x1 64 bits R16G16B16A16Sfloat, tick 33394; CPU reads wait for it
+Readback first copy read by the CPU: 0x2002ed0000 (8 bytes), GPU not done yet: waiting
+Readback first copy published: 0x2002ed0000 (1024 bytes); non-zero 8-byte groups: +0:(0.046783 0.046783 0.046783 0.046783) +192:(1.7285e-06 1.7285e-06 1.7285e-06 0) +200:(1.7285e-06 1.7285e-06 1.7285e-06 0) +208:(1.7285e-06 1.7285e-06 1.7285e-06 0) +216:(1.7285e-06 1.7285e-06 1.7285e-06 0) +224:(1.7285e-06 1.7285e-06 1.7285e-06 0) +232:(1.7285e-06 1.7285e-06 1.7285e-06 0) +240:(1.7285e-06 1.7285e-06 1.7285e-06 0) +248:(1.7285e-06 1.7285e-06 1.7285e-06 0) +256:(0.00031114 0.00031114 0.00031114 0) +264:(0.00031114 0.00031114 0.00031114 0) +272:(0.00031114 0.00031114 0.00031114 0) +280:(0.00031114 0.00031114 0.00031114 0) +288:(0.00031114 0.00031114 0.00031114 0) +296:(0.00031114 0.00031114 0.00031114 0) +304:(0.00031114 0.00031114 0.00031114 0)
+Stencil plane-sized write by shader 0x6846b3858ae55a9e at 0x204b000000 +0x7f8000 (known plane 0x206f000000)
+Stencil plane-sized write by shader 0x6846b3858ae55a9e at 0x204b000000 +0x7f8000 (known plane 0x206f000000)
+Stencil plane-sized write by shader 0x6846b3858ae55a9e at 0x204b000000 +0x7f8000 (known plane 0x206f000000)
+Stencil plane-sized write by shader 0x6846b3858ae55a9e at 0x204b000000 +0x7f8000 (known plane 0x206f000000)
+Stencil plane-sized write by shader 0x6846b3858ae55a9e at 0x204b000000 +0x7f8000 (known plane 0x206f000000)
+Stencil plane-sized write by shader 0x6846b3858ae55a9e at 0x204b000000 +0x7f8000 (known plane 0x206f000000)
+Stencil plane-sized write by shader 0x6846b3858ae55a9e at 0x204b000000 +0x7f8000 (known plane 0x206f000000)
+Stencil plane-sized write by shader 0x6846b3858ae55a9e at 0x204b000000 +0x7f8000 (known plane 0x206f000000)
+Stencil plane-sized write by shader 0x6846b3858ae55a9e at 0x204b000000 +0x7f8000 (known plane 0x206f000000)
+Stencil plane-sized write by shader 0x6846b3858ae55a9e at 0x204b000000 +0x7f8000 (known plane 0x206f000000)
+Stencil plane-sized write by shader 0x6846b3858ae55a9e at 0x204b000000 +0x7f8000 (known plane 0x206f000000)
+Stencil plane-sized write by shader 0x6846b3858ae55a9e at 0x204b000000 +0x7f8000 (known plane 0x206f000000)
+Buffer residency: 32 MB chunk 16 allocated ahead
+Runtime: guest thread 'SlateLoadingThread6' created (stack=262144, prio=700)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Readback first copy queued: 0x2012cbaa00 (256 bytes), image 8x8 16 bits R16Sfloat, tick 40675; CPU reads wait for it
+Readback first copy published: 0x2012cbaa00 (256 bytes); non-zero 8-byte groups: +0:(-203.75 -2432 6.0856e-05 6.2883e-05) +8:(7.8142e-05 1.5318e-05 -0.072693 -0.51172) +16:(0.0098724 0.015854 0.022644 0) +24:(0.0098419 0.015808 0.022583 0) +32:(-0.00033927 8.7678e-05 1.1921e-07 6.4671e-05) +40:(-632 9.1493e-05 -0.029861 -438.5) +48:(0.0099792 0.016159 0.022858 0) +56:(0.010078 0.016327 0.023102 0) +64:(-0.029373 -17.125 -3.7754 -9984) +72:(-3328 3.0637e-05 -127.31 -20288) +80:(0.0097046 0.015587 0.022278 0) +88:(0.0096588 0.015511 0.022171 0) +96:(6.2704e-05 -9.4235e-05 -14.945 -0.15039) +104:(6.6638e-05 -0.011681 -1.833 -0.078674) +112:(0.0098572 0.015945 0.022552 0) +120:(0.0099869 0.016159 0.022858 0)
+Readback first copy queued: 0x2012cbab00 (128 bytes), image 4x4 16 bits R16Sfloat, tick 40676; CPU reads wait for it
+Readback first copy published: 0x2012cbab00 (128 bytes); non-zero 8-byte groups: +0:(-2432 -0.51172 -0.00033927 -632) +64:(-9984 -20288 -14.945 -1.833)
+Readback first copy queued: 0x2012cbac00 (64 bytes), image 2x2 16 bits R16Sfloat, tick 40677; CPU reads wait for it
+Readback first copy published: 0x2012cbac00 (64 bytes); non-zero 8-byte groups: +0:(-2432 0 0 1.875) +8:(231.38 371.75 531 23264) +16:(229.75 369 527 23264) +24:(229.12 368 525.5 23264) +32:(0 0 525 23264) +40:(230.38 373 527.5 23264) +48:(232.25 376.25 532 23264) +56:(234.62 380 537.5 23264)
+Readback first copy queued: 0x2003d70000 (1024 bytes), image 1x1 64 bits R16G16B16A16Sfloat, tick 40683; CPU reads wait for it
+Readback first copy read by the CPU: 0x2003d70000 (8 bytes), GPU not done yet: waiting
+Readback first copy published: 0x2003d70000 (1024 bytes); non-zero 8-byte groups: +0:(0.065552 0.065552 0.065552 0.065552) +8:(7.8142e-05 1.5318e-05 -0.072693 -0.51172) +32:(-0.00033927 8.7678e-05 1.1921e-07 6.4671e-05) +40:(-632 9.1493e-05 -0.029861 -438.5) +64:(-0.029373 -17.125 -3.7754 -9984) +72:(-3328 3.0637e-05 -127.31 -20288) +96:(6.2704e-05 -9.4235e-05 -14.945 -0.15039) +104:(6.6638e-05 -0.011681 -1.833 -0.078674) +128:(-0.10938 4.0054e-05 -23200 5.6624e-06) +136:(3.1173e-05 -1.458 -0.12433 -0.052094) +160:(-20480 3.8147e-05 7.5102e-06 -0.046875) +168:(-0.059906 -0.062469 0 -0.054657) +192:(-0.054504 5.1856e-06 1.0133e-05 -80) +200:(-0.059845 -0.052063 2.861e-05 -3754) +224:(3.2425e-05 -0.051758 7.6175e-05 -0.33569) +232:(7.7486e-06 -0.052063 -0.031311 -0.054016)
+Buffer residency: 32 MB chunk 17 allocated ahead
+Buffer residency: 32 MB chunk 18 allocated ahead
+Buffer residency: 32 MB chunk 19 allocated ahead
+Runtime: guest thread 'SlateLoadingThread7' created (stack=262144, prio=700)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Readback first copy queued: 0x20105faa00 (256 bytes), image 8x8 16 bits R16Sfloat, tick 60854; CPU reads wait for it
+Readback first copy published: 0x20105faa00 (256 bytes); non-zero 8-byte groups: +0:(71.875 87.875 71.812 87.812) +8:(483.75 483.5 582.5 582) +16:(0.0098724 0.015854 0.022644 0) +24:(0.0098419 0.015808 0.022583 0) +32:(176.38 144.38 144.25 176.25) +40:(712 839 838.5 966.5) +48:(0.0099792 0.016159 0.022858 0) +56:(0.010078 0.016327 0.023102 0) +64:(209.12 209 240.88 240.75) +72:(969 968 967.5 967) +80:(0.0097046 0.015587 0.022278 0) +88:(0.0096588 0.015511 0.022171 0) +96:(355.25 355 354.75 418.25) +104:(1171 1169 1166 1421) +112:(0.0098572 0.015945 0.022552 0) +120:(0.0099869 0.016159 0.022858 0)
+Readback first copy queued: 0x20105fab00 (128 bytes), image 4x4 16 bits R16Sfloat, tick 60855; CPU reads wait for it
+Readback first copy published: 0x20105fab00 (128 bytes); non-zero 8-byte groups: +0:(71.812 483.5 144.25 712) +64:(209 967 354.75 1166)
+Readback first copy queued: 0x20105fac00 (64 bytes), image 2x2 16 bits R16Sfloat, tick 60856; CPU reads wait for it
+Readback first copy queued: 0x2018d98000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 60856; CPU reads wait for it
+Readback first copy queued: 0x2016f78000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 60856; CPU reads wait for it
+Readback first copy queued: 0x2042f38000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 60856; CPU reads wait for it
+Readback first copy queued: 0x2016f78000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 60856; CPU reads wait for it
+Readback first copy published: 0x20105fac00 (64 bytes); non-zero 8-byte groups: +0:(71.812 0 0 1.875) +8:(7.8142e-05 1.5318e-05 -0.072693 -0.51172) +16:(229.75 369 527 23264) +24:(229.12 368 525.5 23264) +32:(0 0 1.1921e-07 6.4671e-05) +40:(-632 9.1493e-05 -0.029861 -438.5) +48:(232.25 376.25 532 23264) +56:(234.62 380 537.5 23264)
+Readback first copy published: 0x2018d98000 (32768 bytes); non-zero 8-byte groups: all zero
+Readback first copy published: 0x2016f78000 (32768 bytes); non-zero 8-byte groups: +24:(1.7285e-06 1.7285e-06 1.7285e-06 0) +32:(0.00031114 0.00031114 0.00031114 0) +40:(0.055298 0.055298 0.055298 0) +48:(9.8203 9.8203 9.8203 0) +56:(1745 1745 1745 0) +88:(1.7285e-06 1.7285e-06 1.7285e-06 0) +96:(0.00031114 0.00031114 0.00031114 0) +104:(0.055298 0.055298 0.055298 0) +112:(9.8203 9.8203 9.8203 0) +120:(1745 1745 1745 0) +152:(1.7285e-06 1.7285e-06 1.7285e-06 0) +160:(0.00031114 0.00031114 0.00031114 0) +168:(0.055298 0.055298 0.055298 0) +176:(9.8203 9.8203 9.8203 0) +184:(1745 1745 1745 0) +216:(1.7285e-06 1.7285e-06 1.7285e-06 0)
+Readback first copy published: 0x2042f38000 (32768 bytes); non-zero 8-byte groups: +24:(0 0 0 1.7285e-06) +32:(3.3975e-06 5.4836e-06 7.8678e-06 0.00031114) +40:(0.00059319 0.0009532 0.0013618 0.055267) +48:(0.10236 0.16443 0.23499 9.8203) +56:(17.766 28.547 40.781 1744) +88:(0 0 0 1.7285e-06) +96:(3.3975e-06 5.4836e-06 7.8678e-06 0.00031114) +104:(0.00058937 0.000947 0.0013533 0.055267) +112:(0.1015 0.16309 0.23303 9.8203) +120:(17.609 28.281 40.406 1744) +152:(0 0 0 1.7285e-06) +160:(3.3975e-06 5.4836e-06 7.8678e-06 0.00031114) +168:(0.00058603 0.00094175 0.0013456 0.055267) +176:(0.10077 0.16187 0.2312 9.8203) +184:(17.469 28.062 40.094 1744) +216:(0 0 0 1.7285e-06)
+Readback first copy queued: 0x2003b00000 (1024 bytes), image 1x1 64 bits R16G16B16A16Sfloat, tick 60863; CPU reads wait for it
+Readback first copy read by the CPU: 0x2003b00000 (8 bytes), GPU not done yet: waiting
+Readback first copy published: 0x2003b00000 (1024 bytes); non-zero 8-byte groups: +0:(0.046783 0.046783 0.046783 0.046783) +192:(0 0 0 1.7285e-06) +200:(0 0 0 1.7285e-06) +208:(0 0 0 1.7285e-06) +216:(0 0 0 1.7285e-06) +224:(0 0 0 1.7285e-06) +232:(0 0 0 1.7285e-06) +240:(0 0 0 1.7285e-06) +248:(0 0 0 1.7285e-06) +256:(3.3975e-06 5.3644e-06 7.6294e-06 0.00031114) +264:(3.3975e-06 5.3644e-06 7.6294e-06 0.00031114) +272:(3.3975e-06 5.3644e-06 7.6294e-06 0.00031114) +280:(3.3975e-06 5.3644e-06 7.6294e-06 0.00031114) +288:(3.3975e-06 5.5432e-06 7.9274e-06 0.00031114) +296:(3.3975e-06 5.5432e-06 7.9274e-06 0.00031114) +304:(3.3975e-06 5.5432e-06 7.9274e-06 0.00031114)
+Buffer residency: 32 MB chunk 20 allocated ahead
+HLE thread: join failed (thread::join failed: No such device or address); waiting for it to finish
+HLE thread: join failed (thread::join failed: No such device or address); waiting for it to finish
+HLE thread: join failed (thread::join failed: No such device or address); waiting for it to finish
+AvPlayer 230.751 s: 000000014B8F2FF0 Stop -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 92 frames delivered)
+Runtime: guest thread 'SlateLoadingThread8' created (stack=262144, prio=700)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Buffer residency: 32 MB chunk 21 allocated ahead
+Readback first copy queued: 0x2015fe0000 (1024 bytes), image 1x1 64 bits R16G16B16A16Sfloat, tick 64538; CPU reads wait for it
+Readback first copy read by the CPU: 0x2015fe0000 (8 bytes), GPU not done yet: waiting
+Readback first copy published: 0x2015fe0000 (1024 bytes); non-zero 8-byte groups: +0:(3332 3332 3332 3332) +192:(0 0 0 1.7285e-06) +200:(0 0 0 1.7285e-06) +208:(0 0 0 1.7285e-06) +216:(0 0 0 1.7285e-06) +224:(0 0 0 1.7285e-06) +232:(0 0 0 1.7285e-06) +240:(0 0 0 1.7285e-06) +248:(0 0 0 1.7285e-06) +256:(3.3975e-06 5.3644e-06 7.6294e-06 0.00031114) +264:(3.3975e-06 5.3644e-06 7.6294e-06 0.00031114) +272:(3.3975e-06 5.3644e-06 7.6294e-06 0.00031114) +280:(3.3975e-06 5.3644e-06 7.6294e-06 0.00031114) +288:(3.3975e-06 5.5432e-06 7.9274e-06 0.00031114) +296:(3.3975e-06 5.5432e-06 7.9274e-06 0.00031114) +304:(3.3975e-06 5.5432e-06 7.9274e-06 0.00031114)
+Readback first copy queued: 0x2061eaaa00 (256 bytes), image 8x8 16 bits R16Sfloat, tick 64539; CPU reads wait for it
+Readback first copy published: 0x2061eaaa00 (256 bytes); non-zero 8-byte groups: +0:(0.00012183 0.062042 0.00010324 0.046631) +8:(0.058624 0.058624 0.058624 0.058624) +16:(0 0 0 1) +24:(0 0 0 1) +32:(0.0078659 0.057831 0.028931 0.031021) +40:(0.055603 0.055603 0.055603 0.055603) +48:(0 0 0 1) +56:(0 0 0 1) +64:(0.086182 0.078308 0.070129 0.062225) +72:(0.062225 0.062225 0.062225 0.062225) +80:(0 0 0 1) +88:(0 0 0 1) +96:(0.086975 0.079102 0.070129 0.062469) +104:(0.062469 0.062469 0.062469 0.062469) +112:(0 0 0 1) +120:(0 0 0 1)
+Readback first copy queued: 0x2061eaab00 (128 bytes), image 4x4 16 bits R16Sfloat, tick 64540; CPU reads wait for it
+Readback first copy published: 0x2061eaab00 (128 bytes); non-zero 8-byte groups: +0:(0.00012183 0.00010324 0.055603 0.055603) +8:(0.0099411 0.015976 0.022812 0) +16:(0.0098724 0.015854 0.022644 0) +24:(0.0098419 0.015808 0.022583 0) +32:(0.078308 0.062225 0.062225 0.062225) +40:(0.0098953 0.016022 0.022659 0) +48:(0.0099792 0.016159 0.022858 0) +56:(0.010078 0.016327 0.023102 0) +64:(0.079285 0.062683 0.062683 0.062683) +72:(0.0098038 0.015747 0.022491 0) +80:(0.0097046 0.015587 0.022278 0) +88:(0.0096588 0.015511 0.022171 0) +96:(0.079285 0.062683 0.062683 0.062683) +104:(0.0097427 0.015762 0.022308 0) +112:(0.0098572 0.015945 0.022552 0) +120:(0.0099869 0.016159 0.022858 0)
+Readback first copy queued: 0x2061eaac00 (64 bytes), image 2x2 16 bits R16Sfloat, tick 64541; CPU reads wait for it
+Readback first copy queued: 0x20168b0000 (1024 bytes), image 1x1 64 bits R32G32Sfloat, tick 64541; CPU reads wait for it
+Readback first copy published: 0x2061eaac00 (64 bytes); non-zero 8-byte groups: +0:(0.00010324 0.055603 3332 3332) +32:(0.062683 0.062683 0 0)
+Readback first copy published: 0x20168b0000 (1024 bytes); non-zero 8-byte groups: +0:(0 1.875 0 1.875) +8:(0.058624 0.058624 0.058624 0.058624) +16:(0 0 0 1) +24:(0 0 0 1) +32:(0.0078659 0.057831 0.028931 0.031021) +40:(0.055603 0.055603 0.055603 0.055603) +48:(0 0 0 1) +56:(0 0 0 1) +64:(0.086182 0.078308 0.070129 0.062225) +72:(0.062225 0.062225 0.062225 0.062225) +80:(0 0 0 1) +88:(0 0 0 1) +96:(0.086975 0.079102 0.070129 0.062469) +104:(0.062469 0.062469 0.062469 0.062469) +112:(0 0 0 1) +120:(0 0 0 1)
+Buffer residency: 32 MB chunk 22 allocated ahead
+Runtime: guest thread 'SlateLoadingThread9' created (stack=262144, prio=700)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Readback first copy queued: 0x200cbeaa00 (256 bytes), image 8x8 16 bits R16Sfloat, tick 67143; CPU reads wait for it
+Readback first copy published: 0x200cbeaa00 (256 bytes); non-zero 8-byte groups: +0:(-0.052063 -0.052063 -0.052063 -0.052063) +8:(-0.052063 -93.312 -1.9365 -85.312) +32:(-0.052063 -0.052063 -0.052063 -0) +40:(-0.052063 0 0 -3.0059) +64:(-0.052063 -0.052063 -85.312 0) +72:(-0.052063 -0.052063 -0.052063 0) +96:(-0.052063 -93.312 0 -1.3018) +104:(-0.052063 -0.052063 -0.052063 0) +128:(1.9073e-06 0 0 -0.052063) +136:(-0.052063 -0.052063 -0.052063 -0.052063) +160:(0 0 0 -0.052063) +168:(-469.25 -1.749 0 -0.052063) +192:(0 0 -0.052063 -0.052063) +200:(-1.5199e-05 -21840 0 -0.052063) +208:(0 0 0 1.7285e-06) +216:(0 0 0 1.7285e-06)
+Readback first copy queued: 0x200cbeab00 (128 bytes), image 4x4 16 bits R16Sfloat, tick 67144; CPU reads wait for it
+Readback first copy published: 0x200cbeab00 (128 bytes); non-zero 8-byte groups: +0:(-0.052063 -93.312 -0.052063 -3.0059) +8:(0.058624 0.058624 0.058624 0.058624) +16:(0 0 0 1) +24:(0 0 0 1) +40:(0.055603 0.055603 0.055603 0.055603) +48:(0 0 0 1) +56:(0 0 0 1) +64:(-85.312 -0.052063 -93.312 -0.052063) +72:(0.062225 0.062225 0.062225 0.062225) +80:(0 0 0 1) +88:(0 0 0 1) +104:(0.062469 0.062469 0.062469 0.062469) +112:(0 0 0 1) +120:(0 0 0 1)
+Readback first copy queued: 0x200cbeac00 (64 bytes), image 2x2 16 bits R16Sfloat, tick 67145; CPU reads wait for it
+Readback first copy queued: 0x20107d0000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 67145; CPU reads wait for it
+Readback first copy queued: 0x2042e68000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 67145; CPU reads wait for it
+Readback first copy queued: 0x2012b70000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 67145; CPU reads wait for it
+Readback first copy queued: 0x2042e68000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 67145; CPU reads wait for it
+Readback first copy published: 0x200cbeac00 (64 bytes); non-zero 8-byte groups: +0:(-93.312 0.058624 0 1.875) +8:(0.0099411 0.015976 0.022812 0) +16:(0.0098724 0.015854 0.022644 0) +24:(0.0098419 0.015808 0.022583 0) +32:(0 0 0.062225 0.062225) +40:(0.0098953 0.016022 0.022659 0) +48:(0.0099792 0.016159 0.022858 0) +56:(0.010078 0.016327 0.023102 0)
+Readback first copy published: 0x20107d0000 (32768 bytes); non-zero 8-byte groups: all zero
+Readback first copy published: 0x2042e68000 (32768 bytes); non-zero 8-byte groups: +24:(1.7285e-06 1.7285e-06 1.7285e-06 0) +32:(0.00031114 0.00031114 0.00031114 0) +40:(0.055298 0.055298 0.055298 0) +48:(9.8203 9.8203 9.8203 0) +56:(1745 1745 1745 0) +88:(1.7285e-06 1.7285e-06 1.7285e-06 0) +96:(0.00031114 0.00031114 0.00031114 0) +104:(0.055298 0.055298 0.055298 0) +112:(9.8203 9.8203 9.8203 0) +120:(1745 1745 1745 0) +152:(1.7285e-06 1.7285e-06 1.7285e-06 0) +160:(0.00031114 0.00031114 0.00031114 0) +168:(0.055298 0.055298 0.055298 0) +176:(9.8203 9.8203 9.8203 0) +184:(1745 1745 1745 0) +216:(1.7285e-06 1.7285e-06 1.7285e-06 0)
+Readback first copy published: 0x2012b70000 (32768 bytes); non-zero 8-byte groups: +24:(0 0 0 1.7285e-06) +32:(3.3975e-06 5.4836e-06 7.8678e-06 0.00031114) +40:(0.00059319 0.0009532 0.0013618 0.055267) +48:(0.10236 0.16443 0.23499 9.8203) +56:(17.766 28.547 40.781 1744) +88:(0 0 0 1.7285e-06) +96:(3.3975e-06 5.4836e-06 7.8678e-06 0.00031114) +104:(0.00058937 0.000947 0.0013533 0.055267) +112:(0.1015 0.16309 0.23303 9.8203) +120:(17.609 28.281 40.406 1744) +152:(0 0 0 1.7285e-06) +160:(3.3975e-06 5.4836e-06 7.8678e-06 0.00031114) +168:(0.00058603 0.00094175 0.0013456 0.055267) +176:(0.10077 0.16187 0.2312 9.8203) +184:(17.469 28.062 40.094 1744) +216:(0 0 0 1.7285e-06)
+Readback first copy queued: 0x2006a90000 (1024 bytes), image 1x1 64 bits R16G16B16A16Sfloat, tick 67152; CPU reads wait for it
+Readback first copy read by the CPU: 0x2006a90000 (8 bytes), GPU not done yet: waiting
+Readback first copy published: 0x2006a90000 (1024 bytes); non-zero 8-byte groups: +0:(0.046783 0.046783 0.046783 0.046783) +8:(-0.052063 -93.312 -1.9365 -85.312) +32:(-0.052063 -0.052063 -0.052063 -0) +40:(-0.052063 0 0 -3.0059) +64:(-0.052063 -0.052063 -85.312 0) +72:(-0.052063 -0.052063 -0.052063 0) +96:(-0.052063 -93.312 0 -1.3018) +104:(-0.052063 -0.052063 -0.052063 0) +128:(1.9073e-06 0 0 -0.052063) +136:(-0.052063 -0.052063 -0.052063 -0.052063) +160:(0 0 0 -0.052063) +168:(-469.25 -1.749 0 -0.052063) +192:(0 0 -0.052063 -0.052063) +200:(-1.5199e-05 -21840 0 -0.052063) +224:(-0.052063 -0.052063 -0.052063 -0.052063) +232:(-11.57 -0.03125 0 -0.052063)
+Buffer residency: 32 MB chunk 23 allocated ahead
+GPU: spare image memory block ready (type 1, 1 ms)
+Runtime: guest thread 'SlateLoadingThread10' created (stack=262144, prio=700)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Readback first copy queued: 0x202dbeaa00 (256 bytes), image 8x8 16 bits R16Sfloat, tick 71114; CPU reads wait for it
+Readback first copy published: 0x202dbeaa00 (256 bytes); non-zero 8-byte groups: +0:(-33.406 -18592 -0.005558 -4.4844) +8:(-0.00080204 -0.23755 0 0.0013304) +16:(0 0 0 1) +24:(0 0 0 1) +32:(-0.0037193 -1.9209 -0.0055771 -1.0908) +40:(-0.00048828 -90.625 -4144 0.00033283) +48:(0 0 0 1) +56:(0 0 0 1) +64:(-1992 -0.050446 -2.1458e-06 -0.79688) +72:(-9.9766 52960 -96.188 -64800) +80:(0 0 0 1) +88:(0 0 0 1) +96:(-0.035156 -90.625 6.6757e-06 -3492) +104:(-1279 0.0001843 -201.62 -56992) +112:(0 0 0 1) +120:(0 0 0 1)
+Readback first copy queued: 0x202dbeab00 (128 bytes), image 4x4 16 bits R16Sfloat, tick 71115; CPU reads wait for it
+Readback first copy published: 0x202dbeab00 (128 bytes); non-zero 8-byte groups: +0:(-18592 -0.23755 -1.9209 -4144) +8:(-0.052063 -93.312 -1.9365 -85.312) +16:(0 0 0 1) +24:(0 0 0 1) +40:(-0.052063 0 0 -3.0059) +48:(0 0 0 1) +56:(0 0 0 1) +64:(-1992 -64800 -3492 -56992) +72:(-0.052063 -0.052063 -0.052063 0) +80:(0 0 0 1) +88:(0 0 0 1) +104:(-0.052063 -0.052063 -0.052063 0) +112:(0 0 0 1) +120:(0 0 0 1)
+Readback first copy queued: 0x202dbeac00 (64 bytes), image 2x2 16 bits R16Sfloat, tick 71116; CPU reads wait for it
+Readback first copy published: 0x202dbeac00 (64 bytes); non-zero 8-byte groups: +0:(-18592 -93.312 0 1.875) +8:(-0.052063 -93.312 -1.9365 -85.312) +32:(0 0 -0.052063 -0) +40:(-0.052063 0 0 -3.0059)
+Readback first copy queued: 0x2002830000 (1024 bytes), image 1x1 64 bits R16G16B16A16Sfloat, tick 71122; CPU reads wait for it
+Readback first copy read by the CPU: 0x2002830000 (8 bytes), GPU not done yet: waiting
+Readback first copy published: 0x2002830000 (1024 bytes); non-zero 8-byte groups: +0:(0.11224 0.11224 0.11224 0.11224) +8:(-0.00080204 -0.23755 0 0.0013304) +32:(-0.0037193 -1.9209 -0.0055771 -1.0908) +40:(-0.00048828 -90.625 -4144 0.00033283) +64:(-1992 -0.050446 -2.1458e-06 -0.79688) +72:(-9.9766 52960 -96.188 -64800) +96:(-0.035156 -90.625 6.6757e-06 -3492) +104:(-1279 0.0001843 -201.62 -56992) +128:(-0.0029316 -1008 -2.3125 -0.052063) +136:(1.9073e-06 -27.219 -147.62 -0.073547) +160:(6.9618e-05 -0.0004189 -0.25269 -0.022049) +168:(1.0908e-05 -0.37378 -258.25 -31.234) +192:(-0.012283 -495.75 -12864 -0.0045738) +200:(-422.75 -342 -255.62 -3.6309) +208:(0 0 0 1.7285e-06) +216:(0 0 0 1.7285e-06)
+Readback first copy queued: 0x202f460000 (1024 bytes), image 1x1 64 bits R32G32Sfloat, tick 71125; CPU reads wait for it
+Readback first copy queued: 0x202f500000 (1024 bytes), image 1x1 64 bits R32G32Sfloat, tick 71125; CPU reads wait for it
+Readback first copy published: 0x202f460000 (1024 bytes); non-zero 8-byte groups: +0:(0 1.875 0 1.875) +8:(-0.052063 -93.312 -1.9365 -85.312) +16:(0 0 0 1) +24:(0 0 0 1) +40:(-0.052063 0 0 -3.0059) +48:(0 0 0 1) +56:(0 0 0 1) +64:(-1992 -64800 -3492 -56992) +72:(-0.052063 -0.052063 -0.052063 0) +80:(0 0 0 1) +88:(0 0 0 1) +104:(-0.052063 -0.052063 -0.052063 0) +112:(0 0 0 1) +120:(0 0 0 1) +128:(1.9073e-06 0 0 -0.052063) +136:(-0.052063 -0.052063 -0.052063 -0.052063)
+Readback first copy published: 0x202f500000 (1024 bytes); non-zero 8-byte groups: +0:(0 1.875 0 1.875) +16:(0.055298 0.055298 0.055298 0) +24:(0.00031114 0.00031114 0.00031114 0) +80:(0.055298 0.055298 0.055298 0) +88:(0.00031114 0.00031114 0.00031114 0) +144:(0.055298 0.055298 0.055298 0) +152:(0.00031114 0.00031114 0.00031114 0) +208:(0.055298 0.055298 0.055298 0) +216:(0.00031114 0.00031114 0.00031114 0) +256:(1745 1745 1745 0) +264:(9.8203 9.8203 9.8203 0) +272:(0.055298 0.055298 0.055298 0) +280:(0.00031114 0.00031114 0.00031114 0) +288:(1.7285e-06 1.7285e-06 1.7285e-06 0) +320:(1745 1745 1745 0) +328:(9.8203 9.8203 9.8203 0)
+Buffer residency: 32 MB chunk 24 allocated ahead
+Runtime: guest thread 'SlateLoadingThread11' created (stack=262144, prio=700)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Readback first copy queued: 0x2010f6aa00 (256 bytes), image 8x8 16 bits R16Sfloat, tick 76264; CPU reads wait for it
+Readback first copy published: 0x2010f6aa00 (256 bytes); non-zero 8-byte groups: +16:(0 0 0 1) +24:(0 0 0 1) +48:(0 0 0 1) +56:(0 0 0 1) +80:(0 0 0 1) +88:(0 0 0 1) +112:(0 0 0 1) +120:(0 0 0 1) +144:(0 0 0 1) +152:(0 0 0 1) +176:(0 0 0 1) +184:(0 0 0 1) +208:(0 0 0 0.75732) +216:(0 0 0 0.76904) +240:(0 0 0 0.73584) +248:(0 0 0 0.70801)
+Readback first copy queued: 0x2010f6ab00 (128 bytes), image 4x4 16 bits R16Sfloat, tick 76265; CPU reads wait for it
+Readback first copy published: 0x2010f6ab00 (128 bytes); non-zero 8-byte groups: +8:(-0.052063 -93.312 -1.9365 -85.312) +16:(0 0 0 1) +24:(0 0 0 1) +40:(-0.052063 0 0 -3.0059) +48:(0 0 0 1) +56:(0 0 0 1) +72:(-0.052063 -0.052063 -0.052063 0) +80:(0 0 0 1) +88:(0 0 0 1) +104:(-0.052063 -0.052063 -0.052063 0) +112:(0 0 0 1) +120:(0 0 0 1)
+Readback first copy queued: 0x2010f6ac00 (64 bytes), image 2x2 16 bits R16Sfloat, tick 76266; CPU reads wait for it
+Readback first copy queued: 0x2018090000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 76266; CPU reads wait for it
+Readback first copy queued: 0x20180e0000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 76266; CPU reads wait for it
+Readback first copy queued: 0x2018090000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 76266; CPU reads wait for it
+Readback first copy published: 0x2010f6ac00 (64 bytes); non-zero 8-byte groups: +0:(0 -93.312 0 1.875) +8:(-0.00080204 -0.23755 0 0.0013304) +40:(-0.00048828 -90.625 -4144 0.00033283)
+Readback first copy published: 0x2018090000 (32768 bytes); non-zero 8-byte groups: +24:(1.7285e-06 1.7285e-06 1.7285e-06 0) +32:(0.00031114 0.00031114 0.00031114 0) +40:(0.055298 0.055298 0.055298 0) +48:(9.8203 9.8203 9.8203 0) +56:(1745 1745 1745 0) +88:(1.7285e-06 1.7285e-06 1.7285e-06 0) +96:(0.00031114 0.00031114 0.00031114 0) +104:(0.055298 0.055298 0.055298 0) +112:(9.8203 9.8203 9.8203 0) +120:(1745 1745 1745 0) +152:(1.7285e-06 1.7285e-06 1.7285e-06 0) +160:(0.00031114 0.00031114 0.00031114 0) +168:(0.055298 0.055298 0.055298 0) +176:(9.8203 9.8203 9.8203 0) +184:(1745 1745 1745 0) +216:(1.7285e-06 1.7285e-06 1.7285e-06 0)
+Readback first copy published: 0x20180e0000 (32768 bytes); non-zero 8-byte groups: +24:(0 0 0 1.7285e-06) +32:(3.3975e-06 5.4836e-06 7.8678e-06 0.00031114) +40:(0.00059319 0.0009532 0.0013618 0.055267) +48:(0.10236 0.16443 0.23499 9.8203) +56:(17.766 28.547 40.781 1744) +88:(0 0 0 1.7285e-06) +96:(3.3975e-06 5.4836e-06 7.8678e-06 0.00031114) +104:(0.00058937 0.000947 0.0013533 0.055267) +112:(0.1015 0.16309 0.23303 9.8203) +120:(17.609 28.281 40.406 1744) +152:(0 0 0 1.7285e-06) +160:(3.3975e-06 5.4836e-06 7.8678e-06 0.00031114) +168:(0.00058603 0.00094175 0.0013456 0.055267) +176:(0.10077 0.16187 0.2312 9.8203) +184:(17.469 28.062 40.094 1744) +216:(0 0 0 1.7285e-06)
+Readback first copy queued: 0x20119f0000 (1024 bytes), image 1x1 64 bits R16G16B16A16Sfloat, tick 76273; CPU reads wait for it
+Readback first copy read by the CPU: 0x20119f0000 (8 bytes), GPU not done yet: waiting
+Readback first copy published: 0x20119f0000 (1024 bytes); non-zero 8-byte groups: +0:(0.046783 0.046783 0.046783 0.046783)
+Buffer residency: 32 MB chunk 25 allocated ahead
+Runtime: guest thread 'SlateLoadingThread12' created (stack=262144, prio=700)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Readback first copy queued: 0x202f5eaa00 (256 bytes), image 8x8 16 bits R16Sfloat, tick 90687; CPU reads wait for it
+Readback first copy published: 0x202f5eaa00 (256 bytes); non-zero 8-byte groups: +0:(0.15637 0.14111 0.14111 0.12671) +8:(0.058441 0.045837 0.033844 0.045471) +32:(0.14026 0.15735 0.12561 0.15698) +40:(0.058105 0.045349 0.033203 0.021957) +64:(0.14124 0.14062 0.12646 0.11267) +72:(0.033264 0.021667 0.010078 0.021973) +96:(0.14099 0.12659 0.12683 0.12646) +104:(0.011093 0.010452 0.010483 0.022049) +128:(0.011086 0.034241 0.011406 0.035461) +136:(0.11273 0.11279 0.11279 0.099121) +160:(0.022263 0.022385 0.035034 0.046265) +168:(0.11243 0.11304 0.098389 0.098694) +192:(0.046021 0.046387 0.057587 0.070312) +200:(0.085876 0.098816 0.085327 0.071228) +224:(0.057068 0.057526 0.071228 0.070862) +232:(0.085327 0.071716 0.059357 0.071289)
+Readback first copy queued: 0x202f5eab00 (128 bytes), image 4x4 16 bits R16Sfloat, tick 90688; CPU reads wait for it
+Readback first copy published: 0x202f5eab00 (128 bytes); non-zero 8-byte groups: +0:(0.12671 0.033844 0.12561 0.021957) +64:(0.11267 0.010078 0.12646 0.010452)
+Readback first copy queued: 0x202f5eac00 (64 bytes), image 2x2 16 bits R16Sfloat, tick 90689; CPU reads wait for it
+Readback first copy published: 0x202f5eac00 (64 bytes); non-zero 8-byte groups: +0:(0.021957 0 0 1.875)
+Readback first copy queued: 0x2002a50000 (1024 bytes), image 1x1 64 bits R16G16B16A16Sfloat, tick 90695; CPU reads wait for it
+Readback first copy read by the CPU: 0x2002a50000 (8 bytes), GPU not done yet: waiting
+Readback first copy published: 0x2002a50000 (1024 bytes); non-zero 8-byte groups: +0:(0.57227 0.57227 0.57227 0.57227) +64:(0.11267 0.010078 0.12646 0.010452)
+Barriers: 4759 image barriers in one batch (largest so far)
+Pipeline binary cache: 768 hits, 0 compiled, 0 rejected, 0 saved, 0 cache errors (restore 1.228 ms, compile 0.000 ms each)
+Buffer residency: 32 MB chunk 26 allocated ahead
+Runtime: guest thread 'SlateLoadingThread13' created (stack=262144, prio=700)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Readback first copy queued: 0x2010ebaa00 (256 bytes), image 8x8 16 bits R16Sfloat, tick 100919; CPU reads wait for it
+Readback first copy published: 0x2010ebaa00 (256 bytes); non-zero 8-byte groups: +0:(-0.00095129 -1.8775e-05 -0.3999 -0.11475) +8:(-2.9385e-05 -2.4438e-05 -2.712e-05 -1.5259e-05) +32:(-2.9206e-05 -1.8239e-05 -0.00025678 -0.022766) +40:(-2.8789e-05 -5352 -3164 -2.9743e-05) +64:(-2.1577e-05 -0.00015712 -1.5974e-05 -2.6226e-05) +72:(-2.9624e-05 -3.0041e-05 -1.5259e-05 -3.6699) +96:(-6.0976e-05 -0.3501 -4.5061e-05 -0.001173) +104:(-59968 -2.0027e-05 -26672 -0.0012712) +128:(-9984 -4240 -418.25 -3486) +136:(-0.00010592 -7064 -0.00023842 -1.5795e-05) +160:(-4016 -6264 -4184 -588.5) +168:(-1.9121 -3.0637e-05 -0.00043058 -0.00088501) +192:(-1.5616e-05 -1.5855e-05 -2.867e-05 -2.6882e-05) +200:(-1236 -2.6941e-05 -61568 -2.3186e-05) +224:(-1.5974e-05 -2.6226e-05 -11224 -53024) +232:(-1.9431e-05 -29760 -2.7418e-05 -1.8555)
+Readback first copy queued: 0x2010ebab00 (128 bytes), image 4x4 16 bits R16Sfloat, tick 100920; CPU reads wait for it
+Readback first copy published: 0x2010ebab00 (128 bytes); non-zero 8-byte groups: +0:(-0.3999 -2.9385e-05 -0.022766 -5352) +64:(-0.00015712 -3.6699 -0.3501 -59968)
+Readback first copy queued: 0x2010ebac00 (64 bytes), image 2x2 16 bits R16Sfloat, tick 100921; CPU reads wait for it
+Readback first copy queued: 0x2016f08000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 100921; CPU reads wait for it
+Readback first copy queued: 0x2042e28000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 100921; CPU reads wait for it
+Readback first copy queued: 0x20169e0000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 100921; CPU reads wait for it
+Readback first copy queued: 0x2042e28000 (32768 bytes), image 8x8 64 bits R16G16B16A16Sfloat, tick 100921; CPU reads wait for it
+Readback first copy published: 0x2010ebac00 (64 bytes); non-zero 8-byte groups: +0:(-5352 0 0 1.875) +8:(0.058441 0.045837 0.033844 0.045471) +32:(0 0 0.12561 0.15698) +40:(0.058105 0.045349 0.033203 0.021957)
+Readback first copy published: 0x2016f08000 (32768 bytes); non-zero 8-byte groups: all zero
+Readback first copy published: 0x2042e28000 (32768 bytes); non-zero 8-byte groups: +24:(1.7285e-06 1.7285e-06 1.7285e-06 0) +32:(0.00031114 0.00031114 0.00031114 0) +40:(0.055298 0.055298 0.055298 0) +48:(9.8203 9.8203 9.8203 0) +56:(1745 1745 1745 0) +88:(1.7285e-06 1.7285e-06 1.7285e-06 0) +96:(0.00031114 0.00031114 0.00031114 0) +104:(0.055298 0.055298 0.055298 0) +112:(9.8203 9.8203 9.8203 0) +120:(1745 1745 1745 0) +152:(1.7285e-06 1.7285e-06 1.7285e-06 0) +160:(0.00031114 0.00031114 0.00031114 0) +168:(0.055298 0.055298 0.055298 0) +176:(9.8203 9.8203 9.8203 0) +184:(1745 1745 1745 0) +216:(1.7285e-06 1.7285e-06 1.7285e-06 0)
+Readback first copy published: 0x20169e0000 (32768 bytes); non-zero 8-byte groups: +24:(0 0 0 1.7285e-06) +32:(3.3975e-06 5.4836e-06 7.8678e-06 0.00031114) +40:(0.00059319 0.0009532 0.0013618 0.055267) +48:(0.10236 0.16443 0.23499 9.8203) +56:(17.766 28.547 40.781 1744) +88:(0 0 0 1.7285e-06) +96:(3.3975e-06 5.4836e-06 7.8678e-06 0.00031114) +104:(0.00058937 0.000947 0.0013533 0.055267) +112:(0.1015 0.16309 0.23303 9.8203) +120:(17.609 28.281 40.406 1744) +152:(0 0 0 1.7285e-06) +160:(3.3975e-06 5.4836e-06 7.8678e-06 0.00031114) +168:(0.00058603 0.00094175 0.0013456 0.055267) +176:(0.10077 0.16187 0.2312 9.8203) +184:(17.469 28.062 40.094 1744) +216:(0 0 0 1.7285e-06)
+Readback first copy queued: 0x20038d0000 (1024 bytes), image 1x1 64 bits R16G16B16A16Sfloat, tick 100928; CPU reads wait for it
+Readback first copy read by the CPU: 0x20038d0000 (8 bytes), GPU not done yet: waiting
+Readback first copy published: 0x20038d0000 (1024 bytes); non-zero 8-byte groups: +0:(0.046783 0.046783 0.046783 0.046783) +8:(0 0 0 1) +16:(0 0 0 1) +24:(0 0 0 1) +32:(0 0 0 1) +40:(0 0 0 1) +48:(0 0 0 1) +56:(0 0 0 1) +64:(0 0 0 1) +72:(0 0 0 1) +80:(0 0 0 1) +88:(0 0 0 1) +96:(0 0 0 1) +104:(0 0 0 1) +112:(0 0 0 1) +120:(0 0 0 1)

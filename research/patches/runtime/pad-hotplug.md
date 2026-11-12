@@ -59,6 +59,12 @@ toolbox) it also sets `SDL_JOYSTICK_DISABLE_UDEV=1` and `SDL_HIDAPI_UDEV=0`, so 
 
 ## History and pitfalls
 
+- T-UP1 / T-UP2 (2026-11-12, `upstream-ports`, PC, DualSense over USB): connected after the start, then (T-UP2,
+  research/docs/data/upstream-ports-t-up2.log) unplugged and replugged in a level: "gamepad disconnected" then
+  "gamepad connected" three lines later; the user: the pad controls Dan again. Hotplug already worked here
+  before: a no-regression check; the case it fixes (a pad whose messages the init thread never pumps) was not
+  reproduced.
+
 - Shortlist row 5 of study-forks-survey.md §9, taken as the hotplug part only.
 - Risk: low, but it touches all pad input on Windows. If input regresses, A/B with `GOW3_PAD_HOTPLUG=0` before
   anything else.
