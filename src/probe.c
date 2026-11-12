@@ -902,7 +902,7 @@ static void camera_look_class(const char *cls, const unsigned char *script, int3
 }
 
 static void camera_look(const void *stack) {
-    static uint64_t last_ms, log_ms, ticks, moved, locked, dropped, clamped;
+    static uint64_t last_ms, log_ms, ticks, moved, locked, dropped, clamped, no_pitch;
     static long long counts_x, counts_y;
     static double pitch_moved;
     if (!runtime_mouse_enabled()) return;
@@ -918,8 +918,9 @@ static void camera_look(const void *stack) {
         if (camera_looks[i].cls == area) look = &camera_looks[i];
     const int stale = ms - last_ms > 100 || !mouse_look_seen_ms || ms - mouse_look_seen_ms > 100;
     last_ms = ms;
-    if ((x || y) && (stale || !look || !object)) { ++dropped; x = y = 0; }
+    if ((x || y) && (stale || !object)) { ++dropped; x = y = 0; }
     if ((x || y) && !mouse_look_allowed) { ++locked; x = y = 0; }
+    if (y && !look) { ++no_pitch; y = 0; } /* yaw still turns in an area whose pitch was not found */
     if (x || y) {
         const unsigned char *code = *(const unsigned char *const *)(frame + 0x20);
         const char *locals = *(const char *const *)(frame + 0x28);
@@ -958,13 +959,14 @@ static void camera_look(const void *stack) {
             gow3_mouse_look(&yaw_degrees, &pitch_degrees);
             printf("Mouse look: last %.1f s: %" PRIu64 " camera ticks, %" PRIu64 " with mouse; x %lld counts = %.1f "
                    "degrees, y %lld counts, pitch moved %.1f degrees (%" PRIu64 " ticks at a limit); %" PRIu64
-                   " dropped, %" PRIu64 " camera locked; %.4f degrees per count, vertical %.4f\n",
+                   " dropped, %" PRIu64 " camera locked, %" PRIu64 " vertical without the area's pitch; %.4f degrees "
+                   "per count, vertical %.4f\n",
                    (double)(ms - log_ms) / 1000.0, ticks, moved, counts_x, (double)counts_x * yaw_degrees, counts_y,
-                   pitch_moved, clamped, dropped, locked, (double)yaw_degrees, (double)pitch_degrees);
+                   pitch_moved, clamped, dropped, locked, no_pitch, (double)yaw_degrees, (double)pitch_degrees);
             fflush(stdout);
         }
         log_ms = ms;
-        ticks = moved = locked = dropped = clamped = 0;
+        ticks = moved = locked = dropped = clamped = no_pitch = 0;
         counts_x = counts_y = 0;
         pitch_moved = 0.0;
     }

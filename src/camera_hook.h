@@ -83,9 +83,11 @@ static inline uint64_t medievil_camera_input_rotation(const unsigned char *scrip
  *   jump + 0x0e  EX_Let (0f) <Target> EX_InstanceVariable (01) <Target> EX_FloatConst (1e)      Target = 0
  *   jump + 0x25  EX_Let (0f) <L> EX_LocalVariable (00) <L> EX_CallMath (68) <FInterpTo>
  *                EX_InstanceVariable (01) <Smoothed> (01) <Target> ...
- * and the one run of three 46-byte statements `L1 = Add(L0, PitchEffective)`, `L2 = FMin(L1, UserPitchMax)`,
- * `L3 = FMax(L2, UserPitchMin)`: EX_Let <L> 00 <L> 68 <fn> 00 <arg L> 01 <property> 16, each one's argument
- * the previous one's result. The same layout in 01.00's and 01.02's Free and in FreeSimple. */
+ * and the one chain of four 46-byte statements `L1 = Add(L0, PitchEffective)`, `L2 = FMin(L1, UserPitchMax)`,
+ * `L3 = FMax(L2, UserPitchMin)`, `L4 = Subtract(L3, PitchEffective)`: EX_Let <L> 00 <L> 68 <fn> 00 <arg L>
+ * 01 <property> 16, each one's argument the previous one's result, then `Target = L4`
+ * (0f <Target> 01 <Target> 00 <L4>). Three in a row match twice (Add..FMax and FMin..Subtract), so the
+ * whole chain is the anchor. The same layout in 01.00's and 01.02's Free and in FreeSimple. */
 typedef struct {
     uint64_t target, smoothed, effective, max, min;
 } MedievilCameraPitch;
@@ -113,14 +115,21 @@ static inline int medievil_camera_pitch(const unsigned char *script, int32_t siz
         return 0;
     const uint64_t smoothed = medievil_camera_ptr(script, jump + 0x41);
     int found = 0;
-    for (int32_t a = jump; a + 3 * 0x2e <= size; ++a) {
+    for (int32_t a = jump; a + 4 * 0x2e + 0x1b <= size; ++a) {
         const uint64_t l1 = medievil_camera_math_let(script, a);
         if (!l1) continue;
         const uint64_t l2 = medievil_camera_math_let(script, a + 0x2e);
         if (!l2 || medievil_camera_ptr(script, a + 0x2e + 0x1c) != l1) continue;
         const uint64_t l3 = medievil_camera_math_let(script, a + 0x5c);
         if (!l3 || medievil_camera_ptr(script, a + 0x5c + 0x1c) != l2) continue;
-        if (found++) return 0; /* more than one run: not the layout we know */
+        const uint64_t l4 = medievil_camera_math_let(script, a + 0x8a);
+        if (!l4 || medievil_camera_ptr(script, a + 0x8a + 0x1c) != l3) continue;
+        if (medievil_camera_ptr(script, a + 0x25) != medievil_camera_ptr(script, a + 0x8a + 0x25)) continue;
+        const unsigned char *s = script + a + 0xb8;
+        if (s[0] != 0x0f || s[9] != 0x01 || s[0x12] != 0x00 || medievil_camera_ptr(script, a + 0xb9) != target ||
+            medievil_camera_ptr(script, a + 0xc2) != target || medievil_camera_ptr(script, a + 0xcb) != l4)
+            continue;
+        if (found++) return 0; /* more than one chain: not the layout we know */
         out->effective = medievil_camera_ptr(script, a + 0x25);
         out->max = medievil_camera_ptr(script, a + 0x2e + 0x25);
         out->min = medievil_camera_ptr(script, a + 0x5c + 0x25);
