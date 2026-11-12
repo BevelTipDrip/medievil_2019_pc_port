@@ -34,6 +34,8 @@ extern "C" void runtime_ue4_request_setres(const char* text); // src/runtime_ext
 extern "C" void runtime_ue4_request_cvar(const char* name, const char* value); // live console variables
 extern "C" void runtime_ue4_particle_single_pass(int on); // src/runtime_extra.c: r.GPUParticle.FixDeltaSeconds
 u32 Gow3DisplayRefreshHz(); // gow3gpu.cpp: the display refresh rate
+extern "C" void gow3gpu_choice_style(const char* dir); // gow3gpu.cpp: the game UI cache's look, loaded once
+extern "C" const char* runtime_file_user_dir(void); // src/runtime_file.c: the saves folder
 #include "common/elf_info.h"
 #include "imgui.h"
 #include "imgui_internal.h" // RegisterUserTexture (save pictures)
@@ -103,6 +105,11 @@ struct ChoiceStyle {
         return title && text && std::all_of(std::begin(textures), std::end(textures), [](auto* t) { return t; });
     }
 } choice_style;
+// MediEvil's Options menu colours (the Load list and the settings menu in its look).
+constexpr ImU32 Cream = IM_COL32(240, 234, 220, 255), Gold = IM_COL32(245, 196, 30, 255),
+                Green = IM_COL32(72, 226, 42, 255), Dim = IM_COL32(176, 166, 150, 255),
+                White = IM_COL32(250, 248, 242, 255), FocusFill = IM_COL32(255, 214, 120, 26),
+                PanelFill = IM_COL32(28, 19, 13, 255);
 int choice_index = 0;
 std::atomic<int> choice_result{-1}; // -1 open, -2 cancelled, else the chosen index
 // Save pictures: decoded by BeginChoice, made textures on the present thread (null = none).
@@ -408,8 +415,32 @@ RowNav NavRow(ImVec2 min, ImVec2 max, const char* help, bool enabled) {
     return result;
 }
 
-// Two-column rows: the name on the left, the control on the right.
+// The menu in the game's look (choice_style ready; StyledMenu) for this frame. menu_u is the frame's
+// scale (drawn height / 870, as `u` in StyledChoiceBox); the sizes below are in the frame's pixels.
+bool styled = false;
+float menu_u = 1.0f;
+constexpr float RowHeight = 42.0f, InfoHeight = 34.0f, RowText = 28.0f, InfoText = 25.0f, NoteText = 23.0f,
+                SectionText = 30.0f, ValueColumn = 0.55f, RightMargin = 18.0f;
+
+float Px(float frame_px) {
+    return frame_px * menu_u;
+}
+
+// The game's text font size for `frame_px`, in whole pixels: ImGui 1.92 rasterises each size once.
+float TextPx(float frame_px) {
+    return std::max(std::round(Px(frame_px)), 8.0f);
+}
+
+// A colour with the style's alpha (dimmed inside BeginDisabled).
+ImU32 Col(ImU32 color) {
+    return ImGui::GetColorU32(color);
+}
+
+// Two-column rows: the name on the left, the control on the right (the game's look draws its own).
 bool BeginRows(const char* id) {
+    if (styled) {
+        return true;
+    }
     if (!ImGui::BeginTable(id, 2, ImGuiTableFlags_SizingStretchProp)) {
         return false;
     }
@@ -419,17 +450,121 @@ bool BeginRows(const char* id) {
 }
 
 void EndRows() {
-    ImGui::EndTable();
+    if (!styled) {
+        ImGui::EndTable();
+    }
 }
 
+// A section heading; in the game's look "-NAME-" in green, centred (as the Load list's "-LEVELS-").
 void Section(const char* name) {
-    ImGui::SeparatorText(name);
+    if (!styled) {
+        ImGui::SeparatorText(name);
+        return;
+    }
+    std::string heading = std::string("-") + name + "-";
+    std::transform(heading.begin(), heading.end(), heading.begin(),
+                   [](unsigned char c) { return char(std::toupper(c)); });
+    const float size = TextPx(SectionText), width = ImGui::GetContentRegionAvail().x;
+    ImGui::Dummy(ImVec2(0.0f, Px(8.0f)));
+    const ImVec2 at = ImGui::GetCursorScreenPos();
+    const float w = choice_style.text->CalcTextSizeA(size, FLT_MAX, 0.0f, heading.c_str()).x;
+    ImGui::GetWindowDrawList()->AddText(choice_style.text, size, ImVec2(at.x + (width - w) * 0.5f, at.y), Col(Green),
+                                        heading.c_str());
+    ImGui::Dummy(ImVec2(width, size * 1.2f));
 }
 
-float row_top = 0.0f; // the row being drawn: its top (RowEnd)
+// A row in the game's look: the focus fill and the name (Gold when focused) are drawn first; controls
+// with their own mouse handling (a slider's track, a number box) come next and take the mouse first;
+// StyledRowHit then adds the row's hit box. The value goes from value_x to right.
+struct RowArea {
+    ImVec2 min, max;
+    float value_x = 0.0f, right = 0.0f, mid = 0.0f;
+    bool focused = false;
+    bool clicked = false; // a click on the row outside its controls
+};
 
-// A row: the name, then the control (PushID; PopID after it). A focusable row with the focus gets a
-// gold background.
+RowArea BeginStyledRow(const char* label, float width = 0.0f) {
+    RowArea r;
+    r.focused = NextRowFocused();
+    width = width > 0.0f ? width : ImGui::GetContentRegionAvail().x;
+    r.min = ImGui::GetCursorScreenPos();
+    r.max = ImVec2(r.min.x + width, r.min.y + Px(RowHeight));
+    r.value_x = r.min.x + width * ValueColumn;
+    r.right = r.max.x - Px(RightMargin);
+    r.mid = (r.min.y + r.max.y) * 0.5f;
+    ImGui::PushID(label);
+    ImDrawList* draw = ImGui::GetWindowDrawList();
+    if (r.focused) {
+        draw->AddRectFilled(ImVec2(r.min.x, r.min.y + Px(1.0f)), ImVec2(r.max.x - Px(6.0f), r.max.y - Px(1.0f)),
+                            Col(FocusFill), Px(10.0f));
+    }
+    const float size = TextPx(RowText);
+    const ImVec4 clip(r.min.x, r.min.y, r.value_x - Px(10.0f), r.max.y);
+    draw->AddText(choice_style.text, size, ImVec2(r.min.x + Px(12.0f), r.mid - size * 0.55f),
+                  Col(r.focused ? Gold : Cream), label, nullptr, 0.0f, &clip);
+    return r;
+}
+
+void StyledRowHit(RowArea& r) {
+    ImGui::SetCursorScreenPos(r.min);
+    r.clicked = ImGui::InvisibleButton("##row", ImVec2(r.max.x - r.min.x, r.max.y - r.min.y));
+}
+
+// The direction a click on a choice row means: the left arrow's quarter of the value column goes back.
+int ClickStep(const RowArea& r) {
+    return ImGui::GetIO().MousePos.x < r.value_x + (r.right - r.value_x) * 0.25f ? -1 : 1;
+}
+
+// A value between arrows ("<  value  >"); a value too wide is drawn smaller (to 60%), then clipped.
+void DrawChoice(const RowArea& r, const char* text, bool arrows = true) {
+    ImDrawList* draw = ImGui::GetWindowDrawList();
+    const float arrow = Px(9.0f), x0 = r.value_x, x1 = r.right, mid = r.mid;
+    const float room = x1 - x0 - 5.0f * arrow;
+    float size = TextPx(RowText);
+    const float wide = choice_style.text->CalcTextSizeA(size, FLT_MAX, 0.0f, text).x;
+    if (wide > room) {
+        size = std::max(std::floor(size * room / wide), std::round(size * 0.6f));
+    }
+    const float w = choice_style.text->CalcTextSizeA(size, FLT_MAX, 0.0f, text).x;
+    const ImVec4 clip(x0 + 2.0f * arrow, r.min.y, x1 - 2.0f * arrow, r.max.y);
+    draw->AddText(choice_style.text, size, ImVec2(std::max((x0 + x1 - w) * 0.5f, clip.x), mid - size * 0.55f),
+                  Col(r.focused ? Gold : Cream), text, nullptr, 0.0f, &clip);
+    if (arrows) {
+        const ImU32 color = Col(r.focused ? Gold : Dim);
+        draw->AddTriangleFilled(ImVec2(x0, mid), ImVec2(x0 + arrow, mid - arrow), ImVec2(x0 + arrow, mid + arrow), color);
+        draw->AddTriangleFilled(ImVec2(x1, mid), ImVec2(x1 - arrow, mid + arrow), ImVec2(x1 - arrow, mid - arrow), color);
+    }
+}
+
+// A slider in the value column: a track filled to `fraction`, a knob, `text` after it; `room` frame pixels
+// stay free on the right (text, number box). The track's hit box is submitted here (before
+// StyledRowHit): returns the fraction the mouse sets while it holds the track, else -1.
+float StyledSlider(const RowArea& r, float fraction, const char* text, bool* dragging, float room = 130.0f) {
+    ImDrawList* draw = ImGui::GetWindowDrawList();
+    const float x0 = r.value_x + Px(12.0f), x1 = r.right - Px(room), mid = r.mid, thick = Px(6.0f);
+    const float knob = x0 + (x1 - x0) * std::clamp(fraction, 0.0f, 1.0f);
+    const ImU32 color = Col(r.focused ? Gold : Cream);
+    draw->AddRectFilled(ImVec2(x0, mid - thick * 0.5f), ImVec2(x1, mid + thick * 0.5f), Col(IM_COL32(86, 70, 54, 255)),
+                        thick * 0.5f);
+    draw->AddRectFilled(ImVec2(x0, mid - thick * 0.5f), ImVec2(knob, mid + thick * 0.5f), color, thick * 0.5f);
+    draw->AddCircleFilled(ImVec2(knob, mid), Px(10.0f), color);
+    if (text) {
+        const float size = TextPx(RowText);
+        draw->AddText(choice_style.text, size, ImVec2(x1 + Px(18.0f), mid - size * 0.55f), color, text);
+    }
+    ImGui::SetCursorScreenPos(ImVec2(x0 - Px(12.0f), r.min.y));
+    ImGui::InvisibleButton("##track", ImVec2(x1 - x0 + Px(24.0f), r.max.y - r.min.y));
+    const bool held = ImGui::IsItemActive();
+    if (dragging) {
+        *dragging = held;
+    }
+    return held ? std::clamp((ImGui::GetIO().MousePos.x - x0) / (x1 - x0), 0.0f, 1.0f) : -1.0f;
+}
+
+float row_top = 0.0f; // the plain look's row being drawn: its top (RowEnd)
+
+// A row of the plain look: the name, then the control (PushID; PopID after it). A focusable row with the
+// focus gets a gold background.
 void Row(const char* label, bool focusable = true) {
     ImGui::TableNextRow();
     if (focusable && NextRowFocused()) {
@@ -452,11 +587,30 @@ RowNav RowEnd(const char* help, int enabled = -1) {
                   enabled < 0 ? LastItemEnabled() : enabled != 0);
 }
 
-// On / off: a checkbox. Pad: left off, right on, Cross flips. Returns whether `on` changed.
+// The same for the game's look.
+RowNav StyledRowEnd(const RowArea& r, const char* help, int enabled = -1) {
+    return NavRow(r.min, r.max, help, enabled < 0 ? LastItemEnabled() : enabled != 0);
+}
+
+// On / off: a checkbox, or "<  On  >". Pad: left off, right on, Cross flips; a click on the row flips.
+// Returns whether `on` changed.
 bool ToggleRow(const char* label, bool& on, const char* help) {
-    Row(label);
-    bool changed = ImGui::Checkbox("##value", &on);
-    const RowNav in = RowEnd(help);
+    bool changed = false;
+    RowNav in;
+    if (styled) {
+        RowArea r = BeginStyledRow(label);
+        StyledRowHit(r);
+        if (r.clicked) {
+            on = !on;
+            changed = true;
+        }
+        DrawChoice(r, on ? "On" : "Off");
+        in = StyledRowEnd(r, help);
+    } else {
+        Row(label);
+        changed = ImGui::Checkbox("##value", &on);
+        in = RowEnd(help);
+    }
     if (in.press || in.step) {
         const bool next = in.press ? !on : in.step > 0;
         changed |= next != on;
@@ -474,21 +628,32 @@ void CheckRow(const char* label, std::atomic<bool>& value, const char* help = nu
 
 // A choice among `count` labels: `current` -1 (a value the menu does not list) shows `unlisted` until
 // changed. Returns the chosen index, -1 when unchanged. Pad: left / right step (stopping at the ends),
-// Cross the next one (wrapping).
+// Cross the next one (wrapping). The game's look: a click on the left arrow goes back, elsewhere on.
 int ChoiceIndex(const char* label, int current, const char* const* labels, int count, const char* help,
                 const char* unlisted = "(custom)") {
     int chosen = current;
     const char* shown = current >= 0 && current < count ? labels[current] : unlisted;
-    Row(label);
-    if (ImGui::BeginCombo("##value", shown)) {
-        for (int i = 0; i < count; ++i) {
-            if (ImGui::Selectable(labels[i], i == current)) {
-                chosen = i;
-            }
+    RowNav in;
+    if (styled) {
+        RowArea r = BeginStyledRow(label);
+        StyledRowHit(r);
+        if (r.clicked && count > 0) {
+            chosen = current < 0 ? 0 : (current + ClickStep(r) + count) % count;
         }
-        ImGui::EndCombo();
+        DrawChoice(r, shown);
+        in = StyledRowEnd(r, help);
+    } else {
+        Row(label);
+        if (ImGui::BeginCombo("##value", shown)) {
+            for (int i = 0; i < count; ++i) {
+                if (ImGui::Selectable(labels[i], i == current)) {
+                    chosen = i;
+                }
+            }
+            ImGui::EndCombo();
+        }
+        in = RowEnd(help);
     }
-    const RowNav in = RowEnd(help);
     if (in.step && count > 0) {
         chosen = current < 0 ? (in.step > 0 ? 0 : count - 1) : std::clamp(current + in.step, 0, count - 1);
     }
@@ -519,32 +684,45 @@ void IndexChoiceRow(const char* label, int& value, const char* const* labels, in
     }
 }
 
-// An int slider; `plus_minus` adds - / + buttons (render scale). Returns the new value. Pad: left / right
-// by `step`. `dragging`: the mouse holds the slider.
+// An int slider; `plus_minus` adds - / + buttons in the plain look (render scale). Returns the new
+// value. Pad: left / right by `step`. `dragging`: the mouse holds the slider.
 int IntSliderRow(const char* label, int value, int lo, int hi, int step, const char* format, const char* help,
                  bool* dragging = nullptr, bool plus_minus = false) {
-    Row(label);
-    const ImGuiStyle& style = ImGui::GetStyle();
-    const float button = ImGui::GetFrameHeight();
-    if (plus_minus) {
-        ImGui::SetNextItemWidth(-(2.0f * (button + style.ItemSpacing.x)));
-    }
     int v = value;
-    ImGui::SliderInt("##value", &v, lo, hi, format, ImGuiSliderFlags_AlwaysClamp);
-    if (dragging) {
-        *dragging = ImGui::IsItemActive();
-    }
-    if (plus_minus) {
-        ImGui::SameLine();
-        if (ImGui::Button("-", ImVec2(button, 0.0f))) {
-            v = value - 1;
+    RowNav in;
+    if (styled) {
+        RowArea r = BeginStyledRow(label);
+        char text[32];
+        std::snprintf(text, sizeof(text), format, value);
+        const float set = StyledSlider(r, hi > lo ? float(value - lo) / float(hi - lo) : 0.0f, text, dragging);
+        if (set >= 0.0f) {
+            v = lo + int(std::round(set * float(hi - lo)));
         }
-        ImGui::SameLine();
-        if (ImGui::Button("+", ImVec2(button, 0.0f))) {
-            v = value + 1;
+        StyledRowHit(r);
+        in = StyledRowEnd(r, help);
+    } else {
+        Row(label);
+        const ImGuiStyle& style = ImGui::GetStyle();
+        const float button = ImGui::GetFrameHeight();
+        if (plus_minus) {
+            ImGui::SetNextItemWidth(-(2.0f * (button + style.ItemSpacing.x)));
         }
+        ImGui::SliderInt("##value", &v, lo, hi, format, ImGuiSliderFlags_AlwaysClamp);
+        if (dragging) {
+            *dragging = ImGui::IsItemActive();
+        }
+        if (plus_minus) {
+            ImGui::SameLine();
+            if (ImGui::Button("-", ImVec2(button, 0.0f))) {
+                v = value - 1;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("+", ImVec2(button, 0.0f))) {
+                v = value + 1;
+            }
+        }
+        in = RowEnd(help);
     }
-    const RowNav in = RowEnd(help);
     v += in.step * step;
     ImGui::PopID();
     return std::clamp(v, lo, hi);
@@ -557,20 +735,36 @@ void SliderRow(const char* label, std::atomic<int>& value, int lo, int hi, const
     Store(value, next, next != v);
 }
 
-// A 0.1x to 100x multiplier with a 1x button. Pad: left / right divide / multiply by 1.1, Cross 1x.
+// A 0.1x to 100x multiplier with a 1x button (the game's look: "<  1.00x  >", a click steps by 1.25).
+// Pad: left / right divide / multiply by 1.1, Cross 1x.
 void MultiplierRow(const char* label, std::atomic<float>& value, const char* help) {
-    Row(label);
-    const ImGuiStyle& style = ImGui::GetStyle();
-    ImGui::SetNextItemWidth(-(ImGui::CalcTextSize("1x").x + style.FramePadding.x * 2 + style.ItemSpacing.x));
-    float v = value;
-    if (ImGui::SliderFloat("##value", &v, 0.1f, 100.0f, "%.2fx",
-                           ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp)) {
-        value = Gow3Orbs::ClampMultiplier(v);
-        dirty = true;
+    bool reset = false;
+    RowNav in;
+    if (styled) {
+        RowArea r = BeginStyledRow(label);
+        StyledRowHit(r);
+        if (r.clicked) {
+            value = Gow3Orbs::ClampMultiplier(value * (ClickStep(r) > 0 ? 1.25f : 0.8f));
+            dirty = true;
+        }
+        char text[32];
+        std::snprintf(text, sizeof(text), "%.2fx", value.load());
+        DrawChoice(r, text);
+        in = StyledRowEnd(r, help);
+    } else {
+        Row(label);
+        const ImGuiStyle& style = ImGui::GetStyle();
+        ImGui::SetNextItemWidth(-(ImGui::CalcTextSize("1x").x + style.FramePadding.x * 2 + style.ItemSpacing.x));
+        float v = value;
+        if (ImGui::SliderFloat("##value", &v, 0.1f, 100.0f, "%.2fx",
+                               ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp)) {
+            value = Gow3Orbs::ClampMultiplier(v);
+            dirty = true;
+        }
+        ImGui::SameLine();
+        reset = ImGui::SmallButton("1x");
+        in = RowEnd(help);
     }
-    ImGui::SameLine();
-    bool reset = ImGui::SmallButton("1x");
-    const RowNav in = RowEnd(help);
     if (in.step) {
         value = Gow3Orbs::ClampMultiplier(std::round(value * (in.step > 0 ? 1.1f : 1.0f / 1.1f) * 100.0f) / 100.0f);
         dirty = true;
@@ -582,27 +776,47 @@ void MultiplierRow(const char* label, std::atomic<float>& value, const char* hel
     ImGui::PopID();
 }
 
-// A float slider with a number box beside it for typing an exact value (Ctrl+click types into the slider too).
-// `clamp` keeps the stored value in range and on its steps. Pad: left / right by `step`.
+// A float slider with a number box beside it for typing an exact value (Ctrl+click types into the slider
+// too, plain look). `clamp` keeps the stored value in range and on its steps. Pad: left / right by `step`.
 void NumberRow(const char* label, std::atomic<float>& value, float lo, float hi, float step, const char* format,
                float (*clamp)(float), const char* help) {
-    Row(label);
-    const ImGuiStyle& style = ImGui::GetStyle();
-    const float box = ImGui::CalcTextSize("0.0000").x + style.FramePadding.x * 2;
-    ImGui::SetNextItemWidth(-(box + style.ItemSpacing.x));
-    float v = value;
-    if (ImGui::SliderFloat("##slider", &v, lo, hi, format, ImGuiSliderFlags_AlwaysClamp)) {
-        value = clamp(v);
-        dirty = true;
+    RowNav in;
+    if (styled) {
+        RowArea r = BeginStyledRow(label);
+        constexpr float Box = 110.0f; // frame pixels
+        const float set = StyledSlider(r, (value - lo) / (hi - lo), nullptr, nullptr, Box + 24.0f);
+        if (set >= 0.0f) {
+            value = clamp(lo + set * (hi - lo));
+            dirty = true;
+        }
+        ImGui::SetCursorScreenPos(ImVec2(r.right - Px(Box), r.mid - ImGui::GetFrameHeight() * 0.5f));
+        ImGui::SetNextItemWidth(Px(Box));
+        float v = value;
+        if (ImGui::InputFloat("##number", &v, 0.0f, 0.0f, format)) {
+            value = clamp(std::round(v / step) * step);
+            dirty = true;
+        }
+        StyledRowHit(r);
+        in = StyledRowEnd(r, help);
+    } else {
+        Row(label);
+        const ImGuiStyle& style = ImGui::GetStyle();
+        const float box = ImGui::CalcTextSize("0.0000").x + style.FramePadding.x * 2;
+        ImGui::SetNextItemWidth(-(box + style.ItemSpacing.x));
+        float v = value;
+        if (ImGui::SliderFloat("##slider", &v, lo, hi, format, ImGuiSliderFlags_AlwaysClamp)) {
+            value = clamp(v);
+            dirty = true;
+        }
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(box);
+        v = value;
+        if (ImGui::InputFloat("##number", &v, 0.0f, 0.0f, format)) {
+            value = clamp(std::round(v / step) * step);
+            dirty = true;
+        }
+        in = RowEnd(help);
     }
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(box);
-    v = value;
-    if (ImGui::InputFloat("##number", &v, 0.0f, 0.0f, format)) {
-        value = clamp(std::round(v / step) * step);
-        dirty = true;
-    }
-    const RowNav in = RowEnd(help);
     if (in.step) {
         value = clamp(std::round((value + in.step * step) / step) * step);
         dirty = true;
@@ -611,30 +825,55 @@ void NumberRow(const char* label, std::atomic<float>& value, float lo, float hi,
 }
 
 // A row of buttons (the game resolutions): returns the one pressed, or -1. `enabled`: per button. Pad:
-// left / right pick one (outlined), Cross presses it.
+// left / right pick one (outlined, or Gold and underlined in the game's look), Cross presses it.
 int ButtonsRow(const char* label, const char* const* labels, int count, const bool* enabled, const char* help) {
     ImGuiStorage* storage = ImGui::GetStateStorage();
     const ImGuiID pick_id = ImGui::GetID(label);
     int pick = std::clamp(storage->GetInt(pick_id, 0), 0, count - 1);
-    const bool focused = NextRowFocused();
     int pressed = -1;
-    Row(label);
-    for (int i = 0; i < count; ++i) {
-        if (i) {
-            ImGui::SameLine();
+    RowNav in;
+    if (styled) {
+        RowArea r = BeginStyledRow(label);
+        StyledRowHit(r);
+        const float cell = (r.right - r.value_x) / float(count), size = TextPx(RowText);
+        if (r.clicked) {
+            const int i = int((ImGui::GetIO().MousePos.x - r.value_x) / cell);
+            if (i >= 0 && i < count && enabled[i]) {
+                pressed = pick = i;
+            }
         }
-        ImGui::BeginDisabled(!enabled[i]);
-        if (ImGui::Button(labels[i])) {
-            pressed = i;
+        ImDrawList* draw = ImGui::GetWindowDrawList();
+        for (int i = 0; i < count; ++i) {
+            const float w = choice_style.text->CalcTextSizeA(size, FLT_MAX, 0.0f, labels[i]).x;
+            const ImVec2 at(r.value_x + cell * (float(i) + 0.5f) - w * 0.5f, r.mid - size * 0.55f);
+            const bool picked = r.focused && i == pick;
+            const ImU32 color = !enabled[i] ? Col(IM_COL32(176, 166, 150, 110)) : Col(picked ? Gold : Cream);
+            draw->AddText(choice_style.text, size, at, color, labels[i]);
+            if (picked) {
+                draw->AddLine(ImVec2(at.x, at.y + size * 1.05f), ImVec2(at.x + w, at.y + size * 1.05f), color, Px(2.0f));
+            }
         }
-        ImGui::EndDisabled();
-        if (focused && i == pick) {
-            ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(),
-                                                IM_COL32(245, 196, 30, 255), ImGui::GetStyle().FrameRounding, 0,
-                                                2.0f * base_scale);
+        in = StyledRowEnd(r, help, 1);
+    } else {
+        const bool focused = NextRowFocused();
+        Row(label);
+        for (int i = 0; i < count; ++i) {
+            if (i) {
+                ImGui::SameLine();
+            }
+            ImGui::BeginDisabled(!enabled[i]);
+            if (ImGui::Button(labels[i])) {
+                pressed = i;
+            }
+            ImGui::EndDisabled();
+            if (focused && i == pick) {
+                ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(),
+                                                    IM_COL32(245, 196, 30, 255), ImGui::GetStyle().FrameRounding, 0,
+                                                    2.0f * base_scale);
+            }
         }
+        in = RowEnd(help, 1);
     }
-    const RowNav in = RowEnd(help, 1);
     pick = std::clamp(pick + in.step, 0, count - 1);
     storage->SetInt(pick_id, pick);
     if (in.press && enabled[pick]) {
@@ -644,7 +883,24 @@ int ButtonsRow(const char* label, const char* const* labels, int count, const bo
     return pressed;
 }
 
+// A row to read, not change (not focusable): the game's look as the Load list's details, the name in
+// Cream and the value in Gold.
 void InfoRow(const char* label, const char* text) {
+    if (styled) {
+        const float width = ImGui::GetContentRegionAvail().x, size = TextPx(InfoText);
+        const ImVec2 at = ImGui::GetCursorScreenPos();
+        const float mid = at.y + Px(InfoHeight) * 0.5f, value_x = at.x + width * ValueColumn;
+        ImDrawList* draw = ImGui::GetWindowDrawList();
+        const ImVec4 clip(at.x, at.y, value_x - Px(10.0f), at.y + Px(InfoHeight));
+        draw->AddText(choice_style.text, size, ImVec2(at.x + Px(12.0f), mid - size * 0.55f), Col(Cream), label,
+                      nullptr, 0.0f, &clip);
+        const float w = choice_style.text->CalcTextSizeA(size, FLT_MAX, 0.0f, text).x;
+        const float right = at.x + width - Px(RightMargin);
+        draw->AddText(choice_style.text, size, ImVec2(std::max((value_x + right - w) * 0.5f, value_x), mid - size * 0.55f),
+                      Col(Gold), text);
+        ImGui::Dummy(ImVec2(width, Px(InfoHeight)));
+        return;
+    }
     Row(label, false);
     ImGui::TextDisabled("%s", text);
     ImGui::PopID();
@@ -1151,12 +1407,19 @@ void PerformanceTab() {
 void OverlayPreview() {
     const auto& s = Gow3Settings::Get();
     ImGui::TextDisabled("Preview");
+    if (styled) { // the overlay's own font at its own size, not the menu's
+        ImFont* font = ImGui::GetIO().Fonts->Fonts[0];
+        ImGui::PushFont(font, font->LegacySize);
+    }
     ImGui::BeginChild("##preview", ImVec2(0, 0), ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY);
     ImGui::SetWindowFontScale(s.overlay_scale / 100.0f);
     const std::string text = OverlayText();
     ImGui::TextUnformatted(text.empty() ? "(nothing selected)" : text.c_str());
     ImGui::SetWindowFontScale(1.0f);
     ImGui::EndChild();
+    if (styled) {
+        ImGui::PopFont();
+    }
 }
 
 void OverlayTab() {
@@ -1357,10 +1620,235 @@ void PlainMenu() {
     }
 }
 
+// The game's font and colours for ImGui's own items in the styled menu (notes, the number box, the
+// preview's frame).
+constexpr std::pair<ImGuiCol, ImU32> MenuColors[] = {
+    {ImGuiCol_Text, Cream},
+    {ImGuiCol_TextDisabled, Dim},
+    {ImGuiCol_FrameBg, IM_COL32(52, 38, 28, 255)},
+    {ImGuiCol_FrameBgHovered, IM_COL32(72, 54, 38, 255)},
+    {ImGuiCol_FrameBgActive, IM_COL32(92, 68, 46, 255)},
+    {ImGuiCol_ChildBg, IM_COL32(0, 0, 0, 110)},
+    {ImGuiCol_Border, IM_COL32(176, 166, 150, 90)},
+    {ImGuiCol_TextSelectedBg, IM_COL32(245, 196, 30, 90)},
+};
+
+void PushMenuStyle() {
+    ImGui::PushFont(choice_style.text, TextPx(NoteText) / ImGui::GetStyle().FontScaleMain);
+    for (const auto& [color, value] : MenuColors) {
+        ImGui::PushStyleColor(color, value);
+    }
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(Px(8.0f), Px(2.0f)));
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(Px(8.0f), Px(3.0f)));
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, Px(6.0f));
+}
+
+void PopMenuStyle() {
+    ImGui::PopStyleVar(3);
+    ImGui::PopStyleColor(int(std::size(MenuColors)));
+    ImGui::PopFont();
+}
+
+// The menu in MediEvil's Options menu look (research/docs/plan-settings-menu.md): the Load list's frame,
+// fonts, colours and prompts. The title, the tabs between the L1 / R1 prompts, the tab's rows in a
+// scrolled body, the restart row while changes wait for a start, the focused row's help, the prompts
+// under the frame (clickable). Drawn in the frame's own pixels (1181x870), so it keeps its proportions.
+void StyledMenu() {
+    auto& s = Gow3Settings::Get();
+    if (requested_tab >= 0) {
+        s.menu_tab = requested_tab;
+        dirty = true;
+        requested_tab = -1;
+    }
+    const int tab = std::clamp(s.menu_tab.load(), 0, TabCount - 1);
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    constexpr float FrameW = 1181.0f, FrameH = 870.0f, PromptsH = 72.0f;
+    // 86% of the height from 3% down (the Load list: 76% from 6%), the prompts under the frame.
+    const float width = std::min(viewport->WorkSize.y * 0.86f * FrameW / FrameH, viewport->WorkSize.x * 0.96f);
+    const float height = width * FrameH / FrameW;
+    menu_u = height / FrameH;
+    const ImVec2 at(std::floor(viewport->WorkPos.x + (viewport->WorkSize.x - width) * 0.5f),
+                    std::floor(viewport->WorkPos.y + viewport->WorkSize.y * 0.03f));
+    const auto P = [&](float x, float y) { return ImVec2(at.x + x * menu_u, at.y + y * menu_u); };
+    const auto text_width = [](ImFont* face, float size, const char* text) {
+        return face->CalcTextSizeA(size, FLT_MAX, 0.0f, text).x;
+    };
+    ImGui::SetNextWindowPos(at, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(width, height + Px(PromptsH)), ImGuiCond_Always);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    const bool shown = ImGui::Begin("##settings", nullptr,
+                                    ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
+                                        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
+                                        ImGuiWindowFlags_NoScrollWithMouse);
+    ImGui::PopStyleVar(2);
+    if (!shown) {
+        ImGui::End();
+        return;
+    }
+    ImDrawList* draw = ImGui::GetWindowDrawList();
+    // The frame's middle filled opaque as in the Options menu, the frame over it, the title.
+    draw->AddRectFilled(P(20, 106), P(1161, 768), PanelFill, Px(34.0f));
+    draw->AddImage(choice_style.textures[StyleFrame]->GetTexRef(), at, ImVec2(at.x + width, at.y + height));
+    {
+        const char* title = "-SETTINGS-";
+        const float size = TextPx(66.0f);
+        draw->AddText(choice_style.title, size,
+                      ImVec2(at.x + (width - text_width(choice_style.title, size, title)) * 0.5f, P(0, 112).y), White,
+                      title);
+    }
+
+    // The tabs between the L1 and R1 prompts (each clickable); the current one Gold and underlined.
+    {
+        static const char* const tabs[TabCount] = {"GAME", "CONTROLS", "IMAGE", "PERFORMANCE", "OVERLAY"};
+        float size = TextPx(28.0f), icon = Px(44.0f), gap = Px(22.0f);
+        float total = 2.0f * (icon + gap) - gap;
+        for (const char* name : tabs) {
+            total += text_width(choice_style.text, size, name) + gap;
+        }
+        if (total > Px(1040.0f)) { // another font: keep the strip inside the frame
+            const float fit = Px(1040.0f) / total;
+            size = std::floor(size * fit);
+            icon *= fit;
+            gap *= fit;
+            total = Px(1040.0f);
+        }
+        float x = at.x + (width - total) * 0.5f;
+        const float y = P(0, 198).y, line = y + size * 0.5f;
+        const auto icon_button = [&](const char* id, StyleImage image) {
+            const ImVec2 min(x, line - icon * 0.5f), max(x + icon, line + icon * 0.5f);
+            draw->AddImage(choice_style.textures[image]->GetTexRef(), min, max);
+            ImGui::SetCursorScreenPos(min);
+            const bool pressed = ImGui::InvisibleButton(id, ImVec2(icon, icon));
+            x += icon + gap;
+            return pressed;
+        };
+        if (icon_button("##l1", StyleL1)) {
+            MenuPress(Ps4::L1);
+        }
+        for (int i = 0; i < TabCount; ++i) {
+            const float w = text_width(choice_style.text, size, tabs[i]);
+            ImGui::SetCursorScreenPos(ImVec2(x, y));
+            ImGui::PushID(i);
+            if (ImGui::InvisibleButton("##tab", ImVec2(w, size * 1.2f))) {
+                requested_tab = i;
+            }
+            const bool hovered = ImGui::IsItemHovered();
+            ImGui::PopID();
+            draw->AddText(choice_style.text, size, ImVec2(x, y), i == tab ? Gold : hovered ? White : Dim, tabs[i]);
+            if (i == tab) {
+                draw->AddLine(ImVec2(x, y + size * 1.12f), ImVec2(x + w, y + size * 1.12f), Gold, Px(2.0f));
+            }
+            x += w + gap;
+        }
+        if (icon_button("##r1", StyleR1)) {
+            MenuPress(Ps4::R1);
+        }
+        draw->AddLine(P(64, 248), P(1117, 248), IM_COL32(245, 196, 30, 70), Px(2.0f));
+    }
+
+    // The game's button prompts under the frame, as the Load list's; drawn before the rows so a click on
+    // SELECT reaches the focused row in this frame.
+    {
+        struct Prompt {
+            StyleImage icons[2];
+            int count;
+            const char* label;
+            uint32_t press;
+        };
+        const Prompt prompts[] = {{{StyleCross, StyleCross}, 1, "SELECT", Ps4::Cross},
+                                  {{StyleCircle, StyleCircle}, 1, "GO BACK", Ps4::Circle},
+                                  {{StyleL1, StyleR1}, 2, "CHANGE TAB", Ps4::R1}};
+        constexpr float Icon = 50.0f, Label = 36.0f, Space = 70.0f, Pair = 6.0f;
+        const float label_size = TextPx(Label);
+        float row = 0.0f;
+        for (const Prompt& prompt : prompts) {
+            row += (Icon + Pair) * float(prompt.count) - Pair + 12.0f +
+                   text_width(choice_style.text, label_size, prompt.label) / menu_u + Space;
+        }
+        float x = (FrameW - (row - Space)) * 0.5f;
+        const float top = FrameH + 8.0f;
+        for (const Prompt& prompt : prompts) {
+            const float start = x;
+            for (int i = 0; i < prompt.count; ++i) {
+                draw->AddImage(choice_style.textures[prompt.icons[i]]->GetTexRef(), P(x, top), P(x + Icon, top + Icon));
+                x += Icon + Pair;
+            }
+            x += 12.0f - Pair;
+            draw->AddText(choice_style.text, label_size, P(x, top + (Icon - Label) * 0.5f - 2.0f), White, prompt.label);
+            x += text_width(choice_style.text, label_size, prompt.label) / menu_u;
+            ImGui::SetCursorScreenPos(P(start, top));
+            if (ImGui::InvisibleButton(prompt.label, ImVec2(Px(x - start), Px(Icon)))) {
+                MenuPress(prompt.press);
+            }
+            x += Space;
+        }
+    }
+
+    // The tab's rows, scrolled, with a thin scroll bar when they do not fit (as the Load list's).
+    const int changes = RestartChanges();
+    constexpr float BodyX = 64.0f, BodyW = 1053.0f, BodyTop = 258.0f;
+    const float body_bottom = changes ? 598.0f : 640.0f;
+    ImGui::SetCursorScreenPos(P(BodyX, BodyTop));
+    PushMenuStyle();
+    if (ImGui::BeginChild("##body", ImVec2(Px(BodyW), Px(body_bottom - BodyTop)), ImGuiChildFlags_None,
+                          ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar)) {
+        NavStartTab(tab);
+        TabBody(tab);
+        if (const float max_scroll = ImGui::GetScrollMaxY(); max_scroll > 0.0f) {
+            const ImVec2 body = ImGui::GetWindowPos();
+            const float view = ImGui::GetWindowHeight(), bar_w = Px(5.0f);
+            const float bar = std::max(view * view / (view + max_scroll), Px(30.0f));
+            const float top = body.y + (view - bar) * ImGui::GetScrollY() / max_scroll;
+            const float x = body.x + ImGui::GetWindowWidth() - bar_w;
+            ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(x, top), ImVec2(x + bar_w, top + bar),
+                                                      IM_COL32(200, 196, 190, 120), Px(3.0f));
+        }
+    }
+    ImGui::EndChild();
+
+    // The restart row (focusable, after the tab's rows) while changes wait for a start.
+    if (changes) {
+        char label[64];
+        std::snprintf(label, sizeof(label), "%d change%s need%s a restart", changes, changes == 1 ? "" : "s",
+                      changes == 1 ? "s" : "");
+        ImGui::SetCursorScreenPos(P(BodyX, 600));
+        ImGui::BeginDisabled(!std::getenv("GOW3_RESTART_COMMAND"));
+        RowArea r = BeginStyledRow(label, Px(BodyW));
+        StyledRowHit(r);
+        DrawChoice(r, RestartArmed() ? "PRESS AGAIN TO RESTART" : "APPLY AND RESTART", false);
+        const RowNav in = StyledRowEnd(r, RestartHelp);
+        ImGui::PopID();
+        ImGui::EndDisabled();
+        if (r.clicked || in.press) {
+            RestartPressed();
+        }
+    }
+    PopMenuStyle();
+
+    // The focused row's help (the rows set it), else how to open and close the menu.
+    {
+        static const std::string idle = OpenKeys() + ": open and close this menu. Settings are saved in medievil.ini.";
+        const char* help = footer_help ? footer_help : idle.c_str();
+        const float size = TextPx(24.0f);
+        const ImVec2 from = P(72, 650), to = P(1110, 764);
+        const ImVec4 clip(from.x, from.y, to.x, to.y);
+        draw->AddText(choice_style.text, size, from, footer_help ? Cream : Dim, help, nullptr, to.x - from.x, &clip);
+    }
+    ImGui::End();
+}
+
 void Menu() {
     ApplyRenderScale(false);
     footer_help = nullptr;
-    PlainMenu();
+    // The game's look needs its files, and room (a tiny window keeps the plain look).
+    styled = choice_style.Ready() && ImGui::GetMainViewport()->WorkSize.y >= 360.0f;
+    if (styled) {
+        StyledMenu();
+    } else {
+        PlainMenu();
+    }
+    styled = false;
     NavEndFrame();
 }
 
@@ -1468,9 +1956,6 @@ void StyledChoiceBox() {
     const ImVec2 at(viewport->WorkPos.x + (viewport->WorkSize.x - width) * 0.5f,
                     viewport->WorkPos.y + viewport->WorkSize.y * 0.06f);
     const auto P = [&](float x, float y) { return ImVec2(at.x + x * u, at.y + y * u); };
-    constexpr ImU32 Cream = IM_COL32(240, 234, 220, 255), Gold = IM_COL32(245, 196, 30, 255),
-                    Green = IM_COL32(72, 226, 42, 255), Dim = IM_COL32(176, 166, 150, 255),
-                    White = IM_COL32(250, 248, 242, 255);
     ImFont* const title_font = choice_style.title;
     ImFont* const font = choice_style.text;
     const auto text = [&](ImFont* face, float px, ImVec2 pos, ImU32 color, std::string_view s) {
@@ -1482,7 +1967,7 @@ void StyledChoiceBox() {
 
     // The frame's transparent middle is filled as in the Options menu (opaque: the title screen's
     // logo showed through), then the frame drawn over it.
-    draw->AddRectFilled(P(20, 106), P(1161, 768), IM_COL32(28, 19, 13, 255), 34.0f * u);
+    draw->AddRectFilled(P(20, 106), P(1161, 768), PanelFill, 34.0f * u);
     draw->AddImage(choice_style.textures[0]->GetTexRef(), at, ImVec2(at.x + width, at.y + height));
     std::string heading = "-" + choice_title + "-";
     std::transform(heading.begin(), heading.end(), heading.begin(),
@@ -1517,8 +2002,8 @@ void StyledChoiceBox() {
             continue;
         }
         if (chosen) {
-            draw->AddRectFilled(P(ListX - 14, y - 4), P(ListX + ListW - 6, y + heights[i] + 4),
-                                IM_COL32(255, 214, 120, 26), 10.0f * u);
+            draw->AddRectFilled(P(ListX - 14, y - 4), P(ListX + ListW - 6, y + heights[i] + 4), FocusFill,
+                                10.0f * u);
         }
         const auto lines = SplitLines(choice_items[i]);
         for (size_t l = 0; l < lines.size(); ++l) {
@@ -1884,6 +2369,12 @@ void Init(const Vulkan::Instance& instance, vk::Format format, u32 image_count) 
     overlay_instance = &instance;
     initialized = true;
     std::printf("Overlay: menu ready (%s or %s)\n", SDL_GetKeyName(MenuKey()), MenuPad().name.c_str());
+    // The game's menu look for the settings menu (and the save list) from the game UI cache, the folder
+    // the save list names (runtime_services.c), read off this thread at start so the menu has it from
+    // its first opening; SetChoiceStyle waits for imgui_mutex until Init returns.
+    std::thread([] {
+        gow3gpu_choice_style((std::string(runtime_file_user_dir()) + "/cache/game_ui").c_str());
+    }).detach();
 }
 
 void UpdateTextInput(SDL_Window* window) {
@@ -2322,6 +2813,7 @@ void SetChoiceStyle(ChoiceStyleFiles files) {
     }
     choice_style.title = fonts[0];
     choice_style.text = fonts[1];
+    std::printf("Overlay: the game's menu look loaded (settings menu, save list)\n");
     static_assert(sizeof(files.images) / sizeof(files.images[0]) == StyleImageCount);
     for (int i = 0; i < StyleImageCount; ++i) {
         choice_style.pending[i] = std::move(files.images[i]);

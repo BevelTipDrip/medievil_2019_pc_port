@@ -286,14 +286,14 @@ def small(uexp, style, number, icon=None):
     return with_whole(uexp, picture, layout)
 
 
-# The port's Load list prompts (gow3gpu_choice_style): file name and PS4 button.
-OVERLAY = {'Cross': 'cross', 'Circle': 'circle', 'Square': 'square'}
+# The port's Load list and settings menu prompts (gow3gpu_choice_style): file name and PS4 button.
+OVERLAY = {'Cross': 'cross', 'Circle': 'circle', 'Square': 'square', 'L1': 'l1', 'R1': 'r1'}
 
 
 def overlay_prompts(style, cache, key_map='', pad_map='', mouse_map='', prefer_mouse=False):
-    """Writes <cache>/prompts/style/Cross|Circle|Square.png for the port's Load list in the given
-    style; the game's own PS4 prompts (game UI cache) for playstation, test, an unknown style or a
-    key without a picture."""
+    """Writes <cache>/prompts/style/Cross|Circle|Square|L1|R1.png for the port's Load list and
+    settings menu in the given style; the game's own PS4 prompts (game UI cache) for playstation,
+    test, an unknown style or a key without a picture."""
     from PIL import Image
     out = Path(cache) / 'prompts' / 'style'
     out.mkdir(parents=True, exist_ok=True)
