@@ -541,7 +541,8 @@ void ImageTab() {
         CheckRow("Sharpening (RCAS)", s.rcas,
                  rcas_blocked && downscaling ? "No effect: the game's image is larger than the window."
                  : rcas_blocked              ? "Needs FSR 1: the game's image is smaller than the window."
-                                             : "Sharpens the final image.");
+                                             : "Sharpens the image: with AMD FSR it is FSR's own sharpening, "
+                                               "otherwise (the game's TAA, NVIDIA DLSS) the final image.");
         ImGui::EndDisabled();
         ImGui::BeginDisabled(!s.rcas || rcas_blocked);
         SliderRow("Sharpening strength", s.rcas_strength, 0, 100, "%d%%", "How strong the sharpening is.");

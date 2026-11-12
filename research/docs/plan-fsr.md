@@ -58,7 +58,7 @@ Status (2026-11-12): step 1 on branch `fsr`, verified on the PC (T-F1); its Deck
 
 ## To do (the user, 2026-11-12)
 
-- **Sharpening with an upscaler**: the sharpening slider (menu Image tab, launcher `rcas_strength`) should set the
+- **Sharpening with an upscaler** (fix built, F2b): the sharpening slider (menu Image tab, launcher `rcas_strength`) should set the
   upscaler's sharpening too, not only the presenter's RCAS. Today RCAS is forced off while an upscaler runs
   (`vk_presenter.cpp` `!Ue4Upscaler::Running()`), and DLSS gets `sharpness = 0`. FSR 3.1: its own RCAS
   (`enableSharpening`, `sharpness` 0-1). DLSS: NVIDIA deprecated its sharpening (newer DLSS ignores the
@@ -110,3 +110,12 @@ extra-env): the graph as in the user's earlier runs there tonight. **The stats p
 steady_clock reads per draw (~2,400 a frame on stage B) and / or the 5 s FPS line. T-F3 / T-F4's lows with the stats on
 are pessimistic; their hook before / after holds (the same stats in both). Before the stats are used again: time
 one frame in N, or a cheaper clock.
+
+T-F5 (research/docs/data/upscaler-quiet-t-f5.log, stats and FPS line off): the user: with the hook fix, DLSS's and
+FSR's 0.1% lows are up significantly. F3 verified for the lows.
+
+F2b (fix built, not run): the menu's sharpening (rcas, rcas_strength) is FSR's own RCAS while FSR runs
+(`Ue4UpscaleFrame::sharpness` = strength / 100: FSR's attenuation 2 - 2s equals the presenter's 2 (1 - p / 100)), and
+the presenter's RCAS stays off then (`Ue4Upscaler::SharpensItself`); over DLSS and UE4's TAA the presenter's RCAS
+runs (before: off over DLAA). The user: DLSS is already sharp; people may want it softer, which is the DLSS model
+(preset) choice (roadmap), not RCAS.

@@ -4,7 +4,7 @@
 // anti-aliasing when the input and output sizes match (render scale 100), upscaling below it. The inputs are
 // the front end's: the HDR colour before tonemapping (auto exposure), UE4's reversed infinite depth, U2's
 // motion vectors (render pixels, previous minus current: FSR's convention at scale 1) and the game's jitter.
-// No reactive mask yet (plan-fsr.md step 4), FSR's own sharpening off. GOW3_FSR=0 leaves it out.
+// No reactive mask yet (plan-fsr.md step 4). The menu's sharpening is FSR's own RCAS. GOW3_FSR=0 leaves it out.
 
 #include <cstdio>
 #include <cstdlib>
@@ -136,8 +136,9 @@ public:
         info.cameraFar = std::numeric_limits<float>::max(); // infinite (the context flag)
         info.cameraVerticalFovRadians = frame.fov_y;
         info.viewSpaceToMeters = 0.01f; // UE units are centimetres
-        info.sharpness = 0.0f;
-        info.enableSharpening = VK_FALSE;
+        // The menu's sharpening, as FSR's own RCAS (the presenter's stays off while FSR runs).
+        info.sharpness = frame.sharpness < 0.0f ? 0.0f : frame.sharpness;
+        info.enableSharpening = frame.sharpness < 0.0f ? VK_FALSE : VK_TRUE;
         info.reset = frame.reset ? VK_TRUE : VK_FALSE;
         info.frameId = frame_id++;
         if (const u64 issues = ffxVkPortableValidateUpscaleDispatchInfo(&create_info, &info)) {

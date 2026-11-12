@@ -647,17 +647,21 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
     // gow3: FSR 1, RCAS and its strength come from the in-game menu, every frame.
     const auto& graphics = Gow3Settings::Get();
     fsr_settings.enable = graphics.fsr1;
-    // gow3 U3: no RCAS over DLAA (the user's decision: DLSS on, RCAS off).
-    fsr_settings.use_rcas = graphics.rcas && !Ue4Upscaler::Running();
+    // gow3 F2: the menu's sharpening is FSR's own while FSR runs (Ue4Upscaler: no second RCAS); over
+    // DLSS and UE4's TAA it is this RCAS (the user, 2026-11-12: the slider sharpens DLSS too; it was off
+    // over DLAA before).
+    const bool upscaler_sharpens = Ue4Upscaler::SharpensItself();
+    fsr_settings.use_rcas = graphics.rcas && !upscaler_sharpens;
     fsr_settings.rcas_attenuation = Gow3Graphics::RcasAttenuation(graphics.rcas_strength);
     Gow3Settings::Get().image_width = int(image_size.width);
     Gow3Settings::Get().image_height = int(image_size.height);
     Gow3Settings::Get().window_width = int(frame->width);
     Gow3Settings::Get().window_height = int(frame->height);
     Gow3Settings::Get().rcas_applied =
-        fsr_settings.use_rcas &&
-        Gow3Graphics::FsrPassRuns(fsr_settings.enable, true, int(image_size.width), int(image_size.height),
-                                  int(frame->width), int(frame->height));
+        (graphics.rcas && upscaler_sharpens) ||
+        (fsr_settings.use_rcas &&
+         Gow3Graphics::FsrPassRuns(fsr_settings.enable, true, int(image_size.width), int(image_size.height),
+                                   int(frame->width), int(frame->height)));
     image_view = fsr_pass.Render(cmdbuf, image_view, image_size, {frame->width, frame->height},
                                  fsr_settings, frame->is_hdr);
 

@@ -60,6 +60,9 @@ struct Ue4UpscaleFrame {
     float frame_ms;
     float near_plane; ///< UE units (cm); the far plane is infinite
     float fov_y;      ///< vertical field of view, radians
+    /// The menu's sharpening for a backend that sharpens itself (FSR): 0-1, 1 the strongest (the
+    /// presenter's RCAS at the same strength); negative: off. DLSS has none (the presenter's RCAS).
+    float sharpness;
 };
 
 class Ue4UpscalerBackend;
@@ -98,6 +101,9 @@ public:
     static bool Running();
     /// The upscaler that ran last (while Running()), for the menu: "DLSS", "FSR".
     static const char* RunningName();
+    /// An upscaler that sharpens itself (FSR) ran within the last 100 ms: the presenter's RCAS
+    /// stays off then (the menu's sharpening is the upscaler's).
+    static bool SharpensItself();
     /// Enabled and an upscaler other than TAA chosen: worth looking up the TAAU output image.
     static bool On();
 

@@ -9,8 +9,8 @@ default_deck: off
 origin: ours
 class: M
 commits:
-files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_fsr.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp, launcher/medievil_launcher.py
-symbols: FsrBackend, MakeFsrBackend, Describe, ffxVkPortableUpscaleContextCreate, ffxVkPortableUpscaleContextRecordDispatch, near_plane, fov_y
+files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_fsr.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shim/gow3_overlay.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp, launcher/medievil_launcher.py
+symbols: FsrBackend, MakeFsrBackend, SharpensItself, sharpness, Describe, ffxVkPortableUpscaleContextCreate, ffxVkPortableUpscaleContextRecordDispatch, near_plane, fov_y
 switches: GOW3_FSR
 tests:
 docs: plan-fsr.md
@@ -33,7 +33,8 @@ III upscaler):
   `ViewToClip[1][1]` (View offset 384 + 20), `viewSpaceToMeters` 0.01, pre-exposure 1.
 - Every image in VK_IMAGE_LAYOUT_GENERAL: FidelityFX's Vulkan backend maps GENERIC_READ and UNORDERED_ACCESS to
   GENERAL and returns each image to its state after the dispatch.
-- No reactive mask (step 4) and FSR's own sharpening off (the user's to-do: the sharpening slider).
+- No reactive mask (step 4). The menu's sharpening is FSR's own RCAS (`sharpness` = strength / 100, the same
+  look as the presenter's RCAS at that strength), the presenter's RCAS off while FSR runs (F2b).
 - Available where the device enables `shaderStorageImageWriteWithoutFormat` (FSR 3's accumulate shaders); `GOW3_FSR=0`
   leaves it out.
 

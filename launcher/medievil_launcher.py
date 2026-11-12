@@ -1692,7 +1692,9 @@ class Launcher:
         self.check(f, 'fsr1', 'ini', _('Upscale with FSR 1'),
                    _('Enlarges a smaller game image to the window. With Render resolution 720p (Performance) '
                      'it raises the FPS; at the size of the window it does nothing.'))
-        self.check(f, 'rcas', 'ini', _('Final image sharpening (RCAS)'))
+        self.check(f, 'rcas', 'ini', _('Final image sharpening (RCAS)'),
+                   _('With AMD FSR the strength below sets FSR\'s own sharpening; with the game\'s TAA or NVIDIA DLSS '
+                     'it sharpens the final image.'))
         self.row(f, _('Anti-aliasing / upscaler'), self.choice(f, 'ue4_upscaler', 'ini', UPSCALERS),
                  _('Replaces the game\'s anti-aliasing: native anti-aliasing at Render scale 100, upscaling below '
                    'it (NVIDIA DLSS: Quality / Balanced / Performance from the scale). Sharpening is off while it '
