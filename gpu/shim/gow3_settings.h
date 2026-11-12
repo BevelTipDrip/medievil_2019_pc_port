@@ -30,6 +30,17 @@ inline constexpr int OutputCount = 4;
 inline constexpr int OutputDefault = 1; ///< 1920x1080, the game's own size
 /// The free camera's automatic moves, in src/camera_hook.h's order.
 inline constexpr int CameraMoveCount = 6;
+/// Mouse look ranges (the launcher's Controls > Mouse uses the same).
+inline constexpr float MouseSensitivityMin = 0.001f, MouseSensitivityMax = 0.2f;
+inline constexpr float MouseRatioMin = 0.10f, MouseRatioMax = 2.00f;
+inline float ClampMouseSensitivity(float v) {
+    return v >= MouseSensitivityMin && v <= MouseSensitivityMax ? v : v > MouseSensitivityMax ? MouseSensitivityMax
+                                                                                            : MouseSensitivityMin;
+}
+inline float ClampMouseRatio(float v) { ///< also to 0.01 steps
+    const float clamped = v >= MouseRatioMin && v <= MouseRatioMax ? v : v > MouseRatioMax ? MouseRatioMax : MouseRatioMin;
+    return float(int(clamped * 100.0f + 0.5f)) / 100.0f;
+}
 
 struct Values {
     std::atomic<int> upscaler{UpscalerFsr3};
@@ -65,6 +76,11 @@ struct Values {
     /// The free camera's automatic moves (src/camera_hook.h, the Controls tab), each on (the game's) or
     /// off, live: follow, swing, suggest, keepout, run_zoom, pitch_return (medievil.ini camera_*).
     std::atomic<bool> camera_moves[CameraMoveCount]{true, true, true, true, true, true};
+    /// Mouse look (GOW3_MOUSE=1; src/probe.c camera_look), live: degrees per count, vertical as a share of it
+    /// (0.10-2.00 in 0.01 steps), vertical inverted (medievil.ini mouse_*).
+    std::atomic<float> mouse_sensitivity{0.022f};
+    std::atomic<float> mouse_vertical_ratio{0.80f};
+    std::atomic<bool> mouse_invert_y{false};
     std::atomic<bool> camera_hook{false};      ///< ComputeCameraSimple wrapped (an analysed eboot)
     std::atomic<uint32_t> camera_found{0};     ///< moves whose bytecode has been found so far
     // Graphics (gow3_graphics.h). Live: applied on the next frame.

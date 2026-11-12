@@ -36,6 +36,13 @@ static atomic_uint capture_serial;        /* +1 at each capture: the reader bloc
 static atomic_llong total_x, total_y, total_wheel; /* counts not yet read, wheel in WHEEL_DELTA units */
 static atomic_llong camera_x, camera_y;   /* the same counts for the camera hook (probe.c, mouse_hook.h) */
 static atomic_uint shown_buttons;         /* buttons the game sees */
+/* Wheel presses for GOW3_MOUSE_MAP (runtime_pad.c): one per gesture, no queue. The first notch after the
+ * wheel was still for WHEEL_QUIET_MS presses its direction for WHEEL_PRESS_MS; every notch moves the
+ * end of the gesture, so a fast scroll is one press (the user, 2026-11-11: no back and forth). */
+#define WHEEL_QUIET_MS 200u
+#define WHEEL_PRESS_MS 60u
+static atomic_ullong wheel_up_until, wheel_down_until; /* GetTickCount64 ms */
+static ULONGLONG wheel_quiet_until;      /* the reader thread only */
 static atomic_ullong reports, wakes, batches; /* statistics for the log */
 static HWND reader_window;
 /* Mouse buttons reach the game only with GOW3_MOUSE_BUTTONS=1: a click the game received moved its
@@ -89,6 +96,12 @@ static void drain(void) {
         atomic_fetch_add(&total_x,dx); atomic_fetch_add(&total_y,dy); atomic_fetch_add(&total_wheel,wheel);
         atomic_fetch_add(&camera_x,dx); atomic_fetch_add(&camera_y,dy);
         atomic_store(&shown_buttons,held&~blocked);
+        if (wheel) {
+            const ULONGLONG now=GetTickCount64();
+            if (now>=wheel_quiet_until)
+                atomic_store(wheel>0 ? &wheel_up_until : &wheel_down_until,(unsigned long long)(now+WHEEL_PRESS_MS));
+            wheel_quiet_until=now+WHEEL_QUIET_MS;
+        }
     } else {
         atomic_store(&shown_buttons,0);
     }
@@ -154,6 +167,7 @@ void runtime_mouse_capture(int on) {
         atomic_store(&total_x,0); atomic_store(&total_y,0); atomic_store(&total_wheel,0);
         atomic_store(&camera_x,0); atomic_store(&camera_y,0);
         atomic_store(&shown_buttons,0);
+        atomic_store(&wheel_up_until,0); atomic_store(&wheel_down_until,0);
     }
     const ULONGLONG now=GetTickCount64();
     const unsigned long long r=atomic_load(&reports), w=atomic_load(&wakes), b=atomic_load(&batches);
@@ -170,15 +184,21 @@ void runtime_mouse_capture(int on) {
     since=now; last_reports=r; last_wakes=w; last_batches=b;
 }
 
-/* The camera hook's share: the counts since its last take (only counted while captured). */
+/* The camera hooks' share: the counts since their last take (only counted while captured); a NULL axis
+ * is left for later. */
 void runtime_mouse_take_camera(int32_t *x,int32_t *y) {
-    *x=(int32_t)atomic_exchange(&camera_x,0); *y=(int32_t)atomic_exchange(&camera_y,0);
+    if (x) *x=(int32_t)atomic_exchange(&camera_x,0);
+    if (y) *y=(int32_t)atomic_exchange(&camera_y,0);
 }
 
 /* The buttons held while the game has the mouse, without the click that took it (sceMouse bits: 1 left,
- * 2 right, 4 middle, 8 x1, 16 x2): GOW3_MOUSE_MAP presses pad buttons with them (runtime_pad.c). */
+ * 2 right, 4 middle, 8 x1, 16 x2), plus the wheel's presses (32 up, 64 down): GOW3_MOUSE_MAP presses pad
+ * buttons with them (runtime_pad.c). */
 uint32_t runtime_mouse_buttons(void) {
-    return atomic_load_explicit(&shown_buttons,memory_order_relaxed);
+    const unsigned long long now=GetTickCount64();
+    return atomic_load_explicit(&shown_buttons,memory_order_relaxed) |
+           (now<atomic_load_explicit(&wheel_up_until,memory_order_relaxed) ? 32u : 0u) |
+           (now<atomic_load_explicit(&wheel_down_until,memory_order_relaxed) ? 64u : 0u);
 }
 
 int runtime_mouse_take(int32_t *x,int32_t *y,int32_t *wheel,uint32_t *buttons) {
@@ -193,7 +213,7 @@ int runtime_mouse_take(int32_t *x,int32_t *y,int32_t *wheel,uint32_t *buttons) {
 #else
 void runtime_mouse_start(void) {}
 void runtime_mouse_capture(int on) { (void)on; }
-void runtime_mouse_take_camera(int32_t *x,int32_t *y) { *x=0; *y=0; }
+void runtime_mouse_take_camera(int32_t *x,int32_t *y) { if (x) *x=0; if (y) *y=0; }
 uint32_t runtime_mouse_buttons(void) { return 0; }
 int runtime_mouse_take(int32_t *x,int32_t *y,int32_t *wheel,uint32_t *buttons) {
     (void)x; (void)y; (void)wheel; (void)buttons; return 0;

@@ -181,7 +181,7 @@ APP_DEFAULTS = {'ui_language': 'en', 'game_dir': os.environ.get('GOW3_GAME_DIR',
                 'background_warmup': True, 'parallel_warmup': True, 'pipeline_binary_cache': True, 'perf_diag': False, 'frame_capture_key': False, 'frame_stats': False, 'gpu_profile': False,
                 'vk_validation': False, 'close_on_play': False, 'prep_workers': '', 'stage_b_core': False,
                 'update_check': True, 'game_patches': {}, 'game_patches_seen': {}, 'controls': {}, 'pad_style': 'playstation', 'stick_range': '',
-                'menu_key': 'Insert', 'mouse': False, 'mouse_yaw': '0.022',
+                'menu_key': 'Insert', 'mouse': False,
                 'last_pkg': '', 'graphics_preset': '', 'deck_switches': False, 'deck_switches_off': '',
                 'deck_offered': False}
 
@@ -265,12 +265,9 @@ def menu_key(settings):
 # Mouse buttons a game button can take (GOW3_MOUSE_MAP, src/runtime_pad.c), next to its key: the names the
 # runtime reads and their labels.
 MOUSE_BUTTONS = [('', ('None',)), ('left', ('Left button',)), ('right', ('Right button',)),
-                 ('middle', ('Middle button',)), ('x1', ('Side button (back)',)), ('x2', ('Side button (forward)',))]
+                 ('middle', ('Middle button',)), ('x1', ('Side button (back)',)), ('x2', ('Side button (forward)',)),
+                 ('wheel_up', ('Wheel up',)), ('wheel_down', ('Wheel down',)), ('wheel', ('Wheel (up or down)',))]
 MOUSE_BUTTON_NAMES = {name for name, _label in MOUSE_BUTTONS if name}
-# Mouse look speed in degrees per mouse count (GOW3_MOUSE_YAW); 0.022 is the usual PC shooter default.
-MOUSE_SPEEDS = [('0.011', ('Slow (0.011 degrees per count)',)), ('0.016', ('0.016 degrees per count',)),
-                ('0.022', ('Default (0.022 degrees per count)',)), ('0.033', ('0.033 degrees per count',)),
-                ('0.044', ('Fast (0.044 degrees per count)',))]
 
 
 def control_map(controls, kind):
@@ -405,6 +402,27 @@ INI_FLAGS.update({FRAME_TRACE[0], 'present_no_frame_caps', 'display_vrr'})
 INI_DEFAULTS.update({'present_inline': '1', 'present_precise_tick': '1', 'present_frame_trace': '0',
                      'present_no_frame_caps': '0', 'present_tick_hz': '960', 'present_mode': 'auto',
                      'present_limiter': 'reflex', 'fps_limit': '-3', 'display_vrr': '1'})
+# Mouse look and the free camera's automatic moves (medievil.ini; the in-game menu's Controls tab changes the
+# same keys live: gpu/shim/gow3_settings.cpp). Each move: key, title, hint; 1 = the game's move.
+CAMERA_MOVES = [
+    ('camera_follow', 'Camera follows Dan', 'While Dan moves, the camera turns toward where he is going. Off: only you '
+     'turn it (mouse or right stick), at the same speed standing or moving.'),
+    ('camera_swing', 'Sideways swing', 'Running sideways swings the camera up to about 20 degrees.'),
+    ('camera_suggest', 'Suggested directions', 'Entering some areas turns the camera toward the way ahead for up to a '
+     'second (13 areas).'),
+    ('camera_keepout', 'Turn around posts', 'Near a few posts the camera turns so the post does not block the view '
+     '(2 areas).'),
+    ('camera_run_zoom', 'Run zoom and tilt', 'The camera pulls in or out and tilts when Dan starts running.'),
+    ('camera_pitch_return', 'Vertical look re-centres', 'While Dan moves or attacks, the up / down angle eases back to '
+     'the middle.'),
+]
+# Set when "Mouse look and buttons" is ticked (the user's recommended camera with a mouse, T-CM2).
+MOUSE_CAMERA = {'camera_follow': '0', 'camera_swing': '0', 'camera_suggest': '1', 'camera_keepout': '1',
+                'camera_run_zoom': '0', 'camera_pitch_return': '0'}
+MOUSE_SENSITIVITY_RANGE, MOUSE_RATIO_RANGE = (0.001, 0.2), (0.10, 2.00)
+INI_FLAGS.update({'mouse_invert_y', *(key for key, _title, _hint in CAMERA_MOVES)})
+INI_DEFAULTS.update({'mouse_sensitivity': '0.022', 'mouse_vertical_ratio': '0.80', 'mouse_invert_y': '0',
+                     **{key: '1' for key, _title, _hint in CAMERA_MOVES}})
 # GOW3_STICK_RANGE (issue #36): that much tilt is a full push, for sticks that never reach the edge.
 STICK_RANGES = [('', ('Full tilt (default)',)), ('90', ('90%',)), ('85', ('85%',)), ('80', ('80%',)),
                 ('70', ('70%',))]
@@ -569,9 +587,7 @@ def game_environment(s):
         env['GOW3_MENU_KEY'] = key
     # The mouse (Windows: the Raw Input reader, mouse look, mouse buttons): Controls > Mouse.
     if s.get('mouse'):
-        env['GOW3_MOUSE'] = '1'
-        if str(s.get('mouse_yaw', '0.022')) != '0.022':
-            env['GOW3_MOUSE_YAW'] = str(s['mouse_yaw'])
+        env['GOW3_MOUSE'] = '1'  # its sensitivity and the camera switches are medievil.ini keys
     env.setdefault('GOW3_FPS_LOG', '1')  # FPS and worst frame every 5 s in the log (diagnostics)
     # Frame statistics (draws, compiles, stalls every 5 s) only with Advanced > Frame statistics:
     # part of them is printed by the draw recording thread and costs frame time stability (T-S2b).
@@ -1190,6 +1206,58 @@ class Launcher:
         text.trace_add('write', from_text)
         var.trace_add('write', from_setting)
         output.trace_add('write', from_setting)
+        from_setting()
+        return holder
+
+    def number_control(self, parent, key, low, high, step, digits, slider_high=None):
+        """A medievil.ini number: a slider (low..slider_high) and a box to type or step any value in low..high.
+        Only values in the range, rounded to `step`, reach the setting."""
+        ttk = self.ttk
+        holder = ttk.Frame(parent)
+        var = self.var(key, 'ini')
+        top = slider_high or high
+        scale = ttk.Scale(holder, from_=low, to=top, orient='horizontal', length=self.px(240))
+        scale.pack(side='left')
+        text = self.tk.StringVar(value=var.get())
+        ttk.Spinbox(holder, from_=low, to=high, increment=step, width=7, textvariable=text, format=f'%.{digits}f',
+                    font=self.f('body', 10)).pack(side='left', padx=(10, 0))
+
+        syncing = [False]  # scale.set below calls the slider's command too: not a user's move
+
+        def store(value):
+            if syncing[0]:
+                return
+            value = min(max(round(value / step) * step, low), high)
+            if f'{value:.{digits}f}' != var.get():
+                var.set(f'{value:.{digits}f}')
+
+        def from_text(*_args):
+            try:
+                value = float(text.get().strip())
+            except ValueError:
+                return
+            if low <= value <= high:
+                store(value)
+
+        def from_setting(*_args):
+            try:
+                value = float(var.get())
+            except ValueError:
+                return
+            try:
+                typed = round(float(text.get().strip()) / step)
+            except ValueError:
+                typed = None
+            if typed != round(value / step):  # not while the box already says that number (typing "0.02")
+                text.set(var.get())
+            syncing[0] = True
+            try:
+                scale.set(min(value, top))
+            finally:
+                syncing[0] = False
+        scale.configure(command=lambda value: store(float(value)))
+        text.trace_add('write', from_text)
+        var.trace_add('write', from_setting)
         from_setting()
         return holder
 
@@ -1961,13 +2029,33 @@ class Launcher:
                  _('The keyboard key that opens the port\'s menu in the game (R3+L2 on the gamepad). It cannot be '
                    'a game button\'s key too. Applied when the game starts.'))
         self.section(f, _('Mouse'))
-        self.check(f, 'mouse', 'app', _('Mouse look and buttons'),
-                   _('Windows. The game takes the mouse while its window has focus (borderless and fullscreen) or '
-                     'after a click (window); alt-tab or the menu let it go. Moving it turns the camera; the MOUSE '
-                     'column below presses game buttons. Applied when the game starts.'))
-        self.row(f, _('Mouse look speed'), self.choice(f, 'mouse_yaw', 'app', MOUSE_SPEEDS,
-                                                         custom=lambda v: f'{v} degrees per count'),
-                 _('How far the camera turns per mouse count (at 1600 DPI, 0.022 is about 35 degrees per inch).'))
+        mouse_box = self.check(f, 'mouse', 'app', _('Mouse look and buttons'),
+                               _('Windows. The game takes the mouse while its window has focus (borderless and '
+                                 'fullscreen) or after a click (window); alt-tab or the menu let it go. Moving it turns '
+                                 'the camera; the MOUSE column below presses game buttons. Ticking it sets the camera '
+                                 'switches below for mouse play. Gamepad works when the mouse is enabled; camera '
+                                 'behavior overrides also apply to analog stick input. Applied when the game starts.'))
+
+        def mouse_ticked():  # the recommended camera for the mouse, once, when it is switched on
+            if self.var('mouse', 'app').get():
+                for key, value in MOUSE_CAMERA.items():
+                    self.var(key, 'ini').set(value == '1')
+        mouse_box.configure(command=mouse_ticked)
+        self.row(f, _('Sensitivity'), self.number_control(f, 'mouse_sensitivity', *MOUSE_SENSITIVITY_RANGE, 0.001, 3,
+                                                          slider_high=0.1),
+                 _('Degrees the camera turns per mouse count, horizontally (0.022 is the usual PC default; at 1600 DPI '
+                   'about 35 degrees per inch). The box takes values up to 0.2. Also in the in-game menu > Controls, '
+                   'live.'))
+        self.row(f, _('Vertical / horizontal'), self.number_control(f, 'mouse_vertical_ratio', *MOUSE_RATIO_RANGE,
+                                                                    0.01, 2),
+                 _('Vertical sensitivity as a share of the horizontal one: below 1, up and down turns less (the '
+                   'camera has 360 degrees around and about 60 up and down).'))
+        self.check(f, 'mouse_invert_y', 'ini', _('Invert vertical'), _('Pushing the mouse forward looks down instead of up.'))
+        self.section(f, _('Advanced camera'))
+        self.note(f, _('The free camera\'s automatic moves; ticked = the game\'s. Fixed, rail and boss cameras keep the '
+                       'game\'s moves. Also in the in-game menu > Controls, live.'), top=2)
+        for key, title, hint in CAMERA_MOVES:
+            self.check(f, key, 'ini', _(title), _(hint))
         self.section(f, _('Buttons'))
         table = ttk.Frame(f)
         table.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(8, 0))

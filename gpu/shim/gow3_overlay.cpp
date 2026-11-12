@@ -300,6 +300,31 @@ void MultiplierRow(const char* label, std::atomic<float>& value, const char* hel
     ImGui::PopID();
 }
 
+// A float slider with a number box beside it for typing an exact value (Ctrl+click types into the slider too).
+// `clamp` keeps the stored value in range and on its steps.
+void NumberRow(const char* label, std::atomic<float>& value, float lo, float hi, float step, const char* format,
+               float (*clamp)(float), const char* help) {
+    Row(label);
+    const ImGuiStyle& style = ImGui::GetStyle();
+    const float box = ImGui::CalcTextSize("0.0000").x + style.FramePadding.x * 2;
+    ImGui::SetNextItemWidth(-(box + style.ItemSpacing.x));
+    float v = value;
+    if (ImGui::SliderFloat("##slider", &v, lo, hi, format, ImGuiSliderFlags_AlwaysClamp)) {
+        value = clamp(v);
+        dirty = true;
+    }
+    Help(help);
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(box);
+    v = value;
+    if (ImGui::InputFloat("##number", &v, 0.0f, 0.0f, format)) {
+        value = clamp(std::round(v / step) * step);
+        dirty = true;
+    }
+    Help(help);
+    ImGui::PopID();
+}
+
 void InfoRow(const char* label, const char* text) {
     Row(label);
     ImGui::TextDisabled("%s", text);
@@ -437,6 +462,28 @@ void GameTab() {
 // Controls: the free camera's automatic moves (src/camera_hook.h), each live. Ticked = the game's camera.
 void ControlsTab() {
     auto& s = Gow3Settings::Get();
+    ImGui::SeparatorText("Mouse");
+    static const bool mouse_on = [] {
+        const char* env = std::getenv("GOW3_MOUSE");
+        return env && std::strcmp(env, "1") == 0;
+    }();
+    if (!mouse_on) {
+        ImGui::PushTextWrapPos(0.0f);
+        ImGui::TextDisabled("The mouse is off: launcher > Controls > Mouse look and buttons (applied at the next start). "
+                            "These values are kept for then.");
+        ImGui::PopTextWrapPos();
+    }
+    if (BeginRows("##mouse")) {
+        NumberRow("Sensitivity", s.mouse_sensitivity, Gow3Settings::MouseSensitivityMin, 0.1f, 0.001f, "%.3f",
+                  Gow3Settings::ClampMouseSensitivity,
+                  "Degrees the camera turns per mouse count, horizontally (0.022 is the usual PC default; at 1600 "
+                  "DPI about 35 degrees per inch). Type a value up to 0.2 in the box.");
+        NumberRow("Vertical / horizontal", s.mouse_vertical_ratio, Gow3Settings::MouseRatioMin,
+                  Gow3Settings::MouseRatioMax, 0.01f, "%.2f", Gow3Settings::ClampMouseRatio,
+                  "Vertical sensitivity as a share of the horizontal one: below 1, up and down turns less.");
+        CheckRow("Invert vertical", s.mouse_invert_y, "Pushing the mouse forward looks down instead of up.");
+        ImGui::EndTable();
+    }
     ImGui::SeparatorText("Advanced camera");
     const uint32_t found = s.camera_found.load();
     ImGui::PushTextWrapPos(0.0f);

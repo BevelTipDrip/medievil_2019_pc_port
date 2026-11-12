@@ -76,6 +76,67 @@ static inline uint64_t medievil_camera_input_rotation(const unsigned char *scrip
                    ir1 == ir2 ? ir1 : 0;
 }
 
+/* Mouse look's pitch (study-camera-moves.md section 8): the free area's ubergraph keeps the player's pitch
+ * as TargetLookUpAxisValue (the stick integrates into it; clamped so Target + PitchEffective stays within
+ * UserPitchMin / UserPitchMax) and shows SmoothedLookUpAxisValue, which follows it. Their UProperty*, read
+ * from the bytecode around the pitch_return JumpIfNot at `jump` (07, or 06 while that move is off), in-memory:
+ *   jump + 0x0e  EX_Let (0f) <Target> EX_InstanceVariable (01) <Target> EX_FloatConst (1e)      Target = 0
+ *   jump + 0x25  EX_Let (0f) <L> EX_LocalVariable (00) <L> EX_CallMath (68) <FInterpTo>
+ *                EX_InstanceVariable (01) <Smoothed> (01) <Target> ...
+ * and the one run of three 46-byte statements `L1 = Add(L0, PitchEffective)`, `L2 = FMin(L1, UserPitchMax)`,
+ * `L3 = FMax(L2, UserPitchMin)`: EX_Let <L> 00 <L> 68 <fn> 00 <arg L> 01 <property> 16, each one's argument
+ * the previous one's result. The same layout in 01.00's and 01.02's Free and in FreeSimple. */
+typedef struct {
+    uint64_t target, smoothed, effective, max, min;
+} MedievilCameraPitch;
+static inline uint64_t medievil_camera_ptr(const unsigned char *script, int32_t at) {
+    uint64_t v;
+    memcpy(&v, script + at, 8);
+    return v;
+}
+/* A 46-byte `let L = fn(L', property)` statement at `a`: its result local, or 0. */
+static inline uint64_t medievil_camera_math_let(const unsigned char *script, int32_t a) {
+    const uint64_t result = medievil_camera_ptr(script, a + 1);
+    return script[a] == 0x0f && script[a + 0x09] == 0x00 && script[a + 0x12] == 0x68 && script[a + 0x1b] == 0x00 &&
+                   script[a + 0x24] == 0x01 && script[a + 0x2d] == 0x16 && result &&
+                   result == medievil_camera_ptr(script, a + 0x0a) ? result : 0;
+}
+static inline int medievil_camera_pitch(const unsigned char *script, int32_t size, int32_t jump, MedievilCameraPitch *out) {
+    if (jump < 1 || jump + 0x52 > size || (script[jump] != 0x07 && script[jump] != 0x06)) return 0;
+    const unsigned char *t = script + jump;
+    const uint64_t target = medievil_camera_ptr(script, jump + 0x0f);
+    if (t[0x0e] != 0x0f || t[0x17] != 0x01 || t[0x20] != 0x1e || !target ||
+        medievil_camera_ptr(script, jump + 0x18) != target)
+        return 0;
+    if (t[0x25] != 0x0f || t[0x2e] != 0x00 || t[0x37] != 0x68 || t[0x40] != 0x01 || t[0x49] != 0x01 ||
+        medievil_camera_ptr(script, jump + 0x4a) != target)
+        return 0;
+    const uint64_t smoothed = medievil_camera_ptr(script, jump + 0x41);
+    int found = 0;
+    for (int32_t a = jump; a + 3 * 0x2e <= size; ++a) {
+        const uint64_t l1 = medievil_camera_math_let(script, a);
+        if (!l1) continue;
+        const uint64_t l2 = medievil_camera_math_let(script, a + 0x2e);
+        if (!l2 || medievil_camera_ptr(script, a + 0x2e + 0x1c) != l1) continue;
+        const uint64_t l3 = medievil_camera_math_let(script, a + 0x5c);
+        if (!l3 || medievil_camera_ptr(script, a + 0x5c + 0x1c) != l2) continue;
+        if (found++) return 0; /* more than one run: not the layout we know */
+        out->effective = medievil_camera_ptr(script, a + 0x25);
+        out->max = medievil_camera_ptr(script, a + 0x2e + 0x25);
+        out->min = medievil_camera_ptr(script, a + 0x5c + 0x25);
+    }
+    if (!found || !smoothed || !out->effective || !out->max || !out->min) return 0;
+    out->target = target;
+    out->smoothed = smoothed;
+    return 1;
+}
+
+/* ComputeCameraSimple's first two arguments as the exec starts (Stack.Code, after EX_FinalFunction (1c)
+ * <UFunction*>): EX_LocalVariable (00) <origin> 00 <rotation>. The rotation local's UProperty*, or 0. */
+static inline uint64_t medievil_camera_rotation_local(const unsigned char *code) {
+    return code[-9] == 0x1c && code[0] == 0x00 && code[9] == 0x00 ? medievil_camera_ptr(code, 10) : 0;
+}
+
 /* UMedievilSpringArm::ComputeCameraSimple's exec slot (FNameNativePtrPair + 8), its thunk and name. */
 typedef struct {
     uint32_t slot, exec, name;

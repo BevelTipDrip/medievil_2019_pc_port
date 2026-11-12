@@ -128,6 +128,18 @@ void Set(Values& v, const std::string& key, const std::string& value) {
             return;
         }
     }
+    if (key == "mouse_sensitivity") {
+        v.mouse_sensitivity = ClampMouseSensitivity(f);
+        return;
+    }
+    if (key == "mouse_vertical_ratio") {
+        v.mouse_vertical_ratio = ClampMouseRatio(f);
+        return;
+    }
+    if (key == "mouse_invert_y") {
+        v.mouse_invert_y = i != 0;
+        return;
+    }
     const char* cheat_keys[] = {"cheat_health", "cheat_magic", "cheat_item", "cheat_rage", "cheat_orbs",
                                 "cheat_very_hard", "cheat_double_jumps"};
     for (unsigned cheat = 0; cheat < GOW3_CHEAT_COUNT; ++cheat) {
@@ -563,6 +575,8 @@ std::map<std::string, std::string> Serialize(const Values& v) {
     for (int move = 0; move < CameraMoveCount; ++move) {
         Append(out, "%s=%d\n", CameraMoveKeys[move], int(v.camera_moves[move].load()));
     }
+    Append(out, "mouse_sensitivity=%.4f\nmouse_vertical_ratio=%.2f\nmouse_invert_y=%d\n", v.mouse_sensitivity.load(),
+           v.mouse_vertical_ratio.load(), int(v.mouse_invert_y.load()));
     Append(out,
            "overlay_fps=%d\noverlay_frametime=%d\noverlay_upscaler=%d\noverlay_gpu=%d\n"
            "overlay_cpu=%d\noverlay_ram=%d\noverlay_vram=%d\noverlay_scale=%d\noverlay_corner=%d\n"
@@ -699,6 +713,16 @@ extern "C" uint32_t gow3_camera_off_mask(void) {
         }
     }
     return off;
+}
+
+// Mouse look in degrees per count (src/probe.c camera_look, each camera tick): horizontal, and vertical with
+// the ratio and inversion applied (positive: the camera looks up for a mouse pushed forward).
+extern "C" void gow3_mouse_look(float* yaw_degrees, float* pitch_degrees) {
+    const auto& s = Gow3Settings::Get();
+    const float sensitivity = s.mouse_sensitivity.load(std::memory_order_relaxed);
+    *yaw_degrees = sensitivity;
+    *pitch_degrees = sensitivity * s.mouse_vertical_ratio.load(std::memory_order_relaxed) *
+                     (s.mouse_invert_y.load(std::memory_order_relaxed) ? -1.0f : 1.0f);
 }
 
 extern "C" void gow3_camera_status(int installed, uint32_t found) {

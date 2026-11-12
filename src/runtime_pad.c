@@ -131,7 +131,8 @@ static int current_gamepads(void) {
  * GOW3_KEY_MAP="cross=Q,square=Left Shift" or GOW3_PAD_MAP="cross=b,circle=a": comma-separated
  * <ps4 button>=<SDL key or gamepad button name>. A mapped PS4 button loses its default sources.
  * Sticks, triggers and the overlay shortcuts are not remapped. GOW3_MOUSE_MAP (the launcher's MOUSE
- * column, e.g. "square=left,cross=x2") adds mouse buttons (left, right, middle, x1, x2) next to the
+ * column, e.g. "square=left,triangle=wheel") adds mouse buttons (left, right, middle, x1, x2, wheel_up,
+ * wheel_down, wheel: either direction, one press per scroll gesture) next to the
  * keys, read while the game has the mouse (GOW3_MOUSE=1, runtime_mouse_buttons); there are none by
  * default. */
 static const struct { const char *name; uint32_t ps; } ps_names[]={
@@ -159,12 +160,12 @@ static ButtonMap key_map={{
     {SDL_SCANCODE_RETURN,BTN_OPTIONS},
     {SDL_SCANCODE_I,BTN_UP}, {SDL_SCANCODE_K,BTN_DOWN}, {SDL_SCANCODE_J,BTN_LEFT}, {SDL_SCANCODE_L,BTN_RIGHT},
 },15};
-static ButtonMap mouse_map; /* source: the sceMouse button bit (0 left .. 4 x2) */
+static ButtonMap mouse_map; /* source: a runtime_mouse_buttons bit (0 left .. 4 x2, 5 wheel up, 6 down, 7 either) */
 enum { MAP_PAD, MAP_KEYS, MAP_MOUSE };
 
 static int mouse_button_from_name(const char *name) {
-    static const char *const names[]={"left","right","middle","x1","x2"};
-    for (int i=0;i<5;++i) if (!SDL_strcasecmp(name,names[i])) return i;
+    static const char *const names[]={"left","right","middle","x1","x2","wheel_up","wheel_down","wheel"};
+    for (int i=0;i<8;++i) if (!SDL_strcasecmp(name,names[i])) return i;
     return -1;
 }
 
@@ -227,7 +228,8 @@ static void load_button_maps(void) {
 /* The PS4 buttons the held mouse buttons press (GOW3_MOUSE_MAP), while the game has the mouse. */
 static uint32_t mouse_map_buttons(void) {
     if (!mouse_map.count) return 0;
-    const uint32_t held=runtime_mouse_buttons();
+    uint32_t held=runtime_mouse_buttons();
+    if (held & (32u|64u)) held|=128u; /* "wheel": either direction */
     uint32_t buttons=0;
     for (size_t i=0;i<mouse_map.count;++i) if ((held>>mouse_map.entries[i].source)&1) buttons|=mouse_map.entries[i].ps;
     return buttons;

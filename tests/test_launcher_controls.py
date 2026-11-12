@@ -212,13 +212,26 @@ class ControlMapTest(unittest.TestCase):
             self.assertEqual(launcher.menu_key({'menu_key': bad}), 'Insert')
         # Mouse buttons: every chosen one is kept (no defaults); unknown names are dropped.
         mouse = {b: '' for b, _k, _p in launcher.CONTROLS}
-        mouse.update(square='left', cross='x2', circle='wheel')
-        self.assertEqual(launcher.control_changes(mouse, 'mouse'), {'cross': 'x2', 'square': 'left'})
-        env = launcher.game_environment({**settings, 'mouse': True, 'mouse_yaw': '0.033',
-                                         'controls': {'mouse': {'square': 'left', 'cross': 'x2'}}})
-        self.assertEqual((env['GOW3_MOUSE'], env['GOW3_MOUSE_YAW'], env['GOW3_MOUSE_MAP']),
-                         ('1', '0.033', 'cross=x2,square=left'))
-        self.assertNotIn('GOW3_MOUSE_YAW', own(launcher.game_environment({**settings, 'mouse': True})))
+        mouse.update(square='left', cross='x2', circle='scroll', triangle='wheel')
+        self.assertEqual(launcher.control_changes(mouse, 'mouse'), {'cross': 'x2', 'square': 'left', 'triangle': 'wheel'})
+        env = launcher.game_environment({**settings, 'mouse': True,
+                                         'controls': {'mouse': {'square': 'left', 'triangle': 'wheel'}}})
+        self.assertEqual((env['GOW3_MOUSE'], env['GOW3_MOUSE_MAP']), ('1', 'square=left,triangle=wheel'))
+        self.assertNotIn('GOW3_MOUSE_YAW', own(env))  # sensitivity is a medievil.ini key now
+
+    def test_mouse_and_camera_keys_match_the_game(self):
+        """The launcher's camera_* and mouse_* keys are the ones the game's settings read and write."""
+        source = (ROOT / 'gpu' / 'shim' / 'gow3_settings.cpp').read_text(encoding='utf-8')
+        runtime = (ROOT / 'src' / 'runtime_pad.c').read_text(encoding='utf-8')
+        keys = [key for key, _title, _hint in launcher.CAMERA_MOVES]
+        self.assertEqual(len(keys), 6)
+        for key in (*keys, 'mouse_sensitivity', 'mouse_vertical_ratio', 'mouse_invert_y'):
+            self.assertIn(f'"{key}', source)
+            self.assertIn(key, launcher.INI_DEFAULTS)
+        self.assertEqual(set(launcher.MOUSE_CAMERA), set(keys))
+        self.assertEqual({k for k, v in launcher.MOUSE_CAMERA.items() if v == '1'}, {'camera_suggest', 'camera_keepout'})
+        for name in launcher.MOUSE_BUTTON_NAMES:  # every mouse button the launcher offers, the runtime reads
+            self.assertIn(f'"{name}"', runtime)
 
     def test_new_default_patches_start_on(self):
         from patches import game_profile

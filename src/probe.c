@@ -698,25 +698,34 @@ static void install_debug_menu_trace(Segment *segments, uint64_t count, uint64_t
     printf("Debug menu trace: unavailable (not an analysed MediEvil eboot: 01.00 or 01.02)\n");
 }
 
-/* MediEvil mouse yaw (src/mouse_hook.h; study-mouse-input.md, step 5): with GOW3_MOUSE=1 the mouse's
- * x counts x GOW3_MOUSE_YAW degrees (default 0.022; negative turns the other way, 0 off) go where the
- * stick's turn goes, in Dan's TurnRate handler: into the stick-turn local the AddControllerYawInput call
- * reads (/ InputYawScale 2.5: control yaw, which turns the camera while Dan stands), put back after the
- * call, and into the camera manager's InputRotation (/ 2: the camera areas add InputRotation x 2 degrees
- * a tick while Dan moves). Nothing is added while the handler's AllowUserCameraControl is false, and
- * counts are dropped when the handler was not called for 100 ms (menus, cutscenes, pauses). A bytecode
- * check that fails turns it off with one log line. Logs every 5 s. */
+/* MediEvil mouse look's camera lock (src/mouse_hook.h; study-mouse-input.md, step 5): AddControllerYawInput's
+ * exec is wrapped. Dan's TurnRate handler calls it once a gameplay frame, right after reading the camera
+ * area's AllowUserCameraControl; the mouse look on the camera tick (camera_look) follows that flag, and
+ * drops the mouse's counts when the handler has not run for 100 ms (menus, cutscenes, pauses). With
+ * GOW3_MOUSE_INPUT_YAW=1 the first path (T-MS6) turns the camera here instead: the mouse's x counts go
+ * into the stick-turn local the call reads (/ InputYawScale 2.5), put back after the call, and into the
+ * camera manager's InputRotation (/ 2), and camera_look leaves yaw alone. A bytecode check that fails
+ * turns it off with one log line. */
 static Ue4Native mouse_yaw_exec;
 static const MedievilMouseYawSites *mouse_yaw_site;
-static float mouse_yaw_degrees = 0.022f;
+static int mouse_input_yaw;         /* GOW3_MOUSE_INPUT_YAW=1 */
+static int mouse_look_allowed;      /* the handler's AllowUserCameraControl, last frame */
+static uint64_t mouse_look_seen_ms; /* when the handler last ran (0: never) */
+extern void gow3_mouse_look(float *yaw_degrees, float *pitch_degrees);
 #define MOUSE_YAW_INPUT_SCALE 2.5f /* APlayerController::InputYawScale (BaseGame.ini; the game keeps it) */
+static uint64_t mouse_now_ms(void) {
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return (uint64_t)now.tv_sec * 1000 + (uint64_t)now.tv_nsec / 1000000;
+}
 static int32_t ue4_property_offset(const unsigned char *script, uint32_t at) {
     const char *property;
     memcpy(&property, script + at, 8);
     return *(const int32_t *)(property + 0x44); /* UProperty::Offset_Internal */
 }
-/* Before the original exec: the stick-turn local and InputRotation to add to and the degrees, or 0
- * (not Dan's call, a check failed, no mouse, camera locked). Statistics and the 5 s log line. */
+/* Before the original exec: records the camera lock; with GOW3_MOUSE_INPUT_YAW=1 also the stick-turn local
+ * and InputRotation to add to and the degrees, or 0 (not Dan's call, a check failed, no mouse, camera
+ * locked), with its statistics and 5 s log line. */
 static float mouse_yaw_take(void *stack, float **turn, float **input_rotation) {
     static const unsigned char *checked_script;
     static const char *checked_manager;
@@ -766,22 +775,25 @@ static float mouse_yaw_take(void *stack, float **turn, float **input_rotation) {
         fflush(stdout);
         checked_manager = manager;
     }
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
-    const uint64_t ms = (uint64_t)now.tv_sec * 1000 + (uint64_t)now.tv_nsec / 1000000;
-    int32_t x, y;
-    runtime_mouse_take_camera(&x, &y);
+    const uint64_t ms = mouse_now_ms();
+    const unsigned char allowed = *(const unsigned char *)(locals + ue4_property_offset(script, s->call_at + 0x15));
+    mouse_look_allowed = allowed != 0;
+    mouse_look_seen_ms = ms;
+    if (!mouse_input_yaw) return 0.0f;
+    float degrees, pitch_degrees;
+    gow3_mouse_look(&degrees, &pitch_degrees);
+    int32_t x;
+    runtime_mouse_take_camera(&x, NULL);
     ++calls;
     if (ms - last_ms > 100 && x) { ++dropped; x = 0; }
     last_ms = ms;
-    const unsigned char allowed = *(const unsigned char *)(locals + ue4_property_offset(script, s->call_at + 0x15));
     if (!allowed && x) { ++gated; x = 0; }
     float *value = (float *)(manager + *(const int32_t *)(property + 0x44));
     if (ms - log_ms >= 5000) {
         if (log_ms) {
             printf("Mouse yaw: last %.1f s: %" PRIu64 " handler calls, %" PRIu64 " with mouse, %lld counts = %.1f degrees; "
                    "%" PRIu64 " dropped (stale), %" PRIu64 " camera locked; InputRotation %.3f\n",
-                   (double)(ms - log_ms) / 1000.0, calls, moved, counts, (double)counts * mouse_yaw_degrees, dropped,
+                   (double)(ms - log_ms) / 1000.0, calls, moved, counts, (double)counts * degrees, dropped,
                    gated, (double)*value);
             fflush(stdout);
         }
@@ -794,7 +806,7 @@ static float mouse_yaw_take(void *stack, float **turn, float **input_rotation) {
     counts += x;
     *turn = (float *)(locals + ue4_property_offset(script, s->call_at + 0x31));
     *input_rotation = value;
-    return (float)x * mouse_yaw_degrees;
+    return (float)x * degrees;
 }
 static ABI void mouse_yaw(void *context, void *stack, void *result) {
     float *turn = NULL, *input_rotation = NULL;
@@ -811,12 +823,8 @@ static ABI void mouse_yaw(void *context, void *stack, void *result) {
 }
 static void install_mouse_yaw(Segment *segments, uint64_t count, uint64_t size) {
     if (!runtime_mouse_enabled()) return;
-    const char *env = getenv("GOW3_MOUSE_YAW");
-    if (env && env[0]) mouse_yaw_degrees = strtof(env, NULL);
-    if (mouse_yaw_degrees == 0.0f) {
-        printf("Mouse yaw: off (GOW3_MOUSE_YAW=0)\n");
-        return;
-    }
+    const char *env = getenv("GOW3_MOUSE_INPUT_YAW");
+    mouse_input_yaw = env && strcmp(env, "1") == 0;
     const MedievilMouseYawSites *s = medievil_mouse_yaw_find(image, size);
     if (!s || !mapped(segments, count, s->slot, 8)) {
         printf("Mouse yaw: unavailable (not an analysed MediEvil eboot: 01.00 or 01.02)\n");
@@ -826,8 +834,8 @@ static void install_mouse_yaw(Segment *segments, uint64_t count, uint64_t size) 
     mouse_yaw_exec = (Ue4Native)(uintptr_t)(image + s->exec);
     const uint64_t wrapper = (uint64_t)(uintptr_t)mouse_yaw;
     memcpy(image + s->slot, &wrapper, 8);
-    printf("Mouse yaw: AddControllerYawInput wrapped (game build %s, %.4f degrees per count)\n", s->build,
-           (double)mouse_yaw_degrees);
+    printf("Mouse yaw: AddControllerYawInput wrapped (game build %s; %s)\n", s->build,
+           mouse_input_yaw ? "yaw on the input path, GOW3_MOUSE_INPUT_YAW=1" : "the camera lock for mouse look");
 }
 
 /* MediEvil camera moves (src/camera_hook.h; study-camera-moves.md): the menu's Controls tab turns each
@@ -850,6 +858,117 @@ static int camera_searched_count;
 static uint32_t camera_found;
 static const char *const camera_move_names[MEDIEVIL_CAMERA_MOVES] = {"follow", "swing", "suggest", "keepout",
                                                                       "run_zoom", "pitch_return"};
+
+/* Mouse look (GOW3_MOUSE=1; study-camera-moves.md section 8): on the camera tick in a free area (a class
+ * whose pitch properties were found), before ComputeCameraSimple runs, the mouse's counts since the last
+ * tick turn this frame's rotation, its second argument: yaw + x x sensitivity (the camera manager then
+ * sets control yaw from the result, so it holds), pitch + y x sensitivity x ratio (forward looks up),
+ * clamped as the stick's is and kept in the area's Target / Smoothed pitch so the next tick starts there.
+ * Both axes are read at the same moment, as late as the camera allows. Counts are dropped outside free
+ * areas, while the area forbids camera control (the yaw hook's flag) and when Dan's handler or the camera
+ * tick has not run for 100 ms. Logs every 5 s. */
+typedef struct {
+    const char *cls;
+    int32_t target, smoothed, effective, max, min;
+} CameraLook;
+static CameraLook camera_looks[8];
+static int camera_look_count;
+
+/* The pitch properties around a free area's pitch_return jump (camera_hook.h), each a 4-byte property of
+ * `cls` or a parent; a new table entry, or a log line saying why not. */
+static void camera_look_class(const char *cls, const unsigned char *script, int32_t size, int32_t jump) {
+    MedievilCameraPitch p;
+    if (!medievil_camera_pitch(script, size, jump, &p)) {
+        printf("Mouse look: no pitch in class %p (its ubergraph is not the layout we know)\n", (const void *)cls);
+        return;
+    }
+    const uint64_t properties[5] = {p.target, p.smoothed, p.effective, p.max, p.min};
+    int32_t offsets[5];
+    for (int i = 0; i < 5; ++i) {
+        const char *property = (const char *)(uintptr_t)properties[i];
+        const char *owner = *(const char *const *)(property + 0x20);
+        const char *c = cls;
+        for (int depth = 0; c && c != owner && depth < 16; ++depth) c = *(const char *const *)(c + 0x30);
+        if (c != owner || *(const int32_t *)(property + 0x34) != 4) {
+            printf("Mouse look: no pitch in class %p (property %d is not a float of the area)\n", (const void *)cls, i);
+            return;
+        }
+        offsets[i] = *(const int32_t *)(property + 0x44);
+    }
+    if (camera_look_count == (int)(sizeof(camera_looks) / sizeof(camera_looks[0]))) return;
+    camera_looks[camera_look_count++] = (CameraLook){cls, offsets[0], offsets[1], offsets[2], offsets[3], offsets[4]};
+    printf("Mouse look: pitch found (class %p: target +%#x, shown +%#x, base +%#x, max +%#x, min +%#x)\n",
+           (const void *)cls, offsets[0], offsets[1], offsets[2], offsets[3], offsets[4]);
+}
+
+static void camera_look(const void *stack) {
+    static uint64_t last_ms, log_ms, ticks, moved, locked, dropped, clamped;
+    static long long counts_x, counts_y;
+    static double pitch_moved;
+    if (!runtime_mouse_enabled()) return;
+    const char *frame = stack;
+    const char *node = *(const char *const *)(frame + 0x10), *object = *(const char *const *)(frame + 0x18);
+    const uint64_t ms = mouse_now_ms();
+    int32_t x = 0, y = 0;
+    runtime_mouse_take_camera(mouse_input_yaw ? NULL : &x, &y);
+    ++ticks;
+    const char *area = node ? *(const char *const *)(node + 0x20) : NULL;
+    const CameraLook *look = NULL;
+    for (int i = 0; i < camera_look_count; ++i)
+        if (camera_looks[i].cls == area) look = &camera_looks[i];
+    const int stale = ms - last_ms > 100 || !mouse_look_seen_ms || ms - mouse_look_seen_ms > 100;
+    last_ms = ms;
+    if ((x || y) && (stale || !look || !object)) { ++dropped; x = y = 0; }
+    if ((x || y) && !mouse_look_allowed) { ++locked; x = y = 0; }
+    if (x || y) {
+        const unsigned char *code = *(const unsigned char *const *)(frame + 0x20);
+        const char *locals = *(const char *const *)(frame + 0x28);
+        const uint64_t local = code && locals ? medievil_camera_rotation_local(code) : 0;
+        const char *rotation_property = (const char *)(uintptr_t)local;
+        if (!local || *(const char *const *)(rotation_property + 0x20) != node ||
+            *(const int32_t *)(rotation_property + 0x34) != 12) {
+            ++dropped; /* not the ComputeCameraSimple call we know */
+        } else {
+            float *rotation = (float *)(locals + *(const int32_t *)(rotation_property + 0x44)); /* pitch, yaw, roll */
+            float yaw_degrees, pitch_degrees;
+            gow3_mouse_look(&yaw_degrees, &pitch_degrees);
+            rotation[1] += (float)x * yaw_degrees;
+            if (y) {
+                char *base = (char *)object;
+                float *target = (float *)(base + look->target), *shown = (float *)(base + look->smoothed);
+                const float effective = *(const float *)(base + look->effective);
+                const float max = *(const float *)(base + look->max), min = *(const float *)(base + look->min);
+                const float before = *target + effective, wanted = before - (float)y * pitch_degrees;
+                const float after = wanted > max ? max : wanted < min ? min : wanted;
+                const float applied = after - before;
+                if (after != wanted) ++clamped;
+                *target += applied;
+                *shown += applied;
+                rotation[0] += applied;
+                pitch_moved += applied;
+            }
+            ++moved;
+            counts_x += x;
+            counts_y += y;
+        }
+    }
+    if (ms - log_ms >= 5000) {
+        if (log_ms) {
+            float yaw_degrees, pitch_degrees;
+            gow3_mouse_look(&yaw_degrees, &pitch_degrees);
+            printf("Mouse look: last %.1f s: %" PRIu64 " camera ticks, %" PRIu64 " with mouse; x %lld counts = %.1f "
+                   "degrees, y %lld counts, pitch moved %.1f degrees (%" PRIu64 " ticks at a limit); %" PRIu64
+                   " dropped, %" PRIu64 " camera locked; %.4f degrees per count, vertical %.4f\n",
+                   (double)(ms - log_ms) / 1000.0, ticks, moved, counts_x, (double)counts_x * yaw_degrees, counts_y,
+                   pitch_moved, clamped, dropped, locked, (double)yaw_degrees, (double)pitch_degrees);
+            fflush(stdout);
+        }
+        log_ms = ms;
+        ticks = moved = locked = dropped = clamped = 0;
+        counts_x = counts_y = 0;
+        pitch_moved = 0.0;
+    }
+}
 
 /* The first visit of (class, where); later visits and a full table return 0. */
 static int camera_first_visit(const char *cls, int where) {
@@ -898,6 +1017,11 @@ static int camera_search(const char *cls, const char *function_class, int where,
         const MedievilCameraEdit *d = &medievil_camera_edits[e];
         if (d->where == where && d->together && (count[e] != 1 || other[e])) incomplete[d->move] = 1;
     }
+    /* Mouse look's pitch properties sit next to the pitch_return jump (the pattern's second byte). */
+    for (int e = 0; e < MEDIEVIL_CAMERA_EDITS; ++e)
+        if (where == MEDIEVIL_CAMERA_IN_AREA && medievil_camera_edits[e].move == MEDIEVIL_CAMERA_PITCH_RETURN &&
+            count[e] == 1 && runtime_mouse_enabled())
+            camera_look_class(cls, script_of[e], size_of[e], (int32_t)(found[e] - script_of[e]) + 1);
     int added = 0;
     for (int e = 0; e < MEDIEVIL_CAMERA_EDITS; ++e) {
         const MedievilCameraEdit *d = &medievil_camera_edits[e];
@@ -978,6 +1102,7 @@ static void camera_update(const void *stack) {
 }
 static ABI void camera_simple(void *context, void *stack, void *result) {
     camera_update(stack);
+    camera_look(stack);
     camera_simple_exec(context, stack, result);
 }
 static void install_camera_moves(Segment *segments, uint64_t count, uint64_t size) {
