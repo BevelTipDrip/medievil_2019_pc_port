@@ -123,6 +123,11 @@ frame map / U2 view is). Periodic counter lines follow `GOW3_FPS_LOG=0`.
 
 ## History and pitfalls
 
+- F3 (`330a5e0`): with an upscaler on, the rasterizer's hook walked every texture and buffer of every draw:
+  ~115-124 us a frame on stage B, worst frames 0.3-0.6 ms (T-F3, `GOW3_UPSCALER_STATS=1`), which cost the lows at
+  237 FPS. Now the walk is only for compute dispatches and the TAA draws: ~52 us with the stats' own clock reads
+  (T-F4), worst frames 4.7-5.2 ms instead of 5.2-5.8. Verified.
+
 - F1 (2026-11-12, branch `fsr`, plan-fsr.md step 1): the front end is generic, `Ue4Upscaler` in
   vk_ue4_upscaler.{h,cpp} (renamed from vk_ue4_dlss.*); DLSS is one backend (`DlssBackend`: context and evaluation
   only), FSR comes next. The hooks exist on every GPU (no longer only with the DLSS DLLs; `GOW3_UE4_HOOKS=0` removes

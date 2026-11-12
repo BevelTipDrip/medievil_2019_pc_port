@@ -97,3 +97,8 @@ T-F3 (`9bb4d1f`, research/docs/data/upscaler-stats-t-f3.log, map screen, 50%): p
 spikes about 5.2 ms (the user; the log's worst frames 5.2-5.8 ms). Found: the hook's texture and buffer walk on every
 draw is the cost. Fix built (F3): the walk only for compute dispatches and the TAA draws (by hash); every other draw
 is told apart by its targets. To check: the same stats line, and the lows against TAA.
+
+T-F4 (`330a5e0`, research/docs/data/upscaler-stats-t-f4.log up to the user's level load; map screen, 50%): the hook
+~52 us a frame for FSR and DLSS (from ~115 / ~124), worst 200-450 us per 5 s (from 290-570); the log's worst frames
+4.7-5.2 ms (from 5.2-5.8). Part of the 52 us is the stats' own two clock reads on ~800 draws. The user: the small
+spikes left are the base game's (a work-queue item). Fix verified.
