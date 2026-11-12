@@ -12,6 +12,8 @@
 #include <cstring>
 #include <mutex>
 #include <string_view>
+#include <thread>
+#include <utility>
 #include <vector>
 
 #include <SDL3/SDL.h>
@@ -74,7 +76,6 @@ namespace {
 std::mutex imgui_mutex; // the ImGui context: window thread (input) and present thread
 bool initialized = false;
 std::atomic<bool> menu_open{false};
-bool r3_down = false, l2_down = false;
 std::atomic<bool> loading{false};
 std::atomic<u32> loading_done{0}, loading_total{0};
 std::atomic<u32> background_done{0}, background_total{0};
@@ -89,15 +90,17 @@ std::string choice_title;
 std::vector<std::string> choice_items;
 std::vector<std::string> choice_details, choice_more; // per item; empty: the plain list
 bool choice_expanded = false;                           // Square: `more` in place of `details`
-// The game's menu look for the list with details (SetChoiceStyle): images become textures on the
-// present thread (UpdateChoiceTextures); both fonts and all textures, or the plain look.
+// The game's menu look for the list with details and the settings menu (SetChoiceStyle): images
+// become textures on the present thread (UpdateChoiceTextures); both fonts and all textures, or the
+// plain look.
+enum StyleImage { StyleFrame, StyleCross, StyleCircle, StyleSquare, StyleL1, StyleR1, StyleImageCount };
 struct ChoiceStyle {
-    Gow3Png::Image pending[4]; // frame, cross, circle, square
-    ImTextureData* textures[4] = {};
+    Gow3Png::Image pending[StyleImageCount];
+    ImTextureData* textures[StyleImageCount] = {};
     ImFont* title = nullptr;
     ImFont* text = nullptr;
     bool Ready() const {
-        return title && text && textures[0] && textures[1] && textures[2] && textures[3];
+        return title && text && std::all_of(std::begin(textures), std::end(textures), [](auto* t) { return t; });
     }
 } choice_style;
 int choice_index = 0;
@@ -128,12 +131,15 @@ void ApplyRenderScale(bool now) {
     Gow3Settings::RequestRenderScale(Gow3Settings::Get().render_scale);
 }
 
+bool menu_buttons_fresh = false; // the menu just opened: buttons held now wait for release (MenuButtons)
+
 void SetOpen(bool value) {
     if (menu_open.exchange(value) == value) {
         return;
     }
     if (value) {
         requested_tab = Gow3Settings::Get().menu_tab;
+        menu_buttons_fresh = true;
     }
     if (!value) {
         ApplyRenderScale(true);
@@ -153,6 +159,51 @@ SDL_Keycode MenuKey() {
         return chosen != SDLK_UNKNOWN ? chosen : SDLK_INSERT;
     }();
     return key;
+}
+
+// The gamepad buttons that open the menu together (raw SDL buttons, not the game's binds): GOW3_MENU_PAD,
+// SDL gamepad names joined by '+' ("back+start", "paddle1", "lefttrigger+rightstick"), all held. R3+L2
+// without it or for a name SDL does not know (L3+R3 is a game action in God of War III).
+static_assert(SDL_GAMEPAD_BUTTON_COUNT <= 32);
+struct MenuPadCombo {
+    uint32_t buttons = 0;  // bits by SDL_GamepadButton
+    unsigned triggers = 0; // 1 left, 2 right
+    std::string name;      // for the title and the log
+    bool Held(uint32_t held, unsigned triggers_held) const {
+        return (held & buttons) == buttons && (triggers_held & triggers) == triggers;
+    }
+};
+
+const MenuPadCombo& MenuPad() {
+    static const MenuPadCombo combo = [] {
+        const MenuPadCombo r3_l2{1u << SDL_GAMEPAD_BUTTON_RIGHT_STICK, 1u, "R3+L2"};
+        const char* env = std::getenv("GOW3_MENU_PAD");
+        if (!env || !env[0]) {
+            return r3_l2;
+        }
+        MenuPadCombo combo{0, 0, env};
+        const std::string_view spec(env);
+        for (size_t begin = 0; begin <= spec.size();) {
+            const size_t end = std::min(spec.find('+', begin), spec.size());
+            std::string name(spec.substr(begin, end - begin));
+            name.erase(0, name.find_first_not_of(' '));
+            name.erase(name.find_last_not_of(' ') + 1);
+            const SDL_GamepadAxis axis = SDL_GetGamepadAxisFromString(name.c_str());
+            const SDL_GamepadButton button = SDL_GetGamepadButtonFromString(name.c_str());
+            if (axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER || axis == SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) {
+                combo.triggers |= axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER ? 1u : 2u;
+            } else if (button != SDL_GAMEPAD_BUTTON_INVALID) {
+                combo.buttons |= 1u << button;
+            } else {
+                std::printf("Overlay: GOW3_MENU_PAD=%s: '%s' is no gamepad button; R3+L2 opens the menu\n", env,
+                            name.c_str());
+                return r3_l2;
+            }
+            begin = end + 1;
+        }
+        return combo;
+    }();
+    return combo;
 }
 
 ImGuiKey KeyFromSdl(SDL_Keycode key) {
@@ -184,24 +235,6 @@ ImGuiKey KeyFromSdl(SDL_Keycode key) {
     }
 }
 
-ImGuiKey KeyFromGamepad(u8 button) {
-    switch (button) {
-    case SDL_GAMEPAD_BUTTON_SOUTH: return ImGuiKey_GamepadFaceDown;
-    case SDL_GAMEPAD_BUTTON_EAST: return ImGuiKey_GamepadFaceRight;
-    case SDL_GAMEPAD_BUTTON_WEST: return ImGuiKey_GamepadFaceLeft;
-    case SDL_GAMEPAD_BUTTON_NORTH: return ImGuiKey_GamepadFaceUp;
-    case SDL_GAMEPAD_BUTTON_DPAD_UP: return ImGuiKey_GamepadDpadUp;
-    case SDL_GAMEPAD_BUTTON_DPAD_DOWN: return ImGuiKey_GamepadDpadDown;
-    case SDL_GAMEPAD_BUTTON_DPAD_LEFT: return ImGuiKey_GamepadDpadLeft;
-    case SDL_GAMEPAD_BUTTON_DPAD_RIGHT: return ImGuiKey_GamepadDpadRight;
-    case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER: return ImGuiKey_GamepadL1;
-    case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER: return ImGuiKey_GamepadR1;
-    case SDL_GAMEPAD_BUTTON_START: return ImGuiKey_GamepadStart;
-    case SDL_GAMEPAD_BUTTON_BACK: return ImGuiKey_GamepadBack;
-    default: return ImGuiKey_None;
-    }
-}
-
 float PixelDensity(SDL_WindowID id) {
     SDL_Window* window = SDL_GetWindowFromID(id);
     const float density = window ? SDL_GetWindowPixelDensity(window) : 1.0f;
@@ -217,31 +250,162 @@ void Store(std::atomic<T>& target, T value, bool changed) {
     }
 }
 
-void Checkbox(const char* label, std::atomic<bool>& value) {
-    bool v = value;
-    const bool changed = ImGui::Checkbox(label, &v);
-    Store(value, v, changed);
-}
-
-// A combo over `count` labels storing an index or a value from `values`.
-void Choice(const char* label, std::atomic<int>& target, const char* const* labels, const int* values,
-            int count) {
-    int current = 0;
-    for (int i = 0; i < count; ++i) {
-        if ((values ? values[i] : i) == target.load()) current = i;
-    }
-    if (ImGui::Combo(label, &current, labels, count)) {
-        Store(target, values ? values[current] : current, true);
-    }
-}
-
-// The note for the item under the mouse or the gamepad/keyboard focus, shown in the footer.
+// The help of the focused row (pad, keys or the mouse over it), shown in the footer.
 const char* footer_help = nullptr;
 
-void Help(const char* text) {
-    if (text && (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) || ImGui::IsItemFocused())) {
-        footer_help = text;
+constexpr int TabCount = 5;
+
+// The PS4 buttons the menu reads (the runtime's bits, runtime_pad.c menu_buttons).
+namespace Ps4 {
+constexpr uint32_t Up = 0x10, Right = 0x20, Down = 0x40, Left = 0x80, L1 = 0x400, R1 = 0x800, Circle = 0x2000,
+                   Cross = 0x4000, Directions = Up | Right | Down | Left;
+}
+
+// Pad and keyboard navigation of the menu (research/docs/plan-settings-menu.md): the rows a tab draws are
+// numbered in order; the focused one is highlighted, shows its help, takes left / right (changes its
+// value) and Cross (changes it, or presses it) and is scrolled into view when the pad or keys moved the
+// focus. The mouse focuses the row it moves over. ImGui's own navigation is off (Init).
+struct MenuNav {
+    int focus[TabCount] = {}; // the focused row of each tab, kept while the menu is closed
+    int tab = 0;              // the tab being drawn
+    int rows = 0;             // rows drawn so far this frame
+    int last_rows = 0;        // rows drawn in the last frame (the pinned restart row included)
+    int body_rows = 0;        // of those, the tab's own (scrolled)
+    int move = 0, step = 0;   // up / down and left / right since the last frame
+    bool press = false;       // Cross since the last frame
+    bool reveal = false;      // scroll the focused row into view
+    bool in_body = false;     // drawing the scrolled body
+} nav;
+
+int& Focus() {
+    return nav.focus[nav.tab];
+}
+
+// Whether the next row drawn has the focus.
+bool NextRowFocused() {
+    return nav.rows == Focus();
+}
+
+// What a press of the menu's buttons does (MenuButtons; SDL events when the runtime gave no input).
+void MenuPress(uint32_t pressed) {
+    nav.move += (pressed & Ps4::Up) ? -1 : (pressed & Ps4::Down) ? 1 : 0;
+    nav.step += (pressed & Ps4::Left) ? -1 : (pressed & Ps4::Right) ? 1 : 0;
+    nav.press |= (pressed & Ps4::Cross) != 0;
+    if (pressed & (Ps4::L1 | Ps4::R1)) {
+        const int from = requested_tab >= 0 ? requested_tab : Gow3Settings::Get().menu_tab.load();
+        requested_tab = (from + ((pressed & Ps4::R1) ? 1 : TabCount - 1)) % TabCount;
     }
+    if (pressed & Ps4::Circle) {
+        SetOpen(false);
+    }
+}
+
+// The runtime's buttons for the menu (runtime_pad.c menu_buttons: pad, keys and mouse binds as
+// mapped, fixed menu keys, the left stick as a D-pad), read every presented frame while it is open.
+std::atomic<uint32_t (*)()> menu_input{nullptr};
+
+// imgui_mutex held, before NewFrame. Presses act once; a held direction repeats after 400 ms every
+// 120 ms, left / right every 40 ms once held 1.2 s (long sliders). Buttons held when the menu opened
+// (the combo that opened it) wait for release. Nothing while a number box is typed in.
+void MenuButtons(uint32_t buttons) {
+    using Clock = std::chrono::steady_clock;
+    static uint32_t previous = 0, repeating = 0;
+    static Clock::time_point held_since{}, repeat_at{};
+    if (!menu_open) {
+        return;
+    }
+    if (menu_buttons_fresh) {
+        menu_buttons_fresh = false;
+        previous = buttons;
+        repeating = 0;
+        nav.move = nav.step = 0;
+        nav.press = false;
+        return;
+    }
+    const uint32_t pressed = buttons & ~previous;
+    previous = buttons;
+    if (ImGui::GetIO().WantTextInput) {
+        repeating = 0;
+        return;
+    }
+    const auto now = Clock::now();
+    uint32_t fire = 0;
+    if (const uint32_t directions = pressed & Ps4::Directions) {
+        repeating = directions & (~directions + 1); // one direction: the lowest bit
+        fire = repeating;
+        held_since = now;
+        repeat_at = now + std::chrono::milliseconds(400);
+    } else if (repeating && (buttons & repeating) && now >= repeat_at) {
+        fire = repeating;
+        const bool fast = (repeating & (Ps4::Left | Ps4::Right)) && now - held_since > std::chrono::milliseconds(1200);
+        repeat_at = now + std::chrono::milliseconds(fast ? 40 : 120);
+    } else if (!(buttons & repeating)) {
+        repeating = 0;
+    }
+    MenuPress(fire | (pressed & ~Ps4::Directions));
+}
+
+// Before a tab's rows: counts restart and a pending up / down moves the focus (wrapping).
+void NavStartTab(int tab) {
+    nav.tab = tab;
+    nav.rows = 0;
+    if (nav.move && nav.last_rows > 0) {
+        Focus() = ((Focus() + nav.move) % nav.last_rows + nav.last_rows) % nav.last_rows;
+        nav.reveal = true;
+    }
+    nav.move = 0;
+}
+
+// After the menu: the focus stays on a row that exists; what no row took is dropped.
+void NavEndFrame() {
+    nav.last_rows = nav.rows;
+    Focus() = nav.rows > 0 ? std::clamp(Focus(), 0, nav.rows - 1) : 0;
+    nav.move = nav.step = 0;
+    nav.press = nav.reveal = false;
+}
+
+// What the pad and keys did to a row.
+struct RowNav {
+    int step = 0;       // left / right
+    bool press = false; // Cross
+};
+
+bool LastItemEnabled() {
+    return !(ImGui::GetItemFlags() & ImGuiItemFlags_Disabled);
+}
+
+// Ends a focusable row whose rectangle is min..max: the mouse moving over it focuses it; the focused
+// row shows its help, is scrolled into view after a pad or key move (the body's first row to the top,
+// its last to the bottom, so notes under it show) and gets the pad's change if it is enabled.
+RowNav NavRow(ImVec2 min, ImVec2 max, const char* help, bool enabled) {
+    const int index = nav.rows++;
+    const ImGuiIO& io = ImGui::GetIO();
+    if ((io.MouseDelta.x != 0.0f || io.MouseDelta.y != 0.0f) && ImGui::IsMouseHoveringRect(min, max, false) &&
+        ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem)) {
+        Focus() = index;
+    }
+    RowNav result;
+    if (index != Focus()) {
+        return result;
+    }
+    footer_help = help;
+    if (nav.reveal && nav.in_body) {
+        nav.reveal = false;
+        if (index == 0) {
+            ImGui::SetScrollY(0.0f);
+        } else if (index == nav.body_rows - 1) {
+            ImGui::SetScrollY(ImGui::GetScrollMaxY());
+        } else {
+            const float margin = ImGui::GetFrameHeight();
+            ImGui::ScrollToRect(ImGui::GetCurrentWindow(), ImRect(min.x, min.y - margin, max.x, max.y + margin),
+                                ImGuiScrollFlags_KeepVisibleEdgeY);
+        }
+    }
+    if (enabled) {
+        result.step = std::exchange(nav.step, 0);
+        result.press = std::exchange(nav.press, false);
+    }
+    return result;
 }
 
 // Two-column rows: the name on the left, the control on the right.
@@ -254,9 +418,25 @@ bool BeginRows(const char* id) {
     return true;
 }
 
-void Row(const char* label) {
+void EndRows() {
+    ImGui::EndTable();
+}
+
+void Section(const char* name) {
+    ImGui::SeparatorText(name);
+}
+
+float row_top = 0.0f; // the row being drawn: its top (RowEnd)
+
+// A row: the name, then the control (PushID; PopID after it). A focusable row with the focus gets a
+// gold background.
+void Row(const char* label, bool focusable = true) {
     ImGui::TableNextRow();
+    if (focusable && NextRowFocused()) {
+        ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, IM_COL32(255, 214, 120, 48));
+    }
     ImGui::TableNextColumn();
+    row_top = ImGui::GetCursorScreenPos().y;
     ImGui::AlignTextToFramePadding();
     ImGui::TextUnformatted(label);
     ImGui::TableNextColumn();
@@ -264,22 +444,120 @@ void Row(const char* label) {
     ImGui::PushID(label);
 }
 
-void CheckRow(const char* label, std::atomic<bool>& value, const char* help = nullptr) {
-    Row(label);
-    Checkbox("##value", value);
-    Help(help);
-    ImGui::PopID();
+// Ends a row's control (the last item) as a focusable row across the window; enabled unless the last
+// item is disabled (or as `enabled` says).
+RowNav RowEnd(const char* help, int enabled = -1) {
+    const float left = ImGui::GetWindowPos().x;
+    return NavRow(ImVec2(left, row_top), ImVec2(left + ImGui::GetWindowWidth(), ImGui::GetItemRectMax().y), help,
+                  enabled < 0 ? LastItemEnabled() : enabled != 0);
 }
 
+// On / off: a checkbox. Pad: left off, right on, Cross flips. Returns whether `on` changed.
+bool ToggleRow(const char* label, bool& on, const char* help) {
+    Row(label);
+    bool changed = ImGui::Checkbox("##value", &on);
+    const RowNav in = RowEnd(help);
+    if (in.press || in.step) {
+        const bool next = in.press ? !on : in.step > 0;
+        changed |= next != on;
+        on = next;
+    }
+    ImGui::PopID();
+    return changed;
+}
+
+void CheckRow(const char* label, std::atomic<bool>& value, const char* help = nullptr) {
+    bool v = value;
+    const bool changed = ToggleRow(label, v, help);
+    Store(value, v, changed);
+}
+
+// A choice among `count` labels: `current` -1 (a value the menu does not list) shows `unlisted` until
+// changed. Returns the chosen index, -1 when unchanged. Pad: left / right step (stopping at the ends),
+// Cross the next one (wrapping).
+int ChoiceIndex(const char* label, int current, const char* const* labels, int count, const char* help,
+                const char* unlisted = "(custom)") {
+    int chosen = current;
+    const char* shown = current >= 0 && current < count ? labels[current] : unlisted;
+    Row(label);
+    if (ImGui::BeginCombo("##value", shown)) {
+        for (int i = 0; i < count; ++i) {
+            if (ImGui::Selectable(labels[i], i == current)) {
+                chosen = i;
+            }
+        }
+        ImGui::EndCombo();
+    }
+    const RowNav in = RowEnd(help);
+    if (in.step && count > 0) {
+        chosen = current < 0 ? (in.step > 0 ? 0 : count - 1) : std::clamp(current + in.step, 0, count - 1);
+    }
+    if (in.press && count > 0) {
+        chosen = current < 0 ? 0 : (current + 1) % count;
+    }
+    ImGui::PopID();
+    return chosen != current ? chosen : -1;
+}
+
+// A choice storing an index, or a value from `values`.
 void ChoiceRow(const char* label, std::atomic<int>& target, const char* const* labels, const int* values,
                int count, const char* help = nullptr) {
-    Row(label);
-    Choice("##value", target, labels, values, count);
-    Help(help);
-    ImGui::PopID();
+    int current = -1;
+    for (int i = 0; i < count; ++i) {
+        if ((values ? values[i] : i) == target.load()) current = i;
+    }
+    if (const int chosen = ChoiceIndex(label, current, labels, count, help); chosen >= 0) {
+        Store(target, values ? values[chosen] : chosen, true);
+    }
 }
 
-// A 0.1x to 100x multiplier with a 1x button.
+// Choice over a plain int index (-1: a value the menu does not list, shown until changed).
+void IndexChoiceRow(const char* label, int& value, const char* const* labels, int count, const char* help) {
+    if (const int chosen = ChoiceIndex(label, value, labels, count, help); chosen >= 0) {
+        value = chosen;
+        dirty = true;
+    }
+}
+
+// An int slider; `plus_minus` adds - / + buttons (render scale). Returns the new value. Pad: left / right
+// by `step`. `dragging`: the mouse holds the slider.
+int IntSliderRow(const char* label, int value, int lo, int hi, int step, const char* format, const char* help,
+                 bool* dragging = nullptr, bool plus_minus = false) {
+    Row(label);
+    const ImGuiStyle& style = ImGui::GetStyle();
+    const float button = ImGui::GetFrameHeight();
+    if (plus_minus) {
+        ImGui::SetNextItemWidth(-(2.0f * (button + style.ItemSpacing.x)));
+    }
+    int v = value;
+    ImGui::SliderInt("##value", &v, lo, hi, format, ImGuiSliderFlags_AlwaysClamp);
+    if (dragging) {
+        *dragging = ImGui::IsItemActive();
+    }
+    if (plus_minus) {
+        ImGui::SameLine();
+        if (ImGui::Button("-", ImVec2(button, 0.0f))) {
+            v = value - 1;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("+", ImVec2(button, 0.0f))) {
+            v = value + 1;
+        }
+    }
+    const RowNav in = RowEnd(help);
+    v += in.step * step;
+    ImGui::PopID();
+    return std::clamp(v, lo, hi);
+}
+
+void SliderRow(const char* label, std::atomic<int>& value, int lo, int hi, const char* format, const char* help,
+               int step = 1) {
+    const int v = value;
+    const int next = IntSliderRow(label, v, lo, hi, step, format, help);
+    Store(value, next, next != v);
+}
+
+// A 0.1x to 100x multiplier with a 1x button. Pad: left / right divide / multiply by 1.1, Cross 1x.
 void MultiplierRow(const char* label, std::atomic<float>& value, const char* help) {
     Row(label);
     const ImGuiStyle& style = ImGui::GetStyle();
@@ -290,18 +568,22 @@ void MultiplierRow(const char* label, std::atomic<float>& value, const char* hel
         value = Gow3Orbs::ClampMultiplier(v);
         dirty = true;
     }
-    Help(help);
     ImGui::SameLine();
-    if (ImGui::SmallButton("1x")) {
+    bool reset = ImGui::SmallButton("1x");
+    const RowNav in = RowEnd(help);
+    if (in.step) {
+        value = Gow3Orbs::ClampMultiplier(std::round(value * (in.step > 0 ? 1.1f : 1.0f / 1.1f) * 100.0f) / 100.0f);
+        dirty = true;
+    }
+    if (reset || in.press) {
         value = 1.0f;
         dirty = true;
     }
-    Help(help);
     ImGui::PopID();
 }
 
 // A float slider with a number box beside it for typing an exact value (Ctrl+click types into the slider too).
-// `clamp` keeps the stored value in range and on its steps.
+// `clamp` keeps the stored value in range and on its steps. Pad: left / right by `step`.
 void NumberRow(const char* label, std::atomic<float>& value, float lo, float hi, float step, const char* format,
                float (*clamp)(float), const char* help) {
     Row(label);
@@ -313,7 +595,6 @@ void NumberRow(const char* label, std::atomic<float>& value, float lo, float hi,
         value = clamp(v);
         dirty = true;
     }
-    Help(help);
     ImGui::SameLine();
     ImGui::SetNextItemWidth(box);
     v = value;
@@ -321,23 +602,51 @@ void NumberRow(const char* label, std::atomic<float>& value, float lo, float hi,
         value = clamp(std::round(v / step) * step);
         dirty = true;
     }
-    Help(help);
+    const RowNav in = RowEnd(help);
+    if (in.step) {
+        value = clamp(std::round((value + in.step * step) / step) * step);
+        dirty = true;
+    }
     ImGui::PopID();
+}
+
+// A row of buttons (the game resolutions): returns the one pressed, or -1. `enabled`: per button. Pad:
+// left / right pick one (outlined), Cross presses it.
+int ButtonsRow(const char* label, const char* const* labels, int count, const bool* enabled, const char* help) {
+    ImGuiStorage* storage = ImGui::GetStateStorage();
+    const ImGuiID pick_id = ImGui::GetID(label);
+    int pick = std::clamp(storage->GetInt(pick_id, 0), 0, count - 1);
+    const bool focused = NextRowFocused();
+    int pressed = -1;
+    Row(label);
+    for (int i = 0; i < count; ++i) {
+        if (i) {
+            ImGui::SameLine();
+        }
+        ImGui::BeginDisabled(!enabled[i]);
+        if (ImGui::Button(labels[i])) {
+            pressed = i;
+        }
+        ImGui::EndDisabled();
+        if (focused && i == pick) {
+            ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(),
+                                                IM_COL32(245, 196, 30, 255), ImGui::GetStyle().FrameRounding, 0,
+                                                2.0f * base_scale);
+        }
+    }
+    const RowNav in = RowEnd(help, 1);
+    pick = std::clamp(pick + in.step, 0, count - 1);
+    storage->SetInt(pick_id, pick);
+    if (in.press && enabled[pick]) {
+        pressed = pick;
+    }
+    ImGui::PopID();
+    return pressed;
 }
 
 void InfoRow(const char* label, const char* text) {
-    Row(label);
+    Row(label, false);
     ImGui::TextDisabled("%s", text);
-    ImGui::PopID();
-}
-
-void SliderRow(const char* label, std::atomic<int>& value, int lo, int hi, const char* format, const char* help) {
-    Row(label);
-    int v = value;
-    if (ImGui::SliderInt("##value", &v, lo, hi, format, ImGuiSliderFlags_AlwaysClamp)) {
-        Store(value, std::clamp(v, lo, hi), true);
-    }
-    Help(help);
     ImGui::PopID();
 }
 
@@ -379,7 +688,7 @@ bool IsGow3() {
 void GameTab() {
     auto& s = Gow3Settings::Get();
     if (!IsGow3()) {
-        ImGui::SeparatorText("Game");
+        Section("Game");
         const std::string_view serial = Common::ElfInfo::Instance().GameSerial();
         if (serial.starts_with("CUSA11227") || serial.starts_with("CUSA12982")) {
             // Issue #37: players read the generic note as "MediEvil has no cheats".
@@ -395,7 +704,7 @@ void GameTab() {
                            std::string(Common::ElfInfo::Instance().Title()).c_str());
         return;
     }
-    ImGui::SeparatorText("Cheats");
+    Section("Cheats");
     if (BeginRows("##cheats")) {
         static const char* const names[] = {"Infinite health", "Infinite magic", "Infinite item meter",
                                             "Infinite Rage of Sparta", "Max red orbs",
@@ -412,19 +721,21 @@ void GameTab() {
             CheckRow(names[cheat], s.cheats[cheat], available ? helps[cheat] : Unsupported);
             ImGui::EndDisabled();
         }
-        ImGui::EndTable();
+        EndRows();
     }
 
-    ImGui::SeparatorText("Multipliers");
-    if (ImGui::Button("Reset all to 1x")) {
-        for (auto* m : {&s.red_orb_multiplier, &s.green_orb_multiplier, &s.blue_orb_multiplier,
-                        &s.gold_orb_multiplier, &s.damage_dealt, &s.damage_taken}) {
-            *m = 1.0f;
-        }
-        dirty = true;
-    }
-    Help("Every multiplier back to 1x (the game's normal values).");
+    Section("Multipliers");
     if (BeginRows("##multipliers")) {
+        static const char* const reset[] = {"Reset all to 1x"};
+        static const bool reset_enabled[] = {true};
+        if (ButtonsRow("All multipliers", reset, 1, reset_enabled,
+                       "Every multiplier back to 1x (the game's normal values).") == 0) {
+            for (auto* m : {&s.red_orb_multiplier, &s.green_orb_multiplier, &s.blue_orb_multiplier,
+                            &s.gold_orb_multiplier, &s.damage_dealt, &s.damage_taken}) {
+                *m = 1.0f;
+            }
+            dirty = true;
+        }
         const bool max_orbs = (s.cheats_supported.load() & (1u << 4)) && s.cheats[4].load();
         ImGui::BeginDisabled(!s.red_orbs_supported.load() || max_orbs);
         MultiplierRow("Red orbs", s.red_orb_multiplier,
@@ -446,23 +757,23 @@ void GameTab() {
         MultiplierRow("Damage dealt", s.damage_dealt, damage ? damage : "Damage Kratos does to enemies.");
         MultiplierRow("Damage taken", s.damage_taken, damage ? damage : "Damage Kratos takes.");
         ImGui::EndDisabled();
-        ImGui::EndTable();
+        EndRows();
     }
 
-    ImGui::SeparatorText("HUD");
+    Section("HUD");
     if (BeginRows("##hud")) {
         ImGui::BeginDisabled(!s.actor_watch_supported.load());
         CheckRow("Enemy health bar", s.enemy_health_bar,
                  s.actor_watch_supported.load() ? "A thin bar at the top for the last enemy hit." : Unsupported);
         ImGui::EndDisabled();
-        ImGui::EndTable();
+        EndRows();
     }
 }
 
 // Controls: the free camera's automatic moves (src/camera_hook.h), each live. Ticked = the game's camera.
 void ControlsTab() {
     auto& s = Gow3Settings::Get();
-    ImGui::SeparatorText("Mouse");
+    Section("Mouse");
     static const bool mouse_on = [] {
         const char* env = std::getenv("GOW3_MOUSE");
         return env && std::strcmp(env, "1") == 0;
@@ -482,9 +793,9 @@ void ControlsTab() {
                   Gow3Settings::MouseRatioMax, 0.01f, "%.2f", Gow3Settings::ClampMouseRatio,
                   "Vertical sensitivity as a share of the horizontal one: below 1, up and down turns less.");
         CheckRow("Invert vertical", s.mouse_invert_y, "Pushing the mouse forward looks down instead of up.");
-        ImGui::EndTable();
+        EndRows();
     }
-    ImGui::SeparatorText("Advanced camera");
+    Section("Advanced camera");
     const uint32_t found = s.camera_found.load();
     ImGui::PushTextWrapPos(0.0f);
     if (!s.camera_hook.load()) {
@@ -515,25 +826,25 @@ void ControlsTab() {
                      seen || !s.camera_hook.load() ? hints[move]
                                                    : "Not found yet: applies once its camera area has been used.");
         }
-        ImGui::EndTable();
+        EndRows();
     }
 }
 
 void ImageTab() {
     namespace G = Gow3Graphics;
     auto& s = Gow3Settings::Get();
-    ImGui::SeparatorText("Display");
+    Section("Display");
     if (BeginRows("##display")) {
         ChoiceRow("Display mode", s.display_mode, G::DisplayModeNames.data(), nullptr, G::DisplayModeCount,
                   "Windowed, borderless window or exclusive fullscreen.");
         CheckRow("VSync", s.vsync, "Waits for the monitor: no tearing, a little more input delay.");
-        ImGui::EndTable();
+        EndRows();
     }
     const int iw = s.image_width, ih = s.image_height, ww = s.window_width, wh = s.window_height;
     const bool upscaling = iw < ww && ih < wh;
     const bool downscaling = iw > ww || ih > wh;
     const bool rcas_blocked = s.rcas && !s.rcas_applied;
-    ImGui::SeparatorText("Scaling and sharpening");
+    Section("Scaling and sharpening");
     if (BeginRows("##scaling")) {
         CheckRow("Upscale with FSR 1", s.fsr1,
                  "Enlarges a smaller game image to the window. For more FPS: Render resolution 720p + FSR 1.");
@@ -545,7 +856,7 @@ void ImageTab() {
                                                "otherwise (the game's TAA, NVIDIA DLSS) the final image.");
         ImGui::EndDisabled();
         ImGui::BeginDisabled(!s.rcas || rcas_blocked);
-        SliderRow("Sharpening strength", s.rcas_strength, 0, 100, "%d%%", "How strong the sharpening is.");
+        SliderRow("Sharpening strength", s.rcas_strength, 0, 100, "%d%%", "How strong the sharpening is.", 5);
         ImGui::EndDisabled();
         {
             // The game's TAA, and the upscalers this system can run (Vulkan::Ue4Upscaler).
@@ -564,9 +875,9 @@ void ImageTab() {
                       "below it. Sharpening is off while it runs. F9 switches between them in the game. DLSS "
                       "needs an NVIDIA RTX GPU and nvngx_dlss.dll in the bin folder (see README-Windows.txt).");
         }
-        ImGui::EndTable();
+        EndRows();
     }
-    ImGui::SeparatorText("Information");
+    Section("Information");
     if (BeginRows("##image_info")) {
         char text[96];
         std::snprintf(text, sizeof(text), "%d x %d", iw, ih);
@@ -581,25 +892,8 @@ void ImageTab() {
         InfoRow("Upscaler", Vulkan::Ue4Upscaler::Running() ? text
                             : s.ue4_upscaler != 0          ? "chosen (waiting for the game's TAA)"
                                                            : "the game's TAA");
-        ImGui::EndTable();
+        EndRows();
     }
-}
-
-// Choice over a plain int index (-1: a value the menu does not list, shown until changed).
-void IndexChoiceRow(const char* label, int& value, const char* const* labels, int count, const char* help) {
-    Row(label);
-    const char* preview = value >= 0 && value < count ? labels[value] : "(custom)";
-    if (ImGui::BeginCombo("##value", preview)) {
-        for (int i = 0; i < count; ++i) {
-            if (ImGui::Selectable(labels[i], i == value)) {
-                value = i;
-                dirty = true;
-            }
-        }
-        ImGui::EndCombo();
-    }
-    Help(help);
-    ImGui::PopID();
 }
 
 // MediEvil: the 3D scene's size per side compared with the output, in 1% steps, switched live
@@ -619,29 +913,9 @@ void RenderScaleSection() {
     if (!BeginRows("##render_scale")) {
         return;
     }
-    Row("Render scale");
-    const ImGuiStyle& style = ImGui::GetStyle();
-    const float button = ImGui::GetFrameHeight();
-    ImGui::SetNextItemWidth(-(2.0f * (button + style.ItemSpacing.x)));
-    int v = s.render_scale;
-    bool changed = ImGui::SliderInt("##value", &v, lo, S::RenderScaleMax, "%d%%", ImGuiSliderFlags_AlwaysClamp);
-    const bool active = ImGui::IsItemActive();
-    Help(help);
-    ImGui::SameLine();
-    if (ImGui::Button("-", ImVec2(button, 0.0f))) {
-        v = std::max(lo, s.render_scale - 1);
-        changed = true;
-    }
-    Help(help);
-    ImGui::SameLine();
-    if (ImGui::Button("+", ImVec2(button, 0.0f))) {
-        v = std::min(int(S::RenderScaleMax), s.render_scale + 1);
-        changed = true;
-    }
-    Help(help);
-    ImGui::PopID();
-    v = std::clamp(v, lo, int(S::RenderScaleMax));
-    if (changed && v != s.render_scale) {
+    bool active = false;
+    const int v = IntSliderRow("Render scale", s.render_scale, lo, S::RenderScaleMax, 1, "%d%%", help, &active, true);
+    if (v != s.render_scale) {
         s.render_scale = v;
         dirty = true;
         render_scale_pending = true;
@@ -659,7 +933,7 @@ void RenderScaleSection() {
         std::snprintf(text, sizeof(text), "%d%%", s.live_render_scale);
     }
     InfoRow("Scene now", text);
-    ImGui::EndTable();
+    EndRows();
     if (s.render_scale > live_max) {
         ImGui::TextWrapped("%d%% applies at the next start (Apply and restart). Until then the scene stays at "
                            "%d%%: live changes go up to %d%%, the scene size the game's memory was set up for "
@@ -697,12 +971,12 @@ void PerfPatchesSection() {
         "No depth barriers between effect draws: fights' 0.1% lows 100 -> 117 at a 120 cap.",
         "Descriptors copied in one piece, samplers reused: ~0.3 ms less draw-thread work in heavy frames.",
         "Constants bound again in a command buffer reuse their first copy: heavy-area 0.1% lows ~145 -> ~185."};
-    ImGui::SeparatorText("Performance patches");
+    Section("Performance patches");
     if (BeginRows("##perf_live")) {
         for (int p = 0; p < S::PerfCount; ++p) {
             if (S::PerfLive[p]) CheckRow(titles[p], s.perf[p], hints[p]);
         }
-        ImGui::EndTable();
+        EndRows();
     }
     // The live ones in the memory runtime (src/runtime_memory.c); the buffer cache reads its own.
     runtime_memory_set_perf(s.perf[S::PerfLockfreeMemory] ? 1 : 0, s.perf[S::PerfCheapFrees] ? 1 : 0);
@@ -717,14 +991,14 @@ void PerfPatchesSection() {
         for (int p = 0; p < S::PerfCount; ++p) {
             if (!S::PerfLive[p]) CheckRow(titles[p], s.perf[p], hints[p]);
         }
-        ImGui::EndTable();
+        EndRows();
     }
 }
 
 void PerformanceTab() {
     namespace G = Gow3Graphics;
     auto& s = Gow3Settings::Get();
-    ImGui::SeparatorText("Live");
+    Section("Live");
     if (BeginRows("##live")) {
         static const char* const fps_labels[] = {"Auto: refresh (VRR: below it, Reflex rule)",
                                                  "Auto: half refresh (VRR: one below)", "30", "60", "119 (VRR, 240 Hz)",
@@ -751,12 +1025,12 @@ void PerformanceTab() {
                   int(G::FramesQueued.size()), "More frames queued: steadier FPS, slower response to input.");
         CheckRow("Compile new shaders in the background", s.async_shaders,
                  "Fewer stutters in new areas; an object or effect may appear a moment later.");
-        ImGui::EndTable();
+        EndRows();
     }
     if (!IsGow3()) {
         // MediEvil: the game's own resolution, switched live (as its debug menu does). The debug
         // menu's gamepad navigation needs 1080p: switch there for cheats, then back.
-        ImGui::SeparatorText("Game resolution now");
+        Section("Game resolution now");
         static constexpr const char* labels[] = {"1080p", "1440p", "1800p", "4K"};
         static constexpr const char* values[] = {"1920x1080", "2560x1440", "3200x1800", "3840x2160"};
         // Render scales above 100% supersample (r.ScreenPercentage up to 200): a larger output on
@@ -764,15 +1038,14 @@ void PerformanceTab() {
         // crash). Those keep 1080p here.
         // A live render scale stays at or below the start's when that is above 100% (RequestRenderScale).
         const bool supersampling = s.startup_render_scale > 100;
-        for (int i = 0; i < 4; ++i) {
-            if (i) {
-                ImGui::SameLine();
+        if (BeginRows("##game_resolution")) {
+            const bool enabled[] = {true, !supersampling, !supersampling, !supersampling};
+            if (const int pressed = ButtonsRow("Switch the output to", labels, 4, enabled,
+                                               "The game's output size now, until the next start.");
+                pressed >= 0) {
+                runtime_ue4_request_setres(values[pressed]);
             }
-            ImGui::BeginDisabled(supersampling && i > 0);
-            if (ImGui::Button(labels[i])) {
-                runtime_ue4_request_setres(values[i]);
-            }
-            ImGui::EndDisabled();
+            EndRows();
         }
         ImGui::TextWrapped("%s", supersampling
                                      ? "Unavailable when the game started with a render scale above 100% (the "
@@ -782,7 +1055,7 @@ void PerformanceTab() {
                                        "below is the size it starts at). Use 1080p for the debug menu (R3), then "
                                        "switch back.");
         // UE4 console variables switched live (src/runtime_extra.c), kept in medievil.ini.
-        ImGui::SeparatorText("Applied now");
+        Section("Applied now");
         RenderScaleSection();
         if (BeginRows("##live")) {
             const bool preshadows = s.preshadows;
@@ -810,20 +1083,16 @@ void PerformanceTab() {
                 static const char* const quality_labels[] = {"Ultra", "High", "Console (PS4)", "Medium",
                                                              "Low (integrated graphics)", "Deck Optimized"};
                 const int matched = S::UE4MatchedLevel(s, s.ue4_quality);
-                Row("Graphics quality");
-                if (ImGui::BeginCombo("##value", matched >= 0 ? quality_labels[matched] : "Custom")) {
-                    for (int level = 0; level < int(std::size(S::UE4QualityKeys)); ++level) {
-                        if (ImGui::Selectable(quality_labels[level], level == matched)) {
-                            S::UE4ApplyLevel(level);
-                            dirty = true;
-                        }
-                    }
-                    ImGui::EndCombo();
+                const int level = ChoiceIndex(
+                    "Graphics quality", matched, quality_labels, int(std::size(S::UE4QualityKeys)),
+                    "Sets every graphics setting: Console is exactly the PS4, High and Ultra go beyond it, "
+                    "Medium and Low are for integrated graphics. Custom: some settings changed by hand. "
+                    "The settings under \"Applied on restart\" take effect at the next start.",
+                    "Custom");
+                if (level >= 0) {
+                    S::UE4ApplyLevel(level);
+                    dirty = true;
                 }
-                Help("Sets every graphics setting: Console is exactly the PS4, High and Ultra go beyond it, "
-                     "Medium and Low are for integrated graphics. Custom: some settings changed by hand. "
-                     "The settings under \"Applied on restart\" take effect at the next start.");
-                ImGui::PopID();
             }
             for (int o = 0; o < Gow3Settings::UE4LiveCount; ++o) {
                 const auto& option = Gow3Settings::UE4LiveOptions[o];
@@ -834,10 +1103,10 @@ void PerformanceTab() {
                     Gow3Settings::RequestUE4Live(o, s.ue4_live[o]);
                 }
             }
-            ImGui::EndTable();
+            EndRows();
         }
     }
-    ImGui::SeparatorText("Applied on restart");
+    Section("Applied on restart");
     if (BeginRows("##restart")) {
         if (IsGow3()) {
             // God of War III: a resolution patch.
@@ -871,11 +1140,23 @@ void PerformanceTab() {
                 }
             }
         }
-        ImGui::EndTable();
+        EndRows();
     }
     if (!IsGow3()) {
         PerfPatchesSection();
     }
+}
+
+// The performance overlay as it will look, at its own font size (Font size: overlay_scale).
+void OverlayPreview() {
+    const auto& s = Gow3Settings::Get();
+    ImGui::TextDisabled("Preview");
+    ImGui::BeginChild("##preview", ImVec2(0, 0), ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY);
+    ImGui::SetWindowFontScale(s.overlay_scale / 100.0f);
+    const std::string text = OverlayText();
+    ImGui::TextUnformatted(text.empty() ? "(nothing selected)" : text.c_str());
+    ImGui::SetWindowFontScale(1.0f);
+    ImGui::EndChild();
 }
 
 void OverlayTab() {
@@ -883,44 +1164,36 @@ void OverlayTab() {
     auto& s = Gow3Settings::Get();
     if (BeginRows("##overlay_on")) {
         CheckRow("Show overlay", s.show_fps, "The performance overlay in a corner of the screen.");
-        ImGui::EndTable();
+        EndRows();
     }
     ImGui::BeginDisabled(!s.show_fps);
-    ImGui::SeparatorText("What to show");
-    if (ImGui::BeginTable("##overlay_items", 2, ImGuiTableFlags_SizingStretchProp)) {
-        ImGui::TableNextColumn();
+    Section("What to show");
+    if (BeginRows("##overlay_items")) {
         static const char* const names[] = {"FPS", "Frametime", "Upscaler", "GPU (name and use)", "CPU (game)",
                                             "RAM (game / total)", "VRAM (used / available)"};
         for (unsigned item = 0; item < 7; ++item) {
             const unsigned bit = 1u << item;
             bool on = (s.overlay_items & bit) != 0;
-            if (ImGui::Checkbox(names[item], &on)) {
+            if (ToggleRow(names[item], on, "Shown in the performance overlay.")) {
                 s.overlay_items = on ? (s.overlay_items | bit) : (s.overlay_items & ~bit);
                 dirty = true;
             }
         }
-        ImGui::TableNextColumn();
-        ImGui::TextDisabled("Preview");
-        ImGui::BeginChild("##preview", ImVec2(0, 0), ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY);
-        ImGui::SetWindowFontScale(s.overlay_scale / 100.0f);
-        const std::string text = OverlayText();
-        ImGui::TextUnformatted(text.empty() ? "(nothing selected)" : text.c_str());
-        ImGui::SetWindowFontScale(1.0f);
-        ImGui::EndChild();
-        ImGui::EndTable();
+        EndRows();
     }
-    ImGui::SeparatorText("Appearance");
+    OverlayPreview();
+    Section("Appearance");
     if (BeginRows("##appearance")) {
-        SliderRow("Font size", s.overlay_scale, 50, 300, "%d%%", "Size of the overlay text.");
+        SliderRow("Font size", s.overlay_scale, 50, 300, "%d%%", "Size of the overlay text.", 10);
         static const char* const corners[] = {"Top left", "Top right", "Bottom left", "Bottom right"};
         ChoiceRow("Corner", s.overlay_corner, corners, nullptr, 4, "Where the overlay sits.");
-        SliderRow("Background opacity", s.overlay_opacity, 0, 100, "%d%%", "0% is no background.");
+        SliderRow("Background opacity", s.overlay_opacity, 0, 100, "%d%%", "0% is no background.", 5);
         static const char* const layouts[] = {"One line", "One item per line"};
         ChoiceRow("Layout", s.overlay_layout, layouts, nullptr, 2, "Items side by side or stacked.");
-        ImGui::EndTable();
+        EndRows();
     }
     ImGui::EndDisabled();
-    ImGui::SeparatorText("About");
+    Section("About");
     if (BeginRows("##about")) {
         const auto& elf = Common::ElfInfo::Instance();
         char text[160];
@@ -946,7 +1219,7 @@ void OverlayTab() {
         add(s.damage_supported.load(), "damage");
         add(s.actor_watch_supported.load(), "enemy health");
         InfoRow("Game hooks", hooks.empty() ? "none" : hooks.c_str());
-        ImGui::EndTable();
+        EndRows();
     }
 }
 
@@ -954,9 +1227,50 @@ int RestartChanges() {
     return Gow3Settings::RestartChanges();
 }
 
-void Menu() {
+// The tab's content.
+void TabBody(int tab) {
+    nav.in_body = true;
+    switch (tab) {
+    case 0: GameTab(); break;
+    case 1: ControlsTab(); break;
+    case 2: ImageTab(); break;
+    case 3: PerformanceTab(); break;
+    default: OverlayTab(); break;
+    }
+    nav.in_body = false;
+    nav.body_rows = nav.rows;
+}
+
+// "Apply and restart" asks for a second press within 3 s: it ends the game without saving.
+std::chrono::steady_clock::time_point restart_armed{};
+
+bool RestartArmed() {
+    return std::chrono::steady_clock::now() < restart_armed;
+}
+
+void RestartPressed() {
+    if (!RestartArmed()) {
+        restart_armed = std::chrono::steady_clock::now() + std::chrono::seconds(3);
+        return;
+    }
+    // The new launch confirms the options once the game shows; run.py restores the
+    // previous ones if it never does (restart_unconfirmed).
+    Gow3Settings::Get().restart_unconfirmed = true;
+    Gow3Settings::Save();
+    runtime_restart();
+}
+
+constexpr const char* RestartHelp = "Starts the game again with the new settings. Progress since the last save is lost.";
+
+// The menu key and the pad combination, for the title and the default help.
+const std::string& OpenKeys() {
+    static const std::string keys = std::string(SDL_GetKeyName(MenuKey())) + " / " + MenuPad().name;
+    return keys;
+}
+
+// The plain look (ImGui's own), when the game's menu look is not there.
+void PlainMenu() {
     auto& s = Gow3Settings::Get();
-    ApplyRenderScale(false);
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x + viewport->WorkSize.x * 0.5f,
                                    viewport->WorkPos.y + viewport->WorkSize.y * 0.5f),
@@ -968,23 +1282,11 @@ void Menu() {
     // gow3: the game's own title (param.sfo), not a fixed one.
     static const std::string heading = [] {
         const std::string_view title = Common::ElfInfo::Instance().Title();
-        return std::string(title.empty() ? "MediEvil" : title) + "  (" + SDL_GetKeyName(MenuKey()) + " / R3+L2)";
+        return std::string(title.empty() ? "MediEvil" : title) + "  (" + OpenKeys() + ")";
     }();
     if (!ImGui::Begin(heading.c_str(), &keep_open, ImGuiWindowFlags_NoCollapse)) {
         ImGui::End();
         return;
-    }
-    footer_help = nullptr;
-    constexpr int TabCount = 5;
-    const ImGuiIO& io = ImGui::GetIO();
-    if (!io.WantTextInput) {
-        const int step = ImGui::IsKeyPressed(ImGuiKey_GamepadR1, false) || ImGui::IsKeyPressed(ImGuiKey_E, false) ? 1
-                         : ImGui::IsKeyPressed(ImGuiKey_GamepadL1, false) || ImGui::IsKeyPressed(ImGuiKey_Q, false)
-                             ? -1
-                             : 0;
-        if (step) {
-            requested_tab = (s.menu_tab + step + TabCount) % TabCount;
-        }
     }
     const float footer = ImGui::GetFrameHeightWithSpacing() * 2.0f + ImGui::GetTextLineHeightWithSpacing() * 2.0f;
     if (ImGui::BeginTabBar("##tabs")) {
@@ -998,14 +1300,9 @@ void Menu() {
                 s.menu_tab = tab;
                 dirty = true;
             }
+            NavStartTab(tab);
             if (ImGui::BeginChild("##body", ImVec2(0, -footer))) {
-                switch (tab) {
-                case 0: GameTab(); break;
-                case 1: ControlsTab(); break;
-                case 2: ImageTab(); break;
-                case 3: PerformanceTab(); break;
-                default: OverlayTab(); break;
-                }
+                TabBody(tab);
             }
             ImGui::EndChild();
             ImGui::EndTabItem();
@@ -1019,22 +1316,33 @@ void Menu() {
     }
 
     ImGui::Separator();
+    const int changes = RestartChanges();
+    if (changes && NextRowFocused()) {
+        footer_help = RestartHelp; // the restart row below has the focus
+    }
     ImGui::PushTextWrapPos(0.0f);
-    ImGui::TextDisabled("%s", footer_help ? footer_help : "L1 / R1 or Q / E: switch tabs. Settings are saved in medievil.ini.");
+    ImGui::TextDisabled("%s", footer_help ? footer_help
+                                          : "D-pad or arrows: choose and change. Cross (A) / Enter: change. L1 / R1 "
+                                            "or Q / E: switch tabs. Circle (B) / Esc: close. Settings are saved in "
+                                            "medievil.ini.");
     ImGui::PopTextWrapPos();
-    if (const int changes = RestartChanges()) {
+    if (changes) {
         ImGui::TextColored(ImVec4(0.85f, 0.72f, 0.45f, 1.0f), "%d change%s need%s a restart (unsaved progress is lost).",
                            changes, changes == 1 ? "" : "s", changes == 1 ? "s" : "");
         ImGui::SameLine();
+        const bool focused = NextRowFocused();
         ImGui::BeginDisabled(!std::getenv("GOW3_RESTART_COMMAND"));
-        if (ImGui::Button("Apply and restart")) {
-            // The new launch confirms the options once the game shows; run.py restores the
-            // previous ones if it never does (restart_unconfirmed).
-            s.restart_unconfirmed = true;
-            Gow3Settings::Save();
-            runtime_restart();
+        bool pressed = ImGui::Button(RestartArmed() ? "Press again to restart" : "Apply and restart");
+        if (focused) {
+            ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(),
+                                                IM_COL32(245, 196, 30, 255), ImGui::GetStyle().FrameRounding, 0,
+                                                2.0f * base_scale);
         }
+        pressed |= NavRow(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), RestartHelp, LastItemEnabled()).press;
         ImGui::EndDisabled();
+        if (pressed) {
+            RestartPressed();
+        }
     } else {
         ImGui::NewLine();
     }
@@ -1047,6 +1355,13 @@ void Menu() {
     if (!keep_open) {
         SetOpen(false);
     }
+}
+
+void Menu() {
+    ApplyRenderScale(false);
+    footer_help = nullptr;
+    PlainMenu();
+    NavEndFrame();
 }
 
 // Enemy health bar from the damage hook's records (gow3_actors.cpp).
@@ -1519,8 +1834,7 @@ void Init(const Vulkan::Instance& instance, vk::Format format, u32 image_count) 
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = nullptr; // window positions are not kept
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
-    io.BackendFlags |= ImGuiBackendFlags_HasGamepad;
+    // No ImGui navigation: the menu has its own (MenuNav), whose Cross / Enter would act twice with it.
     io.BackendPlatformName = "gow3";
 
     ImGui::StyleColorsDark();
@@ -1569,7 +1883,7 @@ void Init(const Vulkan::Instance& instance, vk::Format format, u32 image_count) 
     }
     overlay_instance = &instance;
     initialized = true;
-    std::printf("Overlay: menu ready (%s or R3+L2)\n", SDL_GetKeyName(MenuKey()));
+    std::printf("Overlay: menu ready (%s or %s)\n", SDL_GetKeyName(MenuKey()), MenuPad().name.c_str());
 }
 
 void UpdateTextInput(SDL_Window* window) {
@@ -1602,7 +1916,7 @@ void RetireChoiceTextures() {
 
 // imgui_mutex held, before NewFrame: new pictures become textures, destroyed ones are freed.
 void UpdateChoiceTextures() {
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < StyleImageCount; ++i) {
         Gow3Png::Image& image = choice_style.pending[i];
         if (image.rgba.empty() || choice_style.textures[i]) {
             continue;
@@ -1733,6 +2047,14 @@ void SetChoiceInput(uint32_t (*buttons)()) {
     choice_input = buttons;
 }
 
+void SetMenuInput(uint32_t (*buttons)()) {
+    menu_input = buttons;
+}
+
+// The gamepad buttons and triggers held (window thread, imgui_mutex held): the menu's combination.
+uint32_t pad_held = 0;
+unsigned triggers_held = 0;
+
 bool HandleEvent(const SDL_Event& event) {
     std::scoped_lock lock{imgui_mutex};
     if (!initialized) {
@@ -1793,13 +2115,28 @@ bool HandleEvent(const SDL_Event& event) {
             }
             return true;
         }
-        if (down && !event.key.repeat &&
-            (event.key.key == MenuKey() || (is_open && event.key.key == SDLK_ESCAPE))) {
-            SetOpen(event.key.key == MenuKey() ? !is_open : false);
+        if (down && !event.key.repeat && event.key.key == MenuKey()) {
+            SetOpen(!is_open);
             return true;
         }
         if (!is_open) {
             return false;
+        }
+        // The menu's keys come from the runtime's poll (MenuButtons: Esc closes there). Without it,
+        // from these events; Esc while a number box is typed in is ImGui's (cancels the edit).
+        if (down && !menu_input && !io.WantTextInput) {
+            switch (event.key.key) {
+            case SDLK_UP: MenuPress(Ps4::Up); break;
+            case SDLK_DOWN: MenuPress(Ps4::Down); break;
+            case SDLK_LEFT: MenuPress(Ps4::Left); break;
+            case SDLK_RIGHT: MenuPress(Ps4::Right); break;
+            case SDLK_RETURN:
+            case SDLK_KP_ENTER: MenuPress(Ps4::Cross); break;
+            case SDLK_ESCAPE: MenuPress(Ps4::Circle); break;
+            case SDLK_Q: MenuPress(Ps4::L1); break;
+            case SDLK_E: MenuPress(Ps4::R1); break;
+            default: break;
+            }
         }
         io.AddKeyEvent(ImGuiMod_Ctrl, (event.key.mod & SDL_KMOD_CTRL) != 0);
         io.AddKeyEvent(ImGuiMod_Shift, (event.key.mod & SDL_KMOD_SHIFT) != 0);
@@ -1813,10 +2150,12 @@ bool HandleEvent(const SDL_Event& event) {
     case SDL_EVENT_GAMEPAD_BUTTON_UP: {
         const bool down = event.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN;
         const u8 button = event.gbutton.button;
-        // R3+L2 opens the menu: L3+R3 is a game action in God of War III.
-        if (button == SDL_GAMEPAD_BUTTON_RIGHT_STICK) {
-            r3_down = down;
-            if (down && l2_down) {
+        // The combination that opens the menu (MenuPad, R3+L2 by default), when its last button goes down.
+        if (button < SDL_GAMEPAD_BUTTON_COUNT) {
+            const MenuPadCombo& combo = MenuPad();
+            const bool was = combo.Held(pad_held, triggers_held);
+            pad_held = down ? pad_held | (1u << button) : pad_held & ~(1u << button);
+            if (down && !was && combo.Held(pad_held, triggers_held) && ((combo.buttons >> button) & 1)) {
                 SetOpen(!is_open);
                 return true;
             }
@@ -1824,20 +2163,34 @@ bool HandleEvent(const SDL_Event& event) {
         if (!is_open) {
             return false;
         }
-        if (const ImGuiKey key = KeyFromGamepad(button); key != ImGuiKey_None) {
-            io.AddKeyEvent(key, down);
+        // The open menu polls the pad (MenuButtons); without the runtime's input, these events drive it.
+        if (down && !menu_input) {
+            switch (button) {
+            case SDL_GAMEPAD_BUTTON_DPAD_UP: MenuPress(Ps4::Up); break;
+            case SDL_GAMEPAD_BUTTON_DPAD_DOWN: MenuPress(Ps4::Down); break;
+            case SDL_GAMEPAD_BUTTON_DPAD_LEFT: MenuPress(Ps4::Left); break;
+            case SDL_GAMEPAD_BUTTON_DPAD_RIGHT: MenuPress(Ps4::Right); break;
+            case SDL_GAMEPAD_BUTTON_SOUTH: MenuPress(Ps4::Cross); break;
+            case SDL_GAMEPAD_BUTTON_EAST: MenuPress(Ps4::Circle); break;
+            case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER: MenuPress(Ps4::L1); break;
+            case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER: MenuPress(Ps4::R1); break;
+            default: break;
+            }
         }
         return true;
     }
     case SDL_EVENT_GAMEPAD_AXIS_MOTION: {
-        if (event.gaxis.axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER) {
+        const SDL_GamepadAxis axis = SDL_GamepadAxis(event.gaxis.axis);
+        if (axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER || axis == SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) {
+            const unsigned bit = axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER ? 1u : 2u;
             const bool down = event.gaxis.value > 16000;
-            if (down && !l2_down && r3_down) {
-                l2_down = true;
+            const MenuPadCombo& combo = MenuPad();
+            const bool was = combo.Held(pad_held, triggers_held);
+            triggers_held = down ? triggers_held | bit : triggers_held & ~bit;
+            if (down && !was && combo.Held(pad_held, triggers_held) && (combo.triggers & bit)) {
                 SetOpen(!is_open);
                 return true;
             }
-            l2_down = down;
         }
         return false;
     }
@@ -1969,7 +2322,8 @@ void SetChoiceStyle(ChoiceStyleFiles files) {
     }
     choice_style.title = fonts[0];
     choice_style.text = fonts[1];
-    for (int i = 0; i < 4; ++i) {
+    static_assert(sizeof(files.images) / sizeof(files.images[0]) == StyleImageCount);
+    for (int i = 0; i < StyleImageCount; ++i) {
         choice_style.pending[i] = std::move(files.images[i]);
     }
 }
@@ -2021,7 +2375,11 @@ void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent) {
     if (!Visible()) {
         return;
     }
+    // The menu's buttons, read before the lock as the save list's (the runtime takes its pad lock).
+    uint32_t (*const menu_buttons)() = menu_input;
+    const uint32_t menu_held = menu_open && menu_buttons ? menu_buttons() : 0;
     std::scoped_lock lock{imgui_mutex};
+    MenuButtons(menu_held);
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize = ImVec2(float(extent.width), float(extent.height));
     io.DeltaTime = ms > 0.0f && ms < 1000.0f ? ms / 1000.0f : 1.0f / 60.0f;

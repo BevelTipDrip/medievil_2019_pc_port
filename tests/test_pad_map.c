@@ -56,5 +56,33 @@ int main(void) {
     assert(apply_button_map(&no_pad,"cross=none",MAP_PAD)==1 && pressed_by(&no_pad,SDL_GAMEPAD_BUTTON_SOUTH)==0);
     ButtonMap mouse={{{0,0}},0};
     assert(apply_button_map(&mouse,"cross=none",MAP_MOUSE)==0 && mouse.count==0); /* mouse: no defaults to take */
+
+    /* The settings menu's keys: the bound ones as mapped, the fixed ones while not bound to a menu button. */
+    static bool k[SDL_SCANCODE_COUNT];
+    k[SDL_SCANCODE_RETURN]=true; /* Options by default: Cross in the menu */
+    assert(menu_key_buttons(k,&key_map)==BTN_CROSS);
+    k[SDL_SCANCODE_RETURN]=false; k[SDL_SCANCODE_SPACE]=true; /* bound to Cross */
+    assert(menu_key_buttons(k,&key_map)==BTN_CROSS);
+    k[SDL_SCANCODE_SPACE]=false; k[SDL_SCANCODE_Q]=true; k[SDL_SCANCODE_E]=true; /* Triangle / Square: tabs here */
+    assert(menu_key_buttons(k,&key_map)==(BTN_L1|BTN_R1));
+    k[SDL_SCANCODE_Q]=k[SDL_SCANCODE_E]=false; k[SDL_SCANCODE_I]=true; k[SDL_SCANCODE_LEFT]=true; /* D-pad up, arrow */
+    assert(menu_key_buttons(k,&key_map)==(BTN_UP|BTN_LEFT));
+    k[SDL_SCANCODE_I]=k[SDL_SCANCODE_LEFT]=false; k[SDL_SCANCODE_R]=true; /* L2: not a menu button */
+    assert(menu_key_buttons(k,&key_map)==0);
+    k[SDL_SCANCODE_R]=false;
+    ButtonMap bound=key_map; /* Enter bound to Circle: only Circle (no Cross as well) */
+    assert(apply_button_map(&bound,"circle=Return",MAP_KEYS)==1);
+    k[SDL_SCANCODE_RETURN]=true;
+    assert(menu_key_buttons(k,&bound)==BTN_CIRCLE);
+    k[SDL_SCANCODE_RETURN]=false; k[SDL_SCANCODE_ESCAPE]=true;
+    assert(menu_key_buttons(k,&bound)==BTN_CIRCLE);
+    k[SDL_SCANCODE_ESCAPE]=false;
+
+    /* Mouse binds in the menu: Circle / L1 / R1 only, never from the left button. */
+    assert(apply_button_map(&mouse_map,"circle=left,l1=right,cross=middle,r1=x1",MAP_MOUSE)==4);
+    assert(menu_mouse_buttons(1u)==0);       /* left: the pointer's */
+    assert(menu_mouse_buttons(2u)==BTN_L1);  /* right */
+    assert(menu_mouse_buttons(4u)==0);       /* middle: Cross, not taken */
+    assert(menu_mouse_buttons(1u|8u)==BTN_R1);
     puts("PASS: pad and key maps");
 }

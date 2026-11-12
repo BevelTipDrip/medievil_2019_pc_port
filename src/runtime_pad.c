@@ -251,13 +251,19 @@ static uint32_t mouse_map_from(uint32_t held) {
 static uint32_t mouse_map_buttons(void) {
     return mouse_map.count ? mouse_map_from(runtime_mouse_buttons()) : 0;
 }
-/* The same for the port's save list, which shows the cursor: the game does not have the mouse then
- * (runtime_mouse_buttons() is 0), so SDL's button state while the window has the mouse. No wheel. */
-static uint32_t list_mouse_buttons(void) {
+/* The mouse buttons held over the window (mouse_button_from_name's bits), from SDL's state: for the
+ * port's save list and menu, which show the cursor while the game does not have the mouse
+ * (runtime_mouse_buttons() is 0). No wheel. */
+static uint32_t window_mouse_held(void) {
     if (!mouse_map.count || !SDL_WasInit(SDL_INIT_VIDEO) || !SDL_GetMouseFocus()) return 0;
     const SDL_MouseButtonFlags m=SDL_GetMouseState(NULL,NULL);
-    return mouse_map_from((m&SDL_BUTTON_LMASK ? 1u : 0u)|(m&SDL_BUTTON_RMASK ? 2u : 0u)|(m&SDL_BUTTON_MMASK ? 4u : 0u)|
-                          (m&SDL_BUTTON_X1MASK ? 8u : 0u)|(m&SDL_BUTTON_X2MASK ? 16u : 0u));
+    return (m&SDL_BUTTON_LMASK ? 1u : 0u)|(m&SDL_BUTTON_RMASK ? 2u : 0u)|(m&SDL_BUTTON_MMASK ? 4u : 0u)|
+           (m&SDL_BUTTON_X1MASK ? 8u : 0u)|(m&SDL_BUTTON_X2MASK ? 16u : 0u);
+}
+/* The PS4 buttons the mouse buttons held over the window press (the save list). */
+static uint32_t list_mouse_buttons(void) {
+    const uint32_t held=window_mouse_held();
+    return held ? mouse_map_from(held) : 0;
 }
 
 static void key_axis(uint8_t *axis, bool negative, bool positive) {
@@ -496,6 +502,64 @@ static uint32_t list_buttons(void) {
     pthread_mutex_unlock(&lock);
     return buttons;
 }
+/* The port's settings menu reads the PS4 buttons the menu uses (research/docs/plan-settings-menu.md):
+ * the D-pad, Cross (change), Circle (back), L1 / R1 (tabs). Besides the keys as mapped, fixed keys
+ * stand for them there: arrows the D-pad, Enter Cross, Esc and Backspace Circle, Q / E L1 / R1. A
+ * fixed key counts only while it is not bound to one of the menu's buttons (with the default binds
+ * Enter is Options and Q / E are Triangle / Square, unused there). One mask, so a key both bound and
+ * fixed is one press. */
+#define MENU_BUTTONS (BTN_UP|BTN_DOWN|BTN_LEFT|BTN_RIGHT|BTN_CROSS|BTN_CIRCLE|BTN_L1|BTN_R1)
+static const struct { int key; uint32_t ps; } menu_keys[]={
+    {SDL_SCANCODE_UP,BTN_UP}, {SDL_SCANCODE_DOWN,BTN_DOWN}, {SDL_SCANCODE_LEFT,BTN_LEFT},
+    {SDL_SCANCODE_RIGHT,BTN_RIGHT}, {SDL_SCANCODE_RETURN,BTN_CROSS}, {SDL_SCANCODE_KP_ENTER,BTN_CROSS},
+    {SDL_SCANCODE_ESCAPE,BTN_CIRCLE}, {SDL_SCANCODE_BACKSPACE,BTN_CIRCLE}, {SDL_SCANCODE_Q,BTN_L1},
+    {SDL_SCANCODE_E,BTN_R1},
+};
+/* The menu's buttons from the keys held in `k` (SDL_GetKeyboardState) with the key map `map`. */
+static uint32_t menu_key_buttons(const bool *k, const ButtonMap *map) {
+    uint32_t buttons=0;
+    for (size_t i=0;i<map->count;++i) if (k[map->entries[i].source]) buttons|=map->entries[i].ps;
+    for (size_t i=0;i<sizeof(menu_keys)/sizeof(*menu_keys);++i) {
+        if (!k[menu_keys[i].key]) continue;
+        uint32_t bound=0;
+        for (size_t j=0;j<map->count;++j) if (map->entries[j].source==menu_keys[i].key) bound|=map->entries[j].ps;
+        if (!(bound&MENU_BUTTONS)) buttons|=menu_keys[i].ps;
+    }
+    return buttons&MENU_BUTTONS;
+}
+/* The menu's buttons from mouse buttons held over the window (mouse_button_from_name's bits) as
+ * mapped: only Circle, L1 and R1, and never from the left button, the pointer's (a left click bound
+ * to Cross or Circle would act twice, or close the menu at every click). */
+static uint32_t menu_mouse_buttons(uint32_t held) {
+    held&=~1u;
+    return held ? mouse_map_from(held)&(BTN_CIRCLE|BTN_L1|BTN_R1) : 0;
+}
+/* Buttons for the port's settings menu, polled by the overlay every presented frame while it is
+ * open (the game's pad is held neutral then): the gamepad as mapped, the keys (menu_key_buttons),
+ * mouse binds (menu_mouse_buttons), scripted input, and the left stick as a 4-way D-pad. */
+static uint32_t menu_buttons(void) {
+    pthread_mutex_lock(&lock);
+    read_inject();
+    load_button_maps();
+    const int pads=current_gamepads();
+    uint32_t buttons=(pads ? gamepad_buttons() : 0)|injected.buttons;
+    const bool *k=SDL_WasInit(SDL_INIT_VIDEO) ? SDL_GetKeyboardState(NULL) : NULL;
+    if (k) buttons|=menu_key_buttons(k,&key_map);
+    buttons|=menu_mouse_buttons(window_mouse_held());
+    for (int p=0;p<pads;++p) {
+        const int x=SDL_GetGamepadAxis(gamepads[p],SDL_GAMEPAD_AXIS_LEFTX), y=SDL_GetGamepadAxis(gamepads[p],SDL_GAMEPAD_AXIS_LEFTY);
+        if (abs(y)>=abs(x) && y<-16000) buttons|=BTN_UP;
+        else if (abs(y)>=abs(x) && y>16000) buttons|=BTN_DOWN;
+        else if (x<-16000) buttons|=BTN_LEFT;
+        else if (x>16000) buttons|=BTN_RIGHT;
+    }
+    if (injected.stick[1]>=0 && injected.stick[1]<64) buttons|=BTN_UP;
+    else if (injected.stick[1]>192) buttons|=BTN_DOWN;
+    if (injected.stick[0]>=0 && injected.stick[0]<64) buttons|=BTN_LEFT;
+    else if (injected.stick[0]>192) buttons|=BTN_RIGHT;
+    pthread_mutex_unlock(&lock);
+    return buttons&MENU_BUTTONS;
+}
 static void sample(PadData *d) {
     sample_host(d);
     if (gow3gpu_overlay_captures_input()) { hold_after_capture=1; return; }
@@ -518,6 +582,7 @@ static void sample(PadData *d) {
 static ABI int32_t pad_init(void) {
     pthread_mutex_lock(&lock); initialized=1; pthread_mutex_unlock(&lock);
     gow3gpu_choice_set_input(list_buttons);
+    gow3gpu_menu_set_input(menu_buttons);
     return 0;
 }
 static ABI int32_t pad_open(int32_t user, int32_t type, int32_t index, const void *param) {

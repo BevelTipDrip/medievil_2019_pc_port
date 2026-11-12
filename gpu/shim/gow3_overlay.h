@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // gow3: in-game settings menu (Dear ImGui), drawn by the presenter into the swapchain image
-// after the game frame, at display resolution. Insert (keyboard) or R3+L2 (gamepad) opens it;
-// while it is open the game gets no pad/keyboard input. Settings live in gow3_settings.h.
+// after the game frame, at display resolution. Insert (keyboard, GOW3_MENU_KEY) or R3+L2 (gamepad,
+// GOW3_MENU_PAD) opens it; while it is open the game gets no pad/keyboard input. Settings live in
+// gow3_settings.h; research/docs/plan-settings-menu.md has its look and controls.
 
 #pragma once
 
@@ -52,6 +53,9 @@ bool CapturesInput();
 void SetChoiceInput(uint32_t (*buttons)());
 /// Reads the save list's buttons now (also done every presented frame).
 void PollChoiceInput();
+/// The runtime's buttons (PS4 bits) that drive the settings menu, polled every presented frame
+/// while it is open: the D-pad moves and changes, Cross changes, Circle closes, L1 / R1 switch tabs.
+void SetMenuInput(uint32_t (*buttons)());
 
 /// Window thread: the game's text dialog (sceImeDialog). Shown as a box on screen until
 /// `active` is false; typing goes to the window (sdl_window), the box only displays it.
@@ -67,10 +71,11 @@ void BeginChoice(const std::string& title, const std::vector<std::string>& items
                  std::vector<std::string> more, int focus);
 int PollChoice();
 
-/// The game's menu look for the save list with details (scripts/game_ui_assets.py): the
-/// Options menu frame, the Cross / Circle / Square prompts, the title and text fonts.
+/// The game's menu look for the save list with details and the settings menu
+/// (scripts/game_ui_assets.py): the Options menu frame, the Cross / Circle / Square / L1 / R1
+/// prompts, the title and text fonts.
 struct ChoiceStyleFiles {
-    Gow3Png::Image images[4]; ///< frame, cross, circle, square
+    Gow3Png::Image images[6]; ///< frame, cross, circle, square, l1, r1
     std::vector<unsigned char> fonts[2]; ///< title, text (TrueType / OpenType)
 };
 void SetChoiceStyle(ChoiceStyleFiles files);

@@ -37,14 +37,18 @@ int gow3gpu_text_input_poll(char *out_utf8, uint64_t size);
 int gow3gpu_choice_begin(const char *title, const char *const *items, const char *const *images,
                          const char *const *details, const char *const *more, int count, int focus);
 int gow3gpu_choice_poll(void);
-/* The game's menu look for lists with details: `dir` is the game UI cache
+/* The game's menu look for lists with details and the settings menu: `dir` is the game UI cache
  * (scripts/game_ui_assets.py: menu/frame_options.png, fonts/title.ttf, fonts/text.ttf; the
- * prompts from prompts/style/Cross / Circle / Square.png, the chosen button style written by
- * scripts/ue4_glyphs.py, else prompts/PS4_*.png). Loaded once; a missing file leaves the plain look. */
+ * prompts from prompts/style/Cross / Circle / Square / L1 / R1.png, the chosen button style written
+ * by scripts/ue4_glyphs.py, else prompts/PS4_*.png). Loaded once (the first call, from the overlay
+ * at start or the first save list); a missing file leaves the plain look. */
 void gow3gpu_choice_style(const char *dir);
 /* The save list reads its buttons (PS4 button bits: up 0x10, down 0x40, circle 0x2000,
  * cross 0x4000, square 0x8000) from this function every frame while it is open. */
 void gow3gpu_choice_set_input(uint32_t (*buttons)(void));
+/* The settings menu reads its buttons (PS4 bits: the D-pad 0x10-0x80, L1 0x400, R1 0x800, circle
+ * 0x2000, cross 0x4000) from this function every presented frame while it is open. */
+void gow3gpu_menu_set_input(uint32_t (*buttons)(void));
 /* 1 while the in-game settings menu is open: the game's pad input is held neutral. */
 int gow3gpu_overlay_captures_input(void);
 /* Number of symbols registered by the vendored libraries (diagnostics). */

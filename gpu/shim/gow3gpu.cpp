@@ -446,13 +446,14 @@ extern "C" void gow3gpu_choice_style(const char* dir) {
         // The prompts in the chosen button style (prompts/style/, written at each start by
         // scripts/ue4_glyphs.py overlay_prompts), else the game's own PS4 ones.
         const char* const images[] = {"menu/frame_options.png", "prompts/style/Cross.png", "prompts/style/Circle.png",
-                                      "prompts/style/Square.png"};
+                                      "prompts/style/Square.png", "prompts/style/L1.png", "prompts/style/R1.png"};
         const char* const fallbacks[] = {nullptr, "prompts/PS4_Cross.png", "prompts/PS4_Circle.png",
-                                         "prompts/PS4_Square.png"};
-        for (int i = 0; i < 4; ++i) {
+                                         "prompts/PS4_Square.png", "prompts/PS4_L1.png", "prompts/PS4_R1.png"};
+        static_assert(std::size(images) == sizeof(files.images) / sizeof(files.images[0]));
+        for (size_t i = 0; i < std::size(images); ++i) {
             if (!Gow3Png::LoadRgba((dir + "/" + images[i]).c_str(), files.images[i]) &&
                 (!fallbacks[i] || !Gow3Png::LoadRgba((dir + "/" + fallbacks[i]).c_str(), files.images[i]))) {
-                LOG_INFO(Lib_SaveDataDialog, "save list: plain look (no {} in {})", images[i], dir);
+                LOG_INFO(Lib_SaveDataDialog, "save list and menu: plain look (no {} in {})", images[i], dir);
                 return;
             }
         }
@@ -460,7 +461,7 @@ extern "C" void gow3gpu_choice_style(const char* dir) {
         for (int i = 0; i < 2; ++i) {
             FILE* f = std::fopen((dir + "/" + fonts[i]).c_str(), "rb");
             if (!f) {
-                LOG_INFO(Lib_SaveDataDialog, "save list: plain look (no {} in {})", fonts[i], dir);
+                LOG_INFO(Lib_SaveDataDialog, "save list and menu: plain look (no {} in {})", fonts[i], dir);
                 return;
             }
             unsigned char chunk[65536];
@@ -480,6 +481,10 @@ extern "C" int gow3gpu_choice_poll(void) {
 
 extern "C" void gow3gpu_choice_set_input(uint32_t (*buttons)(void)) {
     Gow3Overlay::SetChoiceInput(buttons);
+}
+
+extern "C" void gow3gpu_menu_set_input(uint32_t (*buttons)(void)) {
+    Gow3Overlay::SetMenuInput(buttons);
 }
 
 extern "C" int gow3gpu_text_input_poll(char* out, uint64_t size) {
