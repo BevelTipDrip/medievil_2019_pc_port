@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: ours
 class: G
-commits: 0d091ec
+commits: 0d091ec, 801c3cd
 files: launcher/bug_report.py, launcher/medievil_launcher.py, .github/ISSUE_TEMPLATE/bug_report.yml, .github/ISSUE_TEMPLATE/feature_request.yml, .github/ISSUE_TEMPLATE/config.yml, research/tools/issue2card.py, tests/test_bug_report.py
 symbols: redact, redaction_context, log_excerpt, issue_url, issue_fields, report_files, write_report, newest_dump, game_mode, build_report, refresh_report, submit_report, report_state, start_run_log, parse_form, queue_row, add_to_queue
 switches:
@@ -109,10 +109,19 @@ with no pipes or backticks and no log text. A card is written by hand once somet
 - A hidden-launcher run drove the page with a log that contains the real home path. The preview, file list and
   dump box appeared. Open GitHub saved the zip, opened its folder and opened a 604-character URL. The home path
   appeared in neither the URL nor the zip, and a feature request listed no files.
+- The user, 2026-11-12 (`801c3cd`, Windows, from source): a feature request from the page became issue #1 with
+  the triage and feature-request labels, a word-cut title and only the `GPU:` lines in its system field;
+  `issue2card.py show 1` read the form back. Verified for feature requests on Windows. The bug form with a zip
+  attached is not run yet.
 - Not run on the Steam Deck: whether the browser opens from Game Mode (the user: test later).
 
 ## History and pitfalls
 
+- The first Open GitHub gave a 404: GitHub turns Issues off on forks. Turned on with the user's go
+  (`gh repo edit --enable-issues`). The `triage` and `feature-request` labels were made then too; a form's label
+  that does not exist on the repo is left off the issue without an error.
+- The first system field took every log line naming the GPU (patch names, pacing, renderer warnings);
+  `801c3cd` keeps the runtime's `GPU: ` lines only.
 - Designed 2026-11-11 by a design agent and agreed with the user:
   - zip in the saves folder;
   - previous log kept;
