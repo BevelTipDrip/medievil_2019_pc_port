@@ -94,7 +94,7 @@ study-glyphs.md; the Xbox and keyboard sets (G3, G4) and the bone textures (G2) 
   (third_party/input-prompts/README.md); redrawn after the user's review (`687d80b`: round outline, side
   buttons without a halo, the mouse as large as the key takes). T-MP1 (2026-11-12): the Load list showed the right
   button for Go Back and the left for Details / Summary (Space kept for Select, no mouse bind); the user: "looks
-  great". Verified on the Load list.
+  great". Verified on the Load list; the user, 2026-11-12 (2.3.0): "everything works" across the game's menus too.
 
 ## History and pitfalls
 
