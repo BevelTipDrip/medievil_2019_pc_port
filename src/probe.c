@@ -864,9 +864,10 @@ static const char *const camera_move_names[MEDIEVIL_CAMERA_MOVES] = {"follow", "
  * tick turn this frame's rotation, its second argument: yaw + x x sensitivity (the camera manager then
  * sets control yaw from the result, so it holds), pitch + y x sensitivity x ratio (forward looks up),
  * clamped as the stick's is and kept in the area's Target / Smoothed pitch so the next tick starts there.
- * Both axes are read at the same moment, as late as the camera allows. Counts are dropped outside free
- * areas, while the area forbids camera control (the yaw hook's flag) and when Dan's handler or the camera
- * tick has not run for 100 ms. Logs every 5 s. */
+ * Both axes are read at the same moment, as late as the camera allows. In Dan-cam (camera_dancam) the
+ * same counts also go into the yaw and Pitch it rebuilds its rotation from after the call. Pitch is
+ * dropped in other areas whose pitch is unknown; both axes while the area forbids camera control (the yaw
+ * hook's flag) and when Dan's handler or the camera tick has not run for 100 ms. Logs every 5 s. */
 typedef struct {
     const char *cls;
     int32_t target, smoothed, effective, max, min;
@@ -901,8 +902,54 @@ static void camera_look_class(const char *cls, const unsigned char *script, int3
            (const void *)cls, offsets[0], offsets[1], offsets[2], offsets[3], offsets[4]);
 }
 
+/* `property`'s offset when it is `size` bytes and owned by `owner` (a function, for a local) or, with
+ * owner NULL, by `cls` or a parent; else -1. */
+static int32_t camera_property_offset(uint64_t value, int32_t size, const char *owner, const char *cls) {
+    const char *property = (const char *)(uintptr_t)value;
+    const char *outer = *(const char *const *)(property + 0x20);
+    if (*(const int32_t *)(property + 0x34) != size) return -1;
+    if (owner) return outer == owner ? *(const int32_t *)(property + 0x44) : -1;
+    for (int depth = 0; cls && depth < 16; cls = *(const char *const *)(cls + 0x30), ++depth)
+        if (cls == outer) return *(const int32_t *)(property + 0x44);
+    return -1;
+}
+
+/* Dan-cam's ComputeCamera functions (camera_hook.h), each scanned once: ok, or not Dan-cam. */
+typedef struct {
+    const char *node;
+    int ok;
+    int32_t yaw, past, smoothed, pitch; /* locals: yaw, past; the area: smoothed, pitch */
+} CameraDanCam;
+static CameraDanCam camera_dancams[16];
+static int camera_dancam_count;
+
+static const CameraDanCam *camera_dancam(const char *node, const char *area) {
+    for (int i = 0; i < camera_dancam_count; ++i)
+        if (camera_dancams[i].node == node) return camera_dancams[i].ok ? &camera_dancams[i] : NULL;
+    if (camera_dancam_count == (int)(sizeof(camera_dancams) / sizeof(camera_dancams[0]))) return NULL;
+    CameraDanCam *c = &camera_dancams[camera_dancam_count++];
+    *c = (CameraDanCam){node, 0, 0, 0, 0, 0};
+    const unsigned char *script = *(const unsigned char *const *)(node + 0x48);
+    const int32_t size = *(const int32_t *)(node + 0x50);
+    MedievilCameraDanCam d;
+    if (!script || size <= 0 || size > (1 << 20) || !medievil_camera_dancam(script, size, &d)) return NULL;
+    c->yaw = camera_property_offset(d.yaw, 4, node, NULL);
+    c->past = camera_property_offset(d.past, 1, node, NULL);
+    c->smoothed = camera_property_offset(d.smoothed, 4, NULL, area);
+    c->pitch = camera_property_offset(d.pitch, 4, NULL, area);
+    if (c->yaw < 0 || c->past < 0 || c->smoothed < 0 || c->pitch < 0) {
+        printf("Mouse look: Dan-cam layout in class %p, but a property is not the type we know (%d %d %d %d)\n",
+               (const void *)area, c->yaw, c->past, c->smoothed, c->pitch);
+        return NULL;
+    }
+    c->ok = 1;
+    printf("Mouse look: Dan-cam found (class %p: yaw local +%#x, past local +%#x, stick +%#x, pitch +%#x)\n",
+           (const void *)area, c->yaw, c->past, c->smoothed, c->pitch);
+    return c;
+}
+
 static void camera_look(const void *stack) {
-    static uint64_t last_ms, log_ms, ticks, moved, locked, dropped, clamped, no_pitch;
+    static uint64_t last_ms, log_ms, ticks, moved, locked, dropped, clamped, no_pitch, dan_moved, dan_cameras, dan_facing;
     static long long counts_x, counts_y;
     static double pitch_moved;
     if (!runtime_mouse_enabled()) return;
@@ -916,14 +963,16 @@ static void camera_look(const void *stack) {
     const CameraLook *look = NULL;
     for (int i = 0; i < camera_look_count; ++i)
         if (camera_looks[i].cls == area) look = &camera_looks[i];
+    const CameraDanCam *dan = !look && node && area ? camera_dancam(node, area) : NULL;
     const int stale = ms - last_ms > 100 || !mouse_look_seen_ms || ms - mouse_look_seen_ms > 100;
     last_ms = ms;
     if ((x || y) && (stale || !object)) { ++dropped; x = y = 0; }
     if ((x || y) && !mouse_look_allowed) { ++locked; x = y = 0; }
-    if (y && !look) { ++no_pitch; y = 0; } /* yaw still turns in an area whose pitch was not found */
+    if (y && !look && !dan) { ++no_pitch; y = 0; } /* yaw still turns in an area whose pitch was not found */
+    const char *locals = *(const char *const *)(frame + 0x28);
+    if (x && dan && locals && !locals[dan->past]) { ++dan_facing; x = 0; } /* Dan-cam's yaw is Dan's facing yet */
     if (x || y) {
         const unsigned char *code = *(const unsigned char *const *)(frame + 0x20);
-        const char *locals = *(const char *const *)(frame + 0x28);
         const uint64_t local = code && locals ? medievil_camera_rotation_local(code) : 0;
         const char *rotation_property = (const char *)(uintptr_t)local;
         if (!local || *(const char *const *)(rotation_property + 0x20) != node ||
@@ -934,7 +983,28 @@ static void camera_look(const void *stack) {
             float yaw_degrees, pitch_degrees;
             gow3_mouse_look(&yaw_degrees, &pitch_degrees);
             rotation[1] += (float)x * yaw_degrees;
-            if (y) {
+            if (dan) {
+                /* Dan-cam rebuilds its rotation after this call from PreviousYaw and stick x 40 + Pitch; the
+                 * mouse keeps the stick's reach, the first Pitch seen on this camera +-40 degrees. */
+                static const char *dan_object;
+                static float dan_pitch0;
+                char *base = (char *)object;
+                float *pitch = (float *)(base + dan->pitch);
+                if (object != dan_object) { dan_object = object; dan_pitch0 = *pitch; ++dan_cameras; }
+                *(float *)(locals + dan->yaw) += (float)x * yaw_degrees;
+                if (y) {
+                    const float stick = *(const float *)(base + dan->smoothed) * 40.0f;
+                    const float before = stick + *pitch, wanted = before - (float)y * pitch_degrees;
+                    const float max = dan_pitch0 + 40.0f, min = dan_pitch0 - 40.0f;
+                    const float after = wanted > max ? max : wanted < min ? min : wanted;
+                    const float applied = after - before;
+                    if (after != wanted) ++clamped;
+                    *pitch += applied;
+                    rotation[0] += applied;
+                    pitch_moved += applied;
+                }
+                ++dan_moved;
+            } else if (y) {
                 char *base = (char *)object;
                 float *target = (float *)(base + look->target), *shown = (float *)(base + look->smoothed);
                 const float effective = *(const float *)(base + look->effective);
@@ -959,14 +1029,16 @@ static void camera_look(const void *stack) {
             gow3_mouse_look(&yaw_degrees, &pitch_degrees);
             printf("Mouse look: last %.1f s: %" PRIu64 " camera ticks, %" PRIu64 " with mouse; x %lld counts = %.1f "
                    "degrees, y %lld counts, pitch moved %.1f degrees (%" PRIu64 " ticks at a limit); %" PRIu64
-                   " dropped, %" PRIu64 " camera locked, %" PRIu64 " vertical without the area's pitch; %.4f degrees "
-                   "per count, vertical %.4f\n",
+                   " dropped, %" PRIu64 " camera locked, %" PRIu64 " vertical without the area's pitch; Dan-cam: %"
+                   PRIu64 " with mouse, %" PRIu64 " new, %" PRIu64 " yaw on Dan's facing; %.4f degrees per count, "
+                   "vertical %.4f\n",
                    (double)(ms - log_ms) / 1000.0, ticks, moved, counts_x, (double)counts_x * yaw_degrees, counts_y,
-                   pitch_moved, clamped, dropped, locked, no_pitch, (double)yaw_degrees, (double)pitch_degrees);
+                   pitch_moved, clamped, dropped, locked, no_pitch, dan_moved, dan_cameras, dan_facing,
+                   (double)yaw_degrees, (double)pitch_degrees);
             fflush(stdout);
         }
         log_ms = ms;
-        ticks = moved = locked = dropped = clamped = no_pitch = 0;
+        ticks = moved = locked = dropped = clamped = no_pitch = dan_moved = dan_cameras = dan_facing = 0;
         counts_x = counts_y = 0;
         pitch_moved = 0.0;
     }

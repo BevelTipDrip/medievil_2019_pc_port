@@ -90,6 +90,13 @@ path there (T-MS5/6: the stick-turn local and InputRotation).
   runs (Add..FMax and FMin..Subtract) and gave up ("Mouse look: no pitch"), and a class without pitch dropped yaw
   too. Fix built `64da6dd`: the finder anchors on the whole Add, FMin, FMax, Subtract chain and `Target = L4` (a
   byte test of the Free layout fails on the old finder and passes on the new); yaw no longer needs the pitch.
+- T-MS9 (`64da6dd`, research/docs/data/mouse-look-t-ms9.log): both axes in free areas, the user: "it works quite
+  well". Found: in Dan-cam the camera "fights" (shakes, does not turn); the ~30 s of "vertical without the area's
+  pitch" in the log. Dan-cam's ComputeCamera rebuilds its rotation after ComputeCameraSimple from PreviousYaw and
+  stick x 40 + Pitch, so the mouse only moved the boom for a frame. Fix built: in Dan-cam the counts also go into
+  PreviousYaw (a local of that frame) and Pitch, clamped to the first Pitch seen +-40 (the stick's reach); yaw
+  waits while Dan-cam still follows Dan's facing (its first 1.5 x CameraBlendTime). Found from its bytecode
+  (`medievil_camera_dancam`: SelectFloat, x 40, + Pitch, twice and equal; byte test of that layout passes).
 
 ## History and pitfalls
 

@@ -146,6 +146,43 @@ static inline uint64_t medievil_camera_rotation_local(const unsigned char *code)
     return code[-9] == 0x1c && code[0] == 0x00 && code[9] == 0x00 ? medievil_camera_ptr(code, 10) : 0;
 }
 
+/* Dan-cam (BP_CameraAreaDanCam.ComputeCamera, the over-the-shoulder aim camera) rebuilds its rotation after
+ * ComputeCameraSimple from `MakeRotator(0, SmoothedLookUpAxisValue x 40 + Pitch, SelectFloat(PreviousYaw,
+ * Dan's yaw, ActiveTime > 1.5 x CameraBlendTime))`, so mouse look writes PreviousYaw (the control yaw it was
+ * given) and Pitch. Their UProperty*, from the statements that appear twice in the function (before and after
+ * the call), in-memory:
+ *   s      EX_Let (0f) <L> 00 <L> 68 <SelectFloat> 00 <PreviousYaw> 00 <Dan's yaw> 00 <Past> 16   (0x37 bytes)
+ *   s+0x37 EX_Let (0f) <L1> 00 <L1> 68 <Multiply> 01 <Smoothed> EX_FloatConst (1e) 40.0 16    (0x2a bytes)
+ *   s+0x61 EX_Let (0f) <L2> 00 <L2> 68 <Add> 00 <L1> 01 <Pitch> 16                             (0x2e bytes)
+ * Past is the bool local that switches yaw from Dan's facing to PreviousYaw. */
+typedef struct {
+    uint64_t yaw, past, smoothed, pitch;
+} MedievilCameraDanCam;
+static inline int medievil_camera_dancam(const unsigned char *script, int32_t size, MedievilCameraDanCam *out) {
+    static const unsigned char forty[4] = {0x00, 0x00, 0x20, 0x42};
+    int found = 0;
+    for (int32_t a = 0x37; a + 0x2a + 0x2e <= size; ++a) {
+        const unsigned char *m = script + a, *s = script + a - 0x37;
+        const uint64_t product = medievil_camera_ptr(script, a + 1);
+        if (m[0] != 0x0f || m[0x09] != 0x00 || m[0x12] != 0x68 || m[0x1b] != 0x01 || m[0x24] != 0x1e ||
+            memcmp(m + 0x25, forty, 4) || m[0x29] != 0x16 || !product || medievil_camera_ptr(script, a + 0x0a) != product)
+            continue;
+        if (!medievil_camera_math_let(script, a + 0x2a) || medievil_camera_ptr(script, a + 0x2a + 0x1c) != product)
+            continue;
+        const uint64_t select = medievil_camera_ptr(script, a - 0x37 + 1);
+        if (s[0] != 0x0f || s[0x09] != 0x00 || s[0x12] != 0x68 || s[0x1b] != 0x00 || s[0x24] != 0x00 ||
+            s[0x2d] != 0x00 || s[0x36] != 0x16 || !select || medievil_camera_ptr(script, a - 0x37 + 0x0a) != select)
+            continue;
+        const MedievilCameraDanCam d = {medievil_camera_ptr(script, a - 0x37 + 0x1c),
+                                        medievil_camera_ptr(script, a - 0x37 + 0x2e), medievil_camera_ptr(script, a + 0x1c),
+                                        medievil_camera_ptr(script, a + 0x2a + 0x25)};
+        if (!d.yaw || !d.past || !d.smoothed || !d.pitch) continue;
+        if (found++ && memcmp(&d, out, sizeof d)) return 0; /* the two copies disagree: not the layout we know */
+        *out = d;
+    }
+    return found;
+}
+
 /* UMedievilSpringArm::ComputeCameraSimple's exec slot (FNameNativePtrPair + 8), its thunk and name. */
 typedef struct {
     uint32_t slot, exec, name;
