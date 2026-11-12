@@ -9,9 +9,9 @@ default_deck: off
 origin: ours
 class: M
 commits: 4bfd053951, 5ebcaa16ec, f82291a28b, 2598c44c39, aa5e865248, 396cc55a8a, 175941cf62, 29d3782e05
-files: scripts/ue4_glyphs.py, scripts/game_ui_assets.py, scripts/ue4_override.py, run.py, tests/test_ue4_glyphs.py, third_party/input-prompts/README.md, packaging/windows/package.sh, packaging/linux/appimage.sh, launcher/medievil_launcher.py, gpu/shim/gow3gpu.cpp, gpu/gow3gpu.h
-symbols: files, atlas, small, place, icons, key_icon, button_map, load_icon, visible, fit, SQUARE_TABS, SIZE_32x22, INVENTORY_SLOT, DEFAULT_KEYS, DEFAULT_PAD, PAD_ICONS, KEY_ICONS, overlay_prompts, OVERLAY, BUTTON_PROMPTS, gow3gpu_choice_style, ART, whole, with_whole, bc3, strip, with_strip, test_cells, test_square, texture, detile, tile, ATLAS_CELLS, SMALL, BONE, STYLES
-switches:
+files: scripts/ue4_glyphs.py, scripts/game_ui_assets.py, scripts/ue4_override.py, run.py, tests/test_ue4_glyphs.py, third_party/input-prompts/README.md, packaging/windows/package.sh, packaging/linux/appimage.sh, launcher/medievil_launcher.py, gpu/shim/gow3gpu.cpp, gpu/gow3gpu.h, scripts/make_mouse_prompts.py, launcher/medievil_launcher.py
+symbols: files, atlas, small, place, icons, key_icon, button_map, load_icon, visible, fit, SQUARE_TABS, SIZE_32x22, INVENTORY_SLOT, DEFAULT_KEYS, DEFAULT_PAD, PAD_ICONS, KEY_ICONS, overlay_prompts, OVERLAY, BUTTON_PROMPTS, gow3gpu_choice_style, ART, whole, with_whole, bc3, strip, with_strip, test_cells, test_square, texture, detile, tile, ATLAS_CELLS, SMALL, BONE, STYLES, MOUSE_ICONS, prompt_controls, blank_key, side_buttons
+switches: GOW3_PROMPTS_PREFER_MOUSE
 tests: T-G1, T-G1b, T-G2, T-G3, T-G3b, T-G4, T-G4c
 docs: study-glyphs.md#4-step-plan-smallest-first-every-launch-needs-the-users-go, study-glyphs.md#21-format-of-the-cooked-texture-what-a-patch-must-write-v
 depends_on: game-ui-cache
@@ -85,6 +85,13 @@ study-glyphs.md; the Xbox and keyboard sets (G3, G4) and the bone textures (G2) 
 - T-G4 (PC, 01.02): run by the user from the launcher. Keyboard and remaps work; after the crop and squeeze fixes
   "Everything looks good" except the bestiary's Enemies / Bosses tabs (narrow keys: the 1.45 narrowing, since removed).
 - T-G4c (PC, 01.02): square boxes. The user: "the bestiary all looks correct, as do the rest of the prompts".
+
+- Mouse prompts (the user, 2026-11-12): with Keyboard prompts and the mouse on, a game button bound to a mouse
+  button (GOW3_MOUSE_MAP) shows a mouse icon: always with Controls > Mouse > "Prefer mouse binds for glyphs" (on by
+  default, `GOW3_PROMPTS_PREFER_MOUSE`), otherwise only where the key is unbound or has no picture (`icons`,
+  `prompt_controls` in run.py; the game's prompts and the Load list's). The icons (left, right, middle, wheel up /
+  down / either, side back / forward) are drawn in the round key style by scripts/make_mouse_prompts.py
+  (third_party/input-prompts/README.md). Fix built, not run.
 
 ## History and pitfalls
 

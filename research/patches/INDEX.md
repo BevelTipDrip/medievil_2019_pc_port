@@ -187,7 +187,7 @@ _UE4 config overrides, eboot patches, game hooks, particles, render scale, boot 
 | ID | Status | W / D | Branch | Switches | Title |
 |---|---|---|---|---|---|
 | [4k-memory](ue4/4k-memory.md) | active | on / off | lab | perf_4k_memory, GOW3_PS4_MEMORY, GOW3_DMEM_MB | 4K memory sizes: 7,104 MB guest memory and the 512 MB framebuffer pool above 1080p (perf_4k_memory) |
-| [button-prompts](ue4/button-prompts.md) | active | off / off | deck-lab |  | Button prompts: the game's PS4 prompt textures re-drawn in the override pak (medievil.ini button_prompts) |
+| [button-prompts](ue4/button-prompts.md) | active | off / off | deck-lab | GOW3_PROMPTS_PREFER_MOUSE | Button prompts: the game's PS4 prompt textures re-drawn in the override pak (medievil.ini button_prompts) |
 | [camera-moves](ue4/camera-moves.md) | active | off / off | deck-lab |  | The free camera's automatic moves, each switchable live (menu Controls tab, medievil.ini camera_*) |
 | [debug-menu-0102](ue4/debug-menu-0102.md) | active | off / off | deck-lab | GOW3_DEBUG_MENU_TRACE | "Debug menu on 01.02: L1 + R1 + R3 (the game's own combo); no input edit; GetAllowDebugMenu trace probe" |
 | [early-z-pass-off](ue4/early-z-pass-off.md) | superseded | off / off | lab |  | r.EarlyZPass=0 alone (PS4 depth prepass off) |
@@ -245,7 +245,7 @@ _launcher, settings, medievil.ini keys, run.py, packaging, build scripts_
 
 | ID | Status | W / D | Branch | Switches | Title |
 |---|---|---|---|---|---|
-| [bug-report](launcher/bug-report.md) | active | on / on | - |  | Launcher Submit Bug Report: a filled-in GitHub issue form and a redacted zip of logs and settings; issues into the work queue |
+| [bug-report](launcher/bug-report.md) | active | on / on | deck-lab |  | Launcher Submit Bug Report: a filled-in GitHub issue form and a redacted zip of logs and settings; issues into the work queue |
 | [cursor-hide](launcher/cursor-hide.md) | active | on / on | lab |  | Hide the mouse cursor in borderless and fullscreen and when idle in a window; shown while unfocused |
 | [extra-env-file](launcher/extra-env-file.md) | active | off / off | deck-lab |  | run.py: extra-env.txt in the data folder sets test environment variables on every start |
 | [game-ui-cache](launcher/game-ui-cache.md) | active | on / on | deck-lab |  | Game UI cache: level names, loading screens, menu frame, button prompts and fonts from the player's paks |

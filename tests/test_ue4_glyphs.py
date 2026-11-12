@@ -112,6 +112,23 @@ class GlyphTests(unittest.TestCase):
         self.assertNotIn('square', keys)  # no picture: the cell keeps the PS4 art
         self.assertEqual(len(lines), 1)
 
+    def test_mouse_binds_pick_the_mouse_icon(self):
+        mouse = 'circle=right,triangle=wheel,l1=x1,r1=x2,square=left'
+        # Preferred: every button with a mouse button shows the mouse.
+        keys = ue4_glyphs.icons('keyboard', mouse_map=mouse, prefer_mouse=True)
+        self.assertEqual([keys[b] for b in ('circle', 'triangle', 'l1', 'r1', 'square', 'cross')],
+                         ['Mouse_Right', 'Mouse_Wheel', 'Mouse_Back', 'Mouse_Forward', 'Mouse_Left', 'Space'])
+        # Not preferred: the key, and the mouse only where the key is unbound (None) or has no picture.
+        keys = ue4_glyphs.icons('keyboard', key_map='circle=None', mouse_map=mouse, log=lambda _l: None)
+        self.assertEqual((keys['circle'], keys['triangle'], keys['square']), ('Mouse_Right', 'Q', 'E'))
+        # The gamepad style and unknown names ignore the mouse.
+        self.assertEqual(ue4_glyphs.icons('xbox', mouse_map=mouse, prefer_mouse=True)['circle'], 'B')
+        self.assertEqual(ue4_glyphs.icons('keyboard', mouse_map='circle=thumb', prefer_mouse=True)['circle'], 'Shift')
+        for name in ue4_glyphs.MOUSE_ICONS.values():
+            self.assertTrue((ue4_glyphs.ART / 'keyboard' / f'{name}.png').is_file(), name)
+        import medievil_launcher  # every mouse button the launcher offers has a picture
+        self.assertEqual(medievil_launcher.MOUSE_BUTTON_NAMES, set(ue4_glyphs.MOUSE_ICONS))
+
     def test_icons_are_cropped_to_what_is_visible(self):
         # The pack's keys fade to alpha 1-2 out to the 128 px edge: that border is not drawn.
         self.assertEqual(ue4_glyphs.load_icon('keyboard', 'Q').size, (96, 96))

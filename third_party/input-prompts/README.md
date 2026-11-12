@@ -33,3 +33,11 @@ Copied unchanged (128x128 RGBA PNG), renamed after the button or key:
 Every key icon of the set (84 files; not the mouse icons, the cursor or the sprite sheet):
 `Keyboard_Mouse/Vintage/T_<name>_Key_Vintage.png` is `keyboard/<name>.png`, e.g. `T_Space_Key_Vintage.png` is
 `Space.png`. The pack spells Ctrl `Crtl`.
+
+### keyboard/Mouse_*.png (drawn for this port)
+
+The set's own mouse icons are dark and tall and do not match its round keys, and it has none for the side buttons.
+`scripts/make_mouse_prompts.py` draws `Mouse_Left`, `Mouse_Right`, `Mouse_Middle`, `Mouse_Wheel_Up`,
+`Mouse_Wheel_Down`, `Mouse_Wheel`, `Mouse_Back` and `Mouse_Forward` from two pack files: the Vintage `Q` key with its
+letter painted over, and the `Keyboard_Mouse/White` set's mouse (`T_Mouse_<button>_Key_White.png`) with a white
+outline, wheel arrows and side buttons added. Same CC0 terms.

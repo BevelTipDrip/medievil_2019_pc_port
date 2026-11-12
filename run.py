@@ -97,6 +97,14 @@ def load_extra_env(env, path):
         print(f'Extra environment ({path}): {" ".join(applied)}')
 
 
+def prompt_controls(env):
+    """The remaps the button prompts follow (scripts/ue4_glyphs.py): keys, gamepad, and with the mouse on its
+    buttons and whether they win over the key (GOW3_PROMPTS_PREFER_MOUSE, launcher: Prefer mouse binds)."""
+    mouse = env.get('GOW3_MOUSE') == '1'
+    return (env.get('GOW3_KEY_MAP', ''), env.get('GOW3_PAD_MAP', ''),
+            env.get('GOW3_MOUSE_MAP', '') if mouse else '', mouse and env.get("GOW3_PROMPTS_PREFER_MOUSE") == '1')
+
+
 def find_executable(name):
     """bin/ (packaged), else out/ (built with build.sh)."""
     for candidate in (PORT / 'bin' / name, PORT / 'out' / name):
@@ -241,7 +249,7 @@ def main():
                                                            ini.get('ue4_voice', ''),
                                                            graphics_options.graphics_cvars(choices),
                                                            ini.get('button_prompts', ''),
-                                                           (env.get('GOW3_KEY_MAP', ''), env.get('GOW3_PAD_MAP', ''))),
+                                                           prompt_controls(env)),
                   flush=True)
         except (OSError, ValueError) as error:
             print(f'Render resolution: unchanged ({error})', flush=True)
@@ -324,7 +332,7 @@ def main():
             # The Load list's prompts in the button style the game gets (medievil.ini button_prompts).
             from ue4_glyphs import overlay_prompts
             overlay_prompts(graphics_options.read_ini(env['GOW3_CONFIG']).get('button_prompts', ''), cache,
-                            env.get('GOW3_KEY_MAP', ''), env.get('GOW3_PAD_MAP', ''))
+                            *prompt_controls(env))
         except Exception as error:  # the overlay then uses its plain look
             print(f'Game UI files skipped: {error}', flush=True)
         this = ['--run'] if getattr(sys, 'frozen', False) else [str(Path(__file__).resolve())]

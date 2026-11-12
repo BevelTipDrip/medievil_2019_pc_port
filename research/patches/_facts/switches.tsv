@@ -139,10 +139,10 @@ GOW3_ONSUBMIT_STAGE_B	upstream	gpu/shim/gow3_decode_pacing.cpp:247
 GOW3_OPTIMISTIC_CLAMP	upstream	gpu/shim/gow3_settings.cpp:417 src/runtime_memory.c:1959
 GOW3_OUTPUT_RES	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:184
 GOW3_PACER_SPIN_US	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1265 gpu/shadps4/core/libraries/videoout/driver.cpp:1555 gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:1016
-GOW3_PAD_FILE	upstream	src/runtime_pad.c:344 tests/test_pad.c:26
+GOW3_PAD_FILE	upstream	src/runtime_pad.c:354 tests/test_pad.c:26
 GOW3_PAD_MAP	upstream	src/runtime_pad.c:224
-GOW3_PAD_RECORD	upstream	src/runtime_pad.c:389
-GOW3_PAD_REPLAY	upstream	src/runtime_pad.c:421
+GOW3_PAD_RECORD	upstream	src/runtime_pad.c:399
+GOW3_PAD_REPLAY	upstream	src/runtime_pad.c:431
 GOW3_PAGEABLE_MEMORY	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:391
 GOW3_PARALLEL_WARMUP	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_serialization.cpp:503
 GOW3_PARK_UNMAPPED	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:1127
@@ -173,6 +173,7 @@ GOW3_PRESENT_MODE	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_swapchain.c
 GOW3_PRESENT_PRIORITY	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:118
 GOW3_PRESENT_THREAD	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:100
 GOW3_PRESET_FILE	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:271
+GOW3_PROMPTS_PREFER_MOUSE	ours	run.py:105
 GOW3_PS4_MEMORY	upstream	gpu/shim/gow3_settings.cpp:418
 GOW3_RCAS	upstream	gpu/shim/gow3_settings.cpp:381
 GOW3_REACTIVE	upstream	gpu/shim/gow3_settings.cpp:376
@@ -227,7 +228,7 @@ GOW3_STAGE_B_SPIN_US	upstream	gpu/shim/gow3_stage_b_wait.h:63
 GOW3_STAGING_KEEP_MB	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_staging_buffer_pool.cpp:43
 GOW3_STALE_READBACK	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.h:557 gpu/shim/gow3_settings.cpp:380
 GOW3_STDOUT_FILE	upstream	src/probe.c:1283
-GOW3_STICK_RANGE	upstream	src/runtime_pad.c:257
+GOW3_STICK_RANGE	upstream	src/runtime_pad.c:267
 GOW3_STREAM_CLEAN	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1073 gpu/shim/gow3_settings.cpp:417 gpu/shim/gow3_settings.cpp:429
 GOW3_STRICT_HANDLES	upstream	src/probe.c:1349
 GOW3_SUBMIT_AHEAD	upstream	gpu/shim/gow3_decode_pacing.cpp:37 gpu/shim/gow3_gpu_fences.cpp:24

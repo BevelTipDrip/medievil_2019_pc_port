@@ -146,6 +146,14 @@ def short_title(text, limit=80):
     return (cut or first[:limit - 1]) + '…'
 
 
+ATTACH_LIMIT = 25 << 20  # GitHub's limit for a file attached to an issue
+
+
+def dump_fits(dump):
+    """Whether the dump, zipped with the logs, stays under GitHub's attachment limit (with room for the rest)."""
+    return dump is not None and dump.stat().st_size < ATTACH_LIMIT - (2 << 20)
+
+
 def newest_dump(user_dir):
     """The newest crash dump (<saves folder>/crashdumps, Windows: src/probe.c), or None."""
     dumps = sorted(Path(user_dir).glob('crashdumps/*.dmp'), key=lambda p: p.stat().st_mtime)

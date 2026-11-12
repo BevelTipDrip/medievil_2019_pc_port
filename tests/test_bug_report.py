@@ -123,6 +123,16 @@ class ZipTest(unittest.TestCase):
             with zipfile.ZipFile(path) as z:
                 self.assertIn('crashdumps/medievil-1.dmp', z.namelist())
 
+    def test_dump_size_limit(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            small, large = Path(tmp) / 'small.dmp', Path(tmp) / 'large.dmp'
+            small.write_bytes(b'MDMP' * 1024)
+            with open(large, 'wb') as f:
+                f.truncate(bug_report.ATTACH_LIMIT)
+            self.assertTrue(bug_report.dump_fits(small))
+            self.assertFalse(bug_report.dump_fits(large))
+            self.assertFalse(bug_report.dump_fits(None))
+
     def test_game_mode(self):
         self.assertTrue(bug_report.game_mode({'XDG_CURRENT_DESKTOP': 'gamescope'}))
         self.assertTrue(bug_report.game_mode({'SteamGamepadUI': '1'}))

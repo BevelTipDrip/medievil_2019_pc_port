@@ -229,6 +229,15 @@ class ControlMapTest(unittest.TestCase):
                                          'controls': {'mouse': {'square': 'left', 'triangle': 'wheel'}}})
         self.assertEqual((env['GOW3_MOUSE'], env['GOW3_MOUSE_MAP']), ('1', 'square=left,triangle=wheel'))
         self.assertNotIn('GOW3_MOUSE_YAW', own(env))  # sensitivity is a medievil.ini key now
+        self.assertEqual(env['GOW3_PROMPTS_PREFER_MOUSE'], '1')  # the checkbox's default
+        off = launcher.game_environment({**settings, 'mouse': True, 'prompts_prefer_mouse': False})
+        self.assertEqual(off['GOW3_PROMPTS_PREFER_MOUSE'], '0')
+        sys.path.insert(0, str(ROOT))
+        import run  # the prompts follow the mouse only while it is on
+        self.assertEqual(run.prompt_controls({'GOW3_MOUSE_MAP': 'circle=right', 'GOW3_PROMPTS_PREFER_MOUSE': '1'}),
+                         ('', '', '', False))
+        self.assertEqual(run.prompt_controls({**env, 'GOW3_KEY_MAP': 'cross=Q'}),
+                         ('cross=Q', '', 'square=left,triangle=wheel', True))
 
     def test_mouse_and_camera_keys_match_the_game(self):
         """The launcher's camera_* and mouse_* keys are the ones the game's settings read and write."""

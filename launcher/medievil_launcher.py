@@ -182,7 +182,7 @@ APP_DEFAULTS = {'ui_language': 'en', 'game_dir': os.environ.get('GOW3_GAME_DIR',
                 'background_warmup': True, 'parallel_warmup': True, 'pipeline_binary_cache': True, 'perf_diag': False, 'frame_capture_key': False, 'frame_stats': False, 'gpu_profile': False,
                 'vk_validation': False, 'close_on_play': False, 'prep_workers': '', 'stage_b_core': False,
                 'update_check': True, 'game_patches': {}, 'game_patches_seen': {}, 'controls': {}, 'pad_style': 'playstation', 'stick_range': '',
-                'menu_key': 'Insert', 'mouse': False,
+                'menu_key': 'Insert', 'mouse': False, 'prompts_prefer_mouse': True,
                 'last_pkg': '', 'graphics_preset': '', 'deck_switches': False, 'deck_switches_off': '',
                 'deck_offered': False}
 
@@ -593,6 +593,8 @@ def game_environment(s):
     # The mouse (Windows: the Raw Input reader, mouse look, mouse buttons): Controls > Mouse.
     if s.get('mouse'):
         env['GOW3_MOUSE'] = '1'  # its sensitivity and the camera switches are medievil.ini keys
+        # Keyboard prompts show a game button's mouse button rather than its key (scripts/ue4_glyphs.py).
+        env['GOW3_PROMPTS_PREFER_MOUSE'] = '1' if s.get('prompts_prefer_mouse', True) else '0'
     env.setdefault('GOW3_FPS_LOG', '1')  # FPS and worst frame every 5 s in the log (diagnostics)
     # Frame statistics (draws, compiles, stalls every 5 s) only with Advanced > Frame statistics:
     # part of them is printed by the draw recording thread and costs frame time stability (T-S2b).
@@ -2058,6 +2060,10 @@ class Launcher:
                  _('Vertical sensitivity as a share of the horizontal one: below 1, up and down turns less (the '
                    'camera has 360 degrees around and about 60 up and down).'))
         self.check(f, 'mouse_invert_y', 'ini', _('Invert vertical'), _('Pushing the mouse forward looks down instead of up.'))
+        self.check(f, 'prompts_prefer_mouse', 'app', _('Prefer mouse binds for glyphs'),
+                   _('With Keyboard button prompts, a game button that has a mouse button (MOUSE column below) shows '
+                     'the mouse rather than its key. Off: the key, and the mouse only for a button with no key. '
+                     'Applied when the game starts.'), restart=True)
         self.section(f, _('Advanced camera'))
         self.note(f, _('The free camera\'s automatic moves; ticked = the game\'s. Fixed, rail and boss cameras keep the '
                        'game\'s moves. Also in the in-game menu > Controls, live.'), top=2)
@@ -2392,9 +2398,16 @@ class Launcher:
                                                       for name, path in files)))
         dump = None if feature else bug_report.newest_dump(self.user_dir())
         if dump:
-            self.report_dump_box.configure(text=_('Also the newest crash dump ({}, {} MB). It holds the game\'s '
-                                                  'memory; only when asked for it.').format(
-                dump.name, dump.stat().st_size // (1 << 20) + 1))
+            size = dump.stat().st_size // (1 << 20) + 1
+            if bug_report.dump_fits(dump):
+                self.report_dump_box.configure(state='normal', text=_(
+                    'Also the newest crash dump ({}, {} MB). It holds the game\'s memory; only when asked for it.'
+                ).format(dump.name, size))
+            else:
+                self.report_dump.set(False)
+                self.report_dump_box.configure(state='disabled', text=_(
+                    'The newest crash dump ({}, {} MB) is too large for GitHub (25 MB); keep it in case we ask.'
+                ).format(dump.name, size))
             self.report_dump_box.grid()
         else:
             self.report_dump.set(False)
@@ -2422,6 +2435,7 @@ class Launcher:
         if kind != 'feature':
             files = bug_report.report_files(self.user_dir(), ini_path(), CONFIG_FILE, DATA_DIR)
             dump = bug_report.newest_dump(self.user_dir()) if self.report_dump.get() else None
+            dump = dump if bug_report.dump_fits(dump) else None
             summary = bug_report.fields_text(bug_report.issue_fields(kind, description, system, excerpt))
             try:
                 path = bug_report.write_report(self.reports_folder(), files, ctx, summary, dump)

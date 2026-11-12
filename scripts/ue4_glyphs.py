@@ -82,6 +82,9 @@ KEY_ICONS = {'space': 'Space', 'left shift': 'Shift', 'right shift': 'Shift', 'r
              '-': 'Minus', '/': 'Slash', ';': 'Semicolon', "'": 'Quotation', '`': 'Tilde', '[': 'Brackets_L',
              ']': 'Brackets_R', 'keypad *': 'Asterisk', 'keypad +': 'Plus', 'keypad -': 'Minus', 'keypad /': 'Slash'}
 KEY_FIXED = {'stick_left': ('W', 'A', 'S', 'D'), 'stick_right': ('Up', 'Left', 'Down', 'Right')}
+# Mouse icons (keyboard/Mouse_*.png, scripts/make_mouse_prompts.py) by GOW3_MOUSE_MAP name (runtime_pad.c).
+MOUSE_ICONS = {'left': 'Mouse_Left', 'right': 'Mouse_Right', 'middle': 'Mouse_Middle', 'x1': 'Mouse_Back',
+               'x2': 'Mouse_Forward', 'wheel_up': 'Mouse_Wheel_Up', 'wheel_down': 'Mouse_Wheel_Down', 'wheel': 'Mouse_Wheel'}
 VISIBLE = 16  # alpha above which an icon pixel counts as visible (the pack's keys fade to 1-2 at the edge)
 
 
@@ -190,9 +193,11 @@ def key_icon(key):
     return KEY_ICONS.get(name)
 
 
-def icons(style, key_map='', pad_map='', log=lambda line: print(line, flush=True)):
+def icons(style, key_map='', pad_map='', log=lambda line: print(line, flush=True), mouse_map='', prefer_mouse=False):
     """{button: icon name, or a tuple of names drawn as a key cluster} for xbox / keyboard: the pad
-    button or key each PS4 button is mapped to. A key without a picture keeps the PS4 one (log)."""
+    button or key each PS4 button is mapped to. A key without a picture keeps the PS4 one (log).
+    Keyboard: a button with a mouse button (GOW3_MOUSE_MAP) shows the mouse when prefer_mouse is set or
+    its key has no picture (none: unbound in the launcher)."""
     if style == 'xbox':
         chosen = {**DEFAULT_PAD, **{b: n.lower() for b, n in button_map(pad_map).items()}}
         result = {b: PAD_ICONS.get(n) for b, n in chosen.items()}
@@ -200,6 +205,10 @@ def icons(style, key_map='', pad_map='', log=lambda line: print(line, flush=True
     elif style == 'keyboard':
         chosen = {**DEFAULT_KEYS, **button_map(key_map)}
         result = {b: key_icon(n) for b, n in chosen.items()}
+        for button, name in button_map(mouse_map).items():
+            icon = MOUSE_ICONS.get(name.lower())
+            if icon and button in chosen and (prefer_mouse or not result.get(button)):
+                result[button] = icon
         result.update(KEY_FIXED)
     else:
         return {}
@@ -281,14 +290,14 @@ def small(uexp, style, number, icon=None):
 OVERLAY = {'Cross': 'cross', 'Circle': 'circle', 'Square': 'square'}
 
 
-def overlay_prompts(style, cache, key_map='', pad_map=''):
+def overlay_prompts(style, cache, key_map='', pad_map='', mouse_map='', prefer_mouse=False):
     """Writes <cache>/prompts/style/Cross|Circle|Square.png for the port's Load list in the given
     style; the game's own PS4 prompts (game UI cache) for playstation, test, an unknown style or a
     key without a picture."""
     from PIL import Image
     out = Path(cache) / 'prompts' / 'style'
     out.mkdir(parents=True, exist_ok=True)
-    chosen = icons(style, key_map, pad_map, log=lambda _line: None)
+    chosen = icons(style, key_map, pad_map, log=lambda _line: None, mouse_map=mouse_map, prefer_mouse=prefer_mouse)
     for file, button in OVERLAY.items():
         if chosen.get(button):
             picture = Image.new('RGBA', (100, 100), (0, 0, 0, 0))  # the size of the game's prompts
@@ -299,12 +308,12 @@ def overlay_prompts(style, cache, key_map='', pad_map=''):
         picture.save(out / f'{file}.png')
 
 
-def files(read, style, key_map='', pad_map=''):
-    """{pak path: edited .uexp} for a style; read(name) gives the game's file; key_map / pad_map:
-    the launcher's remaps (GOW3_KEY_MAP / GOW3_PAD_MAP)."""
+def files(read, style, key_map='', pad_map='', mouse_map='', prefer_mouse=False):
+    """{pak path: edited .uexp} for a style; read(name) gives the game's file; key_map / pad_map /
+    mouse_map: the launcher's remaps (GOW3_KEY_MAP / GOW3_PAD_MAP / GOW3_MOUSE_MAP; icons)."""
     if style not in STYLES or style == 'playstation':
         return {}
-    chosen = icons(style, key_map, pad_map)
+    chosen = icons(style, key_map, pad_map, mouse_map=mouse_map, prefer_mouse=prefer_mouse)
     result = {ATLAS: atlas(read(ATLAS), style, chosen)}
     for name, (number, button) in SMALL.items():
         if style == 'test' or chosen.get(button):
