@@ -67,6 +67,18 @@ class ExcerptAndUrlTest(unittest.TestCase):
         self.assertTrue(log.startswith(LOG.splitlines()[0]))
         self.assertTrue(log.endswith('The game exited (code 3221225477).'))
 
+    def test_gpu_lines_and_title(self):
+        log = ("Patches: 17 writes from ['GPU particle bounds']\nGPU: NVIDIA GeForce RTX 4090, driver NVIDIA 616.92.0.0\n"
+               "Decode pacing: on, GPU idle in stream order\nGPU [Render.Vulkan] <Warning> vk_instance.cpp:971 x\n"
+               "GPU: pageable video memory on\n")
+        self.assertEqual(bug_report.gpu_lines(log), ['GPU: NVIDIA GeForce RTX 4090, driver NVIDIA 616.92.0.0',
+                                                     'GPU: pageable video memory on'])
+        title = bug_report.short_title('Requesting FSR4.X support, potentially with the ability to use FSRs ML '
+                                       'version on Nvidia GPUs.')
+        self.assertEqual(title, 'Requesting FSR4.X support, potentially with the ability to use FSRs ML version…')
+        self.assertLessEqual(len(title), 80)
+        self.assertEqual(bug_report.short_title('Short one\nsecond line'), 'Short one')
+
     def test_feature_request_has_no_log(self):
         url = bug_report.issue_url('feature', 'Mouse in the menus', 'Launcher: 2.2.1', ['a log line'])
         query = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)

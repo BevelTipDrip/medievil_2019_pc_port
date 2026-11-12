@@ -101,7 +101,7 @@ def issue_url(kind, description, system, excerpt, limit=URL_LIMIT):
     """The new-issue URL with the form filled in, at most `limit` characters: log lines go from the middle
     of the excerpt first (the start and the end say the most)."""
     feature = kind == 'feature'
-    title = description.strip().splitlines()[0][:80] if description.strip() else ''
+    title = short_title(description)
     excerpt = [] if feature else list(excerpt)
 
     def build(lines):
@@ -130,11 +130,20 @@ def system_summary(values):
     return '\n'.join(f'{name}: {value}' for name, value in values if value not in (None, ''))
 
 
-def gpu_lines(log_text, limit=6):
-    """The log's lines naming the graphics card and driver."""
-    found = [line.strip() for line in log_text.splitlines()[:400]
-             if re.search(r'\bGPU\b|graphics card|driver', line, re.I) and not NOISY.search(line)]
+def gpu_lines(log_text, limit=3):
+    """The runtime's own 'GPU: ' lines (card, driver, Vulkan version, memory and feature notes); not the
+    lines that merely mention the GPU (patch names, pacing, the renderer's 'GPU [Render]' messages)."""
+    found = [line.strip() for line in log_text.splitlines()[:400] if line.startswith('GPU: ')]
     return found[:limit]
+
+
+def short_title(text, limit=80):
+    """The first line of text, cut at a word under `limit` characters."""
+    first = text.strip().splitlines()[0] if text.strip() else ''
+    if len(first) <= limit:
+        return first
+    cut = first[:limit - 1].rsplit(' ', 1)[0].rstrip(' ,.;:')
+    return (cut or first[:limit - 1]) + '…'
 
 
 def newest_dump(user_dir):
