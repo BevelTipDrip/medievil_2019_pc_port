@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: upstream PR #64 (Porticus ffa6a72, hotplug part only)
 class: G
-commits: 42d25a1dcd
+commits: 42d25a1dcd, 75f2b89
 files: gpu/shim/window.cpp, src/runtime_pad.c
 symbols: WindowSDL, current_gamepads, sdl_ready
 switches:
@@ -20,7 +20,7 @@ checked: 2026-11-07
 ---
 ## What it does
 
-Only on branch `fork-ports`: not in `lab` or `deck-lab` yet. The write-up is `research/docs/impl-fork-ports.md` §3
+On branch `upstream-ports` (from `deck-lab` `e2594e3`, 2026-11-12, for 2.3.0): `75f2b89`, re-applied from `fork-ports`'s `42d25a1` unchanged. Upstream merged the same change on 2026-11-10 (PR #64 with the merge fix-ups `d3c91aa` / `907d8e6`, which kept only the hotplug hints and the log line, as ours); its file is identical to ours. Fix built, not run. Earlier: only on branch `fork-ports`. The write-up is `research/docs/impl-fork-ports.md` §3
 on that branch. Its switch `GOW3_PAD_HOTPLUG` exists only there, so the facts do not list it. Before SDL starts the
 gamepad subsystem, the port sets `SDL_HINT_JOYSTICK_THREAD=1`. On Windows SDL then hears of new devices on its own
 thread instead of through a message window on the thread that started the subsystem, which can be the game thread

@@ -8,7 +8,7 @@ default_windows: n/a
 default_deck: n/a
 origin: upstream PR #52 (Porticus 40d105e)
 class: M
-commits: f130b8de78
+commits: f130b8de78, dd14bd3
 files: gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp
 symbols: GetGraphicsPipeline, GetProgram, AsyncCompilation, TryPreparedPipeline
 docs: study-forks-survey.md#9-worth-porting-shortlist, study-forks-survey.md#unverified--open
@@ -17,7 +17,7 @@ checked: 2026-11-07
 ---
 ## What it does
 
-This exists only on branch **`fork-ports`** (`f130b8d`, local, not in `lab` or `deck-lab`). Its write-up is
+On branch `upstream-ports` (from `deck-lab` `e2594e3`, 2026-11-12, for 2.3.0): `dd14bd3`, re-applied from `fork-ports`'s `f130b8d` unchanged. Upstream merged the same change on 2026-11-10 (PR #52, `e688328`); its file is identical to ours. Fix built, not run. Earlier: only on branch **`fork-ports`**. Its write-up is
 `research/docs/impl-fork-ports.md` section 2, which is on that branch only. `MustCompileSync(pgm_hash)` is true
 for UE4's particle curve injection programs (vs `0x113f0c20873a7659`, ps `0x1b1e7c76d6a281d3`). For them,
 `GetProgram` compiles on the spot instead of queueing, and `GetGraphicsPipeline` skips the async path for any

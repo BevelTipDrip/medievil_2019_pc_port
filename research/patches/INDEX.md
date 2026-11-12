@@ -33,12 +33,12 @@ _loader, HLE libraries, threads, locks, files, audio, input (src/ outside memory
 
 | ID | Status | W / D | Branch | Switches | Title |
 |---|---|---|---|---|---|
-| [avplayer-join-hang](runtime/avplayer-join-hang.md) | active | on / on | fork-ports |  | Fix the game hanging after the first movie (AvPlayer thread joins, upstream PR #68) |
+| [avplayer-join-hang](runtime/avplayer-join-hang.md) | active | on / on | fork-ports,upstream-ports |  | Fix the game hanging after the first movie (AvPlayer thread joins, upstream PR #68) |
 | [crash-dump](runtime/crash-dump.md) | active | on / n/a | lab | GOW3_CRASH_DUMP | Minidump on any fatal fault, with fallbacks to smaller dump types and faults inside winpthreads |
 | [load-list-continue](runtime/load-list-continue.md) | active | on / on | deck-lab |  | Load list: "Continue" (the newest save) in place of the dead "New save" entry; "Slot N" on every save |
 | [load-list-details](runtime/load-list-details.md) | active | on / on | deck-lab |  | Load list: per-save details, level picture and level list (Square), in the game's Options menu look |
 | [mouse-input](runtime/mouse-input.md) | active | off / n/a | deck-lab | GOW3_MOUSE, GOW3_MOUSE_BUTTONS | Mouse input through the game's own sceMouse path, from a batched Raw Input reader (GOW3_MOUSE=1, Windows) |
-| [pad-hotplug](runtime/pad-hotplug.md) | active | on / on | fork-ports |  | Pads plugged in after start: SDL hotplug hints (fork port, #64) |
+| [pad-hotplug](runtime/pad-hotplug.md) | active | on / on | fork-ports,upstream-ports |  | Pads plugged in after start: SDL hotplug hints (fork port, #64) |
 | [quiet-log](runtime/quiet-log.md) | active | off / off | deck-lab | GOW3_FPS_LOG | GOW3_FPS_LOG=0 turns off the periodic log lines (FPS line, particle guard summary) |
 | [R2](runtime/r2.md) | active | on / on | lab |  | Runtime: rwlock handles validated through an open-addressing hash set, not a list walk |
 | [save-date-last-write](runtime/save-date-last-write.md) | active | on / on | deck-lab |  | A save's date is its last write (param.bin or any save file), so MediEvil saves into the slot it loaded |
@@ -93,7 +93,7 @@ _draw recording, rasterizer, pipelines, descriptors, recorder, fences, drains_
 | [O2-O3](stage-b/o2-o3.md) | superseded | off / off | lab | GOW3_OCCLUSION, GOW3_OCCLUSION_SUBMIT_US | Real occlusion query results (O2), submitted when their render pass ends, rate-limited (O3) |
 | [own-target-texsets](stage-b/own-target-texsets.md) | rejected | n/a / n/a | - |  | Texture sets that contain the draw's own target made memoizable (study item 4, not built) |
 | [parallel-recording](stage-b/parallel-recording.md) | rejected | n/a / n/a | - |  | Parallel Vulkan recording (several recorder threads, Bloodborne 0.3-0.4; not built) |
-| [particle-curve-sync-compile](stage-b/particle-curve-sync-compile.md) | active | n/a / n/a | fork-ports |  | Compile UE4 particle curve injection synchronously (torch flames on a cold cache, fork port #52) |
+| [particle-curve-sync-compile](stage-b/particle-curve-sync-compile.md) | active | n/a / n/a | fork-ports,upstream-ports |  | Compile UE4 particle curve injection synchronously (torch flames on a cold cache, fork port #52) |
 | [pool-small-copies](stage-b/pool-small-copies.md) | rejected | off / off | - | toggle:PoolSmallCopies | Small host copies off the recorder to the copy threads in batches (toggle bit 19 PoolSmallCopies) |
 | [prep-priority](stage-b/prep-priority.md) | active | off / n/a | lab | GOW3_PREP_PRIORITY | GOW3_PREP_PRIORITY=below: draw-preparation scanner and workers below normal instead of idle (Windows) |
 | [record-skip-identical](stage-b/record-skip-identical.md) | rejected | n/a / n/a | - |  | Skip identical setVertexInputEXT / pushConstants records; one ChunkGuard per block (not built) |

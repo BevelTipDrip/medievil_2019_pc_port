@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: upstream PR #68 (dvilelaf 42b2afb)
 class: G
-commits: b182a97325
+commits: b182a97325, babe332
 files: gpu/shim/core/libraries/kernel/threads.h
 symbols: Thread, Join, Stop, Joinable, Run
 switches:
@@ -20,8 +20,8 @@ checked: 2026-11-07
 ---
 ## What it does
 
-Only on branch `fork-ports` (from `lab` `63b0c76`): not in `lab` or `deck-lab` yet, so their `threads.h` is still
-the old one. The write-up is `research/docs/impl-fork-ports.md` §1 on that branch. The game stops each movie with
+On branch `upstream-ports` (from `deck-lab` `e2594e3`, 2026-11-12, for 2.3.0): `babe332`, re-applied from `fork-ports`'s `b182a97` unchanged. Upstream merged the same change on 2026-11-10 (PR #68, `2099f27`); its file is identical to ours. Fix built, not run. Earlier: only on branch `fork-ports`
+(from `lab` `63b0c76`). The write-up is `research/docs/impl-fork-ports.md` §1 on that branch. The game stops each movie with
 `sceAvPlayerStop`, which joins AvPlayer's demuxer and decoder threads. Those threads also joined themselves when they
 finished, and a self-join detached them. A join on a thread that has just detached hangs on Linux (black screen,
 sound goes on) and fails on Windows ("HLE thread: join failed"). The new `Kernel::Thread`: a self-join returns at
@@ -70,7 +70,7 @@ own object detaches.
 - PC logs show `HLE thread: join failed (... No such device or address)`, then a wait of up to 5 s: one at the
   logo's end (impl-fork-ports.md §1.1), and in `research/docs/data` 260 of 337 logs carry 1-7 such lines (the rest
   are Deck runs, excerpts and runs that never got through the logo movie). It should be gone with this patch: that line is the cheap check on Windows.
-- No switch: the old path is the race itself. The A/B is a build without `b182a97`.
+- No switch: the old path is the race itself. The A/B is a build without `b182a97` / `babe332`.
 - Risk: a join that now waits where the old code detached. Before merging, run regression items R1, R4, R5 and R8
   of impl-fork-ports.md §4: logo, intro, level ends, world map, restart, a second start, five Deck level ends.
 - The intro's player is never closed by the game, so its finished threads stay un-joined until exit. That is as

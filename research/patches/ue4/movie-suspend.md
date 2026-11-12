@@ -48,7 +48,7 @@ restores them and jumps to `OpenLevel`. Every player still in Play / Buffering g
 
 - avplayer-trace: the trace map it walks is that diagnostic's (always on, no switch: `Trace` at Init / InitEx adds
   every player); removing the trace, or putting it behind a switch, removes the player registry.
-- avplayer-join-hang (branch `fork-ports` only): the same AvPlayer threads; a suspended player's decoder threads block
+- avplayer-join-hang (branch `upstream-ports`): the same AvPlayer threads; a suspended player's decoder threads block
   on their buffers, so the join fix must still let them exit at the game's own Stop (206.9 s in T-M1) and Close.
 - game-update-0102: the 01.02 sites (`medievil_level_builds[1]`) came with `1e8150f`.
 

@@ -65,7 +65,7 @@ glibc check.
 - S1-v3-build extends this script (`out/cpu-level`, `-v3` AppImage, AppRun's CPU flag check); thinlto changes the
   `build.sh` build whose output it packages.
 - avplayer-join-hang: the hang after the first movie ("most starts hung here") is the main Linux problem on this
-  base. Its port (upstream PR #68, `b182a97325`) is only on branch `fork-ports`, not in `lab` or `deck-lab`.
+  base. Its port (upstream PR #68, `b182a97325`) is on branch `upstream-ports` (`babe332`, 2026-11-12).
 - upstream-screenshots: `4ec0013` builds the 1.3.6 screenshot and scheduler diagnostics on Linux and sets
   `GOW3_SCREENSHOT_DIR` in `AppRun`.
 - deck-preset, extra-env-file: launcher and `run.py` features that run through these Linux branches (extra-env.txt

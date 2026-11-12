@@ -52,7 +52,7 @@ on them is empty); `window.cpp` and the launcher carry other changes of ours, bu
 
 ## Interactions
 
-- pad-hotplug (branch `fork-ports`): adds SDL hotplug hints at the same two init sites. Background events are what
+- pad-hotplug (branch `upstream-ports`): adds SDL hotplug hints at the same two init sites. Background events are what
   it must not break.
 - Every platform, the Deck included: Wwise already mixes stereo, so the downmix only folds zero channels (FL FR then six zeros) plus the limiter.
   No CPU saving is left in the output layout. Do not port spacepepperoni's `58a7e18` (report 8 channels): Wwise would
