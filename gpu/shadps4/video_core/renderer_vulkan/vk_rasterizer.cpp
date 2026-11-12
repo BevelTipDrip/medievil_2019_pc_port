@@ -4655,6 +4655,13 @@ void Rasterizer::NoteFrameStart() {
 }
 
 bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
+    // GOW3_UPSCALER_STATS: this call's CPU time, whichever way it returns.
+    struct HookTimer {
+        s64 start = Ue4Upscaler::StatsClock();
+        ~HookTimer() {
+            Ue4Upscaler::NoteHook(start);
+        }
+    } hook_timer;
     Ue4FrameMap::Pass pass;
     const auto& regs = Regs();
     pass.compute = pipeline->IsCompute();
@@ -4775,8 +4782,10 @@ bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
         } else if ((!pass.compute && (pass.hash == Ue4FrameMap::TaaNormal ||
                                       pass.hash == Ue4FrameMap::TaaResponsive)) ||
                    taau) {
+            const s64 motion_start = Ue4Upscaler::StatsClock();
             ue4_motion->OnTaa(pass.view, std::span(pass.reads.data(), pass.num_reads),
                               pass.compute ? VideoCore::ImageId{} : db_desc.first);
+            Ue4Upscaler::NoteMotion(motion_start);
             if (ue4_upscaler && pass.compute && written_desc && pass.num_writes) {
                 const VideoCore::ImageId output_id = texture_cache.FindImage(*written_desc);
                 skip = ue4_upscaler->OnTaauDispatch(

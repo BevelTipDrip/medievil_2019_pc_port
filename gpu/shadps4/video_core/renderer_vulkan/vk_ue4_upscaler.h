@@ -101,6 +101,17 @@ public:
     /// Enabled and an upscaler other than TAA chosen: worth looking up the TAAU output image.
     static bool On();
 
+    /// GOW3_UPSCALER_STATS=1 (plan-fsr.md, the lows): the CPU time the upscaler path costs per frame,
+    /// logged every 5 s by Run: the rasterizer's hook (every draw while On), its motion pass setup,
+    /// the front end and the backend's recording.
+    static bool StatsOn();
+    /// For the timers: a steady clock in ns, 0 when the stats are off.
+    static s64 StatsClock();
+    /// Stage B: one call of the rasterizer's hook (ObserveFrameMap) took `ns` (since StatsClock).
+    static void NoteHook(s64 start_ns);
+    /// Stage B: the motion pass setup (Ue4Motion::OnTaa) inside a hook call.
+    static void NoteMotion(s64 start_ns);
+
     Ue4Upscaler(const Instance& instance, Scheduler& scheduler, VideoCore::TextureCache& texture_cache,
                 Runtime& runtime, Ue4Motion& motion);
     ~Ue4Upscaler();

@@ -62,7 +62,7 @@ GOW3_FLIP_TRACE	upstream	gpu/shim/gow3_flip_trace.h:24
 GOW3_FORCE_ANISO	upstream	gpu/shadps4/video_core/texture_cache/sampler.cpp:20
 GOW3_FPS_CAP	upstream	gpu/shim/core/emulator_settings.h:52
 GOW3_FPS_LIMIT	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1478 gpu/shim/core/emulator_settings.h:46
-GOW3_FPS_LOG	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp:356 gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp:537 gpu/shim/gow3_overlay.cpp:1987 src/runtime_extra.c:746
+GOW3_FPS_LOG	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp:356 gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp:621 gpu/shim/gow3_overlay.cpp:1987 src/runtime_extra.c:746
 GOW3_FRAMES_AHEAD	upstream	gpu/shim/gow3_settings.cpp:396 tests/test_graphics_settings.cpp:104 tests/test_graphics_settings.cpp:113
 GOW3_FRAME_CAPTURE_KEY	upstream	gpu/shim/gow3_overlay.cpp:1750
 GOW3_FRAME_DUMP_COUNT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:501
@@ -260,6 +260,7 @@ GOW3_UFFD	upstream	gpu/shadps4/video_core/page_manager.cpp:396 gpu/shadps4/video
 GOW3_UI_TRIGGER_VS	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:181
 GOW3_UNDEFINED_GPU_FREED	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.h:497
 GOW3_UPSCALER	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_camera_motion.cpp:56 gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:176 gpu/shim/gow3_settings.cpp:383 tests/test_upscaler_support.cpp:17
+GOW3_UPSCALER_STATS	ours	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp:207
 GOW3_UPSCALE_BEFORE_CS	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:178
 GOW3_UPSCALE_PRESET	upstream	gpu/shim/gow3_settings.cpp:393 tests/test_upscaler_support.cpp:18
 GOW3_USER_NAME	upstream	src/runtime_services.c:60 src/runtime_services.c:60 src/runtime_services.c:510

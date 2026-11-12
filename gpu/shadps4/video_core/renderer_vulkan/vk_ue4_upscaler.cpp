@@ -151,7 +151,81 @@ constexpr const char* JitterSignNames[] = {"Upscaler jitter +x +y", "Upscaler ji
 s64 SteadyNs() {
     return std::chrono::steady_clock::now().time_since_epoch().count();
 }
+
+/// GOW3_UPSCALER_STATS: stage B's part (one thread: plain values) and the recording thread's.
+struct HookStats {
+    s64 hook_ns = 0, motion_ns = 0; ///< this frame, so far
+    u32 calls = 0;
+    u64 frames = 0, calls_sum = 0;
+    s64 hook_sum = 0, hook_max = 0, motion_sum = 0, run_sum = 0, run_max = 0, window_start = 0;
+} hook_stats;
+std::atomic<s64> record_sum{0}, record_max{0};
+std::atomic<u64> record_count{0};
+
+/// A frame's end (an upscaler ran): into the window; every 5 s, one line. The hook time counts
+/// everything in the rasterizer's hook (the motion setup and the front end run inside it).
+void NoteFrame(const char* name, s64 run_ns) {
+    auto& s = hook_stats;
+    ++s.frames;
+    s.calls_sum += s.calls;
+    s.hook_sum += s.hook_ns;
+    s.hook_max = std::max(s.hook_max, s.hook_ns);
+    s.motion_sum += s.motion_ns;
+    s.run_sum += run_ns;
+    s.run_max = std::max(s.run_max, run_ns);
+    s.hook_ns = s.motion_ns = 0;
+    s.calls = 0;
+    const s64 now = SteadyNs();
+    if (!s.window_start) {
+        s.window_start = now;
+        return;
+    }
+    if (now - s.window_start < 5'000'000'000LL) {
+        return;
+    }
+    const u64 records = record_count.exchange(0, std::memory_order_relaxed);
+    const s64 record = record_sum.exchange(0, std::memory_order_relaxed);
+    const s64 record_worst = record_max.exchange(0, std::memory_order_relaxed);
+    const double frames = double(std::max<u64>(s.frames, 1));
+    std::printf("UE4 upscaler stats: %s, last %.1f s, %llu frames; per frame: hook %.1f us over %.0f "
+                "calls (worst %.1f), of it motion setup %.1f us and front end %.1f us (worst %.1f); "
+                "recording %.1f us (worst %.1f)\n",
+                name, double(now - s.window_start) / 1e9, static_cast<unsigned long long>(s.frames),
+                double(s.hook_sum) / frames / 1e3, double(s.calls_sum) / frames, double(s.hook_max) / 1e3,
+                double(s.motion_sum) / frames / 1e3, double(s.run_sum) / frames / 1e3,
+                double(s.run_max) / 1e3, records ? double(record) / double(records) / 1e3 : 0.0,
+                double(record_worst) / 1e3);
+    std::fflush(stdout);
+    const s64 start = now;
+    s = HookStats{};
+    s.window_start = start;
+}
 } // namespace
+
+bool Ue4Upscaler::StatsOn() {
+    static const bool on = [] {
+        const char* value = std::getenv("GOW3_UPSCALER_STATS");
+        return value && value[0] == '1';
+    }();
+    return on;
+}
+
+s64 Ue4Upscaler::StatsClock() {
+    return StatsOn() ? SteadyNs() : 0;
+}
+
+void Ue4Upscaler::NoteHook(s64 start_ns) {
+    if (start_ns) {
+        hook_stats.hook_ns += SteadyNs() - start_ns;
+        ++hook_stats.calls;
+    }
+}
+
+void Ue4Upscaler::NoteMotion(s64 start_ns) {
+    if (start_ns) {
+        hook_stats.motion_ns += SteadyNs() - start_ns;
+    }
+}
 
 std::atomic<int> Ue4Upscaler::jitter_sign{0};
 std::atomic<bool> Ue4Upscaler::sign_changed{false};
@@ -253,6 +327,7 @@ bool Ue4Upscaler::OnTaauDispatch(const u8* view, std::span<const VAddr> reads,
 bool Ue4Upscaler::Run(const u8* view, std::span<const VAddr> reads, VideoCore::ImageId output_id,
                   VAddr output_address, u32 output_width, u32 output_height,
                   const std::function<void()>& mark_written) {
+    const s64 run_start = StatsClock();
     const bool upscale = output_width != 0;
     if (!view) {
         return Fail("no View buffer");
@@ -457,6 +532,7 @@ bool Ue4Upscaler::Run(const u8* view, std::span<const VAddr> reads, VideoCore::I
     // user saw a small saw-tooth in the frame times once). A backend only records into `cmdbuf`.
     scheduler.Record([backend, frame, output_handle, taa_output, motion_image, out_width, out_height,
                       same_format](vk::CommandBuffer cmdbuf) {
+        const s64 record_start = StatsClock();
         const std::array<vk::ImageMemoryBarrier2, 2> before{{
             {
                 // U2's motion pass wrote the vectors.
@@ -523,6 +599,14 @@ bool Ue4Upscaler::Run(const u8* view, std::span<const VAddr> reads, VideoCore::I
             cmdbuf.blitImage(output_handle, vk::ImageLayout::eTransferSrcOptimal, taa_output,
                              vk::ImageLayout::eTransferDstOptimal, region, vk::Filter::eNearest);
         }
+        if (record_start) {
+            const s64 took = SteadyNs() - record_start;
+            record_sum.fetch_add(took, std::memory_order_relaxed);
+            record_count.fetch_add(1, std::memory_order_relaxed);
+            s64 worst = record_max.load(std::memory_order_relaxed);
+            while (took > worst && !record_max.compare_exchange_weak(worst, took, std::memory_order_relaxed)) {
+            }
+        }
     });
 
     if (reset_reason) {
@@ -550,6 +634,9 @@ bool Ue4Upscaler::Run(const u8* view, std::span<const VAddr> reads, VideoCore::I
     running_name.store(backend->Name(), std::memory_order_relaxed);
     last_run_ns.store(std::chrono::steady_clock::now().time_since_epoch().count(),
                       std::memory_order_relaxed);
+    if (run_start) {
+        NoteFrame(backend->Name(), SteadyNs() - run_start);
+    }
     return true;
 }
 

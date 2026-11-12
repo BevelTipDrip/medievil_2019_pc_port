@@ -80,3 +80,13 @@ T-F1 (2026-11-12, `4457918`, RTX 4090, 4K output at 75%): the old `ue4_dlss=1` c
 NVIDIA DLSS; DLSS available, FSR not available"), the DLSS context 2859x1620 -> 3812x2160 (TAAU), F9 between DLSS
 and UE4 TAA with one reset per return to DLSS; the ini now has `ue4_upscaler=dlss`. The user: DLSS still works, the
 switch works as before.
+
+## Lows with an upscaler (T-F2, 2026-11-12)
+
+T-F2 (`536dfd3`, research/docs/data/fsr-t-f2.log): FSR 3.1 ran at 75%, 50% and native (no failure; context 200-380 MB).
+The user, on the map screen and in the graveyard: with an upscaler the 1% / 0.1% lows are worse than expected for the
+GPU headroom. Native with UE4's TAA 226 / 209; DLSS at 50% 226 / 198; FSR at 50% only slightly better than native on
+the 0.1%. FSR shows DLSS's steady small spikes at a higher amplitude. Suspected: CPU work the upscaler path adds per
+frame (the hook on every draw while On, the motion pass setup, two image views a frame, the render pass ended for the
+upscaler, FSR's recording of ~10 passes). Measured next with `GOW3_UPSCALER_STATS=1` (CPU time per frame of each part,
+logged every 5 s), map screen, TAA / DLSS / FSR at 50%, about 60 s each.
