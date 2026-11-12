@@ -1,6 +1,6 @@
 # Plan: AMD FSR in place of UE4's TAA (FSR 3.x, FSR 4.x)
 
-Status (2026-11-12): step 1 fix built on branch `fsr`, not run. Parent: [START-HERE.md](START-HERE.md). Related:
+Status (2026-11-12): step 1 on branch `fsr`, verified on the PC (T-F1); its Deck check goes with step 5. Parent: [START-HERE.md](START-HERE.md). Related:
 [plan-dlss.md](plan-dlss.md), [plan-ue4-motion-vectors.md](plan-ue4-motion-vectors.md) (U2-U4, the inputs),
 [upscaler-reference.md](upscaler-reference.md) (the God of War III upscaler), [plan-fsr-frame-generation.md](plan-fsr-frame-generation.md).
 
@@ -56,7 +56,16 @@ Status (2026-11-12): step 1 fix built on branch `fsr`, not run. Parent: [START-H
 | 6 | Official FSR 4 (SDK 2.4 DLLs, Windows) | RX 6900 XT later; on the 4090 only the 3.1.6 fallback |
 | 7 | FSR 4 on NVIDIA: UniversalScalers-Vulkan INT8 (`i8_2` / `lite_i8`), user-fetched models | 4090: image and ms against DLSS |
 
-## Step 1 (fix built)
+## To do (the user, 2026-11-12)
+
+- **Sharpening with an upscaler**: the sharpening slider (menu Image tab, launcher `rcas_strength`) should set the
+  upscaler's sharpening too, not only the presenter's RCAS. Today RCAS is forced off while an upscaler runs
+  (`vk_presenter.cpp` `!Ue4Upscaler::Running()`), and DLSS gets `sharpness = 0`. FSR 3.1: its own RCAS
+  (`enableSharpening`, `sharpness` 0-1). DLSS: NVIDIA deprecated its sharpening (newer DLSS ignores the
+  parameter) [to check against our nvngx_dlss.dll version], so for DLSS the presenter's RCAS after DLSS, at the
+  slider's strength, instead of being blocked.
+
+## Step 1 (verified on the PC, T-F1)
 
 `Ue4Upscaler` (vk_ue4_upscaler.{h,cpp}, renamed from vk_ue4_dlss.*): the front end keeps the input lookup, resets,
 own output image, copy / blit into TAA's target and the texture cache bookkeeping; a backend
@@ -66,3 +75,8 @@ own output image, copy / blit into TAA's target and the texture cache bookkeepin
 Settings: `ue4_upscaler` (gow3_settings `Ue4UpscalerKeys`), `ue4_fsr_available`; the older `ue4_dlss=1` and
 `GOW3_UE4_DLSS=1` still mean dlss (the new key wins in a file with both). Menu: Image > "Anti-aliasing / upscaler"
 lists what the system runs; F9 cycles it. Launcher: Graphics > "Anti-aliasing / upscaler" (`UPSCALERS`).
+
+T-F1 (2026-11-12, `4457918`, RTX 4090, 4K output at 75%): the old `ue4_dlss=1` came up as DLSS ("UE4 upscaler:
+NVIDIA DLSS; DLSS available, FSR not available"), the DLSS context 2859x1620 -> 3812x2160 (TAAU), F9 between DLSS
+and UE4 TAA with one reset per return to DLSS; the ini now has `ue4_upscaler=dlss`. The user: DLSS still works, the
+switch works as before.

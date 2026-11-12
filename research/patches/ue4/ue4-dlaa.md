@@ -129,7 +129,7 @@ frame map / U2 view is). Periodic counter lines follow `GOW3_FPS_LOG=0`.
   them) and only work while an upscaler other than TAA is chosen. The setting is `ue4_upscaler` = taa / dlss / fsr
   (menu: one choice listing what the system runs; F9 cycles them; launcher: Graphics > Anti-aliasing / upscaler);
   `ue4_dlss=1` (ini, launcher) and `GOW3_UE4_DLSS=1` still mean dlss. Log lines now start "UE4 upscaler:".
-  Fix built, not run.
+  T-F1 (PC): DLSS through the new front end, F9, the old setting carried over; the user: works as before. Verified.
 
 - 2.3.0 (`d169e73`, upstream `b396f85` cherry-picked; with `7127e10` / `6cec84f`, build_dlss.sh finds the
   CLANG64 headers and Visual Studio 2022 or 2026 by itself): the zip carries NVIDIA's DLSS SDK licence next to
