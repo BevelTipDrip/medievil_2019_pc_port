@@ -1,0 +1,55 @@
+name: Bug report
+description: Something in the port does not work. The launcher's "Submit Bug Report" button fills this in.
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The easiest way: in the launcher, press **Submit Bug Report**. It fills in this form and saves a zip of your
+        logs and settings (with your user and PC names removed) for the Logs box below.
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened
+      description: What you saw, and where in the game.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Load the Hall of Heroes
+        2. ...
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+  - type: input
+    id: kind
+    attributes:
+      label: Kind
+      description: Crash or freeze, Graphics, Performance, Input, Other bug
+  - type: textarea
+    id: system
+    attributes:
+      label: Version and system
+      description: Launcher version, game build, platform, graphics card (the launcher fills this in).
+  - type: textarea
+    id: log_excerpt
+    attributes:
+      label: Log excerpt
+      description: The start of the log and its error lines (the launcher fills this in).
+      render: shell
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Logs
+      description: Drag the medievil-report-....zip the launcher saved into this box.
+  - type: checkboxes
+    id: checked
+    attributes:
+      label: Before you submit
+      options:
+        - label: I looked at the text and the zip; nothing in them is private to me.
+          required: true

@@ -1,0 +1,19 @@
+name: Feature request
+description: An idea for the port. The launcher's "Submit Bug Report" button (Feature request) fills this in.
+labels: [feature-request, triage]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it would help
+  - type: textarea
+    id: system
+    attributes:
+      label: Version and system
+      description: Launcher version, game build and platform (the launcher fills this in).

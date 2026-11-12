@@ -15,6 +15,7 @@ import ctypes
 import json
 import os
 from pathlib import Path
+import platform
 import queue
 import re
 import runpy
@@ -120,6 +121,7 @@ def run_command():
 # languages are in lang.py, keyed by the English text.
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import bug_report  # noqa: E402
 import button_icons  # noqa: E402
 import theme  # noqa: E402
 import lang  # noqa: E402
@@ -1478,6 +1480,7 @@ class Launcher:
         self.build_controls()
         self.build_advanced()
         self.build_log()
+        self.build_report()
         self.root.bind_all('<MouseWheel>', self.wheel)
         self.game_changed()
 
@@ -1540,6 +1543,8 @@ class Launcher:
             self.refresh_game_patches()
         elif name == 'home':
             self.refresh_status()
+        elif name == 'report':
+            self.refresh_report()
 
     def build_home(self):
         tk, ttk = self.tk, self.ttk
@@ -1578,12 +1583,13 @@ class Launcher:
         show()
 
     def link_buttons(self, parent):
-        """GitHub and Discord buttons that open the port's pages in the browser."""
+        """GitHub and Discord buttons that open the port's pages in the browser, and Submit Bug Report."""
         ttk = self.ttk
         holder = ttk.Frame(parent)
         for index, (name, url) in enumerate(LINKS):
             ttk.Button(holder, text=name, command=lambda u=url: webbrowser.open(u)).pack(
                 side='left', padx=(0 if index == 0 else 8, 0))
+        ttk.Button(holder, text=_('Submit Bug Report'), command=lambda: self.show('report')).pack(side='left', padx=(8, 0))
         return holder
 
     def draw_banner(self):
@@ -2285,6 +2291,152 @@ class Launcher:
         bar.pack(side='right', fill='y')
         self.log.pack(fill='both', expand=True)
 
+    def build_report(self):
+        """Submit Bug Report (link_buttons; not in the sidebar): the issue's text and the files of the report
+        zip, redacted and shown before anything leaves the machine (bug_report.py). GitHub posts it."""
+        tk, ttk = self.tk, self.ttk
+        f = self.scrolled_page('report', _('Bug report'), _('A problem or an idea, on GitHub with your logs.'))
+        self.report_kind = tk.StringVar(value='crash')
+        kinds = ttk.Frame(f)
+        for i, (key, label) in enumerate(bug_report.KINDS):
+            ttk.Radiobutton(kinds, text=_(label), value=key, variable=self.report_kind,
+                            command=self.refresh_report).grid(row=i // 3, column=i % 3, sticky='w', padx=(0, 18))
+        self.row(f, _('Kind'), kinds)
+
+        def text_box(height, **options):
+            box = tk.Text(f, height=height, wrap='word', relief='flat', padx=8, pady=6, highlightthickness=1,
+                          highlightbackground=LINE, highlightcolor=GOLD, insertbackground=TEXT, **options)
+            box.grid(row=self.next_row(f), column=0, columnspan=2, sticky='we', pady=(6, 0))
+            return box
+        self.section(f, _('WHAT HAPPENED'))
+        self.report_text = text_box(5, bg=CARD, fg=TEXT, font=self.f('body', 10))
+        self.report_text.bind('<KeyRelease>', lambda _e: self.schedule_report_refresh())
+        self.note(f, _('What you saw, and where in the game. You can also write it on GitHub.'), top=4)
+        self.section(f, _('WHAT WILL BE SENT'))
+        self.report_preview = text_box(14, bg='#0a0810', fg='#d8e8c8', state='disabled',
+                                       font=('Consolas', 9) if WINDOWS else 'TkFixedFont')
+        self.report_files = ttk.Label(f, style='Muted.TLabel', wraplength=self.px(680), justify='left')
+        self.report_files.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(6, 0))
+        self.report_dump = tk.BooleanVar(value=False)
+        self.report_dump_box = ttk.Checkbutton(f, variable=self.report_dump)
+        self.report_dump_box.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(6, 0))
+        self.report_status = ttk.Label(f, style='Muted.TLabel', wraplength=self.px(680), justify='left')
+        self.report_status.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(6, 0))
+        buttons = ttk.Frame(f)
+        buttons.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(12, 0))
+        for i, (text, command) in enumerate((
+                (_('Open GitHub'), self.submit_report), (_('Copy summary'), self.copy_report_summary),
+                (_('Show report folder'), lambda: self.open_path(self.reports_folder())),
+                (_('Discord instead'), lambda: webbrowser.open(dict(LINKS)['Discord'])),
+                (_('Back'), lambda: self.show('home')))):
+            ttk.Button(buttons, text=text, command=command).pack(side='left', padx=(0 if i == 0 else 8, 0))
+        self.note(f, _('Your user name, PC name, player name and home folder are replaced in the text above and in '
+                       'every file of the zip. Open GitHub saves the zip and opens a filled-in issue; nothing is sent '
+                       'until you press Submit there (it needs a GitHub account). Without one, post on Discord. If '
+                       'the log does not fit in the link, lines from its middle are left out; the zip has all of it.'))
+        self.report_after = None
+
+    def reports_folder(self):
+        return self.user_dir() / 'bug-reports'
+
+    def schedule_report_refresh(self):
+        if self.report_after:
+            self.root.after_cancel(self.report_after)
+        self.report_after = self.root.after(400, self.refresh_report)
+
+    def report_system(self, log, log_path):
+        """Version and system for the issue and report.txt."""
+        folder = self.var('game_dir', 'app').get()
+        info = game_info(folder)
+        try:
+            title_id = game_profile_of(folder)[0] if folder else None
+        except (ImportError, OSError, ValueError):
+            title_id = None
+        build = 'Windows zip' if FROZEN else 'AppImage' if os.environ.get('APPIMAGE') else 'source'
+        where = 'Steam Deck' if steam_deck() else 'Windows' if WINDOWS else 'Linux'
+        if where == 'Steam Deck' and bug_report.game_mode():
+            where += ' (Game Mode)'
+        try:
+            written = time.strftime('%Y-%m-%d %H:%M', time.localtime(log_path.stat().st_mtime))
+        except OSError:
+            written = 'none'
+        values = [('Launcher', f'{VERSION} ({build})'), ('Platform', where), ('OS', platform.platform()),
+                  ('Game', f'{title_id or "?"} version {info[1]}' if info else 'not found'), ('Last log', written)]
+        return bug_report.system_summary(values + [('From the log', line) for line in bug_report.gpu_lines(log)])
+
+    def report_state(self):
+        """(kind, description, system, log excerpt, redaction context), all redacted."""
+        ctx = bug_report.redaction_context(player=self.var('player_name', 'app').get())
+        kind = self.report_kind.get()
+        log_path = self.user_dir() / 'last_run.log'
+        try:
+            log = log_path.read_text(encoding='utf-8', errors='replace')
+        except OSError:
+            log = ''
+        description = bug_report.redact(self.report_text.get('1.0', 'end').strip(), ctx)
+        excerpt = [] if kind == 'feature' else [bug_report.redact(line, ctx) for line in bug_report.log_excerpt(log)]
+        return kind, description, bug_report.redact(self.report_system(log, log_path), ctx), excerpt, ctx
+
+    def refresh_report(self):
+        self.report_after = None
+        kind, description, system, excerpt, _ctx = self.report_state()
+        text = bug_report.fields_text(bug_report.issue_fields(kind, description, system, excerpt))
+        self.report_preview.configure(state='normal')
+        self.report_preview.delete('1.0', 'end')
+        self.report_preview.insert('end', text)
+        self.report_preview.configure(state='disabled')
+        feature = kind == 'feature'
+        files = bug_report.report_files(self.user_dir(), ini_path(), CONFIG_FILE, DATA_DIR)
+        self.report_files.configure(text=_('A feature request sends no files.') if feature else _(
+            'The zip: report.txt, {}.').format(', '.join(f'{name} ({path.stat().st_size // 1024 + 1} KB)'
+                                                      for name, path in files)))
+        dump = None if feature else bug_report.newest_dump(self.user_dir())
+        if dump:
+            self.report_dump_box.configure(text=_('Also the newest crash dump ({}, {} MB). It holds the game\'s '
+                                                  'memory; only when asked for it.').format(
+                dump.name, dump.stat().st_size // (1 << 20) + 1))
+            self.report_dump_box.grid()
+        else:
+            self.report_dump.set(False)
+            self.report_dump_box.grid_remove()
+        notes = []
+        if self.process:
+            notes.append(_('The game is running: its log is still being written.'))
+        if not feature and not excerpt:
+            notes.append(_('No log yet: play once, then report.'))
+        self.report_status.configure(text=' '.join(notes))
+
+    def report_summary(self):
+        kind, description, system, excerpt, _ctx = self.report_state()
+        return bug_report.fields_text(bug_report.issue_fields(kind, description, system, excerpt))
+
+    def copy_report_summary(self):
+        self.root.clipboard_clear()
+        self.root.clipboard_append(self.report_summary())
+        self.report_status.configure(text=_('Copied. Paste it on GitHub or Discord.'))
+
+    def submit_report(self):
+        """Saves the zip (bug reports), opens its folder and the filled-in issue in the browser."""
+        kind, description, system, excerpt, ctx = self.report_state()
+        url = bug_report.issue_url(kind, description, system, excerpt)
+        if kind != 'feature':
+            files = bug_report.report_files(self.user_dir(), ini_path(), CONFIG_FILE, DATA_DIR)
+            dump = bug_report.newest_dump(self.user_dir()) if self.report_dump.get() else None
+            summary = bug_report.fields_text(bug_report.issue_fields(kind, description, system, excerpt))
+            try:
+                path = bug_report.write_report(self.reports_folder(), files, ctx, summary, dump)
+            except OSError as error:
+                self.messagebox.showerror(APP_NAME, _('Could not save the report: {}').format(error))
+                return
+            if bug_report.game_mode():
+                self.report_status.configure(text=_('Saved {} in {}. Attach it from Desktop Mode, or post it on '
+                                                    'Discord.').format(path.name, path.parent))
+            else:
+                self.open_path(path.parent)
+                self.report_status.configure(text=_('Saved {}. Drag it into the Logs box of the GitHub page.').format(
+                    path.name))
+        webbrowser.open(url)
+
     # ---- state -------------------------------------------------------------------------------
     def game_changed(self):
         folder = self.var('game_dir', 'app').get()
@@ -2499,8 +2651,7 @@ class Launcher:
         """The game's output for the Log page, also kept in <saves folder>/last_run.log."""
         log = None
         try:
-            self.user_dir().mkdir(parents=True, exist_ok=True)
-            log = open(self.user_dir() / 'last_run.log', 'w', encoding='utf-8', buffering=1)
+            log = start_run_log(self.user_dir())
         except OSError:
             pass
         for raw in iter(process.stdout.readline, b''):
@@ -2781,13 +2932,24 @@ class GameJob:
             self.handle = None
 
 
+def start_run_log(folder):
+    """<saves folder>/last_run.log, opened for a new run; the run before's moves to last_run.1.log, so a
+    relaunch after a crash keeps the crash's log for a bug report."""
+    folder.mkdir(parents=True, exist_ok=True)
+    log = folder / 'last_run.log'
+    try:
+        if log.exists():
+            log.replace(folder / 'last_run.1.log')
+    except OSError:
+        pass
+    return open(log, 'w', encoding='utf-8', buffering=1)
+
+
 def play_without_window(settings):
     """--play: the game with the saved settings (shortcuts, Steam). Output goes to the console
     when there is one and to <saves folder>/last_run.log."""
     attach_stdio()
-    log_dir = Path(settings.get('user_dir') or DATA_DIR / 'user')
-    log_dir.mkdir(parents=True, exist_ok=True)
-    with open(log_dir / 'last_run.log', 'w', encoding='utf-8', buffering=1) as log:
+    with start_run_log(Path(settings.get('user_dir') or DATA_DIR / 'user')) as log:
         process = subprocess.Popen(run_command(), cwd=PORT_DIR, env=game_environment(settings),
                                    stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT, creationflags=NO_WINDOW)

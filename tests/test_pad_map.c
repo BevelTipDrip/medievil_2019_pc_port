@@ -46,5 +46,15 @@ int main(void) {
     assert(pressed_by(&pad,SDL_GAMEPAD_BUTTON_BACK)==0 && pressed_by(&pad,SDL_GAMEPAD_BUTTON_TOUCHPAD)==0);
     assert(pressed_by(&pad,SDL_GAMEPAD_BUTTON_MISC1)==BTN_TOUCHPAD);
     assert(apply_button_map(&pad,"cross=Space",false)==0); /* a key name is no gamepad button */
+
+    /* "none" (the launcher's unbound box) takes the default away and adds nothing, keys and gamepad. */
+    ButtonMap unbound=key_map;
+    assert(apply_button_map(&unbound,"cross=None,circle=none",MAP_KEYS)==2);
+    assert(pressed_by(&unbound,SDL_SCANCODE_SPACE)==0 && pressed_by(&unbound,SDL_SCANCODE_LSHIFT)==0);
+    assert(unbound.count==key_map.count-2 && pressed_by(&unbound,SDL_SCANCODE_E)==BTN_SQUARE);
+    ButtonMap no_pad=pad_map;
+    assert(apply_button_map(&no_pad,"cross=none",MAP_PAD)==1 && pressed_by(&no_pad,SDL_GAMEPAD_BUTTON_SOUTH)==0);
+    ButtonMap mouse={{{0,0}},0};
+    assert(apply_button_map(&mouse,"cross=none",MAP_MOUSE)==0 && mouse.count==0); /* mouse: no defaults to take */
     puts("PASS: pad and key maps");
 }
