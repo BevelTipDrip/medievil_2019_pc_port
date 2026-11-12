@@ -105,7 +105,9 @@ tick path was verified (T-MS10; the user, 2026-11-12).
 
 - Save list (the user, 2026-11-12): mouse binds did nothing there (right button as Back): the list shows the
   cursor, so the game does not have the mouse and `runtime_mouse_buttons()` is 0. Fix built: `list_buttons` adds
-  SDL's held buttons through the same map (`list_mouse_buttons`, no wheel) while the window has the mouse. Not run.
+  SDL's held buttons through the same map (`list_mouse_buttons`, no wheel) while the window has the mouse. Run in
+  T-MP1 (research/docs/data/mouse-prompts-t-mp1.log: "SaveDataDialog list: cancelled" by the right button); the user:
+  "looks great". Verified.
 
 ## History and pitfalls
 

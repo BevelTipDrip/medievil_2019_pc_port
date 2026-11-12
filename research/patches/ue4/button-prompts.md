@@ -91,7 +91,10 @@ study-glyphs.md; the Xbox and keyboard sets (G3, G4) and the bone textures (G2) 
   default, `GOW3_PROMPTS_PREFER_MOUSE`), otherwise only where the key is unbound or has no picture (`icons`,
   `prompt_controls` in run.py; the game's prompts and the Load list's). The icons (left, right, middle, wheel up /
   down / either, side back / forward) are drawn in the round key style by scripts/make_mouse_prompts.py
-  (third_party/input-prompts/README.md). Fix built, not run.
+  (third_party/input-prompts/README.md); redrawn after the user's review (`687d80b`: round outline, side
+  buttons without a halo, the mouse as large as the key takes). T-MP1 (2026-11-12): the Load list showed the right
+  button for Go Back and the left for Details / Summary (Space kept for Select, no mouse bind); the user: "looks
+  great". Verified on the Load list.
 
 ## History and pitfalls
 
