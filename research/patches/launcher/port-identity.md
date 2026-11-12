@@ -10,7 +10,7 @@ origin: ours
 class: G
 commits: dda748522a, c1db412306, 711b3968f1, 44a4036e93
 files: launcher/medievil_launcher.py, run.py, packaging/linux/appimage.sh, packaging/windows/package.sh, launcher/medievil.ico, launcher/medievil.png, tests/test_launcher_controls.py, README.md
-symbols: VERSION, RELEASES_API, RELEASES_PAGE, LINKS, version_tuple, latest_release, check_update, install_update, set_icon, shortcut, shortcut_script, GOW3_WINDOW_ICON
+symbols: VERSION, RELEASES_API, RELEASES_PAGE, LINKS, WINDOW_TITLE, link_buttons, version_tuple, latest_release, check_update, install_update, set_icon, shortcut, shortcut_script, GOW3_WINDOW_ICON
 switches:
 tests:
 docs: plan-work-queue.md#the-users-quality-of-life-list-2026-11-03-after-the-v200-release, study-upstream-commits.md#semantic-hazards-in-files-that-auto-merge-mt
@@ -28,6 +28,9 @@ the README has a "This fork" section. `c1db412`: Advanced has a "Start menu shor
 so it cannot overwrite the design. `44a4036`: the launcher and game windows show the user's game icon again
 (`sce_sys/icon0.png`: the launcher's `set_icon`, run.py's `GOW3_WINDOW_ICON` BMP). The launcher falls back to the
 port icon; run.py has no fallback, so without the icon or Pillow the game window gets SDL's default.
+Links (the user, 2026-11-11): `LINKS` is GitHub and the mod's Discord (https://discord.gg/wyF6jnRpnf); the
+YouTube and Patreon buttons, the Patreon line and the upstream author's name in `WINDOW_TITLE` ("MediEvil (PC) ·
+v2.2.1") are gone. The README keeps the credit to the upstream port.
 
 ## Invariants
 

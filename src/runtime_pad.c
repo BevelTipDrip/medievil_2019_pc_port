@@ -198,17 +198,20 @@ static int apply_button_map(ButtonMap *map, const char *spec, int kind) {
         entry=next;
         uint32_t ps=0;
         for (size_t i=0;i<sizeof(ps_names)/sizeof(*ps_names);++i) if (!SDL_strcasecmp(button,ps_names[i].name)) ps=ps_names[i].ps;
-        const int source=!*name ? -1 : kind==MAP_KEYS ? (int)SDL_GetScancodeFromName(name)
+        /* "none" (the launcher's unbound key or gamepad button) takes the button's default away */
+        const int unbound=kind!=MAP_MOUSE && !SDL_strcasecmp(name,"none");
+        const int source=!*name || unbound ? -1 : kind==MAP_KEYS ? (int)SDL_GetScancodeFromName(name)
                          : kind==MAP_MOUSE ? mouse_button_from_name(name) : (int)SDL_GetGamepadButtonFromString(name);
-        if (!ps || source<=(kind==MAP_KEYS ? (int)SDL_SCANCODE_UNKNOWN : kind==MAP_MOUSE ? -1
-                            : (int)SDL_GAMEPAD_BUTTON_INVALID)) {
+        if (!ps || (!unbound && source<=(kind==MAP_KEYS ? (int)SDL_SCANCODE_UNKNOWN : kind==MAP_MOUSE ? -1
+                                         : (int)SDL_GAMEPAD_BUTTON_INVALID))) {
             printf("Runtime: pad map: ignored '%s=%s'\n",button,name);
             continue;
         }
         size_t kept=0;
         for (size_t i=0;i<map->count;++i) if (map->entries[i].ps!=ps) map->entries[kept++]=map->entries[i];
         map->count=kept;
-        if (map->count<sizeof(map->entries)/sizeof(*map->entries)) map->entries[map->count++]=(ButtonSource){source,ps};
+        if (!unbound && map->count<sizeof(map->entries)/sizeof(*map->entries))
+            map->entries[map->count++]=(ButtonSource){source,ps};
         ++used;
     }
     return used;

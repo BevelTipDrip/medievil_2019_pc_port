@@ -161,6 +161,17 @@ class ControlMapTest(unittest.TestCase):
         pads.update(cross='b', l2='a')
         self.assertEqual(launcher.control_changes(pads, 'pad'), {'cross': 'b'})  # L2/R2: triggers only
 
+    def test_unbound_key_reaches_the_game(self):
+        """A key box right-clicked to None sends 'button=None', which the runtime reads as no key."""
+        keys = {b: k for b, k, _p in launcher.CONTROLS}
+        keys['cross'] = launcher.KEY_NONE
+        self.assertEqual(launcher.control_changes(keys, 'key'), {'cross': 'None'})
+        env = launcher.game_environment({**launcher.APP_DEFAULTS, 'controls': {'key': {'cross': launcher.KEY_NONE}}})
+        self.assertEqual(env['GOW3_KEY_MAP'], 'cross=None')
+        runtime = (ROOT / 'src' / 'runtime_pad.c').read_text(encoding='utf-8')
+        self.assertIn('!SDL_strcasecmp(name,"none")', runtime)
+        self.assertIsNone(launcher.sdl_key_name('None'))  # no key can be captured as the unbound name
+
     def test_captured_keys_get_sdl_names(self):
         names = {'a': 'A', '5': '5', 'space': 'Space', 'Shift_L': 'Left Shift', 'Control_R': 'Right Ctrl',
                  'Return': 'Return', 'BackSpace': 'Backspace', 'Prior': 'PageUp', 'F11': 'F11', 'KP_7': 'Keypad 7'}

@@ -51,15 +51,14 @@ APP_NAME = 'MediEvil'
 MAX_LOG_LINES = 6000
 NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
 # This build. The launcher checks the fork's GitHub releases at start and offers newer versions.
-# The fork's own series starts at 2.0.0 (upstream bc160201983 is at 1.3.x), so it never offers upstream's builds.
+# The fork's own series starts at 2.0.0 (the upstream port is at 1.3.x), so it never offers upstream's builds.
 VERSION = '2.2.1'
 RELEASES_API = 'https://api.github.com/repos/BevelTipDrip/medievil_2019_pc_port/releases/latest'
 RELEASES_PAGE = 'https://github.com/BevelTipDrip/medievil_2019_pc_port/releases'
 # The port's pages (Home and Advanced), opened in the browser.
 LINKS = (('GitHub', 'https://github.com/BevelTipDrip/medievil_2019_pc_port'),
-         ('YouTube', 'https://www.youtube.com/@BilalReloaded'),
-         ('Patreon', 'https://www.patreon.com/c/bilalreloaded'))
-WINDOW_TITLE = '{} (PC) — Port By BilalReloaded · v{}'
+         ('Discord', 'https://discord.gg/wyF6jnRpnf'))
+WINDOW_TITLE = '{} (PC) · v{}'
 UPDATE_DIR = Path(tempfile.gettempdir()) / 'medievil-update'
 # Never copied over an installation by an update (the package does not hold them either).
 USER_FILES = ('user', 'out', 'mods', 'medievil.ini', 'mods.json', 'mods_presets.json', 'patches.json', 'last_run.log',
@@ -248,6 +247,10 @@ def sdl_key_name(keysym):
     if re.fullmatch(r'KP_[0-9]', keysym):
         return f'Keypad {keysym[3]}'
     return TK_KEYS.get(keysym)
+
+
+# A game button left with no key (right-click on its key box): the runtime's "none" takes its default away.
+KEY_NONE = 'None'
 
 
 def menu_key_name(keysym):
@@ -1575,14 +1578,12 @@ class Launcher:
         show()
 
     def link_buttons(self, parent):
-        """GitHub, YouTube and Patreon buttons that open the port's pages in the browser."""
+        """GitHub and Discord buttons that open the port's pages in the browser."""
         ttk = self.ttk
         holder = ttk.Frame(parent)
         for index, (name, url) in enumerate(LINKS):
             ttk.Button(holder, text=name, command=lambda u=url: webbrowser.open(u)).pack(
                 side='left', padx=(0 if index == 0 else 8, 0))
-        ttk.Label(holder, text=_('Support the port on Patreon', 'Поддержите порт на Patreon'),
-                  style='Muted.TLabel').pack(side='left', padx=12)
         return holder
 
     def draw_banner(self):
@@ -2108,7 +2109,8 @@ class Launcher:
                 box = ttk.Label(table, text=_('{} trigger').format(PS_BUTTON_NAMES[button]), style='Muted.TLabel')
             box.grid(row=r, column=5, sticky='w')
             self.draw_pad_icon(button)
-        self.note(f, _('Click a key box, then press the key for that button (click elsewhere to cancel). The menu '
+        self.note(f, _('Click a key box, then press the key for that button, or right-click to leave the button '
+                       'with no key (click elsewhere to cancel). The menu '
                        'key and F12 (screenshots) cannot be chosen. A mouse button works together with the key, '
                        'with Mouse look and buttons on. L2/R2 on the gamepad stay on the triggers. Applied when the '
                        'game starts.'))
@@ -2125,12 +2127,21 @@ class Launcher:
 
     def key_capture(self, parent, var, menu=False):
         """A key box: click it, then press the key (sdl_key_name; the menu key may also be Insert), which is
-        stored in var. A key the menu or a game button already has is refused."""
+        stored in var. A key the menu or a game button already has is refused. A right-click while it waits
+        leaves a game button with no key (KEY_NONE); the menu always keeps one."""
         box = self.ttk.Button(parent, width=16)
         box.capturing = False
 
         def show(*_args):
-            box.configure(text=var.get())
+            box.configure(text=_('None') if var.get() == KEY_NONE else var.get())
+
+        def unbind(_event):
+            if not box.capturing:
+                return None
+            box.capturing = False
+            var.set(KEY_NONE)
+            parent.focus_set()
+            return 'break'
 
         def start():
             box.capturing = True
@@ -2160,6 +2171,8 @@ class Launcher:
         box.configure(command=start)
         box.bind('<KeyPress>', pressed)
         box.bind('<FocusOut>', stop)
+        if not menu:
+            box.bind('<Button-3>', unbind)
         return box
 
     def draw_pad_icon(self, button):
