@@ -56,6 +56,12 @@ it into. Nothing is sent until you press Submit on GitHub. The log of the run be
 
 ![Launcher: Submit Bug Report](docs/screenshots/launcher-bug-report.jpg)
 
+**Fixes from the community** (upstream PRs, thanks to their authors):
+- **Torch flames and other effects missing** while shaders were still compiling: the main menu's torches on the first start, torches in levels, and the trail of small stars behind the firefly that follows Dan. Porticus, [upstream #52](https://github.com/bc160201983/medievil_2019_pc_port/pull/52).
+- **Movie ends**: the threads that play a movie no longer race when it stops. On Windows each movie end could wait up to 5 seconds; on Linux and the Steam Deck it could hang (black screen after the logo, or on the world map). dvilelaf, [upstream #68](https://github.com/bc160201983/medievil_2019_pc_port/pull/68).
+- **Controllers plugged in after start** are found on more systems. Porticus, [upstream #64](https://github.com/bc160201983/medievil_2019_pc_port/pull/64).
+- The Windows zip carries NVIDIA's DLSS licence next to the DLSS bridge.
+
 **Also:** settings the game's menu changes are no longer overwritten by the launcher after the game exits.
 
 ![Fight in the Hilltop Mausoleum with the frame statistics](docs/screenshots/mausoleum-fight-stats.jpg)
