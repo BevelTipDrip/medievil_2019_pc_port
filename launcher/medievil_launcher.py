@@ -53,7 +53,7 @@ MAX_LOG_LINES = 6000
 NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
 # This build. The launcher checks the fork's GitHub releases at start and offers newer versions.
 # The fork's own series starts at 2.0.0 (the upstream port is at 1.3.x), so it never offers upstream's builds.
-VERSION = '2.2.1'
+VERSION = '2.3.0'
 RELEASES_API = 'https://api.github.com/repos/BevelTipDrip/medievil_2019_pc_port/releases/latest'
 RELEASES_PAGE = 'https://github.com/BevelTipDrip/medievil_2019_pc_port/releases'
 # The port's pages (Home and Advanced), opened in the browser.

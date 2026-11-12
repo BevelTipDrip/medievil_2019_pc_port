@@ -10,6 +10,60 @@ The graphics run on the [shadPS4](https://github.com/shadps4-emu/shadPS4) video 
 emulates the PS4 GPU at a high level: it recompiles the game's shaders and translates its GPU
 commands to Vulkan.
 
+**How it runs.** On an RTX 4090, the game holds over 200 FPS at native resolution (no upscaling) with steady
+1% and 0.1% lows. The Steam Deck holds 60 FPS in the game's heaviest view at its 15 W limit, with ambient
+occlusion, reflections and volumetric fog still on.
+
+**Community:** [Discord](https://discord.gg/wyF6jnRpnf) · bug reports and ideas through the launcher's
+**Submit Bug Report** button or the [issue tracker](../../issues).
+
+> **No game files are included.** You need your own copy of MediEvil (CUSA11227), as an unpacked
+> folder or a fake package (.pkg). This project is not affiliated with Sony Interactive
+> Entertainment or Other Ocean. MediEvil is a trademark of Sony Interactive Entertainment.
+
+## What's new in 2.3.0
+
+**Mouse and keyboard (Windows).** Launcher > Controls > Mouse > **Mouse look and buttons**.
+
+- **Mouse look** on both axes, in the free camera and in Dan-cam (the aim camera). The mouse turns the camera inside
+  the game's own camera update, so both axes respond on the same frame. Sensitivity, vertical / horizontal ratio
+  and invert are in the launcher and, live, in the game's menu (Controls tab).
+- The game takes the mouse when its window has focus in borderless and fullscreen; Alt+Tab and the menu give it back.
+- **Mouse buttons and the wheel press game buttons**: a MOUSE column next to the keyboard's. Wheel up, wheel down,
+  or "wheel (up or down)", which is one press per scroll, so a fast scroll switches weapons once.
+- **Mouse button prompts**: with Keyboard prompts, buttons bound to the mouse show a mouse icon, in the game and
+  in the Load list ("Prefer mouse binds for glyphs").
+- **Keys**: right-click a key box while it waits for a key to leave that button without one. The key that opens
+  the port's menu (Insert) can be changed, for keyboards without Insert.
+
+| | |
+|---|---|
+| ![The in-game menu's Controls tab](docs/screenshots/controls-menu.jpg) | ![The Load list with mouse prompts](docs/screenshots/load-list-mouse.jpg) |
+| The in-game menu's Controls tab: mouse settings and the camera's automatic moves, live | The Load list with mouse prompts (right button: back, left button: details) |
+| ![Launcher: Controls](docs/screenshots/launcher-controls.jpg) | ![Launcher: buttons, with the MOUSE column](docs/screenshots/launcher-mouse-binds.jpg) |
+| Launcher > Controls: mouse, menu key and camera | The MOUSE column beside the keyboard and gamepad |
+
+**Camera options.** The free camera's automatic moves can each be switched off (Controls > Advanced camera, or
+live in the game): the camera following Dan, the sideways swing, suggested directions, turning at posts, the
+running zoom and tilt, and the vertical re-centre. Ticking Mouse look sets a mouse-friendly mix (only suggested
+directions and posts on). The switches apply to the right stick too; fixed, rail and boss cameras keep the
+game's moves.
+
+**Submit Bug Report.** A button next to GitHub and Discord. It shows exactly what will be sent, saves a zip of
+your logs and settings with your user, PC and player names removed, and opens a filled-in GitHub issue to drag
+it into. Nothing is sent until you press Submit on GitHub. The log of the run before is now kept too
+(`last_run.1.log`), so a crash's log survives a relaunch.
+
+![Launcher: Submit Bug Report](docs/screenshots/launcher-bug-report.jpg)
+
+**Also:** settings the game's menu changes are no longer overwritten by the launcher after the game exits.
+
+![Fight in the Hilltop Mausoleum with the frame statistics](docs/screenshots/mausoleum-fight-stats.jpg)
+*A fight in the Hilltop Mausoleum, RTX 4090, 4K output with DLSS at 75% and a 237 FPS cap: 232 FPS average,
+1% low 204, 0.1% low 177 (the port's overlay, top right).*
+
+Earlier versions: see the [Releases page](../../releases).
+
 ## Roadmap
 
 What this fork has done, and what is next. Checked items are in a release or on the default branch.
@@ -22,129 +76,116 @@ What this fork has done, and what is next. Checked items are in a release or on 
 - [x] Memory sync and draw-translation CPU cuts; no stalls when Windows trims memory
 - [x] Frame pacing above 60 FPS: Reflex limiter, automatic frame limit, precise vblank tick
 - [x] Shadow black boxes, a draw-pipe crash / freeze and vanishing GPU particles fixed
-- [x] Finer occlusion culling at small resolutions
-- [x] Hilltop Mausoleum lighting fixed on Linux / Steam Deck
-- [x] Wrong lighting / white or teal walls / purple reflections (Hall of Heroes, Hilltop Mausoleum): the sky light's
-  brightness is now read correctly at each level load
+- [x] Wrong lighting (teal or white walls, purple reflections) after a level load fixed
 - [ ] Hang at "quit to main menu" (found: a deadlock between two GPU threads)
-- [ ] Occasional crash at startup (S1; restarting works)
+- [ ] Occasional crash at startup (restarting works)
 
 **Game and platforms**
-- [x] Upstream 1.3.8 merged
 - [x] Game update 01.02 supported
-- [x] Steam Deck / Linux: native AppImage
-- [x] Deck Optimized preset (detects the Deck, 60 FPS in the heaviest view)
+- [x] Steam Deck / Linux: native AppImage, Deck Optimized preset (60 FPS in the heaviest view)
 - [ ] Deck: steadier frame times at the 60 FPS cap
 - [ ] Deck: freeze after quitting from Steam
 
 **Graphics**
 - [x] Graphics quality levels (Ultra to Low, Deck Optimized) with 18 individual settings, Console = the PS4's values
 - [x] Real Unreal motion vectors and camera-cut detection for temporal upscalers
-- [x] NVIDIA DLAA (render scale 100) in place of the game's anti-aliasing
-- [x] NVIDIA DLSS upscaling below 100 (Quality / Balanced / Performance)
-- [x] DLSS in the launcher and the in-game menu, F9 in game
+- [x] NVIDIA DLAA and DLSS upscaling, in the launcher, the in-game menu and on F9
 - [ ] DLSS model (preset) per quality mode
-- [ ] AMD FSR 3 upscaling on the same inputs
-- [ ] DLSS frame generation
-- [ ] FSR frame generation
+- [ ] AMD FSR upscaling on the same inputs (FSR 4 requested: [#1](../../issues/1))
+- [ ] DLSS and FSR frame generation
 
-**Launcher and controls**
-- [x] New icon, Start menu shortcut, updates from this fork
-- [x] Mouse cursor hidden while playing
-- [x] Xbox and keyboard button prompts in the game, following your remaps; keys set by pressing them
-- [ ] Mouse look and menu mouse, camera options
+**Controls and launcher**
+- [x] Xbox and keyboard button prompts in the game, following your remaps
+- [x] Mouse look, mouse buttons and wheel, mouse prompts, camera options
+- [x] Bug reports from the launcher, Discord
+- [ ] Mouse in the game's menus
+- [ ] Free camera in fixed and scripted camera areas
+- [ ] Mouse look on Linux / Steam Deck
 
-## What's new in 2.2.1
+## Screenshots
 
-- **Windows build fix.** 2.2.0's `MediEvil.exe` (and the 2.1 releases') was built with an old Python 3.8 by
-  mistake: mods that replace game files failed to start, and with Xbox / Keyboard prompts the inventory's and
-  tutorials' button pictures stayed PlayStation. It is now built with Python 3.14. The Linux / Deck AppImage was
-  not affected.
+| | |
+|---|---|
+| ![The Graveyard's gate](docs/screenshots/graveyard-gate.jpg) | ![The Hilltop Mausoleum](docs/screenshots/hilltop-mausoleum.jpg) |
+| ![The Hall of Heroes](docs/screenshots/hall-of-heroes.jpg) | ![The Hilltop Mausoleum's chapel, keyboard prompts](docs/screenshots/mausoleum-chapel.jpg) |
 
-## What's new in 2.2.0
+Windows 11, RTX 4090, 4K. Some show the port's frame statistics along the top.
 
-- **Xbox and keyboard button prompts.** Launcher > Controls > **In-game button prompts**: PlayStation (the game's
-  own), Xbox or Keyboard. The game's HUD, menus, inventory, bestiary and Button Layout page show the button or key
-  you play with, including your remaps (Cross on B shows B; Cross on Q shows Q). The icons are Julio Cacko's
-  [Free Input Prompts](https://juliocacko.itch.io/free-input-prompts) (CC0). "Gamepad names" is now
-  **Controller type**.
-- **Key capture.** To remap a key, click its box on the Controls page and press the key: no more typing
-  "Left Shift". Left and right Shift / Ctrl / Alt are told apart.
-- **A new Load list**, in the game's own menu style:
-  - **Continue** loads your newest save; every save shows its **Slot** number.
-  - Beside the list: the level's loading screen, chalices, levels completed, life bottles, gold, bestiary entries
-    and play time. Square / Tab lists every level in the save.
-  - The names, pictures and fonts come from your own copy of the game at start; nothing of the game is shipped.
-- **Saves stay in their slot.** Loading an older slot and playing on used to save into a different slot. A
-  save's date is now its last write, so the game saves where you loaded. Save backups made at each start are
-  no longer deleted (they are small).
-- **Dan's Crypt water** at effects resolution below 100% looked wrong (and the map screen had glitches): fixed.
+## Features
 
-## What's new in 2.1.1
+**Graphics**
+- **Any output resolution** (720p to 4K, your display's size, or any `output_resolution=WxH` in `medievil.ini`):
+  the game starts at that size, as a PS4 starts at its TV's, so menus and controller navigation work at every size.
+- **Render scale** 50% to 200%: above 100% supersampling, below it the game's own temporal upsampling. Live in
+  the game's menu.
+- **NVIDIA DLSS** (RTX cards): DLAA at render scale 100, upscaling below it. NVIDIA's `nvngx_dlss.dll` is not
+  included: copy it into the `bin` folder ([README-Windows.txt](packaging/windows/README-Windows.txt)).
+- **Graphics quality**: Ultra, High, Console (the PS4's exact values), Medium, Low and Deck Optimized, each a set
+  of 18 settings you can change one by one. Anti-aliasing: the game's TAA, FXAA or off.
+- **Frame rate**: the PS4 game's 60 FPS cap can be lifted (Engine frame rate) with normal game speed; NVIDIA
+  Reflex limiter, an automatic frame limit, VRR (G-Sync / FreeSync) support.
 
-- **Lighting fix.** Walls that sometimes came up flooded with light after a level load (teal in the Hall of
-  Heroes, white on 01.00, purple reflections) are fixed. Each level load, the game reads one small value back
-  from the GPU, the sky light's average brightness; the port used to hand it leftover memory instead. Levels
-  now also look as intended on good loads: darker corners, less washed out.
-- **Developer cheat menu on 01.02.** It opens with **L1 + R1 + R3** in a level (01.00: R3). The update added
-  that combo; the port's earlier attempts to free up R3 are gone, so R3 still recenters the camera.
-- **Steam Deck build attached** to the release: `MediEvil-x86_64.AppImage`.
+**Controls**
+- Controllers (DualSense, Xbox and others through SDL3), keyboard and, on Windows, the mouse; all remappable.
+  Every connected controller is read, also while another window has the focus.
+- Button prompts in the game: PlayStation (the game's own), Xbox or Keyboard (and mouse), following your remaps.
+  Icons: Julio Cacko's [Free Input Prompts](https://juliocacko.itch.io/free-input-prompts) (CC0).
+- Stick range for sticks that never reach the edge; the camera's automatic moves switchable (above).
 
-## What's new in 2.1.0
+**Game**
+- Saving and loading, with a backup of your saves before every start. The port's **Load list** shows each save's
+  slot, level picture, chalices, levels, gold, bestiary entries and play time; Continue loads the newest.
+- **All the game's languages**, whatever region your copy is from, and the **voice language** separately (15 dubs).
+- **Cheats** (launcher > Game > Cheats): the developers' own debug menu (in a level: R3; 01.02: L1 + R1 + R3) with
+  level select, invincibility, all weapons and more, and unlimited ammo.
+- Both game versions, 01.00 and 01.02, of CUSA11227 and CUSA12982.
+- Audio (Wwise, ATRAC9, AAC) with the game's 7.1 mixed down properly for stereo.
+- Online features answer as a console that is not signed in.
 
-- **NVIDIA DLSS (RTX cards).** It replaces the game's own anti-aliasing:
-  - DLAA at render scale 100;
-  - upscaling below 100. At 50% (Performance) the picture looks close to native at a much higher frame rate.
-  - Turn it on in the launcher (Graphics > NVIDIA DLSS), in the game's menu (Image tab), or with F9 while
-    playing. It is off by default.
-  - NVIDIA's `nvngx_dlss.dll` is not included: copy it into the `bin` folder
-    ([README-Windows.txt](packaging/windows/README-Windows.txt)).
-- **Graphics quality levels.** Ultra, High, Console, Medium and Low each set 18 individual settings, five of them
-  new. Change any one and the level shows Custom. Console uses the PS4's exact values, shadows included.
-- **Steam Deck and Linux.**
-  - The Linux build works again and runs natively on the Deck as an AppImage.
-  - A Deck Optimized preset holds 60 FPS in the heaviest graveyard view.
-  - Finer occlusion culling at small resolutions.
-  - Less CPU work per frame, which leaves the Deck's 15 W power budget to the GPU.
-  - See [packaging/linux/README-Linux.md](packaging/linux/README-Linux.md).
-- **Fixes.**
-  - Hilltop Mausoleum lighting on Linux, and on Windows the same kind of fix (reused memory is cleared before it
-    changes hands) against wrong lighting and purple reflections.
-  - The torch and crypt-floor glitch with the single particle pass.
-  - The in-game menu no longer adds frames while it is open.
-  - A crash during memory copies on Linux.
-  - Launcher settings carry over correctly between quality levels.
-  - The mouse cursor hides while playing.
-- **Live render scale** from 50% to 200% in the in-game menu.
+**Launcher**
+- In MediEvil's style, with the game's own fonts and cover art (read from your copy, never shipped).
+- Installs from a fake PKG, handles mods and patches, save backups, controls, and checks this fork for updates.
+- **In-game menu** (Insert or your chosen key, or R3+L2): Game, Controls, Image, Performance and Overlay tabs, with
+  live settings and a performance overlay.
+- **Screenshots**: F12 saves the game's picture at full resolution in `user/screenshots`.
+
+### Known limits
+
+- Mouse look and mouse buttons are Windows only for now; fixed and scripted camera areas keep the game's camera.
+- With a native output above 1080p, the gamepad cannot reach menu items outside the top-left 1920×1080 area (the
+  pause menu's "Quit to Map", the debug menu's right column).
+- **Radeon RX 400/500 and Vega** (older AMD drivers): some crash when the main menu loads. Try launcher >
+  Performance > Safe GPU mode (older AMD GPUs), and send a bug report from the launcher.
+- Experimental PS4 Pro mode (`GOW3_NEO=1`) stops in the texture cache.
+
+## Download and play
+
+**Windows**
+1. Download `medievil-windows.zip` from the [Releases page](../../releases/latest) and extract it.
+2. Open **`MediEvil.exe`** (Windows may warn that it is not signed: More info, Run anyway).
+3. On **Game**, either **Choose .pkg…** to install from your package, or **Browse…** to the folder with `eboot.bin`.
+4. Choose an **Output resolution** and **Render scale** on **Home** and press **PLAY**.
+
+`Play MediEvil.exe` starts the game with the saved settings, for shortcuts and Steam. With an empty file
+`portable.txt` next to `MediEvil.exe`, the launcher keeps its settings beside it. More in
+[README-Windows.txt](packaging/windows/README-Windows.txt).
+
+**Steam Deck and Linux**: download `MediEvil-x86_64.AppImage` from the same page and follow
+[README-Linux.md](packaging/linux/README-Linux.md) (Desktop Mode once to pick the game, then Game Mode through Steam).
+
+## Community and bug reports
+
+- [Discord](https://discord.gg/wyF6jnRpnf): help, questions and news.
+- **Bug reports**: launcher > **Submit Bug Report**. It attaches what we need (logs and settings, with your names
+  removed) to a GitHub issue. Feature requests go the same way.
 
 ## This fork
 
 This is BevelTipDrip's fork of [bc160201983's MediEvil port](https://github.com/bc160201983/medievil_2019_pc_port),
-**actively maintained**. It contains everything up to upstream 1.3.8, plus performance and correctness work, each
-change measured in game. Its releases start at **2.0.0**, and the launcher checks this fork for updates, so it never
-offers upstream's builds in place of this one.
-
-What 2.0.0 changed, in short:
-
-- **Fights**: kill effects nearly doubled the render passes in a frame (326 to 560–660), each break costing the
-  draw-translation thread time, so it saturated; most of those breaks are gone (Performance patches > "Fewer render
-  pass breaks"). A fight at a 120 FPS cap holds 1% / 0.1% lows of 119.7 / 117.4 FPS, with no frame over 10 ms.
-- **Culling**: Unreal's HZB occlusion culling works (its small mip levels were never rendered), through a runtime
-  remap with no GPU wait. The decal depth prepass, about 600 draws a frame for decals nobody sees, is skipped.
-- **Memory sync**: CPU writes into memory the GPU wrote no longer force downloads (27 a second to 0); the 2–5 s
-  stalls when Windows trimmed the game's memory are gone; lock and memory-pool lookups are cheaper (+17% median FPS
-  in the heaviest view); small buffers live in VRAM.
-- **Draw translation**: less CPU work per draw (texture-set memo, word-wise register scans, deferred fences, bulk
-  descriptor copies, sampler memo).
-- **Correctness**: shadows drawn as black boxes (stencil writes by shaders) fixed; a crash and freeze in the
-  draw pipe fixed; dust and other GPU particles no longer vanish with the camera angle ("GPU particle bounds"
-  game patch).
-- **Frame pacing** (above 60 FPS): NVIDIA Reflex limiter, an automatic frame limit at half the refresh (one below
-  it with VRR), and presents on a precise vblank tick.
-- **Game update 01.02** (CUSA11227) with every hook the port uses mapped.
-
-Every optimisation is a switch (launcher > Performance > Performance patches, or a `GOW3_*` variable), so each one
-can be compared on and off.
+**actively maintained**. It contains everything up to upstream 1.3.8, plus performance, correctness and feature
+work, each change measured in game. Its releases start at **2.0.0**, and the launcher checks this fork for updates,
+so it never offers upstream's builds in place of this one. Every optimisation is a switch (launcher > Performance >
+Performance patches, or a `GOW3_*` variable), so each one can be compared on and off.
 
 ### For other ports
 
@@ -157,170 +198,11 @@ credit the source). Where to start:
 - [research/docs/gpu-threading-reference.md](research/docs/gpu-threading-reference.md): how the GPU threads,
   waits and memory sync fit together, and the rules learned the hard way.
 - [research/docs/START-HERE.md](research/docs/START-HERE.md): the index of the research docs (plans, tests and
-  measurements).
+  measurements), and [research/patches](research/patches) (one card per change).
 - Commit messages name the test (`T-…`) that measured each change. In the video core, changes from shadPS4
   are marked with `gow3:` comments ([gpu/VENDOR.txt](gpu/VENDOR.txt)).
 
 Pointing an LLM at this repo works well: the docs above are written to be read that way.
-
-> **No game files are included.** You need your own copy of MediEvil (CUSA11227), as an unpacked
-> folder or a fake package (.pkg). This project is not affiliated with Sony Interactive
-> Entertainment or Other Ocean. MediEvil is a trademark of Sony Interactive Entertainment.
-
-## Screenshots
-
-| | |
-|---|---|
-| ![The Graveyard](docs/screenshots/graveyard.jpg) | ![Combat](docs/screenshots/combat.jpg) |
-| ![Spirit flames in The Graveyard](docs/screenshots/spirits.jpg) | ![World map](docs/screenshots/world-map.jpg) |
-
-Captured on Windows 11 (RTX 5080) with this port.
-
-## What works
-
-- Boot, intro movies, menus and gameplay (tested on an RTX 5080, a 1080p 200 Hz monitor and a 4K TV).
-- **Intel and AMD CPUs**: the game's few AMD-only SSE4a instructions (`INSERTQ`) are replaced with
-  SSE2 code on CPUs without them (all Intel CPUs), and any other one is emulated.
-- **60 FPS by default; above 60 is experimental**: Engine frame rate 120 or 240 (launcher >
-  Performance, or the in-game menu) lifts the PS4 game's 60 FPS cap, but can stutter and needs a
-  fast CPU; settings from before 1.3.4 go back to 60 once. The cap is Unreal Engine 4's console frame-rate ceiling
-  (`SmoothedFrameRateRange`, applied with VSync on), raised by the config override pak; game speed
-  stays normal. Frames are shown as soon as they are ready (a 480 Hz virtual vblank with a frame
-  limit), so pacing stays even. An RTX 5080 runs menus at 120 and levels at about 90 to 120 FPS.
-- **Smooth frame pacing on any monitor**: Frame rate limit "Half display refresh (smoothest)" shows
-  every frame for exactly two refreshes (72 FPS on 144 Hz, 100 FPS on 200 Hz; with Engine frame
-  rate 120). 60 FPS on a 144/165 Hz screen cannot be shown evenly and looks like stutter. With
-  VSync on, a limit at the display's own refresh (60 on a 60 Hz TV) is left to VSync, which paces it.
-- Audio (Wwise through AudioOut, ATRAC9 and AAC). On stereo speakers and headphones the port mixes
-  the game's 7.1 output down itself (SDL's downmix played it about 13 dB too quietly).
-- Controller (DualSense, Xbox and others, through SDL3) and keyboard, both remappable. Every
-  connected controller is read, also while another window has the focus, and the log names each
-  one. Controls > Controller type (PlayStation / Xbox) labels the launcher's buttons; Controls >
-  In-game button prompts (PlayStation / Xbox / Keyboard) changes the game's own prompts and the
-  Load list's, showing your remapped buttons and keys (Xbox and keyboard icons: Julio Cacko's Free
-  Input Prompts, CC0, third_party/input-prompts). Controls > Stick range (90% to 70%) counts less
-  tilt as a full push, for sticks that never reach the edge (some hall-effect pads).
-- Saving and loading; save backups before every start.
-- **All the game's languages** (launcher > Game > Language): every PS4 system language can be
-  picked, Polish included, whatever region your copy is from (a language the game has no text
-  for shows English).
-- **Voice language** (launcher > Game > Voice language): the spoken language can differ from the
-  text. The game has 15 dubs (English, French, German, Italian, Spanish, Latin American Spanish,
-  Portuguese, Brazilian Portuguese, Dutch, Polish, Russian, Czech, Greek, Arabic, Japanese), for
-  example Japanese voices with English text. "Same as game language" keeps the game's own choice.
-- **Screenshots**: F12 in the game saves a PNG of the game's picture at its full resolution
-  (3840 × 2160 in native 4K) in `user/screenshots` (launcher > Display > Open screenshots folder).
-  Shift+F12 saves raw frames for bug reports.
-- **Update notice**: the launcher asks GitHub for a newer release when it opens and offers to
-  download and install it (Advanced > Check for updates; can be switched off).
-- **Install from PKG**: the launcher (or `run.py`) unpacks a fake PKG once, resumably.
-- **Any output resolution** (launcher > Output resolution: 720p, 1080p, 1440p, 1800p, 4K, your
-  display's size, or any `output_resolution=WxH` in `medievil.ini`): the game starts at that size,
-  as a PS4 starts at its TV's (built-in patch "Boot display size", `patches/MediEvil.xml`), so the
-  menus and controller navigation work at every size. In windowed mode the window opens at it.
-  Above 1080p the port also uses a larger PS4 framebuffer pool ("Native 4K framebuffer pool
-  (512 MB)") and more game memory, by itself.
-- **Render scale** (launcher > Render scale, 50% to 200%): above 100% the 3D scene is drawn larger
-  and scaled down to the output (supersampling, sharpest); below 100% the game's own UE4 temporal
-  upsampling draws it smaller and rebuilds the full picture from its motion vectors (faster). The
-  menus and HUD stay at the output size (a UE4 config override pak, `scripts/ue4_override.py`).
-  The in-game menu (Performance > Game resolution now) can still switch between 1080p, 1440p,
-  1800p and 4K live, for the developer debug menu.
-- **Anti-aliasing** (launcher > Performance > Anti-aliasing): the game's temporal AA (default,
-  smooth), FXAA (sharper) or Off (raw pixels, best with a high render resolution). A render scale
-  below 100% always uses temporal AA.
-- **Graphics quality**: Low (integrated graphics such as the Radeon 780M), Medium, Console (PS4),
-  High and Ultra (sharper, longer-range shadows, better reflections and more distant detail).
-  Every preset keeps point/spot light shadows at one fixed size, which stops the shadow flicker
-  while moving, and limits shadow draws so busy outdoor scenes stay near 60 FPS.
-- **Launcher** in MediEvil's style: Gallowmere's colors and the game's own fonts (read from your
-  copy of the game, never shipped), with home and cover art, display, performance, game folder /
-  PKG install / save backups, cheats, patches, mods, controls, diagnostics and log.
-- **In-game menu** (Insert, or R3+L2): image (display mode, VSync, FSR 1, sharpening),
-  performance and the performance overlay.
-- Online features (PSN) answer as a console that is not signed in.
-
-### Cheats (launcher > Game > Cheats)
-
-- **Developer cheat menu**: MediEvil's own debug menu, left in the game by its developers and
-  switched on by the override pak. Press **R3** in a level (01.02: hold **L1 + R1**, then press
-  **R3**): unlock all levels, level select,
-  complete level, unlock all weapons, invincibility, all runes and quest items, life bottles,
-  gold, chalices, fly mode and more. Its 60 FPS lock is removed. Enemies pause while the menu is
-  open (the developers' design) and carry on when it closes, however it is closed (Complete
-  Level and other level changes included).
-- **Unlimited ammo**: daggers, crossbow and longbow bolts, lightning and the other weapons never
-  run out (weapons and shields also stop wearing out).
-
-### Performance work in this port
-
-- **Fewer hitches (from the Uncharted port)**: a 1 ms Windows timer, no power throttling of the
-  game's threads, a spare GPU memory block per memory type (new textures no longer wait for the
-  driver), pageable video memory where the driver offers it, merged buffer barrier ranges and
-  lighter thread wake-ups. On 4 CPU cores the worst gameplay frame went from 31-32 ms to 18 ms and
-  a busy scene from 33 to 54 FPS (measured twice). Each can be switched off for tests
-  (`GOW3_TIMER_RES=0`, `GOW3_POWER_THROTTLE=1`, `GOW3_SPARE_IMAGE_BLOCK=0`,
-  `GOW3_PAGEABLE_MEMORY=0`, `GOW3_TRACKER_MERGE_GAP=0`, `GOW3_FUTEX_COND=0`).
-- GPU barriers are recorded at most 128 images per call (very large batches are what older AMD
-  drivers crash on).
-- **No more texture churn**: the game draws its lighting volumes and colour grading LUT (3D
-  textures) as 2D slices; each switch rebuilt and copied the texture, about 14 times per frame.
-  The 3D texture now serves the slices through a 2D array view (~4,700 texture rebuilds per 5 s
-  down to ~90).
-- **8 GB graphics cards (laptops)**: the texture garbage collector's limits now follow the
-  driver's memory budget (from the Uncharted port). The old rule evicted textures still in use
-  on 8 GB cards and loaded them again (746 evictions in a test route; now none).
-
-- Texture cache images share VMA memory blocks instead of one driver allocation each (Unreal
-  Engine 4 reuses render target memory every frame): 22% of the draw recording thread was spent
-  creating and freeing GPU memory.
-- A sampling profiler for the GPU threads: `GOW3_SAMPLE_FILE=<prefix>` and
-  `scripts/symbolize_samples.py`.
-
-### Known limits
-
-- Above 60 FPS, the busiest levels are limited by the port's GPU command translation (one thread).
-- "Game resolution now" (in-game menu) works with Native and the native output modes; with the
-  1440p / 1800p / 4K render resolutions (supersampling) it stays at 1080p, as a larger output on top
-  runs out of the game's PS4 memory.
-- With a native output above 1080p (1440p / 1800p / 4K native output) the gamepad cannot reach
-  menu items outside the top-left 1920×1080 area (pause menu "Quit to Map", the debug menu's right
-  column): the game's UI window stays at 1080p while the picture switches. "4K (sharpest)" renders
-  the 3D scene at 4K with working menus; or switch to 1080p (in-game menu > Performance) and back.
-- Both MediEvil versions are supported: 01.00 (the base game) and 01.02 (the update), for
-  CUSA11227 and CUSA12982. The built-in patches have addresses for each version and are chosen by
-  the game's APP_VER and the eboot.bin hash (such as the 4K framebuffer pool); cheat edits that do
-  not match the installed version are skipped (the log says which). Native output (1440p / 1800p /
-  4K native output) finds the game's resolution setting in each version's own code (tested on 01.00;
-  the 01.02 address was found by @Porticus in #29). If a game build doesn't have that code, native
-  output stays at 1080p and the log says so. On the European 01.02 (CUSA12982) the 4K pool patch,
-  unlimited ammo, the FPS counter edit and the voice option work; the developer cheat menu opens
-  with L1 + R1 + R3 there as on the US 01.02 (not tested on the EU build). The 01.02 eboot does not export
-  a few `libSceNpToolkit2` C++ functions the game links; those imports are logged no-ops returning
-  0, since the port does not implement that module.
-- **Radeon RX 400/500 and Vega** (older AMD drivers): some crash in `amdvlk64.dll` when the main
-  menu loads. Try launcher > Performance > Safe GPU mode (older AMD GPUs) (`GOW3_VULKAN_COMPAT=1`),
-  which runs without newer Vulkan features. The log names the GPU and driver (a `GPU: …` line), and
-  a crash report lists the GPU barriers being recorded: please attach `user/last_run.log`.
-- Experimental PS4 Pro mode (`GOW3_NEO=1`) stops in the texture cache.
-
-## Download and play
-
-1. Download `medievil-windows.zip` from the
-   [Releases page](../../releases/latest) and extract it (not inside the zip).
-2. Open **`MediEvil.exe`** (Windows may warn that it is not signed: More info, Run anyway).
-3. On **Game**, either **Choose .pkg…** to install from your package, or **Browse…** to the
-   folder with `eboot.bin`.
-4. Choose an **Output resolution** (your display's size for a sharp picture) and a **Render scale** on
-   **Home** and press **PLAY**.
-5. Optional, NVIDIA RTX: copy NVIDIA's `nvngx_dlss.dll` into the `bin` folder and turn on **NVIDIA DLSS**
-   (launcher > Graphics). DLAA at render scale 100, DLSS upscaling below it.
-
-`Play MediEvil.exe` starts the game with the saved settings, for shortcuts and Steam.
-**Portable mode**: with an empty file `portable.txt` next to `MediEvil.exe`, the launcher keeps its
-settings in a `launcher-data` folder beside it instead of `%APPDATA%\medievil-launcher` (saves and
-`medievil.ini` are in the port folder already); updates keep both.
-More in [packaging/windows/README-Windows.txt](packaging/windows/README-Windows.txt).
 
 ## Building from source
 
@@ -345,8 +227,8 @@ More in [packaging/windows/README-Windows.txt](packaging/windows/README-Windows.
 
 4. Package: `bash packaging/windows/package.sh` builds `dist/medievil-windows.zip`.
 
-Linux (community build, not official yet): see [packaging/linux/README-Linux.md](packaging/linux/README-Linux.md)
-for building from source and the AppImage script (#13, by @nydal91).
+Linux: see [packaging/linux/README-Linux.md](packaging/linux/README-Linux.md) for building from source and the
+AppImage script (first contributed in #13 by @nydal91).
 
 ## How it works
 
@@ -355,25 +237,27 @@ for building from source and the AppImage script (#13, by @nydal91).
 | PKG install | `scripts/pkg_extract.py` | Decrypts and unpacks fake PKGs (PFS, PFSC), as shadPS4 does |
 | Game profiles | `scripts/game_profiles.py` | Modules to link and GPU defaults per title |
 | Preparation | `scripts/` | Reads `eboot.bin`, links the game's `libc`, `libSceFios2` and `libSceNpToolkit2` |
-| Loader | `src/probe.c` | Loads the image and starts the game's original code |
-| Runtime | `src/runtime_*.c` | PS4 system functions; `runtime_extra.c` holds the ones added for MediEvil |
-| GPU | `gpu/shadps4/` | shadPS4 video core (Vulkan) with the speed work of the port it is based on |
-| Override pak | `scripts/ue4_override.py` | Resolution, quality, frame rate cap, debug menu and unlimited ammo (config and Blueprint edits) |
-| Game patches | `patches/MediEvil.xml` | Code patches for 01.00 and 01.02 (native 4K framebuffer pool) |
-| Launcher | `launcher/medievil_launcher.py` | Settings, PKG install, mods, controls and the play button |
+| Loader | `src/probe.c` | Loads the image, starts the game's original code, and the hooks into its Blueprints (camera, mouse look) |
+| Runtime | `src/runtime_*.c` | PS4 system functions: pad, mouse, audio, saves, files |
+| GPU | `gpu/shadps4/` | shadPS4 video core (Vulkan) with the speed work of the ports it is based on |
+| Override pak | `scripts/ue4_override.py` | Resolution, quality, frame rate cap, debug menu, unlimited ammo, button prompts |
+| Game patches | `patches/MediEvil.xml` | Code patches for 01.00 and 01.02 |
+| Launcher | `launcher/` | Settings, PKG install, mods, controls, bug reports and the play button |
 
 To port another PS4 game the same way: the loader stops at the first system function the runtime
-does not implement and names it; `scripts/gen_import_names.py` adds a game's imports to the name
-table.
+does not implement and names it; `scripts/gen_import_names.py` adds a game's imports to the name table.
 
 ## Credits
 
+- **bc160201983**: [the MediEvil port](https://github.com/bc160201983/medievil_2019_pc_port) this fork continues.
 - **FelipePrado0**: [gow3_pc](https://github.com/FelipePrado0/gow3_pc), the God of War III port
-  this project is built on, and its credits: **Supermedo** and **deadinside28** (bloodborne_pc),
+  that port is built on, and its credits: **Supermedo** and **deadinside28** (bloodborne_pc),
   **cuesta4** (shadPS4 GPU fixes).
 - **shadPS4 team**: the video core, and the PKG format and fake-PKG keysets used by
   `scripts/pkg_extract.py` (`src/core/file_format/pkg.cpp`, `src/core/crypto`) and the NID name
   list (`tools/aerolib.inl`).
+- **Julio Cacko**: [Free Input Prompts](https://juliocacko.itch.io/free-input-prompts) (CC0), the Xbox, keyboard
+  and mouse button icons.
 - Also used: LibAtrac9, FFmpeg, SDL3, Dear ImGui, sirit, magic_enum, miniz, xbyak, Vulkan Memory
   Allocator, FSR-Vulkan, MSYS2, LLVM, Pillow and cryptography.
 
