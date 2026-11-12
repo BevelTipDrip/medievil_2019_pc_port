@@ -228,14 +228,24 @@ static void load_button_maps(void) {
         printf("Runtime: pad map: %d gamepad and %d keyboard buttons remapped, %d mouse buttons\n",pad,keys,mouse);
 }
 
-/* The PS4 buttons the held mouse buttons press (GOW3_MOUSE_MAP), while the game has the mouse. */
-static uint32_t mouse_map_buttons(void) {
-    if (!mouse_map.count) return 0;
-    uint32_t held=runtime_mouse_buttons();
+/* The PS4 buttons `held` mouse buttons press (GOW3_MOUSE_MAP; bits in mouse_button_from_name's order). */
+static uint32_t mouse_map_from(uint32_t held) {
     if (held & (32u|64u)) held|=128u; /* "wheel": either direction */
     uint32_t buttons=0;
     for (size_t i=0;i<mouse_map.count;++i) if ((held>>mouse_map.entries[i].source)&1) buttons|=mouse_map.entries[i].ps;
     return buttons;
+}
+/* The PS4 buttons the held mouse buttons press, while the game has the mouse. */
+static uint32_t mouse_map_buttons(void) {
+    return mouse_map.count ? mouse_map_from(runtime_mouse_buttons()) : 0;
+}
+/* The same for the port's save list, which shows the cursor: the game does not have the mouse then
+ * (runtime_mouse_buttons() is 0), so SDL's button state while the window has the mouse. No wheel. */
+static uint32_t list_mouse_buttons(void) {
+    if (!mouse_map.count || !SDL_WasInit(SDL_INIT_VIDEO) || !SDL_GetMouseFocus()) return 0;
+    const SDL_MouseButtonFlags m=SDL_GetMouseState(NULL,NULL);
+    return mouse_map_from((m&SDL_BUTTON_LMASK ? 1u : 0u)|(m&SDL_BUTTON_RMASK ? 2u : 0u)|(m&SDL_BUTTON_MMASK ? 4u : 0u)|
+                          (m&SDL_BUTTON_X1MASK ? 8u : 0u)|(m&SDL_BUTTON_X2MASK ? 16u : 0u));
 }
 
 static void key_axis(uint8_t *axis, bool negative, bool positive) {
@@ -457,12 +467,12 @@ static uint32_t host_buttons(void) {
     return buttons|mouse_map_buttons();
 }
 /* Buttons for the port's save list (sceSaveDataDialog), polled by the overlay every frame while
- * it is open: the game stops reading the pad during the dialog. Gamepad and keyboard as mapped,
- * scripted input, and the left stick as up/down. */
+ * it is open: the game stops reading the pad during the dialog. Gamepad, keyboard and mouse buttons
+ * as mapped, scripted input, and the left stick as up/down. */
 static uint32_t list_buttons(void) {
     pthread_mutex_lock(&lock);
     read_inject();
-    uint32_t buttons=host_buttons()|injected.buttons;
+    uint32_t buttons=host_buttons()|list_mouse_buttons()|injected.buttons;
     const int pads=current_gamepads();
     for (int p=0;p<pads;++p) {
         const int y=SDL_GetGamepadAxis(gamepads[p],SDL_GAMEPAD_AXIS_LEFTY);

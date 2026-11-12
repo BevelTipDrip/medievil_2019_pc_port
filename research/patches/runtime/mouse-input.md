@@ -9,8 +9,8 @@ default_deck: n/a
 origin: ours
 class: M
 commits: f4f13b8, e27103e, 870f584, 88bf535, a7c91f7, b4d9e6f, 5bb45d0, 7449317, 64da6dd, d76d3d0
-files: src/runtime_mouse.c, src/mouse_hook.h, src/camera_hook.h, src/probe.c, src/runtime_services.c, gpu/shim/window.cpp, gpu/shim/sdl_window.h, scripts/ue4_override.py
-symbols: runtime_mouse_enabled, runtime_mouse_start, runtime_mouse_capture, runtime_mouse_take, drain, reader_thread, mouse_init, mouse_read, SetMouseCapture, mouse_captured, runtime_mouse_take_camera, medievil_mouse_yaw_find, medievil_mouse_yaw_script_ok, mouse_yaw, mouse_lock_record, install_mouse_yaw, camera_look, camera_look_class, camera_dancam, medievil_camera_pitch, medievil_camera_dancam
+files: src/runtime_mouse.c, src/runtime_pad.c, src/mouse_hook.h, src/camera_hook.h, src/probe.c, src/runtime_services.c, gpu/shim/window.cpp, gpu/shim/sdl_window.h, scripts/ue4_override.py
+symbols: runtime_mouse_enabled, runtime_mouse_start, runtime_mouse_capture, runtime_mouse_take, drain, reader_thread, mouse_init, mouse_read, SetMouseCapture, mouse_captured, runtime_mouse_take_camera, medievil_mouse_yaw_find, medievil_mouse_yaw_script_ok, mouse_yaw, mouse_lock_record, install_mouse_yaw, list_mouse_buttons, mouse_map_from, camera_look, camera_look_class, camera_dancam, medievil_camera_pitch, medievil_camera_dancam
 switches: GOW3_MOUSE, GOW3_MOUSE_BUTTONS
 tests: T-MS1, T-MS2, T-MS3, T-MS4, T-MS5, T-MS6, T-MS7, T-MS8, T-MS9, T-MS10
 docs: study-mouse-input.md#t-ms1-ps4enablemouse-from-the-paks-ini-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-step1-enablelog
@@ -102,6 +102,10 @@ tick path was verified (T-MS10; the user, 2026-11-12).
   mouse on up to ~1170 of ~1180 ticks per 5 s, 0 vertical without pitch, each new Dan-cam waited out its 0.3 s
   of Dan's facing. The user: "everything is working as expected": mouse look on both axes (free areas and
   Dan-cam), wheel, sensitivity / ratio / invert verified.
+
+- Save list (the user, 2026-11-12): mouse binds did nothing there (right button as Back): the list shows the
+  cursor, so the game does not have the mouse and `runtime_mouse_buttons()` is 0. Fix built: `list_buttons` adds
+  SDL's held buttons through the same map (`list_mouse_buttons`, no wheel) while the window has the mouse. Not run.
 
 ## History and pitfalls
 
