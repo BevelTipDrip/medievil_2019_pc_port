@@ -377,6 +377,7 @@ plan-fsr.md	31	2	outside-web-research-2026-11-12-sources-in-the-agent-report-key
 plan-fsr.md	47	2	steps-one-change-per-launch-the-users-order-2026-11-12	Steps (one change per launch; the user's order, 2026-11-12)
 plan-fsr.md	59	2	to-do-the-user-2026-11-12	To do (the user, 2026-11-12)
 plan-fsr.md	68	2	step-1-verified-on-the-pc-t-f1	Step 1 (verified on the PC, T-F1)
+plan-fsr.md	84	2	lows-with-an-upscaler-t-f2-2026-11-12	Lows with an upscaler (T-F2, 2026-11-12)
 plan-gpu-threading.md	1	1	plan-port-the-bloodborne-ports-performance-work-threading-waits-memory	Plan: port the Bloodborne port's performance work (threading, waits, memory)
 plan-gpu-threading.md	7	2	answer	Answer
 plan-gpu-threading.md	16	2	threads-today-both-ports	Threads today (both ports)
@@ -496,6 +497,17 @@ plan-roadmap.md	7	2	the-rule	The rule
 plan-roadmap.md	13	2	order-proposed-2026-10-18-the-user-to-confirm	Order (proposed 2026-10-18; the user to confirm)
 plan-roadmap.md	26	2	progress	Progress
 plan-roadmap.md	54	2	test-notes	Test notes
+plan-settings-menu.md	1	1	plan-the-settings-menu-in-the-games-look-usable-with-a-pad-alone-2026-11-12	Plan: the settings menu in the game's look, usable with a pad alone (2026-11-12)
+plan-settings-menu.md	8	2	1-what-exists-found-2026-11-12-code-at-b4e3620	1. What exists (found 2026-11-12, code at `b4e3620`)
+plan-settings-menu.md	45	2	2-design	2. Design
+plan-settings-menu.md	47	3	21-look-when-the-game-ui-cache-is-there	2.1 Look (when the game UI cache is there)
+plan-settings-menu.md	79	3	22-controls	2.2 Controls
+plan-settings-menu.md	111	3	23-assets	2.3 Assets
+plan-settings-menu.md	123	2	3-risks	3. Risks
+plan-settings-menu.md	137	2	4-test-plan-for-the-user-each-launch-needs-the-users-go	4. Test plan for the user (each launch needs the user's go)
+plan-settings-menu.md	169	2	5-decisions-for-the-user	5. Decisions for the user
+plan-settings-menu.md	183	2	6-steps	6. Steps
+plan-settings-menu.md	194	2	7-state	7. State
 plan-stage-b-split.md	1	1	plan-stage-bs-work-across-threads-feasibility-study	Plan: stage B's work across threads (feasibility study)
 plan-stage-b-split.md	7	2	why	Why
 plan-stage-b-split.md	13	2	profile-t-p3-2026-10-19-2100-2102-launched-by-claude-with-the-users-go-build-32eaea9--samples-log-datat-p3-stageb-profilelog-samples-in-research-datasamplest-p3-stageb-profile	Profile T-P3 (2026-10-19 21:00-21:02, launched by Claude with the user's go; build `32eaea9`; `-Samples`; log `data/t-p3-stageb-profile.log`, samples in `research-data\samples\t-p3-stageb-profile`)
@@ -567,10 +579,10 @@ plan-upstream-merge.md	50	2	3-test-after-the-merge-one-session-the-users-go	3. T
 plan-upstream-merge.md	63	2	4-next-work-items-in-order	4. Next work items, in order
 plan-work-queue.md	1	1	work-queue-what-is-next-in-order	Work queue: what is next, in order
 plan-work-queue.md	7	2	the-users-quality-of-life-list-2026-11-03-after-the-v200-release	The user's quality-of-life list (2026-11-03, after the v2.0.0 release)
-plan-work-queue.md	42	2	the-users-order-2026-10-30	The user's order (2026-10-30)
-plan-work-queue.md	71	2	pending-fixes-research-2026-10-29-ranked-there-state-now	Pending fixes (research 2026-10-29, ranked there; state now)
-plan-work-queue.md	99	2	found-on-the-way-2026-10-30	Found on the way (2026-10-30)
-plan-work-queue.md	120	2	from-github-issues	From GitHub issues
+plan-work-queue.md	43	2	the-users-order-2026-10-30	The user's order (2026-10-30)
+plan-work-queue.md	72	2	pending-fixes-research-2026-10-29-ranked-there-state-now	Pending fixes (research 2026-10-29, ranked there; state now)
+plan-work-queue.md	100	2	found-on-the-way-2026-10-30	Found on the way (2026-10-30)
+plan-work-queue.md	122	2	from-github-issues	From GitHub issues
 pr-checklist.md	1	1	pr-checklist-the-bar-for-anything-proposed-upstream	PR checklist: the bar for anything proposed upstream
 pr-checklist.md	7	2	scope	Scope
 pr-checklist.md	14	2	code	Code

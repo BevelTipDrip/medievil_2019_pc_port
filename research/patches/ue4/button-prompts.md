@@ -24,7 +24,8 @@ The ini key `button_prompts` (`playstation`, the default, writes nothing; `xbox`
 button prompt style. Xbox and keyboard show what each PS4 button is mapped to (the launcher's remaps,
 `GOW3_PAD_MAP` / `GOW3_KEY_MAP`; keyboard: the pack's Vintage keys, the sticks as WASD / arrow clusters). `xbox` draws the CC0 Free Input Prompts pack's Default Xbox icons (`third_party/input-prompts/xbox/`).
 Launcher > Controls > "In-game button prompts" sets it (until chosen: the Gamepad names style). The port's Load
-list follows: `run.py` writes `prompts/style/Cross|Circle|Square.png` into the game UI cache at each start
+list and the settings menu follow: `run.py` writes `prompts/style/Cross|Circle|Square|L1|R1.png` (`OVERLAY`; L1 / R1
+since settings-menu) into the game UI cache at each start
 (`overlay_prompts`) and `gow3gpu_choice_style` reads them. For a style other than PlayStation, `ue4_override.apply` puts edited copies of the game's prompt textures in
 the override pak: today the 16 64x64 cells in the top row of `InventoryButtonAtlas` (the `SP_PS4_*` sprites),
 which `test` fills with numbered yellow squares (00 Circle ... 15 StickRight, `ATLAS_CELLS`), and the three small
@@ -60,6 +61,7 @@ study-glyphs.md; the Xbox and keyboard sets (G3, G4) and the bone textures (G2) 
 
 ## Interactions
 
+- settings-menu: the menu's SELECT / GO BACK / CHANGE TAB prompts and tab strip use the same files (L1 / R1 too).
 - load-list-details: the Load list's prompts come from `prompts/style/` (this card), else the cache's `PS4_*`
   (an older cache, or `overlay_prompts` failed: "Game UI files skipped" in the log).
 - game-ui-cache: shares the texture reader and tiling code (`texture`, `detile`, `tile`); its decode output did not

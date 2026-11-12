@@ -193,4 +193,9 @@ prompts) and whether a pad is connected.
 
 ## 7. State
 
-Built, not run (see the card for the commits).
+**Built, not run (2026-11-12).** Commits on `menu-redesign`: `64fb18a` (this plan), `7f6a98e` (runtime input and
+the navigation, plain look), `b914242` (the game's look, the style loaded at start, L1 / R1 prompts). Build clean
+(no new warnings; the two `vk_rasterizer.cpp` -Wunused-result warnings were there before), Python tests 189 OK
+(31 skipped), pad-map-test PASS (built by hand: its CMake target lacks winmm, found). Offline: every character
+of the menu's texts is in the game's text font; the tab strip and prompt bar fit the frame. A window under 360 px
+high keeps the plain look. Nothing launched: T-SM1-T-SM8 are next, with the user's go.

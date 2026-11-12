@@ -56,6 +56,8 @@ Added 2026-11-11 (the user: "my main keyboard has no insert key"; mouse buttons 
 
 ## Interactions
 
+- settings-menu: the menu's gamepad combination is `GOW3_MENU_PAD` (R3+L2 by default; no launcher box yet); in the
+  open menu the keys bound to the D-pad / Cross / Circle / L1 / R1 drive it, besides arrows, Enter, Esc, Q / E.
 - button-prompts: the keyboard prompts show the key's cap (`ue4_glyphs.key_icon`; keypad digits use the digit's).
 
 ## Evidence

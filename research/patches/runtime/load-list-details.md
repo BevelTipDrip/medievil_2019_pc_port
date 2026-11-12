@@ -15,7 +15,7 @@ switches:
 tests: T-SV5
 docs: study-save-slots.md#t-sv5-details-level-pictures-and-the-games-menu-look-2026-11-10-launched-by-claude-with-the-users-go-logs-dataload-details-1-0102log-dataload-style-1-0102log-dataload-style-2-0102log
 depends_on: load-list-continue, game-ui-cache
-related: save-date-last-write
+related: save-date-last-write, settings-menu
 checked:
 ---
 ## What it does
@@ -37,8 +37,10 @@ button prompts); otherwise in the plain overlay style.
 - The styled list keeps the frame's proportions (1181x870), 76% of the height from 6% down, so the prompts end
   above the title screen's copyright line. The fill inside the frame is opaque. Details start under the picture's
   left edge, values from its middle.
-- Style files load once (gow3gpu_choice_style, game thread); fonts are added to the ImGui atlas under imgui_mutex
-  (1.92 dynamic fonts), textures made on the present thread. All six files or the plain look.
+- Style files load once (gow3gpu_choice_style; since settings-menu at overlay Init on a thread of its own, from
+  `runtime_file_user_dir()/cache/game_ui`, the folder this list names); fonts are added to the ImGui atlas under
+  imgui_mutex (1.92 dynamic fonts), textures made on the present thread. All files (frame, Cross, Circle, Square,
+  L1, R1 and both fonts) or the plain look; the list draws only the first four images.
 - Square is PS4 bit 0x8000 in the list's input; Tab and the gamepad's west button when SDL events drive it.
 
 ## Interactions
