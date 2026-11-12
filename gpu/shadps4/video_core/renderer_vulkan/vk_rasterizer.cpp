@@ -4700,6 +4700,18 @@ bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
         if (stage->sw_stage == Shader::SwStage::Fragment) {
             pass.stage = "fs";
         }
+    }
+    // F3 (plan-fsr.md, T-F3: ~0.12 us on each of ~970 draws, 115 us a frame on stage B, worst frames
+    // 0.3-0.6 ms): the texture and buffer walk only where something reads it. The motion pass and the
+    // upscaler need it for the TAA draws (by hash) and compute dispatches (the TAAU one samples
+    // velocity); velocity, scene and colour-target draws are told apart by their targets above. The
+    // frame map (GOW3_UE4_FRAME_MAP) logs every pass.
+    const bool need_bindings = frame_map || pass.compute || pass.hash == Ue4FrameMap::TaaNormal ||
+                               pass.hash == Ue4FrameMap::TaaResponsive;
+    for (const auto* stage : pipeline->GetStages()) {
+        if (!stage || !need_bindings) {
+            continue;
+        }
         const PreparedStage* prepared = FindPreparedStage(*stage);
         for (u32 i = 0; i < stage->images.size(); ++i) {
             const auto& desc = stage->images[i];

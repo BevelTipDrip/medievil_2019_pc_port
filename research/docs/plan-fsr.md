@@ -90,3 +90,10 @@ the 0.1%. FSR shows DLSS's steady small spikes at a higher amplitude. Suspected:
 frame (the hook on every draw while On, the motion pass setup, two image views a frame, the render pass ended for the
 upscaler, FSR's recording of ~10 passes). Measured next with `GOW3_UPSCALER_STATS=1` (CPU time per frame of each part,
 logged every 5 s), map screen, TAA / DLSS / FSR at 50%, about 60 s each.
+
+T-F3 (`9bb4d1f`, research/docs/data/upscaler-stats-t-f3.log, map screen, 50%): per frame the rasterizer's hook took
+~115 us (FSR) / ~124 us (DLSS) on stage B over ~970 calls, worst frame 290-570 us per 5 s; of it the motion setup
+~3-5 us and the front end ~2.5-3.5 us. The recording thread: FSR ~80 us, DLSS ~50 us. Frames 4.22 ms on average,
+spikes about 5.2 ms (the user; the log's worst frames 5.2-5.8 ms). Found: the hook's texture and buffer walk on every
+draw is the cost. Fix built (F3): the walk only for compute dispatches and the TAA draws (by hash); every other draw
+is told apart by its targets. To check: the same stats line, and the lows against TAA.
