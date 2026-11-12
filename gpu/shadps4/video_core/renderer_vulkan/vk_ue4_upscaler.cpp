@@ -23,6 +23,7 @@ namespace Vulkan {
 namespace {
 
 // View uniform buffer offsets (study-taau-frame-map.md section 3).
+constexpr u32 OffsetViewToClip = 384;
 constexpr u32 OffsetClipToPrevClip = 1824;
 constexpr u32 OffsetJitter = 1888;
 constexpr u32 OffsetViewSize = 1952;
@@ -205,6 +206,7 @@ Ue4Upscaler::Ue4Upscaler(const Instance& instance_, Scheduler& scheduler_,
     if (Dlss::Get()) {
         backends[Ue4DlssKind] = std::make_unique<DlssBackend>();
     }
+    backends[Ue4FsrKind] = MakeFsrBackend(instance);
     auto& settings = Gow3Settings::Get();
     const auto available = [this](int kind) { return backends[kind] && backends[kind]->Available(); };
     settings.ue4_dlss_available.store(available(Ue4DlssKind), std::memory_order_relaxed);
@@ -430,17 +432,23 @@ bool Ue4Upscaler::Run(const u8* view, std::span<const VAddr> reads, VideoCore::I
         (sign & 2 ? 1.0f : -1.0f) * Load<float>(view, OffsetJitter + 4) * view_size[1] * 0.5f;
     const Ue4UpscaleFrame frame{
         .color = {color_image->GetImage(), color_view, vk::Format::eR16G16B16A16Sfloat,
-                  vk::ImageAspectFlagBits::eColor, width, height},
+                  vk::ImageAspectFlagBits::eColor, width, height, color_image->usage_flags},
         .depth = {depth_image->GetImage(), depth_view, depth_image->info.pixel_format,
-                  vk::ImageAspectFlagBits::eDepth, width, height},
+                  vk::ImageAspectFlagBits::eDepth, width, height, depth_image->usage_flags},
         .motion = {pass.image, pass.view, vk::Format::eR16G16B16A16Sfloat,
-                   vk::ImageAspectFlagBits::eColor, width, height},
+                   vk::ImageAspectFlagBits::eColor, width, height,
+                   vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled},
         .output = {output_handle, *output_view, vk::Format::eR16G16B16A16Sfloat,
-                   vk::ImageAspectFlagBits::eColor, out_width, out_height},
+                   vk::ImageAspectFlagBits::eColor, out_width, out_height,
+                   vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled |
+                       vk::ImageUsageFlagBits::eTransferSrc},
         .jitter_x = jitter_x,
         .jitter_y = jitter_y,
         .reset = reset_reason != nullptr,
         .frame_ms = frame_ms,
+        // Reversed infinite projection: ViewToClip[3][2] is the near plane, [1][1] = 1 / tan(fov_y / 2).
+        .near_plane = Load<float>(view, OffsetNearPlane),
+        .fov_y = 2.0f * std::atan(1.0f / std::max(Load<float>(view, OffsetViewToClip + 20), 1e-3f)),
     };
     const vk::Image taa_output = output_image->GetImage();
     const vk::Image motion_image = pass.image;

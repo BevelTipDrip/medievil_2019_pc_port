@@ -5,7 +5,7 @@ START-HERE.md	24	2	rules-the-users-also-in-claudes-memory	Rules (the user's; als
 START-HERE.md	46	2	current-state-table-last-fully-updated-2026-10-18	Current state (table last fully updated 2026-10-18)
 START-HERE.md	68	2	knobs-and-triggers	Knobs and triggers
 START-HERE.md	85	2	document-index	Document index
-START-HERE.md	119	2	elsewhere	Elsewhere
+START-HERE.md	120	2	elsewhere	Elsewhere
 building-and-tools.md	1	1	building-and-tools	Building and tools
 building-and-tools.md	5	2	paths	Paths
 building-and-tools.md	19	2	toolchain-installed-2026-10-18	Toolchain (installed 2026-10-18)
@@ -370,6 +370,13 @@ plan-fsr-frame-generation.md	6	2	what-is-known-today-read-2026-10-18	What is kno
 plan-fsr-frame-generation.md	20	2	design	Design
 plan-fsr-frame-generation.md	30	2	stages-one-change-per-launch	Stages (one change per launch)
 plan-fsr-frame-generation.md	39	2	risks	Risks
+plan-fsr.md	1	1	plan-amd-fsr-in-place-of-ue4s-taa-fsr-3x-fsr-4x	Plan: AMD FSR in place of UE4's TAA (FSR 3.x, FSR 4.x)
+plan-fsr.md	7	2	the-users-goals-2026-11-12	The user's goals (2026-11-12)
+plan-fsr.md	16	2	what-the-repo-has-code-research-2026-11-12	What the repo has (code research, 2026-11-12)
+plan-fsr.md	31	2	outside-web-research-2026-11-12-sources-in-the-agent-report-key-ones-here	Outside (web research, 2026-11-12; sources in the agent report, key ones here)
+plan-fsr.md	47	2	steps-one-change-per-launch-the-users-order-2026-11-12	Steps (one change per launch; the user's order, 2026-11-12)
+plan-fsr.md	59	2	to-do-the-user-2026-11-12	To do (the user, 2026-11-12)
+plan-fsr.md	68	2	step-1-verified-on-the-pc-t-f1	Step 1 (verified on the PC, T-F1)
 plan-gpu-threading.md	1	1	plan-port-the-bloodborne-ports-performance-work-threading-waits-memory	Plan: port the Bloodborne port's performance work (threading, waits, memory)
 plan-gpu-threading.md	7	2	answer	Answer
 plan-gpu-threading.md	16	2	threads-today-both-ports	Threads today (both ports)

@@ -268,7 +268,7 @@ def menu_key(settings):
 
 
 # What replaces the game's TAA (medievil.ini ue4_upscaler, gow3_settings Ue4UpscalerKeys; F9 in the game).
-UPSCALERS = [('taa', ("The game's TAA",)), ('dlss', ('NVIDIA DLSS',))]
+UPSCALERS = [('taa', ("The game's TAA",)), ('dlss', ('NVIDIA DLSS',)), ('fsr', ('AMD FSR 3.1',))]
 
 
 # Mouse buttons a game button can take (GOW3_MOUSE_MAP, src/runtime_pad.c), next to its key: the names the

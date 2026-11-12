@@ -42,6 +42,7 @@ struct Ue4UpscaleImage {
     vk::Format format;
     vk::ImageAspectFlags aspect;
     u32 width, height;
+    vk::ImageUsageFlags usage; ///< the image's creation usage (FSR describes it)
 };
 
 /// A backend's context: input and output rectangles (equal at render scale 100).
@@ -57,7 +58,13 @@ struct Ue4UpscaleFrame {
     float jitter_x, jitter_y;
     bool reset;
     float frame_ms;
+    float near_plane; ///< UE units (cm); the far plane is infinite
+    float fov_y;      ///< vertical field of view, radians
 };
+
+class Ue4UpscalerBackend;
+/// AMD FSR 3.1 (vk_ue4_fsr.cpp), or null when this GPU lacks what it needs.
+std::unique_ptr<Ue4UpscalerBackend> MakeFsrBackend(const Instance& instance);
 
 class Ue4UpscalerBackend {
 public:

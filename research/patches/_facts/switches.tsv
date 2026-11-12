@@ -62,12 +62,13 @@ GOW3_FLIP_TRACE	upstream	gpu/shim/gow3_flip_trace.h:24
 GOW3_FORCE_ANISO	upstream	gpu/shadps4/video_core/texture_cache/sampler.cpp:20
 GOW3_FPS_CAP	upstream	gpu/shim/core/emulator_settings.h:52
 GOW3_FPS_LIMIT	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1478 gpu/shim/core/emulator_settings.h:46
-GOW3_FPS_LOG	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp:356 gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp:529 gpu/shim/gow3_overlay.cpp:1987 src/runtime_extra.c:746
+GOW3_FPS_LOG	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp:356 gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp:537 gpu/shim/gow3_overlay.cpp:1987 src/runtime_extra.c:746
 GOW3_FRAMES_AHEAD	upstream	gpu/shim/gow3_settings.cpp:396 tests/test_graphics_settings.cpp:104 tests/test_graphics_settings.cpp:113
 GOW3_FRAME_CAPTURE_KEY	upstream	gpu/shim/gow3_overlay.cpp:1750
 GOW3_FRAME_DUMP_COUNT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:501
 GOW3_FRAME_DUMP_TRIGGER	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:497 gpu/shim/gow3_overlay.cpp:1786
 GOW3_FRAME_STATS	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:400 gpu/shadps4/video_core/renderer_vulkan/vk_draw_prep.cpp:507 gpu/shadps4/video_core/renderer_vulkan/vk_occlusion.cpp:258 gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:497 gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:993 gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:1894 gpu/shadps4/video_core/texture_cache/texture_cache.cpp:2532 gpu/shim/gow3_toggles.h:310 src/runtime_memory.c:2202
+GOW3_FSR	ours	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_fsr.cpp:165
 GOW3_FSR1	upstream	gpu/shim/gow3_settings.cpp:395
 GOW3_FSR411_DIR	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_fsr4.cpp:240 gpu/tools/fsr4_bench.cpp:497
 GOW3_FSR4_DIR	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_fsr4.cpp:25 gpu/tools/fsr4_bench.cpp:295
@@ -250,7 +251,7 @@ GOW3_TRACE_SEMA	upstream	src/runtime_sema.c:75
 GOW3_TRACKER_MERGE_GAP	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_barrier_tracker.cpp:36
 GOW3_UE4_DLSS	upstream	gpu/shim/gow3_settings.cpp:397
 GOW3_UE4_FRAME_MAP	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.cpp:63
-GOW3_UE4_HOOKS	ours	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp:136
+GOW3_UE4_HOOKS	ours	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp:137
 GOW3_UE4_MOTION_VIEW	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp:101
 GOW3_UE4_SETRES	upstream	src/runtime_extra.c:835
 GOW3_UE4_SETRES_CVAR	upstream	src/runtime_extra.c:599
