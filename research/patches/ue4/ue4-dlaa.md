@@ -127,6 +127,9 @@ frame map / U2 view is). Periodic counter lines follow `GOW3_FPS_LOG=0`.
   ~115-124 us a frame on stage B, worst frames 0.3-0.6 ms (T-F3, `GOW3_UPSCALER_STATS=1`), which cost the lows at
   237 FPS. Now the walk is only for compute dispatches and the TAA draws: ~52 us with the stats' own clock reads
   (T-F4), worst frames 4.7-5.2 ms instead of 5.2-5.8. Verified.
+- Pitfall: `GOW3_UPSCALER_STATS=1` itself costs frame time (two clock reads per draw); in the graveyard with it and
+  the FPS line on, the lows fell to 168 / 143 and came back with both off (T-F5). Lows measured with the stats on are
+  pessimistic; compare only runs with the same stats.
 
 - F1 (2026-11-12, branch `fsr`, plan-fsr.md step 1): the front end is generic, `Ue4Upscaler` in
   vk_ue4_upscaler.{h,cpp} (renamed from vk_ue4_dlss.*); DLSS is one backend (`DlssBackend`: context and evaluation

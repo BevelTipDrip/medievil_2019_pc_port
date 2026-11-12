@@ -102,3 +102,11 @@ T-F4 (`330a5e0`, research/docs/data/upscaler-stats-t-f4.log up to the user's lev
 ~52 us a frame for FSR and DLSS (from ~115 / ~124), worst 200-450 us per 5 s (from 290-570); the log's worst frames
 4.7-5.2 ms (from 5.2-5.8). Part of the 52 us is the stats' own two clock reads on ~800 draws. The user: the small
 spikes left are the base game's (a work-queue item). Fix verified.
+
+T-F4 level (research/docs/data/upscaler-stats-t-f4-level.log): in the graveyard near the level start, with
+`GOW3_UPSCALER_STATS=1` and `GOW3_FPS_LOG=1`, DLSS at 75%: 1% / 0.1% lows 168 / 143 at 226 average, irregular spikes,
+worst frames 9-12 ms in several 5 s windows. T-F5, the same spot and build with both lines off (the user's quiet
+extra-env): the graph as in the user's earlier runs there tonight. **The stats perturb what they measure**: about two
+steady_clock reads per draw (~2,400 a frame on stage B) and / or the 5 s FPS line. T-F3 / T-F4's lows with the stats on
+are pessimistic; their hook before / after holds (the same stats in both). Before the stats are used again: time
+one frame in N, or a cheaper clock.

@@ -1,0 +1,1301 @@
+Extra environment (C:\Users\Ty\MediEvil\medievil_2019_pc_port\extra-env.txt): GOW3_FPS_LOG=1 GOW3_UPSCALER_STATS=1
+Deck switches: 8 on: early_frame_eop, decode_pacing, drain_hybrid, texset_wide, region_index, pending_filter, reg_hash_paired, particle_flip_guard; off: backing_copy (Linux only), thread_nice (Linux only), arena_writes_off (already off on Windows); Windows: untested
+Game profile: MediEvil (libc.prx, libSceFios2.prx, libSceNpToolkit2.prx)
+Output resolution: 3840x2160
+Graphics: quality custom; shadow_resolution=dynamic, small_object_shadows=0.01, shadow_distance=ps4, sun_shadow_resolution=2048, shadow_quality=3, view_distance=1, lod_distance=ps4, foliage_density=1, texture_filtering=16, ambient_occlusion=auto, reflections=3, refraction=2, volumetric_fog=1, motion_blur=4, depth_of_field=2, bloom=5, lens_flares=2, chromatic_aberration=1
+Render resolution: 3840x2160 output, render scale 50% (temporal upsampling), console quality, up to 1000 FPS, debug menu (R3; 01.02: L1 + R1 + R3), button prompts keyboard
+MediEvil | entry=0x2e9da70 | image=96,917,088 bytes
+928 imported symbols; 552,865 relocations; 58 required modules
+Unavailable non-loadable metadata headers: [10]; not a byte-exact ELF reconstruction
+Output: C:\Users\Ty\MediEvil\medievil_2019_pc_port\out
+libc _init_env verified RET: True
+Linked native libc: base=0x5c70000, 162 fallback exports, TLS=1152 bytes; eboot TLS=16 bytes, fs->gs patched=5
+Linked modules: libc.prx@0x5c70000, libSceFios2.prx@0x5da0000, libSceNpToolkit2.prx@0x5f30000; 348 native bindings, 850 imports left to the host runtime, fs->gs patched=5
+AppContent profile: SKU=full (probe setting), user params=[0, 0, 0, 0], mounted add-ons=0
+Patches: CUSA11227; 17 writes from ['Native 4K framebuffer pool (512 MB)', 'GPU particle bounds', 'Finer occlusion culling (low render resolutions, Steam Deck)', '4K display metrics at boot']
+Saves backed up to C:\Users\Ty\MediEvil\medievil_2019_pc_port\user\savedata_backups\20261112-031743
+Host scheduling: 1 ms timer resolution (GOW3_TIMER_RES=0 keeps 15.6 ms)
+Host scheduling: power throttling off (GOW3_POWER_THROTTLE=1 keeps it)
+Settings: C:\Users\Ty\MediEvil\medievil_2019_pc_port\medievil.ini
+Window: windowed size 3771x2121 pixels for a 3840x2160 game image
+Window: Borderless
+Decode pacing: on (GOW3_DECODE_PACING=1): lead 2 frame(s), 2 submissions of a frame ahead (GOW3_SUBMIT_AHEAD), GPU idle in stream order
+Mouse: captured; last 0.0 s: 0 reports (0/s), 0 wake-ups (0/s), 0 batches; raw mouse reader not running
+GPU: NVIDIA GeForce RTX 4090, driver NVIDIA 616.92.0.0, Vulkan 1.4.351
+Vulkan: NVIDIA Reflex (VK_NV_low_latency2) enabled
+GPU: pageable video memory on (when the card is full, the driver moves memory to system RAM)
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_AMD_shader_explicit_vertex_parameter unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_EXT_shader_stencil_export unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_AMD_shader_image_load_store_lod unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_AMD_gcn_shader unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_AMD_shader_trinary_minmax unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_AMD_mixed_attachment_samples unavailable.
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:312 operator(): Extension VK_EXT_shader_atomic_float2 unavailable.
+GPU: maintenance5 on, maintenance8 on, feedback loop layouts on, 2D views of 3D on
+DLSS: ready
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=1, number_format=9 is not fully supported (vk_format=R8Srgb, missing features={ ColorAttachment })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=3, number_format=9 is not fully supported (vk_format=R8G8Srgb, missing features={ SampledImage | ColorAttachment | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=9, number_format=1 is not fully supported (vk_format=A2B10G10R10SnormPack32, missing features={ SampledImage | StorageImage | ColorAttachment | TransferSrc | TransferDst | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=9, number_format=5 is not fully supported (vk_format=A2B10G10R10SintPack32, missing features={ SampledImage | StorageImage | ColorAttachment | TransferSrc | TransferDst | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=13, number_format=4 is not fully supported (vk_format=R32G32B32Uint, missing features={ SampledImage | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=13, number_format=5 is not fully supported (vk_format=R32G32B32Sint, missing features={ SampledImage | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=13, number_format=7 is not fully supported (vk_format=R32G32B32Sfloat, missing features={ SampledImage | TransferSrc | TransferDst })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=16, number_format=0 is not fully supported (vk_format=R5G6B5UnormPack16, missing features={ StorageImage | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=17, number_format=0 is not fully supported (vk_format=A1R5G5B5UnormPack16, missing features={ StorageImage | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=18, number_format=0 is not fully supported (vk_format=R5G5B5A1UnormPack16, missing features={ StorageImage | ColorAttachment | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:971 CollectImageFormatInfo: Surface format data_format=19, number_format=0 is not fully supported (vk_format=B4G4R4A4UnormPack16, missing features={ StorageImage | ColorAttachment | StorageReadWithoutFormat | StorageWriteWithoutFormat })
+GPU [Render.Vulkan] <Warning> vk_instance.cpp:981 CollectImageFormatInfo: Depth format z_format=1, stencil_format=1 is not fully supported (vk_format=D16UnormS8Uint, missing features={ DepthStencilAttachment })
+Swapchain: VSync on (Fifo)
+Swapchain: Reflex sleep mode, minimum interval 0 us (Success)
+GPU memory types: 0: 0 heap 1 (32571 MiB) (not for the arena); 1: DEVICE_LOCAL heap 0 (24138 MiB); 2: HOST_VISIBLE|HOST_COHERENT heap 1 (32571 MiB) (not for the arena); 3: HOST_VISIBLE|HOST_COHERENT|HOST_CACHED heap 1 (32571 MiB) (not for the arena); 4: DEVICE_LOCAL|HOST_VISIBLE|HOST_COHERENT heap 0 (24138 MiB) (not for the arena)
+Buffer residency: 32 MB chunk 1 allocated at start
+Buffer arena: memory type 1 (DEVICE_LOCAL, heap 0), 64 KiB blocks; direct arena writes (U2) off (GOW3_ARENA_HOST_VISIBLE=0 or no suitable memory type)
+Scheduler 0000000053F75B80: commands recorded from thread '' (caller medievil-runtime.exe+0x1b2505)
+GPU: deferred image readback enabled (64 copies, 64 MiB pending limit); CPU reads use the previous frame's copy
+GPU: draw preparation workers: 8 (+1 scanner, 16 hardware threads)
+Texture-set memo: compact layout, 44.0 MB (index 2.1, images 25.2, region data 16.8 MB; the table as before: 52.2 MB); transparent huge pages: n/a (system: n/a)
+Object motion: off (enable in menu or GOW3_OBJECT_MOTION=1)
+UE4 motion: on, view 0 (F10 cycles)
+UE4 upscaler: AMD FSR; DLSS available, FSR available (menu Image tab or F9)
+Runtime: disabled optimizations mask=0
+Overlay: menu ready (Home or R3+L2)
+Pipeline startup: on demand, no bulk warm-up
+GPU: window and Vulkan presenter ready; SDK 0x05050001, 327 HLE symbols
+VideoOut: vblank thread priority time-critical, MMCSS Games (high)
+VideoOut: precise vblank tick (spin 700 us)
+GPU: vblank follows the display refresh rate, 240 Hz
+Swapchain: Reflex sleep mode, minimum interval 4219 us (Success)
+VideoOut: vblank 960 Hz, frame limit 0 FPS
+Patches: 17 writes, 59 bytes applied, 0 pointers rebased
+HZB remap: MapResults and Submit hooks ready (game build 01.02; results served by occlusion history key, no GPU wait)
+Movies: playing movies are suspended at each level change (OpenLevel hook, game build 01.02)
+Mouse yaw: AddControllerYawInput wrapped (game build 01.02; the camera lock for mouse look)
+Camera moves: ComputeCameraSimple wrapped (game build 01.02; the menu's Controls tab)
+GPU particle flip guard: PreInitViews and PreRender hooks ready (game build 01.02; one state flip per simulation; toggle file second word 16384: guard off)
+Guest TCB loads redirected to the TEB TLS slot: 5
+Mapped 100602208 bytes, 12 segments; applied 555435 relocations
+Starting linked module 0 at image offset 0x5c70000; native bindings=348
+Runtime: application heap API registered
+Runtime: direct allocation offset=0x0, size=536870912 bytes, type=3
+Runtime: mapped direct memory 0000004000000000, size=536870912, prot=0x32
+Runtime: direct allocation offset=0x20000000, size=6912147456 bytes, type=0
+Runtime: memory pool expanded by 6912147456 bytes at 0x20000000
+Runtime: reserved virtual range 0000001000000000, size=8589934592
+Runtime: reserved virtual range 0000002000000000, size=8589934592
+Runtime: reserved virtual range 0000003000000000, size=1073741824
+Module 0 initializer returned 0
+Starting linked module 1 at image offset 0x5da0000; native bindings=348
+Module 1 initializer returned 0
+Starting linked module 2 at image offset 0x5f30000; native bindings=348
+Module 2 initializer returned 0
+Entering original x86-64 code at guest offset 0x2e9da70
+Runtime: _init_env returned (verified libc implementation: RET)
+AdditionalArgs before fixup = ../../../OVERBITE/OVERBITE.uproject 
+AdditionalArgs after fixup = ../../../OVERBITE/OVERBITE.uproject -pak
+File root is /app0/!
+Runtime: open(/app0/symbols/shipping-symbols.bin) -> not found
+Runtime: open(/app0/build/ps4/symbols/shipping-symbols.bin) -> not found
+Runtime: open(/app0/overbite/symbols/shipping-symbols.bin) -> not found
+Failed to locate symbol files on /app0 or /app0/overbite/symbols s!
+Runtime: open(shipping-symbols.bin) -> not found
+Failed to load symbols from shipping-symbols.bin!
+Runtime: open(shipping-symbolmetadata.txt) -> not found
+Used memory before allocating anything was 524.56MB
+FIOS2: built with SDK version 0x06008001
+Runtime: guest thread 'SceFiosCallback' created (stack=65536, prio=260)
+Runtime: guest thread 'SceFiosIO' created (stack=81920, prio=260)
+Runtime: internal system module 0xd7 loaded (host implementation)
+Runtime: guest thread 'SceFiosIO /' created (stack=81920, prio=260)
+Runtime: AppContent host provider loaded; references=1
+Runtime: AppContent initialized; offline base-game profile, no mounted add-ons
+Runtime: temporary data mounted at /temp0 -> C:\Users\Ty\MediEvil\medievil_2019_pc_port\user/temp0
+Runtime: open(/app0/deepfiles) -> not found
+Runtime: system module 0x83 loaded (host implementation)
+Runtime: PlayGo initialized; 23 chunks, all installed locally
+Runtime: open(/app0/overbite/saved/paks) -> not found
+Runtime: open(/app0/engine/content/paks) -> not found
+Runtime: open(/app0/overbite/saved/paks) -> not found
+Runtime: open(/app0/engine/content/paks) -> not found
+Runtime: guest thread 'TaskGraphThreadNP 0' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadNP 1' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadNP 2' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadNP 3' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 4' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 5' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 6' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadHP 7' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 8' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 9' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 10' created (stack=393216, prio=700)
+Runtime: guest thread 'TaskGraphThreadBP 11' created (stack=393216, prio=700)
+Runtime: guest thread 'PoolThread 0' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 1' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 2' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 3' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 4' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 5' created (stack=262144, prio=700)
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/res_index.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/plurals.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/lang/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/lang/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/lang/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/region/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/region/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/region/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/zoneinfo64.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/numberingsystems.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/curr/supplementaldata.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/curr/en_us_posix.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/curr/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/curr/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/likelysubtags.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/icudt53l/supplementaldata.res) -> not found
+Runtime: UserService initialized (user 1 logged in)
+Runtime: open(/app0/engine/saved/config/ps4/editorsettings.ini) -> not found
+Runtime: guest thread 'HttpManagerThread' created (stack=262144, prio=700)
+Runtime: system module 0x9c loaded (host implementation)
+Runtime: system module 0x85 loaded (host implementation)
+Runtime: UserService initialized (user 1 logged in)
+Runtime: system module 0xa6 loaded (host implementation)
+Runtime: system module 0xd3 loaded (host implementation)
+Runtime: system module 0x81 loaded (host implementation)
+Runtime: UserService initialized (user 1 logged in)
+Runtime: guest thread 'OnlineAsyncTaskThreadPS4 Defau' created (stack=262144, prio=700)
+Runtime: system module 0x102 loaded (host implementation)
+Runtime: system module 0x19 loaded (host implementation)
+Runtime: mapped flexible memory 0000001200000000, size=16777216, prot=0x2
+Runtime: mapped flexible memory 0000001201000000, size=6291456, prot=0x2
+Runtime: guest thread 'Toolkit::NP::Main' created (stack=262144, prio=700)
+Runtime: guest thread 'Toolkit::NP::Notifications' created (stack=65536, prio=700)
+Runtime: guest thread 'Toolkit::NP::AbortThread' created (stack=65536, prio=700)
+Runtime: system module 0xe4 loaded (host implementation)
+Runtime: system module 0xa8 loaded (host implementation)
+Runtime: system module 0xe7 loaded (host implementation)
+Runtime: system module 0xb2 loaded (host implementation)
+Runtime: system module 0xab loaded (host implementation)
+Runtime: system module 0xa2 loaded (host implementation)
+Runtime: system module 0xac loaded (host implementation)
+Runtime: system module 0xb8 loaded (host implementation)
+Runtime: system module 0xad loaded (host implementation)
+Runtime: system module 0x2c loaded (host implementation)
+Runtime: system module 0x1b loaded (host implementation)
+Runtime: guest thread 'PoolThread 6' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 7' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 8' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 9' created (stack=262144, prio=700)
+Runtime: open(/app0/overbite/intermediate/shaders/tmp) -> not found
+Runtime: open(/app0/overbite/intermediate/shaders/workingdirectory) -> not found
+Runtime: UserService initialized (user 1 logged in)
+Runtime: system module 0xa9 loaded (host implementation)
+Mouse: sceMouseInit from guest+0xb71388 (GOW3_MOUSE=1: Raw Input reader)
+Mouse: buttons to the game off (movement and wheel only)
+Runtime: system module 0x96 loaded (host implementation)
+Runtime: guest thread 'SystemEventGatherThreadPS4' created (stack=262144, prio=700)
+Runtime: open(/app0/overbite/saved/preferences/editorkeybindings.txt) -> not found
+Mouse: Raw Input reader running (batched, at most one wake-up a millisecond, normal priority)
+Runtime: guest thread 'SubmitDoneAsyncTaskThreadPS4' created (stack=262144, prio=700)
+Runtime: guest thread 'SubmitGPUCommandsAsyncTaskThre' created (stack=262144, prio=700)
+Runtime: open(/app0/overbite/content/shaderarchive-global-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/shaderarchive-paper2d-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/shaderarchive-paper2d_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/content/shaderarchive-paper2d-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/2d/paper2d/content/shaderarchive-paper2d_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/shaderarchive-cryptokeys-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/shaderarchive-cryptokeys_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/content/shaderarchive-cryptokeys-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/cryptokeys/content/shaderarchive-cryptokeys_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/shaderarchive-mesheditor-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/shaderarchive-mesheditor_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/content/shaderarchive-mesheditor-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/editor/mesheditor/content/shaderarchive-mesheditor_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/shaderarchive-datasmithcontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/shaderarchive-datasmithcontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/content/shaderarchive-datasmithcontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/datasmithcontent/content/shaderarchive-datasmithcontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/shaderarchive-variantmanagercontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/shaderarchive-variantmanagercontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/content/shaderarchive-variantmanagercontent-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/enterprise/variantmanagercontent/content/shaderarchive-variantmanagercontent_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/shaderarchive-mediacompositing-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/shaderarchive-mediacompositing_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/content/shaderarchive-mediacompositing-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/media/mediacompositing/content/shaderarchive-mediacompositing_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/shaderarchive-wwise-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/shaderarchive-wwise_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/content/shaderarchive-wwise-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/engine/plugins/runtime/wwise/content/shaderarchive-wwise_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: guest thread 'RHIThread' created (stack=524288, prio=700)
+Scheduler 0000000053F75B80: commands recorded from thread 'gow3:DrawRec' (caller medievil-runtime.exe+0x274ecd)
+OnSubmit on stage B: on (GOW3_ONSUBMIT_STAGE_B unset, with GOW3_DECODE_PACING): fault buffer, image downloads, collectors, staging trim and the frame's Flush in stream order
+Runtime: guest thread 'RenderThread 0' created (stack=262144, prio=700)
+Runtime: guest thread 'RTHeartBeat 0' created (stack=262144, prio=700)
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/brkitr/en_us.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/brkitr/en.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Texture cache: shared image memory on (NVIDIA GeForce RTX 4090)
+Runtime: guest thread 'RHIFrameOffsetThread' created (stack=262144, prio=700)
+Runtime: guest thread 'RHIFrameFlipThread' created (stack=262144, prio=700)
+Runtime: pad opened for user 1 (SDL gamepad or keyboard)
+Mouse: sceMouseOpen user 1 type 0 index 0 param 1 -> 15 from guest+0xb74afc
+Runtime: SystemService: splash screen hidden
+Runtime: SystemService: splash screen hidden
+Runtime: open(/app0/overbite/content/shaderarchive-overbite-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/app0/overbite/content/shaderarchive-overbite_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/download0/installedcontent/overbite/content/shaderarchive-overbite-sf_ps4.ushaderbytecode) -> not found
+Runtime: open(/download0/installedcontent/overbite/content/shaderarchive-overbite_sc-sf_ps4.ushaderbytecode) -> not found
+Runtime: system module 0xa5 loaded (host implementation)
+Runtime: system module 0xcf loaded (host implementation)
+Runtime: system module 0x88 loaded (host implementation)
+Runtime: system module 0xa5 loaded (host implementation)
+Runtime: guest thread 'SlateLoadingThread1' created (stack=262144, prio=700)
+Runtime: SystemService: splash screen hidden
+Runtime: guest thread 'AK::IOThread' created (stack=131072, prio=256)
+Runtime: guest thread 'AK::BankManager' created (stack=131072, prio=700)
+Runtime: guest thread 'AK Suspended' created (stack=131072, prio=256)
+Runtime: Ajm context initialized (ATRAC9 via LibAtrac9, MP3 via FFmpeg)
+Runtime: guest thread 'AK::EventManager' created (stack=131072, prio=256)
+GPU: spare image memory block ready (type 1, 1 ms)
+GPU [Render.Vulkan] <Warning> emit_spirv.cpp:459 operator(): Float32 denorm flushing is not supported by the GPU
+Runtime: guest thread 'FImgMediaSchedulerThread 0' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 1' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 2' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 3' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 4' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 5' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 6' created (stack=262144, prio=700)
+Runtime: guest thread 'FImgMediaSchedulerThread 7' created (stack=262144, prio=700)
+Runtime: guest thread 'FMediaTicker' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 10' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 11' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 12' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 13' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 14' created (stack=262144, prio=700)
+Runtime: guest thread 'PoolThread 15' created (stack=262144, prio=700)
+Runtime: system module 0xb loaded (host implementation)
+Runtime: Ajm context initialized (ATRAC9 via LibAtrac9, MP3 via FFmpeg)
+Runtime: guest thread 'Ngs2AudioRenderingThread' created (stack=262144, prio=700)
+Runtime: NGS2 system created (silent renderer)
+Runtime: audio backend wasapi
+Runtime: audio port 0 opened (type 0, 8 ch, float, 256 frames, downmixed to stereo)
+Runtime: guest thread 'AudioThread' created (stack=262144, prio=700)
+GPU: spare image memory block ready (type 1, 1 ms)
+Buffer residency: 32 MB chunk 2 allocated ahead
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/lang/root.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l/region/root.res) -> not found
+Runtime: open(/app0/engine/content/internationalization/usrdt53l.dat) -> not found
+Runtime: audio port 1 opened (type 0, 8 ch, float, 512 frames, downmixed to stereo)
+Runtime: guest thread 'AK::LibAudioOut' created (stack=131072, prio=256)
+Runtime: system module 0xa0 loaded (host implementation)
+Save trace: search '@%' key 3 order 1 capacity 1024 -> 7 found, 7 returned from guest+0x6cce73
+Save trace:   0: @MediEvil0006  2026-11-12 02:57:55  The Graveyard
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   3: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   6: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+Runtime: save data '@MediEvil0006' mounted at /savedata0 (existing, read-only)
+Save trace: mount '@MediEvil0006' mode 0x1 blocks 96 -> ok from guest+0x6cd29e
+Save trace: open /savedata0/ue4savegame.ps4.sav for reading, 22677 bytes
+Save trace: unmount /savedata0 ('@MediEvil0006')
+Runtime: pad map: 0 gamepad and 5 keyboard buttons remapped, 5 mouse buttons
+Mouse: sceMouseRead #1 handle 15 count 8, 0.0 reads/s; 1 reads moved, |x| 104 |y| 52, largest 104 from guest+0xb7599c
+gow3: curve injection program 0x1b1e7c76d6a281d3 ready synchronously (0.3 ms)
+gow3: curve injection program 0x113f0c20873a7659 ready synchronously (0.2 ms)
+Runtime: guest thread 'RenderThread 1' created (stack=262144, prio=700)
+Runtime: guest thread 'RTHeartBeat 1' created (stack=262144, prio=700)
+GPU particle flips: 0 flips, 1 simulations; 1 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #2 handle 15 count 8, 84.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #3 handle 15 count 8, 159.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Stencil plane copy: depth 0x2018000000 (image 0x2018000000 1920x1080), stencil plane 0x2010400000 (2359296 bytes, format 1), written by shader 0x6846b3858ae55a9e at 0x2010400000 +0x240000
+Perf: 164.9 FPS, worst frame 228.5 ms
+AvPlayer 0.000 s: 0000000079100520 Init -> 0 (no source, 0 frames delivered)
+AvPlayer 0.001 s: 0000000079100520 AddSource -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 0 frames delivered)
+AvPlayer 0.030 s: 0000000079100520 SetLooping off -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 0 frames delivered)
+AvPlayer 0.031 s: 0000000079100520 Start -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 0 frames delivered)
+Buffer residency: 32 MB chunk 3 allocated ahead
+Mouse: sceMouseRead #1000 handle 15 count 8, 234.0 reads/s; 14 reads moved, |x| 5 |y| 12, largest 1 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+[aac @ 0000000061423c00] Could not update timestamps for discarded samples.
+Perf: 237.0 FPS, worst frame 5.4 ms
+Mouse: sceMouseRead #2000 handle 15 count 8, 235.5 reads/s; 58 reads moved, |x| 43 |y| 27, largest 2 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+GPU [Lib.AvPlayer] <Warning> avplayer_source.cpp:308 Stop: Could not stop playback: already stopped.
+AvPlayer 6.772 s: 0000000079100520 Stop -> -2140536830 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 149 frames delivered)
+AvPlayer 6.772 s: 0000000079100520 Close -> 0 (file://../../../overbite/Content/Movies/ooi_logo_plain_black.mp4, 149 frames delivered)
+GPU [Lib.AvPlayer] <Warning> avplayer_source.cpp:308 Stop: Could not stop playback: already stopped.
+Runtime: guest thread 'TAsync 0' created (stack=262144, prio=700)
+AvPlayer 6.776 s: 0000000079205500 Init -> 0 (no source, 0 frames delivered)
+AvPlayer 6.859 s: 0000000079205500 AddSource -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 0 frames delivered)
+AvPlayer 6.865 s: 0000000079205500 SetLooping off -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 0 frames delivered)
+AvPlayer 6.866 s: 0000000079205500 Start -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 0 frames delivered)
+Mouse: sceMouseRead #3000 handle 15 count 8, 236.0 reads/s; 75 reads moved, |x| 61 |y| 45, largest 3 from guest+0xb7599c
+Perf: 237.0 FPS, worst frame 5.4 ms
+AvPlayer 9.785 s: 0000000079205500 suspended at a level change (file://../../../overbite/Content/Movies/gameintro.mp4, 97 frames delivered)
+Runtime: guest thread 'SlateLoadingThread2' created (stack=262144, prio=700)
+Buffer residency: 32 MB chunk 4 allocated ahead
+Save trace: mount 'GameDataUE1' mode 0x1 blocks 96 -> failed from guest+0x6c97e1
+Save trace:   error 0x809f0008
+Save trace: search '@%' key 3 order 1 capacity 1024 -> 7 found, 7 returned from guest+0x6ce574
+Save trace:   0: @MediEvil0006  2026-11-12 02:57:55  The Graveyard
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   3: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   6: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+GPU [Render.Vulkan] <Warning> emit_spirv.cpp:516 operator(): Float64 denorm preserving is not supported by the GPU
+Shader: light grid lookup in e3b625eaec7fca55 (2), scale 1.0000 x 1.0000
+Shader: light grid lookup in f1eef25b0c2ae13a (2), scale 1.0000 x 1.0000
+Barriers: 3696 image barriers in one batch (largest so far)
+Constant ring (5 s): 1 allocations found it full (left to stage B), 2 retirement scans; held epochs 36, open epoch holds from 8016, position 101239504, completed 27745984
+UE4 motion: TAAU compute shader cs 9c89e98d32a43b49 (samples velocity, writes one 3812x2160 image)
+UE4 motion: 1 passes, last 1920x1080 (view 1906x1080)
+UE4 upscaler: TAAU output R16G16B16A16Sfloat 3812x2160
+UE4 upscaler: FSR 3.1 context, 198.7 MB of GPU memory
+UE4 upscaler: FSR context 1906x1080 -> 3812x2160 (TAAU)
+UE4 upscaler: FSR reset (context created, View frame 7, camera moved 0 px)
+UE4 upscaler: FSR, 1 frames, 1 resets, 1906x1080 -> 3812x2160, jitter -0.484 0.290 px
+Buffer residency: 32 MB chunk 5 allocated ahead
+GPU particle flips: 1199 flips, 1200 simulations; 8 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #4000 handle 15 count 8, 224.2 reads/s; 22 reads moved, |x| 25 |y| 20, largest 5 from guest+0xb7599c
+Perf: 196.9 FPS, worst frame 576.8 ms
+UE4 upscaler stats: FSR, last 5.0 s, 1187 frames; per frame: hook 75.5 us over 673 calls (worst 20790.4), of it motion setup 5.9 us and front end 16.8 us (worst 16482.0); recording 91.5 us (worst 218.6)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Buffer residency: 32 MB chunk 6 allocated ahead
+Mouse: sceMouseRead #5000 handle 15 count 8, 226.6 reads/s; 13 reads moved, |x| 8 |y| 6, largest 1 from guest+0xb7599c
+Perf: 236.8 FPS, worst frame 6.2 ms
+UE4 upscaler stats: FSR, last 5.0 s, 1184 frames; per frame: hook 35.3 us over 392 calls (worst 248.4), of it motion setup 4.4 us and front end 2.6 us (worst 22.1); recording 80.7 us (worst 129.9)
+Mouse: sceMouseRead #6000 handle 15 count 8, 228.2 reads/s; 35 reads moved, |x| 24 |y| 32, largest 2 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 motion: 3000 passes, last 1920x1080 (view 1906x1080)
+UE4 upscaler: FSR, 3000 frames, 1 resets, 1906x1080 -> 3812x2160, jitter 0.406 0.352 px
+Buffer residency: 32 MB chunk 7 allocated ahead
+Perf: 236.8 FPS, worst frame 12.2 ms
+Mouse: released; last 33.1 s: 3322 reports (100/s), 21500 wake-ups (650/s), 21500 batches; raw mouse registered to the reader
+UE4 upscaler stats: FSR, last 5.0 s, 1184 frames; per frame: hook 40.2 us over 455 calls (worst 216.4), of it motion setup 5.8 us and front end 2.9 us (worst 87.9); recording 85.6 us (worst 163.1)
+Mouse: sceMouseRead #7000 handle 15 count 8, 229.4 reads/s; 212 reads moved, |x| 2383 |y| 514, largest 71 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: captured; last 2.6 s: 3180 reports (1211/s), 1837 wake-ups (700/s), 1837 batches; raw mouse registered to the reader
+Perf: 236.9 FPS, worst frame 4.8 ms
+Save trace: mount 'GameDataUE1' mode 0x1 blocks 96 -> failed from guest+0x6c97e1
+Save trace:   error 0x809f0008
+Save trace: search '@%' key 3 order 1 capacity 1024 -> 7 found, 7 returned from guest+0x6ce574
+Save trace:   0: @MediEvil0006  2026-11-12 02:57:55  The Graveyard
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   3: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   6: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+UE4 motion: TAAU compute shader cs 8996eb8d7eff6a69 (samples velocity, writes one 3812x2160 image)
+Buffer residency: 32 MB chunk 8 allocated ahead
+Mouse: sceMouseRead #8000 handle 15 count 8, 230.3 reads/s; 163 reads moved, |x| 210 |y| 630, largest 21 from guest+0xb7599c
+UE4 upscaler stats: FSR, last 5.0 s, 1185 frames; per frame: hook 31.6 us over 290 calls (worst 262.8), of it motion setup 5.9 us and front end 2.8 us (worst 6.9); recording 85.0 us (worst 182.7)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 237.0 FPS, worst frame 4.8 ms
+Mouse: sceMouseRead #9000 handle 15 count 8, 231.1 reads/s; 124 reads moved, |x| 118 |y| 67, largest 2 from guest+0xb7599c
+Save trace: search '@%' key 3 order 1 capacity 1024 -> 7 found, 7 returned from guest+0x6ce574
+Save trace:   0: @MediEvil0006  2026-11-12 02:57:55  The Graveyard
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   3: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   6: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+Save trace: search '@%' key 3 order 1 capacity 1024 -> 7 found, 7 returned from guest+0x6cce73
+Save trace:   0: @MediEvil0006  2026-11-12 02:57:55  The Graveyard
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   3: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   6: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+Save trace: dialog open, mode 1, type 2, 7 saves listed, with a new-save item from guest+0x6ca900
+Save trace:   focus 0
+Save trace:   0: @MediEvil0006
+Save trace:   1: @MediEvil0002
+Save trace:   2: @MediEvil0001
+Save trace:   3: @MediEvil0007
+Save trace:   4: @MediEvil0005
+Save trace:   5: @MediEvil0004
+Save trace:   6: @MediEvil0003
+Runtime: SaveDataDialog list (Load game): 8 entries shown
+Mouse: released; last 7.0 s: 968 reports (139/s), 4862 wake-ups (698/s), 4862 batches; raw mouse registered to the reader
+Mouse: captured; last 1.3 s: 34 reports (26/s), 958 wake-ups (721/s), 958 batches; raw mouse registered to the reader
+Runtime: SaveDataDialog list: chose @MediEvil0006
+Save trace: dialog result: mode 1, result 0, button 1, save '@MediEvil0006', param filled
+Runtime: save data '@MediEvil0006' mounted at /savedata0 (existing)
+Save trace: mount '@MediEvil0006' mode 0x2 blocks 96 -> ok from guest+0x6cd29e
+Save trace: open /savedata0/ue4savegame.ps4.sav for reading, 22677 bytes
+Save trace: open /savedata0/ue4savegame.ps4.sav for writing, 22677 bytes
+Save trace: unmount /savedata0 ('@MediEvil0006')
+UE4 upscaler stats: FSR, last 5.9 s, 1056 frames; per frame: hook 37.7 us over 410 calls (worst 240.7), of it motion setup 5.9 us and front end 2.6 us (worst 22.4); recording 85.7 us (worst 133.2)
+UE4 motion: 6000 passes, last 1920x1080 (view 1906x1080)
+UE4 upscaler: FSR, 6000 frames, 1 resets, 1906x1080 -> 3812x2160, jitter 0.438 -0.241 px
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 186.5 FPS, worst frame 37.9 ms
+Mouse: sceMouseRead #10000 handle 15 count 8, 224.3 reads/s; 46 reads moved, |x| 39 |y| 22, largest 2 from guest+0xb7599c
+Runtime: guest thread 'SlateLoadingThread3' created (stack=262144, prio=700)
+Buffer residency: 32 MB chunk 9 allocated ahead
+Shader: light grid lookup in 591c5d142a39fbaf (2), scale 1.0000 x 1.0000
+UE4 upscaler: FSR 3.1 context, 199.7 MB of GPU memory
+UE4 upscaler: FSR context 1920x1080 -> 3840x2160 (TAAU)
+UE4 upscaler: FSR reset (context created, View frame 1, camera moved 0 px)
+UE4 upscaler stats: FSR, last 5.2 s, 1086 frames; per frame: hook 38.4 us over 410 calls (worst 316.4), of it motion setup 6.1 us and front end 23.5 us (worst 22342.9); recording 86.8 us (worst 418.6)
+Scheduler 0000000053F75B80: commands recorded from thread 'shadPS4:GpuCommandProcessor' (caller medievil-runtime.exe+0x80db0)
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 1 and destination layers 2 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 2 and destination layers 3 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 3 and destination layers 4 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 4 and destination layers 5 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 5 and destination layers 6 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 6 and destination layers 8 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 1 and destination layers 2 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 2 and destination layers 3 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 3 and destination layers 4 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 4 and destination layers 5 to minimum.
+GPU [Render.Vulkan] <Warning> vk_runtime.cpp:69 SanitizeCopyLayers: Coercing copy source layers 5 and destination layers 6 to minimum.
+Pipeline binary cache: 256 hits, 0 compiled, 0 rejected, 0 saved, 0 cache errors (restore 0.539 ms, compile 0.000 ms each)
+Pipeline binary cache: 256 hits, 0 compiled, 0 rejected, 0 saved, 0 cache errors (restore 0.539 ms, compile 0.000 ms each)
+Buffer residency: 32 MB chunk 10 allocated ahead
+Perf: 207.4 FPS, worst frame 469.2 ms
+GPU particle flips: 1199 flips, 1200 simulations; 7 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #11000 handle 15 count 8, 222.3 reads/s; 28 reads moved, |x| 29 |y| 14, largest 5 from guest+0xb7599c
+UE4 upscaler stats: FSR, last 5.0 s, 1166 frames; per frame: hook 79.9 us over 823 calls (worst 22686.4), of it motion setup 5.0 us and front end 3.7 us (worst 408.5); recording 95.6 us (worst 2042.9)
+Perf: 236.9 FPS, worst frame 5.1 ms
+Mouse: sceMouseRead #12000 handle 15 count 8, 223.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 motion: 9000 passes, last 1920x1080 (view 1920x1080)
+UE4 upscaler: FSR, 9000 frames, 2 resets, 1920x1080 -> 3840x2160, jitter 0.375 0.056 px
+UE4 upscaler stats: FSR, last 5.0 s, 1185 frames; per frame: hook 53.5 us over 808 calls (worst 250.1), of it motion setup 3.6 us and front end 2.7 us (worst 75.2); recording 81.6 us (worst 307.1)
+Mouse: sceMouseRead #13000 handle 15 count 8, 224.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 236.9 FPS, worst frame 5.1 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: FSR, last 5.0 s, 1185 frames; per frame: hook 52.5 us over 807 calls (worst 231.5), of it motion setup 3.2 us and front end 2.3 us (worst 4.8); recording 81.3 us (worst 225.6)
+Mouse: sceMouseRead #14000 handle 15 count 8, 225.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 236.8 FPS, worst frame 4.7 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: FSR, last 5.0 s, 1185 frames; per frame: hook 52.3 us over 808 calls (worst 247.9), of it motion setup 2.9 us and front end 2.4 us (worst 4.6); recording 79.6 us (worst 212.1)
+Mouse: sceMouseRead #15000 handle 15 count 8, 226.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 motion: 12000 passes, last 1920x1080 (view 1920x1080)
+UE4 upscaler: FSR, 12000 frames, 2 resets, 1920x1080 -> 3840x2160, jitter 0.469 -0.043 px
+Perf: 236.9 FPS, worst frame 5.0 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #16000 handle 15 count 8, 226.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: FSR, last 5.0 s, 1185 frames; per frame: hook 52.7 us over 807 calls (worst 239.0), of it motion setup 3.0 us and front end 2.4 us (worst 82.4); recording 79.2 us (worst 233.6)
+Perf: 236.8 FPS, worst frame 4.7 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #17000 handle 15 count 8, 227.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: FSR, last 5.0 s, 1184 frames; per frame: hook 52.9 us over 807 calls (worst 450.0), of it motion setup 3.1 us and front end 2.3 us (worst 3.8); recording 79.6 us (worst 167.8)
+Perf: 236.8 FPS, worst frame 4.8 ms
+Mouse: sceMouseRead #18000 handle 15 count 8, 227.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 motion: 15000 passes, last 1920x1080 (view 1920x1080)
+UE4 upscaler: FSR, 15000 frames, 2 resets, 1920x1080 -> 3840x2160, jitter 0.406 0.352 px
+UE4 upscaler stats: FSR, last 5.0 s, 1185 frames; per frame: hook 52.2 us over 807 calls (worst 251.8), of it motion setup 3.1 us and front end 2.4 us (worst 81.6); recording 80.6 us (worst 212.7)
+Mouse: sceMouseRead #19000 handle 15 count 8, 228.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 236.9 FPS, worst frame 5.1 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: FSR, last 5.0 s, 1185 frames; per frame: hook 52.2 us over 808 calls (worst 247.2), of it motion setup 3.1 us and front end 2.3 us (worst 7.9); recording 79.3 us (worst 227.2)
+Mouse: sceMouseRead #20000 handle 15 count 8, 228.6 reads/s; 2 reads moved, |x| 0 |y| 2, largest 1 from guest+0xb7599c
+Perf: 236.9 FPS, worst frame 4.7 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: FSR, last 5.0 s, 1185 frames; per frame: hook 52.5 us over 807 calls (worst 448.9), of it motion setup 2.9 us and front end 2.3 us (worst 5.0); recording 80.6 us (worst 216.4)
+Mouse: sceMouseRead #21000 handle 15 count 8, 229.0 reads/s; 11 reads moved, |x| 0 |y| 12, largest 2 from guest+0xb7599c
+UE4 motion: 18000 passes, last 1920x1080 (view 1920x1080)
+UE4 upscaler: FSR, 18000 frames, 2 resets, 1920x1080 -> 3840x2160, jitter 0.438 -0.241 px
+Perf: 236.8 FPS, worst frame 4.6 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: FSR, last 5.0 s, 1185 frames; per frame: hook 52.3 us over 807 calls (worst 220.4), of it motion setup 3.1 us and front end 2.4 us (worst 72.8); recording 80.5 us (worst 278.7)
+Mouse: sceMouseRead #22000 handle 15 count 8, 229.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler: UE4 TAA (F9)
+Perf: 236.8 FPS, worst frame 4.9 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #23000 handle 15 count 8, 229.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 236.9 FPS, worst frame 5.0 ms
+Mouse: sceMouseRead #24000 handle 15 count 8, 230.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 236.9 FPS, worst frame 4.7 ms
+Mouse: sceMouseRead #25000 handle 15 count 8, 230.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #26000 handle 15 count 8, 230.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 236.8 FPS, worst frame 4.7 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #27000 handle 15 count 8, 230.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 236.9 FPS, worst frame 4.9 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #28000 handle 15 count 8, 230.9 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 236.9 FPS, worst frame 4.7 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #29000 handle 15 count 8, 231.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 236.9 FPS, worst frame 4.8 ms
+Mouse: sceMouseRead #30000 handle 15 count 8, 231.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 236.9 FPS, worst frame 4.7 ms
+Mouse: sceMouseRead #31000 handle 15 count 8, 231.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler: NVIDIA DLSS (F9)
+DLSS: DLSS 1920x1080 -> 3840x2160, quality 3, preset 0, HDR input
+UE4 upscaler: DLSS context 1920x1080 -> 3840x2160 (TAAU)
+UE4 upscaler: DLSS reset (context created, View frame 21773, camera moved 0 px)
+UE4 upscaler stats: DLSS, last 42.0 s, 117 frames; per frame: hook 54.1 us over 808 calls (worst 236.1), of it motion setup 2.8 us and front end 185.5 us (worst 21429.6); recording 84.6 us (worst 935.2)
+Mouse: sceMouseRead #32000 handle 15 count 8, 231.6 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 235.8 FPS, worst frame 25.1 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #33000 handle 15 count 8, 231.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1184 frames; per frame: hook 70.5 us over 807 calls (worst 21619.5), of it motion setup 2.7 us and front end 2.3 us (worst 15.5); recording 52.3 us (worst 102.5)
+Perf: 236.8 FPS, worst frame 4.9 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #34000 handle 15 count 8, 231.9 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 motion: 21000 passes, last 1920x1080 (view 1920x1080)
+UE4 upscaler: DLSS, 21000 frames, 3 resets, 1920x1080 -> 3840x2160, jitter -0.438 0.389 px
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 52.6 us over 807 calls (worst 266.8), of it motion setup 2.8 us and front end 2.3 us (worst 78.2); recording 51.7 us (worst 118.2)
+Perf: 236.8 FPS, worst frame 4.7 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #35000 handle 15 count 8, 232.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 52.2 us over 807 calls (worst 210.7), of it motion setup 2.7 us and front end 2.3 us (worst 3.8); recording 51.9 us (worst 84.5)
+Perf: 236.9 FPS, worst frame 4.7 ms
+Mouse: sceMouseRead #36000 handle 15 count 8, 232.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1184 frames; per frame: hook 52.3 us over 808 calls (worst 236.9), of it motion setup 2.7 us and front end 2.3 us (worst 17.6); recording 52.0 us (worst 99.9)
+Perf: 236.8 FPS, worst frame 4.8 ms
+Mouse: sceMouseRead #37000 handle 15 count 8, 232.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 motion: 24000 passes, last 1920x1080 (view 1920x1080)
+UE4 upscaler: DLSS, 24000 frames, 3 resets, 1920x1080 -> 3840x2160, jitter -0.484 0.290 px
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 52.5 us over 807 calls (worst 248.5), of it motion setup 2.8 us and front end 2.3 us (worst 77.6); recording 52.2 us (worst 147.8)
+Perf: 236.8 FPS, worst frame 5.2 ms
+Mouse: sceMouseRead #38000 handle 15 count 8, 232.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #39000 handle 15 count 8, 232.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1184 frames; per frame: hook 52.3 us over 807 calls (worst 253.8), of it motion setup 2.8 us and front end 2.3 us (worst 7.4); recording 52.2 us (worst 89.3)
+Perf: 236.7 FPS, worst frame 5.1 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #40000 handle 15 count 8, 232.6 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 motion: 27000 passes, last 1920x1080 (view 1920x1080)
+UE4 upscaler: DLSS, 27000 frames, 3 resets, 1920x1080 -> 3840x2160, jitter -0.406 -0.204 px
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 52.8 us over 807 calls (worst 231.9), of it motion setup 2.8 us and front end 2.4 us (worst 83.4); recording 52.0 us (worst 142.8)
+Perf: 236.9 FPS, worst frame 4.8 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #41000 handle 15 count 8, 232.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1184 frames; per frame: hook 52.3 us over 808 calls (worst 229.1), of it motion setup 2.8 us and front end 2.3 us (worst 43.8); recording 52.0 us (worst 163.5)
+Perf: 236.7 FPS, worst frame 5.1 ms
+Mouse: sceMouseRead #42000 handle 15 count 8, 232.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 52.8 us over 807 calls (worst 233.8), of it motion setup 2.8 us and front end 2.3 us (worst 4.9); recording 52.5 us (worst 110.6)
+Perf: 236.9 FPS, worst frame 4.7 ms
+Mouse: sceMouseRead #43000 handle 15 count 8, 232.9 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 motion: 30000 passes, last 1920x1080 (view 1920x1080)
+UE4 upscaler: DLSS, 30000 frames, 3 resets, 1920x1080 -> 3840x2160, jitter -0.469 0.093 px
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 52.6 us over 807 calls (worst 221.9), of it motion setup 2.8 us and front end 2.3 us (worst 74.5); recording 52.4 us (worst 183.0)
+Perf: 236.8 FPS, worst frame 4.8 ms
+Mouse: sceMouseRead #44000 handle 15 count 8, 233.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1184 frames; per frame: hook 52.5 us over 807 calls (worst 229.8), of it motion setup 2.7 us and front end 2.3 us (worst 36.9); recording 52.5 us (worst 105.3)
+Mouse: sceMouseRead #45000 handle 15 count 8, 233.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 236.8 FPS, worst frame 4.9 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #46000 handle 15 count 8, 233.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 motion: 33000 passes, last 1920x1080 (view 1920x1080)
+UE4 upscaler: DLSS, 33000 frames, 3 resets, 1920x1080 -> 3840x2160, jitter -0.438 0.389 px
+AvPlayer 193.753 s: 0000000079205500 Stop -> 0 (file://../../../overbite/Content/Movies/gameintro.mp4, 97 frames delivered)
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 52.5 us over 808 calls (worst 238.1), of it motion setup 2.8 us and front end 2.4 us (worst 83.5); recording 51.9 us (worst 91.4)
+Perf: 236.8 FPS, worst frame 4.7 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #47000 handle 15 count 8, 233.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1184 frames; per frame: hook 52.8 us over 807 calls (worst 273.6), of it motion setup 2.8 us and front end 2.3 us (worst 53.0); recording 51.8 us (worst 95.1)
+Perf: 236.8 FPS, worst frame 4.8 ms
+Mouse: sceMouseRead #48000 handle 15 count 8, 233.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 52.3 us over 807 calls (worst 203.6), of it motion setup 2.7 us and front end 2.3 us (worst 8.0); recording 52.2 us (worst 86.9)
+Perf: 236.8 FPS, worst frame 4.7 ms
+Mouse: sceMouseRead #49000 handle 15 count 8, 233.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 motion: 36000 passes, last 1920x1080 (view 1920x1080)
+UE4 upscaler: DLSS, 36000 frames, 3 resets, 1920x1080 -> 3840x2160, jitter -0.484 0.290 px
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 52.8 us over 807 calls (worst 256.3), of it motion setup 2.8 us and front end 2.3 us (worst 78.1); recording 52.9 us (worst 138.7)
+Perf: 236.8 FPS, worst frame 4.8 ms
+Mouse: sceMouseRead #50000 handle 15 count 8, 233.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 52.9 us over 808 calls (worst 371.8), of it motion setup 2.7 us and front end 2.3 us (worst 13.2); recording 52.5 us (worst 104.6)
+Perf: 236.8 FPS, worst frame 4.8 ms
+Mouse: sceMouseRead #51000 handle 15 count 8, 233.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #52000 handle 15 count 8, 233.6 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1184 frames; per frame: hook 52.3 us over 807 calls (worst 250.8), of it motion setup 2.7 us and front end 2.3 us (worst 5.5); recording 52.1 us (worst 82.9)
+UE4 motion: 39000 passes, last 1920x1080 (view 1920x1080)
+UE4 upscaler: DLSS, 39000 frames, 3 resets, 1920x1080 -> 3840x2160, jitter -0.406 -0.204 px
+Perf: 236.7 FPS, worst frame 4.9 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #53000 handle 15 count 8, 233.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1184 frames; per frame: hook 52.8 us over 807 calls (worst 222.6), of it motion setup 2.8 us and front end 2.4 us (worst 75.6); recording 52.6 us (worst 94.7)
+Perf: 236.8 FPS, worst frame 4.9 ms
+Mouse: sceMouseRead #54000 handle 15 count 8, 233.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 52.7 us over 807 calls (worst 250.9), of it motion setup 2.7 us and front end 2.3 us (worst 35.3); recording 52.1 us (worst 111.0)
+Perf: 236.7 FPS, worst frame 4.8 ms
+Mouse: sceMouseRead #55000 handle 15 count 8, 233.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 motion: 42000 passes, last 1920x1080 (view 1920x1080)
+UE4 upscaler: DLSS, 42000 frames, 3 resets, 1920x1080 -> 3840x2160, jitter -0.469 0.093 px
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 52.4 us over 808 calls (worst 254.9), of it motion setup 2.8 us and front end 2.3 us (worst 81.5); recording 52.2 us (worst 123.6)
+Perf: 236.8 FPS, worst frame 4.7 ms
+Mouse: sceMouseRead #56000 handle 15 count 8, 233.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1184 frames; per frame: hook 52.2 us over 807 calls (worst 258.9), of it motion setup 2.7 us and front end 2.3 us (worst 3.8); recording 52.0 us (worst 121.8)
+Perf: 236.8 FPS, worst frame 4.7 ms
+Mouse: sceMouseRead #57000 handle 15 count 8, 233.9 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 53.2 us over 807 calls (worst 226.5), of it motion setup 2.8 us and front end 2.3 us (worst 14.6); recording 53.1 us (worst 88.2)
+Mouse: sceMouseRead #58000 handle 15 count 8, 233.9 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 motion: 45000 passes, last 1920x1080 (view 1920x1080)
+UE4 upscaler: DLSS, 45000 frames, 3 resets, 1920x1080 -> 3840x2160, jitter -0.438 0.389 px
+Perf: 236.8 FPS, worst frame 4.8 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #59000 handle 15 count 8, 234.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1184 frames; per frame: hook 52.5 us over 807 calls (worst 230.3), of it motion setup 2.8 us and front end 2.4 us (worst 89.3); recording 52.0 us (worst 121.3)
+Perf: 236.9 FPS, worst frame 4.8 ms
+Mouse: sceMouseRead #60000 handle 15 count 8, 234.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 53.2 us over 808 calls (worst 388.9), of it motion setup 2.7 us and front end 2.3 us (worst 17.1); recording 52.0 us (worst 86.4)
+Perf: 236.8 FPS, worst frame 4.9 ms
+Mouse: sceMouseRead #61000 handle 15 count 8, 234.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 motion: 48000 passes, last 1920x1080 (view 1920x1080)
+UE4 upscaler: DLSS, 48000 frames, 3 resets, 1920x1080 -> 3840x2160, jitter -0.484 0.290 px
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 52.9 us over 807 calls (worst 240.8), of it motion setup 2.8 us and front end 2.4 us (worst 78.0); recording 52.3 us (worst 86.8)
+Perf: 236.9 FPS, worst frame 4.8 ms
+Mouse: sceMouseRead #62000 handle 15 count 8, 234.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1184 frames; per frame: hook 52.6 us over 807 calls (worst 227.8), of it motion setup 2.7 us and front end 2.3 us (worst 3.9); recording 52.0 us (worst 106.0)
+Perf: 236.8 FPS, worst frame 4.9 ms
+Mouse: sceMouseRead #63000 handle 15 count 8, 234.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 53.2 us over 807 calls (worst 259.8), of it motion setup 2.8 us and front end 2.3 us (worst 5.1); recording 53.0 us (worst 115.7)
+Mouse: sceMouseRead #64000 handle 15 count 8, 234.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 236.9 FPS, worst frame 4.7 ms
+UE4 motion: 51000 passes, last 1920x1080 (view 1920x1080)
+UE4 upscaler: DLSS, 51000 frames, 3 resets, 1920x1080 -> 3840x2160, jitter -0.406 -0.204 px
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #65000 handle 15 count 8, 234.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 53.6 us over 811 calls (worst 249.8), of it motion setup 2.8 us and front end 2.4 us (worst 85.3); recording 53.3 us (worst 163.5)
+Perf: 236.8 FPS, worst frame 5.2 ms
+Save trace: search '@%' key 3 order 1 capacity 1024 -> 7 found, 7 returned from guest+0x6cb95c
+Save trace:   0: @MediEvil0006  2026-11-12 03:18:29  The Graveyard
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   3: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   6: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+Save trace: mount '@MediEvil0006' mode 0x16 blocks 101 -> failed from guest+0x6cbc2b
+Save trace:   error 0x809f0007
+Runtime: save data '@MediEvil0006' mounted at /savedata0 (existing)
+Save trace: mount '@MediEvil0006' mode 0x2 blocks 101 -> ok from guest+0x6cbc62
+Save trace: open /savedata0/ue4savegame.ps4.sav for writing, 22677 bytes
+Save trace: set param 1 on '@MediEvil0006': 'SLOT DATA' from guest+0x6cc4e4
+Save trace: set param 2 on '@MediEvil0006': 'The Graveyard' from guest+0x6cc522
+Save trace: unmount /savedata0 ('@MediEvil0006')
+Runtime: guest thread 'SlateLoadingThread4' created (stack=262144, prio=700)
+Buffer residency: 32 MB chunk 11 allocated ahead
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Save trace: mount 'GameData' mode 0x1 blocks 96 -> ok from guest+0x6c97e1
+Save trace: unmount /savedata0 ('GameData')
+Save trace: search '' key 0 order 0 capacity 1024 -> 8 found, 8 returned from guest+0x6ccf16
+Save trace:   0: @MediEvil0001  2026-11-10 23:02:33  Cemetery Hill
+Save trace:   1: @MediEvil0002  2026-11-11 06:53:06  Cemetery Hill
+Save trace:   2: @MediEvil0003  2026-10-18 18:10:39  The Graveyard
+Save trace:   3: @MediEvil0004  2026-10-20 21:39:29  The Graveyard
+Save trace:   4: @MediEvil0005  2026-10-25 18:44:01  Cemetery Hill
+Save trace:   5: @MediEvil0006  2026-11-12 03:22:29  The Graveyard
+Save trace:   6: @MediEvil0007  2026-11-10 21:38:24  The Graveyard
+Save trace:   7: GameData  2026-11-12 01:21:13  
+Runtime: save data 'GameData' mounted at /savedata0 (existing, read-only)
+Save trace: mount 'GameData' mode 0x1 blocks 96 -> ok from guest+0x6cd29e
+Save trace: open /savedata0/ue4savegame.ps4.sav for reading, 1724 bytes
+Save trace: unmount /savedata0 ('GameData')
+Runtime: system module 0xad loaded (host implementation)
+Mouse yaw: Dan's camera lock found (game build 01.02)
+UE4 upscaler: DLSS reset (frame number, View frame 1, camera moved 0 px)
+Buffer residency: 32 MB chunk 12 allocated ahead
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2056800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2056800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2056800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2056800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2056800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2056800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2056800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2056800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2056800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2056800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2056800000)
+Stencil plane-sized write by shader 0xca8545f706d43ff at 0x201c000000 +0x7f8000 (known plane 0x2056800000)
+UE4 upscaler stats: DLSS, last 5.0 s, 856 frames; per frame: hook 64.8 us over 995 calls (worst 557.9), of it motion setup 4.3 us and front end 2.7 us (worst 99.5); recording 58.9 us (worst 289.9)
+GPU particle flips: 1199 flips, 1200 simulations; 2 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #66000 handle 15 count 8, 233.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 180.5 FPS, worst frame 511.8 ms
+Mouse: sceMouseRead #67000 handle 15 count 8, 233.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 motion: 54000 passes, last 1920x1080 (view 1920x1080)
+UE4 upscaler: DLSS, 54000 frames, 4 resets, 1920x1080 -> 3840x2160, jitter -0.469 0.093 px
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 83.0 us over 1249 calls (worst 466.6), of it motion setup 6.4 us and front end 2.9 us (worst 73.5); recording 65.2 us (worst 318.6)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 236.8 FPS, worst frame 5.4 ms
+Mouse: sceMouseRead #68000 handle 15 count 8, 233.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: released; last 252.2 s: 119 reports (0/s), 176054 wake-ups (698/s), 176054 batches; raw mouse registered to the reader
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 74.6 us over 1252 calls (worst 265.0), of it motion setup 5.7 us and front end 2.5 us (worst 4.9); recording 56.5 us (worst 130.3)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 236.9 FPS, worst frame 5.3 ms
+Mouse: sceMouseRead #69000 handle 15 count 8, 233.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1184 frames; per frame: hook 76.8 us over 1251 calls (worst 426.2), of it motion setup 5.9 us and front end 2.6 us (worst 23.0); recording 58.2 us (worst 132.9)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 236.8 FPS, worst frame 4.9 ms
+Mouse: sceMouseRead #70000 handle 15 count 8, 233.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 motion: 57000 passes, last 1920x1080 (view 1920x1080)
+UE4 upscaler: DLSS, 57000 frames, 4 resets, 1920x1080 -> 3840x2160, jitter -0.438 0.389 px
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 76.2 us over 1252 calls (worst 247.9), of it motion setup 5.8 us and front end 2.6 us (worst 84.5); recording 57.7 us (worst 498.2)
+Perf: 236.9 FPS, worst frame 5.0 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #71000 handle 15 count 8, 233.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Buffer residency: 32 MB chunk 13 allocated ahead
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 78.9 us over 1252 calls (worst 425.3), of it motion setup 5.8 us and front end 2.7 us (worst 26.6); recording 59.5 us (worst 119.4)
+Perf: 236.9 FPS, worst frame 5.1 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #72000 handle 15 count 8, 233.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: sceMouseRead #73000 handle 15 count 8, 233.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1184 frames; per frame: hook 78.2 us over 1247 calls (worst 260.9), of it motion setup 5.9 us and front end 2.6 us (worst 6.4); recording 59.5 us (worst 108.9)
+UE4 motion: 60000 passes, last 1920x1080 (view 1920x1080)
+UE4 upscaler: DLSS, 60000 frames, 4 resets, 1920x1080 -> 3840x2160, jitter -0.484 0.290 px
+Perf: 236.8 FPS, worst frame 5.0 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #74000 handle 15 count 8, 233.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1184 frames; per frame: hook 75.4 us over 1246 calls (worst 256.3), of it motion setup 5.8 us and front end 2.6 us (worst 67.5); recording 57.4 us (worst 121.4)
+Perf: 236.6 FPS, worst frame 5.6 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #75000 handle 15 count 8, 233.6 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Render scale: 50% -> 75% (live)
+UE4: r.ScreenPercentage 75 (live)
+DLSS: DLSS 2880x1620 -> 3840x2160, quality 1, preset 0, HDR input
+UE4 upscaler: DLSS context 2880x1620 -> 3840x2160 (TAAU)
+UE4 upscaler: DLSS reset (context created, View frame 9473, camera moved 0 px)
+Buffer residency: 32 MB chunk 14 allocated ahead
+UE4 upscaler stats: DLSS, last 5.0 s, 1163 frames; per frame: hook 112.9 us over 1246 calls (worst 40634.3), of it motion setup 6.5 us and front end 37.5 us (worst 40540.4); recording 58.7 us (worst 614.0)
+Perf: 233.5 FPS, worst frame 17.1 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: captured; last 31.2 s: 9931 reports (319/s), 21621 wake-ups (694/s), 21621 batches; raw mouse registered to the reader
+Mouse: sceMouseRead #76000 handle 15 count 8, 233.5 reads/s; 1 reads moved, |x| 1 |y| 0, largest 1 from guest+0xb7599c
+UE4 motion: 63000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: DLSS, 63000 frames, 5 resets, 2880x1620 -> 3840x2160, jitter 0.250 -0.389 px
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 78.1 us over 1247 calls (worst 297.4), of it motion setup 7.8 us and front end 2.7 us (worst 78.2); recording 57.0 us (worst 365.8)
+Perf: 236.9 FPS, worst frame 4.9 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #77000 handle 15 count 8, 233.6 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1184 frames; per frame: hook 76.1 us over 1245 calls (worst 307.6), of it motion setup 8.3 us and front end 2.6 us (worst 19.4); recording 63.3 us (worst 9528.4)
+Perf: 236.6 FPS, worst frame 12.2 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #78000 handle 15 count 8, 233.6 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1184 frames; per frame: hook 77.5 us over 1244 calls (worst 295.4), of it motion setup 9.6 us and front end 2.7 us (worst 110.5); recording 53.3 us (worst 201.2)
+Mouse: sceMouseRead #79000 handle 15 count 8, 233.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 236.8 FPS, worst frame 6.2 ms
+UE4 motion: 66000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: DLSS, 66000 frames, 5 resets, 2880x1620 -> 3840x2160, jitter 0.375 0.056 px
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #80000 handle 15 count 8, 233.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1184 frames; per frame: hook 76.8 us over 1244 calls (worst 333.4), of it motion setup 8.9 us and front end 2.9 us (worst 160.6); recording 55.6 us (worst 457.6)
+Perf: 236.9 FPS, worst frame 4.9 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #81000 handle 15 count 8, 233.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler: AMD FSR (F9)
+UE4 upscaler: FSR 3.1 context, 274.0 MB of GPU memory
+UE4 upscaler: FSR context 2880x1620 -> 3840x2160 (TAAU)
+UE4 upscaler: FSR reset (context created, View frame 15507, camera moved 0 px)
+UE4 upscaler stats: FSR, last 5.0 s, 1181 frames; per frame: hook 91.6 us over 1244 calls (worst 16730.5), of it motion setup 9.0 us and front end 17.0 us (worst 16656.6); recording 55.5 us (worst 194.5)
+Perf: 236.0 FPS, worst frame 20.0 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #82000 handle 15 count 8, 233.8 reads/s; 1 reads moved, |x| 0 |y| 1, largest 1 from guest+0xb7599c
+UE4 motion: 69000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: FSR, 69000 frames, 6 resets, 2880x1620 -> 3840x2160, jitter 0.312 0.204 px
+UE4 upscaler: UE4 TAA (F9)
+Perf: 236.9 FPS, worst frame 4.7 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #83000 handle 15 count 8, 233.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler: NVIDIA DLSS (F9)
+UE4 upscaler: DLSS reset (upscaler changed, View frame 17456, camera moved 0 px)
+UE4 upscaler stats: DLSS, last 8.0 s, 1062 frames; per frame: hook 74.6 us over 1244 calls (worst 303.7), of it motion setup 6.0 us and front end 2.8 us (worst 116.9); recording 86.8 us (worst 232.5)
+Perf: 236.9 FPS, worst frame 4.8 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #84000 handle 15 count 8, 233.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 76.5 us over 1244 calls (worst 384.0), of it motion setup 7.9 us and front end 2.8 us (worst 149.2); recording 54.2 us (worst 277.6)
+Perf: 236.8 FPS, worst frame 6.0 ms
+Mouse: sceMouseRead #85000 handle 15 count 8, 233.9 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse look: pitch found (class 0000001019ad2c40: target +0x388, shown +0x38c, base +0x3a4, max +0x3c4, min +0x3c8)
+Camera: follow edit 0 found (class 0000001019ad2c40, a 3009-byte function, +0x4cd)
+Camera: follow edit 1 found (class 0000001019ad2c40, a 3009-byte function, +0x24f)
+Camera: run_zoom edit 2 found (class 0000001019ad2c40, a 4533-byte function, +0x344)
+Camera: pitch_return edit 3 found (class 0000001019ad2c40, a 1650-byte function, +0x250)
+Camera: swing edit 7 found (class 0000001023233f80, a 488-byte function, +0x23)
+Camera: keepout edit 6 found (class 0000001019ad3740, a 618-byte function, +0xaf)
+Camera: suggest edit 5 found (class 0000001003cbce80, a 1393-byte function, +0x37)
+Camera: moves off: follow, swing, run_zoom, pitch_return
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Buffer residency: 32 MB chunk 15 allocated ahead
+UE4 upscaler stats: DLSS, last 5.0 s, 1178 frames; per frame: hook 70.1 us over 1117 calls (worst 299.2), of it motion setup 6.5 us and front end 2.7 us (worst 20.8); recording 55.6 us (worst 391.9)
+Shader: light grid lookup in 6237d71f64d79c68 (2), scale 1.0000 x 1.0000
+Buffer residency: 32 MB chunk 16 allocated ahead
+UE4 motion: 72000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: DLSS, 72000 frames, 7 resets, 2880x1620 -> 3840x2160, jitter 0.188 -0.019 px
+Mouse: sceMouseRead #86000 handle 15 count 8, 233.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 229.6 FPS, worst frame 9.7 ms
+Mouse look: last 5.0 s: 1150 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1135 frames; per frame: hook 73.2 us over 1129 calls (worst 258.8), of it motion setup 6.3 us and front end 3.1 us (worst 153.7); recording 60.0 us (worst 177.5)
+Mouse: sceMouseRead #87000 handle 15 count 8, 233.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU: spare image memory block ready (type 1, 1 ms)
+Perf: 231.8 FPS, worst frame 10.4 ms
+Mouse look: last 5.0 s: 1159 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Buffer residency: 32 MB chunk 17 allocated ahead
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1179 frames; per frame: hook 69.6 us over 1039 calls (worst 385.0), of it motion setup 7.5 us and front end 3.1 us (worst 31.4); recording 56.7 us (worst 185.4)
+Mouse: sceMouseRead #88000 handle 15 count 8, 233.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 236.8 FPS, worst frame 6.0 ms
+Mouse look: last 5.0 s: 1184 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 motion: 75000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: DLSS, 75000 frames, 7 resets, 2880x1620 -> 3840x2160, jitter 0.250 -0.389 px
+Mouse: sceMouseRead #89000 handle 15 count 8, 233.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 57.2 us over 824 calls (worst 255.7), of it motion setup 6.3 us and front end 3.0 us (worst 129.1); recording 54.1 us (worst 200.3)
+Buffer residency: 32 MB chunk 18 allocated ahead
+Perf: 234.7 FPS, worst frame 5.4 ms
+Mouse look: last 5.0 s: 1174 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #90000 handle 15 count 8, 233.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1165 frames; per frame: hook 62.5 us over 940 calls (worst 345.7), of it motion setup 6.2 us and front end 2.9 us (worst 22.9); recording 54.7 us (worst 163.2)
+Perf: 225.7 FPS, worst frame 12.6 ms
+Mouse look: last 5.0 s: 1120 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #91000 handle 15 count 8, 233.7 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1081 frames; per frame: hook 79.0 us over 1246 calls (worst 557.7), of it motion setup 6.3 us and front end 3.4 us (worst 302.5); recording 59.9 us (worst 167.4)
+Perf: 213.4 FPS, worst frame 11.2 ms
+UE4 motion: 78000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: DLSS, 78000 frames, 7 resets, 2880x1620 -> 3840x2160, jitter 0.375 0.056 px
+Mouse look: last 5.0 s: 1058 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #92000 handle 15 count 8, 233.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1066 frames; per frame: hook 97.5 us over 1619 calls (worst 283.8), of it motion setup 6.3 us and front end 3.0 us (worst 72.2); recording 60.6 us (worst 121.4)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 220.0 FPS, worst frame 9.6 ms
+Mouse: sceMouseRead #93000 handle 15 count 8, 233.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse look: last 5.0 s: 1120 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler stats: DLSS, last 5.0 s, 1155 frames; per frame: hook 72.9 us over 1144 calls (worst 366.4), of it motion setup 5.8 us and front end 2.7 us (worst 37.0); recording 55.4 us (worst 106.9)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #94000 handle 15 count 8, 233.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 234.5 FPS, worst frame 9.5 ms
+Mouse look: last 5.0 s: 1173 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler stats: DLSS, last 5.0 s, 1177 frames; per frame: hook 62.3 us over 961 calls (worst 271.7), of it motion setup 5.7 us and front end 2.7 us (worst 16.2); recording 54.0 us (worst 253.7)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 motion: 81000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: DLSS, 81000 frames, 7 resets, 2880x1620 -> 3840x2160, jitter 0.312 0.204 px
+Mouse: sceMouseRead #95000 handle 15 count 8, 233.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 236.3 FPS, worst frame 6.7 ms
+Mouse look: last 5.0 s: 1180 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler stats: DLSS, last 5.0 s, 1171 frames; per frame: hook 77.5 us over 1270 calls (worst 415.1), of it motion setup 5.8 us and front end 2.9 us (worst 102.2); recording 55.5 us (worst 156.6)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #96000 handle 15 count 8, 233.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 232.9 FPS, worst frame 8.2 ms
+Mouse look: last 5.0 s: 1164 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #97000 handle 15 count 8, 233.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1173 frames; per frame: hook 72.6 us over 1165 calls (worst 292.0), of it motion setup 5.8 us and front end 2.7 us (worst 18.1); recording 56.0 us (worst 209.8)
+Buffer residency: 32 MB chunk 19 allocated ahead
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 235.4 FPS, worst frame 11.3 ms
+Mouse look: last 5.0 s: 1180 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 motion: 84000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: DLSS, 84000 frames, 7 resets, 2880x1620 -> 3840x2160, jitter 0.000 -0.167 px
+Mouse: sceMouseRead #98000 handle 15 count 8, 233.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1180 frames; per frame: hook 66.1 us over 1011 calls (worst 248.6), of it motion setup 6.5 us and front end 3.1 us (worst 72.7); recording 54.5 us (worst 144.0)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 235.3 FPS, worst frame 5.0 ms
+Mouse look: last 5.0 s: 1176 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #99000 handle 15 count 8, 233.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1155 frames; per frame: hook 74.2 us over 1166 calls (worst 386.4), of it motion setup 5.8 us and front end 3.1 us (worst 267.0); recording 55.6 us (worst 133.7)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 226.3 FPS, worst frame 7.8 ms
+Mouse: sceMouseRead #100000 handle 15 count 8, 233.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse look: last 5.0 s: 1125 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler stats: DLSS, last 5.0 s, 1147 frames; per frame: hook 67.4 us over 1073 calls (worst 269.9), of it motion setup 5.6 us and front end 2.6 us (worst 7.9); recording 56.0 us (worst 357.9)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Buffer residency: 32 MB chunk 20 allocated ahead
+UE4 motion: 87000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: DLSS, 87000 frames, 7 resets, 2880x1620 -> 3840x2160, jitter 0.125 0.278 px
+Mouse: sceMouseRead #101000 handle 15 count 8, 233.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 231.9 FPS, worst frame 5.5 ms
+Mouse look: last 5.0 s: 1159 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler stats: DLSS, last 5.0 s, 1154 frames; per frame: hook 78.4 us over 1221 calls (worst 416.6), of it motion setup 5.9 us and front end 2.8 us (worst 70.8); recording 57.6 us (worst 122.3)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #102000 handle 15 count 8, 233.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 234.2 FPS, worst frame 5.4 ms
+Mouse look: last 5.0 s: 1180 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler stats: DLSS, last 5.0 s, 1184 frames; per frame: hook 66.5 us over 1018 calls (worst 445.1), of it motion setup 6.1 us and front end 2.7 us (worst 21.1); recording 52.8 us (worst 143.1)
+Mouse: sceMouseRead #103000 handle 15 count 8, 233.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 227.3 FPS, worst frame 7.9 ms
+Mouse look: last 5.0 s: 1109 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler stats: DLSS, last 5.0 s, 1014 frames; per frame: hook 94.0 us over 1599 calls (worst 271.9), of it motion setup 6.0 us and front end 3.0 us (worst 39.5); recording 62.3 us (worst 311.2)
+UE4 motion: 90000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: DLSS, 90000 frames, 7 resets, 2880x1620 -> 3840x2160, jitter 0.062 -0.463 px
+Mouse: sceMouseRead #104000 handle 15 count 8, 233.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Buffer residency: 32 MB chunk 21 allocated ahead
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 211.6 FPS, worst frame 7.2 ms
+Buffer residency: 32 MB chunk 22 allocated ahead
+Mouse look: last 5.0 s: 1085 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #105000 handle 15 count 8, 233.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1178 frames; per frame: hook 81.6 us over 1232 calls (worst 313.7), of it motion setup 7.9 us and front end 3.7 us (worst 51.0); recording 62.0 us (worst 105.7)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 235.1 FPS, worst frame 5.3 ms
+Mouse look: last 5.0 s: 1178 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #106000 handle 15 count 8, 233.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse: released; last 131.2 s: 2 reports (0/s), 91509 wake-ups (697/s), 91509 batches; raw mouse registered to the reader
+UE4 upscaler stats: DLSS, last 5.0 s, 1180 frames; per frame: hook 75.4 us over 1215 calls (worst 263.3), of it motion setup 6.0 us and front end 2.9 us (worst 8.1); recording 54.9 us (worst 239.7)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 236.9 FPS, worst frame 5.1 ms
+UE4 motion: 93000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: DLSS, 93000 frames, 7 resets, 2880x1620 -> 3840x2160, jitter 0.188 -0.019 px
+Mouse look: last 5.0 s: 1185 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #107000 handle 15 count 8, 233.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4: r.SeparateTranslucencyScreenPercentage 75 (live)
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 74.4 us over 1157 calls (worst 526.8), of it motion setup 6.1 us and front end 2.9 us (worst 82.3); recording 54.5 us (worst 110.9)
+Mouse: captured; last 6.3 s: 3732 reports (591/s), 4390 wake-ups (695/s), 4390 batches; raw mouse registered to the reader
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #108000 handle 15 count 8, 233.1 reads/s; 13 reads moved, |x| 11 |y| 5, largest 2 from guest+0xb7599c
+Perf: 236.9 FPS, worst frame 5.6 ms
+Mouse look: last 5.0 s: 1185 camera ticks, 14 with mouse; x 11 counts = 0.2 degrees, y -5 counts, pitch moved 0.0 degrees (5 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Shader: light grid lookup in 6237d71f64d79c68 (2), scale 1.3333 x 1.3333
+Buffer residency: 32 MB chunk 23 allocated ahead
+UE4 upscaler stats: DLSS, last 5.0 s, 1168 frames; per frame: hook 74.0 us over 1159 calls (worst 279.3), of it motion setup 6.4 us and front end 3.0 us (worst 117.9); recording 56.6 us (worst 379.9)
+Mouse: sceMouseRead #109000 handle 15 count 8, 233.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 232.0 FPS, worst frame 10.7 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse look: last 5.0 s: 1159 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler stats: DLSS, last 5.0 s, 1169 frames; per frame: hook 80.3 us over 1272 calls (worst 317.7), of it motion setup 7.1 us and front end 3.7 us (worst 127.1); recording 57.9 us (worst 399.5)
+UE4 motion: 96000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: DLSS, 96000 frames, 7 resets, 2880x1620 -> 3840x2160, jitter 0.250 -0.389 px
+Mouse: sceMouseRead #110000 handle 15 count 8, 233.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 234.9 FPS, worst frame 9.2 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse look: last 5.0 s: 1177 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 75.3 us over 1209 calls (worst 310.0), of it motion setup 6.4 us and front end 3.2 us (worst 188.9); recording 54.5 us (worst 258.6)
+Mouse: sceMouseRead #111000 handle 15 count 8, 233.1 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 236.9 FPS, worst frame 5.1 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse look: last 5.0 s: 1185 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #112000 handle 15 count 8, 233.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 74.3 us over 1183 calls (worst 249.3), of it motion setup 6.9 us and front end 2.8 us (worst 47.1); recording 54.5 us (worst 243.5)
+Perf: 236.9 FPS, worst frame 5.1 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse look: last 5.0 s: 1185 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 motion: 99000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: DLSS, 99000 frames, 7 resets, 2880x1620 -> 3840x2160, jitter 0.375 0.056 px
+Mouse: sceMouseRead #113000 handle 15 count 8, 233.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 77.5 us over 1170 calls (worst 506.5), of it motion setup 9.4 us and front end 3.2 us (worst 196.0); recording 54.3 us (worst 238.1)
+Perf: 236.8 FPS, worst frame 5.0 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #114000 handle 15 count 8, 233.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse look: last 5.0 s: 1180 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler stats: DLSS, last 5.0 s, 1178 frames; per frame: hook 76.6 us over 1176 calls (worst 405.7), of it motion setup 9.2 us and front end 2.8 us (worst 128.5); recording 55.5 us (worst 236.4)
+Mouse: sceMouseRead #115000 handle 15 count 8, 233.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 235.6 FPS, worst frame 6.4 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse look: last 5.0 s: 1183 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler stats: DLSS, last 5.0 s, 1184 frames; per frame: hook 75.0 us over 1179 calls (worst 365.8), of it motion setup 8.8 us and front end 2.8 us (worst 144.9); recording 54.0 us (worst 224.4)
+UE4 motion: 102000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: DLSS, 102000 frames, 7 resets, 2880x1620 -> 3840x2160, jitter 0.312 0.204 px
+Mouse: sceMouseRead #116000 handle 15 count 8, 233.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 236.8 FPS, worst frame 5.3 ms
+Mouse look: last 5.0 s: 1184 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1185 frames; per frame: hook 76.4 us over 1181 calls (worst 556.5), of it motion setup 9.4 us and front end 3.2 us (worst 366.7); recording 53.2 us (worst 197.2)
+Mouse: sceMouseRead #117000 handle 15 count 8, 233.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 234.7 FPS, worst frame 9.7 ms
+Mouse look: last 5.0 s: 1168 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #118000 handle 15 count 8, 233.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1163 frames; per frame: hook 65.5 us over 995 calls (worst 357.7), of it motion setup 6.0 us and front end 3.0 us (worst 35.3); recording 54.8 us (worst 345.4)
+Perf: 228.7 FPS, worst frame 10.3 ms
+Mouse look: last 5.0 s: 1153 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 motion: 105000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: DLSS, 105000 frames, 7 resets, 2880x1620 -> 3840x2160, jitter 0.000 -0.167 px
+Mouse: sceMouseRead #119000 handle 15 count 8, 233.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1140 frames; per frame: hook 70.7 us over 1091 calls (worst 361.4), of it motion setup 5.9 us and front end 3.0 us (worst 99.4); recording 57.0 us (worst 389.3)
+Perf: 231.3 FPS, worst frame 7.9 ms
+Mouse look: last 5.0 s: 1151 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #120000 handle 15 count 8, 233.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1152 frames; per frame: hook 74.0 us over 1160 calls (worst 370.8), of it motion setup 5.6 us and front end 2.9 us (worst 26.3); recording 54.9 us (worst 321.8)
+UE4 upscaler: AMD FSR (F9)
+UE4 upscaler: FSR reset (upscaler changed, View frame 54682, camera moved 0 px)
+Perf: 231.8 FPS, worst frame 5.3 ms
+Mouse: sceMouseRead #121000 handle 15 count 8, 233.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse look: last 5.0 s: 1165 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: FSR, last 5.0 s, 1179 frames; per frame: hook 69.2 us over 1115 calls (worst 309.0), of it motion setup 5.8 us and front end 3.0 us (worst 102.3); recording 87.8 us (worst 490.7)
+UE4 motion: 108000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: FSR, 108000 frames, 8 resets, 2880x1620 -> 3840x2160, jitter 0.125 0.278 px
+Mouse: sceMouseRead #122000 handle 15 count 8, 233.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 236.3 FPS, worst frame 6.9 ms
+Mouse look: last 5.0 s: 1182 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler: UE4 TAA (F9)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #123000 handle 15 count 8, 233.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 236.5 FPS, worst frame 8.9 ms
+Mouse look: last 5.0 s: 1183 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #124000 handle 15 count 8, 233.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler: NVIDIA DLSS (F9)
+UE4 upscaler: DLSS reset (upscaler changed, View frame 58257, camera moved 0 px)
+UE4 upscaler stats: DLSS, last 10.6 s, 763 frames; per frame: hook 64.0 us over 969 calls (worst 255.3), of it motion setup 5.9 us and front end 3.5 us (worst 182.7); recording 91.3 us (worst 319.3)
+Perf: 231.1 FPS, worst frame 8.1 ms
+Mouse: released; last 72.3 s: 16 reports (0/s), 50400 wake-ups (697/s), 50400 batches; raw mouse registered to the reader
+Mouse look: last 5.0 s: 1150 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #125000 handle 15 count 8, 233.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1118 frames; per frame: hook 75.9 us over 1235 calls (worst 341.4), of it motion setup 5.8 us and front end 2.9 us (worst 8.4); recording 60.2 us (worst 422.9)
+Render scale: 75% -> 100% (live)
+UE4: r.TemporalAA.Upsampling 0 (live)
+UE4: r.ScreenPercentage 100 (live)
+Buffer residency: 32 MB chunk 24 allocated ahead
+Slow image create: 9.7 ms, 3840x2160, 31.9 MiB
+Slow image create: 15.9 ms, 4096x4096, 42.7 MiB
+Perf: 214.4 FPS, worst frame 75.2 ms
+DLSS: DLSS 3840x2160 -> 3840x2160, quality 0, preset 0, HDR input
+UE4 upscaler: DLSS context 3840x2160 -> 3840x2160 (native)
+UE4 upscaler: DLSS reset (context created, View frame 59758, camera moved 0 px)
+Buffer residency: 32 MB chunk 25 allocated ahead
+Mouse look: last 5.0 s: 1036 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: captured; last 5.5 s: 3078 reports (564/s), 3820 wake-ups (701/s), 3820 batches; raw mouse registered to the reader
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #126000 handle 15 count 8, 232.7 reads/s; 2 reads moved, |x| 0 |y| 2, largest 1 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 900 frames; per frame: hook 113.3 us over 1166 calls (worst 34635.1), of it motion setup 7.9 us and front end 39.4 us (worst 33072.2); recording 59.2 us (worst 130.0)
+Perf: 175.4 FPS, worst frame 12.5 ms
+Mouse look: last 5.0 s: 883 camera ticks, 2 with mouse; x 0 counts = 0.0 degrees, y 2 counts, pitch moved -0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 motion: 111000 passes, last 3840x2160 (view 3840x2160)
+UE4 upscaler: DLSS, 111000 frames, 10 resets, 3840x2160 -> 3840x2160, jitter 0.367 -0.308 px
+UE4 upscaler stats: DLSS, last 5.0 s, 901 frames; per frame: hook 70.3 us over 1108 calls (worst 381.7), of it motion setup 5.6 us and front end 2.7 us (worst 80.2); recording 60.2 us (worst 343.0)
+Mouse: sceMouseRead #127000 handle 15 count 8, 232.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 177.1 FPS, worst frame 10.1 ms
+Mouse look: last 5.0 s: 881 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler stats: DLSS, last 5.0 s, 871 frames; per frame: hook 70.0 us over 1076 calls (worst 577.5), of it motion setup 5.8 us and front end 2.6 us (worst 5.6); recording 60.7 us (worst 438.3)
+Mouse: sceMouseRead #128000 handle 15 count 8, 231.6 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 172.7 FPS, worst frame 10.7 ms
+Mouse look: last 5.0 s: 865 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 862 frames; per frame: hook 71.4 us over 1106 calls (worst 252.2), of it motion setup 6.2 us and front end 2.9 us (worst 140.1); recording 56.7 us (worst 176.6)
+Perf: 173.1 FPS, worst frame 24.1 ms
+Mouse: sceMouseRead #129000 handle 15 count 8, 231.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse look: last 5.0 s: 868 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler stats: DLSS, last 5.0 s, 878 frames; per frame: hook 71.5 us over 1056 calls (worst 335.1), of it motion setup 6.2 us and front end 3.0 us (worst 227.9); recording 55.7 us (worst 105.3)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 motion: 114000 passes, last 3840x2160 (view 3840x2160)
+UE4 upscaler: DLSS, 114000 frames, 10 resets, 3840x2160 -> 3840x2160, jitter 0.367 -0.308 px
+Perf: 178.0 FPS, worst frame 11.0 ms
+Mouse look: last 5.0 s: 888 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #130000 handle 15 count 8, 230.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 868 frames; per frame: hook 75.5 us over 1125 calls (worst 213.4), of it motion setup 6.3 us and front end 3.1 us (worst 66.2); recording 60.7 us (worst 359.8)
+UE4 upscaler: AMD FSR (F9)
+UE4 upscaler: FSR 3.1 context, 376.7 MB of GPU memory
+UE4 upscaler: FSR context 3840x2160 -> 3840x2160 (native)
+UE4 upscaler: FSR reset (context created, View frame 64904, camera moved 0 px)
+Perf: 170.1 FPS, worst frame 25.2 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse look: last 5.0 s: 848 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #131000 handle 15 count 8, 229.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: FSR, last 5.0 s, 856 frames; per frame: hook 101.0 us over 1164 calls (worst 22080.1), of it motion setup 6.1 us and front end 28.5 us (worst 22008.1); recording 83.5 us (worst 364.1)
+Perf: 172.6 FPS, worst frame 11.9 ms
+Mouse look: last 5.0 s: 872 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #132000 handle 15 count 8, 229.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: FSR, last 5.0 s, 879 frames; per frame: hook 78.6 us over 1155 calls (worst 460.6), of it motion setup 5.7 us and front end 2.7 us (worst 6.0); recording 94.2 us (worst 178.2)
+Perf: 179.7 FPS, worst frame 6.4 ms
+Mouse look: last 5.0 s: 900 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 motion: 117000 passes, last 3840x2160 (view 3840x2160)
+UE4 upscaler: FSR, 117000 frames, 11 resets, 3840x2160 -> 3840x2160, jitter 0.367 -0.308 px
+Mouse: sceMouseRead #133000 handle 15 count 8, 228.8 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: FSR, last 5.0 s, 924 frames; per frame: hook 74.4 us over 1100 calls (worst 360.1), of it motion setup 5.5 us and front end 2.8 us (worst 77.5); recording 93.4 us (worst 371.3)
+UE4 upscaler: UE4 TAA (F9)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 194.9 FPS, worst frame 17.3 ms
+UE4 upscaler: NVIDIA DLSS (F9)
+UE4 upscaler: DLSS reset (upscaler changed, View frame 67795, camera moved 0 px)
+Mouse look: last 5.0 s: 986 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #134000 handle 15 count 8, 228.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 630 frames; per frame: hook 72.0 us over 1078 calls (worst 243.9), of it motion setup 5.9 us and front end 2.9 us (worst 91.7); recording 64.9 us (worst 316.6)
+Perf: 181.4 FPS, worst frame 10.0 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse look: last 5.0 s: 891 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler stats: DLSS, last 5.0 s, 877 frames; per frame: hook 74.0 us over 1147 calls (worst 319.9), of it motion setup 5.8 us and front end 2.7 us (worst 34.0); recording 55.6 us (worst 97.0)
+Mouse: sceMouseRead #135000 handle 15 count 8, 228.0 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 173.0 FPS, worst frame 10.2 ms
+Mouse look: last 5.0 s: 865 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+GPU [Render] <Warning> page_manager.cpp:121 UpdatePageWatchers: Tracking memory region 0x2006680000 - 0x2006681000 which is not fully GPU mapped.
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 874 frames; per frame: hook 77.2 us over 1165 calls (worst 308.2), of it motion setup 5.6 us and front end 2.8 us (worst 33.5); recording 57.2 us (worst 287.9)
+UE4 motion: 120000 passes, last 3840x2160 (view 3840x2160)
+UE4 upscaler: DLSS, 120000 frames, 12 resets, 3840x2160 -> 3840x2160, jitter 0.172 0.144 px
+Mouse: sceMouseRead #136000 handle 15 count 8, 227.5 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 175.2 FPS, worst frame 10.1 ms
+Mouse look: last 5.0 s: 878 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler stats: DLSS, last 5.0 s, 860 frames; per frame: hook 74.5 us over 1162 calls (worst 248.7), of it motion setup 5.9 us and front end 3.0 us (worst 82.5); recording 57.0 us (worst 350.9)
+Mouse: released; last 62.5 s: 2 reports (0/s), 43508 wake-ups (696/s), 43508 batches; raw mouse registered to the reader
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 169.6 FPS, worst frame 10.5 ms
+Mouse: sceMouseRead #137000 handle 15 count 8, 226.9 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse look: last 5.0 s: 844 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler stats: DLSS, last 5.0 s, 840 frames; per frame: hook 77.2 us over 1145 calls (worst 305.0), of it motion setup 6.3 us and front end 2.9 us (worst 25.4); recording 58.8 us (worst 123.0)
+Render scale: 100% -> 75% (live)
+UE4: r.TemporalAA.Upsampling 1 (live)
+UE4: r.ScreenPercentage 75 (live)
+Buffer residency: 32 MB chunk 26 allocated ahead
+DLSS: DLSS 2880x1620 -> 3840x2160, quality 1, preset 0, HDR input
+UE4 upscaler: DLSS context 2880x1620 -> 3840x2160 (TAAU)
+UE4 upscaler: DLSS reset (context created, View frame 72032, camera moved 0 px)
+Perf: 163.7 FPS, worst frame 25.3 ms
+Mouse look: last 5.0 s: 833 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: captured; last 7.4 s: 1987 reports (268/s), 5164 wake-ups (696/s), 5164 batches; raw mouse registered to the reader
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #138000 handle 15 count 8, 226.4 reads/s; 1 reads moved, |x| 1 |y| 1, largest 1 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 964 frames; per frame: hook 117.8 us over 1154 calls (worst 36769.9), of it motion setup 8.9 us and front end 41.2 us (worst 36646.4); recording 62.8 us (worst 399.1)
+Perf: 223.5 FPS, worst frame 9.9 ms
+UE4 motion: 123000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: DLSS, 123000 frames, 13 resets, 2880x1620 -> 3840x2160, jitter 0.000 -0.167 px
+Mouse: sceMouseRead #139000 handle 15 count 8, 226.4 reads/s; 2 reads moved, |x| 3 |y| 1, largest 2 from guest+0xb7599c
+Mouse look: last 5.0 s: 1124 camera ticks, 3 with mouse; x 4 counts = 0.1 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1158 frames; per frame: hook 69.3 us over 1108 calls (worst 425.1), of it motion setup 5.9 us and front end 2.9 us (worst 87.9); recording 57.1 us (worst 388.2)
+Mouse: sceMouseRead #140000 handle 15 count 8, 226.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 232.2 FPS, worst frame 8.5 ms
+Mouse look: last 5.0 s: 1156 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1137 frames; per frame: hook 71.1 us over 1130 calls (worst 344.7), of it motion setup 5.9 us and front end 2.8 us (worst 6.5); recording 57.8 us (worst 859.5)
+Mouse: sceMouseRead #141000 handle 15 count 8, 226.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 223.5 FPS, worst frame 9.7 ms
+Mouse look: last 5.0 s: 1120 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1125 frames; per frame: hook 76.5 us over 1244 calls (worst 380.0), of it motion setup 6.0 us and front end 2.9 us (worst 103.5); recording 58.1 us (worst 345.1)
+UE4 motion: 126000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: DLSS, 126000 frames, 13 resets, 2880x1620 -> 3840x2160, jitter 0.125 0.278 px
+Mouse: sceMouseRead #142000 handle 15 count 8, 226.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 227.2 FPS, worst frame 8.3 ms
+Mouse look: last 5.0 s: 1138 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+UE4 upscaler stats: DLSS, last 5.0 s, 1082 frames; per frame: hook 77.3 us over 1275 calls (worst 336.1), of it motion setup 6.0 us and front end 3.1 us (worst 78.9); recording 57.0 us (worst 257.0)
+Mouse: sceMouseRead #143000 handle 15 count 8, 226.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 202.8 FPS, worst frame 14.3 ms
+Mouse look: last 5.0 s: 1009 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler stats: DLSS, last 5.0 s, 1032 frames; per frame: hook 79.4 us over 1285 calls (worst 343.0), of it motion setup 6.7 us and front end 3.3 us (worst 26.6); recording 57.5 us (worst 341.3)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #144000 handle 15 count 8, 226.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 218.5 FPS, worst frame 10.0 ms
+Mouse look: last 5.0 s: 1100 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 motion: 129000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: DLSS, 129000 frames, 13 resets, 2880x1620 -> 3840x2160, jitter 0.062 -0.463 px
+Mouse: sceMouseRead #145000 handle 15 count 8, 226.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1131 frames; per frame: hook 75.0 us over 1224 calls (worst 318.9), of it motion setup 5.6 us and front end 3.0 us (worst 141.4); recording 59.9 us (worst 344.3)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 226.9 FPS, worst frame 8.1 ms
+Mouse look: last 5.0 s: 1134 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #146000 handle 15 count 8, 226.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1135 frames; per frame: hook 75.5 us over 1223 calls (worst 278.5), of it motion setup 5.7 us and front end 2.9 us (worst 35.7); recording 59.8 us (worst 293.4)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 226.8 FPS, worst frame 8.2 ms
+Mouse look: last 5.0 s: 1134 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #147000 handle 15 count 8, 226.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1125 frames; per frame: hook 76.9 us over 1226 calls (worst 378.0), of it motion setup 6.4 us and front end 3.2 us (worst 119.9); recording 59.5 us (worst 352.3)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 223.9 FPS, worst frame 9.6 ms
+Mouse look: last 5.0 s: 1119 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 motion: 132000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: DLSS, 132000 frames, 13 resets, 2880x1620 -> 3840x2160, jitter 0.188 -0.019 px
+Mouse: sceMouseRead #148000 handle 15 count 8, 226.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1123 frames; per frame: hook 77.1 us over 1229 calls (worst 263.9), of it motion setup 5.9 us and front end 3.1 us (worst 73.0); recording 60.8 us (worst 413.1)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 224.5 FPS, worst frame 8.6 ms
+Mouse: sceMouseRead #149000 handle 15 count 8, 226.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Mouse look: last 5.0 s: 1124 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler stats: DLSS, last 5.0 s, 1125 frames; per frame: hook 76.8 us over 1222 calls (worst 381.3), of it motion setup 5.8 us and front end 2.9 us (worst 19.7); recording 61.4 us (worst 142.9)
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #150000 handle 15 count 8, 226.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+Perf: 226.6 FPS, worst frame 8.1 ms
+Mouse look: last 5.0 s: 1135 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler stats: DLSS, last 5.0 s, 1150 frames; per frame: hook 73.2 us over 1177 calls (worst 330.5), of it motion setup 5.6 us and front end 2.9 us (worst 43.3); recording 60.6 us (worst 335.6)
+UE4 motion: 135000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: DLSS, 135000 frames, 13 resets, 2880x1620 -> 3840x2160, jitter 0.250 -0.389 px
+Mouse: sceMouseRead #151000 handle 15 count 8, 226.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 231.1 FPS, worst frame 7.9 ms
+Mouse look: last 5.0 s: 1157 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 upscaler stats: DLSS, last 5.0 s, 1167 frames; per frame: hook 72.5 us over 1177 calls (worst 259.3), of it motion setup 5.7 us and front end 2.8 us (worst 61.2); recording 56.5 us (worst 370.2)
+Mouse: sceMouseRead #152000 handle 15 count 8, 226.2 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Perf: 234.5 FPS, worst frame 7.5 ms
+Mouse look: last 5.0 s: 1174 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #153000 handle 15 count 8, 226.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1164 frames; per frame: hook 74.4 us over 1177 calls (worst 391.8), of it motion setup 6.0 us and front end 2.8 us (worst 20.2); recording 56.4 us (worst 267.4)
+Perf: 229.6 FPS, worst frame 9.8 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse look: last 5.0 s: 1148 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+UE4 motion: 138000 passes, last 2880x1620 (view 2880x1620)
+UE4 upscaler: DLSS, 138000 frames, 13 resets, 2880x1620 -> 3840x2160, jitter 0.375 0.056 px
+Mouse: sceMouseRead #154000 handle 15 count 8, 226.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1151 frames; per frame: hook 76.1 us over 1151 calls (worst 2377.8), of it motion setup 8.1 us and front end 3.1 us (worst 85.9); recording 59.6 us (worst 449.3)
+Perf: 232.5 FPS, worst frame 8.3 ms
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse look: last 5.0 s: 1163 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+Mouse: sceMouseRead #155000 handle 15 count 8, 226.3 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+UE4 upscaler stats: DLSS, last 5.0 s, 1167 frames; per frame: hook 73.8 us over 1149 calls (worst 424.1), of it motion setup 6.1 us and front end 2.9 us (worst 8.8); recording 57.5 us (worst 110.0)
+Perf: 232.8 FPS, worst frame 7.6 ms
+Mouse look: last 5.0 s: 1163 camera ticks, 0 with mouse; x 0 counts = 0.0 degrees, y 0 counts, pitch moved 0.0 degrees (0 ticks at a limit); 0 dropped, 0 camera locked, 0 vertical without the area's pitch; Dan-cam: 0 with mouse, 0 new, 0 yaw on Dan's facing; 0.0220 degrees per count, vertical 0.0176
+GPU particle flips: 1200 flips, 1200 simulations; 0 flips without a simulation (skipped), 0 simulations without a flip (flip added); guard on
+Mouse: sceMouseRead #156000 handle 15 count 8, 226.4 reads/s; 0 reads moved, |x| 0 |y| 0, largest 0 from guest+0xb7599c
+
+The game exited (code 0).
