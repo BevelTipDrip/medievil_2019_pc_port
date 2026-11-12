@@ -8,7 +8,7 @@ default_windows: off
 default_deck: n/a
 origin: ours
 class: M
-commits: f4f13b8, e27103e, 870f584, 88bf535, a7c91f7, b4d9e6f, 5bb45d0, 7449317
+commits: f4f13b8, e27103e, 870f584, 88bf535, a7c91f7, b4d9e6f, 5bb45d0, 7449317, 64da6dd
 files: src/runtime_mouse.c, src/mouse_hook.h, src/probe.c, src/runtime_services.c, gpu/shim/window.cpp, gpu/shim/sdl_window.h, scripts/ue4_override.py
 symbols: runtime_mouse_enabled, runtime_mouse_start, runtime_mouse_capture, runtime_mouse_take, drain, reader_thread, mouse_init, mouse_read, SetMouseCapture, mouse_captured, runtime_mouse_take_camera, medievil_mouse_yaw_find, medievil_mouse_yaw_script_ok, mouse_yaw, install_mouse_yaw
 switches: GOW3_MOUSE, GOW3_MOUSE_BUTTONS, GOW3_MOUSE_INPUT_YAW
@@ -85,7 +85,11 @@ path there (T-MS5/6: the stick-turn local and InputRotation).
 - T-MS4 (2026-11-11, PC, `88bf535`, run): the user: "it all works as expected" (no snap on the Load list, a click
   in the game hides the cursor). Log: no capture / release pairs while the list was open.
 
-- Mouse look on the camera tick, wheel buttons, sensitivity settings: fix built `7449317`, not run.
+- Mouse look on the camera tick, wheel buttons, sensitivity settings: fix built `7449317`, run in T-MS8: no mouse
+  look on either axis (research/docs/data/mouse-look-t-ms8.log). Found: the pitch finder saw two three-statement
+  runs (Add..FMax and FMin..Subtract) and gave up ("Mouse look: no pitch"), and a class without pitch dropped yaw
+  too. Fix built `64da6dd`: the finder anchors on the whole Add, FMin, FMax, Subtract chain and `Target = L4` (a
+  byte test of the Free layout fails on the old finder and passes on the new); yaw no longer needs the pitch.
 
 ## History and pitfalls
 
