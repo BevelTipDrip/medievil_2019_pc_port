@@ -34,6 +34,8 @@ Added 2026-11-11 (the user: "my main keyboard has no insert key"; mouse buttons 
   `square=left,cross=x2`). `runtime_pad.c` ORs the PS4 buttons of the held mouse buttons
   (`runtime_mouse_buttons`: only while the game has the mouse, without the click that took it) into the pad, next
   to the keys; no defaults.
+- Wheel (7449317): `wheel_up`, `wheel_down`, `wheel` (either). One 60 ms press per scroll gesture; a gesture ends after
+  200 ms without a notch, so a fast scroll is one press (the user: no queue, no back and forth).
 
 ## Invariants
 

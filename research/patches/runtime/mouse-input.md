@@ -8,10 +8,10 @@ default_windows: off
 default_deck: n/a
 origin: ours
 class: M
-commits: f4f13b8, e27103e, 870f584, 88bf535, a7c91f7, b4d9e6f, 5bb45d0
+commits: f4f13b8, e27103e, 870f584, 88bf535, a7c91f7, b4d9e6f, 5bb45d0, 7449317
 files: src/runtime_mouse.c, src/mouse_hook.h, src/probe.c, src/runtime_services.c, gpu/shim/window.cpp, gpu/shim/sdl_window.h, scripts/ue4_override.py
 symbols: runtime_mouse_enabled, runtime_mouse_start, runtime_mouse_capture, runtime_mouse_take, drain, reader_thread, mouse_init, mouse_read, SetMouseCapture, mouse_captured, runtime_mouse_take_camera, medievil_mouse_yaw_find, medievil_mouse_yaw_script_ok, mouse_yaw, install_mouse_yaw
-switches: GOW3_MOUSE, GOW3_MOUSE_BUTTONS, GOW3_MOUSE_YAW
+switches: GOW3_MOUSE, GOW3_MOUSE_BUTTONS, GOW3_MOUSE_INPUT_YAW
 tests: T-MS1, T-MS2, T-MS3, T-MS4, T-MS5, T-MS6, T-MS7
 docs: study-mouse-input.md#t-ms1-ps4enablemouse-from-the-paks-ini-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-step1-enablelog
 depends_on:
@@ -25,9 +25,13 @@ checked:
 (`RIDEV_INPUTSINK`), normal priority, at most one wake-up a millisecond, every queued report in one
 `GetRawInputBuffer` batch, totals in atomics. `mouse_read` reports a connected mouse with the counts, buttons and
 wheel notches since the last read (buttons only with `GOW3_MOUSE_BUTTONS=1`). The window thread decides capture: borderless and fullscreen take the mouse with focus and no
-menu, a window takes it on a click; focus loss / the Insert menu give it back (F1 dropped, T-MS6). Yaw (step 5): `AddControllerYawInput`'s exec is wrapped through its native slot;
-after Dan's TurnRate handler writes `CameraManager.InputRotation`, the wrapper adds x counts x `GOW3_MOUSE_YAW`
-(degrees per count, default 0.022) / 2, finding both from Dan's loaded bytecode (src/mouse_hook.h).
+menu, a window takes it on a click; focus loss / the Insert menu give it back (F1 dropped, T-MS6). Mouse look (7449317): on the camera tick, in a free area, the
+ComputeCameraSimple wrapper (`camera_look`, probe.c; camera-moves card) adds x counts x `mouse_sensitivity` to this
+frame's rotation's yaw and y counts x sensitivity x `mouse_vertical_ratio` (forward looks up; `mouse_invert_y`) to its
+pitch, clamped like the stick's and kept in the area's Target / Smoothed pitch; both axes read at the same moment
+(medievil.ini keys, live from the menu's Controls tab). `AddControllerYawInput`'s wrapper (src/mouse_hook.h) now
+records Dan's handler's AllowUserCameraControl each frame (the lock); `GOW3_MOUSE_INPUT_YAW=1` keeps the first yaw
+path there (T-MS5/6: the stick-turn local and InputRotation).
 
 ## Invariants
 
@@ -40,7 +44,8 @@ after Dan's TurnRate handler writes `CameraManager.InputRotation`, the wrapper a
 - No mouse buttons to the game by default: a click the game received left the main menu deaf to keyboard and pad
   (T-MS2). `GOW3_MOUSE_BUTTONS=1` is for the menu-focus research only.
 - No release key: alt-tab, the Windows key and the Insert menu release it (the user, 2026-11-11, after T-MS6).
-- Launcher (8f381ab): Controls > Mouse sets `GOW3_MOUSE=1` and `GOW3_MOUSE_YAW`; mouse buttons press game buttons
+- Launcher (8f381ab, 7449317): Controls > Mouse sets `GOW3_MOUSE=1` and the medievil.ini mouse keys; ticking it sets
+  the user's mouse camera (camera-moves). Mouse buttons and the wheel press game buttons
   through the pad (`GOW3_MOUSE_MAP`, card launcher/key-capture), not through sceMouse.
 - A window only takes the mouse on a click, so its title bar stays usable.
 - T-MS7 (2026-11-11, PC, `5bb45d0`, run): auto capture in borderless; the user: "Yup, it works". Log: captured at start,
@@ -79,6 +84,8 @@ after Dan's TurnRate handler writes `CameraManager.InputRotation`, the wrapper a
   moves, for mouse and stick (work queue item 4); the near-camera speed was not found in play.
 - T-MS4 (2026-11-11, PC, `88bf535`, run): the user: "it all works as expected" (no snap on the Load list, a click
   in the game hides the cursor). Log: no capture / release pairs while the list was open.
+
+- Mouse look on the camera tick, wheel buttons, sensitivity settings: fix built `7449317`, not run.
 
 ## History and pitfalls
 
