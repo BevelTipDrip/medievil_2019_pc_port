@@ -12,10 +12,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int enabled=-1;
-
 int runtime_mouse_enabled(void) {
 #ifdef _WIN32
+    static int enabled=-1;
     if (enabled<0) { const char *v=getenv("GOW3_MOUSE"); enabled=v && strcmp(v,"1")==0; }
     return enabled;
 #else
