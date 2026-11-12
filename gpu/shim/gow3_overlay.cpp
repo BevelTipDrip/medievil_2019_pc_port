@@ -40,7 +40,7 @@ u32 Gow3DisplayRefreshHz(); // gow3gpu.cpp: the display refresh rate
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_frame_capture.h"
 #include "video_core/renderer_vulkan/vk_ue4_motion.h"
-#include "video_core/renderer_vulkan/vk_ue4_dlss.h"
+#include "video_core/renderer_vulkan/vk_ue4_upscaler.h"
 
 // DejaVu Sans (Cyrillic), embedded (third_party/fonts, Bitstream Vera license).
 #ifdef _WIN32
@@ -546,13 +546,23 @@ void ImageTab() {
         ImGui::BeginDisabled(!s.rcas || rcas_blocked);
         SliderRow("Sharpening strength", s.rcas_strength, 0, 100, "%d%%", "How strong the sharpening is.");
         ImGui::EndDisabled();
-        ImGui::BeginDisabled(!s.ue4_dlss_available);
-        CheckRow("NVIDIA DLSS", s.ue4_dlss,
-                 s.ue4_dlss_available
-                     ? "Replaces the game's anti-aliasing: DLAA at Render scale 100, DLSS upscaling below it. "
-                       "Sharpening is off while it runs. F9 switches it in the game."
-                     : "Needs an NVIDIA RTX GPU and nvngx_dlss.dll in the bin folder (see README-Windows.txt).");
-        ImGui::EndDisabled();
+        {
+            // The game's TAA, and the upscalers this system can run (Vulkan::Ue4Upscaler).
+            static constexpr const char* names[] = {"Game's TAA", "NVIDIA DLSS", "AMD FSR"};
+            const char* labels[Gow3Settings::Ue4UpscalerCount];
+            int values[Gow3Settings::Ue4UpscalerCount];
+            int count = 0;
+            for (int kind = 0; kind < Gow3Settings::Ue4UpscalerCount; ++kind) {
+                if (kind == 0 || (kind == 1 && s.ue4_dlss_available) || (kind == 2 && s.ue4_fsr_available)) {
+                    labels[count] = names[kind];
+                    values[count++] = kind;
+                }
+            }
+            ChoiceRow("Anti-aliasing / upscaler", s.ue4_upscaler, labels, values, count,
+                      "Replaces the game's anti-aliasing: native anti-aliasing at Render scale 100, upscaling "
+                      "below it. Sharpening is off while it runs. F9 switches between them in the game. DLSS "
+                      "needs an NVIDIA RTX GPU and nvngx_dlss.dll in the bin folder (see README-Windows.txt).");
+        }
         ImGui::EndTable();
     }
     ImGui::SeparatorText("Information");
@@ -564,9 +574,12 @@ void ImageTab() {
         InfoRow("Window", text);
         InfoRow("FSR 1", !s.fsr1 ? "off" : upscaling ? "active" : "no effect (image not smaller than window)");
         InfoRow("Sharpening", s.rcas_applied ? "applied" : "not applied");
-        InfoRow("DLSS", Vulkan::Ue4Dlss::Running() ? "running"
-                        : s.ue4_dlss                ? "on (waiting for the game's TAA)"
-                                                    : "off");
+        if (Vulkan::Ue4Upscaler::Running()) {
+            std::snprintf(text, sizeof(text), "%s running", Vulkan::Ue4Upscaler::RunningName());
+        }
+        InfoRow("Upscaler", Vulkan::Ue4Upscaler::Running() ? text
+                            : s.ue4_upscaler != 0          ? "chosen (waiting for the game's TAA)"
+                                                           : "the game's TAA");
         ImGui::EndTable();
     }
 }
@@ -1741,18 +1754,18 @@ bool HandleEvent(const SDL_Event& event) {
             Vulkan::FrameCapture::Request();
             return true;
         }
-        // F9: DLAA / UE4's TAA (GOW3_UE4_DLSS=1 only). Not with Ctrl or Alt: NVIDIA's development
+        // F9: the next upscaler (UE4's TAA, DLSS, FSR: those this system runs). Not with Ctrl or Alt: NVIDIA's development
         // DLSS DLL uses Ctrl+Alt+F9 / F10 / F12 for its own debug hotkeys.
         const bool plain_key = !(event.key.mod & (SDL_KMOD_CTRL | SDL_KMOD_ALT));
-        // F8: the next jitter sign handed to DLSS (GOW3_UE4_DLSS=1 only), shown on screen.
+        // F8: the next jitter sign handed to the upscaler, shown on screen.
         if (down && !event.key.repeat && plain_key && event.key.key == SDLK_F8 &&
-            Vulkan::Ue4Dlss::Enabled()) {
-            Vulkan::Ue4Dlss::CycleJitterSign();
+            Vulkan::Ue4Upscaler::Enabled()) {
+            Vulkan::Ue4Upscaler::CycleJitterSign();
             return true;
         }
         if (down && !event.key.repeat && plain_key && event.key.key == SDLK_F9 &&
-            Vulkan::Ue4Dlss::Enabled()) {
-            Vulkan::Ue4Dlss::Toggle();
+            Vulkan::Ue4Upscaler::Enabled()) {
+            Vulkan::Ue4Upscaler::Toggle();
             Gow3Settings::Save();
             return true;
         }
@@ -1903,7 +1916,7 @@ bool Visible() {
     const auto& s = Gow3Settings::Get();
     return initialized && (loading || background_total || menu_open || text_entry_active || choice_active ||
                            runtime_disabled_optimizations != 0 ||
-                           choice_retiring || s.show_fps || Vulkan::Ue4Dlss::Notice() ||
+                           choice_retiring || s.show_fps || Vulkan::Ue4Upscaler::Notice() ||
                            (s.actor_watch_supported && s.enemy_health_bar));
 }
 
@@ -2038,7 +2051,7 @@ void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent) {
     if (background_total && !loading && !menu_open) {
         BackgroundLoading();
     }
-    if (const char* notice = Vulkan::Ue4Dlss::Notice(); notice && !menu_open) {
+    if (const char* notice = Vulkan::Ue4Upscaler::Notice(); notice && !menu_open) {
         DlssNotice(notice);
     }
     if (text_entry_active) {

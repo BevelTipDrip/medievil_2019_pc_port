@@ -30,6 +30,9 @@ inline constexpr int OutputCount = 4;
 inline constexpr int OutputDefault = 1; ///< 1920x1080, the game's own size
 /// The free camera's automatic moves, in src/camera_hook.h's order.
 inline constexpr int CameraMoveCount = 6;
+/// ue4_upscaler's values (Vulkan::Ue4UpscalerKind has the same order).
+inline constexpr const char* Ue4UpscalerKeys[] = {"taa", "dlss", "fsr"};
+inline constexpr int Ue4UpscalerCount = 3;
 /// Mouse look ranges (the launcher's Controls > Mouse uses the same).
 inline constexpr float MouseSensitivityMin = 0.001f, MouseSensitivityMax = 0.2f;
 inline constexpr float MouseRatioMin = 0.10f, MouseRatioMax = 2.00f;
@@ -97,11 +100,14 @@ struct Values {
     /// Set by the presenter: sharpening ran on the last frame (it needs FSR 1 when the game's
     /// image is smaller than the window).
     std::atomic<bool> rcas_applied{false};
-    /// gow3 U3 / U4 (ini ue4_dlss, GOW3_UE4_DLSS): NVIDIA DLSS in place of UE4's TAA, live (menu,
-    /// F9). Needs gow3_dlss.dll and nvngx_dlss.dll beside the exe and an RTX GPU.
-    std::atomic<bool> ue4_dlss{false};
+    /// gow3 U3 / U4 / F1 (ini ue4_upscaler = taa, dlss or fsr, Ue4UpscalerKeys; GOW3_UE4_UPSCALER; the
+    /// older ue4_dlss=1 / GOW3_UE4_DLSS=1 mean dlss): what replaces UE4's TAA, live (menu, F9).
+    /// DLSS needs gow3_dlss.dll and nvngx_dlss.dll beside the exe and an RTX GPU.
+    std::atomic<int> ue4_upscaler{0};
     /// Set at start: the DLSS DLLs are there and NGX runs on this GPU.
     std::atomic<bool> ue4_dlss_available{false};
+    /// Set at start: FSR (the vendored FSR-Vulkan) runs on this GPU.
+    std::atomic<bool> ue4_fsr_available{false};
     /// Set by the presenter: the game's image and the window it is shown in, in pixels.
     std::atomic<int> image_width{0}, image_height{0}, window_width{0}, window_height{0};
     std::atomic<int> frames_queued{1};

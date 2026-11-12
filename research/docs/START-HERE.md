@@ -107,6 +107,7 @@ Environment variables and settings already in the port that this work uses (full
 | [plan-ue4-motion-vectors.md](plan-ue4-motion-vectors.md) | Real UE4 motion vectors, depth, jitter, camera |
 | [plan-fsr-frame-generation.md](plan-fsr-frame-generation.md) | FSR 3 frame generation |
 | [plan-dlss.md](plan-dlss.md) | DLSS SR inputs, DLSS FG via NGX Vulkan |
+| [plan-fsr.md](plan-fsr.md) | FSR 3.x / 4.x in place of UE4's TAA: what exists, outside research, steps (F1 built on branch `fsr`) |
 | [gpu-threading-reference.md](gpu-threading-reference.md) | Invariants, symptoms, things not to retry: scheduler/recording |
 | [upscaler-reference.md](upscaler-reference.md) | Invariants, symptoms, things not to retry: MV / FSR / DLSS / FG |
 | [building-and-tools.md](building-and-tools.md) | Toolchain, build, run, profiling, paths |

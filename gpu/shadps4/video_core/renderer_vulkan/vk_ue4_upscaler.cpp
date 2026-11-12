@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-// gow3 U3: DLAA in place of UE4's TAA (vk_ue4_dlss.h).
+// gow3 U3 / F1: an upscaler in place of UE4's TAA (vk_ue4_upscaler.h).
 
-#include "video_core/renderer_vulkan/vk_ue4_dlss.h"
+#include "video_core/renderer_vulkan/vk_ue4_upscaler.h"
 
 #include <algorithm>
 #include <cmath>
@@ -65,112 +65,181 @@ float CameraJumpPixels(const u8* view, std::array<float, 2> size) {
     return std::isfinite(worst) ? worst : 1e30f;
 }
 
+/// NVIDIA DLSS through gow3_dlss.dll (Dlss::Get): DLAA at 1:1, DLSS's quality from the ratio.
+class DlssBackend final : public Ue4UpscalerBackend {
+public:
+    const char* Name() const override {
+        return "DLSS";
+    }
+    bool Available() const override {
+        const Dlss* dlss = Dlss::Get();
+        return dlss && dlss->Available();
+    }
+    bool Has(const Ue4UpscaleDesc& desc) const override {
+        return Dlss::Get()->HasFeature(Feature(desc));
+    }
+    bool Create(vk::CommandBuffer cmdbuf, const Ue4UpscaleDesc& desc) override {
+        Dlss* dlss = Dlss::Get();
+        dlss->ReleaseFeature();
+        return dlss->CreateFeature(cmdbuf, Feature(desc));
+    }
+    bool Evaluate(vk::CommandBuffer cmdbuf, const Ue4UpscaleFrame& frame) override {
+        const auto resource = [](const Ue4UpscaleImage& image) {
+            return Dlss::Resource{image.image, image.view,  image.format,
+                                  image.aspect, image.width, image.height};
+        };
+        return Dlss::Get()->Evaluate(cmdbuf, {
+                                                 .color = resource(frame.color),
+                                                 .depth = resource(frame.depth),
+                                                 .motion = resource(frame.motion),
+                                                 .output = resource(frame.output),
+                                                 .jitter_x = frame.jitter_x,
+                                                 .jitter_y = frame.jitter_y,
+                                                 .reset = frame.reset,
+                                                 .frame_ms = frame.frame_ms,
+                                                 .sharpness = 0.0f,
+                                             });
+    }
+
+private:
+    static Dlss::FeatureDesc Feature(const Ue4UpscaleDesc& desc) {
+        const bool upscale = desc.output_width != desc.input_width;
+        const int quality =
+            upscale ? Dlss::QualityForScale(float(desc.output_width) / float(desc.input_width)) : 0;
+        return {desc.input_width, desc.input_height, desc.output_width, desc.output_height, quality,
+                true, true};
+    }
+};
+
+/// What F9's notice and the log call each upscaler.
+constexpr const char* KindLabels[Ue4UpscalerKinds] = {"UE4 TAA", "NVIDIA DLSS", "AMD FSR"};
+static_assert(Ue4UpscalerKinds == Gow3Settings::Ue4UpscalerCount);
+
 } // namespace
 
-std::atomic<bool> Ue4Dlss::evaluate_failed{false};
-std::atomic<s64> Ue4Dlss::last_run_ns{0};
+std::atomic<bool> Ue4Upscaler::evaluate_failed{false};
+std::atomic<s64> Ue4Upscaler::last_run_ns{0};
+std::atomic<const char*> Ue4Upscaler::running_name{"DLSS"};
 
-bool Ue4Dlss::Running() {
+bool Ue4Upscaler::Running() {
     const s64 now = std::chrono::steady_clock::now().time_since_epoch().count();
     const s64 last = last_run_ns.load(std::memory_order_relaxed);
     return last != 0 && now - last < 100'000'000;
 }
 
-bool Ue4Dlss::Enabled() {
+const char* Ue4Upscaler::RunningName() {
+    return running_name.load(std::memory_order_relaxed);
+}
+
+bool Ue4Upscaler::Enabled() {
     static const bool enabled = [] {
-        const char* value = std::getenv("GOW3_UE4_DLSS");
-        return (value && value[0] == '1') || Dlss::Get() != nullptr;
+        const char* value = std::getenv("GOW3_UE4_HOOKS");
+        return !(value && value[0] == '0');
     }();
     return enabled;
 }
 
-bool Ue4Dlss::On() {
-    return Enabled() && Gow3Settings::Get().ue4_dlss.load(std::memory_order_relaxed);
+bool Ue4Upscaler::On() {
+    return Enabled() && Gow3Settings::Get().ue4_upscaler.load(std::memory_order_relaxed) != Ue4Taa;
 }
 
 namespace {
-constexpr const char* JitterSignNames[] = {"DLSS jitter +x +y", "DLSS jitter -x +y",
-                                           "DLSS jitter +x -y", "DLSS jitter -x -y"};
+constexpr const char* JitterSignNames[] = {"Upscaler jitter +x +y", "Upscaler jitter -x +y",
+                                           "Upscaler jitter +x -y", "Upscaler jitter -x -y"};
 
 s64 SteadyNs() {
     return std::chrono::steady_clock::now().time_since_epoch().count();
 }
 } // namespace
 
-std::atomic<int> Ue4Dlss::jitter_sign{0};
-std::atomic<bool> Ue4Dlss::sign_changed{false};
-std::atomic<s64> Ue4Dlss::notice_until_ns{0};
-std::atomic<const char*> Ue4Dlss::notice{nullptr};
+std::atomic<int> Ue4Upscaler::jitter_sign{0};
+std::atomic<bool> Ue4Upscaler::sign_changed{false};
+std::atomic<s64> Ue4Upscaler::notice_until_ns{0};
+std::atomic<const char*> Ue4Upscaler::notice{nullptr};
 
-void Ue4Dlss::Toggle() {
+void Ue4Upscaler::Toggle() {
     if (!Enabled()) {
         return;
     }
-    auto& setting = Gow3Settings::Get().ue4_dlss;
-    const bool now = !setting.load(std::memory_order_relaxed);
-    setting.store(now, std::memory_order_relaxed);
-    std::printf("UE4 DLSS: %s (F9)\n", now ? "DLSS on" : "UE4 TAA");
+    auto& settings = Gow3Settings::Get();
+    const auto available = [&settings](int kind) {
+        return kind == Ue4Taa ||
+               (kind == Ue4DlssKind && settings.ue4_dlss_available.load(std::memory_order_relaxed)) ||
+               (kind == Ue4FsrKind && settings.ue4_fsr_available.load(std::memory_order_relaxed));
+    };
+    int kind = settings.ue4_upscaler.load(std::memory_order_relaxed);
+    do {
+        kind = (kind + 1) % Ue4UpscalerKinds;
+    } while (!available(kind));
+    settings.ue4_upscaler.store(kind, std::memory_order_relaxed);
+    std::printf("UE4 upscaler: %s (F9)\n", KindLabels[kind]);
     std::fflush(stdout);
-    notice.store(now ? "DLSS on" : "UE4 TAA", std::memory_order_relaxed);
+    notice.store(KindLabels[kind], std::memory_order_relaxed);
     notice_until_ns.store(SteadyNs() + 3'000'000'000LL, std::memory_order_relaxed);
 }
 
-void Ue4Dlss::CycleJitterSign() {
+void Ue4Upscaler::CycleJitterSign() {
     if (!Enabled()) {
         return;
     }
     const int sign = (jitter_sign.load(std::memory_order_relaxed) + 1) % 4;
     jitter_sign.store(sign, std::memory_order_relaxed);
     sign_changed.store(true, std::memory_order_relaxed);
-    std::printf("UE4 DLSS: %s (F8)\n", JitterSignNames[sign]);
+    std::printf("UE4 upscaler: %s (F8)\n", JitterSignNames[sign]);
     std::fflush(stdout);
     notice.store(JitterSignNames[sign], std::memory_order_relaxed);
     notice_until_ns.store(SteadyNs() + 3'000'000'000LL, std::memory_order_relaxed);
 }
 
-const char* Ue4Dlss::Notice() {
+const char* Ue4Upscaler::Notice() {
     return SteadyNs() < notice_until_ns.load(std::memory_order_relaxed)
                ? notice.load(std::memory_order_relaxed)
                : nullptr;
 }
 
-Ue4Dlss::Ue4Dlss(const Instance& instance_, Scheduler& scheduler_,
-                 VideoCore::TextureCache& texture_cache_, Runtime& runtime_, Ue4Motion& motion_)
+Ue4Upscaler::Ue4Upscaler(const Instance& instance_, Scheduler& scheduler_,
+                         VideoCore::TextureCache& texture_cache_, Runtime& runtime_,
+                         Ue4Motion& motion_)
     : instance{instance_}, scheduler{scheduler_}, texture_cache{texture_cache_}, runtime{runtime_},
       motion{motion_} {
-    const Dlss* dlss = Dlss::Get();
-    const bool available = dlss && dlss->Available();
-    Gow3Settings::Get().ue4_dlss_available.store(available, std::memory_order_relaxed);
-    std::printf("UE4 DLSS: %s, %s (menu Image tab or F9)\n",
-                available ? "available" : "not available (DLLs or GPU)",
-                Gow3Settings::Get().ue4_dlss.load() ? "on" : "off");
+    if (Dlss::Get()) {
+        backends[Ue4DlssKind] = std::make_unique<DlssBackend>();
+    }
+    auto& settings = Gow3Settings::Get();
+    const auto available = [this](int kind) { return backends[kind] && backends[kind]->Available(); };
+    settings.ue4_dlss_available.store(available(Ue4DlssKind), std::memory_order_relaxed);
+    settings.ue4_fsr_available.store(available(Ue4FsrKind), std::memory_order_relaxed);
+    std::printf("UE4 upscaler: %s; DLSS %s, FSR %s (menu Image tab or F9)\n",
+                KindLabels[std::clamp(settings.ue4_upscaler.load(), 0, Ue4UpscalerKinds - 1)],
+                available(Ue4DlssKind) ? "available" : "not available (DLLs or GPU)",
+                available(Ue4FsrKind) ? "available" : "not available");
 }
 
-Ue4Dlss::~Ue4Dlss() = default;
+Ue4Upscaler::~Ue4Upscaler() = default;
 
-bool Ue4Dlss::Fail(const char* why) {
+bool Ue4Upscaler::Fail(const char* why) {
     static const char* last = nullptr;
     if (why != last) {
         last = why;
-        std::printf("UE4 DLSS: UE4 TAA this frame (%s)\n", why);
+        std::printf("UE4 upscaler: UE4 TAA this frame (%s)\n", why);
     }
     was_on = false;
     return false;
 }
 
-void Ue4Dlss::OnColorTarget(VideoCore::ImageId id, VAddr address) {
+void Ue4Upscaler::OnColorTarget(VideoCore::ImageId id, VAddr address) {
     if (id != color.id || address != color.address) {
         auto* image = texture_cache.TryGetImage(id, 0);
         color = image ? Target{id, image->image_uid, address} : Target{};
     }
 }
 
-bool Ue4Dlss::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore::ImageId output_id,
+bool Ue4Upscaler::OnTaaDraw(const u8* view, std::span<const VAddr> reads, VideoCore::ImageId output_id,
                         VAddr output_address, const std::function<void()>& mark_written) {
     return Run(view, reads, output_id, output_address, 0, 0, mark_written);
 }
 
-bool Ue4Dlss::OnTaauDispatch(const u8* view, std::span<const VAddr> reads,
+bool Ue4Upscaler::OnTaauDispatch(const u8* view, std::span<const VAddr> reads,
                              VideoCore::ImageId output_id, VAddr output_address, u32 output_width,
                              u32 output_height, const std::function<void()>& mark_written) {
     if (output_width == 0 || output_height == 0) {
@@ -179,7 +248,7 @@ bool Ue4Dlss::OnTaauDispatch(const u8* view, std::span<const VAddr> reads,
     return Run(view, reads, output_id, output_address, output_width, output_height, mark_written);
 }
 
-bool Ue4Dlss::Run(const u8* view, std::span<const VAddr> reads, VideoCore::ImageId output_id,
+bool Ue4Upscaler::Run(const u8* view, std::span<const VAddr> reads, VideoCore::ImageId output_id,
                   VAddr output_address, u32 output_width, u32 output_height,
                   const std::function<void()>& mark_written) {
     const bool upscale = output_width != 0;
@@ -187,21 +256,24 @@ bool Ue4Dlss::Run(const u8* view, std::span<const VAddr> reads, VideoCore::Image
         return Fail("no View buffer");
     }
     const u32 frame_number = Load<u32>(view, OffsetFrameNumber);
-    if (!Gow3Settings::Get().ue4_dlss.load(std::memory_order_relaxed)) {
+    auto& setting = Gow3Settings::Get().ue4_upscaler;
+    const int kind = setting.load(std::memory_order_relaxed);
+    if (kind <= Ue4Taa || kind >= Ue4UpscalerKinds) {
         was_on = false;
         return false;
     }
-    if (was_on && have_frame && frame_number == last_frame) {
-        return true; // the second TAA draw: DLSS already wrote the output
+    if (was_on && have_frame && frame_number == last_frame && kind == last_kind) {
+        return true; // the second TAA draw: the upscaler already wrote the output
     }
     if (evaluate_failed.exchange(false, std::memory_order_relaxed)) {
-        std::printf("UE4 DLSS: evaluation failed; UE4 TAA from now on\n");
-        Gow3Settings::Get().ue4_dlss.store(false, std::memory_order_relaxed);
-        return Fail("DLSS failed");
+        std::printf("UE4 upscaler: %s's evaluation failed; UE4 TAA from now on\n", KindLabels[kind]);
+        setting.store(Ue4Taa, std::memory_order_relaxed);
+        return Fail("evaluation failed");
     }
-    Dlss* dlss = Dlss::Get();
-    if (!dlss || !dlss->Available()) {
-        return Fail(dlss ? "DLSS not available" : "DLSS DLLs not found");
+    Ue4UpscalerBackend* backend = backends[kind].get();
+    if (!backend || !backend->Available()) {
+        return Fail(kind == Ue4DlssKind ? (Dlss::Get() ? "DLSS not available" : "DLSS DLLs not found")
+                                        : "FSR not available");
     }
     Ue4Motion::LastPass pass;
     if (!motion.GetPass(frame_number, pass)) {
@@ -227,7 +299,7 @@ bool Ue4Dlss::Run(const u8* view, std::span<const VAddr> reads, VideoCore::Image
     static vk::Format reported_format = vk::Format::eUndefined;
     if (upscale && output_format != reported_format) {
         reported_format = output_format;
-        std::printf("UE4 DLSS: TAAU output %s %ux%u\n", vk::to_string(output_format).c_str(),
+        std::printf("UE4 upscaler: TAAU output %s %ux%u\n", vk::to_string(output_format).c_str(),
                     output_image->info.size.width, output_image->info.size.height);
     }
     auto* depth_image = pass.depth;
@@ -257,6 +329,7 @@ bool Ue4Dlss::Run(const u8* view, std::span<const VAddr> reads, VideoCore::Image
     // misfired (u3-dlaa: a ClipToPrevClip element above 1.0 reset ~6% of moving frames).
     const float camera_jump = CameraJumpPixels(view, view_size);
     const char* reset_reason = !was_on                          ? "first frame"
+                               : kind != last_kind              ? "upscaler changed"
                                : frame_number != last_frame + 1 ? "frame number"
                                                                 : nullptr;
     if (sign_changed.exchange(false, std::memory_order_relaxed)) {
@@ -326,23 +399,21 @@ bool Ue4Dlss::Run(const u8* view, std::span<const VAddr> reads, VideoCore::Image
     });
 
     const vk::Image output_handle = vk::Image(output);
-    const int quality = upscale ? Dlss::QualityForScale(float(out_width) / float(width)) : 0;
-    const Dlss::FeatureDesc desc{width, height, out_width, out_height, quality, true, true};
-    if (!dlss->HasFeature(desc)) {
+    const Ue4UpscaleDesc desc{width, height, out_width, out_height};
+    if (!backend->Has(desc)) {
         // Rare (the first frame, a size change): directly, once the recording thread has run
-        // everything recorded (CommandBuffer) and the GPU is done with the old feature.
+        // everything recorded (CommandBuffer) and the GPU is done with the old context.
         const auto cmdbuf = scheduler.CommandBuffer();
         scheduler.WaitSubmitted();
-        dlss->ReleaseFeature();
-        const bool created = dlss->CreateFeature(cmdbuf, desc);
-        std::printf("UE4 DLSS: feature %ux%u -> %ux%u, quality %d (%s)%s\n", width, height,
-                    out_width, out_height, quality, upscale ? "TAAU" : "DLAA",
+        const bool created = backend->Create(cmdbuf, desc);
+        std::printf("UE4 upscaler: %s context %ux%u -> %ux%u (%s)%s\n", backend->Name(), width,
+                    height, out_width, out_height, upscale ? "TAAU" : "native",
                     created ? "" : " failed");
         if (!created) {
-            Gow3Settings::Get().ue4_dlss.store(false, std::memory_order_relaxed);
-            return Fail("DLSS feature creation failed");
+            setting.store(Ue4Taa, std::memory_order_relaxed);
+            return Fail("context creation failed");
         }
-        reset_reason = "feature created";
+        reset_reason = "context created";
     }
     const auto now = std::chrono::steady_clock::now();
     float frame_ms = std::chrono::duration<float, std::milli>(now - last_time).count();
@@ -351,13 +422,13 @@ bool Ue4Dlss::Run(const u8* view, std::span<const VAddr> reads, VideoCore::Image
     }
     last_time = now;
     // UE4's TemporalAAJitter.xy is the projection's NDC offset: pixels = x * W / 2, -y * H / 2
-    // (y down). F8 flips the signs to find the one NGX wants (sign 0: as computed).
+    // (y down). F8 flips the signs to find the one a backend wants (sign 0: as computed; DLSS's).
     const int sign = jitter_sign.load(std::memory_order_relaxed);
     const float jitter_x =
         (sign & 1 ? -1.0f : 1.0f) * Load<float>(view, OffsetJitter) * view_size[0] * 0.5f;
     const float jitter_y =
         (sign & 2 ? 1.0f : -1.0f) * Load<float>(view, OffsetJitter + 4) * view_size[1] * 0.5f;
-    const Dlss::Frame frame{
+    const Ue4UpscaleFrame frame{
         .color = {color_image->GetImage(), color_view, vk::Format::eR16G16B16A16Sfloat,
                   vk::ImageAspectFlagBits::eColor, width, height},
         .depth = {depth_image->GetImage(), depth_view, depth_image->info.pixel_format,
@@ -370,14 +441,13 @@ bool Ue4Dlss::Run(const u8* view, std::span<const VAddr> reads, VideoCore::Image
         .jitter_y = jitter_y,
         .reset = reset_reason != nullptr,
         .frame_ms = frame_ms,
-        .sharpness = 0.0f,
     };
     const vk::Image taa_output = output_image->GetImage();
     const vk::Image motion_image = pass.image;
     // In order with the frame's other commands, on the recording thread: no CommandBuffer() here,
     // which made the GPU thread wait for that thread to catch up once a frame (U3 runs 1-3; the
-    // user saw a small saw-tooth in the frame times once). NGX only records into `cmdbuf`.
-    scheduler.Record([dlss, frame, output_handle, taa_output, motion_image, out_width, out_height,
+    // user saw a small saw-tooth in the frame times once). A backend only records into `cmdbuf`.
+    scheduler.Record([backend, frame, output_handle, taa_output, motion_image, out_width, out_height,
                       same_format](vk::CommandBuffer cmdbuf) {
         const std::array<vk::ImageMemoryBarrier2, 2> before{{
             {
@@ -406,7 +476,7 @@ bool Ue4Dlss::Run(const u8* view, std::span<const VAddr> reads, VideoCore::Image
         }};
         cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = u32(before.size()),
                                  .pImageMemoryBarriers = before.data()});
-        if (!dlss->Evaluate(cmdbuf, frame)) {
+        if (!backend->Evaluate(cmdbuf, frame)) {
             // TAA's output keeps last frame's contents once; the GPU thread switches to UE4's
             // TAA at the next TAA draw.
             evaluate_failed.store(true, std::memory_order_relaxed);
@@ -450,8 +520,8 @@ bool Ue4Dlss::Run(const u8* view, std::span<const VAddr> reads, VideoCore::Image
     if (reset_reason) {
         ++resets;
         if (resets <= 50) {
-            std::printf("UE4 DLSS: reset (%s, View frame %u, camera moved %.0f px)\n",
-                        reset_reason, frame_number, camera_jump);
+            std::printf("UE4 upscaler: %s reset (%s, View frame %u, camera moved %.0f px)\n",
+                        backend->Name(), reset_reason, frame_number, camera_jump);
         }
     }
     // GOW3_FPS_LOG=0 (the user's quiet runs): no periodic lines.
@@ -460,14 +530,16 @@ bool Ue4Dlss::Run(const u8* view, std::span<const VAddr> reads, VideoCore::Image
         return value && std::strcmp(value, "0") == 0;
     }();
     if (++evaluations == 1 || (!quiet && evaluations % 3000 == 0)) {
-        std::printf("UE4 DLSS: %llu frames, %llu resets, %ux%u -> %ux%u, jitter %.3f %.3f px\n",
-                    static_cast<unsigned long long>(evaluations),
+        std::printf("UE4 upscaler: %s, %llu frames, %llu resets, %ux%u -> %ux%u, jitter %.3f %.3f px\n",
+                    backend->Name(), static_cast<unsigned long long>(evaluations),
                     static_cast<unsigned long long>(resets), width, height, out_width, out_height,
                     jitter_x, jitter_y);
     }
     have_frame = true;
     last_frame = frame_number;
+    last_kind = kind;
     was_on = true;
+    running_name.store(backend->Name(), std::memory_order_relaxed);
     last_run_ns.store(std::chrono::steady_clock::now().time_since_epoch().count(),
                       std::memory_order_relaxed);
     return true;

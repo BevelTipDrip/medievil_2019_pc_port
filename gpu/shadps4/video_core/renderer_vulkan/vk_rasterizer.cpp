@@ -68,12 +68,14 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
     if (Ue4FrameMap::Enabled()) {
         frame_map = std::make_unique<Ue4FrameMap>();
     }
-    if (Ue4Motion::Enabled() || Ue4Dlss::Enabled()) {
+    if (Ue4Motion::Enabled() || Ue4Upscaler::Enabled()) {
         ue4_motion = std::make_unique<Ue4Motion>(instance, scheduler, texture_cache, runtime);
     }
-    if (Ue4Dlss::Enabled()) {
-        ue4_dlss = std::make_unique<Ue4Dlss>(instance, scheduler, texture_cache, runtime,
-                                             *ue4_motion);
+    // F1: on every GPU (not only with the DLSS DLLs). The hooks only work while an upscaler other
+    // than UE4's TAA is chosen (Ue4Upscaler::On, checked per draw).
+    if (Ue4Upscaler::Enabled()) {
+        ue4_upscaler = std::make_unique<Ue4Upscaler>(instance, scheduler, texture_cache, runtime,
+                                                     *ue4_motion);
     }
     if (!EmulatorSettings.IsNullGPU()) {
         liverpool->BindRasterizer(this);
@@ -1220,7 +1222,7 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
                          cb_descs[0].first, db_desc.first,
                          UiComposition::NativeViewport(viewport.xscale * 2, viewport.yscale * 2));
     }
-    if (frame_map || (ue4_motion && (Ue4Motion::Enabled() || Ue4Dlss::On()))) [[unlikely]] {
+    if (frame_map || (ue4_motion && (Ue4Motion::Enabled() || Ue4Upscaler::On()))) [[unlikely]] {
         if (ObserveFrameMap(pipeline)) {
             // gow3 U3: DLSS wrote TAA's output; the TAA draw is not recorded.
             bind_prepared = nullptr;
@@ -1461,7 +1463,7 @@ void Rasterizer::DrawIndirectRecord(const GraphicsPipeline* pipeline, bool is_in
                          cb_descs[0].first, db_desc.first,
                          UiComposition::NativeViewport(viewport.xscale * 2, viewport.yscale * 2));
     }
-    if (frame_map || (ue4_motion && (Ue4Motion::Enabled() || Ue4Dlss::On()))) [[unlikely]] {
+    if (frame_map || (ue4_motion && (Ue4Motion::Enabled() || Ue4Upscaler::On()))) [[unlikely]] {
         ObserveFrameMap(pipeline);
     }
     if (!BindResources(pipeline)) {
@@ -1587,7 +1589,7 @@ void Rasterizer::DispatchRecord(const ComputePipeline* pipeline) {
     if (ExecuteShaderHLE(cs, Regs(), cs_program, *this)) {
         return;
     }
-    if (frame_map || (ue4_motion && (Ue4Motion::Enabled() || Ue4Dlss::On()))) [[unlikely]] {
+    if (frame_map || (ue4_motion && (Ue4Motion::Enabled() || Ue4Upscaler::On()))) [[unlikely]] {
         if (ObserveFrameMap(pipeline)) {
             // gow3 U4: DLSS wrote the TAAU dispatch's output; the dispatch is not recorded.
             ResetBindings(true);
@@ -4699,7 +4701,7 @@ bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
                 continue;
             }
             if (desc.is_written) {
-                if (pass.compute && !written_desc && ue4_dlss && Ue4Dlss::On()) {
+                if (pass.compute && !written_desc && ue4_upscaler && Ue4Upscaler::On()) {
                     written_desc.emplace(tsharp, desc);
                 }
                 if (pass.num_writes < pass.writes.size()) {
@@ -4775,23 +4777,23 @@ bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
                    taau) {
             ue4_motion->OnTaa(pass.view, std::span(pass.reads.data(), pass.num_reads),
                               pass.compute ? VideoCore::ImageId{} : db_desc.first);
-            if (ue4_dlss && pass.compute && written_desc && pass.num_writes) {
+            if (ue4_upscaler && pass.compute && written_desc && pass.num_writes) {
                 const VideoCore::ImageId output_id = texture_cache.FindImage(*written_desc);
-                skip = ue4_dlss->OnTaauDispatch(
+                skip = ue4_upscaler->OnTaauDispatch(
                     pass.view, std::span(pass.reads.data(), pass.num_reads), output_id,
                     pass.writes[0].address, pass.writes[0].width, pass.writes[0].height, [&] {
                         texture_cache.FindTexture(output_id, *written_desc);
                     });
             }
-            if (ue4_dlss && !pass.compute) {
+            if (ue4_upscaler && !pass.compute) {
                 const auto& [output_id, output_desc] = cb_descs[0];
-                skip = ue4_dlss->OnTaaDraw(pass.view, std::span(pass.reads.data(), pass.num_reads),
+                skip = ue4_upscaler->OnTaaDraw(pass.view, std::span(pass.reads.data(), pass.num_reads),
                                            output_id, pass.target.address, [&] {
                                                texture_cache.FindRenderTarget(output_id, output_desc);
                                            });
             }
-        } else if (ue4_dlss && !pass.compute && pass.targets == 1 && pass.target_rgba16f) {
-            ue4_dlss->OnColorTarget(cb_descs[0].first, pass.target.address);
+        } else if (ue4_upscaler && !pass.compute && pass.targets == 1 && pass.target_rgba16f) {
+            ue4_upscaler->OnColorTarget(cb_descs[0].first, pass.target.address);
         }
     }
     return skip;

@@ -159,7 +159,7 @@ def windows_language():
 # launcher's own settings.json (passed to run.py as environment variables).
 
 INI_FLAGS = {'cheat_menu', 'cheat_infinite_ammo', 'cheat_double_jumps', 'cheat_very_hard', 'show_fps', 'vsync', 'async_shaders', 'deferred_readback',
-             'stale_readback', 'fsr1', 'rcas', 'ue4_dlss'}
+             'stale_readback', 'fsr1', 'rcas'}
 # The graphics keys are also in the in-game menu (Insert / R3+L2); run.py reads the startup ones.
 # The God of War III port's temporal upscaler keys (upscaler, preset, output_res, sharpen, ...)
 # are not set here: run.py turns that upscaler off for MediEvil (its page was removed).
@@ -167,7 +167,7 @@ INI_DEFAULTS = {'show_fps': '1', 'display_mode': 'windowed', 'vsync': '1', 'fps_
                 'async_shaders': '1', 'deferred_readback': '1', 'stale_readback': '1',
                 'output_resolution': '1920x1080', 'render_scale': '100', 'engine_fps': '60', 'fsr1': '0',
                 'rcas': '1', 'rcas_strength': '75', 'frames_queued': '1', 'ue4_quality': 'console',
-                'ue4_dlss': '0',
+                'ue4_upscaler': 'taa',
                 'effects_resolution': '75',
                 'cheat_very_hard': '0', 'cheat_double_jumps': '0', 'cheat_menu': '0', 'cheat_infinite_ammo': '0',
                 'ue4_aa': 'taa', 'ue4_voice': '', 'button_prompts': 'playstation'}
@@ -265,6 +265,10 @@ def menu_key(settings):
     name, else Insert."""
     name = settings.get('menu_key') if isinstance(settings.get('menu_key'), str) else ''
     return name.strip() if name.strip() and not set(name) & set(',=') else 'Insert'
+
+
+# What replaces the game's TAA (medievil.ini ue4_upscaler, gow3_settings Ue4UpscalerKeys; F9 in the game).
+UPSCALERS = [('taa', ("The game's TAA",)), ('dlss', ('NVIDIA DLSS',))]
 
 
 # Mouse buttons a game button can take (GOW3_MOUSE_MAP, src/runtime_pad.c), next to its key: the names the
@@ -468,6 +472,9 @@ def load_ini():
     values.update(found)
     # The single render_resolution (and ue4_upscale) of earlier versions as the two settings.
     values.update(graphics_options.migrate_resolution(found))
+    # Before 2.4 DLSS was a checkbox (ue4_dlss); the game reads it the same way when ue4_upscaler is missing.
+    if 'ue4_upscaler' not in found and found.get('ue4_dlss') == '1':
+        values['ue4_upscaler'] = 'dlss'
     return values, lines
 
 
@@ -1686,11 +1693,12 @@ class Launcher:
                    _('Enlarges a smaller game image to the window. With Render resolution 720p (Performance) '
                      'it raises the FPS; at the size of the window it does nothing.'))
         self.check(f, 'rcas', 'ini', _('Final image sharpening (RCAS)'))
-        self.check(f, 'ue4_dlss', 'ini', _('NVIDIA DLSS (replaces the game\'s anti-aliasing)'),
-                   _('DLAA at Render scale 100, DLSS upscaling below it (Quality / Balanced / Performance from '
-                     'the scale). Sharpening is off while it runs. Needs an NVIDIA RTX GPU and gow3_dlss.dll + '
-                     'nvngx_dlss.dll next to medievil-runtime.exe (the bin folder; nvngx_dlss.dll is not included: see '
-                     'README-Windows.txt). F9 switches it in the game.'))
+        self.row(f, _('Anti-aliasing / upscaler'), self.choice(f, 'ue4_upscaler', 'ini', UPSCALERS),
+                 _('Replaces the game\'s anti-aliasing: native anti-aliasing at Render scale 100, upscaling below '
+                   'it (NVIDIA DLSS: Quality / Balanced / Performance from the scale). Sharpening is off while it '
+                   'runs. DLSS needs an NVIDIA RTX GPU and gow3_dlss.dll + nvngx_dlss.dll next to '
+                   'medievil-runtime.exe (the bin folder; nvngx_dlss.dll is not included: see README-Windows.txt). '
+                   'One the system cannot run falls back to the game\'s TAA. F9 switches it in the game.'))
         holder = ttk.Frame(f)
         strength = self.var('rcas_strength', 'ini')
         tk.Scale(holder, from_=0, to=100, orient='horizontal', variable=strength, showvalue=False, length=self.px(260),

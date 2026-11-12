@@ -9,9 +9,9 @@ default_deck: n/a
 origin: ours
 class: M
 commits: 7b74b91, ef9d584, b0cef35, f25a373, 81a1fc9, c91cfd3, 517547f, 4fc3d16, 3819019, e51573f, d169e73
-files: gpu/shim/gow3_settings.h, gpu/shim/gow3_settings.cpp, launcher/medievil_launcher.py, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shim/gow3_overlay.cpp
-symbols: Ue4Dlss, ue4_dlss_available, CycleJitterSign, Notice, DlssNotice, CameraJumpPixels, OnColorTarget, OnTaaDraw, OnTaauDispatch, Run, Running, GetPass, depth_inverted, ue4_dlss, target_rgba16f
-switches: GOW3_UE4_DLSS
+files: gpu/shim/gow3_settings.h, gpu/shim/gow3_settings.cpp, launcher/medievil_launcher.py, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp, gpu/shim/gow3_overlay.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.h, gpu/shadps4/video_core/renderer_vulkan/vk_dlss.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shim/gow3_overlay.cpp
+symbols: Ue4Upscaler, Ue4UpscalerBackend, DlssBackend, Ue4UpscalerKeys, ue4_upscaler, ue4_fsr_available, ue4_dlss_available, CycleJitterSign, Notice, DlssNotice, CameraJumpPixels, OnColorTarget, OnTaaDraw, OnTaauDispatch, Run, Running, GetPass, depth_inverted, ue4_dlss, target_rgba16f
+switches: GOW3_UE4_DLSS, GOW3_UE4_UPSCALER, GOW3_UE4_HOOKS
 tests: u3-dlaa, u3-dlaa-2, u3-dlaa-3, u3-dlaa-4, u4-dlss, u4-dlss-0102, u4-jitter-0102
 docs: plan-ue4-motion-vectors.md#u3-design-dlaa-at-render-scale-100, plan-dlss.md#d0-2026-11-08-bridge-built-support-checked-offline
 depends_on: ue4-motion-vectors
@@ -122,6 +122,14 @@ frame map / U2 view is). Periodic counter lines follow `GOW3_FPS_LOG=0`.
   ~0.85 ms a frame at 4K on the RTX 4090 (the user: DLSS 4.5 is heavy, ~40 FPS here).
 
 ## History and pitfalls
+
+- F1 (2026-11-12, branch `fsr`, plan-fsr.md step 1): the front end is generic, `Ue4Upscaler` in
+  vk_ue4_upscaler.{h,cpp} (renamed from vk_ue4_dlss.*); DLSS is one backend (`DlssBackend`: context and evaluation
+  only), FSR comes next. The hooks exist on every GPU (no longer only with the DLSS DLLs; `GOW3_UE4_HOOKS=0` removes
+  them) and only work while an upscaler other than TAA is chosen. The setting is `ue4_upscaler` = taa / dlss / fsr
+  (menu: one choice listing what the system runs; F9 cycles them; launcher: Graphics > Anti-aliasing / upscaler);
+  `ue4_dlss=1` (ini, launcher) and `GOW3_UE4_DLSS=1` still mean dlss. Log lines now start "UE4 upscaler:".
+  Fix built, not run.
 
 - 2.3.0 (`d169e73`, upstream `b396f85` cherry-picked; with `7127e10` / `6cec84f`, build_dlss.sh finds the
   CLANG64 headers and Visual Studio 2022 or 2026 by itself): the zip carries NVIDIA's DLSS SDK licence next to

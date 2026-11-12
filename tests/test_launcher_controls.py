@@ -1,4 +1,6 @@
+import re
 import sys
+from pathlib import Path
 import unittest
 
 from paths import ROOT
@@ -160,6 +162,29 @@ class ControlMapTest(unittest.TestCase):
         pads = {b: p or '' for b, _k, p in launcher.CONTROLS}
         pads.update(cross='b', l2='a')
         self.assertEqual(launcher.control_changes(pads, 'pad'), {'cross': 'b'})  # L2/R2: triggers only
+
+    def test_upscaler_choice_matches_the_game_and_migrates_dlss(self):
+        header = (ROOT / 'gpu' / 'shim' / 'gow3_settings.h').read_text(encoding='utf-8')
+        keys = re.search(r'Ue4UpscalerKeys\[\] = \{([^}]*)\}', header).group(1)
+        game = [k.strip().strip('"') for k in keys.split(',')]
+        self.assertEqual(game[0], 'taa')
+        self.assertTrue({value for value, _label in launcher.UPSCALERS} <= set(game))
+        self.assertEqual(launcher.INI_DEFAULTS['ue4_upscaler'], 'taa')
+        import tempfile, os
+        with tempfile.TemporaryDirectory() as tmp:
+            ini = Path(tmp) / 'medievil.ini'
+            old = os.environ.get('GOW3_CONFIG')
+            os.environ['GOW3_CONFIG'] = str(ini)
+            try:
+                ini.write_text('ue4_dlss=1\n', encoding='utf-8')
+                self.assertEqual(launcher.load_ini()[0]['ue4_upscaler'], 'dlss')  # the old checkbox carries over
+                ini.write_text('ue4_dlss=1\nue4_upscaler=taa\n', encoding='utf-8')
+                self.assertEqual(launcher.load_ini()[0]['ue4_upscaler'], 'taa')   # the new key wins
+            finally:
+                if old is None:
+                    os.environ.pop('GOW3_CONFIG', None)
+                else:
+                    os.environ['GOW3_CONFIG'] = old
 
     def test_unbound_key_reaches_the_game(self):
         """A key box right-clicked to None sends 'button=None', which the runtime reads as no key."""

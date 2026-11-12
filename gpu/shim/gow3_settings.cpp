@@ -34,6 +34,10 @@ float Clamp(float v, float lo, float hi) {
     return std::clamp(v, lo, hi);
 }
 
+/// The source being read (the file, then the environment) set ue4_upscaler: its older ue4_dlss=1
+/// does not override it.
+bool ue4_upscaler_set = false;
+
 void Set(Values& v, const std::string& key, const std::string& value) {
     const float f = float(std::atof(value.c_str()));
     const int i = std::atoi(value.c_str());
@@ -190,8 +194,17 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         v.fsr1 = i != 0;
     } else if (key == "rcas") {
         v.rcas = i != 0;
-    } else if (key == "ue4_dlss") {
-        v.ue4_dlss = i != 0;
+    } else if (key == "ue4_upscaler") {
+        for (int u = 0; u < Ue4UpscalerCount; ++u) {
+            if (value == Ue4UpscalerKeys[u]) {
+                v.ue4_upscaler = u;
+            }
+        }
+        ue4_upscaler_set = true;
+    } else if (key == "ue4_dlss") { // before 2.4: a checkbox; ue4_upscaler wins when the file has both
+        if (i != 0 && !ue4_upscaler_set) {
+            v.ue4_upscaler = 1;
+        }
     } else if (key == "rcas_strength") {
         v.rcas_strength = Gow3Graphics::ParseRcasStrength(value.empty() ? -1 : i);
     } else if (key == "frames_queued") {
@@ -350,6 +363,7 @@ void Load() {
     for (int& choice : v.ue4_live) {
         choice = -1; // a key the file does not have: the quality level's choice (below)
     }
+    ue4_upscaler_set = false;
     if (FILE* file = std::fopen(Path(), "r")) {
         char line[256];
         while (std::fgets(line, sizeof(line), file)) {
@@ -364,7 +378,8 @@ void Load() {
         std::fclose(file);
         std::printf("Settings: %s\n", Path());
     }
-    // Environment overrides (scripts, A/B tests).
+    // Environment overrides (scripts, A/B tests). GOW3_UE4_DLSS=1 still means DLSS over the file's choice.
+    ue4_upscaler_set = false;
     if (const char* env = std::getenv("GOW3_UPSCALER")) {
         v.upscaler = UpscalerOff;
         for (int u = 0; u < UpscalerCount; ++u) {
@@ -379,7 +394,7 @@ void Load() {
         {"GOW3_ASYNC_SHADERS", "async_shaders"},      {"GOW3_DEFERRED_READBACK", "deferred_readback"},
         {"GOW3_STALE_READBACK", "stale_readback"},     {"GOW3_FSR1", "fsr1"},
         {"GOW3_RCAS", "rcas"},                        {"GOW3_FRAMES_AHEAD", "frames_queued"},
-        {"GOW3_UE4_DLSS", "ue4_dlss"},
+        {"GOW3_UE4_DLSS", "ue4_dlss"},                {"GOW3_UE4_UPSCALER", "ue4_upscaler"},
     };
     for (const auto& [env, key] : env_keys) {
         if (const char* value = std::getenv(env); value && value[0]) {
@@ -596,7 +611,8 @@ std::map<std::string, std::string> Serialize(const Values& v) {
            Gow3Graphics::Resolutions[std::clamp(v.render_resolution.load(), 0, int(Gow3Graphics::Resolutions.size()) - 1)].data(),
            v.engine_fps.load(), int(v.deferred_readback.load()), int(v.stale_readback.load()),
            int(v.restart_unconfirmed.load()));
-    Append(out, "ue4_dlss=%d\n", int(v.ue4_dlss.load()));
+    Append(out, "ue4_upscaler=%s\n",
+           Ue4UpscalerKeys[std::clamp(v.ue4_upscaler.load(), 0, Ue4UpscalerCount - 1)]);
     // Read by run.sh at start.
     Append(out, "live_resolution=%s\n", v.live_resolution < 0 ? "auto" : v.live_resolution ? "1" : "0");
     for (int p = 0; p < PerfCount; ++p) {
