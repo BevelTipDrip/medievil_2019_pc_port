@@ -8,11 +8,11 @@ default_windows: off
 default_deck: n/a
 origin: ours
 class: M
-commits: f4f13b8, e27103e, 870f584, 88bf535, a7c91f7, b4d9e6f, 5bb45d0, 7449317, 64da6dd
-files: src/runtime_mouse.c, src/mouse_hook.h, src/probe.c, src/runtime_services.c, gpu/shim/window.cpp, gpu/shim/sdl_window.h, scripts/ue4_override.py
-symbols: runtime_mouse_enabled, runtime_mouse_start, runtime_mouse_capture, runtime_mouse_take, drain, reader_thread, mouse_init, mouse_read, SetMouseCapture, mouse_captured, runtime_mouse_take_camera, medievil_mouse_yaw_find, medievil_mouse_yaw_script_ok, mouse_yaw, install_mouse_yaw
+commits: f4f13b8, e27103e, 870f584, 88bf535, a7c91f7, b4d9e6f, 5bb45d0, 7449317, 64da6dd, d76d3d0
+files: src/runtime_mouse.c, src/mouse_hook.h, src/camera_hook.h, src/probe.c, src/runtime_services.c, gpu/shim/window.cpp, gpu/shim/sdl_window.h, scripts/ue4_override.py
+symbols: runtime_mouse_enabled, runtime_mouse_start, runtime_mouse_capture, runtime_mouse_take, drain, reader_thread, mouse_init, mouse_read, SetMouseCapture, mouse_captured, runtime_mouse_take_camera, medievil_mouse_yaw_find, medievil_mouse_yaw_script_ok, mouse_yaw, install_mouse_yaw, camera_look, camera_look_class, camera_dancam, medievil_camera_pitch, medievil_camera_dancam
 switches: GOW3_MOUSE, GOW3_MOUSE_BUTTONS, GOW3_MOUSE_INPUT_YAW
-tests: T-MS1, T-MS2, T-MS3, T-MS4, T-MS5, T-MS6, T-MS7
+tests: T-MS1, T-MS2, T-MS3, T-MS4, T-MS5, T-MS6, T-MS7, T-MS8, T-MS9, T-MS10
 docs: study-mouse-input.md#t-ms1-ps4enablemouse-from-the-paks-ini-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-step1-enablelog
 depends_on:
 related: cursor-hide
@@ -93,10 +93,14 @@ path there (T-MS5/6: the stick-turn local and InputRotation).
 - T-MS9 (`64da6dd`, research/docs/data/mouse-look-t-ms9.log): both axes in free areas, the user: "it works quite
   well". Found: in Dan-cam the camera "fights" (shakes, does not turn); the ~30 s of "vertical without the area's
   pitch" in the log. Dan-cam's ComputeCamera rebuilds its rotation after ComputeCameraSimple from PreviousYaw and
-  stick x 40 + Pitch, so the mouse only moved the boom for a frame. Fix built: in Dan-cam the counts also go into
+  stick x 40 + Pitch, so the mouse only moved the boom for a frame. Fix built `d76d3d0`: in Dan-cam the counts also go into
   PreviousYaw (a local of that frame) and Pitch, clamped to the first Pitch seen +-40 (the stick's reach); yaw
   waits while Dan-cam still follows Dan's facing (its first 1.5 x CameraBlendTime). Found from its bytecode
   (`medievil_camera_dancam`: SelectFloat, x 40, + Pitch, twice and equal; byte test of that layout passes).
+- T-MS10 (`d76d3d0`, research/docs/data/mouse-look-t-ms10.log): "Mouse look: Dan-cam found"; Dan-cam turned by the
+  mouse on up to ~1170 of ~1180 ticks per 5 s, 0 vertical without pitch, each new Dan-cam waited out its 0.3 s
+  of Dan's facing. The user: "everything is working as expected": mouse look on both axes (free areas and
+  Dan-cam), wheel, sensitivity / ratio / invert verified.
 
 ## History and pitfalls
 

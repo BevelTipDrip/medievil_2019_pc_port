@@ -8,11 +8,11 @@ default_windows: on
 default_deck: on
 origin: ours
 class: G
-commits: 29d3782e05, 8f381ab
+commits: 29d3782e05, 8f381ab, 7449317
 files: launcher/medievil_launcher.py, tests/test_launcher_controls.py, gpu/shim/gow3_overlay.cpp, src/runtime_pad.c, src/runtime_mouse.c
 symbols: sdl_key_name, TK_KEYS, key_capture, key_taken, menu_key_name, menu_key, MOUSE_BUTTONS, MenuKey, mouse_map_buttons, runtime_mouse_buttons
 switches: GOW3_MENU_KEY, GOW3_MOUSE_MAP
-tests: T-G4c
+tests: T-G4c, T-MS10
 docs: study-glyphs.md#t-g4c-square-tab-boxes-key-capture-2026-11-11-launched-by-the-user-from-the-launcher-with-claudes-build-log-dataglyphs-g4c-square-tabs-0102log
 depends_on:
 related: button-prompts
@@ -35,7 +35,8 @@ Added 2026-11-11 (the user: "my main keyboard has no insert key"; mouse buttons 
   (`runtime_mouse_buttons`: only while the game has the mouse, without the click that took it) into the pad, next
   to the keys; no defaults.
 - Wheel (7449317): `wheel_up`, `wheel_down`, `wheel` (either). One 60 ms press per scroll gesture; a gesture ends after
-  200 ms without a notch, so a fast scroll is one press (the user: no queue, no back and forth).
+  200 ms without a notch, so a fast scroll is one press (the user: no queue, no back and forth). Verified in
+  T-MS10 (the user: everything works as expected).
 
 ## Invariants
 

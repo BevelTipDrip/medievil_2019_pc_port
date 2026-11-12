@@ -8,11 +8,11 @@ default_windows: off
 default_deck: off
 origin: ours
 class: M
-commits: e1a220b, 36deef0, 10beddc, c81de2c, 7449317
+commits: e1a220b, 36deef0, 10beddc, c81de2c, 7449317, 64da6dd, d76d3d0
 files: src/camera_hook.h, src/probe.c, gpu/shim/gow3_settings.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_overlay.cpp
 symbols: medievil_camera_edits, medievil_camera_input_rotation, medievil_camera_find, camera_search, camera_update, camera_simple, install_camera_moves, gow3_camera_off_mask, gow3_camera_status, ControlsTab, CameraMoveKeys
 switches:
-tests: T-CM1, T-CM2
+tests: T-CM1, T-CM2, T-MS8, T-MS9, T-MS10
 docs: study-camera-moves.md
 depends_on:
 related: mouse-input
@@ -70,7 +70,9 @@ behaviour. The research and offsets: `study-camera-moves.md`.
 
 - The same wrapper carries mouse look (`camera_look`, mouse-input card) and finds the pitch properties next to
   the pitch_return jump (`medievil_camera_pitch`); the launcher's Controls page shows the six switches
-  (`CAMERA_MOVES`) and ticking its mouse box sets the user's set (`MOUSE_CAMERA`): fix built `7449317`, not run.
+  (`CAMERA_MOVES`) and ticking its mouse box sets the user's set (`MOUSE_CAMERA`): fix built `7449317`, verified
+  in T-MS8 to T-MS10 (the ini kept the set across a game run; pitch finder fixed in `64da6dd`, Dan-cam in
+  `d76d3d0`, mouse-input card).
 
 ## History and pitfalls
 

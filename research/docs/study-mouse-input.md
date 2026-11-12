@@ -450,11 +450,40 @@ and InputRotation read from Dan's loaded bytecode (`src/mouse_hook.h`). Open: wh
 is typical per level; whether auto-recentring fights a mouse that never sets `IsCameraRotating` / `IsYawing`;
 `AllowUserCameraControl` = false looks like a stick at rest to a slot wrapper.
 
+### T-MS8: mouse look on the camera tick (2026-11-11, launched by Claude with the user's go, log data/mouse-look-t-ms8.log)
+
+`7449317`: both axes added in the ComputeCameraSimple wrapper (camera-moves card), wheel buttons, live sensitivity /
+ratio / invert. Result: no mouse look on either axis. Found: "Mouse look: no pitch" - the pitch finder matched two
+overlapping three-statement runs (Add..FMax and FMin..Subtract) and gave up, and an area without pitch dropped yaw
+too (766 counts dropped in 5 s). Fix built `64da6dd`: the finder anchors on the whole Add, FMin, FMax, Subtract
+chain and the `Target = L4` after it (a byte test of the Free layout fails on the old finder, passes on the new);
+yaw no longer needs pitch. The launcher kept the recommended camera set and mouse keys in medievil.ini.
+
+### T-MS9: both axes (2026-11-11, launched by Claude with the user's go, log data/mouse-look-t-ms9.log)
+
+"Mouse look: pitch found"; up to ~270 degrees yaw and ~53 degrees pitch per 5 s, 0 dropped, 0 locked, the clamp
+hit at the limits; camera switches toggled live. The user: "it works quite well". Found: Dan-cam (the aim camera)
+"fights" - shakes, does not turn. Its ComputeCamera rebuilds the rotation after ComputeCameraSimple from
+`PreviousYaw` and `SmoothedLookUpAxisValue x 40 + Pitch` (the stick sets a position, not a rate), so the mouse moved
+only the boom for one frame; the log's ~30 s of "vertical without the area's pitch" was Dan-cam. Fix built
+`d76d3d0`: in Dan-cam the counts also go into PreviousYaw (the caller frame's local) and Pitch, clamped to the
+first Pitch seen +-40 (the stick's reach); yaw waits for Dan-cam's first 1.5 x CameraBlendTime (Dan's facing).
+
+### T-MS10: Dan-cam (2026-11-11, launched by Claude with the user's go, log data/mouse-look-t-ms10.log)
+
+"Mouse look: Dan-cam found (yaw local +0x8, past local +0x78, stick +0x378, pitch +0x364)"; Dan-cam turned by the
+mouse on up to ~1170 of ~1180 ticks per 5 s, each new Dan-cam waited out its 0.3 s, 0 vertical without pitch.
+The user: "everything is working as expected". Verified: mouse look on both axes in free areas and Dan-cam, the
+wheel buttons, sensitivity / ratio / invert (launcher and menu). Still the yaw-only fallback
+`GOW3_MOUSE_INPUT_YAW=1` (the T-MS5/6 path) in the code; fixed and scripted cameras ignore the mouse (camera
+study: Free mode in those areas, later).
+
 ## 8. Open questions
 
 1. Does `[SystemSettings]` reach `PS4.EnableMouse` before the PS4 application and the pad opens read it (step 1)? **Yes (T-MS1).**
 2. Does the camera follow control rotation for yaw, and how much lag does its spring add to an exact input?
-3. Pitch: control rotation or the stick-position offset?
+3. Pitch: control rotation or the stick-position offset? **Neither for the mouse: free areas integrate the
+   stick into TargetLookUpAxisValue, Dan-cam uses stick x 40 + Pitch; the mouse writes those (T-MS8 to T-MS10).**
 4. Does the character call `AddControllerYawInput` every gameplay frame, including with the stick at rest (needed
    for the hook to carry mouse yaw), and never while paused or in cutscenes (needed for the mode signal)?
 5. The Slate cursor's coordinate space and clamping at 4K output; where it starts.
