@@ -10,8 +10,8 @@ origin: ours
 class: M
 commits: f4f13b8, e27103e, 870f584, 88bf535, a7c91f7, b4d9e6f, 5bb45d0, 7449317, 64da6dd, d76d3d0
 files: src/runtime_mouse.c, src/mouse_hook.h, src/camera_hook.h, src/probe.c, src/runtime_services.c, gpu/shim/window.cpp, gpu/shim/sdl_window.h, scripts/ue4_override.py
-symbols: runtime_mouse_enabled, runtime_mouse_start, runtime_mouse_capture, runtime_mouse_take, drain, reader_thread, mouse_init, mouse_read, SetMouseCapture, mouse_captured, runtime_mouse_take_camera, medievil_mouse_yaw_find, medievil_mouse_yaw_script_ok, mouse_yaw, install_mouse_yaw, camera_look, camera_look_class, camera_dancam, medievil_camera_pitch, medievil_camera_dancam
-switches: GOW3_MOUSE, GOW3_MOUSE_BUTTONS, GOW3_MOUSE_INPUT_YAW
+symbols: runtime_mouse_enabled, runtime_mouse_start, runtime_mouse_capture, runtime_mouse_take, drain, reader_thread, mouse_init, mouse_read, SetMouseCapture, mouse_captured, runtime_mouse_take_camera, medievil_mouse_yaw_find, medievil_mouse_yaw_script_ok, mouse_yaw, mouse_lock_record, install_mouse_yaw, camera_look, camera_look_class, camera_dancam, medievil_camera_pitch, medievil_camera_dancam
+switches: GOW3_MOUSE, GOW3_MOUSE_BUTTONS
 tests: T-MS1, T-MS2, T-MS3, T-MS4, T-MS5, T-MS6, T-MS7, T-MS8, T-MS9, T-MS10
 docs: study-mouse-input.md#t-ms1-ps4enablemouse-from-the-paks-ini-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-step1-enablelog
 depends_on:
@@ -30,8 +30,9 @@ ComputeCameraSimple wrapper (`camera_look`, probe.c; camera-moves card) adds x c
 frame's rotation's yaw and y counts x sensitivity x `mouse_vertical_ratio` (forward looks up; `mouse_invert_y`) to its
 pitch, clamped like the stick's and kept in the area's Target / Smoothed pitch; both axes read at the same moment
 (medievil.ini keys, live from the menu's Controls tab). `AddControllerYawInput`'s wrapper (src/mouse_hook.h) now
-records Dan's handler's AllowUserCameraControl each frame (the lock); `GOW3_MOUSE_INPUT_YAW=1` keeps the first yaw
-path there (T-MS5/6: the stick-turn local and InputRotation).
+records Dan's handler's AllowUserCameraControl each frame (the lock, `mouse_lock_record`). The first yaw path there
+(T-MS5/6: the stick-turn local and InputRotation, `GOW3_MOUSE_INPUT_YAW=1` after 7449317) was removed once the camera
+tick path was verified (T-MS10; the user, 2026-11-12).
 
 ## Invariants
 

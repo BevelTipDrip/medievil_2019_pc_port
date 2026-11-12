@@ -116,3 +116,11 @@ if its gate passes; (5) item 4 if gated in; item 8 last (risky). Then the ring r
 | **Launcher save backups pruned by name:** `scripts/save_backup.py` kept the 10 newest names; letter-named hand-made backups sorted first and every automatic backup was deleted when made (found 2026-11-10). Fix built: none are deleted (the user: saves are small, keep all until save problems are understood); card launcher/save-backup-keep-all. Run T-SV4: the start's backup stayed | run |
 | **Stale Python tests (found 2026-11-10, after other work):** 8 fail on Windows. 6 in `tests/test_patches.py` read `patches/God_of_War_III_Remastered.xml` / profile CUSA01623, deleted upstream in 316f552 ("MediEvil branding"); rewrite against MediEvil's profile (CUSA11227, `patches/MediEvil.xml`). 2 in `tests/test_packaged_vulkan.py` split Linux `:` path lists and break on `C:\` paths; all 7 pass under WSL Debian: skip them off Linux. Done 2026-11-11 (`d75c1c8`, card tooling/python-test-upkeep): rewritten against MediEvil.xml plus an inline rules file, the 2 skipped on Windows, the glyph tests skip without Pillow; Windows 3.14: 170 OK, WSL 3.13: 158 OK | done |
 | **Hang at "quit to main menu" (PC, 2026-11-08, run `u1-frame-map`, render scale 80):** a small guest copy replayed on `gow3:VkRecorder` read-faulted; the recorder is not a GPU-side thread (`IsGpuSideThread`), so the fault waits on the GPU command thread (`SendCommand<true>`), which waits for stage B to drain, which waits for the recorder. UE4's watchdog ended the game after 120 s. Stacks: `data/u1-hang-recorder-fault-20261108.txt`. Not the frame map (not on any stack). One occurrence | found; fix to propose |
+
+## From GitHub issues
+
+Made by research/tools/issue2card.py queue N.
+
+| Issue | Item | What is known | State |
+|---|---|---|---|
+| #1 | Requesting FSR4.X support, potentially with the ability to use FSRs ML versionâ€¦ | feature request; Windows; 2.2.1 (source); CUSA11227 version 01.02; [issue](https://github.com/BevelTipDrip/medievil_2019_pc_port/issues/1) | open |

@@ -4,7 +4,7 @@ One line per card. Open a card for invariants, interactions and evidence; look u
 reading: `patchmap.py file <path>` / `switch <name>` / `commit <hash>` / `test <id>`.
 Card format and statuses: [README.md](README.md). W / D = default on Windows / Deck.
 
-216 cards.
+217 cards.
 
 ## memory
 
@@ -37,7 +37,7 @@ _loader, HLE libraries, threads, locks, files, audio, input (src/ outside memory
 | [crash-dump](runtime/crash-dump.md) | active | on / n/a | lab | GOW3_CRASH_DUMP | Minidump on any fatal fault, with fallbacks to smaller dump types and faults inside winpthreads |
 | [load-list-continue](runtime/load-list-continue.md) | active | on / on | deck-lab |  | Load list: "Continue" (the newest save) in place of the dead "New save" entry; "Slot N" on every save |
 | [load-list-details](runtime/load-list-details.md) | active | on / on | deck-lab |  | Load list: per-save details, level picture and level list (Square), in the game's Options menu look |
-| [mouse-input](runtime/mouse-input.md) | active | off / n/a | deck-lab | GOW3_MOUSE, GOW3_MOUSE_BUTTONS, GOW3_MOUSE_INPUT_YAW | Mouse input through the game's own sceMouse path, from a batched Raw Input reader (GOW3_MOUSE=1, Windows) |
+| [mouse-input](runtime/mouse-input.md) | active | off / n/a | deck-lab | GOW3_MOUSE, GOW3_MOUSE_BUTTONS | Mouse input through the game's own sceMouse path, from a batched Raw Input reader (GOW3_MOUSE=1, Windows) |
 | [pad-hotplug](runtime/pad-hotplug.md) | active | on / on | fork-ports |  | Pads plugged in after start: SDL hotplug hints (fork port, #64) |
 | [quiet-log](runtime/quiet-log.md) | active | off / off | deck-lab | GOW3_FPS_LOG | GOW3_FPS_LOG=0 turns off the periodic log lines (FPS line, particle guard summary) |
 | [R2](runtime/r2.md) | active | on / on | lab |  | Runtime: rwlock handles validated through an open-addressing hash set, not a list walk |
@@ -245,6 +245,7 @@ _launcher, settings, medievil.ini keys, run.py, packaging, build scripts_
 
 | ID | Status | W / D | Branch | Switches | Title |
 |---|---|---|---|---|---|
+| [bug-report](launcher/bug-report.md) | active | on / on | - |  | Launcher Submit Bug Report: a filled-in GitHub issue form and a redacted zip of logs and settings; issues into the work queue |
 | [cursor-hide](launcher/cursor-hide.md) | active | on / on | lab |  | Hide the mouse cursor in borderless and fullscreen and when idle in a window; shown while unfocused |
 | [extra-env-file](launcher/extra-env-file.md) | active | off / off | deck-lab |  | run.py: extra-env.txt in the data folder sets test environment variables on every start |
 | [game-ui-cache](launcher/game-ui-cache.md) | active | on / on | deck-lab |  | Game UI cache: level names, loading screens, menu frame, button prompts and fonts from the player's paks |

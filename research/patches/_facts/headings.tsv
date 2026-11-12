@@ -541,6 +541,7 @@ plan-work-queue.md	7	2	the-users-quality-of-life-list-2026-11-03-after-the-v200-
 plan-work-queue.md	42	2	the-users-order-2026-10-30	The user's order (2026-10-30)
 plan-work-queue.md	71	2	pending-fixes-research-2026-10-29-ranked-there-state-now	Pending fixes (research 2026-10-29, ranked there; state now)
 plan-work-queue.md	99	2	found-on-the-way-2026-10-30	Found on the way (2026-10-30)
+plan-work-queue.md	120	2	from-github-issues	From GitHub issues
 pr-checklist.md	1	1	pr-checklist-the-bar-for-anything-proposed-upstream	PR checklist: the bar for anything proposed upstream
 pr-checklist.md	7	2	scope	Scope
 pr-checklist.md	14	2	code	Code
@@ -997,9 +998,12 @@ study-mouse-input.md	362	3	t-ms4-no-capture-from-clicks-on-the-save-list-2026-11
 study-mouse-input.md	369	3	t-ms5-mouse-yaw-into-inputrotation-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-yaw-t-ms5log	T-MS5: mouse yaw into InputRotation (2026-11-11, launched by Claude with the user's go, log data/mouse-yaw-t-ms5.log)
 study-mouse-input.md	390	3	t-ms6-mouse-yaw-through-both-paths-2026-11-11-launched-by-the-user-log-datamouse-yaw-t-ms6log	T-MS6: mouse yaw through both paths (2026-11-11, launched by the user, log data/mouse-yaw-t-ms6.log)
 study-mouse-input.md	408	3	step-5-research-the-yaw-and-pitch-sites-and-what-really-turns-the-camera-2026-11-11-no-launch	Step 5 research: the yaw and pitch sites, and what really turns the camera (2026-11-11, no launch)
-study-mouse-input.md	453	2	8-open-questions	8. Open questions
-study-mouse-input.md	465	2	method-notes	Method notes
-study-mouse-input.md	474	2	decision-the-user-2026-11-03	Decision (the user, 2026-11-03)
+study-mouse-input.md	453	3	t-ms8-mouse-look-on-the-camera-tick-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-look-t-ms8log	T-MS8: mouse look on the camera tick (2026-11-11, launched by Claude with the user's go, log data/mouse-look-t-ms8.log)
+study-mouse-input.md	462	3	t-ms9-both-axes-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-look-t-ms9log	T-MS9: both axes (2026-11-11, launched by Claude with the user's go, log data/mouse-look-t-ms9.log)
+study-mouse-input.md	472	3	t-ms10-dan-cam-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-look-t-ms10log	T-MS10: Dan-cam (2026-11-11, launched by Claude with the user's go, log data/mouse-look-t-ms10.log)
+study-mouse-input.md	481	2	8-open-questions	8. Open questions
+study-mouse-input.md	494	2	method-notes	Method notes
+study-mouse-input.md	503	2	decision-the-user-2026-11-03	Decision (the user, 2026-11-03)
 study-native-render-paths.md	1	1	study-native-render-paths-or-cutting-out-the-middle-man-2026-11-04	Study: native render paths, or "cutting out the middle man" (2026-11-04)
 study-native-render-paths.md	15	2	answer	Answer
 study-native-render-paths.md	41	2	1-the-heavy-frame-by-class-question-1	1. The heavy frame by class (question 1)
