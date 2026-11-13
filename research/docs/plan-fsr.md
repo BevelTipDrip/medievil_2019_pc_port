@@ -63,7 +63,9 @@ Status (2026-11-12): step 1 on branch `fsr`, verified on the PC (T-F1); its Deck
   (`vk_presenter.cpp` `!Ue4Upscaler::Running()`), and DLSS gets `sharpness = 0`. FSR 3.1: its own RCAS
   (`enableSharpening`, `sharpness` 0-1). DLSS: NVIDIA deprecated its sharpening (newer DLSS ignores the
   parameter) [to check against our nvngx_dlss.dll version], so for DLSS the presenter's RCAS after DLSS, at the
-  slider's strength, instead of being blocked.
+  slider's strength, instead of being blocked. Verified for FSR (T-F6).
+- **A separate FSR sharpening slider** (the user, after T-F6): FSR's sharpening gets its own strength, apart from the
+  presenter's RCAS (CAS) slider; TAA needs far more RCAS than FSR needs its own sharpening.
 
 ## Step 1 (verified on the PC, T-F1)
 
@@ -114,8 +116,13 @@ one frame in N, or a cheaper clock.
 T-F5 (research/docs/data/upscaler-quiet-t-f5.log, stats and FPS line off): the user: with the hook fix, DLSS's and
 FSR's 0.1% lows are up significantly. F3 verified for the lows.
 
-F2b (fix built, not run): the menu's sharpening (rcas, rcas_strength) is FSR's own RCAS while FSR runs
+F2b (`b4e3620`): the menu's sharpening (rcas, rcas_strength) is FSR's own RCAS while FSR runs
 (`Ue4UpscaleFrame::sharpness` = strength / 100: FSR's attenuation 2 - 2s equals the presenter's 2 (1 - p / 100)), and
 the presenter's RCAS stays off then (`Ue4Upscaler::SharpensItself`); over DLSS and UE4's TAA the presenter's RCAS
 runs (before: off over DLAA). The user: DLSS is already sharp; people may want it softer, which is the DLSS model
 (preset) choice (roadmap), not RCAS.
+
+T-F6 (2026-11-12, `b4e3620`, RTX 4090, 75%): the user: "I tested FSR sharpening, it works!" FSR with its sharpening
+is clearer than UE4's TAA at 75%; to match that clarity, TAA needs so much RCAS that grass and fences are
+oversharpened. F2b verified for FSR; RCAS over DLSS was not reported on. Next (the user): **a separate FSR sharpening
+slider**, not shared with the presenter's RCAS (CAS) strength: the two want different strengths.

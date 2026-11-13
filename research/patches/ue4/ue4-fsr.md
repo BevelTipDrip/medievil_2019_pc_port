@@ -52,7 +52,8 @@ III upscaler):
 
 ## Evidence
 
-- Fix built (plan-fsr.md step 2), not run.
+- T-F2 (plan-fsr.md step 2): FSR 3.1 runs at 75%, 50% and native.
+- T-F6: FSR's own sharpening from the menu's strength verified (the user). To do: its own slider, apart from RCAS.
 
 ## History and pitfalls
 
