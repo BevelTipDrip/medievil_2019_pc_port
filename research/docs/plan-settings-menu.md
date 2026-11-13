@@ -213,3 +213,6 @@ Controls (Advanced camera), Image, Performance. Found in them (polish, not run-b
 
 Next (the user): reorganise the tabs; a workbook of every item per tab (research/docs/data/settings-menu-items.xlsx)
 for planning that.
+
+The user, after T-SM2: the scroll bar does not work with the mouse: the wheel scrolls, but clicking or dragging
+the bar does nothing. Found, not traced; to fix with the polish list above, after the user's tab reorganisation.
