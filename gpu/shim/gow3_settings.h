@@ -45,6 +45,9 @@ inline float ClampMouseRatio(float v) { ///< also to 0.01 steps
     return float(int(clamped * 100.0f + 0.5f)) / 100.0f;
 }
 
+/// Performance patches (PerfPatch, below) and Steam Deck switches (DeckSwitches): their counts, for Values.
+inline constexpr int PerfPatchCount = 13, DeckSwitchCount = 10;
+
 struct Values {
     std::atomic<int> upscaler{UpscalerFsr3};
     std::atomic<int> preset{NativeAA};
@@ -125,9 +128,17 @@ struct Values {
     int startup_render_resolution = 0, startup_engine_fps = 60;
     bool startup_deferred_readback = true, startup_stale_readback = true;
     /// Performance patches (PerfKeys): on by default; live ones apply at once, the others with
-    /// "Apply and restart" (run.py: graphics_options.PERF_SWITCHES).
-    std::atomic<bool> perf[12] = {true, true, true, true, true, true, true, true, true, true, true, true};
-    bool startup_perf[12] = {true, true, true, true, true, true, true, true, true, true, true, true};
+    /// "Apply and restart" (run.py: graphics_options.PERF_SWITCHES / PERF_ON_SWITCHES).
+    std::atomic<bool> perf[PerfPatchCount] = {true, true, true, true, true, true, true,
+                                              true, true, true, true, true, true};
+    bool startup_perf[PerfPatchCount] = {true, true, true, true, true, true, true, true, true, true, true, true, true};
+    /// Steam Deck switches (DeckSwitches, medievil.ini deck_<key>): off by default, at the next start (run.py:
+    /// graphics_options.deck_environment).
+    std::atomic<bool> deck[DeckSwitchCount] = {};
+    bool startup_deck[DeckSwitchCount] = {};
+    /// The primary display's desktop size in pixels (output_resolution "display"), set by the overlay at start;
+    /// 0 until then (read as 1920x1080).
+    std::atomic<int> display_width{0}, display_height{0};
     /// MediEvil graphics quality and output resolution (UE4QualityKeys / UE4OutputKeys; -1: a
     /// value the menu does not list, such as a custom WxH, kept as written). On restart (run.py:
     /// graphics_options, ue4_override).
@@ -198,15 +209,54 @@ bool GraphicsNeedRestart();
 enum PerfPatch {
     PerfHzbOcclusion, PerfNoDecalPrepass, PerfParticleSinglePass, PerfSmallBuffers, PerfTextureMemo,
     PerfLockfreeMemory, PerfCheapFrees, PerfGpuDataNoWaits, Perf4kMemory, PerfLeanBarriers, PerfLeanBinding,
-    PerfRingReuse, PerfCount
+    PerfRingReuse, PerfParticleFlipGuard, PerfCount
 };
+static_assert(PerfCount == PerfPatchCount, "Values::perf: one per PerfPatch");
 inline constexpr const char* PerfKeys[PerfCount] = {
     "perf_hzb_occlusion", "perf_no_decal_prepass", "perf_particle_single_pass", "perf_small_buffers",
     "perf_texture_memo", "perf_lockfree_memory", "perf_cheap_frees", "perf_gpu_data_no_waits",
-    "perf_4k_memory", "perf_lean_barriers", "perf_lean_binding", "perf_ring_reuse"};
+    "perf_4k_memory", "perf_lean_barriers", "perf_lean_binding", "perf_ring_reuse", "perf_particle_flip_guard"};
 /// Switched while the game runs (the others need a restart). The single particle pass through its
 /// console variable (src/runtime_extra.c: runtime_ue4_particle_single_pass, 01.00 and 01.02).
-inline constexpr bool PerfLive[PerfCount] = {false, false, true, true, false, true, true, false, false, false, true, true};
+inline constexpr bool PerfLive[PerfCount] = {false, false, true, true, false, true, true, false, false, false, true, true,
+                                             false};
+/// Steam Deck switches (graphics_options.DECK_SWITCH_ITEMS, the same order; tests/test_deck_preset.py checks they
+/// match): medievil.ini "deck_" + key, the variable run.py sets for it and its value, Linux code only (never set
+/// on Windows, and hidden in the menu there).
+struct DeckSwitch {
+    const char* key;
+    const char* title;
+    const char* hint;
+    const char* env;
+    const char* value;
+    bool linux_only;
+};
+inline constexpr DeckSwitch DeckSwitches[] = {
+    {"early_frame_eop", "Early frame end signals",
+     "The frame's end signal at decode instead of after recording (stage A runs ahead).",
+     "GOW3_EARLY_FRAME_EOP", "1", false},
+    {"decode_pacing", "Decode pacing (2 frames ahead)", "Stage A decodes up to 2 frames ahead of the GPU.",
+     "GOW3_DECODE_PACING", "1", false},
+    {"drain_hybrid", "Stage A's hybrid wait", "Stage A spins briefly, then sleeps, while it waits for stage B.",
+     "GOW3_DRAIN_HYBRID", "1", false},
+    {"texset_wide", "Wide texture-set memo (T2)", "Texture sets of draws without a prepared draw are memoized too.",
+     "GOW3_TEXSET_WIDE", "1", false},
+    {"region_index", "Region cache index (R1)", "Guest memory lookups answered from an index by page.",
+     "GOW3_REGION_INDEX", "1", false},
+    {"pending_filter", "Pending-write filter (A2)", "Stage A's pending-write checks answered from a page filter.",
+     "GOW3_PENDING_FILTER", "1", false},
+    {"reg_hash_paired", "Paired register checksum (A3)", "The register checksum takes two words per step.",
+     "GOW3_REG_HASH_PAIRED", "1", false},
+    {"backing_copy", "Backing copies without the lock (A1)",
+     "GPU-side guest copies read the backing memory without the region table lock.",
+     "GOW3_BACKING_COPY", "1", true},
+    {"thread_nice", "Thread priorities", "Stage B and the vblank thread at a higher priority (nice -10).",
+     "GOW3_THREAD_NICE", "1", true},
+    {"arena_writes_off", "Direct arena writes off (U2)",
+     "Buffer data through staging copies instead of direct writes (no gain on the Deck; their tracking costs stage B).",
+     "GOW3_ARENA_HOST_VISIBLE", "0", true},
+};
+static_assert(int(std::size(DeckSwitches)) == DeckSwitchCount, "Values::deck: one per DeckSwitches");
 /// Whether a live patch is on now (read by the draw thread for every draw).
 inline bool PerfOn(PerfPatch patch) {
     return Get().perf[patch].load(std::memory_order_relaxed);
@@ -214,6 +264,19 @@ inline bool PerfOn(PerfPatch patch) {
 inline constexpr const char* UE4QualityKeys[] = {"ultra", "high", "console", "medium", "low"};
 inline constexpr const char* UE4OutputKeys[] = {"display", "3840x2160", "3200x1800", "2560x1440", "1920x1080",
                                                 "1280x720"};
+/// The pixel size of an output_resolution value ("display": the desktop, Values::display_width; "WxH" as
+/// graphics_options.parse_output: even sizes, 640x360 to 7680x4320; else 1920x1080).
+void OutputSize(const std::string& value, int& width, int& height);
+/// The chosen output size (output_resolution) as its ini value: a listed key or the raw custom one.
+std::string OutputValue();
+/// Why the chosen output size cannot be switched live, or null (then RequestOutput switches it now). Only
+/// these cases count as a restart change (RestartChanges): the game started with a render scale above 100%
+/// and the new size is larger than the start's (1800p at 200% needed 6400x3600 targets: out of the PS4's
+/// memory, crash); the 512 MB framebuffer pool patch is not in this start's patch list and the new size is
+/// above 1440p (the stock 128 MB pool ran out on a live 4K switch: crash); this build's r.SetRes is unknown
+/// (GOW3_UE4_SETRES_CVAR unset). research/docs/plan-settings-menu.md section 9. The menu (gow3_overlay.cpp
+/// RequestOutput) switches the others live through r.SetRes.
+const char* OutputRestartReason();
 /// MediEvil render scale (medievil.ini render_scale; launcher > Performance, in-game menu > Applied
 /// now): any whole percent from RenderScaleMin to RenderScaleMax, the range of UE4 4.21's temporal
 /// upsampling (resolution fraction 0.5-2). The ini still starts 25-49 (graphics_options.py
@@ -397,7 +460,8 @@ void RequestUE4Live(int o, int choice);
 int UE4LevelChoice(int o, int level);
 /// The level every option matches, `picked` first (0-4, UE4DeckLevel), or -1 (Custom).
 int UE4MatchedLevel(const Values& v, int picked);
-/// Graphics quality picked in the menu: every option set to the level's choice, the live ones at once.
+/// Graphics quality picked in the menu: every option set to the level's choice, the live ones at once. Deck
+/// Optimized (UE4DeckLevel) sets only its graphics settings, with ue4_quality low as the launcher writes it.
 void UE4ApplyLevel(int level);
 
 /// Startup options changed since this launch (applied by "Apply and restart").

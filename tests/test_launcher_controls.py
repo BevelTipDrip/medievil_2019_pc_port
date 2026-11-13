@@ -28,10 +28,17 @@ class ControlMapTest(unittest.TestCase):
             self.assertIn(key, launcher.INI_FLAGS)
             self.assertEqual(launcher.INI_DEFAULTS[key], '0' if key in graphics_options.PERF_DEFAULT_OFF else '1')
             self.assertEqual(graphics_options.PERF_SWITCHES[key], off)
-        # The single particle pass is off without a key (plan-0102.md, T-0102-4).
-        self.assertEqual(graphics_options.perf_environment({}), {'GOW3_PARTICLE_FIXED_STEP': '1'})
-        self.assertEqual(graphics_options.perf_environment({'perf_particle_single_pass': '1'}), {})
-        self.assertEqual(graphics_options.perf_environment({'perf_texture_memo': '0', 'perf_particle_single_pass': '1'}),
+        self.assertEqual(set(graphics_options.PERF_SWITCHES), {key for key, *_rest in launcher.PERF_PATCHES})
+        # Without keys every patch is on: the single particle pass with the particle flip guard (its variable
+        # switches it on: PERF_ON_SWITCHES), since 2026-11-13; an explicit 0 turns the pass off.
+        guard = {'GOW3_PARTICLE_FLIP_GUARD': '1'}
+        self.assertEqual(graphics_options.PERF_DEFAULT_OFF, set())
+        self.assertEqual(graphics_options.perf_environment({}), guard)
+        self.assertEqual(graphics_options.perf_environment({'perf_particle_single_pass': '0'}),
+                         {'GOW3_PARTICLE_FIXED_STEP': '1', **guard})
+        self.assertEqual(graphics_options.perf_environment({'perf_particle_single_pass': '1'}), guard)
+        self.assertEqual(graphics_options.perf_environment({'perf_texture_memo': '0', 'perf_particle_single_pass': '1',
+                                                            'perf_particle_flip_guard': '0'}),
                          {'GOW3_TEXSET_REGIONS': '0', 'GOW3_TEXSET_TWO_WAY': '0'})
         env = launcher.game_environment({**launcher.APP_DEFAULTS})
         self.assertEqual(env.get('GOW3_FRAME_STATS'), launcher.os.environ.get('GOW3_FRAME_STATS'))

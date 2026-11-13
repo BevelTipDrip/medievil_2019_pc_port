@@ -471,7 +471,7 @@ def patch_names(names, options, texture_fix_available=True):
 
 
 # Performance patches (launcher > Performance, in-game menu > Performance): medievil.ini key ->
-# the environment that switches the patch off (perf_*=0). Missing keys mean on (PERF_DEFAULT_OFF: off).
+# the environment that switches the patch off (perf_*=0). Missing keys mean on (PERF_DEFAULT_OFF: off; none now).
 PERF_SWITCHES = {
     'perf_hzb_occlusion': {'GOW3_HZB_REMAP': '0'},
     'perf_no_decal_prepass': {'GOW3_DECAL_PREPASS': '1'},
@@ -486,10 +486,73 @@ PERF_SWITCHES = {
     'perf_lean_barriers': {'GOW3_SKIP_READ_BARRIERS': '0', 'GOW3_DEPTH_SAMPLE_IN_PLACE': '0'},
     'perf_lean_binding': {'GOW3_LEAN_BINDING': '0'},
     'perf_ring_reuse': {'GOW3_RING_REUSE': '0'},
+    'perf_particle_flip_guard': {},  # off: nothing set (the guard is installed only with its variable)
 }
-# Off where medievil.ini has no key: the single particle pass slows some torches to a crawl and
-# leaves an ember / golden stream in Dan's crypt (research/docs/plan-0102.md, T-0102-4).
-PERF_DEFAULT_OFF = {'perf_particle_single_pass'}
+# The environment that switches a patch on (perf_*=1), for patches the runtime runs only when asked:
+# the particle flip guard (research/patches/ue4/particle-flip-guard.md), a Steam Deck switch until
+# 2026-11-13, on by default since (the user's PC test).
+PERF_ON_SWITCHES = {
+    'perf_particle_flip_guard': {'GOW3_PARTICLE_FLIP_GUARD': '1'},
+}
+# Off where medievil.ini has no key. Empty since 2026-11-13: the single particle pass (off before: without the
+# flip guard it slows some torches to a crawl and leaves an ember stream in Dan's crypt, plan-0102.md T-0102-4) is
+# on by default with the flip guard, which is on by default too (the user's PC test). An explicit 0 stays off.
+PERF_DEFAULT_OFF = set()
+
+# The Steam Deck's measured wins that are still opt-in start switches (plan-linux-deck.md), one
+# medievil.ini key each ('deck_' + key, 0 by default, 1 in the launcher's Deck Optimized preset), shared
+# with the in-game menu (Performance > Deck tuned; gpu/shim/gow3_settings.h DeckSwitches, tests check
+# they match). Until 2026-11-13 they were launcher settings (deck_switches / deck_switches_off), which an
+# in-game restart could not change. (key, title, hint, variables, why it does nothing on Windows or None):
+# A1 and thread nice are Linux code, U2 is off on Windows anyway (buffer_cache.cpp HostVisibleArenaType);
+# the others run on both and are untested on Windows (research/patches/deck).
+DECK_SWITCH_ITEMS = [
+    ('early_frame_eop', 'Early frame end signals',
+     "The frame's end signal at decode instead of after recording (stage A runs ahead).",
+     {'GOW3_EARLY_FRAME_EOP': '1'}, None),
+    ('decode_pacing', 'Decode pacing (2 frames ahead)', 'Stage A decodes up to 2 frames ahead of the GPU.',
+     {'GOW3_DECODE_PACING': '1', 'GOW3_DECODE_PACING_LEAD': '2'}, None),
+    ('drain_hybrid', "Stage A's hybrid wait", 'Stage A spins briefly, then sleeps, while it waits for stage B.',
+     {'GOW3_DRAIN_HYBRID': '1'}, None),
+    ('texset_wide', 'Wide texture-set memo (T2)', 'Texture sets of draws without a prepared draw are memoized too.',
+     {'GOW3_TEXSET_WIDE': '1'}, None),
+    ('region_index', 'Region cache index (R1)', 'Guest memory lookups answered from an index by page.',
+     {'GOW3_REGION_INDEX': '1'}, None),
+    ('pending_filter', 'Pending-write filter (A2)', "Stage A's pending-write checks answered from a page filter.",
+     {'GOW3_PENDING_FILTER': '1'}, None),
+    ('reg_hash_paired', 'Paired register checksum (A3)', 'The register checksum takes two words per step.',
+     {'GOW3_REG_HASH_PAIRED': '1'}, None),
+    ('backing_copy', 'Backing copies without the lock (A1)', 'GPU-side guest copies read the backing memory '
+     'without the region table lock.', {'GOW3_BACKING_COPY': '1'}, 'Linux only'),
+    ('thread_nice', 'Thread priorities', 'Stage B and the vblank thread at a higher priority (nice -10).',
+     {'GOW3_THREAD_NICE': '1'}, 'Linux only'),
+    ('arena_writes_off', 'Direct arena writes off (U2)', 'Buffer data through staging copies instead of direct '
+     'writes (no gain on the Deck; their tracking costs stage B).', {'GOW3_ARENA_HOST_VISIBLE': '0'},
+     'already off on Windows'),
+]
+DECK_SWITCH_KEYS = tuple('deck_' + key for key, *_rest in DECK_SWITCH_ITEMS)
+
+
+def deck_environment(ini, windows=None):
+    """(variables, summary) of the Steam Deck switches on in medievil.ini (deck_<key>=1), leaving out the ones
+    that do nothing on this platform; the summary is what run.py logs ('' when none is on)."""
+    import sys
+    windows = sys.platform == 'win32' if windows is None else windows
+    env, on, skipped = {}, [], []
+    for key, _title, _hint, variables, windows_reason in DECK_SWITCH_ITEMS:
+        if ini.get('deck_' + key, '0') != '1':
+            continue
+        if windows and windows_reason:
+            skipped.append(f'{key} ({windows_reason})')
+        else:
+            env.update(variables)
+            on.append(key)
+    if not on and not skipped:
+        return {}, ''
+    summary = f'{len(on)} on: {", ".join(on) or "none"}' + (f'; left out: {", ".join(skipped)}' if skipped else '')
+    if windows and on:
+        summary += '; Windows: untested'
+    return env, summary
 
 
 # Presentation settings (launcher > Performance > Presentation): medievil.ini key -> how its value
@@ -543,11 +606,14 @@ def no_frame_caps(ini):
 
 
 def perf_environment(ini):
-    """The switches of the performance patches turned off in medievil.ini."""
+    """The switches of the performance patches turned off in medievil.ini (and of the ones the runtime
+    runs only when asked, PERF_ON_SWITCHES, turned on)."""
     env = {}
     for key, off in PERF_SWITCHES.items():
         if ini.get(key, '0' if key in PERF_DEFAULT_OFF else '1') == '0':
             env.update(off)
+        else:
+            env.update(PERF_ON_SWITCHES.get(key, {}))
     return env
 
 

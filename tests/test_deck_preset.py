@@ -31,8 +31,11 @@ class DeckPresetTest(unittest.TestCase):
             # Settings only Low quality changed before 2026-11-08 (now in the list): Low's values.
             'small_object_shadows': '0.15', 'sun_shadow_resolution': '1024', 'foliage_density': '0.6',
             'texture_filtering': '8', 'refraction': '0'}
+        # Since 2026-11-13 the Deck switches are medievil.ini keys (deck_*) and the flip guard a performance patch.
+        switches = {key: '1' for key in graphics_options.DECK_SWITCH_KEYS}
         self.assertEqual(launcher.DECK_PRESET,
-                         {**logging, 'render_scale': '80', 'volumetric_fog': '1', 'fps_limit': '60'})
+                         {**logging, 'render_scale': '80', 'volumetric_fog': '1', 'fps_limit': '60',
+                          'perf_particle_flip_guard': '1', **switches})
 
     def test_every_value_is_one_the_launcher_and_game_accept(self):
         p = launcher.DECK_PRESET
@@ -70,66 +73,104 @@ class DeckPresetTest(unittest.TestCase):
         for name in ('GOW3_REFLEX', 'GOW3_PRECISE_LIMIT', 'GOW3_LIMIT_HOLD', 'GOW3_PRESENT_MODE', 'GOW3_PRECISE_TICK'):
             self.assertNotIn(name, env)
         self.assertEqual((p['fps_limit'], p['vsync']), ('60', '0'))
-        # Only the 4K memory patch is off (above 1080p only); every other performance patch stays on.
-        self.assertEqual(graphics_options.perf_environment(p), {'GOW3_PS4_MEMORY': '1'})
+        # Only the 4K memory patch is off (above 1080p only); every other performance patch stays on, the
+        # particle flip guard with them (the single pass needs it).
+        self.assertEqual(graphics_options.perf_environment(p),
+                         {'GOW3_PS4_MEMORY': '1', 'GOW3_PARTICLE_FLIP_GUARD': '1'})
 
     def test_switches_come_with_the_preset_only(self):
         self.assertEqual(launcher.DECK_SWITCHES, {
             'GOW3_EARLY_FRAME_EOP': '1', 'GOW3_DECODE_PACING': '1', 'GOW3_DECODE_PACING_LEAD': '2',
             'GOW3_ARENA_HOST_VISIBLE': '0', 'GOW3_DRAIN_HYBRID': '1', 'GOW3_TEXSET_WIDE': '1',
             'GOW3_REGION_INDEX': '1', 'GOW3_BACKING_COPY': '1', 'GOW3_PENDING_FILTER': '1',
-            'GOW3_REG_HASH_PAIRED': '1', 'GOW3_PARTICLE_FLIP_GUARD': '1', 'GOW3_THREAD_NICE': '1'})
-        self.assertFalse(launcher.APP_DEFAULTS['deck_switches'])
+            'GOW3_REG_HASH_PAIRED': '1', 'GOW3_THREAD_NICE': '1'})
+        for key in graphics_options.DECK_SWITCH_KEYS:  # off in a fresh install
+            self.assertEqual(launcher.INI_DEFAULTS[key], '0')
+            self.assertIn(key, launcher.INI_FLAGS)
+        self.assertEqual(graphics_options.deck_environment(launcher.INI_DEFAULTS, windows=False), ({}, ''))
+        # The launcher no longer passes them: run.py derives them from medievil.ini (an in-game restart too).
         added = lambda env: {k: v for k, v in env.items() if k not in os.environ}
         plain = added(launcher.game_environment({**launcher.APP_DEFAULTS}))
         for name in launcher.DECK_SWITCHES:
             self.assertNotIn(name, plain)
-        deck = launcher.game_environment({**launcher.APP_DEFAULTS, 'deck_switches': True})
-        for name, value in launcher.deck_switch_env({'deck_switches': True})[0].items():
-            self.assertEqual(deck[name], os.environ.get(name, value))
-        self.assertIn('GOW3_DECK_SWITCHES', deck)
-        # A variable already set (a test) wins over the preset.
-        saved = os.environ.get('GOW3_ARENA_HOST_VISIBLE')
-        os.environ['GOW3_ARENA_HOST_VISIBLE'] = '1'
-        try:
-            env = launcher.game_environment({**launcher.APP_DEFAULTS, 'deck_switches': True})
-            self.assertEqual(env['GOW3_ARENA_HOST_VISIBLE'], '1')
-        finally:
-            if saved is None:
-                del os.environ['GOW3_ARENA_HOST_VISIBLE']
-            else:
-                os.environ['GOW3_ARENA_HOST_VISIBLE'] = saved
+        self.assertNotIn('deck_switches', launcher.APP_DEFAULTS)
+
+    def test_flip_guard_is_a_performance_patch_on_by_default(self):
+        keys = [key for key, *_rest in launcher.PERF_PATCHES]
+        # Shown under the single particle pass, on without a key (the user's PC test, 2026-11-13).
+        self.assertEqual(keys.index('perf_particle_flip_guard'), keys.index('perf_particle_single_pass') + 1)
+        self.assertEqual(launcher.INI_DEFAULTS['perf_particle_flip_guard'], '1')
+        self.assertEqual(graphics_options.perf_environment({'perf_particle_single_pass': '1'}),
+                         {'GOW3_PARTICLE_FLIP_GUARD': '1'})
+        self.assertEqual(graphics_options.perf_environment({'perf_particle_single_pass': '1',
+                                                            'perf_particle_flip_guard': '0'}), {})
 
 
 class DeckSwitchItemsTest(unittest.TestCase):
     """The switches one by one: all on Linux, the Linux-only ones never on Windows, unchecked ones left out."""
+    ALL = {key: '1' for key in graphics_options.DECK_SWITCH_KEYS}
 
     def test_linux_sets_all_of_them(self):
-        env, summary = launcher.deck_switch_env({'deck_switches': True}, windows=False)
+        env, summary = graphics_options.deck_environment(self.ALL, windows=False)
         self.assertEqual(env, launcher.DECK_SWITCHES)
-        self.assertTrue(summary.startswith('11 on'))
+        self.assertTrue(summary.startswith('10 on'))
 
     def test_windows_leaves_out_what_does_nothing_there(self):
-        env, summary = launcher.deck_switch_env({'deck_switches': True}, windows=True)
+        env, summary = graphics_options.deck_environment(self.ALL, windows=True)
         for name in ('GOW3_BACKING_COPY', 'GOW3_THREAD_NICE', 'GOW3_ARENA_HOST_VISIBLE'):
             self.assertNotIn(name, env)
         self.assertEqual(len(env), len(launcher.DECK_SWITCHES) - 3)
         self.assertIn('Windows: untested', summary)
 
     def test_unchecked_ones_are_left_out(self):
-        env, summary = launcher.deck_switch_env(
-            {'deck_switches': True, 'deck_switches_off': 'decode_pacing,thread_nice'}, windows=False)
+        env, summary = graphics_options.deck_environment(
+            {**self.ALL, 'deck_decode_pacing': '0', 'deck_thread_nice': '0'}, windows=False)
         for name in ('GOW3_DECODE_PACING', 'GOW3_DECODE_PACING_LEAD', 'GOW3_THREAD_NICE'):
             self.assertNotIn(name, env)
-        self.assertIn('decode_pacing (unchecked)', summary)
+        self.assertTrue(summary.startswith('8 on'))
 
     def test_off_sets_nothing(self):
-        self.assertEqual(launcher.deck_switch_env({'deck_switches': False}, windows=False), ({}, ''))
+        self.assertEqual(graphics_options.deck_environment({}, windows=False), ({}, ''))
 
     def test_items_cover_the_preset_switches(self):
         keys = [key for key, *_rest in launcher.DECK_SWITCH_ITEMS]
         self.assertEqual(len(keys), len(set(keys)))
-        self.assertEqual(len(launcher.DECK_SWITCHES), 12)
+        self.assertEqual(len(launcher.DECK_SWITCHES), 11)
+
+    def test_the_game_menu_has_the_same_switches(self):
+        # gpu/shim/gow3_settings.h DeckSwitches: key, title, first variable and its value, Linux-only or not.
+        import re
+        header = (ROOT / 'gpu' / 'shim' / 'gow3_settings.h').read_text(encoding='utf-8')
+        block = header[header.index('DeckSwitches[] = {'):]
+        block = block[:block.index('};')]
+        rows = re.findall(r'\{"(\w+)",\s*"([^"]*)",\s*"(?:[^"\\]|\\.)*",\s*"(\w+)",\s*"(\w*)",\s*(true|false)\}',
+                          block)
+        want = [(key, title, *next(iter(env.items())), 'true' if why else 'false')
+                for key, title, _hint, env, why in launcher.DECK_SWITCH_ITEMS]
+        self.assertEqual(rows, want)
+
+    def test_old_settings_move_into_the_ini(self):
+        import json
+        folder = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        config, ini = folder / 'settings.json', folder / 'medievil.ini'
+        config.write_text(json.dumps({'deck_switches': True, 'deck_switches_off': 'decode_pacing,particle_flip_guard',
+                                      'mouse': True}), encoding='utf-8')
+        ini.write_text('vsync=0\n', encoding='utf-8')
+        written = launcher.migrate_deck_switches(config, ini)
+        values = graphics_options.read_ini(ini)
+        self.assertEqual(values['deck_decode_pacing'], '0')
+        self.assertEqual(values['deck_early_frame_eop'], '1')
+        self.assertEqual(values['perf_particle_flip_guard'], '0')  # unchecked: an explicit off stays off
+        self.assertEqual(values['vsync'], '0')
+        self.assertEqual(written['deck_thread_nice'], '1')
+        self.assertEqual(json.loads(config.read_text(encoding='utf-8')), {'mouse': True})
+        self.assertEqual(launcher.migrate_deck_switches(config, ini), {})  # once
+        # Off before: nothing written, the defaults apply (the guard on).
+        config.write_text(json.dumps({'deck_switches': False, 'deck_switches_off': ''}), encoding='utf-8')
+        ini.write_text('vsync=1\n', encoding='utf-8')
+        self.assertEqual(launcher.migrate_deck_switches(config, ini), {})
+        self.assertEqual(ini.read_text(encoding='utf-8'), 'vsync=1\n')
+        self.assertEqual(json.loads(config.read_text(encoding='utf-8')), {})
 
 
 class SteamDeckDetectionTest(unittest.TestCase):

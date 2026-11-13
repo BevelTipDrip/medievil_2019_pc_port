@@ -37,6 +37,8 @@ float Clamp(float v, float lo, float hi) {
 /// The source being read (the file, then the environment) set ue4_upscaler: its older ue4_dlss=1
 /// does not override it.
 bool ue4_upscaler_set = false;
+// The output this launch started at (output_resolution as loaded: run.py's boot size).
+std::string startup_output_value;
 
 void Set(Values& v, const std::string& key, const std::string& value) {
     const float f = float(std::atof(value.c_str()));
@@ -45,6 +47,14 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         if (key == PerfKeys[p]) {
             v.perf[p] = value != "0";
             return;
+        }
+    }
+    if (key.starts_with("deck_")) {
+        for (int d = 0; d < DeckSwitchCount; ++d) {
+            if (key.compare(5, std::string::npos, DeckSwitches[d].key) == 0) {
+                v.deck[d] = value == "1";
+                return;
+            }
         }
     }
     const auto index_of = [&](const auto& keys) {
@@ -289,8 +299,9 @@ int UE4MatchedLevel(const Values& v, int picked) {
 
 void UE4ApplyLevel(int level) {
     auto& v = Get();
-    if (level < 0 || level >= int(std::size(UE4QualityKeys))) return;
-    v.ue4_quality = level;
+    if (level < 0 || level > UE4DeckLevel) return;
+    // Deck Optimized keeps ue4_quality low for the game, as the launcher's preset writes it.
+    v.ue4_quality = level == UE4DeckLevel ? int(std::size(UE4QualityKeys)) - 1 : level;
     for (int o = 0; o < UE4LiveCount; ++o) {
         const int choice = UE4LevelChoice(o, level);
         if (v.ue4_live[o] != choice) {
@@ -428,18 +439,34 @@ void Load() {
     if (v.effects_resolution > 0) { // the override pak sets it at boot too (run.py)
         runtime_ue4_request_cvar("r.SeparateTranslucencyScreenPercentage", UE4EffectsKeys[v.effects_resolution]);
     }
-    // A launch's own switches (run.py from medievil.ini, or a test) show as the patches' state.
+    // A launch's own switches (run.py from medievil.ini, or a test) show as the patches' state: the first
+    // variable of each bundle and its off value (graphics_options.PERF_SWITCHES).
     static constexpr std::pair<const char*, const char*> perf_off[PerfCount] = {
         {"GOW3_HZB_REMAP", "0"},     {"GOW3_DECAL_PREPASS", "1"},       {"GOW3_PARTICLE_FIXED_STEP", "1"},
         {"GOW3_STREAM_CLEAN", "0"},  {"GOW3_TEXSET_REGIONS", "0"},      {"GOW3_OPTIMISTIC_CLAMP", "0"},
         {"GOW3_DECOMMIT_KEEP_ACCESS", "0"}, {"GOW3_READBACK_QUEUE", "0"}, {"GOW3_PS4_MEMORY", "1"},
         {"GOW3_SKIP_READ_BARRIERS", "0"}, {"GOW3_LEAN_BINDING", "0"},
-        {"GOW3_RING_REUSE", "0"}};
+        {"GOW3_RING_REUSE", "0"}, {nullptr, nullptr}};
     for (int p = 0; p < PerfCount; ++p) {
+        if (!perf_off[p].first) continue; // switched on by its variable (below)
         if (const char* env = std::getenv(perf_off[p].first); env && env[0]) {
             v.perf[p] = std::strcmp(env, perf_off[p].second) != 0;
         }
         v.startup_perf[p] = v.perf[p];
+    }
+    // The particle flip guard is installed only with its variable (src/probe.c; graphics_options.PERF_ON_SWITCHES):
+    // on when run.py set it, as this launch runs.
+    {
+        const char* env = std::getenv("GOW3_PARTICLE_FLIP_GUARD");
+        v.perf[PerfParticleFlipGuard] = env && env[0] == '1';
+        v.startup_perf[PerfParticleFlipGuard] = v.perf[PerfParticleFlipGuard];
+    }
+    // The Steam Deck switches: what this launch runs (run.py's variables, a test's), else the ini's choice.
+    for (int d = 0; d < DeckSwitchCount; ++d) {
+        if (const char* env = std::getenv(DeckSwitches[d].env); env && env[0]) {
+            v.deck[d] = std::strcmp(env, DeckSwitches[d].value) == 0;
+        }
+        v.startup_deck[d] = v.deck[d];
     }
     // Small buffers from VRAM was tested in MediEvil only: on where run.py turns it on.
     {
@@ -449,10 +476,60 @@ void Load() {
     }
     v.startup_ue4_quality = v.ue4_quality;
     v.startup_output_resolution = v.output_resolution;
+    startup_output_value = OutputValue();
     v.startup_render_scale = v.render_scale;
     v.live_render_scale = v.render_scale; // the override pak's r.ScreenPercentage (run.py)
     v.startup_effects_resolution = v.effects_resolution;
     TakeBaseline();
+}
+
+void OutputSize(const std::string& value, int& width, int& height) {
+    const auto& v = Get();
+    width = 1920;
+    height = 1080;
+    if (value == "display") {
+        if (v.display_width > 0 && v.display_height > 0) {
+            width = v.display_width & ~1;
+            height = v.display_height & ~1;
+        }
+        return;
+    }
+    int w = 0, h = 0;
+    char tail = 0;
+    if (std::sscanf(value.c_str(), "%dx%d%c", &w, &h, &tail) == 2 && w >= 640 && w <= 7680 && h >= 360 && h <= 4320) {
+        width = w & ~1;
+        height = h & ~1;
+    }
+}
+
+std::string OutputValue() {
+    const auto& v = Get();
+    return v.output_resolution >= 0 ? UE4OutputKeys[v.output_resolution] : v.output_resolution_raw;
+}
+
+const char* OutputRestartReason() {
+    const auto& v = Get();
+    const std::string now = OutputValue();
+    if (now == startup_output_value) {
+        return nullptr;
+    }
+    int w = 0, h = 0, start_w = 0, start_h = 0;
+    OutputSize(now, w, h);
+    OutputSize(startup_output_value, start_w, start_h);
+    const char* slot = std::getenv("GOW3_UE4_SETRES_CVAR");
+    if (!slot || !slot[0]) {
+        return "No live size switch in this game build: the new size applies at the next start.";
+    }
+    // Upstream 783b25a: 1800p at a 200% render scale needed 6400x3600 targets and ran out of the PS4's memory.
+    if (v.startup_render_scale > 100 && w * h > start_w * start_h) {
+        return "Started at a render scale above 100%: a larger size applies at the next start (memory).";
+    }
+    // The stock 128 MB framebuffer pool ran out on a live 4K switch (upstream-4k-framebuffer-pool).
+    const char* patches = std::getenv("GOW3_PATCHES");
+    if (w * h > 2560 * 1440 && (!patches || !std::strstr(patches, "Native 4K framebuffer pool"))) {
+        return "Above 1440p needs the 512 MB framebuffer pool patch: the size applies at the next start.";
+    }
+    return nullptr;
 }
 
 int RestartChanges() {
@@ -460,13 +537,17 @@ int RestartChanges() {
     int changes = (v.render_resolution != v.startup_render_resolution) + (v.engine_fps != v.startup_engine_fps) +
                   (v.deferred_readback != v.startup_deferred_readback) +
                   (v.stale_readback != v.startup_stale_readback) +
-                  (v.output_resolution != v.startup_output_resolution) + RenderScaleNeedsRestart();
+                  // The output size switches live (the menu's RequestOutput) except in OutputRestartReason's cases.
+                  (OutputRestartReason() != nullptr) + RenderScaleNeedsRestart();
     // Graphics quality itself needs no restart any more: the settings it set do, if they are not live.
     for (int o = 0; o < UE4LiveCount; ++o) {
         changes += !UE4LiveOptions[o].live && v.ue4_live[o] != v.startup_ue4_live[o];
     }
     for (int p = 0; p < PerfCount; ++p) {
         changes += !PerfLive[p] && v.perf[p] != v.startup_perf[p];
+    }
+    for (int d = 0; d < DeckSwitchCount; ++d) {
+        changes += v.deck[d] != v.startup_deck[d];
     }
     return changes;
 }
@@ -619,6 +700,9 @@ std::map<std::string, std::string> Serialize(const Values& v) {
     Append(out, "live_resolution=%s\n", v.live_resolution < 0 ? "auto" : v.live_resolution ? "1" : "0");
     for (int p = 0; p < PerfCount; ++p) {
         Append(out, "%s=%d\n", PerfKeys[p], int(v.perf[p].load()));
+    }
+    for (int d = 0; d < DeckSwitchCount; ++d) {
+        Append(out, "deck_%s=%d\n", DeckSwitches[d].key, int(v.deck[d].load()));
     }
     Append(out, "ue4_quality=%s\n", v.ue4_quality >= 0 ? UE4QualityKeys[v.ue4_quality] : v.ue4_quality_raw.c_str());
     Append(out, "output_resolution=%s\n",

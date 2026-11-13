@@ -183,8 +183,7 @@ APP_DEFAULTS = {'ui_language': 'en', 'game_dir': os.environ.get('GOW3_GAME_DIR',
                 'vk_validation': False, 'close_on_play': False, 'prep_workers': '', 'stage_b_core': False,
                 'update_check': True, 'game_patches': {}, 'game_patches_seen': {}, 'controls': {}, 'pad_style': 'playstation', 'stick_range': '',
                 'menu_key': 'Insert', 'mouse': False, 'prompts_prefer_mouse': True,
-                'last_pkg': '', 'graphics_preset': '', 'deck_switches': False, 'deck_switches_off': '',
-                'deck_offered': False}
+                'last_pkg': '', 'graphics_preset': '', 'deck_offered': False}
 
 # The game's button prompt pictures (medievil.ini button_prompts, scripts/ue4_glyphs.py): written into
 # the override pak at start; the port's Load list follows. Until chosen, the Controller type.
@@ -327,9 +326,14 @@ PERF_PATCHES = [
      {'GOW3_DECAL_PREPASS': '1'}),
     ('perf_particle_single_pass', 'Single GPU particle pass',
      'Particles are simulated once a frame with the real frame time instead of a second, empty '
-     'fixed-step pass: up to ~190 fewer draws while particles are on screen. Off by default: some '
-     'torches animate very slowly with it.',
+     'fixed-step pass: up to ~190 fewer draws while particles are on screen. Needs Particle flip guard '
+     "(below): without it some torches freeze and an ember stream shows in Dan's crypt. Switches at once in "
+     'the in-game menu.',
      {'GOW3_PARTICLE_FIXED_STEP': '1'}),
+    ('perf_particle_flip_guard', 'Particle flip guard',
+     "One state flip per particle simulation: the single particle pass's frozen torches and crypt floor "
+     'embers do not happen with it. No cost measured (the Steam Deck; the PC by the user).',
+     {}),
     ('perf_small_buffers', 'Small buffers from VRAM',
      'Small vertex and constant buffers the game has not changed are read from video memory instead '
      'of being copied for every draw (~1 GB/s less copying): about 5% in heavy areas.',
@@ -377,6 +381,9 @@ PERF_PATCHES = [
 INI_FLAGS.update(entry[0] for entry in PERF_PATCHES)
 INI_DEFAULTS.update({entry[0]: '0' if entry[0] in graphics_options.PERF_DEFAULT_OFF else '1'
                      for entry in PERF_PATCHES})
+# The Steam Deck switches (graphics_options.DECK_SWITCH_ITEMS): medievil.ini deck_<key>, off by default.
+INI_FLAGS.update(graphics_options.DECK_SWITCH_KEYS)
+INI_DEFAULTS.update({key: '0' for key in graphics_options.DECK_SWITCH_KEYS})
 
 # Presentation (research/docs/plan-stage-b-split.md, T-L2 to T-V120h): how finished frames reach the
 # screen. All off by default (the tested defaults); run.py turns them into environment variables
@@ -400,7 +407,7 @@ VSYNC_CHOICES = [('on', ('On',)), ('off', ('Off',)), ('immediate', ('Off, allow 
 VSYNC_HINT = ('On: no tearing; with G-Sync / FreeSync and a frame rate limit below the refresh it adds no latency. '
               'Off: lower latency, no tearing. On and Off can also be switched live in the game\'s menu. '
               'Off, allow tearing: the lowest latency. Adaptive: on, but a late frame shows at once (may tear). '
-              'These two fix the mode: the in-game switch then has no effect.')
+              'These two fix the mode at the next start: the in-game switch then has no effect.')
 PRESENT_LIMITERS = [('reflex', ('NVIDIA Reflex (recommended)',)), ('precise', ('Precise',)),
                     ('standard', ('Standard',))]
 # The engine frame rate choice also covers "no built-in caps" (present_no_frame_caps).
@@ -578,12 +585,7 @@ def game_environment(s):
         env['GOW3_PREP_WORKERS'] = str(s['prep_workers'])
     if s.get('stage_b_core', False):
         env['GOW3_STAGE_B_CORE'] = '1'
-    # Deck Optimized (DECK_SWITCH_ITEMS): the checked ones that work here; a variable already set wins.
-    deck_env, deck_summary = deck_switch_env(s)
-    for name, value in deck_env.items():
-        env.setdefault(name, value)
-    if deck_summary:
-        env['GOW3_DECK_SWITCHES'] = deck_summary  # logged by run.py
+    # The Steam Deck switches are medievil.ini keys now (deck_*): run.py turns them into variables.
     env['GOW3_PIPELINE_BINARIES'] = '1' if s.get('pipeline_binary_cache', True) else '0'
     env.setdefault('GOW3_PERF_DIAG', '1' if s.get('perf_diag', False) else '0')
     for key, name in (('frame_stats', 'GOW3_FRAME_STATS'), ('gpu_profile', 'GOW3_GPU_PROFILE'),
@@ -735,71 +737,42 @@ DECK_PRESET = {
     'perf_hzb_occlusion': '1', 'perf_no_decal_prepass': '1', 'perf_particle_single_pass': '1',
     'perf_small_buffers': '1', 'perf_texture_memo': '1', 'perf_lockfree_memory': '1', 'perf_cheap_frees': '1',
     'perf_gpu_data_no_waits': '1', 'perf_4k_memory': '0', 'perf_lean_barriers': '1', 'perf_lean_binding': '1',
-    'perf_ring_reuse': '1',
+    'perf_ring_reuse': '1', 'perf_particle_flip_guard': '1',
+    **{key: '1' for key in graphics_options.DECK_SWITCH_KEYS},
     'present_inline': '1', 'present_precise_tick': '0', 'present_frame_trace': '0', 'present_no_frame_caps': '1',
     'present_tick_hz': '900', 'present_mode': 'auto', 'present_limiter': 'standard', 'display_vrr': '0',
     'preshadows': '0', **graphics_options.level_choices(graphics_options.DECK_LEVEL)}
 # medievil.ini keys the launcher writes only when they are set (the in-game menu's own switches).
 INI_OPTIONAL_KEYS = ('preshadows',)
 # The Deck's measured wins that are still opt-in start switches (plan-linux-deck.md): early frame EOP,
-# decode pacing with a 2-frame lead, U2 off (no gain on the Deck, its tracking costs stage B), stage A's
-# hybrid drain wait (-1/3 of its CPU), the wide texture-set memo (T2), the region cache index (R1),
-# stage A's per-packet cuts A1 / A2 / A3, the particle flip guard (the single pass's lost updates: the
-# frozen torch, the crypt floor) and nice -10 for stage B and the vblank thread (better lows at a fixed
-# GPU clock). Measured on the Deck only, so they come with the preset (launcher setting deck_switches),
-# not as Linux defaults; an environment variable already set wins, and run.py applies extra-env.txt last.
-# One by one (Advanced: the switches under "Steam Deck performance switches"): (key, title, hint, variables,
-# why it does nothing on Windows or None). The Windows reasons are the code's: A1 and thread nice are Linux
-# code, and U2 is off on Windows anyway (buffer_cache.cpp HostVisibleArenaType), so those are greyed out
-# and never set there; the others run on both and are untested on Windows (research/patches/deck).
-DECK_SWITCH_ITEMS = [
-    ('early_frame_eop', 'Early frame end signals',
-     "The frame's end signal at decode instead of after recording (stage A runs ahead).",
-     {'GOW3_EARLY_FRAME_EOP': '1'}, None),
-    ('decode_pacing', 'Decode pacing (2 frames ahead)', 'Stage A decodes up to 2 frames ahead of the GPU.',
-     {'GOW3_DECODE_PACING': '1', 'GOW3_DECODE_PACING_LEAD': '2'}, None),
-    ('drain_hybrid', "Stage A's hybrid wait", 'Stage A spins briefly, then sleeps, while it waits for stage B.',
-     {'GOW3_DRAIN_HYBRID': '1'}, None),
-    ('texset_wide', 'Wide texture-set memo (T2)', 'Texture sets of draws without a prepared draw are memoized too.',
-     {'GOW3_TEXSET_WIDE': '1'}, None),
-    ('region_index', 'Region cache index (R1)', 'Guest memory lookups answered from an index by page.',
-     {'GOW3_REGION_INDEX': '1'}, None),
-    ('pending_filter', 'Pending-write filter (A2)', "Stage A's pending-write checks answered from a page filter.",
-     {'GOW3_PENDING_FILTER': '1'}, None),
-    ('reg_hash_paired', 'Paired register checksum (A3)', 'The register checksum takes two words per step.',
-     {'GOW3_REG_HASH_PAIRED': '1'}, None),
-    ('particle_flip_guard', 'Particle flip guard', "One state flip per particle simulation (the single pass's "
-     'frozen torches).', {'GOW3_PARTICLE_FLIP_GUARD': '1'}, None),
-    ('backing_copy', 'Backing copies without the lock (A1)', 'GPU-side guest copies read the backing memory '
-     'without the region table lock.', {'GOW3_BACKING_COPY': '1'}, 'Linux only'),
-    ('thread_nice', 'Thread priorities', 'Stage B and the vblank thread at a higher priority (nice -10).',
-     {'GOW3_THREAD_NICE': '1'}, 'Linux only'),
-    ('arena_writes_off', 'Direct arena writes off (U2)', 'Buffer data through staging copies instead of direct '
-     'writes (no gain on the Deck; their tracking costs stage B).', {'GOW3_ARENA_HOST_VISIBLE': '0'},
-     'already off on Windows'),
-]
+# decode pacing with a 2-frame lead, U2 off, stage A's hybrid drain wait, the wide texture-set memo (T2), the
+# region cache index (R1), stage A's per-packet cuts A1 / A2 / A3 and nice -10 for stage B and the vblank thread.
+# Measured on the Deck only, so they come with the preset, not as Linux defaults. medievil.ini deck_<key> since
+# 2026-11-13 (graphics_options.DECK_SWITCH_ITEMS; run.py sets the variables, a variable already set wins), so the
+# in-game menu (Performance > Deck tuned) and "Apply and restart" change them too. The particle flip guard was one
+# of them until then: it is the performance patch perf_particle_flip_guard now, on by default.
+DECK_SWITCH_ITEMS = graphics_options.DECK_SWITCH_ITEMS
 DECK_SWITCHES = {name: value for *_rest, env, _why in DECK_SWITCH_ITEMS for name, value in env.items()}
 
 
-def deck_switch_env(s, windows=WINDOWS):
-    """The Deck switches to set at start: with deck_switches on, every item not listed in deck_switches_off
-    (the ones unchecked) and not one that does nothing on this platform. Also the summary run.py logs."""
-    if not s.get('deck_switches', False):
-        return {}, ''
-    off = {key for key in str(s.get('deck_switches_off', '')).split(',') if key}
-    env, on, skipped = {}, [], []
-    for key, _title, _hint, variables, windows_reason in DECK_SWITCH_ITEMS:
-        if windows and windows_reason:
-            skipped.append(f'{key} ({windows_reason})')
-        elif key in off:
-            skipped.append(f'{key} (unchecked)')
-        else:
-            env.update(variables)
-            on.append(key)
-    summary = f'{len(on)} on: {", ".join(on) or "none"}' + (f'; off: {", ".join(skipped)}' if skipped else '')
-    if windows:
-        summary += '; Windows: untested'
-    return env, summary
+def migrate_deck_switches(config=None, ini=None):
+    """settings.json before 2026-11-13 kept the Deck switches as deck_switches (all on) and deck_switches_off
+    (the unchecked ones): written into medievil.ini once (deck_<key>, and perf_particle_flip_guard for the guard,
+    which was one of them), then dropped from settings.json. Nothing is written when they were off: the keys'
+    defaults (off, the guard on) apply. Returns the medievil.ini keys written."""
+    config = Path(config or CONFIG_FILE)
+    app = load_json(config, None)
+    if not isinstance(app, dict) or ('deck_switches' not in app and 'deck_switches_off' not in app):
+        return {}
+    on = bool(app.pop('deck_switches', False))
+    off = {key for key in str(app.pop('deck_switches_off', '')).split(',') if key}
+    updates = {}
+    if on:
+        updates = {'deck_' + key: '0' if key in off else '1' for key, *_rest in DECK_SWITCH_ITEMS}
+        updates['perf_particle_flip_guard'] = '0' if 'particle_flip_guard' in off else '1'
+        graphics_options.write_keys(ini or ini_path(), updates)
+    config.write_text(json.dumps(app, indent=2, ensure_ascii=False), encoding='utf-8')
+    return updates
 DECK_QUALITY = 'deck'
 QUALITY_PRESETS = [*QUALITY_CHOICES, (DECK_QUALITY, ('Deck Optimized',))]
 DECK_HINT = ('Steam Deck: in the Quick Access Menu (Performance) set a manual GPU clock of about 1,200 MHz and '
@@ -1102,7 +1075,8 @@ class Launcher:
                     else:
                         if preset.get() == DECK_QUALITY:
                             preset.set('')
-                            self.var('deck_switches', 'app').set(False)
+                            for key in graphics_options.DECK_SWITCH_KEYS:
+                                self.var(key, 'ini').set(False)
                         quality.set(value)
                         for key, token in graphics_options.level_choices(value).items():
                             settings[key].set(token)
@@ -1117,8 +1091,8 @@ class Launcher:
         return self.vars['quality_choice']
 
     def apply_deck_preset(self):
-        """Deck Optimized: DECK_PRESET into the settings (saved to medievil.ini like any change) and the
-        Deck switches on; the VSync and engine frame rate lists follow their keys."""
+        """Deck Optimized: DECK_PRESET into the settings (saved to medievil.ini like any change, the Deck
+        switches included); the VSync and engine frame rate lists follow their keys."""
         for key, value in DECK_PRESET.items():
             if key not in INI_DEFAULTS:  # the in-game menu's own keys (INI_OPTIONAL_KEYS)
                 self.ini[key] = value
@@ -1132,7 +1106,6 @@ class Launcher:
         self.engine_cap_var().set('unlimited' if DECK_PRESET['present_no_frame_caps'] == '1'
                                   else DECK_PRESET['engine_fps'])
         self.var('graphics_preset', 'app').set(DECK_QUALITY)
-        self.var('deck_switches', 'app').set(True)
 
     def offer_deck_preset(self):
         """On a Steam Deck, once (deck_offered, saved with the other settings): the first run selects Deck
@@ -1296,45 +1269,55 @@ class Launcher:
         return cell
 
     def deck_switch_rows(self, parent):
-        """Steam Deck performance switches: the checkbox turns them all on (every one checked again); the
-        arrow shows them one by one (DECK_SWITCH_ITEMS, unchecked ones in deck_switches_off). On Windows
-        the ones that do nothing there are unchecked and greyed out, with the reason."""
-        ttk, top, off = self.ttk, self.var('deck_switches', 'app'), self.var('deck_switches_off', 'app')
+        """Steam Deck performance switches (medievil.ini deck_*, DECK_SWITCH_ITEMS; the in-game menu's Performance
+        > Deck tuned shows the same keys): the checkbox is checked while all of them are on and turns them all on
+        or off; the arrow shows them one by one. On Windows the ones that do nothing there are greyed out, with
+        the reason (run.py never sets them there)."""
+        ttk = self.ttk
         holder = ttk.Frame(parent)
+        items = {key: self.var('deck_' + key, 'ini') for key, *_rest in DECK_SWITCH_ITEMS}
+        live = [key for key, *_rest, why in DECK_SWITCH_ITEMS if not (WINDOWS and why)]
+        top = self.tk.BooleanVar(value=all(items[k].get() for k in live))
         ttk.Checkbutton(holder, variable=top).pack(side='left')
         arrow = ttk.Button(holder, text=_('Show the switches ▸'))
         arrow.pack(side='left', padx=(12, 0))
         self.row(parent, _('Steam Deck performance switches'), holder,
                  _('Measured on the Steam Deck, applied at start; on with Deck Optimized. On Windows untested, '
-                   'and the Linux-only ones are left out.'), restart=True)
+                   'and the Linux-only ones are left out. The in-game menu (Performance) switches them too.'),
+                 restart=True)
         slot = ttk.Frame(parent)  # always in the grid, empty while the list is hidden
         slot.grid(row=self.next_row(parent), column=0, columnspan=2, sticky='w', padx=(24, 0))
         panel = ttk.Frame(slot)
-        boxes = {}
+        busy = [False]
         for i, (key, title, hint, _env, windows_reason) in enumerate(DECK_SWITCH_ITEMS):
             dead = WINDOWS and windows_reason
-            item = self.tk.BooleanVar(value=not dead and key not in off.get().split(','))
             text = _(title) + (' — ' + _('does nothing on Windows ({})').format(_(windows_reason)) if dead else '')
-            box = ttk.Checkbutton(panel, text=text, variable=item)
+            box = ttk.Checkbutton(panel, text=text, variable=items[key])
             box.grid(row=2 * i, column=0, sticky='w', pady=(4, 0))
+            if dead:
+                box.state(['disabled'])
             ttk.Label(panel, text=_(hint), style='Muted.TLabel', wraplength=self.px(600), justify='left').grid(
                 row=2 * i + 1, column=0, sticky='w', padx=(22, 0))
-            boxes[key] = (item, box, dead)
 
-        def write_off(*_args):
-            off.set(','.join(k for k, (v, _b, dead) in boxes.items() if not dead and not v.get()))
+        def follow_items(*_args):  # one switch changed: the checkbox shows whether all are on
+            if not busy[0]:
+                busy[0] = True
+                try:
+                    top.set(all(items[k].get() for k in live))
+                finally:
+                    busy[0] = False
 
-        def follow_top(*_args):
-            if top.get():  # on: all of them again
-                for v, _b, dead in boxes.values():
-                    v.set(not dead)
-            for v, b, dead in boxes.values():
-                b.state(['disabled'] if dead or not top.get() else ['!disabled'])
-        for v, _b, _dead in boxes.values():
-            v.trace_add('write', write_off)
+        def follow_top(*_args):  # the checkbox: every switch that works here on, or all off
+            if not busy[0]:
+                busy[0] = True
+                try:
+                    for key in live:
+                        items[key].set(top.get())
+                finally:
+                    busy[0] = False
+        for var in items.values():
+            var.trace_add('write', follow_items)
         top.trace_add('write', follow_top)
-        for v, b, dead in boxes.values():
-            b.state(['disabled'] if dead or not top.get() else ['!disabled'])
 
         def show_or_hide():
             if panel.winfo_ismapped():
@@ -1652,8 +1635,7 @@ class Launcher:
         self.section(f, _('Window', 'Окно'), top=4)
         self.row(f, _('Display mode'), self.choice(f, 'display_mode', 'ini', DISPLAY_MODES),
                  _('Borderless covers the screen without changing the display mode.'))
-        self.row(f, _('VSync'), self.choice(f, self.vsync_choice_var(), None, VSYNC_CHOICES), _(VSYNC_HINT),
-                 restart=True)
+        self.row(f, _('VSync'), self.choice(f, self.vsync_choice_var(), None, VSYNC_CHOICES), _(VSYNC_HINT))
         self.check(f, 'hdr', 'app', _('Allow HDR output', 'Разрешить HDR'),
                    _('When HDR is on in Windows and the display supports it.',
                      'Если HDR включён в Windows и монитор его поддерживает.'))
@@ -1690,8 +1672,8 @@ class Launcher:
             self.check(f, key, 'ini', _(title), _(hint), restart=True)
         self.section(f, _('Scaling and sharpening'))
         self.check(f, 'fsr1', 'ini', _('Upscale with FSR 1'),
-                   _('Enlarges a smaller game image to the window. With Render resolution 720p (Performance) '
-                     'it raises the FPS; at the size of the window it does nothing.'))
+                   _('Enlarges a game image smaller than the window (Output resolution, Performance) with AMD FSR 1; '
+                     'at the size of the window it does nothing.'))
         self.check(f, 'rcas', 'ini', _('Final image sharpening (RCAS)'),
                    _('Sharpens the final image with the game\'s TAA or NVIDIA DLSS. Off while AMD FSR runs: FSR has '
                      'its own sharpening (AMD FSR sharpening).'))
@@ -1740,8 +1722,9 @@ class Launcher:
             self.row(f, _(title), self.choice(f, key, 'ini', [(value, (label,)) for value, label in choices]),
                      _(hint), restart=True)
         self.section(f, _('Performance patches'))
-        self.note(f, _('On by default except the single particle pass. Switch one off to compare, or if '
-                       'something looks wrong; applied at the next start.'), top=2)
+        self.note(f, _('All on by default. Switch one off to compare, or if '
+                       'something looks wrong; applied at the next start (the in-game menu switches several of '
+                       'them at once).'), top=2)
         for key, title, hint, _off in PERF_PATCHES:
             self.check(f, key, 'ini', _(title), _(hint), restart=True)
         self.section(f, _('Resolution and quality'))
@@ -3055,6 +3038,10 @@ def main():
     args = sys.argv[1:]
     if args and args[0] in ('--run', '--script'):
         sys.exit(run_role(args))
+    try:  # settings.json's Deck switches (before 2026-11-13) into medievil.ini, once
+        migrate_deck_switches()
+    except OSError:
+        pass
     settings = {**APP_DEFAULTS, **load_json(CONFIG_FILE, {})}
     LANG = settings.get('ui_language') or windows_language()
     if WINDOWS and args[:1] == ['--install-update'] and len(args) == 3:

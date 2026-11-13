@@ -128,8 +128,6 @@ def main():
         env.pop(key, None)
     data = Path(env.get('GOW3_DATA_DIR', PORT))
     load_extra_env(env, data / 'extra-env.txt')
-    if env.get('GOW3_DECK_SWITCHES'):  # the launcher's Steam Deck performance switches (deck_switch_env)
-        print(f"Deck switches: {env['GOW3_DECK_SWITCHES']}", flush=True)
     out = data / 'out'
     out.mkdir(parents=True, exist_ok=True)
     if not (data / 'medievil.ini').exists() and (data / 'gow3.ini').exists():
@@ -150,6 +148,14 @@ def main():
     ini_values = graphics_options.read_ini(env['GOW3_CONFIG'])
     for key, value in graphics_options.perf_environment(ini_values).items():
         env.setdefault(key, value)
+    # The Steam Deck switches (medievil.ini deck_*: launcher > Performance, in-game menu > Performance > Deck
+    # tuned); a variable already set (a test, extra-env.txt) wins. Derived, so "Apply and restart" takes the
+    # menu's new choice.
+    deck_env, deck_summary = graphics_options.deck_environment(ini_values)
+    for key, value in deck_env.items():
+        env.setdefault(key, value)
+    if deck_summary:
+        print(f'Deck switches: {deck_summary}', flush=True)
     # Presentation settings (launcher > Performance > Presentation); derived, so an in-game
     # restart takes the new values.
     trace = PORT / 'user' / 'logs' / 'flip-trace.csv'

@@ -190,6 +190,81 @@ int main() {
             v.ue4_live[o] = S::UE4LevelChoice(o, S::UE4DeckLevel);
         }
         assert(S::UE4MatchedLevel(v, 4) == S::UE4DeckLevel); // the launcher's Deck Optimized
+        S::UE4ApplyLevel(1);
+        S::UE4ApplyLevel(S::UE4DeckLevel); // picked in the menu: its settings, ue4_quality low as the launcher's
+        assert(v.ue4_quality == 4 && S::UE4MatchedLevel(v, v.ue4_quality) == S::UE4DeckLevel);
+        std::remove(path);
+    }
+
+    // The Steam Deck switches (medievil.ini deck_*) and the particle flip guard (a performance patch since
+    // 2026-11-13): the launch's variables show what runs; a change is a restart change and is saved.
+    {
+        namespace S = Gow3Settings;
+        {
+            std::ofstream out(path);
+            out << "deck_decode_pacing=1\ndeck_thread_nice=0\nperf_particle_flip_guard=1\n";
+        }
+        _putenv_s("GOW3_EARLY_FRAME_EOP", "1");   // run.py's (or a test's) variable wins over the ini
+        _putenv_s("GOW3_DECODE_PACING", "");
+        _putenv_s("GOW3_PARTICLE_FLIP_GUARD", "1");
+        S::Load();
+        assert(v.deck[0] && v.deck[1] && !v.deck[8] && v.perf[S::PerfParticleFlipGuard]);
+        assert(S::RestartChanges() == 0);
+        v.deck[8] = true;
+        assert(S::RestartChanges() == 1);
+        v.perf[S::PerfParticleFlipGuard] = false; // not live: another restart change
+        assert(S::RestartChanges() == 2);
+        S::Save();
+        const std::string deck = Read(path);
+        assert(deck.find("deck_thread_nice=1\n") != std::string::npos);
+        assert(deck.find("perf_particle_flip_guard=0\n") != std::string::npos);
+        assert(deck.find("deck_early_frame_eop") == std::string::npos); // unchanged in the menu: not written
+        _putenv_s("GOW3_EARLY_FRAME_EOP", "");
+        _putenv_s("GOW3_PARTICLE_FLIP_GUARD", "");
+        S::Load();
+        assert(!v.perf[S::PerfParticleFlipGuard]); // not set for this launch: not running
+        std::remove(path);
+    }
+
+    // The output size switches live (the menu's RequestOutput) except where a live switch ran out of memory.
+    {
+        namespace S = Gow3Settings;
+        int w = 0, h = 0;
+        S::OutputSize("2560x1440", w, h);
+        assert(w == 2560 && h == 1440);
+        S::OutputSize("bogus", w, h);
+        assert(w == 1920 && h == 1080);
+        v.display_width = 3841;
+        v.display_height = 2160;
+        S::OutputSize("display", w, h);
+        assert(w == 3840 && h == 2160);
+        {
+            std::ofstream out(path);
+            out << "output_resolution=1920x1080\nrender_scale=100\n";
+        }
+        _putenv_s("GOW3_UE4_SETRES_CVAR", "0x5c28328");
+        _putenv_s("GOW3_PATCHES", "Native 4K framebuffer pool (512 MB);GPU particle bounds");
+        S::Load();
+        assert(!S::OutputRestartReason() && S::RestartChanges() == 0);
+        v.output_resolution = 1; // 4K: live
+        assert(!S::OutputRestartReason() && S::RestartChanges() == 0 && S::OutputValue() == "3840x2160");
+        _putenv_s("GOW3_PATCHES", "GPU particle bounds"); // the stock 128 MB pool: 4K at the next start
+        assert(S::OutputRestartReason() && S::RestartChanges() == 1);
+        v.output_resolution = 3; // 1440p fits the stock pool
+        assert(!S::OutputRestartReason());
+        _putenv_s("GOW3_PATCHES", "Native 4K framebuffer pool (512 MB)");
+        {
+            std::ofstream out(path);
+            out << "output_resolution=1920x1080\nrender_scale=200\n";
+        }
+        S::Load(); // started above 100%: larger sizes at the next start, smaller ones live
+        v.output_resolution = 2;
+        assert(S::OutputRestartReason() && S::RestartChanges() == 1);
+        v.output_resolution = 5;
+        assert(!S::OutputRestartReason() && S::RestartChanges() == 0);
+        _putenv_s("GOW3_UE4_SETRES_CVAR", ""); // no r.SetRes in this build: every change at the next start
+        assert(S::OutputRestartReason());
+        _putenv_s("GOW3_PATCHES", "");
         std::remove(path);
     }
     std::puts("PASS: graphics settings");
