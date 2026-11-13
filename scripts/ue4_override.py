@@ -100,6 +100,14 @@ def read_index(path):
     return entries
 
 
+def pak_names(game):
+    """Every file name in the game's own paks."""
+    names = []
+    for pak in sorted(paks_dir(game).glob('pakchunk*-ps4.pak')):
+        names += list(read_index(pak))
+    return names
+
+
 def read_file(game, name):
     """A file of the game's own paks (stored or zlib-compressed)."""
     for pak in sorted(paks_dir(game).glob('pakchunk*-ps4.pak')):
@@ -461,12 +469,13 @@ def preset_cvars(game, quality):
 
 def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_menu=False,
           infinite_ammo=False, hzb=False, effects='75', aa='taa', voice='', graphics=None, glyphs='',
-          controls=('', '')):
+          controls=('', ''), pc_settings=False):
     """Writes or removes the override pak. Returns a short description of the active state.
     `glyphs`: the button prompt style (medievil.ini button_prompts, ue4_glyphs.STYLES); `controls`: the
     launcher's (GOW3_KEY_MAP, GOW3_PAD_MAP), so the prompts show the mapped key or pad button.
     `graphics`: the graphics settings' console variables (graphics_options.graphics_cvars, run.py), which
-    replace the quality preset's; a diagnostic preset (diag_*) still adds its own on top."""
+    replace the quality preset's; a diagnostic preset (diag_*) still adds its own on top.
+    `pc_settings`: the pause menu's PC Settings row (medievil.ini pc_settings_entry, ue4_pc_settings.py)."""
     pak = paks_dir(game) / PAK_NAME
     # Earlier builds wrote the `_P` spelling: on Linux it stayed behind, unread.
     (paks_dir(game) / OLD_PAK_NAME).unlink(missing_ok=True)
@@ -538,7 +547,8 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
     import ue4_glyphs
     if glyphs not in ue4_glyphs.STYLES or glyphs == 'playstation':
         glyphs = ''
-    if not values and not engine and not debug_menu and not infinite_ammo and not voice and not glyphs:
+    if (not values and not engine and not debug_menu and not infinite_ammo and not voice and not glyphs
+            and not pc_settings):
         pak.unlink(missing_ok=True)
         return '1920x1080 output, render scale 100%, console quality, 60 FPS'
     files = {CONFIG: set_values(read_file(game, CONFIG), values, engine)}
@@ -572,6 +582,15 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
         except (ValueError, FileNotFoundError) as error:
             print(f'Button prompts: not available for this game build ({error})', flush=True)
             glyphs = ''
+    # PC Settings in the pause menu: its hidden Button_Controls, relabelled, opens the port's menu
+    # (research/docs/study-pc-settings-entry.md; the runtime's src/pc_settings_hook.h).
+    if pc_settings:
+        import ue4_pc_settings
+        try:
+            files.update(ue4_pc_settings.files(lambda name: read_file(game, name), pak_names(game)))
+        except (ValueError, FileNotFoundError) as error:
+            print(f'PC Settings in the pause menu: not available for this game build ({error})', flush=True)
+            pc_settings = False
     if fps > 60:
         instance = files.get(GAME_INSTANCE) or read_file(game, GAME_INSTANCE)
         if any(command in instance for command in MAX_FPS_COMMANDS):
@@ -583,6 +602,7 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
             f'{f", anti-aliasing {aa}" if aa_quality is not None else ""}'
             f'{", unlimited ammo" if infinite_ammo else ""}{f", voices {voice}" if voice else ""}'
             f'{f", button prompts {glyphs}" if glyphs else ""}'
+            f'{", PC Settings in the pause menu" if pc_settings else ""}'
             f'{"; extra cvars " + ", ".join(f"{k}={v}" for k, v in extra.items()) if extra else ""}')
 
 

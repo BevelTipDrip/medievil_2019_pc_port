@@ -159,7 +159,7 @@ def windows_language():
 # launcher's own settings.json (passed to run.py as environment variables).
 
 INI_FLAGS = {'cheat_menu', 'cheat_infinite_ammo', 'cheat_double_jumps', 'cheat_very_hard', 'show_fps', 'vsync', 'async_shaders', 'deferred_readback',
-             'stale_readback', 'fsr1', 'rcas'}
+             'stale_readback', 'fsr1', 'rcas', 'pc_settings_entry'}
 # The graphics keys are also in the in-game menu (Insert / R3+L2); run.py reads the startup ones.
 # The God of War III port's temporal upscaler keys (upscaler, preset, output_res, sharpen, ...)
 # are not set here: run.py turns that upscaler off for MediEvil (its page was removed).
@@ -170,7 +170,7 @@ INI_DEFAULTS = {'show_fps': '1', 'display_mode': 'windowed', 'vsync': '1', 'fps_
                 'ue4_upscaler': 'taa', 'fsr_sharpness': '25',
                 'effects_resolution': '75',
                 'cheat_very_hard': '0', 'cheat_double_jumps': '0', 'cheat_menu': '0', 'cheat_infinite_ammo': '0',
-                'ue4_aa': 'taa', 'ue4_voice': '', 'button_prompts': 'playstation'}
+                'ue4_aa': 'taa', 'ue4_voice': '', 'button_prompts': 'playstation', 'pc_settings_entry': '1'}
 DISPLAY_MODES = [('windowed', ('Windowed',)), ('borderless', ('Borderless',)), ('fullscreen', ('Fullscreen',))]
 FPS_LIMITS = [('-2', ('Auto: refresh (VRR: below it, Reflex rule)',)), ('-3', ('Auto: half refresh (VRR: one below)',)),
               ('30', ('30',)), ('60', ('60',)), ('119', ('119 (VRR, 240 Hz)',)), ('120', ('120',)),
@@ -2054,6 +2054,10 @@ class Launcher:
         self.row(f, _('Menu key'), self.key_capture(f, self.var('menu_key', 'app'), menu=True),
                  _('The keyboard key that opens the port\'s menu in the game (R3+L2 on the gamepad). It cannot be '
                    'a game button\'s key too. Applied when the game starts.'))
+        self.check(f, 'pc_settings_entry', 'ini', _('PC Settings in the pause menu'),
+                   _('A "PC Settings" row in the game\'s pause menu, after Options, that opens the port\'s menu. '
+                     'It is the game\'s hidden "Switch to Classic Controls" button; Options > Button Layout still '
+                     'switches the controls. Applied when the game starts.'))
         self.section(f, _('Mouse'))
         mouse_box = self.check(f, 'mouse', 'app', _('Mouse look and buttons'),
                                _('Windows. The game takes the mouse while its window has focus (borderless and '
