@@ -426,9 +426,55 @@ def startup_options(ini):
     return options
 
 
+# One-time steps for existing medievil.ini files (settings_version; research/docs/plan-settings-menu.md section 10).
+# The launcher writes every key it knows, its default included, so a patch whose default later changed from off to
+# on stays off in an older install without the user ever choosing that. Each step sets such keys once; the version
+# then records it, so a later deliberate off stays. Only verified fixes whose released default was off are listed;
+# patches on by default all along are never forced (an off there is the user's choice).
+SETTINGS_VERSION = 1
+SETTINGS_STEPS = {
+    # 2026-11-13: the single particle pass (off in v2.0.0-v2.3.0, on with the guard: the user's decision) and the
+    # particle flip guard (a launcher Deck switch until then, an unchecked one migrated as an explicit 0).
+    1: {'perf_particle_single_pass': '1', 'perf_particle_flip_guard': '1'},
+}
+
+
+def settings_migration(ini):
+    """The keys the one-time steps after the ini's settings_version set (settings_version included); {} when it
+    is current."""
+    try:
+        version = int(ini.get('settings_version', '0'))
+    except ValueError:
+        version = 0
+    if version >= SETTINGS_VERSION:
+        return {}
+    updates = {}
+    for step in range(max(version, 0) + 1, SETTINGS_VERSION + 1):
+        updates.update(SETTINGS_STEPS[step])
+    return {**updates, 'settings_version': str(SETTINGS_VERSION)}
+
+
+def migrate_settings(config, create=False):
+    """Applies the one-time steps to medievil.ini; returns the keys written. Without a file: nothing, or with
+    `create` a file holding only the current settings_version (a new install starts with every default, and the
+    game's menu may write an off later that a step must not undo)."""
+    path = Path(config)
+    if not path.exists():
+        if create:
+            write_keys(path, {'settings_version': str(SETTINGS_VERSION)})
+        return {}
+    updates = settings_migration(read_ini(path))
+    if updates:
+        write_keys(path, updates)
+    return updates
+
+
 def prepare(config, state_path):
     """(options, reverted): the startup options of this launch, restoring the last confirmed
     ones when the previous launch after a restart never confirmed its own."""
+    if migrated := migrate_settings(config, create=True):
+        print('Settings: one-time update to settings_version ' + migrated['settings_version'] + ': ' +
+              ', '.join(f'{k}={v}' for k, v in migrated.items() if k != 'settings_version'), flush=True)
     ini = read_ini(config)
     if migrated := migrate_resolution(ini):
         write_keys(config, migrated)

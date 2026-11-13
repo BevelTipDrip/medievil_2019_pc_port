@@ -94,6 +94,8 @@ class DeckPresetTest(unittest.TestCase):
         for name in launcher.DECK_SWITCHES:
             self.assertNotIn(name, plain)
         self.assertNotIn('deck_switches', launcher.APP_DEFAULTS)
+        # A new ini starts at the current settings_version (its one-time steps are for older files).
+        self.assertEqual(launcher.INI_DEFAULTS['settings_version'], str(graphics_options.SETTINGS_VERSION))
 
     def test_flip_guard_is_a_performance_patch_on_by_default(self):
         keys = [key for key, *_rest in launcher.PERF_PATCHES]

@@ -162,5 +162,59 @@ class GraphicsOptionsTest(unittest.TestCase):
         self.assertTrue(g.no_frame_caps(ini))
 
 
+
+class SettingsVersionTest(unittest.TestCase):
+    """One-time steps for existing medievil.ini files (settings_version, plan-settings-menu.md section 10)."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.ini = Path(self.temp.name) / 'medievil.ini'
+        self.state = Path(self.temp.name) / 'state.json'
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def test_an_old_ini_gets_the_new_defaults_once(self):
+        # The launcher wrote its old default (off) into the file; the user never chose it.
+        self.ini.write_text('# comment\nperf_particle_single_pass=0\nperf_hzb_occlusion=0\nvsync=0\n', encoding='utf-8')
+        written = g.migrate_settings(self.ini)
+        self.assertEqual(written, {'perf_particle_single_pass': '1', 'perf_particle_flip_guard': '1',
+                                   'settings_version': str(g.SETTINGS_VERSION)})
+        ini = g.read_ini(self.ini)
+        self.assertEqual((ini['perf_particle_single_pass'], ini['perf_particle_flip_guard']), ('1', '1'))
+        self.assertEqual(ini['perf_hzb_occlusion'], '0')  # on by default all along: an off there is the user's
+        self.assertEqual(ini['vsync'], '0')
+        self.assertTrue(self.ini.read_text(encoding='utf-8').startswith('# comment\n'))
+        # Turned off afterwards (in the game or the launcher): it stays off.
+        g.write_keys(self.ini, {'perf_particle_single_pass': '0'})
+        self.assertEqual(g.migrate_settings(self.ini), {})
+        g.prepare(self.ini, self.state)
+        self.assertEqual(g.read_ini(self.ini)['perf_particle_single_pass'], '0')
+
+    def test_run_py_applies_it_and_a_new_install_starts_current(self):
+        self.ini.write_text('perf_particle_flip_guard=0\n', encoding='utf-8')
+        g.prepare(self.ini, self.state)
+        self.assertEqual(g.read_ini(self.ini)['perf_particle_flip_guard'], '1')
+        self.ini.unlink()
+        self.assertEqual(g.migrate_settings(self.ini), {})  # the launcher: no file, nothing written
+        self.assertFalse(self.ini.exists())
+        g.prepare(self.ini, self.state)  # run.py: a new file at the current version (and the graphics settings)
+        self.assertEqual(g.read_ini(self.ini)['settings_version'], str(g.SETTINGS_VERSION))
+        self.assertNotIn('perf_particle_single_pass', g.read_ini(self.ini))  # defaults apply, nothing forced
+        g.write_keys(self.ini, {'perf_particle_single_pass': '0'})  # the game's menu, later
+        g.prepare(self.ini, self.state)
+        self.assertEqual(g.read_ini(self.ini)['perf_particle_single_pass'], '0')
+
+    def test_versions_and_bad_values(self):
+        self.assertEqual(g.settings_migration({'settings_version': str(g.SETTINGS_VERSION)}), {})
+        self.assertEqual(g.settings_migration({'settings_version': 'x'})['settings_version'], str(g.SETTINGS_VERSION))
+        self.assertEqual(sorted(g.SETTINGS_STEPS), list(range(1, g.SETTINGS_VERSION + 1)))
+        for step in g.SETTINGS_STEPS.values():  # only patches that are on by default now
+            for key, value in step.items():
+                self.assertIn(key, g.PERF_SWITCHES)
+                self.assertNotIn(key, g.PERF_DEFAULT_OFF)
+                self.assertEqual(value, '1')
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -384,6 +384,8 @@ INI_DEFAULTS.update({entry[0]: '0' if entry[0] in graphics_options.PERF_DEFAULT_
 # The Steam Deck switches (graphics_options.DECK_SWITCH_ITEMS): medievil.ini deck_<key>, off by default.
 INI_FLAGS.update(graphics_options.DECK_SWITCH_KEYS)
 INI_DEFAULTS.update({key: '0' for key in graphics_options.DECK_SWITCH_KEYS})
+# A new ini starts at the current settings_version: its one-time steps are for older files (migrate_settings).
+INI_DEFAULTS['settings_version'] = str(graphics_options.SETTINGS_VERSION)
 
 # Presentation (research/docs/plan-stage-b-split.md, T-L2 to T-V120h): how finished frames reach the
 # screen. All off by default (the tested defaults); run.py turns them into environment variables
@@ -3038,8 +3040,9 @@ def main():
     args = sys.argv[1:]
     if args and args[0] in ('--run', '--script'):
         sys.exit(run_role(args))
-    try:  # settings.json's Deck switches (before 2026-11-13) into medievil.ini, once
-        migrate_deck_switches()
+    try:  # settings.json's Deck switches (before 2026-11-13) into medievil.ini, once; then the ini's one-time
+        migrate_deck_switches()  # steps (settings_version), before anything reads or writes the ini
+        graphics_options.migrate_settings(ini_path())
     except OSError:
         pass
     settings = {**APP_DEFAULTS, **load_json(CONFIG_FILE, {})}
