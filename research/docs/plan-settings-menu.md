@@ -199,3 +199,17 @@ the navigation, plain look), `b914242` (the game's look, the style loaded at sta
 (31 skipped), pad-map-test PASS (built by hand: its CMake target lacks winmm, found). Offline: every character
 of the menu's texts is in the game's text font; the tab strip and prompt bar fit the frame. A window under 360 px
 high keeps the plain look. Nothing launched: T-SM1-T-SM8 are next, with the user's go.
+
+## 8. T-SM1-T-SM3 (2026-11-12, `409a71d`, Windows, 4K fullscreen, keyboard prompts with mouse binds)
+
+The user: "The in-game menu worked great." Screenshots (NVIDIA, `Videos/NVIDIA/medievil-runtime.exe`, 21.07-21.09):
+Controls (Advanced camera), Image, Performance. Found in them (polish, not run-breaking):
+
+1. On the title screen the prompt bar sits on the game's own copyright line (both at the bottom edge).
+2. The list stops well above the frame's bottom: about 100 px (of 1125) of empty frame under the help text while
+   the list scrolls; a taller list area would show two more rows.
+3. The list's bottom row is cut mid-text while scrolling (Image: "AMD FSR sharpening", Performance: "Reflections").
+4. The tab icons follow the binds (left mouse-button icon and SHIFT), as designed.
+
+Next (the user): reorganise the tabs; a workbook of every item per tab (research/docs/data/settings-menu-items.xlsx)
+for planning that.
