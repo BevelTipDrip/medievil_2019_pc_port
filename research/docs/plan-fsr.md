@@ -65,7 +65,7 @@ Status (2026-11-12): step 1 on branch `fsr`, verified on the PC (T-F1); its Deck
   parameter) [to check against our nvngx_dlss.dll version], so for DLSS the presenter's RCAS after DLSS, at the
   slider's strength, instead of being blocked. Verified for FSR and for RCAS over DLSS (T-F6).
 - **A separate FSR sharpening slider** (the user, after T-F6): FSR's sharpening gets its own strength, apart from the
-  presenter's RCAS (CAS) slider; TAA needs far more RCAS than FSR needs its own sharpening. Fix built (F2c):
+  presenter's RCAS (CAS) slider; TAA needs far more RCAS than FSR needs its own sharpening. Verified (F2c, T-F7):
   `fsr_sharpness` 0-100 (0 = off, default 25), menu Image tab and launcher Graphics "AMD FSR sharpening"; the
   Sharpening (RCAS) box and strength are only the presenter's RCAS (the game's TAA, DLSS), off while FSR runs.
 
@@ -129,8 +129,12 @@ is clearer than UE4's TAA at 75%; to match that clarity, TAA needs so much RCAS 
 oversharpened. F2b verified for FSR; the user: RCAS over DLSS works too (verified). Next (the user): **a separate FSR sharpening
 slider**, not shared with the presenter's RCAS (CAS) strength: the two want different strengths.
 
-F2c (fix built, not run): FSR's sharpening has its own setting, `fsr_sharpness` (0-100, 0 = off, default 25:
+F2c (`43d6e0f`): FSR's sharpening has its own setting, `fsr_sharpness` (0-100, 0 = off, default 25:
 `Gow3Graphics::ParseFsrSharpness`), in the menu's Image tab and the launcher's Graphics page as "AMD FSR sharpening".
 `Ue4UpscaleFrame::sharpness` comes from it; the RCAS box and strength no longer reach FSR. The menu's Information
 row "Sharpening" says "AMD FSR, N%" or "AMD FSR, off" while FSR runs. To check: FSR's sharpness follows the new
 slider live, the RCAS strength no longer changes FSR, and RCAS over TAA / DLSS is as before.
+
+T-F7 (2026-11-12, `43d6e0f`, RTX 4090, FSR at 75%): the user: "it all works as expected", in the game and the
+launcher: FSR's sharpening follows its own slider live (0 = off), the RCAS strength leaves FSR alone, RCAS over TAA /
+DLSS as before. F2c verified.
