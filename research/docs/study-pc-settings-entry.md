@@ -281,3 +281,15 @@ Each label uses the word the game itself uses for its settings in that language:
 | ru | Настройки ПК | Настройки (Options) |
 | sv | PC-inställningar | Inställningar (Options) |
 | tr | PC Ayarları | Renk Körü Ayarları |
+
+## 7. T-PC1 run (2026-11-12, `75bac1b`, 01.02, English, keyboard prompts)
+
+The user: the row works: "it actually opened our options menu". Log: `PC settings entry: PostEventAtLocationWithMotion
+wrapped (game build 01.02 ...)` at start and `PC settings entry: clicked (game build 01.02); opening the settings menu`
+twice (user/last_run.log 23:18). Screenshots (NVIDIA, 23.14.52 / 23.15.17): five rows, "PC Settings" in the game's
+font and highlight colour inside the frame (confirmed: the renamed Visibility tag is skipped on load, risk 1 gone);
+the settings menu opens over the paused game. Not run: the German label (step 6), and 01.00.
+
+Found in the screenshot: with our menu open, the pause menu stays drawn under it: its frame's bottom edge shows below
+ours and its SELECT / CANCEL prompts overlap our prompt bar. Fix idea: a full-screen dim behind our frame, or hide
+the pause widget while ours is open. The title screen's Options has no entry: that is S7 (not built), not a failure.

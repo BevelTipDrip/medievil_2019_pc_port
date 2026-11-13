@@ -55,6 +55,7 @@ translations. The runtime wraps `PostEventAtLocationWithMotion`; the call from t
 
 ## Evidence
 
+- T-PC1 (2026-11-12, 01.02, English): run; the row shows and opens the settings menu (the user, log, screenshots). German label and 01.00 not run. Found: the pause menu stays drawn under ours (prompt bars overlap).
 - Offline: `tests/test_ue4_pc_settings.py` on the unpacked 01.00 (`Game Files/CUSA11227`) and 01.02
   (`E:/MediEvil/CUSA11227-0102`). Every locres and the string table round-trip byte-identical. Every edit applies
   exactly once and no other byte changes. The edited bytecode decodes as intended (scratch Kismet walker: arrays
