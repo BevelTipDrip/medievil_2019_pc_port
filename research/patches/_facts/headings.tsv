@@ -505,10 +505,18 @@ plan-settings-menu.md	79	3	22-controls	2.2 Controls
 plan-settings-menu.md	111	3	23-assets	2.3 Assets
 plan-settings-menu.md	123	2	3-risks	3. Risks
 plan-settings-menu.md	137	2	4-test-plan-for-the-user-each-launch-needs-the-users-go	4. Test plan for the user (each launch needs the user's go)
-plan-settings-menu.md	169	2	5-decisions-for-the-user	5. Decisions for the user
-plan-settings-menu.md	183	2	6-steps	6. Steps
-plan-settings-menu.md	194	2	7-state	7. State
-plan-settings-menu.md	203	2	8-t-sm1-t-sm3-2026-11-12-409a71d-windows-4k-fullscreen-keyboard-prompts-with-mouse-binds	8. T-SM1-T-SM3 (2026-11-12, `409a71d`, Windows, 4K fullscreen, keyboard prompts with mouse binds)
+plan-settings-menu.md	161	2	5-decisions-for-the-user	5. Decisions for the user
+plan-settings-menu.md	175	2	6-steps	6. Steps
+plan-settings-menu.md	186	2	7-state	7. State
+plan-settings-menu.md	195	2	8-t-sm1-t-sm3-2026-11-12-409a71d-windows-4k-fullscreen-keyboard-prompts-with-mouse-binds	8. T-SM1-T-SM3 (2026-11-12, `409a71d`, Windows, 4K fullscreen, keyboard prompts with mouse binds)
+plan-settings-menu.md	212	2	9-the-reorganisation-2026-11-13-fix-built-not-run	9. The reorganisation (2026-11-13, fix built, not run)
+plan-settings-menu.md	219	3	91-what-changed-per-tab	9.1 What changed per tab
+plan-settings-menu.md	255	3	92-restart-input-scroll-bar	9.2 Restart, input, scroll bar
+plan-settings-menu.md	272	3	93-frame-buffer-size-live-switch-against-a-start-at-that-size	9.3 Frame buffer size: live switch against a start at that size
+plan-settings-menu.md	297	3	94-particle-flip-guard-single-particle-pass-deck-switches	9.4 Particle flip guard, single particle pass, Deck switches
+plan-settings-menu.md	317	3	95-polish-fixes-and-the-workbooks-oddities	9.5 Polish fixes and the workbook's oddities
+plan-settings-menu.md	330	3	96-tests-for-the-user-each-launch-needs-the-users-go	9.6 Tests for the user (each launch needs the user's go)
+plan-settings-menu.md	361	3	97-state	9.7 State
 plan-stage-b-split.md	1	1	plan-stage-bs-work-across-threads-feasibility-study	Plan: stage B's work across threads (feasibility study)
 plan-stage-b-split.md	7	2	why	Why
 plan-stage-b-split.md	13	2	profile-t-p3-2026-10-19-2100-2102-launched-by-claude-with-the-users-go-build-32eaea9--samples-log-datat-p3-stageb-profilelog-samples-in-research-datasamplest-p3-stageb-profile	Profile T-P3 (2026-10-19 21:00-21:02, launched by Claude with the user's go; build `32eaea9`; `-Samples`; log `data/t-p3-stageb-profile.log`, samples in `research-data\samples\t-p3-stageb-profile`)
@@ -1078,6 +1086,7 @@ study-pc-settings-entry.md	189	3	t-pc1-the-pause-menu-row-combined-launch-built-
 study-pc-settings-entry.md	215	2	5-open-questions	5. Open questions
 study-pc-settings-entry.md	230	2	6-built-2026-11-12-fix-built-not-run	6. Built (2026-11-12): fix built, not run
 study-pc-settings-entry.md	253	3	translations-s6	Translations (S6)
+study-pc-settings-entry.md	285	2	7-t-pc1-run-2026-11-12-75bac1b-0102-english-keyboard-prompts	7. T-PC1 run (2026-11-12, `75bac1b`, 01.02, English, keyboard prompts)
 study-save-slots.md	1	1	save-slots-why-a-save-went-into-another-slot	Save slots: why a save went into another slot
 study-save-slots.md	6	2	the-problem	The problem
 study-save-slots.md	13	2	how-medievil-picks-the-slot-it-saves-into	How MediEvil picks the slot it saves into

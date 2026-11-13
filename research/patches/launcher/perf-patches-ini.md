@@ -8,20 +8,20 @@ default_windows: on
 default_deck: mixed
 origin: ours
 class: G
-commits: 27ec51e36d, 1e657ca5ef, e9d86996a4, a39d538
+commits: 27ec51e36d, 1e657ca5ef, e9d86996a4, a39d538, 0bff4d6
 files: scripts/graphics_options.py, launcher/medievil_launcher.py, run.py, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_settings.h, gpu/shim/gow3_overlay.cpp, src/runtime_memory.c, tests/test_launcher_controls.py, tests/test_graphics_settings.cpp
-symbols: PERF_SWITCHES, PERF_DEFAULT_OFF, perf_environment, PERF_PATCHES, PerfPatch, PerfKeys, PerfLive, PerfOn, perf_off, RestartChanges, PerfPatchesSection, runtime_memory_set_perf, TakeBaseline, Baseline, Serialize, collect
-switches: perf_hzb_occlusion, perf_no_decal_prepass, perf_particle_single_pass, perf_small_buffers, perf_texture_memo, perf_lockfree_memory, perf_cheap_frees, perf_gpu_data_no_waits, perf_4k_memory, perf_lean_barriers, perf_lean_binding, perf_ring_reuse
+symbols: PERF_SWITCHES, PERF_DEFAULT_OFF, PERF_ON_SWITCHES, perf_environment, PERF_PATCHES, PerfPatch, PerfKeys, PerfLive, PerfOn, perf_off, RestartChanges, PerformanceTab, runtime_memory_set_perf, TakeBaseline, Baseline, Serialize, collect
+switches: perf_hzb_occlusion, perf_no_decal_prepass, perf_particle_single_pass, perf_small_buffers, perf_texture_memo, perf_lockfree_memory, perf_cheap_frees, perf_gpu_data_no_waits, perf_4k_memory, perf_lean_barriers, perf_lean_binding, perf_ring_reuse, perf_particle_flip_guard
 tests: T-H3b, T-0102-4
 docs: plan-stage-b-split.md#launcher-performance-patch-toggles-2026-10-21, plan-stage-b-split.md#in-game-menu-and-the-launcher-share-the-settings-2026-10-22, study-live-switches.md#summary, study-live-switches.md#found-on-the-way
 depends_on:
 related: hzb-remap, no-decal-prepass, single-particle-pass, S2, texset-region-stamps, lockfree-region-reads, L2, decommit-keep-access, D3, gpu-write-twins, E1, W2, 4k-memory, lean-barriers, bulk-descriptor-copy, sampler-memo, ring-reuse, deck-preset, extra-env-file, frame-stats-lines, launcher-graphics-page
-checked: 2026-11-07
+checked: 2026-11-13
 ---
 ## What it does
 
-Twelve `perf_*` keys in `medievil.ini`, one per patch bundle, shown as checkboxes in launcher > Performance
-(`PERF_PATCHES`) and in the in-game menu > Performance (`PerfPatchesSection`). On every start `run.py` calls
+Thirteen `perf_*` keys in `medievil.ini` (the particle flip guard since 2026-11-13), one per patch bundle, shown as checkboxes in launcher > Performance
+(`PERF_PATCHES`) and in the in-game menu > Performance (`PerformanceTab`). On every start `run.py` calls
 `perf_environment`: a key set to `0` adds that bundle's off variables from `PERF_SWITCHES` (for example
 `perf_gpu_data_no_waits=0` sets four variables). A missing key means on, except `PERF_DEFAULT_OFF`
 (`perf_particle_single_pass`). Six bundles switch live in the menu on `deck-lab` (`PerfLive`; five on `lab`, where
@@ -36,10 +36,13 @@ the particle pass is still a restart change: it went live in `d20f010`); the oth
   the overlay's `titles` / `hints` have `PerfCount` entries, and `perf_off` in `Load` holds the first variable and
   value of each bundle. No test checks `perf_off`: a wrong entry makes the menu show the wrong state for a test
   start, and toggling the row then writes that wrong state to the ini.
-- `Values::perf[12]` / `startup_perf[12]` are literal 12, not `PerfCount`. There is no static_assert, unlike
-  `ue4_live`. A 13th patch needs both arrays and their initialisers changed.
-- The in-game defaults are all `true`. With no `perf_particle_single_pass` key in the ini, the menu shows the
-  particle pass off only because run.py sets `GOW3_PARTICLE_FIXED_STEP=1` and `Load` reads it through `perf_off`.
+- `Values::perf` / `startup_perf` are sized by `PerfPatchCount` (13), with `static_assert(PerfCount ==
+  PerfPatchCount)`; a new patch still needs both initialisers changed.
+- Patches the runtime runs only when asked (the particle flip guard) have an empty `PERF_SWITCHES` entry and their
+  on variables in `PERF_ON_SWITCHES`; `Load` shows them on only when this start has the variable (`perf_off` holds a
+  null entry for them).
+- `PERF_DEFAULT_OFF` is empty since 2026-11-13: every patch, the single particle pass included, is on without a key.
+  The in-game defaults are all `true`; the menu shows a patch off when run.py set its off variable (`perf_off`).
   Every start must go through `run.py` (AppRun `--run` and the launcher both do).
 - run.py applies the perf variables with `setdefault`, so any variable already set wins over the ini. That covers
   extra-env.txt (loaded first) and `run-game.ps1 -Env` (`DECK_SWITCHES` holds no perf variable).

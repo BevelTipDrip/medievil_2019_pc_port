@@ -10,7 +10,7 @@ origin: ours
 class: M
 commits: 7ab4310696
 files: gpu/shim/gow3_settings.cpp, gpu/shim/gow3_settings.h, gpu/shim/gow3_overlay.cpp, src/runtime_extra.c, scripts/graphics_options.py, launcher/medievil_launcher.py, tests/test_graphics_settings.cpp, tests/test_launcher_controls.py, tests/test_graphics_options.py
-symbols: RequestRenderScale, LiveRenderScaleMax, LiveRenderScaleMin, RenderScaleNeedsRestart, ParseRenderScale, RenderScaleMin, RenderScaleMax, RenderScaleIniMin, live_render_scale, startup_render_scale, ApplyRenderScale, RenderScaleSection, ue4_cvars, RENDER_SCALE_RANGE, live_render_scale_range, parse_render_scale, render_scale_control
+symbols: RequestRenderScale, LiveRenderScaleMax, LiveRenderScaleMin, RenderScaleNeedsRestart, ParseRenderScale, RenderScaleMin, RenderScaleMax, RenderScaleIniMin, live_render_scale, startup_render_scale, ApplyRenderScale, RenderScaleRow, RenderScaleNotes, ue4_cvars, RENDER_SCALE_RANGE, live_render_scale_range, parse_render_scale, render_scale_control
 switches:
 tests:
 docs: impl-live-render-scale.md#how-it-works, impl-live-render-scale.md#limits, impl-live-render-scale.md#what-follows-a-live-change-what-stays-as-started, plan-linux-deck.md#spin-compact-texture-memo-and-the-task-split-2026-11-04, plan-live-switches.md#done
@@ -20,7 +20,8 @@ checked: 2026-11-07
 ---
 ## What it does
 
-In game, Performance > Applied now has a 1% render-scale slider with -/+ buttons (`RenderScaleSection`).
+In game, Display > Scaling and sharpening (Performance > Applied now before 2026-11-13) has a 1% render-scale
+slider with -/+ buttons (`RenderScaleRow`; the scene now is Display > Information > Render resolution).
 `ApplyRenderScale` sends the value once the slider has been still for 0.3 s or the menu closes.
 `RequestRenderScale` clamps it to the live range and requests `r.TemporalAA.Upsampling` 1 / 0 when the scale crosses
 100%, then `r.ScreenPercentage`. Both go through `runtime_ue4_request_cvar` on the game thread's next pad poll

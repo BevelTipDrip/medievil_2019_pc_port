@@ -109,7 +109,7 @@ Environment variables and settings already in the port that this work uses (full
 | [plan-fsr-frame-generation.md](plan-fsr-frame-generation.md) | FSR 3 frame generation |
 | [plan-dlss.md](plan-dlss.md) | DLSS SR inputs, DLSS FG via NGX Vulkan |
 | [plan-fsr.md](plan-fsr.md) | FSR 3.x / 4.x in place of UE4's TAA: what exists, outside research, steps (F1 built on branch `fsr`) |
-| [plan-settings-menu.md](plan-settings-menu.md) | The settings menu in the game's look and usable with a pad alone (branch `menu-redesign`, built, not run): design, controls, assets, T-SM1-T-SM8, decisions for the user |
+| [plan-settings-menu.md](plan-settings-menu.md) | The settings menu in the game's look and usable with a pad alone (branch `menu-redesign`): design, controls, assets, T-SM1-T-SM3 (run); section 9: the tabs reorganised (2026-11-13, fix built, not run), frame buffer size live vs at start, Deck switches in medievil.ini, T-SM4-T-SM15 |
 | [gpu-threading-reference.md](gpu-threading-reference.md) | Invariants, symptoms, things not to retry: scheduler/recording |
 | [upscaler-reference.md](upscaler-reference.md) | Invariants, symptoms, things not to retry: MV / FSR / DLSS / FG |
 | [building-and-tools.md](building-and-tools.md) | Toolchain, build, run, profiling, paths |

@@ -4,19 +4,19 @@ title: GPU particle flip guard: one state flip per main-phase simulation (fixes 
 area: ue4
 status: active
 platforms: all
-default_windows: off
+default_windows: on
 default_deck: on
 origin: ours
 class: M
-commits: fbb8c1ad3d
-files: src/particle_hook.h, src/probe.c, src/runtime_extra.c, gpu/shim/gow3_toggles.h, launcher/medievil_launcher.py, tests/test_particle_fixed_step.py
-symbols: medievil_particle_builds, medievil_particle_find, medievil_particle_build_advance_stub, medievil_particle_build_pre_render_stub, install_particle_flip_guard, medievil_particle_advance, medievil_particle_pre_render, particle_slot, particle_guard_on, particle_guard_report, PARTICLE_FX_SLOTS, TOGGLE2_PARTICLE_FLIP_GUARD_OFF, ParticleFlipGuardOff, DECK_SWITCHES
-switches: GOW3_PARTICLE_FLIP_GUARD, toggle2:ParticleFlipGuardOff
+commits: fbb8c1ad3d, 0bff4d6, 0666928
+files: src/particle_hook.h, src/probe.c, src/runtime_extra.c, gpu/shim/gow3_toggles.h, launcher/medievil_launcher.py, tests/test_particle_fixed_step.py, scripts/graphics_options.py, gpu/shim/gow3_settings.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_overlay.cpp
+symbols: medievil_particle_builds, medievil_particle_find, medievil_particle_build_advance_stub, medievil_particle_build_pre_render_stub, install_particle_flip_guard, medievil_particle_advance, medievil_particle_pre_render, particle_slot, particle_guard_on, particle_guard_report, PARTICLE_FX_SLOTS, TOGGLE2_PARTICLE_FLIP_GUARD_OFF, ParticleFlipGuardOff, PERF_ON_SWITCHES, PerfParticleFlipGuard
+switches: GOW3_PARTICLE_FLIP_GUARD, toggle2:ParticleFlipGuardOff, perf_particle_flip_guard
 tests:
 docs: plan-linux-deck.md#particle-fix-1-2026-11-05-2110-2128-build-49291f3-particlefix-log-datadeck-particlefix-1log, plan-linux-deck.md#particle-fix-2-the-guard-alone-2026-11-06-build-49291f3-particlefix, study-particle-fixed-step.md#the-change, study-particle-fixed-step.md#why-the-copy-pass-makes-the-default-immune-inferred-from-the-code-above
 depends_on:
-related: single-particle-pass, particle-single-fixed, deck-preset, lineage-toggle-file, draw-classes, game-update-0102
-checked: 2026-11-07
+related: single-particle-pass, particle-single-fixed, deck-preset, lineage-toggle-file, draw-classes, game-update-0102, perf-patches-ini, settings-menu
+checked: 2026-11-13
 ---
 ## What it does
 
@@ -46,11 +46,16 @@ when no simulation ran since the last flip. `medievil_particle_pre_render` (at t
   defined twice (`TOGGLE2_PARTICLE_FLIP_GUARD_OFF` in runtime_extra.c, `ParticleFlipGuardOff` in gow3_toggles.h).
 - Installed only with `GOW3_PARTICLE_FLIP_GUARD=1` at start, the GPU enabled and both sites inside a mapped
   segment (`install_particle_flip_guard`); otherwise one "unavailable" line and no hooks.
+- Since 2026-11-13 a performance patch, `perf_particle_flip_guard` in medievil.ini, **on without a key** (Windows
+  and Linux): run.py sets the variable through `graphics_options.PERF_ON_SWITCHES` (a variable already set wins);
+  `perf_particle_flip_guard=0` sets nothing, so no hook. Restart-only (menu: RESTART). The menu shows it on only when
+  this start has the variable (`Load`), so a start without run.py shows it off, truthfully.
 
 ## Interactions
 
-- single-particle-pass: the only mode where it matters; Deck Optimized turns on both (`DECK_SWITCHES`). Opt-in on
-  Windows, so the PC keeps the pass off until a `lab` regression run. particle-single-fixed: tested together in
+- single-particle-pass: the only mode where it matters. Both are on by default since 2026-11-13 (the user's PC
+  test of the guard, then the user's decision for the pass); Deck Optimized writes both (`DECK_PRESET`). Until then
+  it was one of the launcher's Steam Deck switches (opt-in, so the PC kept the pass off). particle-single-fixed: tested together in
   fix 1, not needed (fix 2). lineage-toggle-file: second word 16384, next to 8192. draw-classes: "on the previous
   run's target" 0.00 with the guard on. game-update-0102: the 01.02 rows follow its mapping rule.
 
@@ -62,7 +67,8 @@ when no simulation ran since the last flip. `medievil_particle_pre_render` (at t
   Crypt floor: "That glitch is also gone"; guard off: "Yup, it's back". With the fixed-step patch also on, vs stock:
   81.2 vs 79.5 FPS, 1,102 vs 1,295 draws, stage B 85.9 vs 91.8%, p99 15.64 vs 15.94 ms.
 - Particle fix 2 (guard alone): "the torches still worked", "the crypt floor looks fine".
-- PC: not verified in game.
+- 2026-11-13: the user reports a thorough PC test of the guard: performance unchanged, no torch / crypt floor
+  glitches with the single pass (user report, no log).
 
 ## History and pitfalls
 

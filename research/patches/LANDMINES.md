@@ -49,6 +49,13 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
    out of date. **Checked 2026-11-07:** the recorder is at 41% of a core uncapped (cuts redo), 28% at a 60 cap. Stale,
    but it strengthens both conclusions (C13 parallel recording and A2 small copies off the recorder gain even less);
    note added to study-deck-rescore-rejected.md.
+8b. **The single particle pass's default changed three times** ([single-particle-pass](ue4/single-particle-pass.md),
+   [particle-flip-guard](ue4/particle-flip-guard.md)): on from 2026-10-21 (`27ec51e`), off from 2026-11-01 (`8d85929`,
+   T-0102-4), on again from 2026-11-13 (`0bff4d6`) together with the flip guard, which until then ran only with the
+   launcher's Steam Deck switches (Deck Optimized, or ticked by hand). A PC A/B or baseline from 2026-11-01 to
+   2026-11-13 without a `perf_particle_single_pass` key ran the fixed-step double pass (~190 more draws in particle
+   scenes), and from 2026-11-13 the same ini runs the single pass with the guard: compare such runs only with the key
+   and the log's "GPU particle flip guard" line checked. Runs with the Deck preset are unaffected (both on there).
 
 ## Latent bugs (code reading)
 
@@ -127,7 +134,9 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
 20. HZB remap needs `GOW3_DEFERRED_READBACK=1`, otherwise it falls back to the game's own results every frame
     ([hzb-remap](ue4/hzb-remap.md)).
 21. The single particle pass is off only because run.py exports `GOW3_PARTICLE_FIXED_STEP=1`; any launch that skips
-    run.py gets it on ([particle-single-fixed](ue4/particle-single-fixed.md)).
+    run.py gets it on ([particle-single-fixed](ue4/particle-single-fixed.md)). Since 2026-11-13 it is on by default
+    (the key off sets the variable); a launch that skips run.py also gets no flip guard (its variable is set only by
+    run.py), so the pass runs unguarded there.
 22. Finer occlusion culling's auto rule (scene up to 1280x800) adds the patch even when unticked and with
     `perf_hzb_occlusion=0`; only `GOW3_HZB_FULL_SIZE=0` keeps it off ([finer-occlusion-culling](ue4/finer-occlusion-culling.md)).
 23. U2's cost stays with the live bit off; only `GOW3_ARENA_HOST_VISIBLE=0` at start removes it ([U2](caches/u2.md)).

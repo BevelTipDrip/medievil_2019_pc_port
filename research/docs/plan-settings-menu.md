@@ -155,16 +155,8 @@ prompts) and whether a pad is connected.
   closes, and the game does not get that Circle (Dan does not act). With `button_prompts=xbox` the prompts show
   A / B / LB / RB; PlayStation: the game's icons; keyboard style: the bound keys (and mouse icons with "Prefer
   mouse binds").
-- **T-SM4 Apply and restart.** Change Engine frame rate: the pinned row appears; Cross once shows "Press again";
-  wait 3 s: it resets; Cross twice: the game restarts with the new value.
-- **T-SM5 Load list unchanged.** Open the Load list from the title screen: same look and input as before (T-SV5).
-- **T-SM6 Plain look.** Rename `user/cache/game_ui` (back it up), start: the plain ImGui menu with the gold focus
-  row; the pad works there too. Put the folder back.
-- **T-SM7 Steam Deck (1280x800, Steam Input on).** Open with L2 + R3; read every tab at arm's length: text size,
-  help lines, prompt bar under the frame and above the screen edge; all of T-SM3's pad steps; the touch screen
-  as a mouse. Note anything too small.
-- **T-SM8 Custom combo (optional).** `GOW3_MENU_PAD=back+start` in extra-env.txt: the combo opens the menu; the
-  start log says which combo.
+- The tests planned here after T-SM3 (Apply and restart, Load list, plain look, Steam Deck, custom combo) were
+  never run; they are replaced by the list in section 9.6, which reuses the IDs from T-SM4 on.
 
 ## 5. Decisions for the user
 
@@ -198,7 +190,7 @@ the navigation, plain look), `b914242` (the game's look, the style loaded at sta
 (no new warnings; the two `vk_rasterizer.cpp` -Wunused-result warnings were there before), Python tests 189 OK
 (31 skipped), pad-map-test PASS (built by hand: its CMake target lacks winmm, found). Offline: every character
 of the menu's texts is in the game's text font; the tab strip and prompt bar fit the frame. A window under 360 px
-high keeps the plain look. Nothing launched: T-SM1-T-SM8 are next, with the user's go.
+high keeps the plain look. Nothing launched: T-SM1-T-SM3 were next, with the user's go (run, section 8).
 
 ## 8. T-SM1-T-SM3 (2026-11-12, `409a71d`, Windows, 4K fullscreen, keyboard prompts with mouse binds)
 
@@ -216,3 +208,158 @@ for planning that.
 
 The user, after T-SM2: the scroll bar does not work with the mouse: the wheel scrolls, but clicking or dragging
 the bar does nothing. Found, not traced; to fix with the polish list above, after the user's tab reorganisation.
+
+## 9. The reorganisation (2026-11-13, fix built, not run)
+
+The user's approved layout: the workbook (`research/docs/data/settings-menu-items.xlsx`, row order = intended
+order) with the changes agreed afterwards, and the mockups drawn from it (geometry and texts: the mockup
+generator's constants, renames and help texts). Commits on `menu-redesign`: `0bff4d6` (settings shared by the
+launcher, run.py and the menu), `33491a9` (Square in the menu's input), `0666928` (the menu).
+
+### 9.1 What changed per tab
+
+Tabs: CONTROLS, DISPLAY, GRAPHICS, PERFORMANCE, OVERLAY. The God of War III cheats (GameTab) keep their code and
+have no tab for now. `menu_tab` keeps its number, so a saved tab opens one tab to the right of before, once.
+
+- **CONTROLS**: as before (the workbook's order is the code's).
+- **DISPLAY**: -RESOLUTION-: Frame buffer size (was "Output resolution"; `output_resolution`; Match display /
+  4K / 1800p / 1440p / 1080p (original) / 720p, any other WxH shows Custom), then Display mode. -FRAME CAP-: Engine
+  frame rate (RESTART), Frame rate limit, G-Sync / FreeSync display, Effective limit (info, when it applies).
+  -VSYNC-: VSync, Frames queued. -SCALING AND SHARPENING-: Upscale with FSR 1, Anti-aliasing / upscaler, Render
+  scale (its two notes when they apply; help shortened to three lines), AMD FSR sharpening, Sharpening (RCAS),
+  Sharpening strength. -INFORMATION-: Frame buffer, Render resolution ("W x H (N%)"), Window size, FSR 1,
+  Sharpening, Upscaler. "Game resolution now", its buttons and note are gone.
+- **GRAPHICS**: one heading -GRAPHICS QUALITY-: Graphics quality, Preshadows, Effects resolution, the 13 live
+  settings, then the 5 restart-only ones with the RESTART tag. Found and fix built: "Deck Optimized" never showed
+  (the list stopped at `std::size(UE4QualityKeys)` = 5); it shows now and can be picked: it sets the Deck level's
+  graphics settings only (ue4_quality low, as the launcher writes it), not the preset's other settings.
+- **PERFORMANCE**: -PERFORMANCE PATCHES-: Single GPU particle pass, Particle flip guard (RESTART), Small buffers
+  from VRAM, Lock-free memory map lookups, Cheap memory frees, Cheaper draw binding, Constant ring reuse, Compile
+  new shaders in the background, HZB occlusion culling, Skip the decal depth prepass, Texture set memo, GPU data
+  without waits, 4K memory sizes, Fewer render pass breaks, Game reads GPU data without waiting, Deferred GPU
+  readbacks (the last eight RESTART). A dim note when the single pass is on but the flip guard is not running in
+  this start (the pass row is not greyed out: the user may still compare). -DECK TUNED-: the Steam Deck switches,
+  all RESTART; on Windows the three that do nothing there (A1, thread priorities, U2) are hidden.
+- **OVERLAY**: as before; the "Game hooks" row (God of War III's hooks, always "none" in MediEvil) only shows for
+  that game.
+
+Frame and chrome (the mockups' numbers, frame pixels): title 50, tab strip 26 with 38 px icons; the frame's width
+as before (86% of the height) and its straight middle (rows 300-600 of `frame_options.png`) stretched so it fills
+92% of the height; rows 38 / text 26, info rows 30 / 23, headings 26; the list from 224 to 636 (plus the stretch),
+the help (22 px, three lines) under it, the prompt bar inside the frame's bottom at 722 (34 px icons, 26 px labels),
+clear of the title screen's copyright line; an 80% black dim over the whole screen behind the frame (the game's
+pause menu stays drawn under it). The RESTART tag is small, dim, letter-spaced, in a rounded outline just left of
+the value column. The list shows whole items only: its drawing is cut at the bottom of the last item that fits and
+the top of the first one wholly in view, and rows outside the shown band take no clicks.
+
+### 9.2 Restart, input, scroll bar
+
+- The pinned "N changes need a restart" row is gone. While a restart-only change waits, the prompt bar has a fourth
+  prompt, APPLY & RESTART (Square, in the prompt style the launcher chose, from `prompts/style/Square.png`;
+  clickable). **Deviation:** one press does not restart: it arms the restart for 5 s and the bar then reads RESTART
+  NOW (Cross) / CANCEL (Circle); Circle or Square again cancels. Reason: with the default keys Square is E (below), so
+  pressing E twice, as for two tabs, must not end the game without saving.
+- Square reaches the menu (`menu_buttons`, `33491a9`) from the pad as mapped, a key bound to Square, Tab (a fixed
+  key, as in the Load list) and a non-left mouse button bound to Square. **Changed:** the fixed-key rule ("a fixed
+  key counts only while not bound to a button the menu uses") now makes E (bound to Square by default) Square in the
+  menu, matching its prompt; Q is still L1, the L1 / R1 binds (1 / 3) and the tab names still switch tabs.
+- The scroll bar takes the mouse (found by the user after T-SM2): a 16 px area over it, submitted before the rows
+  so it gets the hover; a click on the track centres the thumb there, the thumb drags; the wheel as before. It
+  brightens while hovered.
+- The frame buffer size switches 0.5 s after the last step (pad steps or clicks), like render scale's 0.3 s, so
+  stepping from 720p to 4K makes one r.SetRes, not five; closing the menu applies a pending one.
+
+### 9.3 Frame buffer size: live switch against a start at that size
+
+Now: a change is saved in medievil.ini (the next start boots at it) and switched at once through r.SetRes
+(`runtime_ue4_request_setres`, the old buttons' path), unless `OutputRestartReason` says otherwise; only then
+does it count as a restart change and the row shows RESTART and a one-line note. Starting at a size and switching
+to it live are **not** the same. What a start does (run.py, `graphics_options.output_environment`, `ue4_override`)
+and whether a live switch gets it:
+
+| At start | Live switch |
+|---|---|
+| "Boot display size WxH" rodata patch (or "4K display metrics at boot"): UE4's cached display metrics and work area, the game window, viewport, backbuffers, Slate geometry and UMG DPI start at the size (study-boot-resolution.md, I1) | Only the render targets and backbuffers are made again. The cached metrics and the hit-test grid of the game's own menus stay at the boot size: **I1 again** (the game's menus did not navigate at 4K after a live switch from 1080p; fixed by booting at the size). Any size other than the boot size, larger or smaller [smaller inferred]. Until the next start. |
+| VideoOut at the size (`GOW3_INTERNAL_WIDTH/HEIGHT`) | Stays at the boot size [inferred: the game registers its buffers at boot]; the presenter scales what the game draws (Information > Frame buffer shows what it draws now). |
+| Above 1080p: the 512 MB framebuffer pool patch forced, and `GOW3_DMEM_MB=7104` (4K memory sizes) | The memory is sized at boot (the game pools all direct memory once). From a 1080p start a live 4K switch runs in the PS4's memory pool (5,056 MiB): what `perf_4k_memory=0` gives at 4K, texture reloads on small camera moves, no crash known. The pool patch is in the default selection at every size; **unticked** (launcher > Patches, possible at 1080p and below) the stock 128 MB pool ran out on a live 4K switch: crash. |
+| Render scale above 100% at that size | 1800p at 200% needed 6400x3600 targets and crashed (upstream `783b25a`). |
+| Finer occlusion culling decided from the start's scene (up to 1280x800: on) | Kept: a 720p start switched to 4K keeps the full-size HZB (a 4096x4096 pyramid for nothing); a large start switched to 720p goes without it. |
+| r.SetRes found per eboot (`GOW3_UE4_SETRES_CVAR`) | Without it nothing switches. |
+
+Handled in code (`OutputRestartReason`: RESTART tag, note, a restart change): (1) a start above 100% render scale
+and a larger size (the user's case; smaller sizes stay live), (2) **added:** a size above 1440p while the pool
+patch is not in this start's `GOW3_PATCHES` (the crash above), (3) **added:** no r.SetRes in this build.
+Not handled, proposed for the user to decide after T-SM5: (a) the I1 menu-navigation effect: a help line ("the
+game's own menus follow a new size fully after a restart") or making every live switch also a restart change
+again; (b) a live switch above 1080p from a start at or below it runs without the 4K memory sizes: restart-only for
+those, or accept the reloads. Both are behaviour the user asked to keep live, so they are left as specified.
+
+### 9.4 Particle flip guard, single particle pass, Deck switches
+
+- Particle flip guard moved out of the Deck switches into the performance patches: `perf_particle_flip_guard`
+  (run.py sets `GOW3_PARTICLE_FLIP_GUARD=1` through `PERF_ON_SWITCHES`), shown under Single GPU particle pass in
+  the menu and the launcher, RESTART. **On by default** (the coordinator, 2026-11-13: the user reports a thorough
+  PC test, performance unchanged, no torch / crypt floor glitch with the single pass). On in Deck Optimized.
+- **Single GPU particle pass on by default** too (the user's decision, 2026-11-13): `PERF_DEFAULT_OFF` is empty;
+  without a key run.py exports no `GOW3_PARTICLE_FIXED_STEP`, so the pak's `r.GPUParticle.FixDeltaSeconds=0` and
+  the runtime's start value agree (single-particle-pass invariant). An explicit `perf_particle_single_pass=0` stays
+  off. Help: it needs Particle flip guard.
+- **Deck switch storage: medievil.ini** (`deck_<key>=0/1`, off by default, 1 in Deck Optimized). Why: the menu and
+  "Apply and restart" must change them, and a restart only re-derives what run.py derives (LANDMINES 12); the
+  launcher's settings.json reached the game only as variables the launcher set, which a restart inherits unchanged.
+  Now: `graphics_options.DECK_SWITCH_ITEMS` / `deck_environment` (run.py sets the variables, a variable already set
+  wins, Linux-only ones never on Windows, logged "Deck switches: ..."), `gow3_settings.h DeckSwitches` (the same
+  table, a test checks), the launcher's rows bound to the same keys (the checkbox now means "all on" and sets all).
+  Migration: `migrate_deck_switches` (launcher start, `--play` too) writes an old `deck_switches=true` into the
+  keys (unchecked ones 0; an unchecked particle_flip_guard becomes `perf_particle_flip_guard=0`, an explicit off),
+  then drops both keys from settings.json; `deck_switches=false` writes nothing (the defaults apply).
+
+### 9.5 Polish fixes and the workbook's oddities
+
+- Found and fix built: VSync differed between menu and launcher: the launcher marked its VSync row "applies at next
+  start" though On / Off switch live in the game; only its two fixed modes need a start (row no longer marked, hint
+  says so). In the menu VSync is greyed out with an explanation while the launcher fixes the present mode
+  (`GOW3_PRESENT_MODE`), where the switch had no effect.
+- Found and fix built: launcher help texts: Upscale with FSR 1 named the old "Render resolution 720p"; the
+  performance patches' note said every patch applies at the next start (several switch live in the menu); the single
+  pass's hint said only "off by default: torches".
+- Found and fix built: God of War III text in MediEvil: Upscale with FSR 1's "Render resolution 720p + FSR 1" (kept
+  for that game only) and the "Game hooks" row.
+- Not done: the overlay preview box (Overlay tab) is a child window and is not cut to whole rows with the list.
+
+### 9.6 Tests for the user (each launch needs the user's go)
+
+Back up medievil.ini first; note `button_prompts` and whether a pad is connected.
+
+- **T-SM4 Look (Windows, 4K).** Open the menu: smaller title, the frame to ~95% of the screen bottom, prompts
+  inside the frame above the copyright line, the help under the list, the game dimmed behind. Every tab against the
+  mockups; RESTART tags only on restart-only rows; while scrolling no half row at the top or bottom. F12 each tab.
+- **T-SM5 Frame buffer size live (Windows, start at 1080p, render scale 100).** Display > Frame buffer size 1440p:
+  the game switches about half a second later, no RESTART tag, Information > Frame buffer 2560 x 1440. Close the menu,
+  open the game's pause and Options menus: do pad and mouse still point at the right items (I1)? Restart the game
+  from the launcher: the log's "Output resolution: 2560x1440" (boot at that size). Back to 1080p the same way.
+- **T-SM6 Frame buffer size above 100% render scale.** Start at render scale 150: 4K shows RESTART and the note,
+  APPLY & RESTART appears; 720p switches live.
+- **T-SM7 APPLY & RESTART.** Change Engine frame rate: APPLY & RESTART appears. Square (pad), E or Tab (keys), or a
+  click: the bar reads RESTART NOW / CANCEL; Circle cancels; again, then Cross: the game restarts with the new value.
+  Pressing E twice quickly must not restart.
+- **T-SM8 Scroll bar.** Performance tab: wheel; click the track below the thumb (jumps), drag the thumb; the bar
+  brightens under the mouse.
+- **T-SM9 Graphics quality.** With the launcher's Deck Optimized chosen the row reads Deck Optimized; pick Low, then
+  Deck Optimized in the menu: the settings follow; the five RESTART rows count as restart changes.
+- **T-SM10 Deck switches and the guard.** Performance > Deck tuned: seven rows on Windows. Turn one on, APPLY &
+  RESTART: the log's "Deck switches: 1 on: ..."; the launcher's Performance page shows it ticked. With an old
+  settings.json (`deck_switches: true`), the launcher's first start moves them into medievil.ini.
+- **T-SM11 New defaults (PC regression for the single pass).** With no `perf_particle_*` keys: the log shows the
+  flip guard installed and no `GOW3_PARTICLE_FIXED_STEP`; the lone torch and Dan's crypt floor look right (T-0102-1's
+  spots); frame times as before.
+- **T-SM12 Load list unchanged** (T-SV5's look and input). **T-SM13 Plain look** (rename `user/cache/game_ui`: the
+  ImGui menu, the new tabs, Square / Tab and "Apply and restart" / "Restart now"). **T-SM14 Steam Deck** (1280x800:
+  text size, help lines, prompts inside the frame, all of T-SM3's pad steps, Deck tuned shows all ten). **T-SM15
+  Custom combo** (`GOW3_MENU_PAD=back+start`).
+
+### 9.7 State
+
+Fix built, not run. Build clean (`out/medievil-runtime.exe`; no new warnings), Python tests 201 run, OK (31
+skipped), graphics-settings-test PASS, pad-map-test PASS (built by hand; the test file now stubs the runtime calls
+it was missing). Nothing launched.

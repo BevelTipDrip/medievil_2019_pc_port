@@ -1,14 +1,14 @@
 ---
 id: single-particle-pass
-title: Single GPU particle pass (r.GPUParticle.FixDeltaSeconds=0): off by default, live switch
+title: Single GPU particle pass (r.GPUParticle.FixDeltaSeconds=0): on by default with the flip guard, live switch
 area: ue4
 status: active
 platforms: all
-default_windows: off
+default_windows: on
 default_deck: on
 origin: ours
 class: M
-commits: 27ec51e36d, 8d85929db0, d20f010416
+commits: 27ec51e36d, 8d85929db0, d20f010416, 0bff4d6
 files: scripts/ue4_override.py, scripts/graphics_options.py, launcher/medievil_launcher.py, src/runtime_extra.c, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_settings.h, gpu/shim/gow3_toggles.h
 symbols: ue4_particle_pass_poll, runtime_ue4_particle_single_pass, particle_wanted, PARTICLE_FIXED_STEP, TOGGLE2_PARTICLE_FIXED_STEP, runtime_ue4_request_cvar, ue4_cvars, PERF_SWITCHES, PERF_DEFAULT_OFF, DECK_PRESET, PerfLive, ParticleFixedStep
 switches: perf_particle_single_pass, GOW3_PARTICLE_FIXED_STEP, toggle2:ParticleFixedStep
@@ -16,7 +16,7 @@ tests: T-H3b, T-0102-1, T-0102-2, T-0102-3, T-0102-4
 docs: plan-stage-b-split.md#t-h3b-one-gpu-particle-pass-2026-10-21-2310-rgpuparticlefixdeltaseconds0-4k-frame-stats-log-datat-h3b-particles-fixdelta0log, plan-0102.md#t-0102-4-2026-11-01-1955-launched-by-claude-with-the-users-go-build-723a893-log-datat-0102-4log, plan-linux-deck.md#single-gpu-particle-pass-live-2026-11-05-d20f010-built-not-run, plan-linux-deck.md#particle-1-results-2026-11-05-1946-build-d20f010-test1105-log-datadeck-particle-1log, study-particle-fixed-step.md#answer, study-heavy-frame-map.md#2-h3-gpu-particle-double-run
 depends_on: particle-flip-guard
 related: particle-single-fixed, particle-identity-skip, deck-preset, perf-patches-ini, live-graphics-options, draw-classes, lineage-toggle-file, mausoleum-toggle-bisect
-checked: 2026-11-07
+checked: 2026-11-13
 ---
 ## What it does
 
@@ -29,8 +29,10 @@ current pair and everything reads it: ~193 draws a frame fewer. The override pak
 ## Invariants
 
 - One pass only works if every simulation reads the pair the previous one wrote: a state flip without a
-  simulation loses a step (slow / frozen torches, the crypt floor ember). The stock 1/30 s copy hides this. Without
-  particle-flip-guard the pass must stay off by default (`PERF_DEFAULT_OFF`, launcher `INI_DEFAULTS`).
+  simulation loses a step (slow / frozen torches, the crypt floor ember). The stock 1/30 s copy hides this. The pass
+  may be on by default only while particle-flip-guard is on by default too: since 2026-11-13 both are
+  (`PERF_DEFAULT_OFF` empty, `perf_particle_flip_guard` on without a key). Turning the guard's default off again
+  means turning this default off with it. An explicit `perf_particle_single_pass=0` stays off.
 - The off value is the string `PARTICLE_FIXED_STEP` "0.033333335" (float 0x3d088889, the registered default).
   "0.0333333" is 9 ulps off, so it would not be stock. Values must fit `ue4_cvar_values` (at most 15 chars):
   `runtime_ue4_request_cvar` drops longer ones without a word.
@@ -43,13 +45,14 @@ current pair and everything reads it: ~193 draws a frame fewer. The override pak
   0x5c14d18 / 0x23933b3, 01.02 0x5c14d58 / 0x2396183). Otherwise it logs "unavailable".
 - Three places read the same default and must agree: `PERF_SWITCHES` / `PERF_DEFAULT_OFF` (graphics_options.py, used
   by run.py), the launcher's `INI_DEFAULTS` (built from `PERF_DEFAULT_OFF`), and `gow3_settings.cpp` (the ini key, then
-  `GOW3_PARTICLE_FIXED_STEP`). `gow3_settings.h` starts every `perf[]` at true: the menu shows the pass off only
-  because run.py exports `GOW3_PARTICLE_FIXED_STEP=1` when the ini key is missing or 0.
+  `GOW3_PARTICLE_FIXED_STEP`). `gow3_settings.h` starts the pass at true: the menu shows it off only because run.py
+  exports `GOW3_PARTICLE_FIXED_STEP=1` when the ini key is 0 (a missing key is on since 2026-11-13, so all three
+  agree on on).
 
 ## Interactions
 
-- particle-flip-guard makes it correct; Deck Optimized pairs them (`DECK_PRESET`, `DECK_SWITCHES`). The guard is
-  opt-in on Windows, so the PC keeps the pass off. particle-single-fixed: tried with it, not needed.
+- particle-flip-guard makes it correct; both on by default since 2026-11-13 (before, the guard was a Deck switch,
+  opt-in on Windows, and the PC kept the pass off). The menu notes when the pass is on but this start has no guard. particle-single-fixed: tried with it, not needed.
   particle-identity-skip: would have cut the same run-2 draws on stage B.
 - lineage-toggle-file: second word 8192; `deck.sh ab "0 0" "0 8192"` compares only with the ini's pass on.
 - draw-classes: "particle sim runs" per frame (1.00 vs ~2). live-graphics-options: same `ue4_cvars` path.
@@ -71,4 +74,5 @@ current pair and everything reads it: ~193 draws a frame fewer. The override pak
 - On by default in `27ec51e` (2026-10-21), off in `8d85929` (2026-11-01), live in `d20f010`. Why the bug showed only
   after hours of play is open. Wrong guesses: a dt effect (same at 60 and 79-240 FPS); "run 2 fires less near 60 FPS"
   (rescore A6: it fires 1.98 times a frame at ~78 FPS). Particles alive at a switch can outlast it: turn away first.
-- Launcher and menu hints still say only "Off by default: some torches..."; they do not mention the guard.
+- On by default again since 2026-11-13 (`0bff4d6`, the user's decision once the guard was on by default). Launcher
+  and menu hints now say it needs Particle flip guard.
