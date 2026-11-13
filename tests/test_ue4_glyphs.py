@@ -168,19 +168,50 @@ class GlyphTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as cache:
             (Path(cache) / 'prompts').mkdir()
             for button in ue4_glyphs.OVERLAY:  # the game's prompts, as the game UI cache holds them
-                Image.new('RGBA', (100, 100), (10, 20, 30, 255)).save(Path(cache) / 'prompts' / f'PS4_{button}.png')
+                name = ue4_glyphs.GAME_PROMPT.get(button, button)
+                Image.new('RGBA', (100, 100), (10, 20, 30, 255)).save(Path(cache) / 'prompts' / f'PS4_{name}.png')
             ue4_glyphs.overlay_prompts('playstation', cache)
             with Image.open(Path(cache) / 'prompts' / 'style' / 'Cross.png') as image:
                 self.assertEqual(image.getpixel((50, 50)), (10, 20, 30, 255))
+            self.assertTrue((Path(cache) / 'prompts' / 'style' / 'Touchpad.png').is_file())  # Touchpad (APPLY & RESTART)
             ue4_glyphs.overlay_prompts('xbox', cache)
             with Image.open(Path(cache) / 'prompts' / 'style' / 'Cross.png') as image:
                 self.assertEqual(image.size, (100, 100))
                 self.assertEqual(image.getpixel((0, 0))[3], 0)
                 self.assertNotEqual(image.getpixel((50, 50)), (10, 20, 30, 255))
 
-    def test_playstation_and_unknown_styles_write_nothing(self):
-        self.assertEqual(ue4_glyphs.files(lambda name: b'', 'playstation'), {})
+    def test_playstation_without_other_pictures_and_unknown_styles_write_nothing(self):
+        # The touchpad bound to the touchpad itself: every PS4 button shows its own picture.
+        self.assertEqual(ue4_glyphs.files(lambda name: b'', 'playstation', pad_map='touchpad=touchpad'), {})
         self.assertEqual(ue4_glyphs.files(lambda name: b'', 'nonsense'), {})
+
+    def test_playstation_shows_the_bound_pad_button(self):
+        # The prompt shows the physical button (the user, 2026-11-13): the touchpad is on Share / Create by default.
+        self.assertEqual(ue4_glyphs.icons('playstation'), {'touchpad': 'PS4_Share'})
+        self.assertEqual(ue4_glyphs.icons('playstation', pad_map='cross=b,circle=a,touchpad=touchpad'),
+                         {'cross': 'PS4_Circle', 'circle': 'PS4_Cross'})
+        # The game's atlas: only the touchpad cell changes, to the Share texture's picture.
+        atlas = fake_uexp(1024, 72, bytes(1024 * 72 * 4))  # transparent
+        share = fake_uexp(64, 64, bytes([0x40, 0x80, 0xc0, 0xff]) * (64 * 64))  # opaque, BGRA
+        read = lambda name: share if name.endswith('PS4_Share.uexp') else atlas
+        edited = decode(ue4_glyphs.files(read, 'playstation')[ue4_glyphs.ATLAS])
+        cell = ue4_glyphs.ATLAS_CELLS.index('touchpad') * ue4_glyphs.CELL
+        self.assertEqual(edited.getpixel((cell + 32, 32)), (0xc0, 0x80, 0x40, 0xff))
+        self.assertEqual(edited.getpixel((32, 32))[3], 0)  # circle: untouched
+        # The menu's prompts: Touchpad.png is the cache's PS4_Share.png.
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as cache:
+            (Path(cache) / 'prompts').mkdir()
+            for button in ue4_glyphs.OVERLAY:
+                name = ue4_glyphs.GAME_PROMPT.get(button, button)
+                Image.new('RGBA', (100, 100), (10, 20, 30, 255)).save(Path(cache) / 'prompts' / f'PS4_{name}.png')
+            Image.new('RGBA', (100, 100), (90, 80, 70, 255)).save(Path(cache) / 'prompts' / 'PS4_Share.png')
+            ue4_glyphs.overlay_prompts('playstation', cache)
+            with Image.open(Path(cache) / 'prompts' / 'style' / 'Touchpad.png') as image:
+                self.assertEqual(image.getpixel((50, 50)), (90, 80, 70, 255))
+            with Image.open(Path(cache) / 'prompts' / 'style' / 'Cross.png') as image:
+                self.assertEqual(image.getpixel((50, 50)), (10, 20, 30, 255))
 
 
 if __name__ == '__main__':

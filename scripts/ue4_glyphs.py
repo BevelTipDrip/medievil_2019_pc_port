@@ -9,7 +9,8 @@ and three 100x100 DXT5 "bone" prompts. Their .uexp holds the pixels already in t
 written over the payload and the edited .uexp goes into the override pak; the .uasset header stays
 the game's.
 
-Styles: "playstation" (the game's own, no files), "xbox" and "keyboard" (third_party/input-prompts,
+Styles: "playstation" (the game's own art; a PS4 button the launcher binds to another pad button shows that
+button's PS4 picture, as Touchpad on Share / Create by default: Share), "xbox" and "keyboard" (third_party/input-prompts,
 the CC0 Free Input Prompts pack's Default Xbox and Vintage keyboard sets; each prompt shows the pad
 button or key the launcher's Controls page maps to that PS4 button, GOW3_PAD_MAP / GOW3_KEY_MAP),
 "test" (numbered squares in the 16 atlas cells, the three small textures and the three bone
@@ -20,7 +21,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from game_ui_assets import FORMATS, detile, texture, tile  # noqa: E402
+from game_ui_assets import FORMATS, decode, detile, texture, tile  # noqa: E402
 
 ATLAS = 'OVERBITE/Content/UI/Sprites/HUD/InventoryButtonAtlas.uexp'
 CELL = 64
@@ -72,6 +73,19 @@ PAD_ICONS = {'a': 'A', 'b': 'B', 'x': 'X', 'y': 'Y', 'leftshoulder': 'LB', 'righ
              'leftstick': 'LS', 'rightstick': 'RS', 'start': 'Menu', 'back': 'View', 'dpup': 'DpadUp',
              'dpdown': 'DpadDown', 'dpleft': 'DpadLeft', 'dpright': 'DpadRight'}
 PAD_FIXED = {'l2': 'LT', 'r2': 'RT', 'stick_left': 'LS', 'stick_right': 'RS'}
+# PlayStation: the game's own PS4 prompt (UI/Textures/ButtonPrompts; the game UI cache's prompts/<name>.png) of
+# each SDL gamepad button. A PS4 button bound to a pad button whose picture is not its own shows that picture
+# (the user, 2026-11-13: the prompt shows the physical button). By default only the touchpad differs: it is on
+# Share / Create (SDL back), so it shows Share.
+PS4_PROMPTS = 'OVERBITE/Content/UI/Textures/ButtonPrompts/'
+PAD_PS4 = {'a': 'PS4_Cross', 'b': 'PS4_Circle', 'x': 'PS4_Square', 'y': 'PS4_Triangle', 'leftshoulder': 'PS4_L1',
+           'rightshoulder': 'PS4_R1', 'leftstick': 'PS4_Left_Stick', 'rightstick': 'PS4_Right_Stick',
+           'start': 'PS4_Options', 'back': 'PS4_Share', 'touchpad': 'PS4_Touch_Pad', 'dpup': 'PS4_Dpad_Up',
+           'dpdown': 'PS4_Dpad_Down', 'dpleft': 'PS4_Dpad_Left', 'dpright': 'PS4_Dpad_Right'}
+OWN_PS4 = {'cross': 'PS4_Cross', 'circle': 'PS4_Circle', 'square': 'PS4_Square', 'triangle': 'PS4_Triangle',
+           'l1': 'PS4_L1', 'r1': 'PS4_R1', 'l3': 'PS4_Left_Stick', 'r3': 'PS4_Right_Stick', 'options': 'PS4_Options',
+           'touchpad': 'PS4_Touch_Pad', 'up': 'PS4_Dpad_Up', 'down': 'PS4_Dpad_Down', 'left': 'PS4_Dpad_Left',
+           'right': 'PS4_Dpad_Right'}
 # Keyboard icons (keyboard/<name>.png) by SDL key name, lower case; letters, digits and F1-F12 are
 # their own name. The sticks are always WASD and the arrow keys (runtime_pad.c): key clusters.
 KEY_ICONS = {'space': 'Space', 'left shift': 'Shift', 'right shift': 'Shift', 'return': 'Enter', 'enter': 'Enter',
@@ -198,6 +212,9 @@ def icons(style, key_map='', pad_map='', log=lambda line: print(line, flush=True
     button or key each PS4 button is mapped to. A key without a picture keeps the PS4 one (log).
     Keyboard: a button with a mouse button (GOW3_MOUSE_MAP) shows the mouse when prefer_mouse is set or
     its key has no picture (none: unbound in the launcher)."""
+    if style == 'playstation':  # only the buttons whose bound pad button has another picture
+        chosen = {**DEFAULT_PAD, **{b: n.lower() for b, n in button_map(pad_map).items()}}
+        return {b: PAD_PS4[n] for b, n in chosen.items() if PAD_PS4.get(n) and PAD_PS4[n] != OWN_PS4.get(b)}
     if style == 'xbox':
         chosen = {**DEFAULT_PAD, **{b: n.lower() for b, n in button_map(pad_map).items()}}
         result = {b: PAD_ICONS.get(n) for b, n in chosen.items()}
@@ -244,9 +261,11 @@ def fit(icon, w, h):
     return icon.convert('RGBa').resize(size, Image.LANCZOS).convert('RGBA')
 
 
-def place(picture, box, name, style):
+def place(picture, box, name, style, loader=None):
     """The style's icon `name` scaled to fit box (left, top, width, height) less MARGIN, centred
-    on a cleared box. A tuple of four names is a key cluster: the first above the other three."""
+    on a cleared box. A tuple of four names is a key cluster: the first above the other three.
+    loader(name): the icon's picture (PlayStation: the game's own textures), else the style's art."""
+    load = loader or (lambda n: load_icon(style, n))
     x, y, w, h = box
     picture.paste((0, 0, 0, 0), (x, y, x + w, y + h))
     if isinstance(name, tuple):
@@ -254,14 +273,14 @@ def place(picture, box, name, style):
         left, top = x + (w - 3 * side) // 2, y + (h - 2 * side) // 2
         spots = ((left + side, top), (left, top + side), (left + side, top + side), (left + 2 * side, top + side))
         for key, (kx, ky) in zip(name, spots):
-            icon = fit(load_icon(style, key), side, side)
+            icon = fit(load(key), side, side)
             picture.alpha_composite(icon, (kx + (side - icon.width) // 2, ky + (side - icon.height) // 2))
         return
-    icon = fit(load_icon(style, name), w - 2 * MARGIN, h - 2 * MARGIN)
+    icon = fit(load(name), w - 2 * MARGIN, h - 2 * MARGIN)
     picture.alpha_composite(icon, (x + (w - icon.width) // 2, y + (h - icon.height) // 2))
 
 
-def atlas(uexp, style, chosen=None):
+def atlas(uexp, style, chosen=None, loader=None):
     """The atlas .uexp with its 16 prompt cells in the given style; chosen: icons() of the style
     (a cell without an icon keeps its PS4 art)."""
     picture, at, pitch = strip(uexp, CELL)
@@ -270,11 +289,11 @@ def atlas(uexp, style, chosen=None):
     else:
         for i, button in enumerate(ATLAS_CELLS):
             if (chosen or {}).get(button):
-                place(picture, (i * CELL, 0, CELL, CELL), chosen[button], style)
+                place(picture, (i * CELL, 0, CELL, CELL), chosen[button], style, loader)
     return with_strip(uexp, picture, at, pitch)
 
 
-def small(uexp, style, number, icon=None):
+def small(uexp, style, number, icon=None, loader=None):
     """A small or bone prompt texture's .uexp in the given style (the whole texture; the padding
     keeps its pixels). number: the test style's; icon: the other styles' icon (none: unchanged)."""
     _format, width, height, *_rest = texture(uexp) or (None, 0, 0)
@@ -282,28 +301,34 @@ def small(uexp, style, number, icon=None):
     if style == 'test':
         test_square(picture, (0, 0, width, height), number)
     elif icon:
-        place(picture, (0, 0, width, height), icon, style)
+        place(picture, (0, 0, width, height), icon, style, loader)
     return with_whole(uexp, picture, layout)
 
 
 # The port's Load list and settings menu prompts (gow3gpu_choice_style): file name and PS4 button.
-OVERLAY = {'Cross': 'cross', 'Circle': 'circle', 'Square': 'square', 'L1': 'l1', 'R1': 'r1'}
+OVERLAY = {'Cross': 'cross', 'Circle': 'circle', 'Square': 'square', 'L1': 'l1', 'R1': 'r1', 'Touchpad': 'touchpad'}
+# The game's own prompt (game UI cache, prompts/PS4_<name>.png) where its name differs from OVERLAY's file name.
+GAME_PROMPT = {'Touchpad': 'Touch_Pad'}
 
 
 def overlay_prompts(style, cache, key_map='', pad_map='', mouse_map='', prefer_mouse=False):
-    """Writes <cache>/prompts/style/Cross|Circle|Square|L1|R1.png for the port's Load list and
-    settings menu in the given style; the game's own PS4 prompts (game UI cache) for playstation,
-    test, an unknown style or a key without a picture."""
+    """Writes <cache>/prompts/style/Cross|Circle|Square|L1|R1|Touchpad.png for the port's Load list and
+    settings menu in the given style (Touchpad: held with Square for APPLY & RESTART); the game's own PS4
+    prompts (game UI cache) for playstation, test, an unknown style or a key without a picture."""
     from PIL import Image
     out = Path(cache) / 'prompts' / 'style'
     out.mkdir(parents=True, exist_ok=True)
     chosen = icons(style, key_map, pad_map, log=lambda _line: None, mouse_map=mouse_map, prefer_mouse=prefer_mouse)
     for file, button in OVERLAY.items():
-        if chosen.get(button):
+        bound = Path(cache) / 'prompts' / f'{chosen.get(button)}.png'
+        if chosen.get(button) and style == 'playstation' and bound.is_file():  # the bound pad button's picture
+            with Image.open(bound) as image:
+                picture = image.convert('RGBA')
+        elif chosen.get(button) and style != 'playstation':
             picture = Image.new('RGBA', (100, 100), (0, 0, 0, 0))  # the size of the game's prompts
             place(picture, (0, 0, 100, 100), chosen[button], style)
         else:
-            with Image.open(Path(cache) / 'prompts' / f'PS4_{file}.png') as image:
+            with Image.open(Path(cache) / 'prompts' / f'PS4_{GAME_PROMPT.get(file, file)}.png') as image:
                 picture = image.convert('RGBA')
         picture.save(out / f'{file}.png')
 
@@ -311,13 +336,23 @@ def overlay_prompts(style, cache, key_map='', pad_map='', mouse_map='', prefer_m
 def files(read, style, key_map='', pad_map='', mouse_map='', prefer_mouse=False):
     """{pak path: edited .uexp} for a style; read(name) gives the game's file; key_map / pad_map /
     mouse_map: the launcher's remaps (GOW3_KEY_MAP / GOW3_PAD_MAP / GOW3_MOUSE_MAP; icons)."""
-    if style not in STYLES or style == 'playstation':
+    if style not in STYLES:
         return {}
     chosen = icons(style, key_map, pad_map, mouse_map=mouse_map, prefer_mouse=prefer_mouse)
-    result = {ATLAS: atlas(read(ATLAS), style, chosen)}
+    loader = None
+    if style == 'playstation':  # the game's art, other buttons' pictures where the binds say so
+        if not chosen:
+            return {}
+
+        def loader(name):
+            picture = decode(read(PS4_PROMPTS + name + '.uexp'))
+            if picture is None:
+                raise ValueError(f'{name}: not a texture of this layout')
+            return visible(picture)
+    result = {ATLAS: atlas(read(ATLAS), style, chosen, loader)}
     for name, (number, button) in SMALL.items():
         if style == 'test' or chosen.get(button):
-            result[name] = small(read(name), style, number, chosen.get(button))
+            result[name] = small(read(name), style, number, chosen.get(button), loader)
     if style in ('xbox', 'keyboard'):
         from ue4_override import apply_edits
         for name, edits in SQUARE_TABS.items():
@@ -328,7 +363,7 @@ def files(read, style, key_map='', pad_map='', mouse_map='', prefer_mouse=False)
     try:
         for name, (number, button) in BONE.items():
             if style == 'test' or chosen.get(button):
-                result[name] = small(read(name), style, number, chosen.get(button))
+                result[name] = small(read(name), style, number, chosen.get(button), loader)
     except ValueError as error:  # the rest of the style still applies
         for name in BONE:
             result.pop(name, None)
