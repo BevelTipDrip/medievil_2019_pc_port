@@ -4,6 +4,10 @@ Research only: nothing was built, launched or changed in the port or the game fo
 the game's own menus (title, pause, options, inventory, dialogs, ...) keep their default buttons while gameplay
 binds are custom? Example: jump on Triangle, while Cross stays "accept" in menus; the same for keyboard keys.
 
+**Follow-ups (sections 7-10):** the goal is keyboard-first with per-device maps kept. Section 7 covers
+device-switched tables, additive keys and the cutscene skip; section 8 native keyboard input; section 9 a truth
+table. **Section 10 is the current recommendation** and replaces sections 3-5's.
+
 Status words: **found** = read in the game's data or the port's code; **confirmed** = seen in game in an earlier
 run (quoted); **inferred** = UE 4.21 engine behaviour or reasoning, not seen. Nothing here is fixed or verified.
 
@@ -377,13 +381,437 @@ T-SB2 (S0b): L3 jumps and still toggles walking. Collect the log.
 4. Should the D-pad, Options, L3 and R3 be bindable for gameplay actions now (S3), or later?
 5. Which layout does the user's save use (Classic or Modern)? T-SB1 step 1 switches to Modern.
 
+## 7. Follow-up (2026-11-13): keyboard-first, per-device independence kept
+
+The user's goal, clarified:
+
+- The feature is mainly for keyboard players.
+- Each device keeps its own physical-to-PS4 map, as today. Gamepad defaults are logical, and a pad remap may
+  keep moving the pad's menu buttons.
+- The keyboard's menu keys stay the defaults while its gameplay keys are custom. Example: Space bound to Square
+  must still accept in menus.
+- The D-pad, L3, R3 and Options only need to stay bindable as today, through the port's pad layer. Game actions do
+  not move onto them through the tables.
+
+This changes the recommendation in sections 3-5: a static table shared by both devices (C) breaks per-device
+independence. The candidates are a table switched by device in use (7.1) and additive keyboard keys (7.2).
+
+### 7.1 Per-device tables, switched at run time
+
+**Model:**
+
+- The pad keeps today's runtime map (`GOW3_PAD_MAP`) and the game's own table, stock Classic or Modern.
+- The keyboard layer becomes static: the default keys (`runtime_pad.c:169-176`) always send their default PS4
+  button, so menus see the default keys. Keys bound to the D-pad, L3, R3 and Options keep working as today:
+  global, menus follow them.
+- While the keyboard is the device in use, the runtime has the game apply a *keyboard table*: the current table's
+  rows with the keyboard's gameplay keys.
+- Derivation: for a row whose stock key is PS4 button X, the launcher's keyboard column binds key K(X). The row's
+  new key is D(K(X)), the PS4 button that key K(X) sends by default; the row's sprite is that button's.
+  Example: Space bound to Square makes Attack1's row (Modern: Square) take Cross; Space sends Cross, which
+  accepts in menus and attacks in gameplay.
+- Rows not edited: `GUINext`, `GUIBack`, `GUISpecial`, both category rows and `SkipSequence` (7.3).
+- Because the derivation uses the current table's stock keys, Classic and Modern both work.
+
+**New keys (not one of the 16 defaults, e.g. G) and mouse buttons:**
+
+- A mouse button bound to the same PS4 button as a key sends that key's default button. No extra slot is needed.
+- A new key needs a *free slot*: a table button (Cross, Circle, Square, Triangle, L1, R1, L2, R2, touchpad) whose
+  default key the custom keyboard map no longer uses. The new key sends that button statically, so it also has
+  that button's menu meaning. The freed default key still sends it too: in gameplay it does the new key's action.
+- Counting: the launcher gives each PS4 button one key, so the unused default keys are at least as many as the
+  new keys. They can still run out among *table* buttons when default keys of table buttons are rebound to the
+  D-pad, L3, R3 or Options. The launcher must refuse that case with a message.
+- Prefer Square as a free slot: it has no menu meaning apart from cheat codes.
+
+**Can the runtime switch the applied table? Yes, inferred feasible, through the game's own path.** The game
+already re-applies a table mid-session: Options > Button Layout calls `SetControlConfig` → `UpdateInputMap` (2.2).
+The runtime would edit the active table's rows in memory, have the game run `UpdateInputMap`, and then restore the
+stock rows. `SetInputActionsMap` keeps *copies* of the rows in `InputActionMap`, so the restore does not undo the
+binds. Later unbinds use those copies, so they stay correct. Pieces:
+
+| Piece | How, both builds | State |
+|---|---|---|
+| Game instance, `InputSettings`, the class | Wrap `InputSettings::AddActionMapping` (slots 2.6). A call whose `Stack.Node` (FFrame +0x10) is `BindActionRemapper` (in-memory script size 0x2a4, identical in both builds) gives the game instance (`Stack.Object` +0x18) and `InputSettings` (Context). The class is the function's Outer (+0x20). | found: offsets are the port's working hooks (`probe.c:722`, `:880-896`, `pc_settings_hook.h`) |
+| `UpdateInputMap` UFunction | The class's function children: the one with script size 0xa0 and the known bytes. UStruct `Children` (+0x38) and UField `Next` (+0x28) are the 4.21 layout. Alternatively, `SetControlConfig`'s script holds the pointer at mem 0x007d. | `Children` / `Next` offsets inferred; the rest found |
+| The two table objects | `UpdateInputMap`'s script: `EX_ObjectConst` pointers at mem 0x000b (Modern) and 0x001e (Classic) | found (kis3 token dump) |
+| Rows | `UDataTable::RowMap` (inferred +0x30, after `RowStruct` +0x28) maps FName to row memory. The field offsets come at run time from `RowStruct`'s property chain (`Offset_Internal` +0x44): `action` → `Key.KeyName` (FKey: FName, then a `KeyDetails` shared pointer) and `buttonPromptImage.ResourceObject`. | inferred; check in X1 |
+| Calling `UpdateInputMap` | `UObject::ProcessEvent(function, NULL)` through the game instance's vtable. **The slot is not found yet:** a quick byte heuristic gave a wrong candidate. Find it offline in Ghidra from a BlueprintImplementableEvent thunk; it is expected to be the same in both builds (same engine). The port already calls guest virtual functions on the game thread from `scePadReadState` (`runtime_extra.c` `ue4_set_cvar`, vtable +0x20 / +0x68). | to find |
+| Where to apply | In `scePadReadState` (the game thread, the same place as the live cvars), before that read's state is returned. The press that switched devices then already acts under the new table, with no wrong frame. | inferred |
+
+**Rejected alternative:** calling `AddActionMapping` / `RemoveActionMapping` (or their C++ functions) directly and
+editing `InputSettings.ActionMappings`. It skips the game's `InputActionMap` (prompts, later unbinds) and its
+`InputMappingsChanged` event. Dan caches the Interact keys on that event (`ProcessInputMappingChanged`, used to
+resolve shared buttons), so the cache would go stale.
+
+**Safety mid-gameplay:**
+
+- **Held buttons.** UE4's keymap rebuild (`ForceRebuildKeymaps`, run by `AddActionMapping(…, true)`) leaves key
+  states alone (inferred). A table button held across a re-apply would release into a different action: Block
+  pressed, then released as something else, so Block never ends. Rule: switch only on a *press edge* of a table
+  button from the other device, and only when the current device holds no table button.
+- **Re-entrancy.** `UpdateInputMap` runs about 19 unbinds, 19 binds and 19 keymap rebuilds. Running it inside
+  the input poll is ordinary game-thread work (inferred). It must never run from inside a game call of the same
+  path. The `AddActionMapping` wrapper knows when the game is applying.
+- **The game's own re-applies** (save load, Options > Button Layout, the inverted-camera option) apply stock rows.
+  The wrapper sees `BindActionRemapper` calls the runtime did not start. On the next pad read, while the keyboard
+  is the device in use, the runtime applies the keyboard table again.
+- **Rows' `KeyDetails`.** The rows are cooked FKeys; their shared pointers are probably empty until looked up
+  (inferred). Copy only the FName while they are empty. Otherwise swap whole FKeys (a permutation, reference
+  counts unchanged), or refuse with a log line.
+- **No save change.** `CurrentKeyMap` is never touched; the save keeps the player's Classic / Modern choice.
+- **Steam Deck:** a pad alone never switches, so behaviour is today's.
+
+**Prompts:**
+
+- `GetButtonIconForAction` reads `InputActionMap`, so prompts made after a switch show the new row's sprite.
+- Property-bound brushes repaint live, for example `PlayerHUD`'s `Get_SwapButton_Brush_0`.
+- Prompts already on screen (a tutorial prompt, a button bar) keep their picture until rebuilt (inferred).
+- The atlas cells are written at start for one style (study-glyphs.md). With the Keyboard style, cell X should
+  draw the key whose gameplay action sits on X: the default key, or the new key on a free slot. The menus then
+  show the default menu keys too. A per-device live glyph switch is study-glyphs option (b), separate.
+
+**Debounce and both devices at once:**
+
+- Only button presses switch; sticks, WASD and mouse motion never do, since movement does not depend on the table.
+- Optionally, a minimum of 250 ms between switches.
+- While one device holds a table button, the other device's presses act under the current table and do not
+  switch. Example: pad Cross during keyboard play does what the keyboard table put on Cross. Log it once.
+
+**Size:**
+
+- Offline: ProcessEvent slot, `RowMap` / `Children` offsets, both builds. 1-2 days.
+- Runtime: finder, row edit / apply / restore, device tracking, hold rules, log lines, C tests for the byte
+  checks. 3-4 days.
+- Launcher: keyboard column semantics, free-slot assignment and refusals, glyph cells. About 2 days.
+- Launches: X1-X3 below, a full run on 01.02 and one on 01.00.
+- Total about 1.5-2 weeks.
+
+**Risks:** the ProcessEvent slot and the UDataTable layout are not seen yet; brush copies (a cached
+`ResourceHandle` in a row brush, inferred unused); stale prompts already on screen; a re-apply during a level load;
+the title screen before the first table apply (the save import); the device rule when both devices are held.
+
+**Cheap first experiments:**
+
+| # | Change | Proves | Launch |
+|---|---|---|---|
+| X1 | Log-only wrapper on `AddActionMapping`. Logs per apply: count, calling function (script size), game instance, `InputSettings`, the two table pointers read from `UpdateInputMap`, each table's row count (19 expected if the `RowMap` offset is right), and the `KeyName` / `ResourceObject` offsets from `RowStruct`. The user loads a save and toggles Options > Button Layout twice. | every object is found in this build; no behaviour change | yes, once per build |
+| X2 | At the first apply, the runtime swaps Jump and Attack1 in the Modern table's rows in memory (as T-SB1, but in memory). The game's own Button Layout toggle applies it. | an in-memory row edit drives gameplay and prompts, menus unchanged, without calling the game | yes |
+| X3 | With the ProcessEvent slot found: a test key makes the runtime call `UpdateInputMap` mid-gameplay with and without the X2 edit | runtime re-apply; held-button rules | yes |
+
+T-SB1 (the pak edit, section 5) stays the cheapest proof that the table alone drives gameplay while menus keep
+their buttons. It needs no runtime code.
+
+### 7.2 Additive keyboard keys (static, no switching)
+
+- **Mechanism:** the launcher lets a PS4 button take extra keys or mouse buttons; the runtime already supports
+  several sources per button (`ButtonMap`, `runtime_pad.c:157-158`). `apply_button_map` replaces a button's
+  sources, so it needs an "add" form such as `cross+=K`. Default keys never change, so menus keep the defaults.
+- **Cost:** an extra key has its button's menu meaning: K → Cross also accepts.
+- **What it covers:**
+  - more keys and mouse buttons for a button (mouse left as Square, Attack in Modern);
+  - moving keys between buttons that have no menu meaning (Square; L3 / R3 / Options / D-pad stay global anyway).
+- **What it does not cover:**
+  - re-purposing a default key: Space as Square while Space still accepts, which is the user's own example;
+  - freeing a default key from gameplay.
+- **Size:** 1 day (launcher column, runtime syntax, glyph cells showing the extra key), no game-side work.
+- **Verdict:** a useful near-term step, but not the user's goal on its own.
+
+The menu meaning of each PS4 button (found, 2.4): Cross accept / GUINext; Circle back; Triangle GUISpecial
+(inventory, bestiary); L1 / R1 categories; L2 / R2 subtabs; touchpad closes the inventory; Options pause and back;
+D-pad navigation. Square has none (cheat codes only).
+
+### 7.3 Cutscene skip (plan only, no decision)
+
+**How skipping works today (found, 01.02 disassembly):**
+
+| Cutscene type | Input | Details |
+|---|---|---|
+| In-engine sequences (`Blueprints/Sequences/BP_Sequence_Control`, placed in about 40 cutscenes: Hall of Heroes intros and rewards, boss intros and outros, Dan's intro, boulders, Ant Caves fairies) | **Action 8 `GUIBack`**, listener at priority 8 (Sequence); `RegisterInputEventHandlers` first blocks everything below 8 | `OnGUIBackPressed` (ubergraph entry 0x19ce): on `Level_IN_MM` (title) it runs `HandleMainMenuSequence` (jump to the menu frame); elsewhere (0x1106 → 0x05e5) `if IsSkippable: SkipSequence()` (set the playback position to the end), then a **0.5 s `RetriggerableDelay` debounce** (`DelayInput`). No hold timer. Not skippable: nothing happens (the "not skippable" message is a stripped `PrintString`). |
+| Its prompt | **`SkipSequence` row (action 28)** | When `IsSkippable`, a `ButtonBar` with `IncludeSkipButton` calls `AddButtonPromptForAction(PROMPT_SKIP, 28)`: the picture comes from the `SkipSequence` row, Circle in both layouts. No listener on action 28 was found in the decoded assets: the row is the prompt only, and the button is `GUIBack`. Both are Circle, so they agree today. |
+| FMV cinematics (`UI/Movies/UI_VideoPlayer`, used by `Level_AV_00` and `Level_AV_GameIntro`) and intro text (`UI/IntroScrollingText`) | **Raw `IsInputKeyDown(Gamepad_FaceButton_Right)`** (`ProcessInput` → `Circle Button`) | The callers in the two levels' scripts, which also bind `GUIBack` / `GUINext` action events, were not decoded (hold or press not known). The intro text has a 1 s `Delay` around skipping. |
+| Return from the background | none | Dan skips the active sequence after a suspend (`IsRecentBackground`, 0x4ed7). Not input. |
+
+**Options for keeping it fixed:**
+
+1. **Fixed on Circle, as a menu button (no work).** Skip is `GUIBack` plus raw Circle, both menu-side and
+   untouched by 7.1 / 7.2. Keep the `SkipSequence` row stock in the keyboard table so the prompt matches. Keyboard:
+   the default Circle key (Left Shift) skips; with the Keyboard prompt style the prompt shows it.
+2. **Follows gameplay.** Make `BP_Sequence_Control` listen to action 28 instead of 8: one same-size byte, the
+   `EX_ByteConst` 8 in `RegisterInputEventHandlers` (mem 0x00bb call; offset to take in both builds). The
+   `SkipSequence` row then decides both the button and the prompt, and the keyboard table may move it. FMV and
+   intro text stay raw Circle unless their key names are edited (a name-map change). Skipping would then differ
+   between cutscene types.
+3. **Both.** Keep `GUIBack` and add 28. That is not same-size (a second register call); alternatively, give the
+   `SkipSequence` row an extra ini key. It costs more for little gain.
+
+Option 1 matches the "menus keep the defaults" goal; 2 and 3 are only worth it if players expect the gameplay
+"back" or "attack" key to skip.
+
+### 7.4 Summary of the follow-up
+
+Superseded by section 10, after the user's preferred idea (native keyboard input, section 8) and the truth table
+(section 9). Kept for 7.1-7.3: per-device tables remain the fallback, additive keys the quick option, and the
+skip plan stands.
+
+## 8. Native keyboard input (the user's preferred idea)
+
+The idea: keyboard keys stop becoming PS4 pad buttons. The runtime sends the engine real key events (SpaceBar, W,
+Escape ...), as on a PC, and keyboard binds become UE4 key mappings. The missing PS4 keyboard library only means
+the PS4 driver is absent. The engine's input layer above it (Slate, `UPlayerInput`) is platform-neutral.
+
+### 8.1 What the build has (found, both eboots)
+
+- **The keyboard FKeys exist.** The `EKeys` static initializer builds `FKey` objects from ASCII names
+  (`lea rdi, <static FKey>; lea rsi, "<name>"; call`). The UTF-16 display names, such as "Space Bar", are there
+  too (`EKeys::Initialize`).
+
+  | Static `FKey` | 01.00 | 01.02 |
+  |---|---|---|
+  | `EKeys::Enter` | 0x5b1b1f0 (name "Enter" 0x3cbd1c4, init 0xb64c78) | 0x5b1b230 (0x3cc0824, 0xb678f8) |
+  | `EKeys::SpaceBar` | 0x5b1b250 (0x3cbd1e0, 0xb64d40) | 0x5b1b290 (0x3cc0840, 0xb679c0) |
+  | `EKeys::LeftMouseButton` | 0x5b1b148 (0x3cbd160, 0xb64b1a) | 0x5b1b188 (0x3cc07c0, 0xb6779a) |
+  | `EKeys::Gamepad_FaceButton_Bottom` | 0x5b1bdd8 (0x3cbd59e, 0xb66555) | 0x5b1be18 (0x3cc0bfe, 0xb691d5) |
+
+  The statics follow `EKeys` declaration order at a 0x18 (`sizeof(FKey)`) stride. For example, Enter → SpaceBar
+  is 0x60, four keys: Enter, Pause, CapsLock, Escape. A runtime can read any key's FName from its static after
+  start.
+- **No `Virtual_Accept` / `Virtual_Back` keys** (no such strings in either eboot). Inferred: this build's Slate
+  takes Enter, SpaceBar and `Gamepad_FaceButton_Bottom` as a button's accept key directly (the 4.21 `SButton`), and
+  its default navigation uses the arrows and Tab for keys, the D-pad and left stick for pads.
+- **The message handler's vtable** is known from the mouse code (study-mouse-input.md 2.3):
+  - Found: `OnMouseDown` +0x30, `OnMouseUp` +0x40, `OnMouseDoubleClick` +0x50, `OnMouseWheel` +0x60,
+    `OnRawMouseMove` +0x78.
+  - Inferred from the 4.21 order (`FGenericApplicationMessageHandler`), which fits those five: `OnKeyChar` +0x18,
+    `OnKeyDown` +0x20, `OnKeyUp` +0x28.
+  - The PS4 input code reaches the handler through a shared reference, e.g. 01.02 0xb75c5c
+    `mov rdi,[rbx]; mov rax,[rdi]; call [rax+0x40]`. The owning object and its offset are **to read offline**
+    from that function (it starts near 0xb74d20 in 01.02).
+- **Raw-check natives** (found, `natives.py`):
+
+  | Native | 01.00 slot / exec | 01.02 slot / exec |
+  |---|---|---|
+  | `PlayerController::IsInputKeyDown` | 0x526aed8 / 0x2a41e70 | 0x526b458 / 0x2a44c30 |
+  | `PlayerController::WasInputKeyJustPressed` | 0x526b1a8 / 0x2a446e0 | 0x526b728 / 0x2a474a0 |
+  | `PlayerController::GetInputKeyTimeDown` | 0x526ae58 / 0x2a41580 | 0x526b3d8 / 0x2a44340 |
+
+### 8.2 The injection point
+
+Two routes, both on the game thread at `scePadReadState`, which is the same place as the live cvars:
+
+- **Through the handler:** `MessageHandler->OnKeyDown(keyCode, charCode, isRepeat)` (+0x20) and `OnKeyUp`
+  (+0x28). These are the calls a PC platform layer makes. `FSlateApplication::OnKeyDown` turns the codes into an
+  FKey through `FInputKeyManager`, whose tables come from the platform (`FPlatformInput::GetKeyMap` /
+  `GetCharKeyMap`).
+  - **Unknown: whether the PS4 platform fills those tables.** If it does not, every key becomes `EKeys::Invalid`
+    and is dropped. `OnKeyDown`'s return value (handled or not) shows this in the first log line.
+- **Past the code mapping:** `FSlateApplication::ProcessKeyDownEvent(const FKeyEvent&)` / `ProcessKeyUpEvent`,
+  with an `FKeyEvent` whose FKey is copied from the `EKeys` static. It needs the function addresses and
+  `FKeyEvent`'s layout and vtable. All three can be read offline from `FSlateApplication::OnKeyDown`, which builds
+  one.
+
+The Slate route covers menus and gameplay, as on a PC:
+
+- Slate first offers the key to the focused widget: UMG accept and navigation.
+- Unhandled keys go to the game viewport, then `UGameViewportClient::InputKey`, the player controller and
+  `UPlayerInput`, which applies the action and axis mappings.
+- Inferred: user index 0 becomes controller 0, the same local player as the pad. Keyboard and pad then merge in
+  one `UPlayerInput`, as on a PC: both at once work with no switching.
+
+Not taken: `APlayerController::InputKey` / `UPlayerInput::InputKey` directly. That is gameplay only; UMG accept
+and navigation would not see the keys.
+
+### 8.3 Gameplay through `DefaultInput.ini` keyboard mappings
+
+- The table adds only pad keys, and `RemoveActionMapping` removes only exact matches (2.2). Lines such as
+  `+ActionMappings=(ActionName="Jump",Key=SpaceBar)` added to the override pak's `DefaultInput.ini` therefore stay
+  bound next to the table's pad key (inferred; T-SB2 tests the same rule with L3).
+- Axes already list keys: `MoveForward` W/S/Up/Down, `MoveRight` A/D, `TurnRate` Left/Right (found). They work as
+  soon as keys arrive. `LookUpRate` has no key; add one, for example PageUp/PageDown. Mouse look stays on the
+  sceMouse path.
+- Classic / Modern changes only the pad keys. Keyboard binds are per action, so they are independent of the
+  in-game layout and of the pad. This is the per-device independence the user wants, with no switching.
+- Dan's shared-button logic reads every key of `Interact` from `InputSettings` (`ProcessInputMappingChanged`), so it
+  includes the keyboard keys.
+- **Template leftovers in the stock ini that would go live and must be removed in the override:**
+  - `MovementUp/Down/Left/Right` on W/A/S/D. Dan listens to `MovementLeft/Right` (actions 22/23) in gameplay, and
+    the inventory navigates with `Movement*`, so give them non-WASD keys.
+  - `GUIUp/Down/Left/Right` on the arrows; keep these for menus, but they share keys with `TurnRate`.
+  - `GUINextSubTab` E, `GUIPreviousSubTab` Q.
+  - `DebugIncrease/DecreaseSimulationSpeed` on Add / Subtract.
+  - Also `bF11TogglesFullscreen`, `bAltEnterTogglesFullscreen`, and the console key Tilde (no console in a
+    shipping build, inferred).
+- **Developer key events in Blueprints would fire too** (found, 2.4). Each needs neutralizing before its key can
+  be injected: a same-size edit of the key's FName in the class's `InputKeyDelegateBinding`, or the runtime never
+  injects it.
+
+  | Asset | Key | What it does |
+  |---|---|---|
+  | `UI/Map/MapPawn` | **G** | `SetLevelCompleted(ActiveLocation.Level, true)`: **marks the selected level completed in the save** (no guard seen) |
+  | `UI/Map/MapPawn` | C, A, U | not decoded |
+  | `BP_df_character` (Dan) | R | `RemoveHealth(30)`, guarded by `IsPackagedForDistribution()` (no-op in this build) |
+  | `BP_df_character` | Five, NumPad 2/4/6/7/8/9 | debug: item effect, camera |
+  | `BP_HH_Manager` | Y | guarded |
+  | `BP_CameraManager` | Tab, [, ] | fades |
+  | `WaterBody_BP0` | E | water plugin |
+  | `GlobalUpdater_BP` | AnyKey | fires for pad keys too today |
+
+### 8.4 Menus
+
+| Menu input | Native keyboard | Notes |
+|---|---|---|
+| UMG accept (pause, options, title, pop-ups, dialogs) | Enter / Space on the focused button (inferred, 4.21 Slate) | no ini needed |
+| UMG navigation | arrows, Tab / Shift+Tab (inferred) | |
+| `GUIBack` (back everywhere, cutscene skip) | needs an ini key, e.g. Escape | Escape on both `Pause` and `GUIBack` could close and reopen pause in one press (both fire); test before binding both |
+| `GUINext` (inventory, map screen, Button Layout) | ini key, e.g. Enter | Space too if wanted |
+| Categories / subtabs / `GUISpecial` / `Movement*` (inventory) | ini keys chosen for menus (e.g. PageUp/PageDown, Q/E, a free key; `Movement*` on IJKL) | |
+| **Raw pad checks** (`IsInputKeyDown(Gamepad_*)`): item splash (Cross, Circle), FMV and intro text (Circle), inventory (Triangle, L1, R1, L2, R2), bestiary (D-pad, left stick up/down, Circle, Triangle, L1, R1, L2, R2) | **miss the keyboard** | fallback below |
+
+Fallbacks for the raw checks:
+
+- **(a) Wrap `IsInputKeyDown`** (slots above), recommended. When the asked key is one of those pad keys and its
+  keyboard menu key is held (Escape for Circle, Enter for Cross, arrows for the D-pad ...), return true. It
+  affects only those checks: about 25 call sites in 5 assets per build, identified as in `pc_settings_hook.h` by
+  the calling function's script size and the code position. Or compare the FKey's FName with the `EKeys`
+  statics, which needs no site table.
+- **(b) Keep sending the pad button for the menu keys only.** In gameplay those keys then also fire the pad's
+  gameplay action: Enter would jump in Modern.
+- **(c) Edit the checks' key in the pak.** That replaces the pad key, so the pad stops working there. Rejected.
+
+### 8.5 Prompts
+
+- The game's prompts read the active table row's sprite, which is a pad glyph per action (2.5). Under native
+  keys, keyboard prompts would show the pad glyph of the current layout. The prompt is wrong whenever the keyboard
+  key differs from the pad button's default keyboard key.
+- `ue4_glyphs.py`'s Keyboard style redraws one atlas cell per **PS4 button**, but native binds are per
+  **action**, and Cross holds both Jump (Modern) and `GUINext`.
+- Showing the right key per action needs one cell per action: point each table row at its own sprite (a
+  same-size import-index edit, while sprites are free) and redraw that cell with the action's key.
+  - There are 16 atlas cells; about 11 gameplay rows and 5 menu rows need one each.
+  - Sprites the table does not import (D-pad, sticks, Options) need the import-map extension (S3).
+  - Fixed-sprite menu prompts (options pages) then show whatever their cell holds.
+- The glyph style is chosen at start, so prompts do not follow the device in use; that is today's behaviour too.
+
+### 8.6 Mouse, both devices, PS4 assumptions
+
+- **Mouse look** is unchanged (sceMouse raw moves).
+- **Mouse buttons** must stay out of Slate: a click the game received left the main menu deaf (T-MS2). Two
+  options: keep them as pad buttons (today), or inject them as FKeys straight into `UPlayerInput` (gameplay only,
+  `LeftMouseButton` statics exist). The second needs the player controller's input object (offline).
+- **Keyboard and pad at once:** one player, one key state (inferred). This is the strongest point of this
+  mechanism.
+- **PS4 assumptions to watch (inferred):**
+  - the `FKeyEvent` user index must be 0 (scePad user 1 is controller 0);
+  - Slate keyboard focus is user 0's focus;
+  - nothing on PS4 expects text input (no IME use was found for keys);
+  - the port's overlay must stop injection while it captures input, and release every injected key on focus loss
+    or menu open, as `hold_after_capture` does for pad buttons.
+
+### 8.7 Size, risks, first experiment
+
+- **Size, about 3-4 weeks in all:**
+  - Offline (Ghidra, both builds): the handler's owner, `OnKeyDown` → `ProcessKeyDownEvent`, the PS4 key map
+    question, `FKeyEvent` layout. 2-3 days.
+  - Runtime: injection with auto-repeat, capture and focus rules, the `IsInputKeyDown` wrapper. About a week.
+  - Pak: the keyboard ini and the developer key neutralizing. 2 days.
+  - Launcher: the keyboard column becomes per action (about 20 actions plus axes), and old binds migrate. 2 days.
+  - Prompts per action (optional, needs S3). 3-5 days.
+  - Tests and launches.
+- **Risks:**
+  - Engine C++ internals per build (non-UFUNCTION addresses, struct layouts) where the port so far wraps only
+    named natives.
+  - The PS4 key-code tables may be empty: the `ProcessKeyDownEvent` route is then needed.
+  - Live developer keys (the map screen's G edits the save).
+  - The ini leftovers.
+  - Prompts that do not match keyboard keys until the per-action cells exist.
+- **First experiment (X-N1; offline work first, then one launch):**
+  1. Offline, find the handler pointer's owner and `OnKeyDown` in 01.02.
+  2. Opt-in runtime test: while the test key is held, call `OnKeyDown` / `OnKeyUp` for Space (key code 0x20, char
+     ' ') once per press. Log `native key SpaceBar: handled=<bool>`.
+  3. Pak: `DefaultInput.ini` override with `+ActionMappings=(ActionName="Jump",...,Key=SpaceBar)`.
+  4. Launcher: Space unbound from Cross for the test, so it reaches the game only natively.
+  - Expected: the test key makes Dan jump, and on a focused pause-menu button it accepts.
+  - If `handled=0` and nothing happens, the key-code tables are empty; X-N2 then tries `ProcessKeyDownEvent`.
+
+## 9. Truth table
+
+**Assumptions:**
+
+- Controllers: menus on the physical defaults; gameplay from the stock table, or the pad's own static table
+  (section 3, C-c) if the pad is remapped.
+- Keyboard: an enforced menu set.
+  - Native (**N**): Enter / Space accept, Escape back, arrows navigate, plus the ini menu keys.
+  - Device-switched table (**T**) and additive keys (**A**): the 16 default keys on their default PS4 buttons.
+- Keyboard gameplay binds come from N, T or A.
+
+**Marks:** ✓ works as intended; ~ works with a stated cost; ✗ breaks. "Prompt" is what the game's prompt shows,
+with the Keyboard glyph style where the keyboard is used; "pad glyph" means the PS4 or Xbox picture.
+
+| # | Device | Context | Bind | N: behaviour / prompt | T: behaviour / prompt | A: behaviour / prompt |
+|---|---|---|---|---|---|---|
+| 1 | Pad only | gameplay | default (Classic or Modern) | ✓ stock / pad glyph | ✓ stock table / pad glyph | ✓ / pad glyph |
+| 2 | Pad only | game menus, pop-ups, skip | any | ✓ physical defaults / pad glyph | ✓ | ✓ |
+| 3 | Pad only | port ImGui menus | any | ✓ fixed menu buttons | ✓ | ✓ |
+| 4 | Keyboard only | gameplay | default | ✓ ini defaults / ~ pad glyph unless per-action cells | ✓ table = stock / ✓ default key | ✓ / ✓ default key |
+| 5 | Keyboard only | game menus (pause, options, title) | any | ✓ Enter/Space accept, arrows, Escape back (ini) / ~ menu prompt cell (one key per cell) | ✓ Space, LShift, IJKL ... / ✓ | ✓ / ✓ |
+| 6 | Keyboard only | inventory, bestiary (raw pad checks) | any | ~ needs the `IsInputKeyDown` wrapper (else ✗ held-shoulder and bestiary navigation) / ~ | ✓ keys send pad bits / ✓ | ✓ / ✓ |
+| 7 | Keyboard only | pop-ups in gameplay (lost soul dialog, confirmations, books) | any | ✓ Slate accept + `GUIBack` / ~ | ✓ / ✓ | ✓ / ✓ |
+| 8 | Keyboard only | new item splash (raw Cross/Circle) | any | ~ wrapper needed, else ✗ (cannot dismiss) | ✓ | ✓ |
+| 9 | Keyboard only | cutscene skip: sequences (`GUIBack`) | any | ✓ Escape (ini) / ~ prompt from the `SkipSequence` row | ✓ LShift / ✓ | ✓ / ✓ |
+| 10 | Keyboard only | cutscene skip: FMV, intro text (raw Circle) | any | ~ wrapper, else ✗ | ✓ | ✓ |
+| 11 | Keyboard only | port ImGui menus | any | ✓ (runtime reads keys; no injection while open) | ✓ | ✓ |
+| 12 | Keyboard only | gameplay | gameplay key moved onto a default menu key (Attack on Space) | ✓ Space attacks; in menus Slate accepts and gameplay listeners are blocked / ~ prompt | ✓ Space sends Cross; keyboard table puts Attack on Cross / ✓ | **✗** not expressible: Space must stay Cross |
+| 13 | Keyboard only | game menus | same bind as 12 | ✓ Space still accepts | ✓ | ✗ (see 12) |
+| 14 | Keyboard only | gameplay | gameplay key on a non-menu key (Jump on G) | ✓ / ~ prompt | ~ G takes a free slot (Square preferred); the freed default key also jumps / ✓ cell redrawn G | ~ G added to Jump's slot / ~ cell shows the default key |
+| 15 | Keyboard only | game menus | same as 14 | ✓ G does nothing in menus | ~ G acts as its slot's button (none for Square; accept if it got Cross) | ~ G acts as Jump's slot (Modern: Cross, so G accepts) |
+| 16 | Keyboard only | gameplay | action left unbound | ✓ no ini key | ✓ row key `None` | **✗** a default key cannot be removed without losing its menu use |
+| 17 | Keyboard only | gameplay | two actions on one key | ~ both fire (as on a PC); game conflicts as in Classic R1; warn | ~ two rows on one slot | ~ only if the stock table already shares that slot |
+| 18 | Keyboard only | Classic ↔ Modern switched in Options | custom | ✓ keyboard unaffected (per action) | ✓ the runtime re-applies the keyboard table after the game's apply / ~ one frame of stock | ~ meaning of extra keys follows the layout |
+| 19 | Both at once | gameplay | custom keyboard, stock pad | ✓ both work together (one player) | **✗** the table belongs to the first device; the other device's presses act under it | ✓ |
+| 20 | Both at once | game menus | any | ✓ | ✓ menus are fixed on both | ✓ |
+| 21 | Switching mid-game | gameplay | custom keyboard | ✓ nothing to switch | ~ switches on a press edge with nothing held; held across is blocked (see 19) | ✓ |
+| 22 | Switching mid-game | game menus | any | ✓ | ✓ (the table is irrelevant in menus) | ✓ |
+| 23 | Any keyboard | prompts with the PlayStation / Xbox style | any | ~ pad glyphs | ~ pad glyphs | ~ pad glyphs |
+| 24 | Pad only | gameplay | pad remapped (C-c static table) | ✓ / ✓ pad glyph of the moved button | ✓ pad table = C-c / ✓ | ✓ / ✓ |
+| 25 | Keyboard only | map screen | G pressed | **✗ marks the level completed** unless the G key event is neutralized in the pak or never injected | ✓ (G sends a pad bit or nothing) | ✓ |
+
+Rows that break: N 25 (until neutralized), and N 6/8/10 without the wrapper; T 19 (both at once); A 12, 13 and 16
+(the user's own example cannot be expressed).
+
+## 10. Updated recommendation (keyboard-first)
+
+1. **Target: native keyboard input (N).** It gives full per-device independence with no device switching, which
+   is the only mechanism with both devices working at once (row 19). Keyboard binds become per-action UE4
+   mappings, the game's menus get keyboard keys natively, and Classic / Modern affects the pad only.
+   - Its costs: engine-internal addresses (offline), an `IsInputKeyDown` wrapper for the raw menu checks, ini
+     cleanup, neutralizing developer keys (the map screen's G), and prompts that stay pad glyphs until per-action
+     cells exist.
+   - Stage it: offline find, then **X-N1** (one Space press, ini `Jump=SpaceBar`, a log line with the handled
+     flag). It decides feasibility before any launcher work.
+2. **Fallback if X-N1 / X-N2 fail: per-device tables (T, 7.1),** staged X1 → X2 → X3.
+3. **Optional quick win: additive keys (A, 7.2),** about 1 day, valid under any of them.
+4. **Pad:** stays on today's map, or the static C-c table if the user wants pad remaps to leave menus alone.
+5. **Cutscene skip:** option 1 (fixed, menu-side). Under N, Escape is bound to `GUIBack` in the ini, and the
+   FMV / intro raw Circle is covered by the `IsInputKeyDown` wrapper.
+6. **T-SB1** (pak table edit) stays the cheapest proof that tables drive gameplay; it matters for T and C, not
+   for N.
+
+**Open questions for the user:**
+
+1. The keyboard menu set under N: Enter + Space accept, Escape back, arrows navigate, plus keys for categories and
+   subtabs?
+2. Escape on `Pause` as well as `GUIBack`?
+3. Should keyboard prompts show the right key per action (S3 work), or are pad glyphs acceptable at first?
+4. Mouse buttons: keep them as pad buttons, or move them to native gameplay-only keys?
+
 ## Scratch tools and data
 
 In `C:\Users\Ty\AppData\Local\Temp\claude\c--Users-Ty-MediEvil\78f7734e-4522-4580-95d1-94046d666589\scratchpad\`:
 
 - `static-binds\`:
   - `rd.py`: one pak file.
-  - `enum.py`: user-defined enum values and display names.
+  - `kstr.py`: strings (ASCII and UTF-16) in both eboots; `xref.py`: the code that references an address (the `EKeys` statics); `scan3.py`: name search over every asset header.
+  - `ue_enum.py`: user-defined enum values and display names.
   - `ex.py`: an export list.
   - `dtoff.py`: DataTable rows with the `.uexp` offsets of key names, sprites and IDs.
   - `scan.py` / `scan_0102.txt`: input-related names over every asset header.
