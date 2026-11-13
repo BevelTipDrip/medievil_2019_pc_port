@@ -63,7 +63,7 @@ Status (2026-11-12): step 1 on branch `fsr`, verified on the PC (T-F1); its Deck
   (`vk_presenter.cpp` `!Ue4Upscaler::Running()`), and DLSS gets `sharpness = 0`. FSR 3.1: its own RCAS
   (`enableSharpening`, `sharpness` 0-1). DLSS: NVIDIA deprecated its sharpening (newer DLSS ignores the
   parameter) [to check against our nvngx_dlss.dll version], so for DLSS the presenter's RCAS after DLSS, at the
-  slider's strength, instead of being blocked. Verified for FSR (T-F6).
+  slider's strength, instead of being blocked. Verified for FSR and for RCAS over DLSS (T-F6).
 - **A separate FSR sharpening slider** (the user, after T-F6): FSR's sharpening gets its own strength, apart from the
   presenter's RCAS (CAS) slider; TAA needs far more RCAS than FSR needs its own sharpening.
 
@@ -124,5 +124,5 @@ runs (before: off over DLAA). The user: DLSS is already sharp; people may want i
 
 T-F6 (2026-11-12, `b4e3620`, RTX 4090, 75%): the user: "I tested FSR sharpening, it works!" FSR with its sharpening
 is clearer than UE4's TAA at 75%; to match that clarity, TAA needs so much RCAS that grass and fences are
-oversharpened. F2b verified for FSR; RCAS over DLSS was not reported on. Next (the user): **a separate FSR sharpening
+oversharpened. F2b verified for FSR; the user: RCAS over DLSS works too (verified). Next (the user): **a separate FSR sharpening
 slider**, not shared with the presenter's RCAS (CAS) strength: the two want different strengths.
