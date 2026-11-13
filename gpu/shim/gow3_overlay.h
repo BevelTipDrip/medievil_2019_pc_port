@@ -49,6 +49,10 @@ void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent);
 /// The menu is open or a text entry is shown: the game's input is held neutral.
 bool CapturesInput();
 
+/// Any thread: open the menu on the next presented frame (the pause menu's PC Settings row,
+/// src/pc_settings_hook.h). Buttons held then wait for release, as when the menu key opens it.
+void RequestOpen();
+
 /// The runtime's buttons (PS4 bits) that move and confirm the save list, polled every frame.
 void SetChoiceInput(uint32_t (*buttons)());
 /// Reads the save list's buttons now (also done every presented frame).

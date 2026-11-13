@@ -78,6 +78,8 @@ namespace {
 std::mutex imgui_mutex; // the ImGui context: window thread (input) and present thread
 bool initialized = false;
 std::atomic<bool> menu_open{false};
+// The runtime asked for the menu (RequestOpen: the pause menu's PC Settings row, game thread); taken by Render.
+std::atomic<bool> open_requested{false};
 std::atomic<bool> loading{false};
 std::atomic<u32> loading_done{0}, loading_total{0};
 std::atomic<u32> background_done{0}, background_total{0};
@@ -2771,7 +2773,8 @@ bool TakeScreenshotRequest() {
 
 bool Visible() {
     const auto& s = Gow3Settings::Get();
-    return initialized && (loading || background_total || menu_open || text_entry_active || choice_active ||
+    return initialized && (loading || background_total || menu_open || open_requested || text_entry_active ||
+                           choice_active ||
                            runtime_disabled_optimizations != 0 ||
                            choice_retiring || s.show_fps || Vulkan::Ue4Upscaler::Notice() ||
                            (s.actor_watch_supported && s.enemy_health_bar));
@@ -2779,6 +2782,10 @@ bool Visible() {
 
 bool CapturesInput() {
     return menu_open || text_entry_active || choice_active;
+}
+
+void RequestOpen() {
+    open_requested.store(true);
 }
 
 void BeginChoice(const std::string& title, const std::vector<std::string>& items,
@@ -2876,6 +2883,9 @@ void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent) {
     }
     ConfirmRestart();
     PollChoiceInput();
+    if (open_requested.exchange(false)) {
+        SetOpen(true);
+    }
     if (!Visible()) {
         return;
     }

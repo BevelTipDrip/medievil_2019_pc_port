@@ -51,6 +51,8 @@ void gow3gpu_choice_set_input(uint32_t (*buttons)(void));
 void gow3gpu_menu_set_input(uint32_t (*buttons)(void));
 /* 1 while the in-game settings menu is open: the game's pad input is held neutral. */
 int gow3gpu_overlay_captures_input(void);
+/* Opens the settings menu on the next presented frame (any thread; the pause menu's PC Settings row). */
+void gow3gpu_menu_open(void);
 /* Number of symbols registered by the vendored libraries (diagnostics). */
 unsigned gow3gpu_symbol_count(void);
 #ifdef __cplusplus

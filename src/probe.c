@@ -16,6 +16,7 @@
 #include "damage_hook.h"
 #include "camera_hook.h"
 #include "mouse_hook.h"
+#include "pc_settings_hook.h"
 #include "gpu/gow3gpu.h"
 #if !defined(__x86_64__) || !defined(__GNUC__)
 #error This prototype requires x86-64 GCC or Clang (including MinGW).
@@ -771,6 +772,53 @@ static void install_mouse_yaw(Segment *segments, uint64_t count, uint64_t size) 
     const uint64_t wrapper = (uint64_t)(uintptr_t)mouse_yaw;
     memcpy(image + s->slot, &wrapper, 8);
     printf("Mouse yaw: AddControllerYawInput wrapped (game build %s; the camera lock for mouse look)\n", s->build);
+}
+
+/* MediEvil "PC Settings" in the pause menu (src/pc_settings_hook.h; study-pc-settings-entry.md): the override pak
+ * shows the pause menu's hidden Button_Controls as "PC Settings" and leaves its click handler only the confirm
+ * sound; PostEventAtLocationWithMotion's exec is wrapped, and its call from that handler opens the port's settings
+ * menu (gow3gpu_menu_open; the overlay takes the request on its next frame). GOW3_PC_SETTINGS_OPEN=0: log the
+ * click only. Every other call goes straight to the game's exec after a size and pointer compare. */
+static Ue4Native pc_settings_exec;
+static const MedievilPcSettingsSites *pc_settings_site;
+static int pc_settings_open = 1;
+static ABI void pc_settings_sound(void *context, void *stack, void *result) {
+    const char *frame = stack;
+    const char *node = *(const char *const *)(frame + 0x10);
+    if (node) {
+        const unsigned char *script = *(const unsigned char *const *)(node + 0x48);
+        const int kind = medievil_pc_settings_call(pc_settings_site, script, *(const int32_t *)(node + 0x50),
+                                                   *(const unsigned char *const *)(frame + 0x20));
+        if (kind == MEDIEVIL_PC_SETTINGS_CLICK) {
+            printf("PC settings entry: clicked (game build %s)%s\n", pc_settings_site->build,
+                   pc_settings_open ? "; opening the settings menu" : "; log only (GOW3_PC_SETTINGS_OPEN=0)");
+            fflush(stdout);
+            if (pc_settings_open) gow3gpu_menu_open();
+        } else if (kind == MEDIEVIL_PC_SETTINGS_ORIGINAL) {
+            static int logged;
+            if (!logged) {
+                logged = 1;
+                printf("PC settings entry: the pause menu's handler is the game's (no override pak edit); not opening\n");
+                fflush(stdout);
+            }
+        }
+    }
+    pc_settings_exec(context, stack, result);
+}
+static void install_pc_settings(Segment *segments, uint64_t count, uint64_t size) {
+    const MedievilPcSettingsSites *s = medievil_pc_settings_find(image, size);
+    if (!s || !mapped(segments, count, s->slot, 8)) {
+        printf("PC settings entry: unavailable (not an analysed MediEvil eboot: 01.00 or 01.02)\n");
+        return;
+    }
+    const char *env = getenv("GOW3_PC_SETTINGS_OPEN");
+    pc_settings_open = !(env && env[0] == '0');
+    pc_settings_site = s;
+    pc_settings_exec = (Ue4Native)(uintptr_t)(image + s->exec);
+    const uint64_t wrapper = (uint64_t)(uintptr_t)pc_settings_sound;
+    memcpy(image + s->slot, &wrapper, 8);
+    printf("PC settings entry: PostEventAtLocationWithMotion wrapped (game build %s; %s)\n", s->build,
+           pc_settings_open ? "the pause menu row opens the settings menu" : "log only");
 }
 
 /* MediEvil camera moves (src/camera_hook.h; study-camera-moves.md): the menu's Controls tab turns each
@@ -1549,6 +1597,7 @@ int main(int argc, char **argv) {
     if (gpu_enabled) install_level_hook(segments, ns, size);
     if (gpu_enabled) install_debug_menu_trace(segments, ns, size);
     if (gpu_enabled) install_mouse_yaw(segments, ns, size);
+    if (gpu_enabled) install_pc_settings(segments, ns, size);
     if (gpu_enabled) install_camera_moves(segments, ns, size);
     if (gpu_enabled) install_particle_flip_guard(segments, ns, size);
 #ifdef _WIN32
