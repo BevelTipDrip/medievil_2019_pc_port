@@ -81,8 +81,8 @@ N-29	plan-frame-pacing.md	1934	n-29-thinlto-on-by-default-2026-10-30-launched-by
 N-30	plan-frame-pacing.md	1949	n-30-bulk-descriptor-copy-ab-inside-one-launch-2026-10-30-launched-by-claude-with-the-users-go-t-bulk-1log-build-ca5636f-lto	N-30: bulk descriptor copy, A/B inside one launch (2026-10-30, launched by Claude with the user's go
 N-31	plan-frame-pacing.md	1960	n-31-sampler-handle-memo-ab-inside-one-launch-2026-10-30-launched-by-claude-with-the-users-go-t-sampler-1log-build-5c752e8-lto-bulk-copy-on	N-31: sampler handle memo, A/B inside one launch (2026-10-30, launched by Claude with the user's go;
 N-32	plan-frame-pacing.md	1970	n-32-ring-reuse-retest-ab-inside-one-launch-2026-10-30-launched-by-claude-with-the-users-go-t-ring-1-build-9fb2d6c--nostats-flip-trace-research-dataflipt-ring-1csv	N-32: ring reuse retest, A/B inside one launch (2026-10-30, launched by Claude with the user's go; `
-T-F1	plan-fsr.md	68	step-1-verified-on-the-pc-t-f1	Step 1 (verified on the PC, T-F1)
-T-F2	plan-fsr.md	84	lows-with-an-upscaler-t-f2-2026-11-12	Lows with an upscaler (T-F2, 2026-11-12)
+T-F1	plan-fsr.md	72	step-1-verified-on-the-pc-t-f1	Step 1 (verified on the PC, T-F1)
+T-F2	plan-fsr.md	88	lows-with-an-upscaler-t-f2-2026-11-12	Lows with an upscaler (T-F2, 2026-11-12)
 Proton run 1	plan-linux-deck.md	586	proton-run-1-2026-11-03-v200-package-steamos-3620-before-the-update-log-datadeck-proton-1log	Proton run 1 (2026-11-03, v2.0.0 package, SteamOS 3.6.20 before the update; log `data/deck-proton-1.
 Proton run 2	plan-linux-deck.md	614	proton-run-2-2026-11-03-after-the-update-v200-package-log-datadeck-proton-2log	Proton run 2 (2026-11-03, after the update; v2.0.0 package; log `data/deck-proton-2.log`)
 Proton runs 3-4	plan-linux-deck.md	627	proton-runs-3-4-2026-11-03-settings-changed-by-the-user-while-exploring	Proton runs 3-4 (2026-11-03, settings changed by the user while exploring)
@@ -107,6 +107,7 @@ T-SM5	plan-settings-menu.md	160	4-test-plan-for-the-user-each-launch-needs-the-u
 T-SM6	plan-settings-menu.md	161	4-test-plan-for-the-user-each-launch-needs-the-users-go	T-SM6 Plain look.** Rename `user/cache/game_ui` (back it up), start: the plain ImGui menu with the g
 T-SM7	plan-settings-menu.md	163	4-test-plan-for-the-user-each-launch-needs-the-users-go	T-SM7 Steam Deck (1280x800, Steam Input on).** Open with L2 + R3; read every tab at arm's length: te
 T-SM8	plan-settings-menu.md	166	4-test-plan-for-the-user-each-launch-needs-the-users-go	T-SM8 Custom combo (optional).** `GOW3_MENU_PAD=back+start` in extra-env.txt: the combo opens the me
+T-SM1-T-SM3	plan-settings-menu.md	203	8-t-sm1-t-sm3-2026-11-12-409a71d-windows-4k-fullscreen-keyboard-prompts-with-mouse-binds	8. T-SM1-T-SM3 (2026-11-12, `409a71d`, Windows, 4K fullscreen, keyboard prompts with mouse binds)
 T-P3	plan-stage-b-split.md	13	profile-t-p3-2026-10-19-2100-2102-launched-by-claude-with-the-users-go-build-32eaea9--samples-log-datat-p3-stageb-profilelog-samples-in-research-datasamplest-p3-stageb-profile	Profile T-P3 (2026-10-19 21:00-21:02, launched by Claude with the user's go; build `32eaea9`; `-Samp
 T-W1	plan-stage-b-split.md	72	t-w1-frames-queued-2-2026-10-19-2112-2116-launched-by-claude-with-the-users-go-build-3b30fe9-log-datat-w1-frames-queuedlog	T-W1: frames queued 2 (2026-10-19 21:12-21:16, launched by Claude with the user's go; build `3b30fe9
 T-W2	plan-stage-b-split.md	85	t-w2-targeted-end-of-pipe-wait-queries-on-2026-10-19-2117-2121-launched-by-claude-with-the-users-go-build-3b30fe9-log-datat-w2-eop-targetedlog	T-W2: targeted end-of-pipe wait, queries on (2026-10-19 21:17-21:21, launched by Claude with the use
@@ -212,6 +213,7 @@ T-MS6	study-mouse-input.md	390	t-ms6-mouse-yaw-through-both-paths-2026-11-11-lau
 T-MS8	study-mouse-input.md	453	t-ms8-mouse-look-on-the-camera-tick-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-look-t-ms8log	T-MS8: mouse look on the camera tick (2026-11-11, launched by Claude with the user's go, log data/mo
 T-MS9	study-mouse-input.md	462	t-ms9-both-axes-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-look-t-ms9log	T-MS9: both axes (2026-11-11, launched by Claude with the user's go, log data/mouse-look-t-ms9.log)
 T-MS10	study-mouse-input.md	472	t-ms10-dan-cam-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-look-t-ms10log	T-MS10: Dan-cam (2026-11-11, launched by Claude with the user's go, log data/mouse-look-t-ms10.log)
+T-PC1	study-pc-settings-entry.md	189	t-pc1-the-pause-menu-row-combined-launch-built-2026-11-12-see-section-6	T-PC1: the pause-menu row (combined launch; built 2026-11-12, see section 6)
 T-SV1	study-save-slots.md	31	t-sv1-first-trace-2026-11-10-launched-by-claude-with-the-users-go-log-datasave-trace-1-0102log	T-SV1: first trace (2026-11-10, launched by Claude with the user's go, log `data/save-trace-1-0102.l
 T-SV2	study-save-slots.md	38	t-sv2-load-a-slot-that-is-not-the-newest-2026-11-10-launched-by-claude-with-the-users-go-log-datasave-trace-2-0102log	T-SV2: load a slot that is not the newest (2026-11-10, launched by Claude with the user's go, log `d
 T-SV3	study-save-slots.md	44	t-sv3-the-date-fix-2026-11-10-launched-by-claude-with-the-users-go-log-datasave-trace-3-0102log	T-SV3: the date fix (2026-11-10, launched by Claude with the user's go, log `data/save-trace-3-0102.

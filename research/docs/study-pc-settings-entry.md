@@ -1,7 +1,7 @@
 # Study: a "PC Settings" entry in the game's own menus (2026-11-12)
 
-Research only: nothing built, nothing launched. Status of every item: **found** (read from the game's data or
-the port's code), not run.
+Research 2026-11-12: every finding below is **found** (read from the game's data or the port's code). The pause-menu
+row was then built the same day (section 6): **fix built, not run**.
 
 ## Summary and recommendation
 
@@ -186,33 +186,98 @@ The pause menu is `VerticalBox_61` (auto-size, centred, inside the `UI_Options_F
 | S7 | Options row (A1): prototype with UAssetGUI on a scratch copy (A2) to learn what loads, then the Python package writer (new exports, class properties, preload deps, `bAllowTemplate` false), the row `ScreenAdjustBtn` / `ScreenAdjust_Text` under -SCREEN- with the same keys, handler 0x04e5 / 0x04ef's delegate call replaced by `EX_Nothing` (the page never opens). Trigger: `EntryPoint` local or an `ExecuteConsoleCommand("pcport.settings")` import with its wrapper | A real Options row on the title screen and in game | yes (T-PC3, T-PC4) |
 | S8 | If S7 stalls: E1 (overlay prompt on the Options page) | A way in from Options without asset structure changes | yes |
 
-### First launch for approval: T-PC1 (after S1-S3; 01.02, the user's daily build)
+### T-PC1: the pause-menu row (combined launch; built 2026-11-12, see section 6)
 
-One change: the revived pause-menu row (pak edits S2 a-d plus the S3 wrapper in **log-only** mode; the overlay does
-not open yet). Steps:
+S1-S3, S5 and S6 are built together (the user's choice, to save a launch). The test is on 01.02, the user's daily
+build; on 01.00 it is the same (both builds' edits are checked by the tests), but this launch does not cover it.
+Settings: launcher > Controls > "PC Settings in the pause menu" ticked (medievil.ini `pc_settings_entry=1`, the
+default), no `GOW3_PC_SETTINGS_OPEN` in extra-env.txt.
 
-1. Start a level and press Options to pause. Expected: six rows, Resume, Restart, Options, **PC Settings**, Quit to
-   Map. The row text is in the same font and colour, the frame still holds every row, and the highlight moves onto
-   the row with the D-pad and stick and plays the up/down sound.
-2. On PC Settings, press Cross. Expected: the confirm sound only. The controls do not switch, which shows in
-   Options > Button Layout (its "Switch to ..." label is unchanged). The log shows one
-   `PC settings entry: clicked (game build 01.02)` line per press.
-3. Options, Resume and Quit to Map still work. With `GOW3_MOUSE=1`, a mouse click on the row gives the same log line.
-4. Optional: the same on 01.00.
+1. In a level, press Options. Expected: **five** rows: Resume, Restart Level, Options, **PC Settings**, Quit to Map
+   (today the menu has four; the two others in the list stay hidden). The new row has the same font, size and
+   colour, it fits inside the frame, and the D-pad / stick move the highlight onto it and off it with the game's up
+   and down sounds (down from Options to PC Settings plays the "down" sound).
+2. On PC Settings, press Cross. Expected: the confirm sound, then the port's settings menu over the paused game.
+   The log has `PC settings entry: clicked (game build 01.02); opening the settings menu`. The controls are not
+   switched: Options > Button Layout still shows the same layout as before.
+3. Close the settings menu with Circle (or Esc). Expected: the pause menu is still there, with PC Settings
+   highlighted. It does not close or unpause on that Circle, and the game stays paused.
+4. With the mouse on (launcher > Controls > Mouse look and buttons), click PC Settings. Expected: the same as 2, and
+   the cursor is shown under the settings menu.
+5. Resume, Options (and back) and Quit to Map still work as before.
+6. Close the game, set launcher > Game > Game language to German, start again and pause. Expected: the row reads
+   **PC-Einstellungen**, in the same look as the German rows around it.
 
-Collect: the log, plus a screenshot of the pause menu. T-PC2 (after S5): Cross opens the settings menu over the
-paused game, Circle closes it, the pause menu is still open with the row focused, and the game does not unpause.
+Collect: the log, plus a screenshot of the pause menu in English and in the other language. If anything looks wrong,
+`GOW3_PC_SETTINGS_OPEN=0` in extra-env.txt keeps the row but only logs the click, and unticking the launcher setting
+removes the row (the game's pause menu as shipped).
 
 ## 5. Open questions
 
-1. Is "PC Settings" the wording, and should it be English in every language or translated (S6)?
-2. Row position: after Options (S2 d) or where the game left it (between Restart and Options)?
-3. Engine behaviour to confirm in T-PC1 [I]: a renamed property tag is skipped on load (4.21
+1. Decided (the user, 2026-11-12): "PC Settings", translated (S6); after Options (S2 d). The Options-menu row (S7)
+   waits.
+2. Engine behaviour to confirm in T-PC1 [I]: a renamed property tag is skipped on load (4.21
    `SerializeTaggedProperties`). The fallback is to add an `ESlateVisibility::Visible` name, a header edit.
-4. Does a sixth row fit the pause frame (`UI_Options_Frame` 1181 x 870 at 0.5, auto-sized list, rows 30 pt + 20 pad)?
-   If not, shrink the bottom padding of the slot (same-size float edit).
-5. Cheat-code mode: should the row open the menu there? The handler `pop`s in cheat mode, but the sound, and so our
-   trigger, run before that check.
-6. Options row: is `bAllowTemplate = false` enough in this cooked build, or must the archetype tree get the row too?
+3. Does a fifth visible row fit the pause frame (`UI_Options_Frame` 1181 x 870 at 0.5, auto-sized list, rows 30 pt +
+   20 pad)? If not, shrink the bottom padding of the slots (same-size float edits).
+4. Cheat-code mode: the handler `pop`s in cheat mode, but the sound, and so the trigger, run before that check, so
+   the row opens the menu there too. Left as is.
+5. Options row: is `bAllowTemplate = false` enough in this cooked build, or must the archetype tree get the row too?
    And can the writer produce preload dependencies that EDL accepts? The S7 prototype answers both.
-7. Should the title screen's Options get the row as well? A1 gives it there automatically, because the same widget is used.
+6. Should the title screen's Options get the row as well? A1 gives it there automatically, because the same widget
+   is used.
+
+## 6. Built (2026-11-12): fix built, not run
+
+Card: [research/patches/ue4/pc-settings-entry.md](../patches/ue4/pc-settings-entry.md).
+
+- **Pak** (`scripts/ue4_pc_settings.py`, called by `ue4_override.apply(pc_settings=...)`; run.py passes
+  `medievil.ini pc_settings_entry`, default `1`; launcher > Controls > "PC Settings in the pause menu"). From the
+  player's files: `PauseMenu.uexp` (same size: the two `Visibility` tags renamed to `Button_Controls`, the keys
+  `OPTIONS_MODERN_CONTROLS_SWITCH` / `..._CLASSIC_...` renamed to `PCPORT_PC_SETTINGS_MODERN_CTRL` /
+  `PCPORT_PC_SETTINGS_CLASSIC_CTRL`, the jump 0x143e -> 0x143d (01.00) / 0x1519 -> 0x1518 (01.02),
+  `VerticalBoxSlot_3` and `_5` swapped in both trees' `Slots`, `Button_Controls` / `Button_Options` and
+  `Text_Controls` / `Text_Options` swapped in `AddButtonsToArray`); `STR_GENERAL` (+2 keys, source "PC Settings":
+  the export's size and BulkDataStartOffset follow); the 25 `Game.locres` (namespace `General`, both keys, source
+  hash `StrCrc32("PC Settings")`, the label below). A build whose files differ loses only this row, with a log
+  line.
+- **Runtime** (`src/pc_settings_hook.h`, `src/probe.c` `install_pc_settings`): `PostEventAtLocationWithMotion` wrapped;
+  the click opens the menu through `gow3gpu_menu_open` -> `Gow3Overlay::RequestOpen` (taken by `Render`).
+  `GOW3_PC_SETTINGS_OPEN=0`: log only. Without the pak's edited jump in memory it never opens (the game's handler
+  would also switch the controls).
+- **Tests:** `tests/test_ue4_pc_settings.py` (9: locres and string-table round trips byte-identical on every
+  file of both builds, every edit exactly once and nothing else changed, translations present with the right hash,
+  the override pak written into a temporary folder) and `tests/test_pc_settings_hook.c` (the build and site
+  checks). Python suite: 198 tests OK (31 skipped).
+
+### Translations (S6)
+
+Each label uses the word the game itself uses for its settings in that language: its "Colorblind Settings" and
+"Options" strings. Every character occurs in that culture's own strings, which the test checks.
+
+| Culture | Label | The game's own wording it follows |
+|---|---|---|
+| ar | إعدادات الكمبيوتر | إعدادات عمى الألوان |
+| bg | Настройки за PC | Настройки за цвета |
+| cs | Nastavení PC | Nastavení (Options) |
+| da | PC-indstillinger | Farveblindhedsindstillinger |
+| de | PC-Einstellungen | Farbenblindheitseinstellungen |
+| el | Ρυθμίσεις PC | Ρυθμίσεις Αχρωματοψίας |
+| en, en-GB | PC Settings | Colorblind Settings |
+| es | Ajustes de PC | Ajustes para daltonismo |
+| es-MX | Configuración de PC | Configuración para daltónicos |
+| fi | PC-asetukset | Asetukset (Options) |
+| fr | Paramètres PC | Paramètres daltonisme |
+| hr | Postavke za PC | Postavke za daltoniste |
+| hu | PC-beállítások | Beállítások (Options) |
+| it | Impostazioni PC | Impostazioni per daltonici |
+| ja | PC設定 | (設定, the usual word; the game's characters) |
+| nl | Pc-instellingen | Kleurenblindheid / Opties (Dutch spelling: "pc") |
+| no | PC-innstillinger | Innstillinger (Options) |
+| pl | Ustawienia PC | Ustawienia dla daltonistów |
+| pt | Definições do PC | Definições para daltónicos |
+| pt-BR | Configurações do PC | the game's Title Case ("Sair para o Mapa") |
+| ro | Setări PC | Setări pentru daltoniști |
+| ru | Настройки ПК | Настройки (Options) |
+| sv | PC-inställningar | Inställningar (Options) |
+| tr | PC Ayarları | Renk Körü Ayarları |

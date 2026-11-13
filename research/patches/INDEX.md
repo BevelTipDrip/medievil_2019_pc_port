@@ -4,7 +4,7 @@ One line per card. Open a card for invariants, interactions and evidence; look u
 reading: `patchmap.py file <path>` / `switch <name>` / `commit <hash>` / `test <id>`.
 Card format and statuses: [README.md](README.md). W / D = default on Windows / Deck.
 
-219 cards.
+220 cards.
 
 ## memory
 
@@ -209,6 +209,7 @@ _UE4 config overrides, eboot patches, game hooks, particles, render scale, boot 
 | [particle-flip-guard](ue4/particle-flip-guard.md) | active | off / on | deck-lab | GOW3_PARTICLE_FLIP_GUARD, toggle2:ParticleFlipGuardOff | GPU particle flip guard: one state flip per main-phase simulation (fixes the single pass's torch / crypt floor bug) |
 | [particle-identity-skip](ue4/particle-identity-skip.md) | rejected | n/a / n/a | - |  | Skip identity GPU-particle sim draws (dt = 0, output equals input; not built) |
 | [particle-single-fixed](ue4/particle-single-fixed.md) | rejected | off / off | deck-lab |  | GPU particle fixed step in the single pass (eboot patch, GOW3_PARTICLE_SINGLE_FIXED) |
+| [pc-settings-entry](ue4/pc-settings-entry.md) | active | on / on | menu-redesign | GOW3_PC_SETTINGS_OPEN | PC Settings in the game's pause menu (its hidden Button_Controls), opening the port's settings menu (medievil.ini pc_settings_entry) |
 | [preshadows-live](ue4/preshadows-live.md) | active | off / on | lab |  | Preshadows (r.Shadow.Preshadows) as a live switch through the game's console variable |
 | [R4a](ue4/r4a.md) | rejected | off / off | - |  | r.NumBufferedOcclusionQueries=2 (rejected) |
 | [S1-streaming](ue4/s1-streaming.md) | rejected | off / off | - |  | r.Streaming.AmortizeCPUToGPUCopy to split the panning bursts (streaming test S1) |

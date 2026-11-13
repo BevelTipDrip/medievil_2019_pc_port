@@ -95,6 +95,7 @@ Environment variables and settings already in the port that this work uses (full
 | [impl-stage-b-per-draw-2.md](impl-stage-b-per-draw-2.md) | Stage B per draw, round 2: residency bitmap (R2), no-image texture binds (T1), wide texture-set memo (T2), region cache index (R1); second word 65536-524288; one-launch Deck A/B |
 | [impl-stage-a-decode.md](impl-stage-a-decode.md) | Stage A per packet (Deck): backing copies without the table lock (A1), pending-write page filter (A2), paired register checksum (A3); second word 1048576-4194304; why stage B waits on stage A; one-launch Deck A/B |
 | [study-camera-moves.md](study-camera-moves.md) | Every automatic camera move per area class (free, fixed, spline, boss), and the live switches built from it (menu Controls tab, 2026-11-11) |
+| [study-pc-settings-entry.md](study-pc-settings-entry.md) | How the game's Options and pause menus are built; "PC Settings" in the pause menu (the hidden Button_Controls, translated, opens the settings menu; built 2026-11-12, T-PC1) and the Options-menu row still to do |
 | [study-live-switches.md](study-live-switches.md) | What can be switched live and what needs a restart; cvar objects in the 01.00 eboot |
 | [study-particle-fixed-step.md](study-particle-fixed-step.md) | The single GPU particle pass's torch / crypt floor bug (2026-11-05): what FixDeltaSeconds changes, the opt-in patch, flip guard and diagnostic, the test |
 | [plan-roadmap.md](plan-roadmap.md) | Working plan: rule, order, Progress table (2026-10-18; superseded by the work queue for order) |

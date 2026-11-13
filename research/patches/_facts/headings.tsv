@@ -5,7 +5,7 @@ START-HERE.md	24	2	rules-the-users-also-in-claudes-memory	Rules (the user's; als
 START-HERE.md	46	2	current-state-table-last-fully-updated-2026-10-18	Current state (table last fully updated 2026-10-18)
 START-HERE.md	68	2	knobs-and-triggers	Knobs and triggers
 START-HERE.md	85	2	document-index	Document index
-START-HERE.md	120	2	elsewhere	Elsewhere
+START-HERE.md	122	2	elsewhere	Elsewhere
 building-and-tools.md	1	1	building-and-tools	Building and tools
 building-and-tools.md	5	2	paths	Paths
 building-and-tools.md	19	2	toolchain-installed-2026-10-18	Toolchain (installed 2026-10-18)
@@ -376,8 +376,8 @@ plan-fsr.md	16	2	what-the-repo-has-code-research-2026-11-12	What the repo has (c
 plan-fsr.md	31	2	outside-web-research-2026-11-12-sources-in-the-agent-report-key-ones-here	Outside (web research, 2026-11-12; sources in the agent report, key ones here)
 plan-fsr.md	47	2	steps-one-change-per-launch-the-users-order-2026-11-12	Steps (one change per launch; the user's order, 2026-11-12)
 plan-fsr.md	59	2	to-do-the-user-2026-11-12	To do (the user, 2026-11-12)
-plan-fsr.md	68	2	step-1-verified-on-the-pc-t-f1	Step 1 (verified on the PC, T-F1)
-plan-fsr.md	84	2	lows-with-an-upscaler-t-f2-2026-11-12	Lows with an upscaler (T-F2, 2026-11-12)
+plan-fsr.md	72	2	step-1-verified-on-the-pc-t-f1	Step 1 (verified on the PC, T-F1)
+plan-fsr.md	88	2	lows-with-an-upscaler-t-f2-2026-11-12	Lows with an upscaler (T-F2, 2026-11-12)
 plan-gpu-threading.md	1	1	plan-port-the-bloodborne-ports-performance-work-threading-waits-memory	Plan: port the Bloodborne port's performance work (threading, waits, memory)
 plan-gpu-threading.md	7	2	answer	Answer
 plan-gpu-threading.md	16	2	threads-today-both-ports	Threads today (both ports)
@@ -508,6 +508,7 @@ plan-settings-menu.md	137	2	4-test-plan-for-the-user-each-launch-needs-the-users
 plan-settings-menu.md	169	2	5-decisions-for-the-user	5. Decisions for the user
 plan-settings-menu.md	183	2	6-steps	6. Steps
 plan-settings-menu.md	194	2	7-state	7. State
+plan-settings-menu.md	203	2	8-t-sm1-t-sm3-2026-11-12-409a71d-windows-4k-fullscreen-keyboard-prompts-with-mouse-binds	8. T-SM1-T-SM3 (2026-11-12, `409a71d`, Windows, 4K fullscreen, keyboard prompts with mouse binds)
 plan-stage-b-split.md	1	1	plan-stage-bs-work-across-threads-feasibility-study	Plan: stage B's work across threads (feasibility study)
 plan-stage-b-split.md	7	2	why	Why
 plan-stage-b-split.md	13	2	profile-t-p3-2026-10-19-2100-2102-launched-by-claude-with-the-users-go-build-32eaea9--samples-log-datat-p3-stageb-profilelog-samples-in-research-datasamplest-p3-stageb-profile	Profile T-P3 (2026-10-19 21:00-21:02, launched by Claude with the user's go; build `32eaea9`; `-Samples`; log `data/t-p3-stageb-profile.log`, samples in `research-data\samples\t-p3-stageb-profile`)
@@ -579,10 +580,10 @@ plan-upstream-merge.md	50	2	3-test-after-the-merge-one-session-the-users-go	3. T
 plan-upstream-merge.md	63	2	4-next-work-items-in-order	4. Next work items, in order
 plan-work-queue.md	1	1	work-queue-what-is-next-in-order	Work queue: what is next, in order
 plan-work-queue.md	7	2	the-users-quality-of-life-list-2026-11-03-after-the-v200-release	The user's quality-of-life list (2026-11-03, after the v2.0.0 release)
-plan-work-queue.md	43	2	the-users-order-2026-10-30	The user's order (2026-10-30)
-plan-work-queue.md	72	2	pending-fixes-research-2026-10-29-ranked-there-state-now	Pending fixes (research 2026-10-29, ranked there; state now)
-plan-work-queue.md	100	2	found-on-the-way-2026-10-30	Found on the way (2026-10-30)
-plan-work-queue.md	122	2	from-github-issues	From GitHub issues
+plan-work-queue.md	44	2	the-users-order-2026-10-30	The user's order (2026-10-30)
+plan-work-queue.md	73	2	pending-fixes-research-2026-10-29-ranked-there-state-now	Pending fixes (research 2026-10-29, ranked there; state now)
+plan-work-queue.md	101	2	found-on-the-way-2026-10-30	Found on the way (2026-10-30)
+plan-work-queue.md	123	2	from-github-issues	From GitHub issues
 pr-checklist.md	1	1	pr-checklist-the-bar-for-anything-proposed-upstream	PR checklist: the bar for anything proposed upstream
 pr-checklist.md	7	2	scope	Scope
 pr-checklist.md	14	2	code	Code
@@ -1063,6 +1064,20 @@ study-particle-fixed-step.md	106	3	why-the-copy-pass-makes-the-default-immune-in
 study-particle-fixed-step.md	114	2	the-change	The change
 study-particle-fixed-step.md	156	2	test-deck-or-pc-needs-the-users-go	Test (Deck or PC, needs the user's go)
 study-particle-fixed-step.md	175	2	unverified	Unverified
+study-pc-settings-entry.md	1	1	study-a-pc-settings-entry-in-the-games-own-menus-2026-11-12	Study: a "PC Settings" entry in the game's own menus (2026-11-12)
+study-pc-settings-entry.md	6	2	summary-and-recommendation	Summary and recommendation
+study-pc-settings-entry.md	27	2	1-findings	1. Findings
+study-pc-settings-entry.md	36	3	11-the-assets	1.1 The assets
+study-pc-settings-entry.md	54	3	12-how-the-options-menu-is-built-0100-rows-0102-adds-5	1.2 How the Options menu is built (01.00 rows; 01.02 adds 5)
+study-pc-settings-entry.md	84	3	13-how-the-pause-menu-is-built	1.3 How the pause menu is built
+study-pc-settings-entry.md	121	3	14-what-the-port-already-has	1.4 What the port already has
+study-pc-settings-entry.md	146	2	2-approaches	2. Approaches
+study-pc-settings-entry.md	158	2	3-hand-off-opening-the-overlay-and-giving-input-back	3. Hand-off: opening the overlay and giving input back
+study-pc-settings-entry.md	176	2	4-recommended-plan	4. Recommended plan
+study-pc-settings-entry.md	189	3	t-pc1-the-pause-menu-row-combined-launch-built-2026-11-12-see-section-6	T-PC1: the pause-menu row (combined launch; built 2026-11-12, see section 6)
+study-pc-settings-entry.md	215	2	5-open-questions	5. Open questions
+study-pc-settings-entry.md	230	2	6-built-2026-11-12-fix-built-not-run	6. Built (2026-11-12): fix built, not run
+study-pc-settings-entry.md	253	3	translations-s6	Translations (S6)
 study-save-slots.md	1	1	save-slots-why-a-save-went-into-another-slot	Save slots: why a save went into another slot
 study-save-slots.md	6	2	the-problem	The problem
 study-save-slots.md	13	2	how-medievil-picks-the-slot-it-saves-into	How MediEvil picks the slot it saves into
