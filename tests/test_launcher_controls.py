@@ -315,6 +315,11 @@ class ControlMapTest(unittest.TestCase):
                          ['-2', '-3', '30', '60', '119', '120', '141', '237', '240', '0', '-1'])
         self.assertEqual((d['present_limiter'], d['present_mode'], d['present_tick_hz']), ('reflex', 'auto', '960'))
         self.assertEqual((d['fsr1'], d['rcas'], d['rcas_strength'], d['frames_queued']), ('0', '1', '75', '1'))
+        # AMD FSR's own sharpening: its own key and default, apart from the RCAS strength (plan-fsr.md T-F6).
+        graphics = (ROOT / 'gpu' / 'shim' / 'gow3_graphics.h').read_text(encoding='utf-8')
+        settings = (ROOT / 'gpu' / 'shim' / 'gow3_settings.h').read_text(encoding='utf-8')
+        self.assertIn(': %s;' % d['fsr_sharpness'], re.search(r'ParseFsrSharpness[^}]*\}', graphics).group(0))
+        self.assertIn('fsr_sharpness{%s}' % d['fsr_sharpness'], settings)
         self.assertEqual([v for v, _t in launcher.FRAMES_QUEUED], ['1', '2', '0'])
         self.assertNotIn('GOW3_FRAMES_AHEAD', launcher.game_environment({**launcher.APP_DEFAULTS, 'frames_ahead': '2'}))
 

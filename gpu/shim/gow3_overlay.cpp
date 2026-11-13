@@ -532,7 +532,9 @@ void ImageTab() {
     const int iw = s.image_width, ih = s.image_height, ww = s.window_width, wh = s.window_height;
     const bool upscaling = iw < ww && ih < wh;
     const bool downscaling = iw > ww || ih > wh;
-    const bool rcas_blocked = s.rcas && !s.rcas_applied;
+    // While AMD FSR runs, RCAS is off and FSR sharpens by its own strength (fsr_sharpness).
+    const bool fsr_running = Vulkan::Ue4Upscaler::SharpensItself();
+    const bool rcas_blocked = s.rcas && !s.rcas_applied && !fsr_running;
     ImGui::SeparatorText("Scaling and sharpening");
     if (BeginRows("##scaling")) {
         CheckRow("Upscale with FSR 1", s.fsr1,
@@ -541,8 +543,8 @@ void ImageTab() {
         CheckRow("Sharpening (RCAS)", s.rcas,
                  rcas_blocked && downscaling ? "No effect: the game's image is larger than the window."
                  : rcas_blocked              ? "Needs FSR 1: the game's image is smaller than the window."
-                                             : "Sharpens the image: with AMD FSR it is FSR's own sharpening, "
-                                               "otherwise (the game's TAA, NVIDIA DLSS) the final image.");
+                 : fsr_running ? "Off while AMD FSR runs: FSR sharpens by its own strength (AMD FSR sharpening)."
+                               : "Sharpens the final image (the game's TAA, NVIDIA DLSS).");
         ImGui::EndDisabled();
         ImGui::BeginDisabled(!s.rcas || rcas_blocked);
         SliderRow("Sharpening strength", s.rcas_strength, 0, 100, "%d%%", "How strong the sharpening is.");
@@ -561,8 +563,13 @@ void ImageTab() {
             }
             ChoiceRow("Anti-aliasing / upscaler", s.ue4_upscaler, labels, values, count,
                       "Replaces the game's anti-aliasing: native anti-aliasing at Render scale 100, upscaling "
-                      "below it. Sharpening is off while it runs. F9 switches between them in the game. DLSS "
-                      "needs an NVIDIA RTX GPU and nvngx_dlss.dll in the bin folder (see README-Windows.txt).");
+                      "below it. AMD FSR sharpens by its own strength, DLSS and the game's TAA with Sharpening "
+                      "(RCAS). F9 switches between them in the game. DLSS needs an NVIDIA RTX GPU and "
+                      "nvngx_dlss.dll in the bin folder (see README-Windows.txt).");
+        }
+        if (s.ue4_fsr_available) {
+            SliderRow("AMD FSR sharpening", s.fsr_sharpness, 0, 100, "%d%%",
+                      "FSR's own sharpening while AMD FSR runs, apart from the RCAS strength. 0 turns it off.");
         }
         ImGui::EndTable();
     }
@@ -574,7 +581,12 @@ void ImageTab() {
         std::snprintf(text, sizeof(text), "%d x %d", ww, wh);
         InfoRow("Window", text);
         InfoRow("FSR 1", !s.fsr1 ? "off" : upscaling ? "active" : "no effect (image not smaller than window)");
-        InfoRow("Sharpening", s.rcas_applied ? "applied" : "not applied");
+        if (fsr_running && s.fsr_sharpness > 0) {
+            std::snprintf(text, sizeof(text), "AMD FSR, %d%%", s.fsr_sharpness.load());
+        }
+        InfoRow("Sharpening", fsr_running ? (s.fsr_sharpness > 0 ? text : "AMD FSR, off")
+                              : s.rcas_applied ? "applied"
+                                               : "not applied");
         if (Vulkan::Ue4Upscaler::Running()) {
             std::snprintf(text, sizeof(text), "%s running", Vulkan::Ue4Upscaler::RunningName());
         }

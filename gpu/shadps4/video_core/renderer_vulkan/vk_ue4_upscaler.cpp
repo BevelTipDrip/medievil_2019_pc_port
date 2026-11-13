@@ -528,11 +528,13 @@ bool Ue4Upscaler::Run(const u8* view, std::span<const VAddr> reads, VideoCore::I
         // Reversed infinite projection: ViewToClip[3][2] is the near plane, [1][1] = 1 / tan(fov_y / 2).
         .near_plane = Load<float>(view, OffsetNearPlane),
         .fov_y = 2.0f * std::atan(1.0f / std::max(Load<float>(view, OffsetViewToClip + 20), 1e-3f)),
-        // The menu's sharpening (rcas, rcas_strength): FSR's RCAS maps sharpness s to attenuation
-        // 2 - 2s, the presenter's RCAS strength p to 2 (1 - p / 100), so s = p / 100 is the same look.
-        .sharpness = Gow3Settings::Get().rcas.load(std::memory_order_relaxed)
-                         ? std::clamp(Gow3Settings::Get().rcas_strength.load(std::memory_order_relaxed), 0, 100) / 100.0f
-                         : -1.0f,
+        // FSR's own sharpening (fsr_sharpness, 0 = off), apart from the RCAS strength (T-F6). FSR's RCAS
+        // maps sharpness s to attenuation 2 - 2s, the presenter's RCAS strength p to 2 (1 - p / 100), so
+        // the same number looks the same on both.
+        .sharpness = [] {
+            const int fsr = Gow3Settings::Get().fsr_sharpness.load(std::memory_order_relaxed);
+            return fsr > 0 ? std::min(fsr, 100) / 100.0f : -1.0f;
+        }(),
     };
     const vk::Image taa_output = output_image->GetImage();
     const vk::Image motion_image = pass.image;

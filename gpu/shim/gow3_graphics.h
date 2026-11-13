@@ -76,6 +76,10 @@ inline int ParseFramesQueued(int value) {
 inline int ParseRcasStrength(int value) {
     return value >= 0 && value <= 100 ? value : 75;
 }
+/// AMD FSR's own sharpening (ini fsr_sharpness, plan-fsr.md T-F6): 0-100, 0 is off; 25 by default.
+inline int ParseFsrSharpness(int value) {
+    return value >= 0 && value <= 100 ? value : 25;
+}
 /// FSR RCAS attenuation for a strength: 0 is the sharpest, 2 the softest.
 inline float RcasAttenuation(int strength) {
     return 2.0f * (1.0f - float(ParseRcasStrength(strength)) / 100.0f);
