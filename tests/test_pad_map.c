@@ -8,6 +8,12 @@ uintptr_t runtime_lookup(const RuntimeExport *table, size_t count, const char *n
     (void)table; (void)count; (void)name;
     return 0;
 }
+/* The rest of the runtime runtime_pad.c calls (the GPU library, the mouse reader, the UE4 poll). */
+void gow3gpu_choice_set_input(uint32_t (*buttons)(void)) { (void)buttons; }
+void gow3gpu_menu_set_input(uint32_t (*buttons)(void)) { (void)buttons; }
+void runtime_ue4_setres_poll(void) {}
+int runtime_mouse_enabled(void) { return 1; }
+uint32_t runtime_mouse_buttons(void) { return 0; }
 
 /* PS4 buttons a host source presses in `map`. */
 static uint32_t pressed_by(const ButtonMap *map, int source) {
@@ -63,9 +69,16 @@ int main(void) {
     assert(menu_key_buttons(k,&key_map)==BTN_CROSS);
     k[SDL_SCANCODE_RETURN]=false; k[SDL_SCANCODE_SPACE]=true; /* bound to Cross */
     assert(menu_key_buttons(k,&key_map)==BTN_CROSS);
-    k[SDL_SCANCODE_SPACE]=false; k[SDL_SCANCODE_Q]=true; k[SDL_SCANCODE_E]=true; /* Triangle / Square: tabs here */
-    assert(menu_key_buttons(k,&key_map)==(BTN_L1|BTN_R1));
-    k[SDL_SCANCODE_Q]=k[SDL_SCANCODE_E]=false; k[SDL_SCANCODE_I]=true; k[SDL_SCANCODE_LEFT]=true; /* D-pad up, arrow */
+    k[SDL_SCANCODE_SPACE]=false; k[SDL_SCANCODE_Q]=true; k[SDL_SCANCODE_E]=true; /* Q Triangle: L1; E Square: Square */
+    assert(menu_key_buttons(k,&key_map)==(BTN_L1|BTN_SQUARE));
+    k[SDL_SCANCODE_E]=false; k[SDL_SCANCODE_TAB]=true; /* the touchpad by default: Square here, as in the Load list */
+    assert(menu_key_buttons(k,&key_map)==(BTN_L1|BTN_SQUARE));
+    k[SDL_SCANCODE_Q]=k[SDL_SCANCODE_TAB]=false;
+    ButtonMap tabs=key_map; /* E bound to nothing: the fixed R1 again */
+    assert(apply_button_map(&tabs,"square=none",MAP_KEYS)==1);
+    k[SDL_SCANCODE_E]=true;
+    assert(menu_key_buttons(k,&tabs)==BTN_R1);
+    k[SDL_SCANCODE_E]=false; k[SDL_SCANCODE_I]=true; k[SDL_SCANCODE_LEFT]=true; /* D-pad up, arrow */
     assert(menu_key_buttons(k,&key_map)==(BTN_UP|BTN_LEFT));
     k[SDL_SCANCODE_I]=k[SDL_SCANCODE_LEFT]=false; k[SDL_SCANCODE_R]=true; /* L2: not a menu button */
     assert(menu_key_buttons(k,&key_map)==0);
@@ -79,10 +92,11 @@ int main(void) {
     k[SDL_SCANCODE_ESCAPE]=false;
 
     /* Mouse binds in the menu: Circle / L1 / R1 only, never from the left button. */
-    assert(apply_button_map(&mouse_map,"circle=left,l1=right,cross=middle,r1=x1",MAP_MOUSE)==4);
+    assert(apply_button_map(&mouse_map,"circle=left,l1=right,cross=middle,r1=x1,square=x2",MAP_MOUSE)==5);
     assert(menu_mouse_buttons(1u)==0);       /* left: the pointer's */
     assert(menu_mouse_buttons(2u)==BTN_L1);  /* right */
     assert(menu_mouse_buttons(4u)==0);       /* middle: Cross, not taken */
     assert(menu_mouse_buttons(1u|8u)==BTN_R1);
+    assert(menu_mouse_buttons(16u)==BTN_SQUARE); /* x2: APPLY & RESTART */
     puts("PASS: pad and key maps");
 }

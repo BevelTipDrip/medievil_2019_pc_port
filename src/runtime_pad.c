@@ -503,17 +503,18 @@ static uint32_t list_buttons(void) {
     return buttons;
 }
 /* The port's settings menu reads the PS4 buttons the menu uses (research/docs/plan-settings-menu.md):
- * the D-pad, Cross (change), Circle (back), L1 / R1 (tabs). Besides the keys as mapped, fixed keys
- * stand for them there: arrows the D-pad, Enter Cross, Esc and Backspace Circle, Q / E L1 / R1. A
- * fixed key counts only while it is not bound to one of the menu's buttons (with the default binds
- * Enter is Options and Q / E are Triangle / Square, unused there). One mask, so a key both bound and
- * fixed is one press. */
-#define MENU_BUTTONS (BTN_UP|BTN_DOWN|BTN_LEFT|BTN_RIGHT|BTN_CROSS|BTN_CIRCLE|BTN_L1|BTN_R1)
+ * the D-pad, Cross (change), Circle (back), L1 / R1 (tabs), Square (APPLY & RESTART, since 2026-11-13).
+ * Besides the keys as mapped, fixed keys stand for them there: arrows the D-pad, Enter Cross, Esc and
+ * Backspace Circle, Q / E L1 / R1, Tab Square (as in the Load list). A fixed key counts only while it is
+ * not bound to one of the menu's buttons (with the default binds Enter is Options, Q Triangle and Tab
+ * the touchpad, unused there; E is Square, so E is Square in the menu, as its prompt shows, and Q alone
+ * switches tabs among the fixed keys). One mask, so a key both bound and fixed is one press. */
+#define MENU_BUTTONS (BTN_UP|BTN_DOWN|BTN_LEFT|BTN_RIGHT|BTN_CROSS|BTN_CIRCLE|BTN_L1|BTN_R1|BTN_SQUARE)
 static const struct { int key; uint32_t ps; } menu_keys[]={
     {SDL_SCANCODE_UP,BTN_UP}, {SDL_SCANCODE_DOWN,BTN_DOWN}, {SDL_SCANCODE_LEFT,BTN_LEFT},
     {SDL_SCANCODE_RIGHT,BTN_RIGHT}, {SDL_SCANCODE_RETURN,BTN_CROSS}, {SDL_SCANCODE_KP_ENTER,BTN_CROSS},
     {SDL_SCANCODE_ESCAPE,BTN_CIRCLE}, {SDL_SCANCODE_BACKSPACE,BTN_CIRCLE}, {SDL_SCANCODE_Q,BTN_L1},
-    {SDL_SCANCODE_E,BTN_R1},
+    {SDL_SCANCODE_E,BTN_R1}, {SDL_SCANCODE_TAB,BTN_SQUARE},
 };
 /* The menu's buttons from the keys held in `k` (SDL_GetKeyboardState) with the key map `map`. */
 static uint32_t menu_key_buttons(const bool *k, const ButtonMap *map) {
@@ -528,11 +529,11 @@ static uint32_t menu_key_buttons(const bool *k, const ButtonMap *map) {
     return buttons&MENU_BUTTONS;
 }
 /* The menu's buttons from mouse buttons held over the window (mouse_button_from_name's bits) as
- * mapped: only Circle, L1 and R1, and never from the left button, the pointer's (a left click bound
- * to Cross or Circle would act twice, or close the menu at every click). */
+ * mapped: only Circle, L1, R1 and Square, and never from the left button, the pointer's (a left click
+ * bound to Cross or Circle would act twice, or close the menu at every click). */
 static uint32_t menu_mouse_buttons(uint32_t held) {
     held&=~1u;
-    return held ? mouse_map_from(held)&(BTN_CIRCLE|BTN_L1|BTN_R1) : 0;
+    return held ? mouse_map_from(held)&(BTN_CIRCLE|BTN_L1|BTN_R1|BTN_SQUARE) : 0;
 }
 /* Buttons for the port's settings menu, polled by the overlay every presented frame while it is
  * open (the game's pad is held neutral then): the gamepad as mapped, the keys (menu_key_buttons),
