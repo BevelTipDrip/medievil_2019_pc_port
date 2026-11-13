@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cctype>
+#include <cstdarg>
 #include <cfloat>
 #include <chrono>
 #include <cmath>
@@ -125,7 +126,7 @@ float base_scale = 1.0f;
 std::chrono::steady_clock::time_point last_present{};
 float frame_ms_avg = 0.0f;
 
-// MediEvil render scale (Performance > Applied now): each change reallocates every scene target
+// MediEvil render scale (Display > Scaling and sharpening): each change reallocates every scene target
 // in the game, so a new value is applied once the slider is let go and no step came for 0.3 s
 // (or when the menu closes), not at every step of a drag.
 bool render_scale_pending = false;
@@ -140,7 +141,23 @@ void ApplyRenderScale(bool now) {
     Gow3Settings::RequestRenderScale(Gow3Settings::Get().render_scale);
 }
 
+// MediEvil frame buffer size (Display > Resolution): the same rule, 0.5 s after the last step (an r.SetRes
+// makes every target of the game again), so stepping through the sizes switches once.
+bool output_pending = false;
+std::chrono::steady_clock::time_point output_edit{};
+void RequestOutput(); // below, with the Display tab
+
+void ApplyOutput(bool now) {
+    if (!output_pending ||
+        (!now && std::chrono::steady_clock::now() - output_edit < std::chrono::milliseconds(500))) {
+        return;
+    }
+    output_pending = false;
+    RequestOutput();
+}
+
 bool menu_buttons_fresh = false; // the menu just opened: buttons held now wait for release (MenuButtons)
+std::chrono::steady_clock::time_point restart_armed{}; // APPLY & RESTART armed until then (ArmRestart)
 
 void SetOpen(bool value) {
     if (menu_open.exchange(value) == value) {
@@ -152,6 +169,8 @@ void SetOpen(bool value) {
     }
     if (!value) {
         ApplyRenderScale(true);
+        ApplyOutput(true);
+        restart_armed = {};
     }
     if (!value && dirty) {
         dirty = false;
@@ -267,7 +286,66 @@ constexpr int TabCount = 5;
 // The PS4 buttons the menu reads (the runtime's bits, runtime_pad.c menu_buttons).
 namespace Ps4 {
 constexpr uint32_t Up = 0x10, Right = 0x20, Down = 0x40, Left = 0x80, L1 = 0x400, R1 = 0x800, Circle = 0x2000,
-                   Cross = 0x4000, Directions = Up | Right | Down | Left;
+                   Cross = 0x4000, Square = 0x8000, Directions = Up | Right | Down | Left;
+}
+
+// The menu in the game's look (choice_style ready; StyledMenu) for this frame. menu_u is the frame's
+// scale (drawn height / 870, as `u` in StyledChoiceBox); the sizes below are in the frame's pixels.
+bool styled = false;
+float menu_u = 1.0f;
+
+// The styled body's items this frame (screen top and bottom of each row, heading, note, info row): the list
+// shows whole items only, cut at the last one that fits (StyledMenu). The visible band of the last frame:
+// rows outside it take no mouse input. The scroll bar's mouse area is hovered (rows do not take the hover).
+std::vector<std::pair<float, float>> body_items;
+float body_visible_top = -FLT_MAX, body_visible_bottom = FLT_MAX;
+bool scrollbar_hovered = false;
+bool in_styled_body = false;
+
+void RecordItem(float top, float bottom) {
+    if (in_styled_body) {
+        body_items.emplace_back(top, bottom);
+    }
+}
+
+// Whether a row lies wholly in the band the list showed last frame (always outside the styled body).
+bool RowVisible(ImVec2 min, ImVec2 max) {
+    return !in_styled_body || (min.y >= body_visible_top - 0.5f && max.y <= body_visible_bottom + 0.5f);
+}
+
+// The next row needs a new start to apply: a small "RESTART" tag left of its value (styled), or the word
+// after its name (plain). Set by Restart(), taken by the next row.
+bool row_restart = false;
+void Restart(bool on = true) {
+    row_restart = on;
+}
+
+// "Apply and restart" (Square, the APPLY & RESTART prompt; research/docs/plan-settings-menu.md section 9): the
+// first press arms it for 5 s and the prompts ask RESTART NOW (Cross) or CANCEL (Circle). It ends the game
+// without saving its progress, so one stray press (E is Square with the default keys) never restarts.
+
+bool RestartAvailable() {
+    const char* command = std::getenv("GOW3_RESTART_COMMAND");
+    return command && command[0];
+}
+
+bool RestartArmed() {
+    return std::chrono::steady_clock::now() < restart_armed;
+}
+
+void ArmRestart() {
+    if (RestartAvailable() && Gow3Settings::RestartChanges() > 0) {
+        restart_armed = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+    }
+}
+
+void RestartNow() {
+    restart_armed = {};
+    // The new launch confirms the options once the game shows; run.py restores the
+    // previous ones if it never does (restart_unconfirmed).
+    Gow3Settings::Get().restart_unconfirmed = true;
+    Gow3Settings::Save();
+    runtime_restart();
 }
 
 // Pad and keyboard navigation of the menu (research/docs/plan-settings-menu.md): the rows a tab draws are
@@ -278,7 +356,7 @@ struct MenuNav {
     int focus[TabCount] = {}; // the focused row of each tab, kept while the menu is closed
     int tab = 0;              // the tab being drawn
     int rows = 0;             // rows drawn so far this frame
-    int last_rows = 0;        // rows drawn in the last frame (the pinned restart row included)
+    int last_rows = 0;        // rows drawn in the last frame
     int body_rows = 0;        // of those, the tab's own (scrolled)
     int move = 0, step = 0;   // up / down and left / right since the last frame
     bool press = false;       // Cross since the last frame
@@ -295,8 +373,24 @@ bool NextRowFocused() {
     return nav.rows == Focus();
 }
 
-// What a press of the menu's buttons does (MenuButtons; SDL events when the runtime gave no input).
+// What a press of the menu's buttons does (MenuButtons; SDL events when the runtime gave no input). While
+// APPLY & RESTART is armed, Cross restarts, Circle or Square cancels, anything else cancels and acts.
 void MenuPress(uint32_t pressed) {
+    if (!pressed) {
+        return;
+    }
+    if (RestartArmed()) {
+        if (pressed & Ps4::Cross) {
+            RestartNow();
+            return;
+        }
+        restart_armed = {};
+        if (pressed & (Ps4::Circle | Ps4::Square)) {
+            return;
+        }
+    } else if (pressed & Ps4::Square) {
+        ArmRestart();
+    }
     nav.move += (pressed & Ps4::Up) ? -1 : (pressed & Ps4::Down) ? 1 : 0;
     nav.step += (pressed & Ps4::Left) ? -1 : (pressed & Ps4::Right) ? 1 : 0;
     nav.press |= (pressed & Ps4::Cross) != 0;
@@ -388,9 +482,11 @@ bool LastItemEnabled() {
 // its last to the bottom, so notes under it show) and gets the pad's change if it is enabled.
 RowNav NavRow(ImVec2 min, ImVec2 max, const char* help, bool enabled) {
     const int index = nav.rows++;
+    RecordItem(min.y, max.y);
     const ImGuiIO& io = ImGui::GetIO();
     if ((io.MouseDelta.x != 0.0f || io.MouseDelta.y != 0.0f) && ImGui::IsMouseHoveringRect(min, max, false) &&
-        ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem)) {
+        ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && RowVisible(min, max) &&
+        !scrollbar_hovered) {
         Focus() = index;
     }
     RowNav result;
@@ -417,12 +513,9 @@ RowNav NavRow(ImVec2 min, ImVec2 max, const char* help, bool enabled) {
     return result;
 }
 
-// The menu in the game's look (choice_style ready; StyledMenu) for this frame. menu_u is the frame's
-// scale (drawn height / 870, as `u` in StyledChoiceBox); the sizes below are in the frame's pixels.
-bool styled = false;
-float menu_u = 1.0f;
-constexpr float RowHeight = 42.0f, InfoHeight = 34.0f, RowText = 28.0f, InfoText = 25.0f, NoteText = 23.0f,
-                SectionText = 30.0f, ValueColumn = 0.55f, RightMargin = 18.0f;
+// Row sizes in frame pixels (2026-11-13: smaller, more rows in view; research/docs/plan-settings-menu.md 9).
+constexpr float RowHeight = 38.0f, InfoHeight = 30.0f, RowText = 26.0f, InfoText = 23.0f, NoteText = 22.0f,
+                SectionText = 26.0f, ValueColumn = 0.55f, RightMargin = 18.0f;
 
 float Px(float frame_px) {
     return frame_px * menu_u;
@@ -467,12 +560,49 @@ void Section(const char* name) {
     std::transform(heading.begin(), heading.end(), heading.begin(),
                    [](unsigned char c) { return char(std::toupper(c)); });
     const float size = TextPx(SectionText), width = ImGui::GetContentRegionAvail().x;
+    const float top = ImGui::GetCursorScreenPos().y;
     ImGui::Dummy(ImVec2(0.0f, Px(8.0f)));
     const ImVec2 at = ImGui::GetCursorScreenPos();
     const float w = choice_style.text->CalcTextSizeA(size, FLT_MAX, 0.0f, heading.c_str()).x;
     ImGui::GetWindowDrawList()->AddText(choice_style.text, size, ImVec2(at.x + (width - w) * 0.5f, at.y), Col(Green),
                                         heading.c_str());
     ImGui::Dummy(ImVec2(width, size * 1.2f));
+    RecordItem(top, ImGui::GetItemRectMax().y);
+}
+
+// A wrapped note between rows (Dim), e.g. why a setting waits for the next start.
+void Note(const char* format, ...) IM_FMTARGS(1);
+void Note(const char* format, ...) {
+    char text[512];
+    va_list args;
+    va_start(args, format);
+    std::vsnprintf(text, sizeof(text), format, args);
+    va_end(args);
+    ImGui::PushTextWrapPos(0.0f);
+    ImGui::TextDisabled("%s", text);
+    ImGui::PopTextWrapPos();
+    RecordItem(ImGui::GetItemRectMin().y, ImGui::GetItemRectMax().y);
+}
+
+// The RESTART tag of a styled row: small, dim, letter-spaced, in a rounded outline whose right edge is just
+// left of the value column. Returns its left edge (the name is clipped there).
+float RestartTag(float value_x, float mid) {
+    ImDrawList* draw = ImGui::GetWindowDrawList();
+    constexpr const char* Text = "RESTART";
+    const float size = TextPx(15.0f), spacing = Px(1.5f), pad = Px(7.0f), h = Px(22.0f);
+    float text_w = spacing * float(std::strlen(Text) - 1);
+    for (const char* c = Text; *c; ++c) {
+        text_w += choice_style.text->CalcTextSizeA(size, FLT_MAX, 0.0f, c, c + 1).x;
+    }
+    const float x1 = value_x - Px(14.0f), x0 = x1 - text_w - 2.0f * pad;
+    draw->AddRect(ImVec2(x0, mid - h * 0.5f), ImVec2(x1, mid + h * 0.5f), Col(IM_COL32(176, 166, 150, 150)), h * 0.5f,
+                  0, std::max(Px(1.2f), 1.0f));
+    float x = x0 + pad;
+    for (const char* c = Text; *c; ++c) {
+        draw->AddText(choice_style.text, size, ImVec2(x, mid - size * 0.55f), Col(Dim), c, c + 1);
+        x += choice_style.text->CalcTextSizeA(size, FLT_MAX, 0.0f, c, c + 1).x + spacing;
+    }
+    return x0;
 }
 
 // A row in the game's look: the focus fill and the name (Gold when focused) are drawn first; controls
@@ -501,7 +631,9 @@ RowArea BeginStyledRow(const char* label, float width = 0.0f) {
                             Col(FocusFill), Px(10.0f));
     }
     const float size = TextPx(RowText);
-    const ImVec4 clip(r.min.x, r.min.y, r.value_x - Px(10.0f), r.max.y);
+    const float name_end = std::exchange(row_restart, false) ? RestartTag(r.value_x, r.mid) - Px(6.0f)
+                                                              : r.value_x - Px(10.0f);
+    const ImVec4 clip(r.min.x, r.min.y, name_end, r.max.y);
     draw->AddText(choice_style.text, size, ImVec2(r.min.x + Px(12.0f), r.mid - size * 0.55f),
                   Col(r.focused ? Gold : Cream), label, nullptr, 0.0f, &clip);
     return r;
@@ -509,7 +641,13 @@ RowArea BeginStyledRow(const char* label, float width = 0.0f) {
 
 void StyledRowHit(RowArea& r) {
     ImGui::SetCursorScreenPos(r.min);
-    r.clicked = ImGui::InvisibleButton("##row", ImVec2(r.max.x - r.min.x, r.max.y - r.min.y));
+    const ImVec2 size(r.max.x - r.min.x, r.max.y - r.min.y);
+    if (RowVisible(r.min, r.max)) {
+        r.clicked = ImGui::InvisibleButton("##row", size);
+    } else { // cut off at the list's edge: no clicks on the hidden part
+        ImGui::Dummy(size);
+        r.clicked = false;
+    }
 }
 
 // The direction a click on a choice row means: the left arrow's quarter of the value column goes back.
@@ -555,8 +693,14 @@ float StyledSlider(const RowArea& r, float fraction, const char* text, bool* dra
         draw->AddText(choice_style.text, size, ImVec2(x1 + Px(18.0f), mid - size * 0.55f), color, text);
     }
     ImGui::SetCursorScreenPos(ImVec2(x0 - Px(12.0f), r.min.y));
-    ImGui::InvisibleButton("##track", ImVec2(x1 - x0 + Px(24.0f), r.max.y - r.min.y));
-    const bool held = ImGui::IsItemActive();
+    const ImVec2 track(x1 - x0 + Px(24.0f), r.max.y - r.min.y);
+    bool held = false;
+    if (RowVisible(r.min, r.max)) {
+        ImGui::InvisibleButton("##track", track);
+        held = ImGui::IsItemActive();
+    } else {
+        ImGui::Dummy(track);
+    }
     if (dragging) {
         *dragging = held;
     }
@@ -576,6 +720,10 @@ void Row(const char* label, bool focusable = true) {
     row_top = ImGui::GetCursorScreenPos().y;
     ImGui::AlignTextToFramePadding();
     ImGui::TextUnformatted(label);
+    if (std::exchange(row_restart, false)) {
+        ImGui::SameLine();
+        ImGui::TextDisabled("RESTART");
+    }
     ImGui::TableNextColumn();
     ImGui::SetNextItemWidth(-FLT_MIN);
     ImGui::PushID(label);
@@ -679,8 +827,9 @@ void ChoiceRow(const char* label, std::atomic<int>& target, const char* const* l
 }
 
 // Choice over a plain int index (-1: a value the menu does not list, shown until changed).
-void IndexChoiceRow(const char* label, int& value, const char* const* labels, int count, const char* help) {
-    if (const int chosen = ChoiceIndex(label, value, labels, count, help); chosen >= 0) {
+void IndexChoiceRow(const char* label, int& value, const char* const* labels, int count, const char* help,
+                    const char* unlisted = "(custom)") {
+    if (const int chosen = ChoiceIndex(label, value, labels, count, help, unlisted); chosen >= 0) {
         value = chosen;
         dirty = true;
     }
@@ -901,6 +1050,7 @@ void InfoRow(const char* label, const char* text) {
         draw->AddText(choice_style.text, size, ImVec2(std::max((value_x + right - w) * 0.5f, value_x), mid - size * 0.55f),
                       Col(Gold), text);
         ImGui::Dummy(ImVec2(width, Px(InfoHeight)));
+        RecordItem(at.y, at.y + Px(InfoHeight));
         return;
     }
     Row(label, false);
@@ -943,7 +1093,7 @@ bool IsGow3() {
     return Common::ElfInfo::Instance().GameSerial().starts_with("CUSA01623");
 }
 
-void GameTab() {
+[[maybe_unused]] void GameTab() { // no tab for now (2026-11-13): God of War III only
     auto& s = Gow3Settings::Get();
     if (!IsGow3()) {
         Section("Game");
@@ -1088,16 +1238,152 @@ void ControlsTab() {
     }
 }
 
-void ImageTab() {
+// MediEvil's frame buffer sizes (medievil.ini output_resolution, Gow3Settings::UE4OutputKeys' order).
+constexpr const char* OutputLabels[] = {"Match display", "4K", "1800p", "1440p", "1080p (original)", "720p"};
+
+// Switches the game's output to the chosen frame buffer size now through r.SetRes (src/runtime_extra.c), as the
+// game's debug menu does, unless a live switch is unsafe (Gow3Settings::OutputRestartReason: then at the next
+// start). Saved in medievil.ini either way, so the next start boots at it (run.py, the boot display size patch).
+void RequestOutput() {
+    namespace S = Gow3Settings;
+    if (const char* reason = S::OutputRestartReason()) {
+        std::printf("Output resolution: %s at the next start (%s)\n", S::OutputValue().c_str(), reason);
+        return;
+    }
+    int width = 0, height = 0;
+    S::OutputSize(S::OutputValue(), width, height);
+    char text[24];
+    std::snprintf(text, sizeof(text), "%dx%d", width, height);
+    runtime_ue4_request_setres(text);
+    std::printf("Output resolution: %s (live, in-game menu)\n", text);
+}
+
+// MediEvil: the 3D scene's size per side compared with the frame buffer, in 1% steps, switched live
+// (Gow3Settings::RequestRenderScale, applied by ApplyRenderScale) and kept in medievil.ini.
+void RenderScaleRow() {
+    namespace S = Gow3Settings;
+    auto& s = S::Get();
+    const int lo = S::LiveRenderScaleMin(), live_max = S::LiveRenderScaleMax();
+    static char help[256];
+    std::snprintf(help, sizeof(help),
+                  "The 3D scene's size compared with the frame buffer. Below 100%%: faster, rebuilt by the upscaler. "
+                  "Above: sharper, slower. Live from %d%% to %d%%, higher on the next start.",
+                  lo, live_max);
+    Restart(S::RenderScaleNeedsRestart());
+    bool active = false;
+    const int v = IntSliderRow("Render scale", s.render_scale, lo, S::RenderScaleMax, 1, "%d%%", help, &active, true);
+    if (v != s.render_scale) {
+        s.render_scale = v;
+        dirty = true;
+        render_scale_pending = true;
+        render_scale_edit = std::chrono::steady_clock::now();
+    }
+    if (active) {
+        render_scale_edit = std::chrono::steady_clock::now(); // applied once let go
+    }
+}
+
+// The render scale's notes, shown only when the chosen scale waits for the next start.
+void RenderScaleNotes() {
+    namespace S = Gow3Settings;
+    const auto& s = S::Get();
+    if (s.render_scale > S::LiveRenderScaleMax()) {
+        Note("%d%% applies at the next start (APPLY & RESTART); until then the scene stays at %d%%, the most the "
+             "game's memory was set up for when it started.",
+             s.render_scale, s.live_render_scale);
+    } else if (S::RenderScaleNeedsRestart()) {
+        Note("Anti-aliasing is not temporal (launcher > Performance): the scale applies now, the anti-aliasing "
+             "stays as the game started until the next start (below 100%% a start always uses temporal AA).");
+    }
+}
+
+// Display: the frame buffer and the window, the frame cap, VSync, scaling and sharpening, what runs now.
+void DisplayTab() {
     namespace G = Gow3Graphics;
-    auto& s = Gow3Settings::Get();
-    Section("Display");
-    if (BeginRows("##display")) {
+    namespace S = Gow3Settings;
+    auto& s = S::Get();
+    Section("Resolution");
+    if (BeginRows("##resolution")) {
+        if (IsGow3()) {
+            // God of War III: a resolution patch.
+            static const char* const resolution_labels[] = {
+                "1080p (original)", "480p", "720p", "1440p", "1800p", "4K", "720p", "1440p", "1800p", "4K"};
+            Restart();
+            ChoiceRow("Render resolution", s.render_resolution, resolution_labels, nullptr,
+                      int(G::Resolutions.size()), "The resolution the game draws at. Higher is sharper and slower.");
+        } else {
+            // MediEvil: the game's output (output_resolution), switched now and kept for the next start.
+            Restart(S::OutputRestartReason() != nullptr);
+            const int before = s.output_resolution;
+            IndexChoiceRow("Frame buffer size", s.output_resolution, OutputLabels, int(std::size(OutputLabels)),
+                           "The size the game draws its picture and HUD at (the PS4's output); the window scales it "
+                           "to fit. Match display for a sharp 1:1 image.",
+                           "Custom");
+            if (s.output_resolution != before) {
+                output_pending = true; // switched 0.5 s after the last step (ApplyOutput)
+                output_edit = std::chrono::steady_clock::now();
+            }
+            if (const char* reason = S::OutputRestartReason()) {
+                EndRows();
+                Note("%s", reason);
+                if (!BeginRows("##resolution_after")) return; // (plain look: a skipped window)
+            }
+        }
         ChoiceRow("Display mode", s.display_mode, G::DisplayModeNames.data(), nullptr, G::DisplayModeCount,
                   "Windowed, borderless window or exclusive fullscreen.");
-        CheckRow("VSync", s.vsync, "Waits for the monitor: no tearing, a little more input delay.");
         EndRows();
     }
+
+    Section("Frame cap");
+    if (BeginRows("##frame_cap")) {
+        // The highest frame rate the game runs at (Unreal Engine 4: run.py's override pak).
+        static const char* const engine_labels[] = {"60 (original)", "120 (experimental)", "240 (experimental)"};
+        Restart();
+        ChoiceRow("Engine frame rate", s.engine_fps, engine_labels, G::EngineFps.data(), int(G::EngineFps.size()),
+                  "The highest frame rate the game itself runs at.");
+        static const char* const fps_labels[] = {"Auto: refresh (VRR: below it, Reflex rule)",
+                                                 "Auto: half refresh (VRR: one below)", "30", "60", "119 (VRR, 240 Hz)",
+                                                 "120", "141 (VRR, 144 Hz)", "237 (VRR, 240 Hz)", "240", "Unlimited",
+                                                 "Half display refresh (fixed refresh)"};
+        ChoiceRow("Frame rate limit", s.fps_limit, fps_labels, G::FpsLimits.data(), int(G::FpsLimits.size()),
+                  "Caps the frame rate. The engine frame rate (above) is the highest it can go.");
+        CheckRow("G-Sync / FreeSync display", s.display_vrr,
+                 "On: the automatic limits stay just below the refresh (VRR). Off (fixed refresh): exactly the "
+                 "refresh or half of it, with VSync on.");
+        const int limit = G::ResolveFpsLimit(s.fps_limit, Gow3DisplayRefreshHz(), s.display_vrr);
+        const int effective = G::EffectiveFps(limit, s.startup_engine_fps);
+        if (s.fps_limit < 0) {
+            char text[64];
+            std::snprintf(text, sizeof(text), "%d FPS (%u Hz display)", effective, Gow3DisplayRefreshHz());
+            InfoRow("Effective limit", text);
+        } else if (limit == 0 || effective < limit) {
+            char text[48];
+            std::snprintf(text, sizeof(text), "%d FPS (engine frame rate)", effective);
+            InfoRow("Effective limit", text);
+        }
+        EndRows();
+    }
+
+    Section("VSync");
+    if (BeginRows("##vsync")) {
+        // The launcher's "Off, allow tearing" / "Adaptive" fix the present mode (GOW3_PRESENT_MODE), which wins
+        // over this switch (vsync-control): shown, but greyed out, as the launcher's choice is what runs.
+        static const bool fixed_mode = [] {
+            const char* mode = std::getenv("GOW3_PRESENT_MODE");
+            return mode && mode[0];
+        }();
+        ImGui::BeginDisabled(fixed_mode);
+        CheckRow("VSync", s.vsync,
+                 fixed_mode ? "No effect: the launcher fixes the present mode (VSync: Off, allow tearing or Adaptive). "
+                              "Choose On or Off there to switch it here."
+                            : "Waits for the monitor: no tearing, a little more input delay.");
+        ImGui::EndDisabled();
+        static const char* const queued_labels[] = {"1 (lowest latency)", "2", "Unlimited"};
+        ChoiceRow("Frames queued", s.frames_queued, queued_labels, G::FramesQueued.data(),
+                  int(G::FramesQueued.size()), "More frames queued: steadier FPS, slower response to input.");
+        EndRows();
+    }
+
     const int iw = s.image_width, ih = s.image_height, ww = s.window_width, wh = s.window_height;
     const bool upscaling = iw < ww && ih < wh;
     const bool downscaling = iw > ww || ih > wh;
@@ -1107,24 +1393,16 @@ void ImageTab() {
     Section("Scaling and sharpening");
     if (BeginRows("##scaling")) {
         CheckRow("Upscale with FSR 1", s.fsr1,
-                 "Enlarges a smaller game image to the window. For more FPS: Render resolution 720p + FSR 1.");
-        ImGui::BeginDisabled(rcas_blocked);
-        CheckRow("Sharpening (RCAS)", s.rcas,
-                 rcas_blocked && downscaling ? "No effect: the game's image is larger than the window."
-                 : rcas_blocked              ? "Needs FSR 1: the game's image is smaller than the window."
-                 : fsr_running ? "Off while AMD FSR runs: FSR sharpens by its own strength (AMD FSR sharpening)."
-                               : "Sharpens the final image (the game's TAA, NVIDIA DLSS).");
-        ImGui::EndDisabled();
-        ImGui::BeginDisabled(!s.rcas || rcas_blocked);
-        SliderRow("Sharpening strength", s.rcas_strength, 0, 100, "%d%%", "How strong the sharpening is.", 5);
-        ImGui::EndDisabled();
+                 IsGow3() ? "Enlarges a smaller game image to the window. For more FPS: Render resolution 720p + FSR 1."
+                          : "Enlarges a frame buffer smaller than the window with AMD FSR 1. For more FPS: a smaller "
+                            "Frame buffer size with FSR 1.");
         {
             // The game's TAA, and the upscalers this system can run (Vulkan::Ue4Upscaler).
             static constexpr const char* names[] = {"Game's TAA", "NVIDIA DLSS", "AMD FSR"};
-            const char* labels[Gow3Settings::Ue4UpscalerCount];
-            int values[Gow3Settings::Ue4UpscalerCount];
+            const char* labels[S::Ue4UpscalerCount];
+            int values[S::Ue4UpscalerCount];
             int count = 0;
-            for (int kind = 0; kind < Gow3Settings::Ue4UpscalerCount; ++kind) {
+            for (int kind = 0; kind < S::Ue4UpscalerCount; ++kind) {
                 if (kind == 0 || (kind == 1 && s.ue4_dlss_available) || (kind == 2 && s.ue4_fsr_available)) {
                     labels[count] = names[kind];
                     values[count++] = kind;
@@ -1136,20 +1414,46 @@ void ImageTab() {
                       "(RCAS). F9 switches between them in the game. DLSS needs an NVIDIA RTX GPU and "
                       "nvngx_dlss.dll in the bin folder (see README-Windows.txt).");
         }
+        if (!IsGow3()) {
+            RenderScaleRow();
+            EndRows();
+            RenderScaleNotes();
+            if (!BeginRows("##scaling_after")) return;
+        }
         if (s.ue4_fsr_available) {
             SliderRow("AMD FSR sharpening", s.fsr_sharpness, 0, 100, "%d%%",
                       "FSR's own sharpening while AMD FSR runs, apart from the RCAS strength. 0 turns it off.", 5);
         }
+        ImGui::BeginDisabled(rcas_blocked);
+        CheckRow("Sharpening (RCAS)", s.rcas,
+                 rcas_blocked && downscaling ? "No effect: the frame buffer is larger than the window."
+                 : rcas_blocked              ? "Needs FSR 1: the frame buffer is smaller than the window."
+                 : fsr_running ? "Off while AMD FSR runs: FSR sharpens by its own strength (AMD FSR sharpening)."
+                               : "Sharpens the final image (the game's TAA, NVIDIA DLSS).");
+        ImGui::EndDisabled();
+        ImGui::BeginDisabled(!s.rcas || rcas_blocked);
+        SliderRow("Sharpening strength", s.rcas_strength, 0, 100, "%d%%", "How strong the sharpening is.", 5);
+        ImGui::EndDisabled();
         EndRows();
     }
+
     Section("Information");
-    if (BeginRows("##image_info")) {
+    if (BeginRows("##information")) {
         char text[96];
         std::snprintf(text, sizeof(text), "%d x %d", iw, ih);
-        InfoRow("Game image", text);
+        InfoRow("Frame buffer", text);
+        if (!IsGow3()) {
+            if (iw > 0 && ih > 0) {
+                std::snprintf(text, sizeof(text), "%d x %d (%d%%)", S::ScaledSize(iw, s.live_render_scale),
+                              S::ScaledSize(ih, s.live_render_scale), s.live_render_scale);
+            } else {
+                std::snprintf(text, sizeof(text), "%d%%", s.live_render_scale);
+            }
+            InfoRow("Render resolution", text);
+        }
         std::snprintf(text, sizeof(text), "%d x %d", ww, wh);
-        InfoRow("Window", text);
-        InfoRow("FSR 1", !s.fsr1 ? "off" : upscaling ? "active" : "no effect (image not smaller than window)");
+        InfoRow("Window size", text);
+        InfoRow("FSR 1", !s.fsr1 ? "off" : upscaling ? "active" : "no effect (frame buffer not smaller)");
         if (fsr_running && s.fsr_sharpness > 0) {
             std::snprintf(text, sizeof(text), "AMD FSR, %d%%", s.fsr_sharpness.load());
         }
@@ -1166,72 +1470,98 @@ void ImageTab() {
     }
 }
 
-// MediEvil: the 3D scene's size per side compared with the output, in 1% steps, switched live
-// (Gow3Settings::RequestRenderScale, applied by ApplyRenderScale) and kept in medievil.ini.
-void RenderScaleSection() {
+// Graphics: Graphics quality, then every graphics setting (research/docs/plan-graphics-settings.md): the live
+// ones switch through UE4 console variables at once, the others (RESTART) at the next start.
+void GraphicsTab() {
     namespace S = Gow3Settings;
     auto& s = S::Get();
-    const int lo = S::LiveRenderScaleMin(), live_max = S::LiveRenderScaleMax();
-    static char help[512];
-    std::snprintf(help, sizeof(help),
-                  "The 3D scene's size per side compared with the output, in 1%% steps. Below 100%%: drawn "
-                  "smaller and rebuilt at full size by the game's temporal upscaler (faster). Above: drawn "
-                  "larger and scaled down (sharper, slower). The HUD stays at the output size. Switched now "
-                  "(each change re-makes the scene's buffers: one short hitch) from %d%% to %d%%; larger "
-                  "values on the next start, as the game's memory is set up for the scene it starts with.",
-                  lo, live_max);
-    if (!BeginRows("##render_scale")) {
+    Section("Graphics quality");
+    if (IsGow3()) {
+        Note("God of War III has no graphics settings here: its render resolution is on the Display tab.");
         return;
     }
-    bool active = false;
-    const int v = IntSliderRow("Render scale", s.render_scale, lo, S::RenderScaleMax, 1, "%d%%", help, &active, true);
-    if (v != s.render_scale) {
-        s.render_scale = v;
-        dirty = true;
-        render_scale_pending = true;
-        render_scale_edit = std::chrono::steady_clock::now();
+    if (!BeginRows("##graphics")) {
+        return;
     }
-    if (active) {
-        render_scale_edit = std::chrono::steady_clock::now(); // applied once let go
+    {
+        // Graphics quality sets every graphics setting; it shows the level they all match, else Custom.
+        static const char* const quality_labels[] = {"Ultra", "High", "Console (PS4)", "Medium",
+                                                     "Low (integrated graphics)", "Deck Optimized"};
+        static_assert(std::size(quality_labels) == S::UE4DeckLevel + 1);
+        const int matched = S::UE4MatchedLevel(s, s.ue4_quality);
+        const int level = ChoiceIndex(
+            "Graphics quality", matched, quality_labels, int(std::size(quality_labels)),
+            "Sets every graphics setting: Console is exactly the PS4, High and Ultra go beyond it, Medium and Low "
+            "are for integrated graphics, Deck Optimized is the Steam Deck's. Custom: some settings changed by hand.",
+            "Custom");
+        if (level >= 0) {
+            S::UE4ApplyLevel(level);
+            dirty = true;
+        }
     }
-    const int iw = s.image_width, ih = s.image_height;
-    char text[96];
-    if (iw > 0 && ih > 0) {
-        std::snprintf(text, sizeof(text), "%d x %d at %d%% of %d x %d", S::ScaledSize(iw, s.live_render_scale),
-                      S::ScaledSize(ih, s.live_render_scale), s.live_render_scale, iw, ih);
-    } else {
-        std::snprintf(text, sizeof(text), "%d%%", s.live_render_scale);
+    const bool preshadows = s.preshadows;
+    CheckRow("Preshadows", s.preshadows,
+             "Shadows that Dan and enemies cast from fixed lights such as torches. Off: faster in busy views with "
+             "many lights (the Graveyard horizon held the frame cap); some of those shadows go.");
+    if (s.preshadows != preshadows) {
+        runtime_ue4_request_cvar("r.Shadow.Preshadows", s.preshadows ? "1" : "0");
     }
-    InfoRow("Scene now", text);
+    static const char* const effects_labels[] = {"100%", "75%", "50%"};
+    const int effects = s.effects_resolution;
+    IndexChoiceRow("Effects resolution", s.effects_resolution, effects_labels, 3,
+                   "Smoke, fire and enemy death effects drawn at a lower resolution and blended in. At 4K, 50% is "
+                   "the PS4's 1080p effect detail; several deaths at once cost 2-3 ms a frame at 100%.");
+    if (s.effects_resolution != effects && s.effects_resolution >= 0) {
+        runtime_ue4_request_cvar("r.SeparateTranslucencyScreenPercentage", S::UE4EffectsKeys[s.effects_resolution]);
+    }
+    // The live settings in the table's order, then the ones a start applies (RESTART).
+    for (const bool live : {true, false}) {
+        for (int o = 0; o < S::UE4LiveCount; ++o) {
+            const auto& option = S::UE4LiveOptions[o];
+            if (option.live != live) continue;
+            const int before = s.ue4_live[o];
+            Restart(!live);
+            IndexChoiceRow(option.title, s.ue4_live[o], option.labels, option.count, option.hint);
+            if (s.ue4_live[o] != before) {
+                S::RequestUE4Live(o, s.ue4_live[o]);
+            }
+        }
+    }
     EndRows();
-    if (s.render_scale > live_max) {
-        ImGui::TextWrapped("%d%% applies at the next start (Apply and restart). Until then the scene stays at "
-                           "%d%%: live changes go up to %d%%, the scene size the game's memory was set up for "
-                           "when it started.",
-                           s.render_scale, s.live_render_scale, live_max);
-    } else if (S::RenderScaleNeedsRestart()) {
-        ImGui::TextWrapped("Anti-aliasing is not temporal (launcher > Performance): applied now, but the "
-                           "anti-aliasing stays as the game started until the next start (below 100%% a start "
-                           "always uses temporal AA for its upsampling).");
-    }
 }
 
 extern "C" void runtime_memory_set_perf(int optimistic, int keep_access);
 
-// MediEvil: the launcher's performance patches. Live ones apply at once.
-void PerfPatchesSection() {
+// Performance: the patches (live ones first, then the shader compile switch, then the ones a start applies),
+// the GPU readback modes, and the Steam Deck switches (medievil.ini deck_*, research/patches/deck).
+void PerformanceTab() {
     namespace S = Gow3Settings;
     auto& s = S::Get();
+    Section("Performance patches");
+    if (IsGow3()) {
+        if (BeginRows("##perf_gow3")) {
+            CheckRow("Compile new shaders in the background", s.async_shaders,
+                     "Fewer stutters in new areas; an object or effect may appear a moment later.");
+            Restart();
+            CheckRow("Game reads GPU data without waiting", s.stale_readback,
+                     "Big FPS gain. Switch it off if lighting or objects look wrong.");
+            Restart();
+            CheckRow("Deferred GPU readbacks", s.deferred_readback,
+                     "Fewer waits for the GPU. Switch it off if textures or shadows look wrong.");
+            EndRows();
+        }
+        return;
+    }
     static const char* const titles[S::PerfCount] = {
         "HZB occlusion culling", "Skip the decal depth prepass", "Single GPU particle pass",
         "Small buffers from VRAM", "Texture set memo", "Lock-free memory map lookups", "Cheap memory frees",
         "GPU data without waits", "4K memory sizes", "Fewer render pass breaks", "Cheaper draw binding",
-        "Constant ring reuse"};
+        "Constant ring reuse", "Particle flip guard"};
     static const char* const hints[S::PerfCount] = {
         "Skips objects hidden behind others, without waiting for the GPU. Heavy areas ~130 -> ~165 FPS.",
         "No second depth-only drawing of the scene for nearly invisible decals: ~600 fewer draws, ~10%.",
-        "One particle simulation pass a frame instead of an extra empty one: up to ~190 fewer draws. Off by "
-        "default: some lone torches burn very slowly and an ember stream can show in Dan's crypt with it.",
+        "One particle simulation pass a frame instead of an extra empty one: up to ~190 fewer draws. Needs "
+        "Particle flip guard (below): without it some lone torches freeze and an ember stream shows in Dan's crypt.",
         "Unchanged small buffers are read from video memory instead of copied every draw: ~5%.",
         "Remembered texture bindings survive other textures streaming in: binding ~7% cheaper.",
         "The GPU threads read the memory map without waiting for the game: fewer panning spikes.",
@@ -1240,11 +1570,21 @@ void PerfPatchesSection() {
         "More graphics memory and texture pool at 4K native: no reloads on small camera moves.",
         "No depth barriers between effect draws: fights' 0.1% lows 100 -> 117 at a 120 cap.",
         "Descriptors copied in one piece, samplers reused: ~0.3 ms less draw-thread work in heavy frames.",
-        "Constants bound again in a command buffer reuse their first copy: heavy-area 0.1% lows ~145 -> ~185."};
-    Section("Performance patches");
+        "Constants bound again in a command buffer reuse their first copy: heavy-area 0.1% lows ~145 -> ~185.",
+        "One state flip per particle simulation: the single particle pass then has no frozen torches or crypt "
+        "floor embers. No cost measured."};
+    // The workbook's order (research/docs/data/settings-menu-items.xlsx): the live patches, the particle flip
+    // guard under the single pass, then the ones a start applies.
+    static constexpr S::PerfPatch live_order[] = {S::PerfParticleSinglePass, S::PerfParticleFlipGuard,
+                                                  S::PerfSmallBuffers,       S::PerfLockfreeMemory,
+                                                  S::PerfCheapFrees,         S::PerfLeanBinding,
+                                                  S::PerfRingReuse};
+    static constexpr S::PerfPatch restart_order[] = {S::PerfHzbOcclusion, S::PerfNoDecalPrepass, S::PerfTextureMemo,
+                                                     S::PerfGpuDataNoWaits, S::Perf4kMemory, S::PerfLeanBarriers};
     if (BeginRows("##perf_live")) {
-        for (int p = 0; p < S::PerfCount; ++p) {
-            if (S::PerfLive[p]) CheckRow(titles[p], s.perf[p], hints[p]);
+        for (const S::PerfPatch p : live_order) {
+            Restart(!S::PerfLive[p]);
+            CheckRow(titles[p], s.perf[p], hints[p]);
         }
         EndRows();
     }
@@ -1253,167 +1593,50 @@ void PerfPatchesSection() {
     // The particle pass through its console variable at the next game-thread poll (once per change).
     runtime_ue4_particle_single_pass(s.perf[S::PerfParticleSinglePass] ? 1 : 0);
     if (Gow3Toggle2::Disabled(Gow3Toggle2::ParticleFixedStep)) {
-        ImGui::TextDisabled("Single GPU particle pass: held off by the toggle file (second word 8192); this "
-                            "choice applies when that bit clears.");
+        Note("Single GPU particle pass: held off by the toggle file (second word 8192); this choice applies when "
+             "that bit clears.");
     }
-    ImGui::TextDisabled("Applied on restart:");
+    if (s.perf[S::PerfParticleSinglePass] && !s.startup_perf[S::PerfParticleFlipGuard]) {
+        Note("Particle flip guard is not running in this start: with the single pass some torches freeze.");
+    }
     if (BeginRows("##perf_restart")) {
-        for (int p = 0; p < S::PerfCount; ++p) {
-            if (!S::PerfLive[p]) CheckRow(titles[p], s.perf[p], hints[p]);
-        }
-        EndRows();
-    }
-}
-
-void PerformanceTab() {
-    namespace G = Gow3Graphics;
-    auto& s = Gow3Settings::Get();
-    Section("Live");
-    if (BeginRows("##live")) {
-        static const char* const fps_labels[] = {"Auto: refresh (VRR: below it, Reflex rule)",
-                                                 "Auto: half refresh (VRR: one below)", "30", "60", "119 (VRR, 240 Hz)",
-                                                 "120", "141 (VRR, 144 Hz)", "237 (VRR, 240 Hz)", "240", "Unlimited",
-                                                 "Half display refresh (fixed refresh)"};
-        ChoiceRow("Frame rate limit", s.fps_limit, fps_labels, G::FpsLimits.data(), int(G::FpsLimits.size()),
-                  "Caps the frame rate. The engine frame rate (below) is the highest it can go.");
-        CheckRow("G-Sync / FreeSync display", s.display_vrr,
-                 "On: the automatic limits stay just below the refresh (VRR). Off (fixed refresh): exactly the "
-                 "refresh or half of it, with VSync on.");
-        const int limit = G::ResolveFpsLimit(s.fps_limit, Gow3DisplayRefreshHz(), s.display_vrr);
-        const int effective = G::EffectiveFps(limit, s.startup_engine_fps);
-        if (s.fps_limit < 0) {
-            char text[64];
-            std::snprintf(text, sizeof(text), "%d FPS (%u Hz display)", effective, Gow3DisplayRefreshHz());
-            InfoRow("Effective limit", text);
-        } else if (limit == 0 || effective < limit) {
-            char text[48];
-            std::snprintf(text, sizeof(text), "%d FPS (engine frame rate)", effective);
-            InfoRow("Effective limit", text);
-        }
-        static const char* const queued_labels[] = {"1 (lowest latency)", "2", "Unlimited"};
-        ChoiceRow("Frames queued", s.frames_queued, queued_labels, G::FramesQueued.data(),
-                  int(G::FramesQueued.size()), "More frames queued: steadier FPS, slower response to input.");
         CheckRow("Compile new shaders in the background", s.async_shaders,
                  "Fewer stutters in new areas; an object or effect may appear a moment later.");
-        EndRows();
-    }
-    if (!IsGow3()) {
-        // MediEvil: the game's own resolution, switched live (as its debug menu does). The debug
-        // menu's gamepad navigation needs 1080p: switch there for cheats, then back.
-        Section("Game resolution now");
-        static constexpr const char* labels[] = {"1080p", "1440p", "1800p", "4K"};
-        static constexpr const char* values[] = {"1920x1080", "2560x1440", "3200x1800", "3840x2160"};
-        // Render scales above 100% supersample (r.ScreenPercentage up to 200): a larger output on
-        // top of that ran out of the PS4 memory budget (1800p at 200% needs 6400x3600 targets:
-        // crash). Those keep 1080p here.
-        // A live render scale stays at or below the start's when that is above 100% (RequestRenderScale).
-        const bool supersampling = s.startup_render_scale > 100;
-        if (BeginRows("##game_resolution")) {
-            const bool enabled[] = {true, !supersampling, !supersampling, !supersampling};
-            if (const int pressed = ButtonsRow("Switch the output to", labels, 4, enabled,
-                                               "The game's output size now, until the next start.");
-                pressed >= 0) {
-                runtime_ue4_request_setres(values[pressed]);
-            }
-            EndRows();
+        for (const S::PerfPatch p : restart_order) {
+            Restart(!S::PerfLive[p]);
+            CheckRow(titles[p], s.perf[p], hints[p]);
         }
-        ImGui::TextWrapped("%s", supersampling
-                                     ? "Unavailable when the game started with a render scale above 100% (the "
-                                       "scene is already drawn larger; more would run out of game memory). Start "
-                                       "with Render scale 100% or lower to switch the output size here."
-                                     : "Switches the game's output now, until the next start (Output resolution "
-                                       "below is the size it starts at). Use 1080p for the debug menu (R3), then "
-                                       "switch back.");
-        // UE4 console variables switched live (src/runtime_extra.c), kept in medievil.ini.
-        Section("Applied now");
-        RenderScaleSection();
-        if (BeginRows("##live")) {
-            const bool preshadows = s.preshadows;
-            CheckRow("Preshadows", s.preshadows,
-                     "Shadows that Dan and enemies cast from fixed lights such as torches. Off: "
-                     "faster in busy views with many lights (the Graveyard horizon held the frame "
-                     "cap); some of those shadows go.");
-            if (s.preshadows != preshadows) {
-                runtime_ue4_request_cvar("r.Shadow.Preshadows", s.preshadows ? "1" : "0");
-            }
-            static const char* const effects_labels[] = {"100%", "75%", "50%"};
-            const int effects = s.effects_resolution;
-            IndexChoiceRow("Effects resolution", s.effects_resolution, effects_labels, 3,
-                           "Smoke, fire and enemy death effects drawn at a lower resolution and "
-                           "blended in. At 4K, 50% is the PS4's 1080p effect detail; several deaths "
-                           "at once cost 2-3 ms a frame at 100%. The cost grows with the render resolution.");
-            if (s.effects_resolution != effects && s.effects_resolution >= 0) {
-                runtime_ue4_request_cvar("r.SeparateTranslucencyScreenPercentage",
-                                         Gow3Settings::UE4EffectsKeys[s.effects_resolution]);
-            }
-            // Graphics quality sets every graphics setting (the live ones now, the others below at the next
-            // start); it shows the level they all match, else Custom (research/docs/plan-graphics-settings.md).
-            {
-                namespace S = Gow3Settings;
-                static const char* const quality_labels[] = {"Ultra", "High", "Console (PS4)", "Medium",
-                                                             "Low (integrated graphics)", "Deck Optimized"};
-                const int matched = S::UE4MatchedLevel(s, s.ue4_quality);
-                const int level = ChoiceIndex(
-                    "Graphics quality", matched, quality_labels, int(std::size(S::UE4QualityKeys)),
-                    "Sets every graphics setting: Console is exactly the PS4, High and Ultra go beyond it, "
-                    "Medium and Low are for integrated graphics. Custom: some settings changed by hand. "
-                    "The settings under \"Applied on restart\" take effect at the next start.",
-                    "Custom");
-                if (level >= 0) {
-                    S::UE4ApplyLevel(level);
-                    dirty = true;
-                }
-            }
-            for (int o = 0; o < Gow3Settings::UE4LiveCount; ++o) {
-                const auto& option = Gow3Settings::UE4LiveOptions[o];
-                if (!option.live) continue; // under "Applied on restart"
-                const int before = s.ue4_live[o];
-                IndexChoiceRow(option.title, s.ue4_live[o], option.labels, option.count, option.hint);
-                if (s.ue4_live[o] != before) {
-                    Gow3Settings::RequestUE4Live(o, s.ue4_live[o]);
-                }
-            }
-            EndRows();
-        }
-    }
-    Section("Applied on restart");
-    if (BeginRows("##restart")) {
-        if (IsGow3()) {
-            // God of War III: a resolution patch.
-            static const char* const resolution_labels[] = {
-                "1080p (original)", "480p", "720p", "1440p", "1800p", "4K", "720p", "1440p", "1800p", "4K"};
-            ChoiceRow("Render resolution", s.render_resolution, resolution_labels, nullptr,
-                      int(G::Resolutions.size()), "The resolution the game draws at. Higher is sharper and slower.");
-        } else {
-            // MediEvil: the size the game starts at (launcher > Performance; run.py: the boot display
-            // size patch). Its render scale is live, above (RenderScaleSection).
-            static const char* const output_labels[] = {"Match display", "4K (3840x2160)", "1800p (3200x1800)",
-                                                        "1440p (2560x1440)", "1080p (original)", "720p (1280x720)"};
-            IndexChoiceRow("Output resolution", s.output_resolution, output_labels, 6,
-                           "The size of the game's picture; it starts at this size. Match the display for a "
-                           "sharp 1:1 image. Custom sizes: output_resolution=WxH in medievil.ini.");
-        }
-        // The highest frame rate the game runs at (Unreal Engine 4: run.py's override pak).
-        static const char* const engine_labels[] = {"60 (original)", "120 (experimental)", "240 (experimental)"};
-        ChoiceRow("Engine frame rate", s.engine_fps, engine_labels, G::EngineFps.data(),
-                  int(G::EngineFps.size()), "The highest frame rate the game itself runs at.");
+        Restart();
         CheckRow("Game reads GPU data without waiting", s.stale_readback,
                  "Big FPS gain. Switch it off if lighting or objects look wrong.");
+        Restart();
         CheckRow("Deferred GPU readbacks", s.deferred_readback,
                  "Fewer waits for the GPU. Switch it off if textures or shadows look wrong.");
-        if (!IsGow3()) {
-            // MediEvil: the graphics settings that are not live (Graphics quality, above, sets them too).
-            for (int o = 0; o < Gow3Settings::UE4LiveCount; ++o) {
-                const auto& option = Gow3Settings::UE4LiveOptions[o];
-                if (!option.live) {
-                    IndexChoiceRow(option.title, s.ue4_live[o], option.labels, option.count, option.hint);
-                }
-            }
-        }
         EndRows();
     }
-    if (!IsGow3()) {
-        PerfPatchesSection();
+    // The Steam Deck's measured wins (launcher: Steam Deck performance switches; Deck Optimized turns them on).
+    // Windows hides the Linux-only ones (run.py never sets them there).
+    Section("Deck tuned");
+    if (BeginRows("##deck")) {
+        static const auto helps = [] {
+            std::array<std::string, S::DeckSwitchCount> out;
+            for (int d = 0; d < S::DeckSwitchCount; ++d) {
+#ifdef _WIN32
+                out[d] = std::string(S::DeckSwitches[d].hint) + " Measured on the Steam Deck; untested on Windows.";
+#else
+                out[d] = std::string(S::DeckSwitches[d].hint) + " Measured on the Steam Deck.";
+#endif
+            }
+            return out;
+        }();
+        for (int d = 0; d < S::DeckSwitchCount; ++d) {
+#ifdef _WIN32
+            if (S::DeckSwitches[d].linux_only) continue;
+#endif
+            Restart();
+            CheckRow(S::DeckSwitches[d].title, s.deck[d], helps[d].c_str());
+        }
+        EndRows();
     }
 }
 
@@ -1421,6 +1644,7 @@ void PerformanceTab() {
 void OverlayPreview() {
     const auto& s = Gow3Settings::Get();
     ImGui::TextDisabled("Preview");
+    const float top = ImGui::GetCursorScreenPos().y;
     if (styled) { // the overlay's own font at its own size, not the menu's
         ImFont* font = ImGui::GetIO().Fonts->Fonts[0];
         ImGui::PushFont(font, font->LegacySize);
@@ -1431,6 +1655,7 @@ void OverlayPreview() {
     ImGui::TextUnformatted(text.empty() ? "(nothing selected)" : text.c_str());
     ImGui::SetWindowFontScale(1.0f);
     ImGui::EndChild();
+    RecordItem(top, ImGui::GetItemRectMax().y);
     if (styled) {
         ImGui::PopFont();
     }
@@ -1484,6 +1709,10 @@ void OverlayTab() {
             std::snprintf(text, sizeof(text), "ready");
         }
         InfoRow("Shader cache", text);
+        if (!IsGow3()) { // the hooks below are God of War III's (cheats, orbs, damage, enemy health)
+            EndRows();
+            return;
+        }
         std::string hooks;
         const auto add = [&](bool on, const char* name) {
             if (on) {
@@ -1504,40 +1733,20 @@ int RestartChanges() {
     return Gow3Settings::RestartChanges();
 }
 
-// The tab's content.
+// The tab's content: CONTROLS, DISPLAY, GRAPHICS, PERFORMANCE, OVERLAY (2026-11-13). GameTab (God of War
+// III's cheats and multipliers) is kept but has no tab for now.
 void TabBody(int tab) {
     nav.in_body = true;
     switch (tab) {
-    case 0: GameTab(); break;
-    case 1: ControlsTab(); break;
-    case 2: ImageTab(); break;
+    case 0: ControlsTab(); break;
+    case 1: DisplayTab(); break;
+    case 2: GraphicsTab(); break;
     case 3: PerformanceTab(); break;
     default: OverlayTab(); break;
     }
     nav.in_body = false;
     nav.body_rows = nav.rows;
 }
-
-// "Apply and restart" asks for a second press within 3 s: it ends the game without saving.
-std::chrono::steady_clock::time_point restart_armed{};
-
-bool RestartArmed() {
-    return std::chrono::steady_clock::now() < restart_armed;
-}
-
-void RestartPressed() {
-    if (!RestartArmed()) {
-        restart_armed = std::chrono::steady_clock::now() + std::chrono::seconds(3);
-        return;
-    }
-    // The new launch confirms the options once the game shows; run.py restores the
-    // previous ones if it never does (restart_unconfirmed).
-    Gow3Settings::Get().restart_unconfirmed = true;
-    Gow3Settings::Save();
-    runtime_restart();
-}
-
-constexpr const char* RestartHelp = "Starts the game again with the new settings. Progress since the last save is lost.";
 
 // The menu key and the pad combination, for the title and the default help.
 const std::string& OpenKeys() {
@@ -1567,7 +1776,7 @@ void PlainMenu() {
     }
     const float footer = ImGui::GetFrameHeightWithSpacing() * 2.0f + ImGui::GetTextLineHeightWithSpacing() * 2.0f;
     if (ImGui::BeginTabBar("##tabs")) {
-        static const char* const tabs[TabCount] = {"Game", "Controls", "Image", "Performance", "Overlay"};
+        static const char* const tabs[TabCount] = {"Controls", "Display", "Graphics", "Performance", "Overlay"};
         for (int tab = 0; tab < TabCount; ++tab) {
             const ImGuiTabItemFlags flags = requested_tab == tab ? ImGuiTabItemFlags_SetSelected : 0;
             if (!ImGui::BeginTabItem(tabs[tab], nullptr, flags)) {
@@ -1594,32 +1803,28 @@ void PlainMenu() {
 
     ImGui::Separator();
     const int changes = RestartChanges();
-    if (changes && NextRowFocused()) {
-        footer_help = RestartHelp; // the restart row below has the focus
-    }
+    const bool armed = RestartArmed();
     ImGui::PushTextWrapPos(0.0f);
-    ImGui::TextDisabled("%s", footer_help ? footer_help
-                                          : "D-pad or arrows: choose and change. Cross (A) / Enter: change. L1 / R1 "
-                                            "or Q / E: switch tabs. Circle (B) / Esc: close. Settings are saved in "
-                                            "medievil.ini.");
+    ImGui::TextDisabled("%s", armed         ? "Cross (A) / Enter or Restart now: start again with the new settings. "
+                                              "Circle (B) / Esc: cancel."
+                              : footer_help ? footer_help
+                                            : "D-pad or arrows: choose and change. Cross (A) / Enter: change. L1 / R1 "
+                                              "or Q: switch tabs. Square (X) / Tab: apply and restart. Circle (B) / "
+                                              "Esc: close. Settings are saved in medievil.ini.");
     ImGui::PopTextWrapPos();
     if (changes) {
         ImGui::TextColored(ImVec4(0.85f, 0.72f, 0.45f, 1.0f), "%d change%s need%s a restart (unsaved progress is lost).",
                            changes, changes == 1 ? "" : "s", changes == 1 ? "s" : "");
         ImGui::SameLine();
-        const bool focused = NextRowFocused();
-        ImGui::BeginDisabled(!std::getenv("GOW3_RESTART_COMMAND"));
-        bool pressed = ImGui::Button(RestartArmed() ? "Press again to restart" : "Apply and restart");
-        if (focused) {
-            ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(),
-                                                IM_COL32(245, 196, 30, 255), ImGui::GetStyle().FrameRounding, 0,
-                                                2.0f * base_scale);
+        ImGui::BeginDisabled(!RestartAvailable());
+        if (ImGui::Button(armed ? "Restart now" : "Apply and restart")) {
+            if (armed) {
+                RestartNow();
+            } else {
+                ArmRestart();
+            }
         }
-        pressed |= NavRow(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), RestartHelp, LastItemEnabled()).press;
         ImGui::EndDisabled();
-        if (pressed) {
-            RestartPressed();
-        }
     } else {
         ImGui::NewLine();
     }
@@ -1664,9 +1869,18 @@ void PopMenuStyle() {
 }
 
 // The menu in MediEvil's Options menu look (research/docs/plan-settings-menu.md): the Load list's frame,
-// fonts, colours and prompts. The title, the tabs between the L1 / R1 prompts, the tab's rows in a
-// scrolled body, the restart row while changes wait for a start, the focused row's help, the prompts
-// under the frame (clickable). Drawn in the frame's own pixels (1181x870), so it keeps its proportions.
+// fonts, colours and prompts. The title, the tabs between the L1 / R1 prompts, the tab's rows in a scrolled
+// list (whole rows only), the focused row's help under it, the prompts inside the frame's bottom (clickable;
+// APPLY & RESTART while changes wait for a start). Drawn in the frame's own pixels (1181x870, `menu_u`): the
+// frame keeps its width (86% of the height, as before) and its straight middle (rows 300-600) is stretched so
+// the frame fills 92% of the height; everything under the middle moves down by `stretch` (section 9).
+constexpr float FrameW = 1181.0f, FrameH = 870.0f;
+constexpr float TitlePx = 50.0f, TitleY = 116.0f, TabPx = 26.0f, TabY = 176.0f, TabIcon = 38.0f, TabRule = 216.0f;
+constexpr float BodyX = 64.0f, BodyW = 1053.0f, BodyTop = 224.0f;
+constexpr float PromptRule = 714.0f, PromptTop = 722.0f, PromptIcon = 34.0f, PromptLabel = 26.0f;
+constexpr float HelpText = 22.0f, HelpLines = 3.0f, HelpTop = PromptRule - 8.0f - HelpLines * HelpText;
+constexpr float BodyBottom = HelpTop - 4.0f;
+
 void StyledMenu() {
     auto& s = Gow3Settings::Get();
     if (requested_tab >= 0) {
@@ -1676,19 +1890,23 @@ void StyledMenu() {
     }
     const int tab = std::clamp(s.menu_tab.load(), 0, TabCount - 1);
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
-    constexpr float FrameW = 1181.0f, FrameH = 870.0f, PromptsH = 72.0f;
-    // 86% of the height from 3% down (the Load list: 76% from 6%), the prompts under the frame.
-    const float width = std::min(viewport->WorkSize.y * 0.86f * FrameW / FrameH, viewport->WorkSize.x * 0.96f);
-    const float height = width * FrameH / FrameW;
+    const float height = std::min(viewport->WorkSize.y * 0.86f, viewport->WorkSize.x * 0.96f * FrameH / FrameW);
+    const float width = height * FrameW / FrameH;
     menu_u = height / FrameH;
+    const float stretch = std::max(0.0f, (viewport->WorkSize.y * 0.92f - height) / menu_u);
     const ImVec2 at(std::floor(viewport->WorkPos.x + (viewport->WorkSize.x - width) * 0.5f),
                     std::floor(viewport->WorkPos.y + viewport->WorkSize.y * 0.03f));
     const auto P = [&](float x, float y) { return ImVec2(at.x + x * menu_u, at.y + y * menu_u); };
+    const auto B = [&](float x, float y) { return P(x, y + stretch); }; // under the stretched middle
     const auto text_width = [](ImFont* face, float size, const char* text) {
         return face->CalcTextSizeA(size, FLT_MAX, 0.0f, text).x;
     };
+    // The game (its pause menu too) dimmed 80% behind the frame.
+    ImGui::GetBackgroundDrawList()->AddRectFilled(viewport->Pos, ImVec2(viewport->Pos.x + viewport->Size.x,
+                                                                        viewport->Pos.y + viewport->Size.y),
+                                                  IM_COL32(0, 0, 0, 204));
     ImGui::SetNextWindowPos(at, ImGuiCond_Always);
-    ImGui::SetNextWindowSize(ImVec2(width, height + Px(PromptsH)), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(width, (FrameH + stretch) * menu_u), ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     const bool shown = ImGui::Begin("##settings", nullptr,
@@ -1701,21 +1919,28 @@ void StyledMenu() {
         return;
     }
     ImDrawList* draw = ImGui::GetWindowDrawList();
-    // The frame's middle filled opaque as in the Options menu, the frame over it, the title.
-    draw->AddRectFilled(P(20, 106), P(1161, 768), PanelFill, Px(34.0f));
-    draw->AddImage(choice_style.textures[StyleFrame]->GetTexRef(), at, ImVec2(at.x + width, at.y + height));
+    // The frame's middle filled opaque as in the Options menu, the frame over it in three slices (its straight
+    // middle stretched), the title.
+    draw->AddRectFilled(P(20, 106), B(1161, 768), PanelFill, Px(34.0f));
+    {
+        const ImTextureRef frame = choice_style.textures[StyleFrame]->GetTexRef();
+        const float top = 300.0f / FrameH, bottom = 600.0f / FrameH;
+        draw->AddImage(frame, P(0, 0), P(FrameW, 300), ImVec2(0.0f, 0.0f), ImVec2(1.0f, top));
+        draw->AddImage(frame, P(0, 300), B(FrameW, 600), ImVec2(0.0f, top), ImVec2(1.0f, bottom));
+        draw->AddImage(frame, B(0, 600), B(FrameW, FrameH), ImVec2(0.0f, bottom), ImVec2(1.0f, 1.0f));
+    }
     {
         const char* title = "-SETTINGS-";
-        const float size = TextPx(66.0f);
+        const float size = TextPx(TitlePx);
         draw->AddText(choice_style.title, size,
-                      ImVec2(at.x + (width - text_width(choice_style.title, size, title)) * 0.5f, P(0, 112).y), White,
-                      title);
+                      ImVec2(at.x + (width - text_width(choice_style.title, size, title)) * 0.5f, P(0, TitleY).y),
+                      White, title);
     }
 
     // The tabs between the L1 and R1 prompts (each clickable); the current one Gold and underlined.
     {
-        static const char* const tabs[TabCount] = {"GAME", "CONTROLS", "IMAGE", "PERFORMANCE", "OVERLAY"};
-        float size = TextPx(28.0f), icon = Px(44.0f), gap = Px(22.0f);
+        static const char* const tabs[TabCount] = {"CONTROLS", "DISPLAY", "GRAPHICS", "PERFORMANCE", "OVERLAY"};
+        float size = TextPx(TabPx), icon = Px(TabIcon), gap = Px(22.0f);
         float total = 2.0f * (icon + gap) - gap;
         for (const char* name : tabs) {
             total += text_width(choice_style.text, size, name) + gap;
@@ -1728,7 +1953,7 @@ void StyledMenu() {
             total = Px(1040.0f);
         }
         float x = at.x + (width - total) * 0.5f;
-        const float y = P(0, 198).y, line = y + size * 0.5f;
+        const float y = P(0, TabY).y, line = y + size * 0.5f;
         const auto icon_button = [&](const char* id, StyleImage image) {
             const ImVec2 min(x, line - icon * 0.5f), max(x + icon, line + icon * 0.5f);
             draw->AddImage(choice_style.textures[image]->GetTexRef(), min, max);
@@ -1758,102 +1983,154 @@ void StyledMenu() {
         if (icon_button("##r1", StyleR1)) {
             MenuPress(Ps4::R1);
         }
-        draw->AddLine(P(64, 248), P(1117, 248), IM_COL32(245, 196, 30, 70), Px(2.0f));
+        draw->AddLine(P(64, TabRule), P(1117, TabRule), IM_COL32(245, 196, 30, 70), Px(2.0f));
     }
 
-    // The game's button prompts under the frame, as the Load list's; drawn before the rows so a click on
-    // SELECT reaches the focused row in this frame.
+    // The game's button prompts inside the frame's bottom (clear of the title screen's copyright line); drawn
+    // before the rows so a click on SELECT reaches the focused row in this frame. APPLY & RESTART (Square) only
+    // while changes wait for a start; armed, the bar asks RESTART NOW (Cross) or CANCEL (Circle).
+    const bool armed = RestartArmed();
     {
         struct Prompt {
             StyleImage icons[2];
             int count;
             const char* label;
             uint32_t press;
+            bool enabled;
         };
-        const Prompt prompts[] = {{{StyleCross, StyleCross}, 1, "SELECT", Ps4::Cross},
-                                  {{StyleCircle, StyleCircle}, 1, "GO BACK", Ps4::Circle},
-                                  {{StyleL1, StyleR1}, 2, "CHANGE TAB", Ps4::R1}};
-        constexpr float Icon = 50.0f, Label = 36.0f, Space = 70.0f, Pair = 6.0f;
-        const float label_size = TextPx(Label);
-        float row = 0.0f;
-        for (const Prompt& prompt : prompts) {
-            row += (Icon + Pair) * float(prompt.count) - Pair + 12.0f +
-                   text_width(choice_style.text, label_size, prompt.label) / menu_u + Space;
-        }
-        float x = (FrameW - (row - Space)) * 0.5f;
-        const float top = FrameH + 8.0f;
-        for (const Prompt& prompt : prompts) {
-            const float start = x;
-            for (int i = 0; i < prompt.count; ++i) {
-                draw->AddImage(choice_style.textures[prompt.icons[i]]->GetTexRef(), P(x, top), P(x + Icon, top + Icon));
-                x += Icon + Pair;
+        Prompt prompts[4];
+        int count = 0;
+        if (armed) {
+            prompts[count++] = {{StyleCross, StyleCross}, 1, "RESTART NOW", Ps4::Cross, true};
+            prompts[count++] = {{StyleCircle, StyleCircle}, 1, "CANCEL", Ps4::Circle, true};
+        } else {
+            prompts[count++] = {{StyleCross, StyleCross}, 1, "SELECT", Ps4::Cross, true};
+            prompts[count++] = {{StyleCircle, StyleCircle}, 1, "GO BACK", Ps4::Circle, true};
+            prompts[count++] = {{StyleL1, StyleR1}, 2, "CHANGE TAB", Ps4::R1, true};
+            if (RestartChanges() > 0) {
+                prompts[count++] = {{StyleSquare, StyleSquare}, 1, "APPLY & RESTART", Ps4::Square, RestartAvailable()};
             }
-            x += 12.0f - Pair;
-            draw->AddText(choice_style.text, label_size, P(x, top + (Icon - Label) * 0.5f - 2.0f), White, prompt.label);
+        }
+        const float space = count > 3 ? 40.0f : 56.0f, pair = 6.0f, gap = 10.0f;
+        const float label_size = TextPx(PromptLabel);
+        float row = 0.0f;
+        for (int i = 0; i < count; ++i) {
+            row += (PromptIcon + pair) * float(prompts[i].count) - pair + gap +
+                   text_width(choice_style.text, label_size, prompts[i].label) / menu_u + space;
+        }
+        float x = (FrameW - (row - space)) * 0.5f;
+        draw->AddLine(B(64, PromptRule), B(1117, PromptRule), IM_COL32(245, 196, 30, 70), Px(2.0f));
+        for (int i = 0; i < count; ++i) {
+            const Prompt& prompt = prompts[i];
+            const ImU32 tint = prompt.enabled ? IM_COL32_WHITE : IM_COL32(255, 255, 255, 110);
+            const float start = x;
+            for (int k = 0; k < prompt.count; ++k) {
+                draw->AddImage(choice_style.textures[prompt.icons[k]]->GetTexRef(), B(x, PromptTop),
+                               B(x + PromptIcon, PromptTop + PromptIcon), ImVec2(0, 0), ImVec2(1, 1), tint);
+                x += PromptIcon + pair;
+            }
+            x += gap - pair;
+            draw->AddText(choice_style.text, label_size, B(x, PromptTop + (PromptIcon - PromptLabel) * 0.5f - 1.0f),
+                          prompt.enabled ? White : Dim, prompt.label);
             x += text_width(choice_style.text, label_size, prompt.label) / menu_u;
-            ImGui::SetCursorScreenPos(P(start, top));
-            if (ImGui::InvisibleButton(prompt.label, ImVec2(Px(x - start), Px(Icon)))) {
+            ImGui::SetCursorScreenPos(B(start, PromptTop));
+            if (ImGui::InvisibleButton(prompt.label, ImVec2(Px(x - start), Px(PromptIcon))) && prompt.enabled) {
                 MenuPress(prompt.press);
             }
-            x += Space;
+            x += space;
         }
     }
 
-    // The tab's rows, scrolled, with a thin scroll bar when they do not fit (as the Load list's).
-    const int changes = RestartChanges();
-    constexpr float BodyX = 64.0f, BodyW = 1053.0f, BodyTop = 258.0f;
-    const float body_bottom = changes ? 598.0f : 640.0f;
+    // The tab's rows, scrolled, whole rows only, with a thin scroll bar (wheel, click or drag) when they do not fit.
     ImGui::SetCursorScreenPos(P(BodyX, BodyTop));
     PushMenuStyle();
-    if (ImGui::BeginChild("##body", ImVec2(Px(BodyW), Px(body_bottom - BodyTop)), ImGuiChildFlags_None,
+    ImVec2 body_pos{}, body_size{};
+    float scroll = 0.0f, scroll_max = 0.0f;
+    if (ImGui::BeginChild("##body", ImVec2(Px(BodyW), Px(BodyBottom + stretch - BodyTop)), ImGuiChildFlags_None,
                           ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar)) {
+        body_pos = ImGui::GetWindowPos();
+        body_size = ImGui::GetWindowSize();
+        // The scroll bar's mouse area first (ImGui gives the hover to the first item), from the last frame's
+        // scroll range: a click on the track jumps there, the thumb drags.
+        scrollbar_hovered = false;
+        if (const float range = ImGui::GetScrollMaxY(); range > 0.0f) {
+            const ImVec2 start = ImGui::GetCursorScreenPos();
+            const float view = body_size.y, bar = std::max(view * view / (view + range), Px(30.0f));
+            const float thumb = body_pos.y + (view - bar) * ImGui::GetScrollY() / range;
+            ImGui::SetCursorScreenPos(ImVec2(body_pos.x + body_size.x - Px(16.0f), body_pos.y));
+            ImGui::InvisibleButton("##scrollbar", ImVec2(Px(16.0f), view));
+            static float grab = 0.0f; // where the thumb was taken, from its top
+            const float mouse = ImGui::GetIO().MousePos.y;
+            if (ImGui::IsItemActivated()) {
+                grab = mouse >= thumb && mouse <= thumb + bar ? mouse - thumb : bar * 0.5f;
+            }
+            if (ImGui::IsItemActive() && view > bar) {
+                ImGui::SetScrollY(std::clamp((mouse - grab - body_pos.y) / (view - bar), 0.0f, 1.0f) * range);
+            }
+            scrollbar_hovered = ImGui::IsItemHovered() || ImGui::IsItemActive();
+            ImGui::SetCursorScreenPos(start);
+        }
+        body_items.clear();
+        in_styled_body = true;
         NavStartTab(tab);
         TabBody(tab);
-        if (const float max_scroll = ImGui::GetScrollMaxY(); max_scroll > 0.0f) {
-            const ImVec2 body = ImGui::GetWindowPos();
-            const float view = ImGui::GetWindowHeight(), bar_w = Px(5.0f);
-            const float bar = std::max(view * view / (view + max_scroll), Px(30.0f));
-            const float top = body.y + (view - bar) * ImGui::GetScrollY() / max_scroll;
-            const float x = body.x + ImGui::GetWindowWidth() - bar_w;
-            ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(x, top), ImVec2(x + bar_w, top + bar),
-                                                      IM_COL32(200, 196, 190, 120), Px(3.0f));
+        in_styled_body = false;
+        scroll = ImGui::GetScrollY();
+        scroll_max = ImGui::GetScrollMaxY();
+        // Whole items only: the list's drawing is cut at the bottom of the last item that fits and at the top of
+        // the first one wholly in view (the last row was cut mid-text, T-SM1).
+        float cut_top = body_pos.y, cut_bottom = body_pos.y + body_size.y;
+        if (scroll_max > 0.0f && !body_items.empty()) {
+            float top = cut_bottom, bottom = cut_top;
+            for (const auto& [item_top, item_bottom] : body_items) {
+                if (item_top >= cut_top - 0.5f) top = std::min(top, item_top);
+                if (item_bottom <= cut_bottom + 0.5f) bottom = std::max(bottom, item_bottom);
+            }
+            if (bottom > top) {
+                cut_top = top;
+                cut_bottom = bottom;
+                for (ImDrawCmd& cmd : ImGui::GetWindowDrawList()->CmdBuffer) {
+                    cmd.ClipRect.y = std::max(cmd.ClipRect.y, cut_top);
+                    cmd.ClipRect.w = std::min(cmd.ClipRect.w, cut_bottom);
+                }
+            }
         }
+        body_visible_top = cut_top;
+        body_visible_bottom = cut_bottom;
     }
     ImGui::EndChild();
-
-    // The restart row (focusable, after the tab's rows) while changes wait for a start.
-    if (changes) {
-        char label[64];
-        std::snprintf(label, sizeof(label), "%d change%s need%s a restart", changes, changes == 1 ? "" : "s",
-                      changes == 1 ? "s" : "");
-        ImGui::SetCursorScreenPos(P(BodyX, 600));
-        ImGui::BeginDisabled(!std::getenv("GOW3_RESTART_COMMAND"));
-        RowArea r = BeginStyledRow(label, Px(BodyW));
-        StyledRowHit(r);
-        DrawChoice(r, RestartArmed() ? "PRESS AGAIN TO RESTART" : "APPLY AND RESTART", false);
-        const RowNav in = StyledRowEnd(r, RestartHelp);
-        ImGui::PopID();
-        ImGui::EndDisabled();
-        if (r.clicked || in.press) {
-            RestartPressed();
-        }
-    }
     PopMenuStyle();
+    if (scroll_max > 0.0f) { // the scroll bar (the frame's draw list: the list's own is cut to whole rows)
+        const float view = body_size.y, bar = std::max(view * view / (view + scroll_max), Px(30.0f));
+        const float top = body_pos.y + (view - bar) * scroll / scroll_max;
+        const float x = body_pos.x + body_size.x - Px(5.0f);
+        if (scrollbar_hovered) {
+            draw->AddRectFilled(ImVec2(x, body_pos.y), ImVec2(x + Px(5.0f), body_pos.y + view),
+                                IM_COL32(200, 196, 190, 40), Px(3.0f));
+        }
+        draw->AddRectFilled(ImVec2(x, top), ImVec2(x + Px(5.0f), top + bar),
+                            IM_COL32(200, 196, 190, scrollbar_hovered ? 200 : 120), Px(3.0f));
+    }
 
-    // The focused row's help (the rows set it), else how to open and close the menu.
+    // Under the list: the focused row's help (up to three lines), else how to open and close the menu.
     {
         static const std::string idle = OpenKeys() + ": open and close this menu. Settings are saved in medievil.ini.";
-        const char* help = footer_help ? footer_help : idle.c_str();
-        const float size = TextPx(24.0f);
-        const ImVec2 from = P(72, 650), to = P(1110, 764);
+        const char* help = armed ? "RESTART NOW starts the game again with the new settings: progress since the last "
+                                   "save is lost. CANCEL keeps playing; the changes stay saved for the next start."
+                           : footer_help ? footer_help
+                                         : idle.c_str();
+        const float size = TextPx(HelpText);
+        const ImVec2 from = B(72, HelpTop), to = B(1110, HelpTop + HelpLines * HelpText + 2.0f);
         const ImVec4 clip(from.x, from.y, to.x, to.y);
-        draw->AddText(choice_style.text, size, from, footer_help ? Cream : Dim, help, nullptr, to.x - from.x, &clip);
+        draw->AddText(choice_style.text, size, from, footer_help || armed ? Cream : Dim, help, nullptr, to.x - from.x,
+                      &clip);
     }
     ImGui::End();
 }
 
 void Menu() {
     ApplyRenderScale(false);
+    ApplyOutput(false);
     footer_help = nullptr;
     // The game's look needs its files, and room (a tiny window keeps the plain look).
     styled = choice_style.Ready() && ImGui::GetMainViewport()->WorkSize.y >= 360.0f;
@@ -2382,6 +2659,12 @@ void Init(const Vulkan::Instance& instance, vk::Format format, u32 image_count) 
     }
     overlay_instance = &instance;
     initialized = true;
+    // The desktop's size in pixels: output_resolution "display" (run.py's graphics_options.display_size).
+    if (const SDL_DisplayMode* mode = SDL_GetDesktopDisplayMode(SDL_GetPrimaryDisplay()); mode && mode->w > 0) {
+        const float density = mode->pixel_density > 0.0f ? mode->pixel_density : 1.0f;
+        Gow3Settings::Get().display_width = int(std::lround(float(mode->w) * density));
+        Gow3Settings::Get().display_height = int(std::lround(float(mode->h) * density));
+    }
     std::printf("Overlay: menu ready (%s or %s)\n", SDL_GetKeyName(MenuKey()), MenuPad().name.c_str());
     // The game's menu look for the settings menu (and the save list) from the game UI cache, the folder
     // the save list names (runtime_services.c), read off this thread at start so the menu has it from
@@ -2640,6 +2923,7 @@ bool HandleEvent(const SDL_Event& event) {
             case SDLK_ESCAPE: MenuPress(Ps4::Circle); break;
             case SDLK_Q: MenuPress(Ps4::L1); break;
             case SDLK_E: MenuPress(Ps4::R1); break;
+            case SDLK_TAB: MenuPress(Ps4::Square); break;
             default: break;
             }
         }
@@ -2677,6 +2961,7 @@ bool HandleEvent(const SDL_Event& event) {
             case SDL_GAMEPAD_BUTTON_DPAD_RIGHT: MenuPress(Ps4::Right); break;
             case SDL_GAMEPAD_BUTTON_SOUTH: MenuPress(Ps4::Cross); break;
             case SDL_GAMEPAD_BUTTON_EAST: MenuPress(Ps4::Circle); break;
+            case SDL_GAMEPAD_BUTTON_WEST: MenuPress(Ps4::Square); break;
             case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER: MenuPress(Ps4::L1); break;
             case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER: MenuPress(Ps4::R1); break;
             default: break;
