@@ -8,9 +8,9 @@ default_windows: on
 default_deck: mixed
 origin: ours
 class: G
-commits: 27ec51e36d, 1e657ca5ef, e9d86996a4, a39d538, 0bff4d6
+commits: 27ec51e36d, 1e657ca5ef, e9d86996a4, a39d538, 0bff4d6, 2364371
 files: scripts/graphics_options.py, launcher/medievil_launcher.py, run.py, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_settings.h, gpu/shim/gow3_overlay.cpp, src/runtime_memory.c, tests/test_launcher_controls.py, tests/test_graphics_settings.cpp
-symbols: PERF_SWITCHES, PERF_DEFAULT_OFF, PERF_ON_SWITCHES, perf_environment, PERF_PATCHES, PerfPatch, PerfKeys, PerfLive, PerfOn, perf_off, RestartChanges, PerformanceTab, runtime_memory_set_perf, TakeBaseline, Baseline, Serialize, collect
+symbols: PERF_SWITCHES, PERF_DEFAULT_OFF, PERF_ON_SWITCHES, SETTINGS_STEPS, SETTINGS_VERSION, settings_migration, migrate_settings, perf_environment, PERF_PATCHES, PerfPatch, PerfKeys, PerfLive, PerfOn, perf_off, RestartChanges, PerformanceTab, runtime_memory_set_perf, TakeBaseline, Baseline, Serialize, collect
 switches: perf_hzb_occlusion, perf_no_decal_prepass, perf_particle_single_pass, perf_small_buffers, perf_texture_memo, perf_lockfree_memory, perf_cheap_frees, perf_gpu_data_no_waits, perf_4k_memory, perf_lean_barriers, perf_lean_binding, perf_ring_reuse, perf_particle_flip_guard
 tests: T-H3b, T-0102-4
 docs: plan-stage-b-split.md#launcher-performance-patch-toggles-2026-10-21, plan-stage-b-split.md#in-game-menu-and-the-launcher-share-the-settings-2026-10-22, study-live-switches.md#summary, study-live-switches.md#found-on-the-way
@@ -42,6 +42,10 @@ the particle pass is still a restart change: it went live in `d20f010`); the oth
   on variables in `PERF_ON_SWITCHES`; `Load` shows them on only when this start has the variable (`perf_off` holds a
   null entry for them).
 - `PERF_DEFAULT_OFF` is empty since 2026-11-13: every patch, the single particle pass included, is on without a key.
+  The launcher writes every key with its default, so a default changed from off to on needs a one-time step for
+  older inis (`graphics_options.SETTINGS_STEPS`, `settings_version`; run.py and the launcher apply it): step 1 sets
+  the single pass and the flip guard to 1 once. A future off-to-on default change needs a new step, not a new
+  default alone; patches on all along are never forced.
   The in-game defaults are all `true`; the menu shows a patch off when run.py set its off variable (`perf_off`).
   Every start must go through `run.py` (AppRun `--run` and the launcher both do).
 - run.py applies the perf variables with `setdefault`, so any variable already set wins over the ini. That covers

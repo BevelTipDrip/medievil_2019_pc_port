@@ -211,6 +211,10 @@ the bar does nothing. Found, not traced; to fix with the polish list above, afte
 
 ## 9. The reorganisation (2026-11-13, fix built, not run)
 
+**Partly superseded by section 10** (the user's decisions on the report, the same day): the frame buffer size is
+restart-only, the menu reads keys only as bound, APPLY & RESTART is Square + Touchpad held 5 s. 9.2, 9.3 and 9.6
+below are updated to match; the rest stands.
+
 The user's approved layout: the workbook (`research/docs/data/settings-menu-items.xlsx`, row order = intended
 order) with the changes agreed afterwards, and the mockups drawn from it (geometry and texts: the mockup
 generator's constants, renames and help texts). Commits on `menu-redesign`: `0bff4d6` (settings shared by the
@@ -228,7 +232,8 @@ have no tab for now. `menu_tab` keeps its number, so a saved tab opens one tab t
   -VSYNC-: VSync, Frames queued. -SCALING AND SHARPENING-: Upscale with FSR 1, Anti-aliasing / upscaler, Render
   scale (its two notes when they apply; help shortened to three lines), AMD FSR sharpening, Sharpening (RCAS),
   Sharpening strength. -INFORMATION-: Frame buffer, Render resolution ("W x H (N%)"), Window size, FSR 1,
-  Sharpening, Upscaler. "Game resolution now", its buttons and note are gone.
+  Sharpening, Upscaler. "Game resolution now", its buttons and note are gone. Frame buffer size is restart-only
+  (section 10): it always carries the RESTART tag.
 - **GRAPHICS**: one heading -GRAPHICS QUALITY-: Graphics quality, Preshadows, Effects resolution, the 13 live
   settings, then the 5 restart-only ones with the RESTART tag. Found and fix built: "Deck Optimized" never showed
   (the list stopped at `std::size(UE4QualityKeys)` = 5); it shows now and can be picked: it sets the Deck level's
@@ -255,27 +260,16 @@ the top of the first one wholly in view, and rows outside the shown band take no
 ### 9.2 Restart, input, scroll bar
 
 - The pinned "N changes need a restart" row is gone. While a restart-only change waits, the prompt bar has a fourth
-  prompt, APPLY & RESTART (Square, in the prompt style the launcher chose, from `prompts/style/Square.png`;
-  clickable). **Deviation:** one press does not restart: it arms the restart for 5 s and the bar then reads RESTART
-  NOW (Cross) / CANCEL (Circle); Circle or Square again cancels. Reason: with the default keys Square is E (below), so
-  pressing E twice, as for two tabs, must not end the game without saving.
-- Square reaches the menu (`menu_buttons`, `33491a9`) from the pad as mapped, a key bound to Square, Tab (a fixed
-  key, as in the Load list) and a non-left mouse button bound to Square. **Changed:** the fixed-key rule ("a fixed
-  key counts only while not bound to a button the menu uses") now makes E (bound to Square by default) Square in the
-  menu, matching its prompt; Q is still L1, the L1 / R1 binds (1 / 3) and the tab names still switch tabs.
+  prompt: "[Square]+[Touchpad] HOLD: APPLY & RESTART" (section 10.3).
+- The menu's input is the PS buttons as bound in the launcher, nothing more (section 10.2).
 - The scroll bar takes the mouse (found by the user after T-SM2): a 16 px area over it, submitted before the rows
   so it gets the hover; a click on the track centres the thumb there, the thumb drags; the wheel as before. It
   brightens while hovered.
-- The frame buffer size switches 0.5 s after the last step (pad steps or clicks), like render scale's 0.3 s, so
-  stepping from 720p to 4K makes one r.SetRes, not five; closing the menu applies a pending one.
 
-### 9.3 Frame buffer size: live switch against a start at that size
+### 9.3 Frame buffer size: live switch against a start at that size (why it is restart-only now)
 
-Now: a change is saved in medievil.ini (the next start boots at it) and switched at once through r.SetRes
-(`runtime_ue4_request_setres`, the old buttons' path), unless `OutputRestartReason` says otherwise; only then
-does it count as a restart change and the row shows RESTART and a one-line note. Starting at a size and switching
-to it live are **not** the same. What a start does (run.py, `graphics_options.output_environment`, `ue4_override`)
-and whether a live switch gets it:
+Built first as a live switch (`0666928`), made restart-only the same day (section 10.1). What starting at a size
+does (run.py, `graphics_options.output_environment`, `ue4_override`) and what a live r.SetRes would not have got:
 
 | At start | Live switch |
 |---|---|
@@ -286,13 +280,8 @@ and whether a live switch gets it:
 | Finer occlusion culling decided from the start's scene (up to 1280x800: on) | Kept: a 720p start switched to 4K keeps the full-size HZB (a 4096x4096 pyramid for nothing); a large start switched to 720p goes without it. |
 | r.SetRes found per eboot (`GOW3_UE4_SETRES_CVAR`) | Without it nothing switches. |
 
-Handled in code (`OutputRestartReason`: RESTART tag, note, a restart change): (1) a start above 100% render scale
-and a larger size (the user's case; smaller sizes stay live), (2) **added:** a size above 1440p while the pool
-patch is not in this start's `GOW3_PATCHES` (the crash above), (3) **added:** no r.SetRes in this build.
-Not handled, proposed for the user to decide after T-SM5: (a) the I1 menu-navigation effect: a help line ("the
-game's own menus follow a new size fully after a restart") or making every live switch also a restart change
-again; (b) a live switch above 1080p from a start at or below it runs without the 4K memory sizes: restart-only for
-those, or accept the reloads. Both are behaviour the user asked to keep live, so they are left as specified.
+The first build handled three of these cases (`OutputRestartReason`); the user then made every change restart-only
+(section 10.1), which avoids all of them: the game always boots at the chosen size.
 
 ### 9.4 Particle flip guard, single particle pass, Deck switches
 
@@ -329,20 +318,23 @@ those, or accept the reloads. Both are behaviour the user asked to keep live, so
 
 ### 9.6 Tests for the user (each launch needs the user's go)
 
-Back up medievil.ini first; note `button_prompts` and whether a pad is connected.
+Back up medievil.ini first; note `button_prompts`, the launcher's binds (Controls) and whether a pad is connected.
 
 - **T-SM4 Look (Windows, 4K).** Open the menu: smaller title, the frame to ~95% of the screen bottom, prompts
   inside the frame above the copyright line, the help under the list, the game dimmed behind. Every tab against the
-  mockups; RESTART tags only on restart-only rows; while scrolling no half row at the top or bottom. F12 each tab.
-- **T-SM5 Frame buffer size live (Windows, start at 1080p, render scale 100).** Display > Frame buffer size 1440p:
-  the game switches about half a second later, no RESTART tag, Information > Frame buffer 2560 x 1440. Close the menu,
-  open the game's pause and Options menus: do pad and mouse still point at the right items (I1)? Restart the game
-  from the launcher: the log's "Output resolution: 2560x1440" (boot at that size). Back to 1080p the same way.
-- **T-SM6 Frame buffer size above 100% render scale.** Start at render scale 150: 4K shows RESTART and the note,
-  APPLY & RESTART appears; 720p switches live.
-- **T-SM7 APPLY & RESTART.** Change Engine frame rate: APPLY & RESTART appears. Square (pad), E or Tab (keys), or a
-  click: the bar reads RESTART NOW / CANCEL; Circle cancels; again, then Cross: the game restarts with the new value.
-  Pressing E twice quickly must not restart.
+  mockups; RESTART tags only on restart-only rows (Frame buffer size always); while scrolling no half row at the top
+  or bottom. F12 each tab.
+- **T-SM5 Frame buffer size (restart-only).** Display > Frame buffer size 1440p: nothing switches now, RESTART tag,
+  the APPLY & RESTART prompt appears. Hold it (T-SM7): the game restarts and the log says "Output resolution:
+  2560x1440"; the game's own menus navigate at that size. Back to the old size the same way.
+- **T-SM6 Binds only.** With the launcher's default keys: I / K / J / L move and change, Space changes, Left Shift
+  and Esc close, 1 / 3 switch tabs; the arrows, Enter, Q, E and Tab do nothing by themselves. Rebind a key in the
+  launcher (e.g. Cross to Enter): it works in the menu and its glyph shows in the prompt bar. A non-left mouse
+  button bound to Circle closes; left click, wheel and the scroll bar work on the menu itself.
+- **T-SM7 APPLY & RESTART held.** Change Engine frame rate: "[Square]+[Touchpad] HOLD: APPLY & RESTART" appears.
+  Hold Square + Touchpad (pad: Square + Share / Create; keys: E + Tab): the prompt fills over 5 s, the help says
+  keep holding; let go at 3 s: it empties, nothing happens; hold the full 5 s: the game restarts with the new
+  value. Also holding the left mouse button on the prompt. Square or Touchpad alone does nothing.
 - **T-SM8 Scroll bar.** Performance tab: wheel; click the track below the thumb (jumps), drag the thumb; the bar
   brightens under the mouse.
 - **T-SM9 Graphics quality.** With the launcher's Deck Optimized chosen the row reads Deck Optimized; pick Low, then
@@ -350,16 +342,113 @@ Back up medievil.ini first; note `button_prompts` and whether a pad is connected
 - **T-SM10 Deck switches and the guard.** Performance > Deck tuned: seven rows on Windows. Turn one on, APPLY &
   RESTART: the log's "Deck switches: 1 on: ..."; the launcher's Performance page shows it ticked. With an old
   settings.json (`deck_switches: true`), the launcher's first start moves them into medievil.ini.
-- **T-SM11 New defaults (PC regression for the single pass).** With no `perf_particle_*` keys: the log shows the
-  flip guard installed and no `GOW3_PARTICLE_FIXED_STEP`; the lone torch and Dan's crypt floor look right (T-0102-1's
-  spots); frame times as before.
+- **T-SM11 New defaults and the one-time update (PC).** A copy of an ini with `perf_particle_single_pass=0` and no
+  `settings_version`: the first start logs "Settings: one-time update to settings_version 1: ...", the pass and the
+  flip guard are on (log: guard installed, no `GOW3_PARTICLE_FIXED_STEP`); the lone torch and Dan's crypt floor look
+  right (T-0102-1's spots); frame times as before. Turn the pass off in the menu, restart: it stays off.
+- **T-SM16 Prompt glyphs.** PlayStation style, default binds: the restart prompt shows Square + SHARE, and the
+  game's own HUD prompts that show the touchpad show SHARE too; rebind Cross to the Circle button on the pad: both
+  show Circle there. Keyboard style: E + Tab; with a mouse button bound to Square and "Prefer mouse binds", its
+  mouse icon.
 - **T-SM12 Load list unchanged** (T-SV5's look and input). **T-SM13 Plain look** (rename `user/cache/game_ui`: the
-  ImGui menu, the new tabs, Square / Tab and "Apply and restart" / "Restart now"). **T-SM14 Steam Deck** (1280x800:
-  text size, help lines, prompts inside the frame, all of T-SM3's pad steps, Deck tuned shows all ten). **T-SM15
-  Custom combo** (`GOW3_MENU_PAD=back+start`).
+  ImGui menu, the new tabs, the held restart button). **T-SM14 Steam Deck** (1280x800: text size, help lines,
+  prompts inside the frame, all of T-SM3's pad steps, Deck tuned shows all ten; Steam Input's mapping of the
+  touchpad / Share for T-SM7). **T-SM15 Custom combo** (`GOW3_MENU_PAD=back+start`).
 
 ### 9.7 State
 
-Fix built, not run. Build clean (`out/medievil-runtime.exe`; no new warnings), Python tests 201 run, OK (31
-skipped), graphics-settings-test PASS, pad-map-test PASS (built by hand; the test file now stubs the runtime calls
-it was missing). Nothing launched.
+See section 10.6.
+
+## 10. The user's decisions on the report (2026-11-13, fix built, not run)
+
+### 10.1 Frame buffer size: restart-only
+
+The live switch existed only because the original 4K implementation broke the game's menus (I1); a start at the
+size has none of 9.3's gaps. Now a change only saves `output_resolution` and counts as a restart change
+(`Gow3Settings::OutputNeedsRestart`: the value differs from the start's, custom WxH included); the row always shows
+RESTART; help: "... Match display for a sharp 1:1 image. Applies at the next start." Removed: the overlay's
+`RequestOutput`, `ApplyOutput` and its 0.5 s debounce and close-menu apply, `OutputRestartReason`, `OutputSize`,
+the desktop size it needed. `runtime_ue4_request_setres` (src/runtime_extra.c) is left in place, unused: the menu
+was its only caller (the start path `GOW3_UE4_SETRES` calls `ue4_setres` directly).
+
+### 10.2 Menu input: the launcher's binds only
+
+A key or mouse button does in the menu what the PS button it is bound to does (pad, keys, mouse as mapped:
+`menu_buttons`), and the prompts show that bind's glyph (`prompts/style/`, written by `ue4_glyphs.overlay_prompts`
+in the launcher's prompt style). Every hard-coded key found, and what happened to it:
+
+| Where | Key | Did | Now |
+|---|---|---|---|
+| runtime_pad.c `menu_keys` | Up / Down / Left / Right | D-pad | removed (the D-pad's binds: I / K / J / L by default) |
+| runtime_pad.c `menu_keys` | Enter, keypad Enter | Cross | removed (Cross: Space by default) |
+| runtime_pad.c `menu_keys` | Backspace | Circle | removed (Circle: Left Shift) |
+| runtime_pad.c `menu_keys` | Q / E | L1 / R1 | removed (L1 / R1: 1 / 3) |
+| runtime_pad.c `menu_keys` | Tab | Square (added in `33491a9`) | removed; Tab is the Touchpad's default bind |
+| runtime_pad.c `menu_keys` | Esc | Circle | **kept**: closes, as in the Load list (`HandleChoiceEvent`), while Esc is not bound to a menu button |
+| runtime_pad.c `menu_mouse_buttons` | non-left mouse buttons | Circle / L1 / R1 / Square only | every menu button as bound; the left button stays the pointer's |
+| runtime_pad.c `sample_host` (game input) | Tab | touched the pad (left) whatever the binds said | now the Touchpad's default bind in `key_map` (same effect by default; a rebind or "none" in the launcher now really moves or removes it) |
+| gow3_overlay.cpp `HandleEvent` fallback (only without the runtime's poll) | arrows, Enter, Esc, Q, E, Tab | menu buttons | Esc only; the pad fallback (raw SDL buttons as the default map) kept, unreachable in the game |
+| gow3_overlay.cpp | the menu key (Insert / `GOW3_MENU_KEY`), F8-F12 | open / close; global hotkeys | kept: no PS button (the pad's equivalent is the L2+R3 combo) |
+| runtime_pad.c `menu_buttons` | the left stick | D-pad | kept (a stick, not a key; the Load list reads it too) |
+| runtime_pad.c `sample_host` (game input) | Backspace, W / A / S / D, arrows | touchpad right half, left stick, right stick | unchanged: game input with no PS button of their own, not read by the menu |
+| gow3_overlay.cpp `HandleChoiceEvent` (Load list) | Tab, Up / W, Down / S, Enter / Space, Esc / Backspace | details, move, accept, cancel | **unchanged** (not part of this menu); proposed: the same binds-only rule there |
+
+### 10.3 APPLY & RESTART: Square + Touchpad held 5 s
+
+"Select" in the port is the PS4 **Touchpad** button (the user's launcher: Touchpad = keyboard Tab, controller
+"Share / Create"; runtime_pad.c `pad_map`: `SDL_GAMEPAD_BUTTON_BACK` and the DualSense touchpad both press it).
+While restart-only changes wait, holding Square + Touchpad together (pad, or the keys / mouse buttons bound to them,
+E + Tab by default) for 5 s restarts the game (`RestartHoldStep`, every presented frame); letting go of either
+cancels; Square or Touchpad alone does nothing; a combination held when the menu opened waits for release. The
+prompt bar shows "[Square]+[Touchpad] HOLD: APPLY & RESTART" (the Touchpad glyph in the prompt style:
+`prompts/style/Touchpad.png`, new in `overlay_prompts`, fallback the game's `PS4_Touch_Pad.png`), filled in gold over
+the 5 s; the help reads "Keep holding ...". **Also built (the optional part):** holding the left mouse button on that
+prompt for 5 s does the same. The plain look has a "Hold Square + Touchpad 5 s (or hold here)" button. The arm /
+confirm of 9.2's first build is gone.
+
+### 10.4 One-time update of older medievil.ini files (settings_version)
+
+The launcher writes every key it knows with its default, so an install from before a default changed keeps the old
+value as if the user had chosen it. `graphics_options.SETTINGS_STEPS` / `settings_migration` / `migrate_settings`:
+when the ini's `settings_version` is older than `SETTINGS_VERSION` (1), each step's keys are set once and the
+version written; a later off stays. Run by run.py (`prepare`, logged "Settings: one-time update ...") and by the
+launcher at start (after the Deck switch migration, before it reads the ini). A new ini starts at the current version
+(launcher `INI_DEFAULTS`; run.py writes it into a missing file), so nothing is forced on a new install.
+
+The list, from the released defaults (launcher `INI_DEFAULTS` and `PERF_DEFAULT_OFF` at v1.3.8, v2.0.0, v2.1.0,
+v2.1.1, v2.2.0, v2.2.1, v2.3.0 and now; v1.4.0 is upstream's tag, not this fork's) and the cards:
+
+| Key | Released default | Now | Evidence | Forced on once |
+|---|---|---|---|---|
+| `perf_particle_single_pass` | 0 in v2.0.0-v2.3.0 (`8d85929`, 2026-11-01) | 1 | single-particle-pass: T-H3b, Deck particle 1 (79.4 vs 77.1 FPS, 1,122 vs 1,316 draws); correct with the guard (particle fix 1 / 2); the user's decision 2026-11-13 | **yes** |
+| `perf_particle_flip_guard` | none (a launcher Deck switch, off unless Deck Optimized; an unchecked one migrates as 0) | 1 | particle-flip-guard: Deck particle fix 1 / 2 (the user: torch animating, crypt floor fixed; "Yup, it's back" with it off); the user's PC test 2026-11-13 | **yes** |
+| `stale_readback` | 0 in v1.3.8 and v2.0.0, 1 from v2.1.0 (`8600b28`) | 1 | lineage-deferred-readbacks: a speed mode (upstream's default 0), not a fix; Windows "mixed"; its launcher default change was "fix built, not run" | no: proposed to the user to decide |
+| `fps_limit` | 0 in v1.3.8, -3 from v2.0.0 | -3 | a setting (frame cap), not a patch | no |
+| every other `perf_*`, `present_*`, `display_vrr` | on from their first release (v2.0.0) | on | on all along: an off is the user's | no |
+
+Env-only fixes that became default since (`GOW3_READBACK_FIRST_WAIT`, `GOW3_POOL_ZERO_FOREIGN`) have no ini key and
+already reach every install.
+
+### 10.5 Prompt glyphs: the physical button or key a PS button is bound to
+
+The user: every prompt shows the physical button the action is bound to, not the PS4 button's own icon (their
+DualSense has Touchpad on Share / Create, so the restart prompt must show SHARE). Found: `ue4_glyphs.icons` already
+did this for the Xbox and keyboard styles (the bound pad button's or key's icon, mouse binds with "Prefer mouse
+binds"), but the PlayStation style always kept each PS button's own picture (Touchpad showed TOUCH). Fix built:
+`icons('playstation')` maps each PS button to the game's own PS4 picture of the pad button it is bound to
+(`PAD_PS4`: SDL back -> PS4_Share, a -> PS4_Cross, ...) where that is not its own picture (`OWN_PS4`). Both writers
+use it, so the game's prompts and the menu agree: `overlay_prompts` (run.py, every start) copies the cache's
+`prompts/<picture>.png` into `prompts/style/`, and `files` (the override pak) draws that texture into the atlas
+cell, the small textures and the bone prompts. With the default binds only the touchpad differs: the game's atlas
+cell and the menu's Touchpad prompt show SHARE (checked offline on the 01.00 paks: the atlas row's touchpad cell
+is the game's SHARE art, every other cell unchanged). Before, the PlayStation style wrote no pak files at all.
+
+The menu's Touchpad prompt is `prompts/style/Touchpad.png` (fallback the game's `PS4_Touch_Pad.png`); the prompt
+and help name the button "Touchpad", as the launcher's Controls page does.
+
+### 10.6 State
+
+Fix built, not run. Build clean (only the two known vk_rasterizer.cpp -Wunused-result warnings), Python tests 205
+run, OK (31 skipped), graphics-settings-test PASS, pad-map-test PASS (built by hand). Tests: 9.6 (T-SM4-T-SM15,
+updated for section 10, and T-SM16). Nothing launched. Commits: `3c42639` (binds-only input), `768ced0` (PlayStation
+glyphs), `6ab5c19` (restart-only frame buffer, held restart), `2364371` (settings_version).

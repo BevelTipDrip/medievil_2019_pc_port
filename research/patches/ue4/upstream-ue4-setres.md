@@ -25,9 +25,10 @@ The base PS4 renderer makes its buffers at the display size at start, and only a
 does: `ue4_set_cvar` calls `Set(value, GetFlags() & 0xff000000)` through the vtable. Sources: upstream 1.3.0
 `3a16e0e`, PR #29 `c167454` (repeats at 2/5/10/20 s), `1ae17cd` (slot found per eboot). 1.3.3 (#11) also reports the
 output size as the display. Here it is the fallback: I1 boots at the output size, and `output_environment` sets
-`GOW3_UE4_SETRES` only with `GOW3_UE4_BOOT_SIZE=0`. The in-game menu's Display > Frame buffer size (since
-2026-11-13; the "Game resolution now" buttons before) uses the same path; plan-settings-menu.md 9.3 lists what a
-live switch does not get that a start at the size does.
+`GOW3_UE4_SETRES` only with `GOW3_UE4_BOOT_SIZE=0`. The in-game "Game resolution now" buttons used
+`runtime_ue4_request_setres` until 2026-11-13; the menu's Frame buffer size is restart-only since (the user;
+plan-settings-menu.md 9.3 lists what a live switch does not get), so `runtime_ue4_request_setres` has no caller and is
+kept unused.
 Every live cvar shares `ue4_set_cvar`.
 
 ## Invariants

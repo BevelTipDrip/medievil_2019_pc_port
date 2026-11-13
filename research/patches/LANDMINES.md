@@ -56,6 +56,8 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
    2026-11-13 without a `perf_particle_single_pass` key ran the fixed-step double pass (~190 more draws in particle
    scenes), and from 2026-11-13 the same ini runs the single pass with the guard: compare such runs only with the key
    and the log's "GPU particle flip guard" line checked. Runs with the Deck preset are unaffected (both on there).
+   The first start after this release also turns both on in older inis once (`settings_version` 1, run.py logs
+   "Settings: one-time update"), whatever the old key said: an A/B across that start changed them too.
 
 ## Latent bugs (code reading)
 

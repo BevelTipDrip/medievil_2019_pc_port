@@ -8,14 +8,14 @@ default_windows: on
 default_deck: on
 origin: ours
 class: G
-commits: 64fb18a, 7f6a98e, b914242, 33491a9, 0666928
+commits: 64fb18a, 7f6a98e, b914242, 33491a9, 0666928, 3c42639, 6ab5c19
 files: gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3gpu.cpp, gpu/gow3gpu.h, src/runtime_pad.c, scripts/ue4_glyphs.py, tests/test_pad_map.c, gpu/shim/gow3_settings.h, gpu/shim/gow3_settings.cpp
-symbols: MenuNav, NavRow, NavStartTab, NavEndFrame, MenuButtons, MenuPress, MenuPadCombo, MenuPad, StyledMenu, PlainMenu, BeginStyledRow, StyledRowHit, StyledSlider, DrawChoice, ToggleRow, ChoiceIndex, IntSliderRow, ButtonsRow, SetMenuInput, DisplayTab, GraphicsTab, PerformanceTab, RestartTag, RecordItem, RowVisible, ArmRestart, RestartNow, RequestOutput, ApplyOutput, OutputRestartReason, Note, gow3gpu_menu_set_input, menu_buttons, menu_key_buttons, menu_mouse_buttons, window_mouse_held, StyleImage, OVERLAY
-switches: GOW3_MENU_PAD, GOW3_MENU_KEY, GOW3_PATCHES, GOW3_UE4_SETRES_CVAR, GOW3_PRESENT_MODE, GOW3_RESTART_COMMAND
-tests: T-SM1, T-SM2, T-SM3, T-SM4, T-SM5, T-SM6, T-SM7, T-SM8, T-SM9, T-SM10, T-SM11, T-SM12, T-SM13, T-SM14, T-SM15
-docs: plan-settings-menu.md#9-the-reorganisation-2026-11-13-fix-built-not-run, plan-settings-menu.md#2-design, plan-settings-menu.md#22-controls, plan-settings-menu.md#4-test-plan-for-the-user-each-launch-needs-the-users-go, plan-settings-menu.md#5-decisions-for-the-user
+symbols: MenuNav, NavRow, NavStartTab, NavEndFrame, MenuButtons, MenuPress, MenuPadCombo, MenuPad, StyledMenu, PlainMenu, BeginStyledRow, StyledRowHit, StyledSlider, DrawChoice, ToggleRow, ChoiceIndex, IntSliderRow, ButtonsRow, SetMenuInput, DisplayTab, GraphicsTab, PerformanceTab, RestartTag, RecordItem, RowVisible, RestartNow, RestartHoldStep, RestartProgress, RestartCombo, OutputNeedsRestart, Note, gow3gpu_menu_set_input, menu_buttons, menu_key_buttons, menu_mouse_buttons, window_mouse_held, StyleImage, OVERLAY
+switches: GOW3_MENU_PAD, GOW3_MENU_KEY, GOW3_PRESENT_MODE, GOW3_RESTART_COMMAND
+tests: T-SM1, T-SM2, T-SM3, T-SM4, T-SM5, T-SM6, T-SM7, T-SM8, T-SM9, T-SM10, T-SM11, T-SM12, T-SM13, T-SM14, T-SM15, T-SM16
+docs: plan-settings-menu.md#10-the-users-decisions-on-the-report-2026-11-13-fix-built-not-run, plan-settings-menu.md#9-the-reorganisation-2026-11-13-fix-built-not-run, plan-settings-menu.md#2-design, plan-settings-menu.md#22-controls, plan-settings-menu.md#4-test-plan-for-the-user-each-launch-needs-the-users-go, plan-settings-menu.md#5-decisions-for-the-user
 depends_on: load-list-details, button-prompts
-related: key-capture, cursor-hide, live-render-scale, deck-preset, particle-flip-guard, perf-patches-ini, upstream-ue4-setres, I1, vsync-control
+related: key-capture, cursor-hide, live-render-scale, deck-preset, particle-flip-guard, perf-patches-ini, upstream-ue4-setres, I1, vsync-control, button-prompts
 checked: 2026-11-13
 ---
 ## What it does
@@ -30,8 +30,9 @@ frame (`menu_buttons`), as the Load list's.
 Since 2026-11-13 (`0666928`, plan section 9): tabs CONTROLS, DISPLAY, GRAPHICS, PERFORMANCE, OVERLAY (God of War
 III's cheats keep their code, no tab); the frame's middle stretched to 92% of the height, smaller rows, the prompt
 bar inside the frame, a 3-line help under the list, whole rows only, an 80% dim behind; RESTART tags on restart-only
-rows; APPLY & RESTART (Square) in the prompt bar while changes wait, armed by one press and confirmed with Cross; the
-scroll bar takes the mouse; Display > Frame buffer size switches the output live (r.SetRes) and saves it.
+rows; "[Square]+[Touchpad] HOLD: APPLY & RESTART" in the prompt bar while changes wait (both held 5 s, or the mouse
+held on it); the scroll bar takes the mouse; Display > Frame buffer size is restart-only (saved, applied at the next
+start). Input is the launcher's binds only (plan section 10).
 
 ## Invariants
 
@@ -39,10 +40,11 @@ scroll bar takes the mouse; Display > Frame buffer size switches the output live
   Esc, Backspace, Q, E; only while not bound to a button the menu uses) and the stick into one mask, so a key both
   bound and fixed is one press. ImGui's keyboard / gamepad navigation must stay off: with it, Space / Enter / A
   would act twice. A new menu key belongs in `menu_keys`, not in `HandleEvent` (pad-map-test checks the rules).
-- Mouse binds count only for Circle / L1 / R1 / Square and never from the left button (`menu_mouse_buttons`): a
-  left click bound to Cross or Circle would act twice or close the menu at every click.
-- Square is a menu button since 2026-11-13: a key bound to Square (E by default) is Square, not the fixed R1; Tab
-  is a fixed Square.
+- Keys and mouse buttons act only as bound (`menu_key_buttons`, `menu_mouse_buttons`), never from the left mouse
+  button (the pointer's: a left click bound to Cross or Circle would act twice). The one fixed key is Esc (Circle,
+  as in the Load list) while not bound to a menu button. A new fixed key would bypass the binds: don't.
+- Tab is the touchpad's default bind in `key_map` (not a fixed line in `sample_host` since 2026-11-13), so a
+  launcher rebind or "none" moves or removes it in the game and the menu alike.
 - Rows must call `NavRow` (through `RowEnd` / `StyledRowEnd`) exactly once each, in drawing order, and `TabBody`
   only from the two menus; `NavEndFrame` runs every drawn frame. A row drawn only some frames shifts the focus.
 - Whole rows: every item of the styled list records its screen band (`RecordItem`: `NavRow`, `Section`, `InfoRow`,
@@ -54,10 +56,10 @@ scroll bar takes the mouse; Display > Frame buffer size switches the output live
   range (`GetScrollMaxY` at the child's start).
 - `Restart()` marks the next row only (`BeginStyledRow` / `Row` take it); a `Restart()` before a row that is then not
   drawn would tag the following one.
-- APPLY & RESTART never restarts on one press: Square arms (5 s), only Cross confirms; Circle or Square cancels.
-  With the default keys E is Square in the menu, so a double press must stay harmless.
-- The frame buffer size counts as a restart change only through `Gow3Settings::OutputRestartReason`; the live
-  request waits 0.5 s after the last step (`ApplyOutput`), and closing the menu applies a pending one.
+- APPLY & RESTART only by holding: Square + Touchpad (`Ps4::RestartCombo`) for 5 s (`RestartHoldStep`, every
+  presented frame), or the left mouse button on its prompt; any release cancels; a combination held when the menu
+  opened waits for release. Neither button does anything alone.
+- The frame buffer size is restart-only (`Gow3Settings::OutputNeedsRestart`): the menu never calls r.SetRes.
 - Styled rows: controls with their own mouse handling (track, number box) are submitted before `StyledRowHit`
   (ImGui gives the hover to the first item; the row's hit box comes last).
 - The style (all six images: frame, Cross, Circle, Square, L1, R1, and both fonts, or the plain look) is loaded

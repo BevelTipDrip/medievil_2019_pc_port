@@ -103,17 +103,18 @@ T-SM1	plan-settings-menu.md	142	4-test-plan-for-the-user-each-launch-needs-the-u
 T-SM2	plan-settings-menu.md	146	4-test-plan-for-the-user-each-launch-needs-the-users-go	T-SM2 Mouse and keyboard (Windows).** Mouse: move over rows (the highlight and help follow), click t
 T-SM3	plan-settings-menu.md	152	4-test-plan-for-the-user-each-launch-needs-the-users-go	T-SM3 Pad (Windows, Xbox or DualSense).** Hold L2, press R3: the menu opens; the game does not react
 T-SM1-T-SM3	plan-settings-menu.md	195	8-t-sm1-t-sm3-2026-11-12-409a71d-windows-4k-fullscreen-keyboard-prompts-with-mouse-binds	8. T-SM1-T-SM3 (2026-11-12, `409a71d`, Windows, 4K fullscreen, keyboard prompts with mouse binds)
-T-SM4	plan-settings-menu.md	334	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM4 Look (Windows, 4K).** Open the menu: smaller title, the frame to ~95% of the screen bottom, pr
-T-SM5	plan-settings-menu.md	337	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM5 Frame buffer size live (Windows, start at 1080p, render scale 100).** Display > Frame buffer s
-T-SM6	plan-settings-menu.md	341	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM6 Frame buffer size above 100% render scale.** Start at render scale 150: 4K shows RESTART and t
-T-SM7	plan-settings-menu.md	343	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM7 APPLY & RESTART.** Change Engine frame rate: APPLY & RESTART appears. Square (pad), E or Tab (
-T-SM8	plan-settings-menu.md	346	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM8 Scroll bar.** Performance tab: wheel; click the track below the thumb (jumps), drag the thumb;
-T-SM9	plan-settings-menu.md	348	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM9 Graphics quality.** With the launcher's Deck Optimized chosen the row reads Deck Optimized; pi
-T-SM10	plan-settings-menu.md	350	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM10 Deck switches and the guard.** Performance > Deck tuned: seven rows on Windows. Turn one on, 
-T-SM11	plan-settings-menu.md	353	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM11 New defaults (PC regression for the single pass).** With no `perf_particle_*` keys: the log s
-T-S	plan-settings-menu.md	356	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM12 Load list unchanged** (T-SV5's look and input). **T-SM13 Plain look** (rename `user/cache/gam
-T-SM12	plan-settings-menu.md	356	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM12 Load list unchanged** (T-SV5's look and input). **T-SM13 Plain look** (rename `user/cache/gam
-T-SV5	plan-settings-menu.md	356	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM12 Load list unchanged** (T-SV5's look and input). **T-SM13 Plain look** (rename `user/cache/gam
+T-SM4	plan-settings-menu.md	323	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM4 Look (Windows, 4K).** Open the menu: smaller title, the frame to ~95% of the screen bottom, pr
+T-SM5	plan-settings-menu.md	327	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM5 Frame buffer size (restart-only).** Display > Frame buffer size 1440p: nothing switches now, R
+T-SM6	plan-settings-menu.md	330	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM6 Binds only.** With the launcher's default keys: I / K / J / L move and change, Space changes, 
+T-SM7	plan-settings-menu.md	334	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM7 APPLY & RESTART held.** Change Engine frame rate: "[Square]+[Touchpad] HOLD: APPLY & RESTART" 
+T-SM8	plan-settings-menu.md	338	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM8 Scroll bar.** Performance tab: wheel; click the track below the thumb (jumps), drag the thumb;
+T-SM9	plan-settings-menu.md	340	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM9 Graphics quality.** With the launcher's Deck Optimized chosen the row reads Deck Optimized; pi
+T-SM10	plan-settings-menu.md	342	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM10 Deck switches and the guard.** Performance > Deck tuned: seven rows on Windows. Turn one on, 
+T-SM11	plan-settings-menu.md	345	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM11 New defaults and the one-time update (PC).** A copy of an ini with `perf_particle_single_pass
+T-SM16	plan-settings-menu.md	349	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM16 Prompt glyphs.** PlayStation style, default binds: the restart prompt shows Square + SHARE, a
+T-S	plan-settings-menu.md	353	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM12 Load list unchanged** (T-SV5's look and input). **T-SM13 Plain look** (rename `user/cache/gam
+T-SM12	plan-settings-menu.md	353	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM12 Load list unchanged** (T-SV5's look and input). **T-SM13 Plain look** (rename `user/cache/gam
+T-SV5	plan-settings-menu.md	353	96-tests-for-the-user-each-launch-needs-the-users-go	T-SM12 Load list unchanged** (T-SV5's look and input). **T-SM13 Plain look** (rename `user/cache/gam
 T-P3	plan-stage-b-split.md	13	profile-t-p3-2026-10-19-2100-2102-launched-by-claude-with-the-users-go-build-32eaea9--samples-log-datat-p3-stageb-profilelog-samples-in-research-datasamplest-p3-stageb-profile	Profile T-P3 (2026-10-19 21:00-21:02, launched by Claude with the user's go; build `32eaea9`; `-Samp
 T-W1	plan-stage-b-split.md	72	t-w1-frames-queued-2-2026-10-19-2112-2116-launched-by-claude-with-the-users-go-build-3b30fe9-log-datat-w1-frames-queuedlog	T-W1: frames queued 2 (2026-10-19 21:12-21:16, launched by Claude with the user's go; build `3b30fe9
 T-W2	plan-stage-b-split.md	85	t-w2-targeted-end-of-pipe-wait-queries-on-2026-10-19-2117-2121-launched-by-claude-with-the-users-go-build-3b30fe9-log-datat-w2-eop-targetedlog	T-W2: targeted end-of-pipe wait, queries on (2026-10-19 21:17-21:21, launched by Claude with the use

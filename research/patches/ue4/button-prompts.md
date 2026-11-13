@@ -8,20 +8,23 @@ default_windows: off
 default_deck: off
 origin: ours
 class: M
-commits: 4bfd053951, 5ebcaa16ec, f82291a28b, 2598c44c39, aa5e865248, 396cc55a8a, 175941cf62, 29d3782e05
+commits: 4bfd053951, 5ebcaa16ec, f82291a28b, 2598c44c39, aa5e865248, 396cc55a8a, 175941cf62, 29d3782e05, 768ced0
 files: scripts/ue4_glyphs.py, scripts/game_ui_assets.py, scripts/ue4_override.py, run.py, tests/test_ue4_glyphs.py, third_party/input-prompts/README.md, packaging/windows/package.sh, packaging/linux/appimage.sh, launcher/medievil_launcher.py, gpu/shim/gow3gpu.cpp, gpu/gow3gpu.h, scripts/make_mouse_prompts.py, launcher/medievil_launcher.py
-symbols: files, atlas, small, place, icons, key_icon, button_map, load_icon, visible, fit, SQUARE_TABS, SIZE_32x22, INVENTORY_SLOT, DEFAULT_KEYS, DEFAULT_PAD, PAD_ICONS, KEY_ICONS, overlay_prompts, OVERLAY, BUTTON_PROMPTS, gow3gpu_choice_style, ART, whole, with_whole, bc3, strip, with_strip, test_cells, test_square, texture, detile, tile, ATLAS_CELLS, SMALL, BONE, STYLES, MOUSE_ICONS, prompt_controls, blank_key, side_buttons
+symbols: files, atlas, small, place, icons, key_icon, button_map, load_icon, visible, fit, SQUARE_TABS, SIZE_32x22, INVENTORY_SLOT, DEFAULT_KEYS, DEFAULT_PAD, PAD_ICONS, KEY_ICONS, overlay_prompts, OVERLAY, BUTTON_PROMPTS, gow3gpu_choice_style, ART, whole, with_whole, bc3, strip, with_strip, test_cells, test_square, texture, detile, tile, ATLAS_CELLS, SMALL, BONE, STYLES, MOUSE_ICONS, prompt_controls, blank_key, side_buttons, PAD_PS4, OWN_PS4, GAME_PROMPT, PS4_PROMPTS
 switches: GOW3_PROMPTS_PREFER_MOUSE
 tests: T-G1, T-G1b, T-G2, T-G3, T-G3b, T-G4, T-G4c
 docs: study-glyphs.md#4-step-plan-smallest-first-every-launch-needs-the-users-go, study-glyphs.md#21-format-of-the-cooked-texture-what-a-patch-must-write-v
 depends_on: game-ui-cache
-related: debug-menu-0102
-checked:
+related: debug-menu-0102, settings-menu
+checked: 2026-11-13
 ---
 ## What it does
 
-The ini key `button_prompts` (`playstation`, the default, writes nothing; `xbox`; `keyboard`; `test`) picks the
-button prompt style. Xbox and keyboard show what each PS4 button is mapped to (the launcher's remaps,
+The ini key `button_prompts` (`playstation`, the default; `xbox`; `keyboard`; `test`) picks the
+button prompt style. Since 2026-11-13 the PlayStation style also shows the physical button: a PS4 button bound to a
+pad button whose picture is not its own shows that button's PS4 picture (`PAD_PS4` / `OWN_PS4`; by default only the
+touchpad, on Share / Create: SHARE), in the game's atlas, small and bone prompts (drawn from the game's own
+`PS4_*.uexp`) and in the menu's `prompts/style/` (copied from the game UI cache); before, it wrote nothing. Xbox and keyboard show what each PS4 button is mapped to (the launcher's remaps,
 `GOW3_PAD_MAP` / `GOW3_KEY_MAP`; keyboard: the pack's Vintage keys, the sticks as WASD / arrow clusters). `xbox` draws the CC0 Free Input Prompts pack's Default Xbox icons (`third_party/input-prompts/xbox/`).
 Launcher > Controls > "In-game button prompts" sets it (until chosen: the Gamepad names style). The port's Load
 list and the settings menu follow: `run.py` writes `prompts/style/Cross|Circle|Square|L1|R1.png` (`OVERLAY`; L1 / R1
@@ -35,6 +38,12 @@ textures of the Button Layout page and the inventory / bestiary tabs, `L1_Active
 study-glyphs.md; the Xbox and keyboard sets (G3, G4) and the bone textures (G2) come next.
 
 ## Invariants
+
+- PlayStation: `icons('playstation')` returns only the buttons whose bound pad button's picture differs from their
+  own; nothing differs only with the touchpad bound to the touchpad itself. `PAD_PS4` must name every SDL gamepad
+  button the launcher offers that has a PS4 picture; one it lacks keeps the button's own picture. The pictures come
+  from the game's `UI/Textures/ButtonPrompts` (pak) and the cache's `prompts/PS4_*.png` (game_ui_assets); a missing
+  one keeps the own picture (menu) or makes `files` raise (pak: the style is skipped with its log line).
 
 - Same size and format as the game's texture: only payload bytes change, so the `.uasset` header (export size,
   bulk offsets, `PF_*` names) stays the game's. Never write another size or format.
