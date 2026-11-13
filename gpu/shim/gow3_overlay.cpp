@@ -402,7 +402,7 @@ void MenuPress(uint32_t pressed) {
 }
 
 // The runtime's buttons for the menu (runtime_pad.c menu_buttons: pad, keys and mouse binds as mapped,
-// Esc as Circle, the left stick as a D-pad), read every presented frame while it is open.
+// the arrows / Enter / Esc fallbacks, the left stick as a D-pad), read every presented frame while it is open.
 std::atomic<uint32_t (*)()> menu_input{nullptr};
 
 // imgui_mutex held, before NewFrame. Presses act once; a held direction repeats after 400 ms every
@@ -1784,9 +1784,9 @@ void PlainMenu() {
     ImGui::PushTextWrapPos(0.0f);
     ImGui::TextDisabled("%s", progress > 0.0f ? "Keep holding: the game starts again with the new settings in 5 seconds."
                               : footer_help   ? footer_help
-                                              : "D-pad: choose and change. Cross: change. L1 / R1: switch tabs. Circle "
-                                                "(or Esc): close. The buttons as bound in the launcher. Settings are "
-                                                "saved in medievil.ini.");
+                                              : "D-pad (or arrows): choose and change. Cross (or Enter): change. L1 / "
+                                                "R1: switch tabs. Circle (or Esc): close. The buttons as bound in the "
+                                                "launcher. Settings are saved in medievil.ini.");
     ImGui::PopTextWrapPos();
     if (changes) {
         ImGui::TextColored(ImVec4(0.85f, 0.72f, 0.45f, 1.0f), "%d change%s need%s a restart (unsaved progress is lost).",
@@ -2450,7 +2450,8 @@ void DetailedChoiceBox() {
     }
     ImGui::EndChild();
     ImGui::Separator();
-    ImGui::TextDisabled("Up/Down: choose   Cross (A) / Enter: load   Circle (B) / Esc: cancel   Square (X) / Tab: %s",
+    ImGui::TextDisabled("D-pad / arrows: choose   Cross / Enter: load   Circle / Esc: cancel   Square: %s "
+                        "(the buttons as bound in the launcher)",
                         choice_expanded ? "summary" : "all levels");
     ImGui::End();
 }
@@ -2508,7 +2509,7 @@ void ChoiceBox() {
         }
     }
     ImGui::Separator();
-    ImGui::TextDisabled("Up/Down or D-pad: choose   Enter or Cross (A): OK   Esc or Circle (B): cancel");
+    ImGui::TextDisabled("D-pad / arrows: choose   Cross / Enter: OK   Circle / Esc: cancel (as bound in the launcher)");
     ImGui::End();
 }
 
@@ -2808,16 +2809,19 @@ void PollChoiceInput() {
     }
 }
 
+// The list's input is PollChoiceInput's (runtime_pad.c list_buttons: the launcher's binds, and the arrows, Enter
+// and Esc as fallbacks where no bind takes them, as in the settings menu; plan-settings-menu.md section 10). These
+// events act only without that poll: the fallback keys and the pad's default buttons.
 bool HandleChoiceEvent(const SDL_Event& event) {
     int move = 0, finish = 0; // finish: 1 accept, 2 cancel
-    bool toggle = false;      // Square / Tab: the details' other page
+    bool toggle = false;      // Square: the details' other page
     if (event.type == SDL_EVENT_KEY_DOWN) {
+        if (choice_input) {
+            return true; // PollChoiceInput reads the keys as bound
+        }
         const SDL_Keycode key = event.key.key;
-        toggle = key == SDLK_TAB;
-        move = key == SDLK_UP || key == SDLK_W ? -1 : key == SDLK_DOWN || key == SDLK_S ? 1 : 0;
-        finish = key == SDLK_RETURN || key == SDLK_KP_ENTER || key == SDLK_SPACE ? 1
-                 : key == SDLK_ESCAPE || key == SDLK_BACKSPACE                   ? 2
-                                                                                 : 0;
+        move = key == SDLK_UP ? -1 : key == SDLK_DOWN ? 1 : 0;
+        finish = key == SDLK_RETURN || key == SDLK_KP_ENTER ? 1 : key == SDLK_ESCAPE ? 2 : 0;
     } else if (event.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) {
         if (choice_input) {
             return true; // PollChoiceInput reads the gamepad
@@ -2912,11 +2916,20 @@ bool HandleEvent(const SDL_Event& event) {
         if (!is_open) {
             return false;
         }
-        // The menu's keys come from the runtime's poll (MenuButtons): the keys as bound to PS buttons, and Esc
-        // as Circle (as in the Load list). Without that poll only Esc closes; Esc while a number box is typed
-        // in is ImGui's (cancels the edit).
-        if (down && !menu_input && !io.WantTextInput && event.key.key == SDLK_ESCAPE) {
-            MenuPress(Ps4::Circle);
+        // The menu's keys come from the runtime's poll (MenuButtons): the keys as bound to PS buttons, and the
+        // arrows, Enter and Esc as fallbacks where no bind takes them. Without that poll, only those fallbacks;
+        // Esc while a number box is typed in is ImGui's (cancels the edit).
+        if (down && !menu_input && !io.WantTextInput) {
+            switch (event.key.key) {
+            case SDLK_UP: MenuPress(Ps4::Up); break;
+            case SDLK_DOWN: MenuPress(Ps4::Down); break;
+            case SDLK_LEFT: MenuPress(Ps4::Left); break;
+            case SDLK_RIGHT: MenuPress(Ps4::Right); break;
+            case SDLK_RETURN:
+            case SDLK_KP_ENTER: MenuPress(Ps4::Cross); break;
+            case SDLK_ESCAPE: MenuPress(Ps4::Circle); break;
+            default: break;
+            }
         }
         io.AddKeyEvent(ImGuiMod_Ctrl, (event.key.mod & SDL_KMOD_CTRL) != 0);
         io.AddKeyEvent(ImGuiMod_Shift, (event.key.mod & SDL_KMOD_SHIFT) != 0);

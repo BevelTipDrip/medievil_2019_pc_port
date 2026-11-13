@@ -63,33 +63,46 @@ int main(void) {
     ButtonMap mouse={{{0,0}},0};
     assert(apply_button_map(&mouse,"cross=none",MAP_MOUSE)==0 && mouse.count==0); /* mouse: no defaults to take */
 
-    /* The settings menu's keys: only as bound (plan section 10), plus Esc as Circle while not bound to one. */
+    /* The menus' keys: as bound (plan section 10), plus the fallbacks arrows / Enter / Esc where no bind takes the
+       key for a menu button. */
     static bool k[SDL_SCANCODE_COUNT];
-    k[SDL_SCANCODE_RETURN]=true; /* Options: nothing in the menu (no fixed Enter) */
-    assert(menu_key_buttons(k,&key_map)==0);
-    k[SDL_SCANCODE_RETURN]=false; k[SDL_SCANCODE_SPACE]=true; /* bound to Cross */
+    k[SDL_SCANCODE_RETURN]=true; /* Options by default (nothing in the menus): the fallback Cross */
+    assert(menu_key_buttons(k,&key_map)==BTN_CROSS);
+    k[SDL_SCANCODE_RETURN]=false; k[SDL_SCANCODE_KP_ENTER]=true;
+    assert(menu_key_buttons(k,&key_map)==BTN_CROSS);
+    k[SDL_SCANCODE_KP_ENTER]=false; k[SDL_SCANCODE_SPACE]=true; /* bound to Cross */
     assert(menu_key_buttons(k,&key_map)==BTN_CROSS);
     k[SDL_SCANCODE_SPACE]=false; k[SDL_SCANCODE_Q]=true; k[SDL_SCANCODE_E]=true; /* Triangle (not used), Square */
     assert(menu_key_buttons(k,&key_map)==BTN_SQUARE);
     k[SDL_SCANCODE_Q]=false; k[SDL_SCANCODE_TAB]=true; /* the touchpad (Share / Create): with Square, APPLY & RESTART */
     assert(menu_key_buttons(k,&key_map)==(BTN_SQUARE|BTN_TOUCHPAD));
     k[SDL_SCANCODE_E]=k[SDL_SCANCODE_TAB]=false;
+    k[SDL_SCANCODE_BACKSPACE]=true; /* no fallback any more */
+    assert(menu_key_buttons(k,&key_map)==0);
+    k[SDL_SCANCODE_BACKSPACE]=false;
+    ButtonMap no_square=key_map; /* Q / E / Tab unbound: nothing (no fixed tab or Square keys) */
+    assert(apply_button_map(&no_square,"square=none,triangle=none,touchpad=none",MAP_KEYS)==3);
+    k[SDL_SCANCODE_Q]=k[SDL_SCANCODE_E]=k[SDL_SCANCODE_TAB]=true;
+    assert(menu_key_buttons(k,&no_square)==0);
+    k[SDL_SCANCODE_Q]=k[SDL_SCANCODE_E]=k[SDL_SCANCODE_TAB]=false;
     k[SDL_SCANCODE_1]=true; k[SDL_SCANCODE_3]=true; /* L1 / R1 as bound: the tabs */
     assert(menu_key_buttons(k,&key_map)==(BTN_L1|BTN_R1));
     k[SDL_SCANCODE_1]=k[SDL_SCANCODE_3]=false;
-    k[SDL_SCANCODE_I]=true; k[SDL_SCANCODE_LEFT]=true; /* D-pad up as bound; the arrow is not bound: nothing */
-    assert(menu_key_buttons(k,&key_map)==BTN_UP);
+    k[SDL_SCANCODE_I]=true; k[SDL_SCANCODE_LEFT]=true; /* D-pad up as bound, left by the fallback arrow */
+    assert(menu_key_buttons(k,&key_map)==(BTN_UP|BTN_LEFT));
     k[SDL_SCANCODE_I]=k[SDL_SCANCODE_LEFT]=false; k[SDL_SCANCODE_R]=true; /* L2: not a menu button */
     assert(menu_key_buttons(k,&key_map)==0);
     k[SDL_SCANCODE_R]=false;
-    ButtonMap arrows=key_map; /* the arrows bound to the D-pad: they move */
-    assert(apply_button_map(&arrows,"up=Up,left=Left",MAP_KEYS)==2);
-    k[SDL_SCANCODE_UP]=k[SDL_SCANCODE_LEFT]=true;
-    assert(menu_key_buttons(k,&arrows)==(BTN_UP|BTN_LEFT));
-    k[SDL_SCANCODE_UP]=k[SDL_SCANCODE_LEFT]=false;
+    ButtonMap arrow_square=key_map; /* a bind wins: the Up arrow bound to Square is Square, not Up */
+    assert(apply_button_map(&arrow_square,"square=Up",MAP_KEYS)==1);
+    k[SDL_SCANCODE_UP]=true;
+    assert(menu_key_buttons(k,&arrow_square)==BTN_SQUARE);
+    assert(menu_fixed_keys(k,&arrow_square)==0);
+    assert(menu_fixed_keys(k,&key_map)==BTN_UP); /* the Load list's fallbacks too */
+    k[SDL_SCANCODE_UP]=false;
     ButtonMap touch=key_map; /* the touchpad moved to another key: Tab is no longer it */
     assert(apply_button_map(&touch,"touchpad=G",MAP_KEYS)==1 && pressed_by(&touch,SDL_SCANCODE_TAB)==0);
-    k[SDL_SCANCODE_ESCAPE]=true; /* Esc: Circle, as in the Load list */
+    k[SDL_SCANCODE_ESCAPE]=true; /* Esc: Circle */
     assert(menu_key_buttons(k,&key_map)==BTN_CIRCLE);
     ButtonMap bound=key_map; /* Esc bound to Cross: only Cross (no Circle as well) */
     assert(apply_button_map(&bound,"cross=Escape",MAP_KEYS)==1);

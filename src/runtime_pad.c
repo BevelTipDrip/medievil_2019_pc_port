@@ -488,10 +488,14 @@ static uint32_t host_buttons(void) {
 /* Buttons for the port's save list (sceSaveDataDialog), polled by the overlay every frame while
  * it is open: the game stops reading the pad during the dialog. Gamepad, keyboard and mouse buttons
  * as mapped, scripted input, and the left stick as up/down. */
+static uint32_t menu_fixed_keys(const bool *k, const ButtonMap *map);
 static uint32_t list_buttons(void) {
     pthread_mutex_lock(&lock);
     read_inject();
     uint32_t buttons=host_buttons()|list_mouse_buttons()|injected.buttons;
+    /* The menus' fallback keys (arrows, Enter, Esc) as in the settings menu, where no bind takes them. */
+    const bool *k=SDL_WasInit(SDL_INIT_VIDEO) ? SDL_GetKeyboardState(NULL) : NULL;
+    if (k) buttons|=menu_fixed_keys(k,&key_map);
     const int pads=current_gamepads();
     for (int p=0;p<pads;++p) {
         const int y=SDL_GetGamepadAxis(gamepads[p],SDL_GAMEPAD_AXIS_LEFTY);
@@ -503,27 +507,35 @@ static uint32_t list_buttons(void) {
     pthread_mutex_unlock(&lock);
     return buttons;
 }
-/* The port's settings menu reads the PS4 buttons the menu uses (research/docs/plan-settings-menu.md
+/* The port's settings menu and Load list read the PS4 buttons the menus use (research/docs/plan-settings-menu.md
  * sections 2.2 and 10): the D-pad, Cross (change), Circle (back), L1 / R1 (tabs), Square + the touchpad held
  * (APPLY & RESTART; the touchpad: Share / Create on a controller, Tab by default). Keys and mouse buttons act as the
- * PS buttons the launcher binds them to, nothing else (the user, 2026-11-13): the arrows, Enter, Backspace, Q,
- * E and Tab no longer stand for menu buttons by themselves. One fixed key stays, as in the Load list: Esc is
- * Circle (closes the menu) while it is not bound to one of the menu's buttons. One mask, so a key both bound
- * and fixed is one press. */
+ * PS buttons the launcher binds them to (the user, 2026-11-13). Standard fallbacks besides: the arrows are the
+ * D-pad, Enter and keypad Enter Cross, Esc Circle, each only while the key is not bound to one of the menus'
+ * buttons (a bind wins: an arrow bound to Square is Square; Enter, bound to Options by default, is Cross here as
+ * Options does nothing in the menus). Backspace, Q, E and Tab are no fallbacks. One mask, so a key both bound and
+ * fixed is one press. */
 #define MENU_BUTTONS (BTN_UP|BTN_DOWN|BTN_LEFT|BTN_RIGHT|BTN_CROSS|BTN_CIRCLE|BTN_L1|BTN_R1|BTN_SQUARE|BTN_TOUCHPAD)
 static const struct { int key; uint32_t ps; } menu_keys[]={
+    {SDL_SCANCODE_UP,BTN_UP}, {SDL_SCANCODE_DOWN,BTN_DOWN}, {SDL_SCANCODE_LEFT,BTN_LEFT},
+    {SDL_SCANCODE_RIGHT,BTN_RIGHT}, {SDL_SCANCODE_RETURN,BTN_CROSS}, {SDL_SCANCODE_KP_ENTER,BTN_CROSS},
     {SDL_SCANCODE_ESCAPE,BTN_CIRCLE},
 };
-/* The menu's buttons from the keys held in `k` (SDL_GetKeyboardState) with the key map `map`. */
-static uint32_t menu_key_buttons(const bool *k, const ButtonMap *map) {
+/* The fallback keys held in `k` (SDL_GetKeyboardState) that no bind of `map` gives a menu button. */
+static uint32_t menu_fixed_keys(const bool *k, const ButtonMap *map) {
     uint32_t buttons=0;
-    for (size_t i=0;i<map->count;++i) if (k[map->entries[i].source]) buttons|=map->entries[i].ps;
     for (size_t i=0;i<sizeof(menu_keys)/sizeof(*menu_keys);++i) {
         if (!k[menu_keys[i].key]) continue;
         uint32_t bound=0;
         for (size_t j=0;j<map->count;++j) if (map->entries[j].source==menu_keys[i].key) bound|=map->entries[j].ps;
         if (!(bound&MENU_BUTTONS)) buttons|=menu_keys[i].ps;
     }
+    return buttons;
+}
+/* The menu's buttons from the keys held in `k` with the key map `map`: the binds and the fallbacks. */
+static uint32_t menu_key_buttons(const bool *k, const ButtonMap *map) {
+    uint32_t buttons=menu_fixed_keys(k,map);
+    for (size_t i=0;i<map->count;++i) if (k[map->entries[i].source]) buttons|=map->entries[i].ps;
     return buttons&MENU_BUTTONS;
 }
 /* The menu's buttons from mouse buttons held over the window (mouse_button_from_name's bits) as
