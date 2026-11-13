@@ -31,7 +31,6 @@ namespace Gow3Overlay {
 extern std::atomic<bool> screenshot_requested;
 }
 extern "C" void runtime_restart(void); // src/probe.c: starts run.py again, ends this process
-extern "C" void runtime_ue4_request_setres(const char* text); // src/runtime_extra.c: live r.SetRes
 extern "C" void runtime_ue4_request_cvar(const char* name, const char* value); // live console variables
 extern "C" void runtime_ue4_particle_single_pass(int on); // src/runtime_extra.c: r.GPUParticle.FixDeltaSeconds
 u32 Gow3DisplayRefreshHz(); // gow3gpu.cpp: the display refresh rate
@@ -98,7 +97,7 @@ bool choice_expanded = false;                           // Square: `more` in pla
 // The game's menu look for the list with details and the settings menu (SetChoiceStyle): images
 // become textures on the present thread (UpdateChoiceTextures); both fonts and all textures, or the
 // plain look.
-enum StyleImage { StyleFrame, StyleCross, StyleCircle, StyleSquare, StyleL1, StyleR1, StyleImageCount };
+enum StyleImage { StyleFrame, StyleCross, StyleCircle, StyleSquare, StyleL1, StyleR1, StyleTouchpad, StyleImageCount };
 struct ChoiceStyle {
     Gow3Png::Image pending[StyleImageCount];
     ImTextureData* textures[StyleImageCount] = {};
@@ -141,23 +140,7 @@ void ApplyRenderScale(bool now) {
     Gow3Settings::RequestRenderScale(Gow3Settings::Get().render_scale);
 }
 
-// MediEvil frame buffer size (Display > Resolution): the same rule, 0.5 s after the last step (an r.SetRes
-// makes every target of the game again), so stepping through the sizes switches once.
-bool output_pending = false;
-std::chrono::steady_clock::time_point output_edit{};
-void RequestOutput(); // below, with the Display tab
-
-void ApplyOutput(bool now) {
-    if (!output_pending ||
-        (!now && std::chrono::steady_clock::now() - output_edit < std::chrono::milliseconds(500))) {
-        return;
-    }
-    output_pending = false;
-    RequestOutput();
-}
-
 bool menu_buttons_fresh = false; // the menu just opened: buttons held now wait for release (MenuButtons)
-std::chrono::steady_clock::time_point restart_armed{}; // APPLY & RESTART armed until then (ArmRestart)
 
 void SetOpen(bool value) {
     if (menu_open.exchange(value) == value) {
@@ -169,8 +152,6 @@ void SetOpen(bool value) {
     }
     if (!value) {
         ApplyRenderScale(true);
-        ApplyOutput(true);
-        restart_armed = {};
     }
     if (!value && dirty) {
         dirty = false;
@@ -286,7 +267,10 @@ constexpr int TabCount = 5;
 // The PS4 buttons the menu reads (the runtime's bits, runtime_pad.c menu_buttons).
 namespace Ps4 {
 constexpr uint32_t Up = 0x10, Right = 0x20, Down = 0x40, Left = 0x80, L1 = 0x400, R1 = 0x800, Circle = 0x2000,
-                   Cross = 0x4000, Square = 0x8000, Directions = Up | Right | Down | Left;
+                   Cross = 0x4000, Square = 0x8000, Touchpad = 0x100000, Directions = Up | Right | Down | Left;
+/// APPLY & RESTART: held together for RestartHold. The touchpad is the PS4 button the launcher calls Touchpad (its
+/// controller button: Share / Create, SDL_GAMEPAD_BUTTON_BACK, and the DualSense touchpad); Tab by default on keys.
+constexpr uint32_t RestartCombo = Square | Touchpad;
 }
 
 // The menu in the game's look (choice_style ready; StyledMenu) for this frame. menu_u is the frame's
@@ -320,32 +304,59 @@ void Restart(bool on = true) {
     row_restart = on;
 }
 
-// "Apply and restart" (Square, the APPLY & RESTART prompt; research/docs/plan-settings-menu.md section 9): the
-// first press arms it for 5 s and the prompts ask RESTART NOW (Cross) or CANCEL (Circle). It ends the game
-// without saving its progress, so one stray press (E is Square with the default keys) never restarts.
+// APPLY & RESTART (research/docs/plan-settings-menu.md section 10): Square and Touchpad (Share / Create) held
+// together for 5 s, or a mouse button held on its prompt, while restart-only changes wait; letting go earlier
+// cancels. It ends the game without saving its progress, so a single press never does it.
+constexpr std::chrono::milliseconds RestartHold{5000};
+std::chrono::steady_clock::time_point restart_hold_since{};
+bool restart_holding = false;    // the combination (or the prompt) is held now
+bool restart_hold_blocked = false; // held when the menu opened: wait for release first
+bool restart_prompt_held = false;  // a mouse button holds the prompt (StyledMenu / PlainMenu, last frame)
 
 bool RestartAvailable() {
     const char* command = std::getenv("GOW3_RESTART_COMMAND");
     return command && command[0];
 }
 
-bool RestartArmed() {
-    return std::chrono::steady_clock::now() < restart_armed;
-}
-
-void ArmRestart() {
-    if (RestartAvailable() && Gow3Settings::RestartChanges() > 0) {
-        restart_armed = std::chrono::steady_clock::now() + std::chrono::seconds(5);
-    }
-}
-
 void RestartNow() {
-    restart_armed = {};
+    restart_holding = false;
     // The new launch confirms the options once the game shows; run.py restores the
     // previous ones if it never does (restart_unconfirmed).
     Gow3Settings::Get().restart_unconfirmed = true;
     Gow3Settings::Save();
     runtime_restart();
+}
+
+// How far the hold has come, 0 to 1 (the prompt's fill).
+float RestartProgress() {
+    if (!restart_holding) {
+        return 0.0f;
+    }
+    const auto held = std::chrono::steady_clock::now() - restart_hold_since;
+    return std::clamp(std::chrono::duration<float>(held).count() /
+                          std::chrono::duration<float>(RestartHold).count(), 0.0f, 1.0f);
+}
+
+// Each presented frame (MenuButtons): the combination held (`buttons`) or the prompt held starts and keeps the
+// hold; at 5 s the game restarts.
+void RestartHoldStep(uint32_t buttons) {
+    const bool combo = (buttons & Ps4::RestartCombo) == Ps4::RestartCombo;
+    if (!combo) {
+        restart_hold_blocked = false;
+    }
+    const bool held = ((combo && !restart_hold_blocked) || restart_prompt_held) && RestartAvailable() &&
+                      Gow3Settings::RestartChanges() > 0;
+    if (!held) {
+        restart_holding = false;
+        return;
+    }
+    if (!restart_holding) {
+        restart_holding = true;
+        restart_hold_since = std::chrono::steady_clock::now();
+    }
+    if (RestartProgress() >= 1.0f) {
+        RestartNow();
+    }
 }
 
 // Pad and keyboard navigation of the menu (research/docs/plan-settings-menu.md): the rows a tab draws are
@@ -373,23 +384,10 @@ bool NextRowFocused() {
     return nav.rows == Focus();
 }
 
-// What a press of the menu's buttons does (MenuButtons; SDL events when the runtime gave no input). While
-// APPLY & RESTART is armed, Cross restarts, Circle or Square cancels, anything else cancels and acts.
+// What a press of the menu's buttons does (MenuButtons; SDL events when the runtime gave no input).
 void MenuPress(uint32_t pressed) {
     if (!pressed) {
         return;
-    }
-    if (RestartArmed()) {
-        if (pressed & Ps4::Cross) {
-            RestartNow();
-            return;
-        }
-        restart_armed = {};
-        if (pressed & (Ps4::Circle | Ps4::Square)) {
-            return;
-        }
-    } else if (pressed & Ps4::Square) {
-        ArmRestart();
     }
     nav.move += (pressed & Ps4::Up) ? -1 : (pressed & Ps4::Down) ? 1 : 0;
     nav.step += (pressed & Ps4::Left) ? -1 : (pressed & Ps4::Right) ? 1 : 0;
@@ -403,8 +401,8 @@ void MenuPress(uint32_t pressed) {
     }
 }
 
-// The runtime's buttons for the menu (runtime_pad.c menu_buttons: pad, keys and mouse binds as
-// mapped, fixed menu keys, the left stick as a D-pad), read every presented frame while it is open.
+// The runtime's buttons for the menu (runtime_pad.c menu_buttons: pad, keys and mouse binds as mapped,
+// Esc as Circle, the left stick as a D-pad), read every presented frame while it is open.
 std::atomic<uint32_t (*)()> menu_input{nullptr};
 
 // imgui_mutex held, before NewFrame. Presses act once; a held direction repeats after 400 ms every
@@ -419,6 +417,8 @@ void MenuButtons(uint32_t buttons) {
     }
     if (menu_buttons_fresh) {
         menu_buttons_fresh = false;
+        restart_holding = restart_prompt_held = false;
+        restart_hold_blocked = (buttons & Ps4::RestartCombo) == Ps4::RestartCombo;
         previous = buttons;
         repeating = 0;
         nav.move = nav.step = 0;
@@ -429,8 +429,10 @@ void MenuButtons(uint32_t buttons) {
     previous = buttons;
     if (ImGui::GetIO().WantTextInput) {
         repeating = 0;
+        restart_holding = false;
         return;
     }
+    RestartHoldStep(buttons);
     const auto now = Clock::now();
     uint32_t fire = 0;
     if (const uint32_t directions = pressed & Ps4::Directions) {
@@ -1241,23 +1243,6 @@ void ControlsTab() {
 // MediEvil's frame buffer sizes (medievil.ini output_resolution, Gow3Settings::UE4OutputKeys' order).
 constexpr const char* OutputLabels[] = {"Match display", "4K", "1800p", "1440p", "1080p (original)", "720p"};
 
-// Switches the game's output to the chosen frame buffer size now through r.SetRes (src/runtime_extra.c), as the
-// game's debug menu does, unless a live switch is unsafe (Gow3Settings::OutputRestartReason: then at the next
-// start). Saved in medievil.ini either way, so the next start boots at it (run.py, the boot display size patch).
-void RequestOutput() {
-    namespace S = Gow3Settings;
-    if (const char* reason = S::OutputRestartReason()) {
-        std::printf("Output resolution: %s at the next start (%s)\n", S::OutputValue().c_str(), reason);
-        return;
-    }
-    int width = 0, height = 0;
-    S::OutputSize(S::OutputValue(), width, height);
-    char text[24];
-    std::snprintf(text, sizeof(text), "%dx%d", width, height);
-    runtime_ue4_request_setres(text);
-    std::printf("Output resolution: %s (live, in-game menu)\n", text);
-}
-
 // MediEvil: the 3D scene's size per side compared with the frame buffer, in 1% steps, switched live
 // (Gow3Settings::RequestRenderScale, applied by ApplyRenderScale) and kept in medievil.ini.
 void RenderScaleRow() {
@@ -1312,22 +1297,13 @@ void DisplayTab() {
             ChoiceRow("Render resolution", s.render_resolution, resolution_labels, nullptr,
                       int(G::Resolutions.size()), "The resolution the game draws at. Higher is sharper and slower.");
         } else {
-            // MediEvil: the game's output (output_resolution), switched now and kept for the next start.
-            Restart(S::OutputRestartReason() != nullptr);
-            const int before = s.output_resolution;
+            // MediEvil: the game's output (output_resolution), saved for the next start: the game boots at it
+            // (run.py, the boot display size patch). Restart-only (the user, 2026-11-13; plan section 10).
+            Restart();
             IndexChoiceRow("Frame buffer size", s.output_resolution, OutputLabels, int(std::size(OutputLabels)),
                            "The size the game draws its picture and HUD at (the PS4's output); the window scales it "
-                           "to fit. Match display for a sharp 1:1 image.",
+                           "to fit. Match display for a sharp 1:1 image. Applies at the next start.",
                            "Custom");
-            if (s.output_resolution != before) {
-                output_pending = true; // switched 0.5 s after the last step (ApplyOutput)
-                output_edit = std::chrono::steady_clock::now();
-            }
-            if (const char* reason = S::OutputRestartReason()) {
-                EndRows();
-                Note("%s", reason);
-                if (!BeginRows("##resolution_after")) return; // (plain look: a skipped window)
-            }
         }
         ChoiceRow("Display mode", s.display_mode, G::DisplayModeNames.data(), nullptr, G::DisplayModeCount,
                   "Windowed, borderless window or exclusive fullscreen.");
@@ -1803,26 +1779,29 @@ void PlainMenu() {
 
     ImGui::Separator();
     const int changes = RestartChanges();
-    const bool armed = RestartArmed();
+    const float progress = RestartProgress();
+    restart_prompt_held = false;
     ImGui::PushTextWrapPos(0.0f);
-    ImGui::TextDisabled("%s", armed         ? "Cross (A) / Enter or Restart now: start again with the new settings. "
-                                              "Circle (B) / Esc: cancel."
-                              : footer_help ? footer_help
-                                            : "D-pad or arrows: choose and change. Cross (A) / Enter: change. L1 / R1 "
-                                              "or Q: switch tabs. Square (X) / Tab: apply and restart. Circle (B) / "
-                                              "Esc: close. Settings are saved in medievil.ini.");
+    ImGui::TextDisabled("%s", progress > 0.0f ? "Keep holding: the game starts again with the new settings in 5 seconds."
+                              : footer_help   ? footer_help
+                                              : "D-pad: choose and change. Cross: change. L1 / R1: switch tabs. Circle "
+                                                "(or Esc): close. The buttons as bound in the launcher. Settings are "
+                                                "saved in medievil.ini.");
     ImGui::PopTextWrapPos();
     if (changes) {
         ImGui::TextColored(ImVec4(0.85f, 0.72f, 0.45f, 1.0f), "%d change%s need%s a restart (unsaved progress is lost).",
                            changes, changes == 1 ? "" : "s", changes == 1 ? "s" : "");
         ImGui::SameLine();
         ImGui::BeginDisabled(!RestartAvailable());
-        if (ImGui::Button(armed ? "Restart now" : "Apply and restart")) {
-            if (armed) {
-                RestartNow();
-            } else {
-                ArmRestart();
-            }
+        char label[96];
+        std::snprintf(label, sizeof(label), "Hold Square + Touchpad 5 s (or hold here): apply and restart%s",
+                      progress > 0.0f ? "..." : "");
+        ImGui::Button(label);
+        restart_prompt_held = ImGui::IsItemActive();
+        if (progress > 0.0f) {
+            const ImVec2 min = ImGui::GetItemRectMin(), max = ImGui::GetItemRectMax();
+            ImGui::GetWindowDrawList()->AddRectFilled(min, ImVec2(min.x + (max.x - min.x) * progress, max.y),
+                                                      IM_COL32(245, 196, 30, 90), ImGui::GetStyle().FrameRounding);
         }
         ImGui::EndDisabled();
     } else {
@@ -1987,55 +1966,84 @@ void StyledMenu() {
     }
 
     // The game's button prompts inside the frame's bottom (clear of the title screen's copyright line); drawn
-    // before the rows so a click on SELECT reaches the focused row in this frame. APPLY & RESTART (Square) only
-    // while changes wait for a start; armed, the bar asks RESTART NOW (Cross) or CANCEL (Circle).
-    const bool armed = RestartArmed();
+    // before the rows so a click on SELECT reaches the focused row in this frame. While restart-only changes wait,
+    // "[Square]+[Touchpad] HOLD: APPLY & RESTART", filled as the hold goes on (a mouse button held on it counts too).
+    const float progress = RestartProgress();
+    restart_prompt_held = false;
     {
         struct Prompt {
             StyleImage icons[2];
             int count;
+            const char* joiner; // between the two icons ("+": held together)
             const char* label;
-            uint32_t press;
+            uint32_t press;     // a click's button; 0: the hold prompt
             bool enabled;
         };
         Prompt prompts[4];
         int count = 0;
-        if (armed) {
-            prompts[count++] = {{StyleCross, StyleCross}, 1, "RESTART NOW", Ps4::Cross, true};
-            prompts[count++] = {{StyleCircle, StyleCircle}, 1, "CANCEL", Ps4::Circle, true};
-        } else {
-            prompts[count++] = {{StyleCross, StyleCross}, 1, "SELECT", Ps4::Cross, true};
-            prompts[count++] = {{StyleCircle, StyleCircle}, 1, "GO BACK", Ps4::Circle, true};
-            prompts[count++] = {{StyleL1, StyleR1}, 2, "CHANGE TAB", Ps4::R1, true};
-            if (RestartChanges() > 0) {
-                prompts[count++] = {{StyleSquare, StyleSquare}, 1, "APPLY & RESTART", Ps4::Square, RestartAvailable()};
+        prompts[count++] = {{StyleCross, StyleCross}, 1, nullptr, "SELECT", Ps4::Cross, true};
+        prompts[count++] = {{StyleCircle, StyleCircle}, 1, nullptr, "GO BACK", Ps4::Circle, true};
+        prompts[count++] = {{StyleL1, StyleR1}, 2, nullptr, "CHANGE TAB", Ps4::R1, true};
+        if (RestartChanges() > 0) {
+            prompts[count++] = {{StyleSquare, StyleTouchpad}, 2, "+", "HOLD: APPLY & RESTART", 0, RestartAvailable()};
+        }
+        constexpr float Pair = 6.0f, Gap = 10.0f, Fit = 1040.0f;
+        const float space = count > 3 ? 32.0f : 56.0f;
+        float label_size = TextPx(PromptLabel);
+        const auto measure = [&](float size, float* labels) {
+            float fixed = 0.0f;
+            *labels = 0.0f;
+            for (int i = 0; i < count; ++i) {
+                fixed += (PromptIcon + Pair) * float(prompts[i].count) - Pair + Gap + space;
+                if (prompts[i].joiner) fixed += text_width(choice_style.text, size, prompts[i].joiner) / menu_u + Pair;
+                *labels += text_width(choice_style.text, size, prompts[i].label) / menu_u;
             }
+            return fixed - space;
+        };
+        float labels = 0.0f;
+        float fixed = measure(label_size, &labels);
+        if (fixed + labels > Fit && labels > 0.0f) { // four prompts in a narrow font: smaller labels
+            label_size = std::max(std::floor(label_size * (Fit - fixed) / labels), 8.0f);
+            fixed = measure(label_size, &labels);
         }
-        const float space = count > 3 ? 40.0f : 56.0f, pair = 6.0f, gap = 10.0f;
-        const float label_size = TextPx(PromptLabel);
-        float row = 0.0f;
-        for (int i = 0; i < count; ++i) {
-            row += (PromptIcon + pair) * float(prompts[i].count) - pair + gap +
-                   text_width(choice_style.text, label_size, prompts[i].label) / menu_u + space;
-        }
-        float x = (FrameW - (row - space)) * 0.5f;
+        float x = (FrameW - (fixed + labels)) * 0.5f;
         draw->AddLine(B(64, PromptRule), B(1117, PromptRule), IM_COL32(245, 196, 30, 70), Px(2.0f));
         for (int i = 0; i < count; ++i) {
             const Prompt& prompt = prompts[i];
             const ImU32 tint = prompt.enabled ? IM_COL32_WHITE : IM_COL32(255, 255, 255, 110);
             const float start = x;
+            float end = x + (PromptIcon + Pair) * float(prompt.count) - Pair + Gap +
+                        text_width(choice_style.text, label_size, prompt.label) / menu_u;
+            if (prompt.joiner) end += text_width(choice_style.text, label_size, prompt.joiner) / menu_u + Pair;
+            if (!prompt.press && progress > 0.0f) { // the hold's fill, under the prompt
+                draw->AddRectFilled(B(start - 6.0f, PromptTop - 3.0f), B(start - 6.0f + (end - start + 12.0f) * progress,
+                                                                         PromptTop + PromptIcon + 3.0f),
+                                    IM_COL32(245, 196, 30, 90), Px(8.0f));
+                draw->AddRect(B(start - 6.0f, PromptTop - 3.0f), B(end + 6.0f, PromptTop + PromptIcon + 3.0f),
+                              IM_COL32(245, 196, 30, 160), Px(8.0f), 0, Px(1.5f));
+            }
             for (int k = 0; k < prompt.count; ++k) {
+                if (k > 0 && prompt.joiner) {
+                    draw->AddText(choice_style.text, label_size,
+                                  B(x, PromptTop + (PromptIcon - PromptLabel) * 0.5f - 1.0f), prompt.enabled ? White : Dim,
+                                  prompt.joiner);
+                    x += text_width(choice_style.text, label_size, prompt.joiner) / menu_u + Pair;
+                }
                 draw->AddImage(choice_style.textures[prompt.icons[k]]->GetTexRef(), B(x, PromptTop),
                                B(x + PromptIcon, PromptTop + PromptIcon), ImVec2(0, 0), ImVec2(1, 1), tint);
-                x += PromptIcon + pair;
+                x += PromptIcon + Pair;
             }
-            x += gap - pair;
+            x += Gap - Pair;
             draw->AddText(choice_style.text, label_size, B(x, PromptTop + (PromptIcon - PromptLabel) * 0.5f - 1.0f),
                           prompt.enabled ? White : Dim, prompt.label);
-            x += text_width(choice_style.text, label_size, prompt.label) / menu_u;
+            x = end;
             ImGui::SetCursorScreenPos(B(start, PromptTop));
-            if (ImGui::InvisibleButton(prompt.label, ImVec2(Px(x - start), Px(PromptIcon))) && prompt.enabled) {
+            const bool clicked = ImGui::InvisibleButton(prompt.label, ImVec2(Px(end - start), Px(PromptIcon)));
+            if (prompt.press && clicked && prompt.enabled) {
                 MenuPress(prompt.press);
+            }
+            if (!prompt.press && ImGui::IsItemActive()) {
+                restart_prompt_held = true; // RestartHoldStep, next frame
             }
             x += space;
         }
@@ -2115,14 +2123,15 @@ void StyledMenu() {
     // Under the list: the focused row's help (up to three lines), else how to open and close the menu.
     {
         static const std::string idle = OpenKeys() + ": open and close this menu. Settings are saved in medievil.ini.";
-        const char* help = armed ? "RESTART NOW starts the game again with the new settings: progress since the last "
-                                   "save is lost. CANCEL keeps playing; the changes stay saved for the next start."
+        const bool holding = progress > 0.0f;
+        const char* help = holding ? "Keep holding: the game starts again with the new settings in 5 seconds; progress "
+                                     "since the last save is lost. Let go to cancel (the changes stay saved)."
                            : footer_help ? footer_help
                                          : idle.c_str();
         const float size = TextPx(HelpText);
         const ImVec2 from = B(72, HelpTop), to = B(1110, HelpTop + HelpLines * HelpText + 2.0f);
         const ImVec4 clip(from.x, from.y, to.x, to.y);
-        draw->AddText(choice_style.text, size, from, footer_help || armed ? Cream : Dim, help, nullptr, to.x - from.x,
+        draw->AddText(choice_style.text, size, from, footer_help || holding ? Cream : Dim, help, nullptr, to.x - from.x,
                       &clip);
     }
     ImGui::End();
@@ -2130,7 +2139,6 @@ void StyledMenu() {
 
 void Menu() {
     ApplyRenderScale(false);
-    ApplyOutput(false);
     footer_help = nullptr;
     // The game's look needs its files, and room (a tiny window keeps the plain look).
     styled = choice_style.Ready() && ImGui::GetMainViewport()->WorkSize.y >= 360.0f;
@@ -2659,12 +2667,6 @@ void Init(const Vulkan::Instance& instance, vk::Format format, u32 image_count) 
     }
     overlay_instance = &instance;
     initialized = true;
-    // The desktop's size in pixels: output_resolution "display" (run.py's graphics_options.display_size).
-    if (const SDL_DisplayMode* mode = SDL_GetDesktopDisplayMode(SDL_GetPrimaryDisplay()); mode && mode->w > 0) {
-        const float density = mode->pixel_density > 0.0f ? mode->pixel_density : 1.0f;
-        Gow3Settings::Get().display_width = int(std::lround(float(mode->w) * density));
-        Gow3Settings::Get().display_height = int(std::lround(float(mode->h) * density));
-    }
     std::printf("Overlay: menu ready (%s or %s)\n", SDL_GetKeyName(MenuKey()), MenuPad().name.c_str());
     // The game's menu look for the settings menu (and the save list) from the game UI cache, the folder
     // the save list names (runtime_services.c), read off this thread at start so the menu has it from
@@ -2910,22 +2912,11 @@ bool HandleEvent(const SDL_Event& event) {
         if (!is_open) {
             return false;
         }
-        // The menu's keys come from the runtime's poll (MenuButtons: Esc closes there). Without it,
-        // from these events; Esc while a number box is typed in is ImGui's (cancels the edit).
-        if (down && !menu_input && !io.WantTextInput) {
-            switch (event.key.key) {
-            case SDLK_UP: MenuPress(Ps4::Up); break;
-            case SDLK_DOWN: MenuPress(Ps4::Down); break;
-            case SDLK_LEFT: MenuPress(Ps4::Left); break;
-            case SDLK_RIGHT: MenuPress(Ps4::Right); break;
-            case SDLK_RETURN:
-            case SDLK_KP_ENTER: MenuPress(Ps4::Cross); break;
-            case SDLK_ESCAPE: MenuPress(Ps4::Circle); break;
-            case SDLK_Q: MenuPress(Ps4::L1); break;
-            case SDLK_E: MenuPress(Ps4::R1); break;
-            case SDLK_TAB: MenuPress(Ps4::Square); break;
-            default: break;
-            }
+        // The menu's keys come from the runtime's poll (MenuButtons): the keys as bound to PS buttons, and Esc
+        // as Circle (as in the Load list). Without that poll only Esc closes; Esc while a number box is typed
+        // in is ImGui's (cancels the edit).
+        if (down && !menu_input && !io.WantTextInput && event.key.key == SDLK_ESCAPE) {
+            MenuPress(Ps4::Circle);
         }
         io.AddKeyEvent(ImGuiMod_Ctrl, (event.key.mod & SDL_KMOD_CTRL) != 0);
         io.AddKeyEvent(ImGuiMod_Shift, (event.key.mod & SDL_KMOD_SHIFT) != 0);
@@ -2961,7 +2952,6 @@ bool HandleEvent(const SDL_Event& event) {
             case SDL_GAMEPAD_BUTTON_DPAD_RIGHT: MenuPress(Ps4::Right); break;
             case SDL_GAMEPAD_BUTTON_SOUTH: MenuPress(Ps4::Cross); break;
             case SDL_GAMEPAD_BUTTON_EAST: MenuPress(Ps4::Circle); break;
-            case SDL_GAMEPAD_BUTTON_WEST: MenuPress(Ps4::Square); break;
             case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER: MenuPress(Ps4::L1); break;
             case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER: MenuPress(Ps4::R1); break;
             default: break;

@@ -483,53 +483,13 @@ void Load() {
     TakeBaseline();
 }
 
-void OutputSize(const std::string& value, int& width, int& height) {
-    const auto& v = Get();
-    width = 1920;
-    height = 1080;
-    if (value == "display") {
-        if (v.display_width > 0 && v.display_height > 0) {
-            width = v.display_width & ~1;
-            height = v.display_height & ~1;
-        }
-        return;
-    }
-    int w = 0, h = 0;
-    char tail = 0;
-    if (std::sscanf(value.c_str(), "%dx%d%c", &w, &h, &tail) == 2 && w >= 640 && w <= 7680 && h >= 360 && h <= 4320) {
-        width = w & ~1;
-        height = h & ~1;
-    }
-}
-
 std::string OutputValue() {
     const auto& v = Get();
     return v.output_resolution >= 0 ? UE4OutputKeys[v.output_resolution] : v.output_resolution_raw;
 }
 
-const char* OutputRestartReason() {
-    const auto& v = Get();
-    const std::string now = OutputValue();
-    if (now == startup_output_value) {
-        return nullptr;
-    }
-    int w = 0, h = 0, start_w = 0, start_h = 0;
-    OutputSize(now, w, h);
-    OutputSize(startup_output_value, start_w, start_h);
-    const char* slot = std::getenv("GOW3_UE4_SETRES_CVAR");
-    if (!slot || !slot[0]) {
-        return "No live size switch in this game build: the new size applies at the next start.";
-    }
-    // Upstream 783b25a: 1800p at a 200% render scale needed 6400x3600 targets and ran out of the PS4's memory.
-    if (v.startup_render_scale > 100 && w * h > start_w * start_h) {
-        return "Started at a render scale above 100%: a larger size applies at the next start (memory).";
-    }
-    // The stock 128 MB framebuffer pool ran out on a live 4K switch (upstream-4k-framebuffer-pool).
-    const char* patches = std::getenv("GOW3_PATCHES");
-    if (w * h > 2560 * 1440 && (!patches || !std::strstr(patches, "Native 4K framebuffer pool"))) {
-        return "Above 1440p needs the 512 MB framebuffer pool patch: the size applies at the next start.";
-    }
-    return nullptr;
+bool OutputNeedsRestart() {
+    return OutputValue() != startup_output_value;
 }
 
 int RestartChanges() {
@@ -537,8 +497,7 @@ int RestartChanges() {
     int changes = (v.render_resolution != v.startup_render_resolution) + (v.engine_fps != v.startup_engine_fps) +
                   (v.deferred_readback != v.startup_deferred_readback) +
                   (v.stale_readback != v.startup_stale_readback) +
-                  // The output size switches live (the menu's RequestOutput) except in OutputRestartReason's cases.
-                  (OutputRestartReason() != nullptr) + RenderScaleNeedsRestart();
+                  OutputNeedsRestart() + RenderScaleNeedsRestart();
     // Graphics quality itself needs no restart any more: the settings it set do, if they are not live.
     for (int o = 0; o < UE4LiveCount; ++o) {
         changes += !UE4LiveOptions[o].live && v.ue4_live[o] != v.startup_ue4_live[o];

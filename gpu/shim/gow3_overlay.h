@@ -79,7 +79,7 @@ int PollChoice();
 /// (scripts/game_ui_assets.py): the Options menu frame, the Cross / Circle / Square / L1 / R1
 /// prompts, the title and text fonts.
 struct ChoiceStyleFiles {
-    Gow3Png::Image images[6]; ///< frame, cross, circle, square, l1, r1
+    Gow3Png::Image images[7]; ///< frame, cross, circle, square, l1, r1, touchpad (APPLY & RESTART, with square)
     std::vector<unsigned char> fonts[2]; ///< title, text (TrueType / OpenType)
 };
 void SetChoiceStyle(ChoiceStyleFiles files);

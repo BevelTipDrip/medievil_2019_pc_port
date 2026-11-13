@@ -136,9 +136,6 @@ struct Values {
     /// graphics_options.deck_environment).
     std::atomic<bool> deck[DeckSwitchCount] = {};
     bool startup_deck[DeckSwitchCount] = {};
-    /// The primary display's desktop size in pixels (output_resolution "display"), set by the overlay at start;
-    /// 0 until then (read as 1920x1080).
-    std::atomic<int> display_width{0}, display_height{0};
     /// MediEvil graphics quality and output resolution (UE4QualityKeys / UE4OutputKeys; -1: a
     /// value the menu does not list, such as a custom WxH, kept as written). On restart (run.py:
     /// graphics_options, ue4_override).
@@ -264,19 +261,12 @@ inline bool PerfOn(PerfPatch patch) {
 inline constexpr const char* UE4QualityKeys[] = {"ultra", "high", "console", "medium", "low"};
 inline constexpr const char* UE4OutputKeys[] = {"display", "3840x2160", "3200x1800", "2560x1440", "1920x1080",
                                                 "1280x720"};
-/// The pixel size of an output_resolution value ("display": the desktop, Values::display_width; "WxH" as
-/// graphics_options.parse_output: even sizes, 640x360 to 7680x4320; else 1920x1080).
-void OutputSize(const std::string& value, int& width, int& height);
 /// The chosen output size (output_resolution) as its ini value: a listed key or the raw custom one.
 std::string OutputValue();
-/// Why the chosen output size cannot be switched live, or null (then RequestOutput switches it now). Only
-/// these cases count as a restart change (RestartChanges): the game started with a render scale above 100%
-/// and the new size is larger than the start's (1800p at 200% needed 6400x3600 targets: out of the PS4's
-/// memory, crash); the 512 MB framebuffer pool patch is not in this start's patch list and the new size is
-/// above 1440p (the stock 128 MB pool ran out on a live 4K switch: crash); this build's r.SetRes is unknown
-/// (GOW3_UE4_SETRES_CVAR unset). research/docs/plan-settings-menu.md section 9. The menu (gow3_overlay.cpp
-/// RequestOutput) switches the others live through r.SetRes.
-const char* OutputRestartReason();
+/// The output size differs from the one this launch started at. Restart-only (the user, 2026-11-13): the game
+/// boots at it (run.py, the boot display size patch); a live r.SetRes kept the game's menus at the boot size (I1)
+/// and its memory as sized at boot (research/docs/plan-settings-menu.md section 10).
+bool OutputNeedsRestart();
 /// MediEvil render scale (medievil.ini render_scale; launcher > Performance, in-game menu > Applied
 /// now): any whole percent from RenderScaleMin to RenderScaleMax, the range of UE4 4.21's temporal
 /// upsampling (resolution fraction 0.5-2). The ini still starts 25-49 (graphics_options.py

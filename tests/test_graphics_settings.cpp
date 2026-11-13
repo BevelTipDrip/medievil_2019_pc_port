@@ -226,45 +226,27 @@ int main() {
         std::remove(path);
     }
 
-    // The output size switches live (the menu's RequestOutput) except where a live switch ran out of memory.
+    // The output size is restart-only (the user, 2026-11-13): any change from the start's value, custom ones too.
     {
         namespace S = Gow3Settings;
-        int w = 0, h = 0;
-        S::OutputSize("2560x1440", w, h);
-        assert(w == 2560 && h == 1440);
-        S::OutputSize("bogus", w, h);
-        assert(w == 1920 && h == 1080);
-        v.display_width = 3841;
-        v.display_height = 2160;
-        S::OutputSize("display", w, h);
-        assert(w == 3840 && h == 2160);
         {
             std::ofstream out(path);
             out << "output_resolution=1920x1080\nrender_scale=100\n";
         }
-        _putenv_s("GOW3_UE4_SETRES_CVAR", "0x5c28328");
-        _putenv_s("GOW3_PATCHES", "Native 4K framebuffer pool (512 MB);GPU particle bounds");
         S::Load();
-        assert(!S::OutputRestartReason() && S::RestartChanges() == 0);
-        v.output_resolution = 1; // 4K: live
-        assert(!S::OutputRestartReason() && S::RestartChanges() == 0 && S::OutputValue() == "3840x2160");
-        _putenv_s("GOW3_PATCHES", "GPU particle bounds"); // the stock 128 MB pool: 4K at the next start
-        assert(S::OutputRestartReason() && S::RestartChanges() == 1);
-        v.output_resolution = 3; // 1440p fits the stock pool
-        assert(!S::OutputRestartReason());
-        _putenv_s("GOW3_PATCHES", "Native 4K framebuffer pool (512 MB)");
+        assert(!S::OutputNeedsRestart() && S::RestartChanges() == 0 && S::OutputValue() == "1920x1080");
+        v.output_resolution = 1; // 4K
+        assert(S::OutputNeedsRestart() && S::RestartChanges() == 1 && S::OutputValue() == "3840x2160");
+        v.output_resolution = 4; // back to the start's
+        assert(!S::OutputNeedsRestart() && S::RestartChanges() == 0);
         {
             std::ofstream out(path);
-            out << "output_resolution=1920x1080\nrender_scale=200\n";
+            out << "output_resolution=2560x1080\n"; // custom: kept as written
         }
-        S::Load(); // started above 100%: larger sizes at the next start, smaller ones live
-        v.output_resolution = 2;
-        assert(S::OutputRestartReason() && S::RestartChanges() == 1);
-        v.output_resolution = 5;
-        assert(!S::OutputRestartReason() && S::RestartChanges() == 0);
-        _putenv_s("GOW3_UE4_SETRES_CVAR", ""); // no r.SetRes in this build: every change at the next start
-        assert(S::OutputRestartReason());
-        _putenv_s("GOW3_PATCHES", "");
+        S::Load();
+        assert(v.output_resolution == -1 && S::OutputValue() == "2560x1080" && !S::OutputNeedsRestart());
+        v.output_resolution = 0;
+        assert(S::OutputNeedsRestart());
         std::remove(path);
     }
     std::puts("PASS: graphics settings");
