@@ -431,11 +431,16 @@ def startup_options(ini):
 # on stays off in an older install without the user ever choosing that. Each step sets such keys once; the version
 # then records it, so a later deliberate off stays. Only verified fixes whose released default was off are listed;
 # patches on by default all along are never forced (an off there is the user's choice).
-SETTINGS_VERSION = 1
+SETTINGS_VERSION = 2
 SETTINGS_STEPS = {
     # 2026-11-13: the single particle pass (off in v2.0.0-v2.3.0, on with the guard: the user's decision) and the
     # particle flip guard (a launcher Deck switch until then, an unchecked one migrated as an explicit 0).
     1: {'perf_particle_single_pass': '1', 'perf_particle_flip_guard': '1'},
+    # 2026-11-13: "Game reads GPU data without waiting" (0 in v1.3.8 and v2.0.0, 1 from v2.1.0). The user: the issues
+    # it can cause are patched (readback-first-wait: the Hall of Heroes / white-wall lighting; hzb-remap: culling;
+    # W2: the host-copy wait whose removal broke the torches). A step of its own: version 1 had already run on the
+    # user's install when it was added.
+    2: {'stale_readback': '1'},
 }
 
 

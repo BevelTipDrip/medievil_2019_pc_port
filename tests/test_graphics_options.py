@@ -179,7 +179,7 @@ class SettingsVersionTest(unittest.TestCase):
         self.ini.write_text('# comment\nperf_particle_single_pass=0\nperf_hzb_occlusion=0\nvsync=0\n', encoding='utf-8')
         written = g.migrate_settings(self.ini)
         self.assertEqual(written, {'perf_particle_single_pass': '1', 'perf_particle_flip_guard': '1',
-                                   'settings_version': str(g.SETTINGS_VERSION)})
+                                   'stale_readback': '1', 'settings_version': str(g.SETTINGS_VERSION)})
         ini = g.read_ini(self.ini)
         self.assertEqual((ini['perf_particle_single_pass'], ini['perf_particle_flip_guard']), ('1', '1'))
         self.assertEqual(ini['perf_hzb_occlusion'], '0')  # on by default all along: an off there is the user's
@@ -205,15 +205,31 @@ class SettingsVersionTest(unittest.TestCase):
         g.prepare(self.ini, self.state)
         self.assertEqual(g.read_ini(self.ini)['perf_particle_single_pass'], '0')
 
+    def test_an_ini_at_version_1_gets_only_step_2(self):
+        # Version 1 already ran (the user's install): the particle keys the user set since stay; stale readbacks
+        # (an older launcher's 0) go on once.
+        self.ini.write_text('settings_version=1\nperf_particle_single_pass=0\nstale_readback=0\n', encoding='utf-8')
+        self.assertEqual(g.migrate_settings(self.ini), {'stale_readback': '1', 'settings_version': '2'})
+        ini = g.read_ini(self.ini)
+        self.assertEqual((ini['perf_particle_single_pass'], ini['stale_readback']), ('0', '1'))
+        options, _ = g.prepare(self.ini, self.state)  # run.py starts with it on
+        self.assertEqual(options['stale_readback'], '1')
+        g.write_keys(self.ini, {'stale_readback': '0'})  # switched off later: stays off
+        self.assertEqual(g.prepare(self.ini, self.state)[0]['stale_readback'], '0')
+
     def test_versions_and_bad_values(self):
         self.assertEqual(g.settings_migration({'settings_version': str(g.SETTINGS_VERSION)}), {})
         self.assertEqual(g.settings_migration({'settings_version': 'x'})['settings_version'], str(g.SETTINGS_VERSION))
         self.assertEqual(sorted(g.SETTINGS_STEPS), list(range(1, g.SETTINGS_VERSION + 1)))
-        for step in g.SETTINGS_STEPS.values():  # only patches that are on by default now
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'launcher'))
+        import medievil_launcher
+        for step in g.SETTINGS_STEPS.values():  # only switches that are on by default now
             for key, value in step.items():
-                self.assertIn(key, g.PERF_SWITCHES)
-                self.assertNotIn(key, g.PERF_DEFAULT_OFF)
                 self.assertEqual(value, '1')
+                self.assertEqual(medievil_launcher.INI_DEFAULTS[key], '1', key)
+                self.assertNotIn(key, g.PERF_DEFAULT_OFF)
+        self.assertEqual(g.DEFAULTS['stale_readback'], '1')
 
 
 if __name__ == '__main__':
