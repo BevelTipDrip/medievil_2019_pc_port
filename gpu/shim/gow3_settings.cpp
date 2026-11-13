@@ -207,6 +207,8 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         }
     } else if (key == "rcas_strength") {
         v.rcas_strength = Gow3Graphics::ParseRcasStrength(value.empty() ? -1 : i);
+    } else if (key == "fsr_sharpness") {
+        v.fsr_sharpness = Gow3Graphics::ParseFsrSharpness(value.empty() ? -1 : i);
     } else if (key == "frames_queued") {
         v.frames_queued = Gow3Graphics::ParseFramesQueued(value.empty() ? -1 : i);
     } else if (key == "render_resolution") {
@@ -611,8 +613,8 @@ std::map<std::string, std::string> Serialize(const Values& v) {
            Gow3Graphics::Resolutions[std::clamp(v.render_resolution.load(), 0, int(Gow3Graphics::Resolutions.size()) - 1)].data(),
            v.engine_fps.load(), int(v.deferred_readback.load()), int(v.stale_readback.load()),
            int(v.restart_unconfirmed.load()));
-    Append(out, "ue4_upscaler=%s\n",
-           Ue4UpscalerKeys[std::clamp(v.ue4_upscaler.load(), 0, Ue4UpscalerCount - 1)]);
+    Append(out, "ue4_upscaler=%s\nfsr_sharpness=%d\n",
+           Ue4UpscalerKeys[std::clamp(v.ue4_upscaler.load(), 0, Ue4UpscalerCount - 1)], v.fsr_sharpness.load());
     // Read by run.sh at start.
     Append(out, "live_resolution=%s\n", v.live_resolution < 0 ? "auto" : v.live_resolution ? "1" : "0");
     for (int p = 0; p < PerfCount; ++p) {

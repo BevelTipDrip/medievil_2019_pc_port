@@ -167,7 +167,7 @@ INI_DEFAULTS = {'show_fps': '1', 'display_mode': 'windowed', 'vsync': '1', 'fps_
                 'async_shaders': '1', 'deferred_readback': '1', 'stale_readback': '1',
                 'output_resolution': '1920x1080', 'render_scale': '100', 'engine_fps': '60', 'fsr1': '0',
                 'rcas': '1', 'rcas_strength': '75', 'frames_queued': '1', 'ue4_quality': 'console',
-                'ue4_upscaler': 'taa',
+                'ue4_upscaler': 'taa', 'fsr_sharpness': '25',
                 'effects_resolution': '75',
                 'cheat_very_hard': '0', 'cheat_double_jumps': '0', 'cheat_menu': '0', 'cheat_infinite_ammo': '0',
                 'ue4_aa': 'taa', 'ue4_voice': '', 'button_prompts': 'playstation'}
@@ -1693,25 +1693,32 @@ class Launcher:
                    _('Enlarges a smaller game image to the window. With Render resolution 720p (Performance) '
                      'it raises the FPS; at the size of the window it does nothing.'))
         self.check(f, 'rcas', 'ini', _('Final image sharpening (RCAS)'),
-                   _('With AMD FSR the strength below sets FSR\'s own sharpening; with the game\'s TAA or NVIDIA DLSS '
-                     'it sharpens the final image.'))
+                   _('Sharpens the final image with the game\'s TAA or NVIDIA DLSS. Off while AMD FSR runs: FSR has '
+                     'its own sharpening (AMD FSR sharpening).'))
+
+        def percent_slider(key):
+            holder = ttk.Frame(f)
+            strength = self.var(key, 'ini')
+            tk.Scale(holder, from_=0, to=100, orient='horizontal', variable=strength, showvalue=False,
+                     length=self.px(260), width=self.px(12), sliderlength=self.px(18), bg=ACCENT, troughcolor=CARD,
+                     activebackground=ACCENT_HI, highlightthickness=0, bd=0, sliderrelief='flat').pack(side='left')
+            value = ttk.Label(holder, width=5)
+            value.pack(side='left', padx=10)
+            show = lambda *_a: value.configure(text=f'{strength.get()}%')
+            strength.trace_add('write', show)
+            show()
+            return holder
+
+        self.row(f, _('Sharpening strength'), percent_slider('rcas_strength'))
         self.row(f, _('Anti-aliasing / upscaler'), self.choice(f, 'ue4_upscaler', 'ini', UPSCALERS),
                  _('Replaces the game\'s anti-aliasing: native anti-aliasing at Render scale 100, upscaling below '
-                   'it (NVIDIA DLSS: Quality / Balanced / Performance from the scale). Sharpening is off while it '
-                   'runs. DLSS needs an NVIDIA RTX GPU and gow3_dlss.dll + nvngx_dlss.dll next to '
+                   'it (NVIDIA DLSS: Quality / Balanced / Performance from the scale). AMD FSR sharpens by its own '
+                   'strength, DLSS and the game\'s TAA with the sharpening above. DLSS needs an NVIDIA RTX GPU and '
+                   'gow3_dlss.dll + nvngx_dlss.dll next to '
                    'medievil-runtime.exe (the bin folder; nvngx_dlss.dll is not included: see README-Windows.txt). '
                    'One the system cannot run falls back to the game\'s TAA. F9 switches it in the game.'))
-        holder = ttk.Frame(f)
-        strength = self.var('rcas_strength', 'ini')
-        tk.Scale(holder, from_=0, to=100, orient='horizontal', variable=strength, showvalue=False, length=self.px(260),
-                 width=self.px(12), sliderlength=self.px(18), bg=ACCENT, troughcolor=CARD, activebackground=ACCENT_HI,
-                 highlightthickness=0, bd=0, sliderrelief='flat').pack(side='left')
-        value = ttk.Label(holder, width=5)
-        value.pack(side='left', padx=10)
-        show = lambda *_a: value.configure(text=f'{strength.get()}%')
-        strength.trace_add('write', show)
-        show()
-        self.row(f, _('Sharpening strength'), holder)
+        self.row(f, _('AMD FSR sharpening'), percent_slider('fsr_sharpness'),
+                 _('FSR\'s own sharpening while AMD FSR runs, apart from the RCAS strength. 0 turns it off.'))
         self.section(f, _('Overlay'))
         self.check(f, 'show_fps', 'ini', _('Show performance overlay'),
                    _('Items, size and corner: in-game menu (Insert / R3+L2) > Overlay.'))

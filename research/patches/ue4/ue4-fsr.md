@@ -9,8 +9,8 @@ default_deck: off
 origin: ours
 class: M
 commits:
-files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_fsr.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shim/gow3_overlay.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp, launcher/medievil_launcher.py
-symbols: FsrBackend, MakeFsrBackend, SharpensItself, sharpness, Describe, ffxVkPortableUpscaleContextCreate, ffxVkPortableUpscaleContextRecordDispatch, near_plane, fov_y
+files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_fsr.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shim/gow3_overlay.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp, launcher/medievil_launcher.py, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_graphics.h
+symbols: FsrBackend, MakeFsrBackend, SharpensItself, sharpness, fsr_sharpness, ParseFsrSharpness, Describe, ffxVkPortableUpscaleContextCreate, ffxVkPortableUpscaleContextRecordDispatch, near_plane, fov_y
 switches: GOW3_FSR
 tests:
 docs: plan-fsr.md
@@ -33,8 +33,9 @@ III upscaler):
   `ViewToClip[1][1]` (View offset 384 + 20), `viewSpaceToMeters` 0.01, pre-exposure 1.
 - Every image in VK_IMAGE_LAYOUT_GENERAL: FidelityFX's Vulkan backend maps GENERIC_READ and UNORDERED_ACCESS to
   GENERAL and returns each image to its state after the dispatch.
-- No reactive mask (step 4). The menu's sharpening is FSR's own RCAS (`sharpness` = strength / 100, the same
-  look as the presenter's RCAS at that strength), the presenter's RCAS off while FSR runs (F2b).
+- No reactive mask (step 4). Sharpening is FSR's own RCAS at its own strength, `fsr_sharpness` (0-100, 0 = off,
+  default 25; menu Image tab and launcher "AMD FSR sharpening"): `sharpness` = strength / 100, the same look as the
+  presenter's RCAS at that strength. The presenter's RCAS and its strength stay off while FSR runs (F2b, F2c).
 - Available where the device enables `shaderStorageImageWriteWithoutFormat` (FSR 3's accumulate shaders); `GOW3_FSR=0`
   leaves it out.
 
@@ -46,13 +47,15 @@ III upscaler):
 ## Interactions
 
 - ue4-dlaa: the same front end and hooks; switching between DLSS and FSR resets the history ("upscaler changed").
-- The presenter's RCAS stays off while FSR runs (`Ue4Upscaler::Running`), as with DLSS.
+- The presenter's RCAS stays off while FSR runs (`Ue4Upscaler::SharpensItself`); over DLSS it runs (F2b).
 - The God of War III upscaler (vk_temporal_upscaler, off for MediEvil) links the same library; both can exist, only
   this one runs for MediEvil.
 
 ## Evidence
 
-- Fix built (plan-fsr.md step 2), not run.
+- T-F2 (plan-fsr.md step 2): FSR 3.1 runs at 75%, 50% and native.
+- T-F6: FSR's own sharpening from the menu's strength verified (the user). F2c, its own slider apart from RCAS
+  (`fsr_sharpness`): verified in T-F7 (menu and launcher).
 
 ## History and pitfalls
 
