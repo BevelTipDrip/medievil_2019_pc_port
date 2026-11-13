@@ -16,7 +16,7 @@ tests:
 docs: plan-frame-pacing.md#the-launchers-gpu-data-settings-read-2026-10-18-the-user-asked, plan-frame-pacing.md#p0-results-2026-10-18-1122-1138-launched-by-claude-with-the-users-go, plan-linux-deck.md#proton-runs-3-4-2026-11-03-settings-changed-by-the-user-while-exploring
 depends_on:
 related: W2, P2, R1-stale-eop, R1-readback, C1-semaphore-poll, C5, hzb-remap, tiny-target-readback, readback-first-wait, gpu-write-subresources, upstream-texture-gc, D3, uffd
-checked: 2026-11-07
+checked: 2026-11-13
 ---
 ## What it does
 
@@ -32,6 +32,9 @@ Relaxed / 2 Precise) is the separate buffer readback mode.
 ## Invariants
 
 - `stale_readbacks` needs `deferred_readbacks` (`deferred_readbacks && env`). Writes always wait: no byte lost.
+- Since 2026-11-13 the ini's `stale_readback` is set to 1 once in older files (`graphics_options.SETTINGS_STEPS`
+  step 2, `settings_version`), the user's call: the issues it caused are patched (readback-first-wait, hzb-remap,
+  W2). Its safety rests on those fixes staying on.
 - The C++ default with no variable is off for both (`value[0] == '1'`). Launches get them from `run.py`, which
   `env.update`s them from medievil.ini (`graphics_options.environment`): a value set in the environment before
   `run.py` is replaced by the ini's.

@@ -516,14 +516,14 @@ plan-settings-menu.md	269	3	93-frame-buffer-size-live-switch-against-a-start-at-
 plan-settings-menu.md	286	3	94-particle-flip-guard-single-particle-pass-deck-switches	9.4 Particle flip guard, single particle pass, Deck switches
 plan-settings-menu.md	306	3	95-polish-fixes-and-the-workbooks-oddities	9.5 Polish fixes and the workbook's oddities
 plan-settings-menu.md	319	3	96-tests-for-the-user-each-launch-needs-the-users-go	9.6 Tests for the user (each launch needs the user's go)
-plan-settings-menu.md	358	3	97-state	9.7 State
-plan-settings-menu.md	362	2	10-the-users-decisions-on-the-report-2026-11-13-fix-built-not-run	10. The user's decisions on the report (2026-11-13, fix built, not run)
-plan-settings-menu.md	364	3	101-frame-buffer-size-restart-only	10.1 Frame buffer size: restart-only
-plan-settings-menu.md	374	3	102-menu-input-the-launchers-binds-only	10.2 Menu input: the launcher's binds only
-plan-settings-menu.md	396	3	103-apply--restart-square--touchpad-held-5-s	10.3 APPLY & RESTART: Square + Touchpad held 5 s
-plan-settings-menu.md	409	3	104-one-time-update-of-older-medievilini-files-settings_version	10.4 One-time update of older medievil.ini files (settings_version)
-plan-settings-menu.md	432	3	105-prompt-glyphs-the-physical-button-or-key-a-ps-button-is-bound-to	10.5 Prompt glyphs: the physical button or key a PS button is bound to
-plan-settings-menu.md	449	3	106-state	10.6 State
+plan-settings-menu.md	362	3	97-state	9.7 State
+plan-settings-menu.md	366	2	10-the-users-decisions-on-the-report-2026-11-13-fix-built-not-run	10. The user's decisions on the report (2026-11-13, fix built, not run)
+plan-settings-menu.md	368	3	101-frame-buffer-size-restart-only	10.1 Frame buffer size: restart-only
+plan-settings-menu.md	378	3	102-menu-input-the-launchers-binds-only	10.2 Menu input: the launcher's binds only
+plan-settings-menu.md	405	3	103-apply--restart-square--touchpad-held-5-s	10.3 APPLY & RESTART: Square + Touchpad held 5 s
+plan-settings-menu.md	418	3	104-one-time-update-of-older-medievilini-files-settings_version	10.4 One-time update of older medievil.ini files (settings_version)
+plan-settings-menu.md	445	3	105-prompt-glyphs-the-physical-button-or-key-a-ps-button-is-bound-to	10.5 Prompt glyphs: the physical button or key a PS button is bound to
+plan-settings-menu.md	462	3	106-state	10.6 State
 plan-stage-b-split.md	1	1	plan-stage-bs-work-across-threads-feasibility-study	Plan: stage B's work across threads (feasibility study)
 plan-stage-b-split.md	7	2	why	Why
 plan-stage-b-split.md	13	2	profile-t-p3-2026-10-19-2100-2102-launched-by-claude-with-the-users-go-build-32eaea9--samples-log-datat-p3-stageb-profilelog-samples-in-research-datasamplest-p3-stageb-profile	Profile T-P3 (2026-10-19 21:00-21:02, launched by Claude with the user's go; build `32eaea9`; `-Samples`; log `data/t-p3-stageb-profile.log`, samples in `research-data\samples\t-p3-stageb-profile`)

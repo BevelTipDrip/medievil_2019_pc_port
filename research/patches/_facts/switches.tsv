@@ -62,11 +62,11 @@ GOW3_FLIP_TRACE	upstream	gpu/shim/gow3_flip_trace.h:24
 GOW3_FORCE_ANISO	upstream	gpu/shadps4/video_core/texture_cache/sampler.cpp:20
 GOW3_FPS_CAP	upstream	gpu/shim/core/emulator_settings.h:52
 GOW3_FPS_LIMIT	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1478 gpu/shim/core/emulator_settings.h:46
-GOW3_FPS_LOG	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp:356 gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp:632 gpu/shim/gow3_overlay.cpp:3128 src/runtime_extra.c:746
+GOW3_FPS_LOG	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp:356 gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp:632 gpu/shim/gow3_overlay.cpp:3141 src/runtime_extra.c:746
 GOW3_FRAMES_AHEAD	upstream	gpu/shim/gow3_settings.cpp:409 tests/test_graphics_settings.cpp:104 tests/test_graphics_settings.cpp:113
-GOW3_FRAME_CAPTURE_KEY	upstream	gpu/shim/gow3_overlay.cpp:2863
+GOW3_FRAME_CAPTURE_KEY	upstream	gpu/shim/gow3_overlay.cpp:2867
 GOW3_FRAME_DUMP_COUNT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:501
-GOW3_FRAME_DUMP_TRIGGER	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:497 gpu/shim/gow3_overlay.cpp:2899
+GOW3_FRAME_DUMP_TRIGGER	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:497 gpu/shim/gow3_overlay.cpp:2903
 GOW3_FRAME_STATS	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:400 gpu/shadps4/video_core/renderer_vulkan/vk_draw_prep.cpp:507 gpu/shadps4/video_core/renderer_vulkan/vk_occlusion.cpp:258 gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:497 gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:993 gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:1894 gpu/shadps4/video_core/texture_cache/texture_cache.cpp:2532 gpu/shim/gow3_toggles.h:310 src/runtime_memory.c:2202
 GOW3_FSR	ours	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_fsr.cpp:166
 GOW3_FSR1	upstream	gpu/shim/gow3_settings.cpp:408
@@ -363,21 +363,21 @@ toggle2:DrainWakeAheadDefault	toggle-upstream	gpu/shim/gow3_toggles.h:182
 toggle2:SignalSleepOff	toggle-upstream	gpu/shim/gow3_toggles.h:186
 perf_particle_single_pass	ini-upstream	scripts/graphics_options.py:438
 perf_particle_flip_guard	ini	scripts/graphics_options.py:438
-perf_hzb_occlusion	ini-upstream	scripts/graphics_options.py:522
-perf_no_decal_prepass	ini-upstream	scripts/graphics_options.py:523
-perf_small_buffers	ini-upstream	scripts/graphics_options.py:525
-perf_texture_memo	ini-upstream	scripts/graphics_options.py:526
-perf_lockfree_memory	ini-upstream	scripts/graphics_options.py:527
-perf_cheap_frees	ini-upstream	scripts/graphics_options.py:528
-perf_gpu_data_no_waits	ini-upstream	scripts/graphics_options.py:529
-perf_4k_memory	ini-upstream	scripts/graphics_options.py:531
-perf_lean_barriers	ini-upstream	scripts/graphics_options.py:532
-perf_lean_binding	ini-upstream	scripts/graphics_options.py:533
-perf_ring_reuse	ini-upstream	scripts/graphics_options.py:534
-present_limiter	ini-upstream	scripts/graphics_options.py:609
-present_tick_hz	ini-upstream	scripts/graphics_options.py:609
-present_precise_tick	ini-upstream	scripts/graphics_options.py:609
-present_inline	ini-upstream	scripts/graphics_options.py:610
-present_no_frame_caps	ini-upstream	scripts/graphics_options.py:610
-present_mode	ini-upstream	scripts/graphics_options.py:610
-present_frame_trace	ini-upstream	scripts/graphics_options.py:611
+perf_hzb_occlusion	ini-upstream	scripts/graphics_options.py:527
+perf_no_decal_prepass	ini-upstream	scripts/graphics_options.py:528
+perf_small_buffers	ini-upstream	scripts/graphics_options.py:530
+perf_texture_memo	ini-upstream	scripts/graphics_options.py:531
+perf_lockfree_memory	ini-upstream	scripts/graphics_options.py:532
+perf_cheap_frees	ini-upstream	scripts/graphics_options.py:533
+perf_gpu_data_no_waits	ini-upstream	scripts/graphics_options.py:534
+perf_4k_memory	ini-upstream	scripts/graphics_options.py:536
+perf_lean_barriers	ini-upstream	scripts/graphics_options.py:537
+perf_lean_binding	ini-upstream	scripts/graphics_options.py:538
+perf_ring_reuse	ini-upstream	scripts/graphics_options.py:539
+present_limiter	ini-upstream	scripts/graphics_options.py:614
+present_tick_hz	ini-upstream	scripts/graphics_options.py:614
+present_precise_tick	ini-upstream	scripts/graphics_options.py:614
+present_inline	ini-upstream	scripts/graphics_options.py:615
+present_no_frame_caps	ini-upstream	scripts/graphics_options.py:615
+present_mode	ini-upstream	scripts/graphics_options.py:615
+present_frame_trace	ini-upstream	scripts/graphics_options.py:616

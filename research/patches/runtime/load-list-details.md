@@ -8,15 +8,15 @@ default_windows: on
 default_deck: on
 origin: ours
 class: M
-commits: 3cbd9ffeca
+commits: 3cbd9ffeca, dc330e1
 files: src/runtime_saveinfo.c, src/runtime_services.c, src/runtime_savedata.c, src/runtime.h, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3gpu.cpp, gpu/gow3gpu.h, tests/test_services.c
 symbols: runtime_saveinfo_read, runtime_saveinfo_text, runtime_saveinfo_level_name, runtime_saveinfo_picture, runtime_savedata_dir, save_entry, gow3gpu_choice_style, SetChoiceStyle, StyledChoiceBox, DetailedChoiceBox, ChoiceStep
 switches:
 tests: T-SV5
 docs: study-save-slots.md#t-sv5-details-level-pictures-and-the-games-menu-look-2026-11-10-launched-by-claude-with-the-users-go-logs-dataload-details-1-0102log-dataload-style-1-0102log-dataload-style-2-0102log
 depends_on: load-list-continue, game-ui-cache
-related: save-date-last-write, settings-menu
-checked:
+related: save-date-last-write, settings-menu, button-prompts
+checked: 2026-11-13
 ---
 ## What it does
 
@@ -27,6 +27,11 @@ chalice. With the game UI cache present the list is drawn in the Options menu's 
 button prompts); otherwise in the plain overlay style.
 
 ## Invariants
+
+- Input (2026-11-13, the settings menu's rules): `PollChoiceInput` reads `list_buttons` (the launcher's binds and the
+  arrows / Enter / Esc fallbacks where no bind takes the key, `menu_fixed_keys`); `HandleChoiceEvent` ignores keys
+  while that poll exists (it doubled bound keys) and has only the fallbacks without it. Tab, W, S, Space and
+  Backspace are no fixed keys any more; Square (details) is whatever is bound to it.
 
 - runtime_saveinfo.c scans GVAS tagged properties in file order and enters containers; map / array inner type
   names ("EnumProperty", "StructProperty") are skipped. `HealthVials` is the life bottle count; `LastLevelPlayed`

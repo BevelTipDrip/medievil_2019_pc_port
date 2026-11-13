@@ -8,7 +8,7 @@ default_windows: on
 default_deck: mixed
 origin: ours
 class: G
-commits: 27ec51e36d, 1e657ca5ef, e9d86996a4, a39d538, 0bff4d6, 2364371
+commits: 27ec51e36d, 1e657ca5ef, e9d86996a4, a39d538, 0bff4d6, 2364371, fc4351d
 files: scripts/graphics_options.py, launcher/medievil_launcher.py, run.py, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_settings.h, gpu/shim/gow3_overlay.cpp, src/runtime_memory.c, tests/test_launcher_controls.py, tests/test_graphics_settings.cpp
 symbols: PERF_SWITCHES, PERF_DEFAULT_OFF, PERF_ON_SWITCHES, SETTINGS_STEPS, SETTINGS_VERSION, settings_migration, migrate_settings, perf_environment, PERF_PATCHES, PerfPatch, PerfKeys, PerfLive, PerfOn, perf_off, RestartChanges, PerformanceTab, runtime_memory_set_perf, TakeBaseline, Baseline, Serialize, collect
 switches: perf_hzb_occlusion, perf_no_decal_prepass, perf_particle_single_pass, perf_small_buffers, perf_texture_memo, perf_lockfree_memory, perf_cheap_frees, perf_gpu_data_no_waits, perf_4k_memory, perf_lean_barriers, perf_lean_binding, perf_ring_reuse, perf_particle_flip_guard

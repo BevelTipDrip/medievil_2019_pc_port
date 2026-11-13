@@ -121,6 +121,9 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
     mode the user's ini never tests.
     **Fix built `8600b28` (2026-11-07), not run:** the launcher default is now 1, as run.py and the Deck preset (the
     user's call: upstream's reason for 0 is likely patched since; not checked). Inis with the key are unchanged.
+    **2026-11-13:** older inis with `stale_readback=0` written by the launcher get it on once (`settings_version` 2,
+    run.py / launcher; the user: the issues it caused are patched: readback-first-wait, hzb-remap, W2). A later 0
+    stays.
 16. **Newest-frame + the default inline present** can run `Presenter::Present` on two threads at once;
     one-clock + `GOW3_NEWEST_FRAME` gives two clocks again; one-clock + `GOW3_VBLANK_SYNC` never flips
     ([newest-frame](present/newest-frame.md), [one-clock](present/one-clock.md)). Never run.

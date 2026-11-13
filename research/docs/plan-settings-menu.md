@@ -327,10 +327,12 @@ Back up medievil.ini first; note `button_prompts`, the launcher's binds (Control
 - **T-SM5 Frame buffer size (restart-only).** Display > Frame buffer size 1440p: nothing switches now, RESTART tag,
   the APPLY & RESTART prompt appears. Hold it (T-SM7): the game restarts and the log says "Output resolution:
   2560x1440"; the game's own menus navigate at that size. Back to the old size the same way.
-- **T-SM6 Binds only.** With the launcher's default keys: I / K / J / L move and change, Space changes, Left Shift
-  and Esc close, 1 / 3 switch tabs; the arrows, Enter, Q, E and Tab do nothing by themselves. Rebind a key in the
-  launcher (e.g. Cross to Enter): it works in the menu and its glyph shows in the prompt bar. A non-left mouse
-  button bound to Circle closes; left click, wheel and the scroll bar work on the menu itself.
+- **T-SM6 Binds and fallbacks.** With the launcher's default keys: I / K / J / L and the arrows move and change,
+  Space and Enter (and keypad Enter) change, Left Shift and Esc close, 1 / 3 switch tabs; Backspace, Q, E and Tab
+  alone do nothing (E and Tab only as Square / Touchpad, the restart hold). Bind an arrow to Square in the launcher:
+  that arrow is Square in the menu, not a direction. Rebind Cross to another key: it works and its glyph shows in the
+  prompt bar (never the fallback keys). A non-left mouse button bound to Circle closes; left click, wheel and the
+  scroll bar work on the menu itself. The Load list (title screen) the same way: binds, arrows, Enter, Esc.
 - **T-SM7 APPLY & RESTART held.** Change Engine frame rate: "[Square]+[Touchpad] HOLD: APPLY & RESTART" appears.
   Hold Square + Touchpad (pad: Square + Share / Create; keys: E + Tab): the prompt fills over 5 s, the help says
   keep holding; let go at 3 s: it empties, nothing happens; hold the full 5 s: the game restarts with the new
@@ -342,15 +344,17 @@ Back up medievil.ini first; note `button_prompts`, the launcher's binds (Control
 - **T-SM10 Deck switches and the guard.** Performance > Deck tuned: seven rows on Windows. Turn one on, APPLY &
   RESTART: the log's "Deck switches: 1 on: ..."; the launcher's Performance page shows it ticked. With an old
   settings.json (`deck_switches: true`), the launcher's first start moves them into medievil.ini.
-- **T-SM11 New defaults and the one-time update (PC).** A copy of an ini with `perf_particle_single_pass=0` and no
-  `settings_version`: the first start logs "Settings: one-time update to settings_version 1: ...", the pass and the
-  flip guard are on (log: guard installed, no `GOW3_PARTICLE_FIXED_STEP`); the lone torch and Dan's crypt floor look
+- **T-SM11 New defaults and the one-time update (PC).** A copy of an ini with `perf_particle_single_pass=0`,
+  `stale_readback=0` and no `settings_version`: the first start logs "Settings: one-time update to settings_version
+  2: ...", the pass, the flip guard and stale readbacks are on (an ini already at version 1, like the user's: only
+  stale readbacks); the Hall of Heroes lighting stays right (readback-first-wait) (log: guard installed, no `GOW3_PARTICLE_FIXED_STEP`); the lone torch and Dan's crypt floor look
   right (T-0102-1's spots); frame times as before. Turn the pass off in the menu, restart: it stays off.
 - **T-SM16 Prompt glyphs.** PlayStation style, default binds: the restart prompt shows Square + SHARE, and the
   game's own HUD prompts that show the touchpad show SHARE too; rebind Cross to the Circle button on the pad: both
   show Circle there. Keyboard style: E + Tab; with a mouse button bound to Square and "Prefer mouse binds", its
   mouse icon.
-- **T-SM12 Load list unchanged** (T-SV5's look and input). **T-SM13 Plain look** (rename `user/cache/game_ui`: the
+- **T-SM12 Load list** (T-SV5's look; input now as T-SM6: binds and the arrows / Enter / Esc fallbacks, Square
+  for the details as bound, prompts in the bound glyphs). **T-SM13 Plain look** (rename `user/cache/game_ui`: the
   ImGui menu, the new tabs, the held restart button). **T-SM14 Steam Deck** (1280x800: text size, help lines,
   prompts inside the frame, all of T-SM3's pad steps, Deck tuned shows all ten; Steam Input's mapping of the
   touchpad / Share for T-SM7). **T-SM15 Custom combo** (`GOW3_MENU_PAD=back+start`).
@@ -373,25 +377,30 @@ was its only caller (the start path `GOW3_UE4_SETRES` calls `ue4_setres` directl
 
 ### 10.2 Menu input: the launcher's binds only
 
+**Updated (the user, later the same day):** the arrows (D-pad) and Enter / keypad Enter (Cross) stay as standard
+fallbacks in both menus, the Load list follows the same rules, and a bind wins over a fallback (an arrow bound to
+Square is Square). "A bind wins" counts binds to the menus' buttons only: Enter is bound to Options by default,
+which the menus do not use, so Enter is Cross there. Prompts always show the bound glyphs, never the fallbacks.
+
 A key or mouse button does in the menu what the PS button it is bound to does (pad, keys, mouse as mapped:
 `menu_buttons`), and the prompts show that bind's glyph (`prompts/style/`, written by `ue4_glyphs.overlay_prompts`
 in the launcher's prompt style). Every hard-coded key found, and what happened to it:
 
 | Where | Key | Did | Now |
 |---|---|---|---|
-| runtime_pad.c `menu_keys` | Up / Down / Left / Right | D-pad | removed (the D-pad's binds: I / K / J / L by default) |
-| runtime_pad.c `menu_keys` | Enter, keypad Enter | Cross | removed (Cross: Space by default) |
+| runtime_pad.c `menu_keys` | Up / Down / Left / Right | D-pad | **kept as a fallback** (removed, then restored by the user): only while the key is not bound to a menu button |
+| runtime_pad.c `menu_keys` | Enter, keypad Enter | Cross | **kept as a fallback**, same rule |
 | runtime_pad.c `menu_keys` | Backspace | Circle | removed (Circle: Left Shift) |
 | runtime_pad.c `menu_keys` | Q / E | L1 / R1 | removed (L1 / R1: 1 / 3) |
 | runtime_pad.c `menu_keys` | Tab | Square (added in `33491a9`) | removed; Tab is the Touchpad's default bind |
-| runtime_pad.c `menu_keys` | Esc | Circle | **kept**: closes, as in the Load list (`HandleChoiceEvent`), while Esc is not bound to a menu button |
+| runtime_pad.c `menu_keys` | Esc | Circle | **kept** as a fallback, same rule |
 | runtime_pad.c `menu_mouse_buttons` | non-left mouse buttons | Circle / L1 / R1 / Square only | every menu button as bound; the left button stays the pointer's |
 | runtime_pad.c `sample_host` (game input) | Tab | touched the pad (left) whatever the binds said | now the Touchpad's default bind in `key_map` (same effect by default; a rebind or "none" in the launcher now really moves or removes it) |
-| gow3_overlay.cpp `HandleEvent` fallback (only without the runtime's poll) | arrows, Enter, Esc, Q, E, Tab | menu buttons | Esc only; the pad fallback (raw SDL buttons as the default map) kept, unreachable in the game |
+| gow3_overlay.cpp `HandleEvent` fallback (only without the runtime's poll) | arrows, Enter, Esc, Q, E, Tab | menu buttons | the arrows, Enter and Esc; the pad fallback (raw SDL buttons as the default map) kept, unreachable in the game |
 | gow3_overlay.cpp | the menu key (Insert / `GOW3_MENU_KEY`), F8-F12 | open / close; global hotkeys | kept: no PS button (the pad's equivalent is the L2+R3 combo) |
 | runtime_pad.c `menu_buttons` | the left stick | D-pad | kept (a stick, not a key; the Load list reads it too) |
 | runtime_pad.c `sample_host` (game input) | Backspace, W / A / S / D, arrows | touchpad right half, left stick, right stick | unchanged: game input with no PS button of their own, not read by the menu |
-| gow3_overlay.cpp `HandleChoiceEvent` (Load list) | Tab, Up / W, Down / S, Enter / Space, Esc / Backspace | details, move, accept, cancel | **unchanged** (not part of this menu); proposed: the same binds-only rule there |
+| gow3_overlay.cpp `HandleChoiceEvent` (Load list) | Tab, Up / W, Down / S, Enter / Space, Esc / Backspace | details, move, accept, cancel | **the settings menu's rules** (the user): the list's poll (`list_buttons`) adds the same fallbacks (`menu_fixed_keys`) to its binds; key events act no more while that poll runs (they doubled bound keys); without it only the arrows, Enter and Esc. Tab, W, S, Space and Backspace are no fixed keys there now. Its mouse binds still count from every button, the left one included (the list has no pointer) |
 
 ### 10.3 APPLY & RESTART: Square + Touchpad held 5 s
 
@@ -410,7 +419,7 @@ confirm of 9.2's first build is gone.
 
 The launcher writes every key it knows with its default, so an install from before a default changed keeps the old
 value as if the user had chosen it. `graphics_options.SETTINGS_STEPS` / `settings_migration` / `migrate_settings`:
-when the ini's `settings_version` is older than `SETTINGS_VERSION` (1), each step's keys are set once and the
+when the ini's `settings_version` is older than `SETTINGS_VERSION` (2), each step's keys are set once and the
 version written; a later off stays. Run by run.py (`prepare`, logged "Settings: one-time update ...") and by the
 launcher at start (after the Deck switch migration, before it reads the ini). A new ini starts at the current version
 (launcher `INI_DEFAULTS`; run.py writes it into a missing file), so nothing is forced on a new install.
@@ -422,9 +431,13 @@ v2.1.1, v2.2.0, v2.2.1, v2.3.0 and now; v1.4.0 is upstream's tag, not this fork'
 |---|---|---|---|---|
 | `perf_particle_single_pass` | 0 in v2.0.0-v2.3.0 (`8d85929`, 2026-11-01) | 1 | single-particle-pass: T-H3b, Deck particle 1 (79.4 vs 77.1 FPS, 1,122 vs 1,316 draws); correct with the guard (particle fix 1 / 2); the user's decision 2026-11-13 | **yes** |
 | `perf_particle_flip_guard` | none (a launcher Deck switch, off unless Deck Optimized; an unchecked one migrates as 0) | 1 | particle-flip-guard: Deck particle fix 1 / 2 (the user: torch animating, crypt floor fixed; "Yup, it's back" with it off); the user's PC test 2026-11-13 | **yes** |
-| `stale_readback` | 0 in v1.3.8 and v2.0.0, 1 from v2.1.0 (`8600b28`) | 1 | lineage-deferred-readbacks: a speed mode (upstream's default 0), not a fix; Windows "mixed"; its launcher default change was "fix built, not run" | no: proposed to the user to decide |
+| `stale_readback` | 0 in v1.3.8 and v2.0.0, 1 from v2.1.0 (`8600b28`) | 1 | the user: "we have specifically patched the issues that can arise from having this on". The fixes: readback-first-wait (a stale first readback fed UE4's sky light brightness: Hall of Heroes teal / white walls; verified by the user 2026-11-09, on by default), hzb-remap (stale HZB results culled Dan and the ground, T-HZ1; the remap serves the newest finished readback per primitive), W2 (the host-copy wait before watching pages; its removal in R1-stale-eop gave V2's black torch boxes). The user's ini and the Deck preset run it | **yes, step 2** |
 | `fps_limit` | 0 in v1.3.8, -3 from v2.0.0 | -3 | a setting (frame cap), not a patch | no |
 | every other `perf_*`, `present_*`, `display_vrr` | on from their first release (v2.0.0) | on | on all along: an off is the user's | no |
+
+**Version 2, not 1:** version 1 had already run on the user's install when stale readbacks were added (their
+medievil.ini got `settings_version=1` at 02:45 on 2026-11-13, after `2364371`), so a key added to step 1 would never
+reach it. Step 2 holds only `stale_readback`; an ini at version 1 gets just that, an older one both steps.
 
 Env-only fixes that became default since (`GOW3_READBACK_FIRST_WAIT`, `GOW3_POOL_ZERO_FOREIGN`) have no ini key and
 already reach every install.
@@ -448,7 +461,8 @@ and help name the button "Touchpad", as the launcher's Controls page does.
 
 ### 10.6 State
 
-Fix built, not run. Build clean (only the two known vk_rasterizer.cpp -Wunused-result warnings), Python tests 205
-run, OK (31 skipped), graphics-settings-test PASS, pad-map-test PASS (built by hand). Tests: 9.6 (T-SM4-T-SM15,
+Fix built, not run. Build clean (no warnings in the last build), Python tests 206 run, OK (31 skipped),
+graphics-settings-test PASS, pad-map-test PASS (built by hand). Tests: 9.6 (T-SM4-T-SM15,
 updated for section 10, and T-SM16). Nothing launched. Commits: `3c42639` (binds-only input), `768ced0` (PlayStation
-glyphs), `6ab5c19` (restart-only frame buffer, held restart), `2364371` (settings_version).
+glyphs), `6ab5c19` (restart-only frame buffer, held restart), `2364371` (settings_version), `dc330e1` (arrows / Enter
+fallbacks, the Load list on the binds), `fc4351d` (settings_version 2: stale readbacks).

@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: ours
 class: G
-commits: 64fb18a, 7f6a98e, b914242, 33491a9, 0666928, 3c42639, 6ab5c19
+commits: 64fb18a, 7f6a98e, b914242, 33491a9, 0666928, 3c42639, 6ab5c19, dc330e1
 files: gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3gpu.cpp, gpu/gow3gpu.h, src/runtime_pad.c, scripts/ue4_glyphs.py, tests/test_pad_map.c, gpu/shim/gow3_settings.h, gpu/shim/gow3_settings.cpp
 symbols: MenuNav, NavRow, NavStartTab, NavEndFrame, MenuButtons, MenuPress, MenuPadCombo, MenuPad, StyledMenu, PlainMenu, BeginStyledRow, StyledRowHit, StyledSlider, DrawChoice, ToggleRow, ChoiceIndex, IntSliderRow, ButtonsRow, SetMenuInput, DisplayTab, GraphicsTab, PerformanceTab, RestartTag, RecordItem, RowVisible, RestartNow, RestartHoldStep, RestartProgress, RestartCombo, OutputNeedsRestart, Note, gow3gpu_menu_set_input, menu_buttons, menu_key_buttons, menu_mouse_buttons, window_mouse_held, StyleImage, OVERLAY
 switches: GOW3_MENU_PAD, GOW3_MENU_KEY, GOW3_PRESENT_MODE, GOW3_RESTART_COMMAND
@@ -40,9 +40,11 @@ start). Input is the launcher's binds only (plan section 10).
   Esc, Backspace, Q, E; only while not bound to a button the menu uses) and the stick into one mask, so a key both
   bound and fixed is one press. ImGui's keyboard / gamepad navigation must stay off: with it, Space / Enter / A
   would act twice. A new menu key belongs in `menu_keys`, not in `HandleEvent` (pad-map-test checks the rules).
-- Keys and mouse buttons act only as bound (`menu_key_buttons`, `menu_mouse_buttons`), never from the left mouse
-  button (the pointer's: a left click bound to Cross or Circle would act twice). The one fixed key is Esc (Circle,
-  as in the Load list) while not bound to a menu button. A new fixed key would bypass the binds: don't.
+- Keys and mouse buttons act as bound (`menu_key_buttons`, `menu_mouse_buttons`), never from the left mouse
+  button (the pointer's: a left click bound to Cross or Circle would act twice). The fallbacks (`menu_fixed_keys`:
+  arrows = D-pad, Enter / keypad Enter = Cross, Esc = Circle) count only while the key is not bound to a menu
+  button (a bind wins); the Load list's poll uses the same fallbacks. Backspace, Q, E and Tab are no fallbacks: a new
+  fixed key would bypass the binds. Prompts show the bound glyphs, never the fallbacks.
 - Tab is the touchpad's default bind in `key_map` (not a fixed line in `sample_host` since 2026-11-13), so a
   launcher rebind or "none" moves or removes it in the game and the menu alike.
 - Rows must call `NavRow` (through `RowEnd` / `StyledRowEnd`) exactly once each, in drawing order, and `TabBody`
