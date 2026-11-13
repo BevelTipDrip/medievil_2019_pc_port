@@ -146,7 +146,8 @@ static int current_gamepads(void) {
  * column, e.g. "square=left,triangle=wheel") adds mouse buttons (left, right, middle, x1, x2, wheel_up,
  * wheel_down, wheel: either direction, one press per scroll gesture) next to the
  * keys, read while the game has the mouse (GOW3_MOUSE=1, runtime_mouse_buttons); there are none by
- * default. */
+ * default. Tab is the touchpad's default key (the launcher's, since 2026-11-13 also here: before, Tab touched
+ * the pad from a fixed line in sample_host, so a remapped or unbound touchpad still had Tab). */
 static const struct { const char *name; uint32_t ps; } ps_names[]={
     {"cross",BTN_CROSS}, {"circle",BTN_CIRCLE}, {"square",BTN_SQUARE}, {"triangle",BTN_TRIANGLE},
     {"l1",BTN_L1}, {"r1",BTN_R1}, {"l2",BTN_L2}, {"r2",BTN_R2}, {"l3",BTN_L3}, {"r3",BTN_R3},
@@ -171,7 +172,8 @@ static ButtonMap key_map={{
     {SDL_SCANCODE_R,BTN_L2}, {SDL_SCANCODE_F,BTN_R2}, {SDL_SCANCODE_Z,BTN_L3}, {SDL_SCANCODE_C,BTN_R3},
     {SDL_SCANCODE_RETURN,BTN_OPTIONS},
     {SDL_SCANCODE_I,BTN_UP}, {SDL_SCANCODE_K,BTN_DOWN}, {SDL_SCANCODE_J,BTN_LEFT}, {SDL_SCANCODE_L,BTN_RIGHT},
-},15};
+    {SDL_SCANCODE_TAB,BTN_TOUCHPAD},
+},16};
 static ButtonMap mouse_map; /* source: a runtime_mouse_buttons bit (0 left .. 4 x2, 5 wheel up, 6 down, 7 either) */
 enum { MAP_PAD, MAP_KEYS, MAP_MOUSE };
 
@@ -348,8 +350,7 @@ static void sample_host(PadData *d) {
     if (!k) return;
     for (size_t i=0;i<key_map.count;++i) if (k[key_map.entries[i].source]) d->buttons|=key_map.entries[i].ps;
     d->buttons|=mouse_map_buttons();
-    if (k[SDL_SCANCODE_TAB]) touch_click(d,0);
-    if ((d->buttons & BTN_TOUCHPAD) && !d->touch_count) touch_click(d,0); /* a remapped touchpad key */
+    if ((d->buttons & BTN_TOUCHPAD) && !d->touch_count) touch_click(d,0); /* the touchpad's key (Tab by default) */
     if (k[SDL_SCANCODE_BACKSPACE]) touch_click(d,1);
     if (d->buttons & BTN_L2) d->l2=255;
     if (d->buttons & BTN_R2) d->r2=255;
@@ -502,19 +503,16 @@ static uint32_t list_buttons(void) {
     pthread_mutex_unlock(&lock);
     return buttons;
 }
-/* The port's settings menu reads the PS4 buttons the menu uses (research/docs/plan-settings-menu.md):
- * the D-pad, Cross (change), Circle (back), L1 / R1 (tabs), Square (APPLY & RESTART, since 2026-11-13).
- * Besides the keys as mapped, fixed keys stand for them there: arrows the D-pad, Enter Cross, Esc and
- * Backspace Circle, Q / E L1 / R1, Tab Square (as in the Load list). A fixed key counts only while it is
- * not bound to one of the menu's buttons (with the default binds Enter is Options, Q Triangle and Tab
- * the touchpad, unused there; E is Square, so E is Square in the menu, as its prompt shows, and Q alone
- * switches tabs among the fixed keys). One mask, so a key both bound and fixed is one press. */
-#define MENU_BUTTONS (BTN_UP|BTN_DOWN|BTN_LEFT|BTN_RIGHT|BTN_CROSS|BTN_CIRCLE|BTN_L1|BTN_R1|BTN_SQUARE)
+/* The port's settings menu reads the PS4 buttons the menu uses (research/docs/plan-settings-menu.md
+ * sections 2.2 and 10): the D-pad, Cross (change), Circle (back), L1 / R1 (tabs), Square + the touchpad held
+ * (APPLY & RESTART; the touchpad: Share / Create on a controller, Tab by default). Keys and mouse buttons act as the
+ * PS buttons the launcher binds them to, nothing else (the user, 2026-11-13): the arrows, Enter, Backspace, Q,
+ * E and Tab no longer stand for menu buttons by themselves. One fixed key stays, as in the Load list: Esc is
+ * Circle (closes the menu) while it is not bound to one of the menu's buttons. One mask, so a key both bound
+ * and fixed is one press. */
+#define MENU_BUTTONS (BTN_UP|BTN_DOWN|BTN_LEFT|BTN_RIGHT|BTN_CROSS|BTN_CIRCLE|BTN_L1|BTN_R1|BTN_SQUARE|BTN_TOUCHPAD)
 static const struct { int key; uint32_t ps; } menu_keys[]={
-    {SDL_SCANCODE_UP,BTN_UP}, {SDL_SCANCODE_DOWN,BTN_DOWN}, {SDL_SCANCODE_LEFT,BTN_LEFT},
-    {SDL_SCANCODE_RIGHT,BTN_RIGHT}, {SDL_SCANCODE_RETURN,BTN_CROSS}, {SDL_SCANCODE_KP_ENTER,BTN_CROSS},
-    {SDL_SCANCODE_ESCAPE,BTN_CIRCLE}, {SDL_SCANCODE_BACKSPACE,BTN_CIRCLE}, {SDL_SCANCODE_Q,BTN_L1},
-    {SDL_SCANCODE_E,BTN_R1}, {SDL_SCANCODE_TAB,BTN_SQUARE},
+    {SDL_SCANCODE_ESCAPE,BTN_CIRCLE},
 };
 /* The menu's buttons from the keys held in `k` (SDL_GetKeyboardState) with the key map `map`. */
 static uint32_t menu_key_buttons(const bool *k, const ButtonMap *map) {
@@ -529,11 +527,11 @@ static uint32_t menu_key_buttons(const bool *k, const ButtonMap *map) {
     return buttons&MENU_BUTTONS;
 }
 /* The menu's buttons from mouse buttons held over the window (mouse_button_from_name's bits) as
- * mapped: only Circle, L1, R1 and Square, and never from the left button, the pointer's (a left click
- * bound to Cross or Circle would act twice, or close the menu at every click). */
+ * mapped, never from the left button: it is the pointer's (a left click bound to Cross or Circle would act
+ * twice, or close the menu at every click); the menu's own widgets take it. */
 static uint32_t menu_mouse_buttons(uint32_t held) {
     held&=~1u;
-    return held ? mouse_map_from(held)&(BTN_CIRCLE|BTN_L1|BTN_R1|BTN_SQUARE) : 0;
+    return held ? mouse_map_from(held)&MENU_BUTTONS : 0;
 }
 /* Buttons for the port's settings menu, polled by the overlay every presented frame while it is
  * open (the game's pad is held neutral then): the gamepad as mapped, the keys (menu_key_buttons),
