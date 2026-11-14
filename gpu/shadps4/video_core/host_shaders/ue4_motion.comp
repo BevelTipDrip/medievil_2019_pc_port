@@ -4,7 +4,9 @@
 // else the camera's motion from scene depth and View.ClipToPrevClip. Output in render pixels,
 // previous position minus current (the DLSS / FSR convention), b = 1 where the game wrote velocity.
 // REACTIVE (plan-fsr.md step 4): also UE4's responsive-AA pixels, stencil bit 3 of the scene depth-stencil
-// (the bit the game's TAA tests): a = 1 there (the debug view), and FSR's reactive mask (`reactive` there, else 0).
+// (the bit the game's TAA tests): FSR's reactive mask (`reactive` there, else 0); a = the raw stencil byte (the
+// debug view's mode 5). With `count` set, pixels of the view rectangle per stencil bit are added to `counts`
+// (one atomic per workgroup and counter; the debug log, about every 480 passes).
 #version 450
 #extension GL_EXT_samplerless_texture_functions : require
 
@@ -16,6 +18,10 @@ layout(binding = 2, rgba16f) uniform writeonly image2D motion_img;
 #ifdef REACTIVE
 layout(binding = 3) uniform utexture2D stencil_tex;          // the same depth-stencil's stencil
 layout(binding = 4, r8) uniform writeonly image2D reactive_img; // FSR's reactive mask
+layout(binding = 5, std430) buffer Counts {
+    uint counts[10]; // pixels in the view rectangle, with any stencil bit, with bit 0-7
+};
+shared uint group_counts[10];
 #endif
 
 layout(push_constant) uniform Constants {
@@ -24,32 +30,67 @@ layout(push_constant) uniform Constants {
     vec2 image_size;           // the velocity / depth images
     uint has_velocity;         // 0: the TAA pass does not sample a velocity target (menus)
     float reactive;            // REACTIVE: the mask's value on responsive-AA pixels (0-1)
+    uint count;                // REACTIVE: add this pass to `counts`
 };
 
 void main() {
     const ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
-    if (any(greaterThanEqual(pixel, ivec2(image_size)))) {
+    const bool inside = all(lessThan(pixel, ivec2(image_size)));
+#ifdef REACTIVE
+    // No early return here: the counting below has barriers.
+    if (count != 0u) {
+        if (gl_LocalInvocationIndex < 10u) {
+            group_counts[gl_LocalInvocationIndex] = 0u;
+        }
+        barrier();
+    }
+    if (inside) {
+#else
+    if (!inside) {
         return;
     }
-    // UE4's screen position: x right, y up, -1..1 over the view rectangle.
-    const vec2 screen = (vec2(pixel) + 0.5) / view_size * vec2(2.0, -2.0) + vec2(-1.0, 1.0);
-    const vec2 encoded = has_velocity != 0u ? texelFetch(velocity_tex, pixel, 0).rg : vec2(0.0);
-    const bool written = encoded.x > 0.0;
-    vec2 back; // current minus previous screen position (UE4's BackN)
-    if (written) {
-        back = encoded * 4.008016 - 2.0039775; // DecodeVelocityFromTexture
-    } else {
-        const float depth = texelFetch(depth_tex, pixel, 0).r;
-        const vec4 prev = screen.x * clip_to_prev_clip[0] + screen.y * clip_to_prev_clip[1] +
-                          depth * clip_to_prev_clip[2] + clip_to_prev_clip[3];
-        back = screen - prev.xy / prev.w;
-    }
-    // Screen units to pixels; screen y is up, pixel y down.
-    const vec2 motion = vec2(-back.x, back.y) * 0.5 * view_size;
-    float responsive = 0.0;
-#ifdef REACTIVE
-    responsive = (texelFetch(stencil_tex, pixel, 0).r & 8u) != 0u ? 1.0 : 0.0;
-    imageStore(reactive_img, pixel, vec4(responsive * reactive));
+    {
 #endif
-    imageStore(motion_img, pixel, vec4(motion, written ? 1.0 : 0.0, responsive));
+        // UE4's screen position: x right, y up, -1..1 over the view rectangle.
+        const vec2 screen = (vec2(pixel) + 0.5) / view_size * vec2(2.0, -2.0) + vec2(-1.0, 1.0);
+        const vec2 encoded = has_velocity != 0u ? texelFetch(velocity_tex, pixel, 0).rg : vec2(0.0);
+        const bool written = encoded.x > 0.0;
+        vec2 back; // current minus previous screen position (UE4's BackN)
+        if (written) {
+            back = encoded * 4.008016 - 2.0039775; // DecodeVelocityFromTexture
+        } else {
+            const float depth = texelFetch(depth_tex, pixel, 0).r;
+            const vec4 prev = screen.x * clip_to_prev_clip[0] + screen.y * clip_to_prev_clip[1] +
+                              depth * clip_to_prev_clip[2] + clip_to_prev_clip[3];
+            back = screen - prev.xy / prev.w;
+        }
+        // Screen units to pixels; screen y is up, pixel y down.
+        const vec2 motion = vec2(-back.x, back.y) * 0.5 * view_size;
+        float stencil_byte = 0.0;
+#ifdef REACTIVE
+        const uint stencil = texelFetch(stencil_tex, pixel, 0).r & 0xffu;
+        stencil_byte = float(stencil);
+        imageStore(reactive_img, pixel, vec4((stencil & 8u) != 0u ? reactive : 0.0));
+        if (count != 0u && all(lessThan(vec2(pixel), view_size))) {
+            atomicAdd(group_counts[0], 1u);
+            if (stencil != 0u) {
+                atomicAdd(group_counts[1], 1u);
+                for (uint bit = 0u; bit < 8u; ++bit) {
+                    if ((stencil & (1u << bit)) != 0u) {
+                        atomicAdd(group_counts[2u + bit], 1u);
+                    }
+                }
+            }
+        }
+#endif
+        imageStore(motion_img, pixel, vec4(motion, written ? 1.0 : 0.0, stencil_byte));
+    }
+#ifdef REACTIVE
+    if (count != 0u) {
+        barrier();
+        if (gl_LocalInvocationIndex < 10u && group_counts[gl_LocalInvocationIndex] != 0u) {
+            atomicAdd(counts[gl_LocalInvocationIndex], group_counts[gl_LocalInvocationIndex]);
+        }
+    }
+#endif
 }

@@ -4,7 +4,8 @@
 // velocity target, where it wrote one, and otherwise the camera's motion (scene depth and the
 // View buffer's ClipToPrevClip) into render pixels, previous minus current (ue4_motion.comp).
 // Nothing in the game's frame changes. GOW3_UE4_MOTION_VIEW=1-5 shows them on the presented
-// frame (ue4_motion_view.comp; 5: UE4's responsive-AA pixels); F10 cycles 1-5 and off. Off by default.
+// frame (ue4_motion_view.comp; 5: the scene stencil, bit 3 = UE4's responsive AA in red, and a log line of
+// the pixels per stencil bit about every 480 passes); F10 cycles 1-5 and off. Off by default.
 // While AMD FSR runs with fsr_reactive above 0 (plan-fsr.md step 4) the pass also writes FSR's reactive
 // mask from the scene depth-stencil's bit 3 (the pass's REACTIVE variant; only with a stencil).
 
@@ -114,6 +115,11 @@ private:
     OwnImage motion;
     OwnImage reactive;
     bool reactive_written = false; ///< the last pass wrote `reactive` for FSR
+    VkBuffer counts_buffer = VK_NULL_HANDLE; ///< view mode 5's stencil counts (host-visible)
+    VmaAllocation counts_allocation = nullptr;
+    const u32* counts_mapped = nullptr;
+    u64 counted_passes = 0;
+    std::atomic<bool> counting = false; ///< a counted pass is waiting for its fence
     OwnImage output;
     std::array<OwnImage, 2> history;
     u32 history_index = 0;

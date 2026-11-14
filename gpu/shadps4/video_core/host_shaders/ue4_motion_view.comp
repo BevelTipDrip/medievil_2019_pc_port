@@ -3,8 +3,9 @@
 // display size. Works on the display buffer's raw bytes (UNORM view). Modes:
 // 1 colours over the picture, 2 colours only (red / green: x / y motion, grey = none, 64 pixels
 // to full; blue tint = the game's velocity, no tint = camera motion), 3 last frame moved by the
-// vectors onto this one, 4 the difference of 3 and this frame (x4: black where they match), 5 UE4's
-// responsive-AA pixels (stencil bit 3: FSR's reactive mask, motion a) in red over the picture.
+// vectors onto this one, 4 the difference of 3 and this frame (x4: black where they match), 5 the scene
+// stencil (motion a, the raw byte) over the darkened picture: red = bit 3 (UE4's responsive AA, FSR's
+// reactive mask), green = bits 0-2, blue = bits 4-7; mixes where several are set.
 #version 450
 #extension GL_EXT_samplerless_texture_functions : require
 
@@ -43,8 +44,13 @@ void main() {
         }
         color = mode == 1u ? mix(current.rgb, vectors, 0.7) : vectors;
     } else if (mode == 5u) {
-        const vec3 red = swap_red_blue != 0u ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
-        color = mix(current.rgb * 0.6, red, motion.a * 0.7);
+        const uint stencil = uint(motion.a + 0.5);
+        vec3 bits = vec3((stencil & 8u) != 0u ? 1.0 : 0.0, (stencil & 7u) != 0u ? 1.0 : 0.0,
+                         (stencil & 0xf0u) != 0u ? 1.0 : 0.0);
+        if (swap_red_blue != 0u) {
+            bits = bits.bgr;
+        }
+        color = mix(current.rgb * 0.6, bits, stencil != 0u ? 0.7 : 0.0);
     } else {
         const vec2 moved = vec2(pixel) + 0.5 + motion.xy / to_render;
         const ivec2 prev_pixel = ivec2(floor(moved));

@@ -9,6 +9,8 @@
 #include <cstring>
 #include <memory>
 
+#include <vk_mem_alloc.h>
+
 #include "gow3_settings.h"
 #include "video_core/host_shaders/ue4_motion_comp.h"
 #include "video_core/host_shaders/ue4_motion_reactive_comp.h"
@@ -36,7 +38,11 @@ struct MotionPush {
     std::array<float, 2> image_size;
     u32 has_velocity;
     float reactive; ///< REACTIVE: the mask on responsive-AA pixels (0-1)
+    u32 count;      ///< REACTIVE: add this pass to the stencil counts
 };
+
+constexpr u32 CountWords = 10;  // ue4_motion.comp `counts`: view pixels, any stencil bit, bits 0-7
+constexpr u64 CountEvery = 480; // passes between counted ones (view mode 5 only)
 
 struct ViewPush {
     std::array<float, 2> display_size;
@@ -120,7 +126,7 @@ void Ue4Motion::CycleViewMode() {
     view_mode.store(mode, std::memory_order_relaxed);
     static constexpr const char* names[] = {"off", "colours over the picture", "colours only",
                                             "last frame moved", "difference x4",
-                                            "responsive-AA pixels (FSR's reactive mask)"};
+                                            "scene stencil (red = bit 3, responsive AA)"};
     std::printf("UE4 motion: view %d (%s)\n", mode, names[mode]);
     std::fflush(stdout);
 }
@@ -134,7 +140,7 @@ Ue4Motion::Ue4Motion(const Instance& instance_, Scheduler& scheduler_,
     MakePipeline(device, UE4_MOTION_COMP, *motion_desc_layout, sizeof(MotionPush), motion_layout,
                  motion_pipeline);
     reactive_desc_layout = MakeLayout(device, {T::eSampledImage, T::eSampledImage, T::eStorageImage,
-                                               T::eSampledImage, T::eStorageImage});
+                                               T::eSampledImage, T::eStorageImage, T::eStorageBuffer});
     MakePipeline(device, UE4_MOTION_REACTIVE_COMP, *reactive_desc_layout, sizeof(MotionPush),
                  reactive_layout, reactive_pipeline);
     // The mask is an R8_UNORM storage image (shaderStorageImageExtendedFormats; FSR's own masks need it too).
@@ -143,6 +149,25 @@ Ue4Motion::Ue4Motion(const Instance& instance_, Scheduler& scheduler_,
     if (!reactive_supported) {
         std::printf("UE4 motion: no R8_UNORM storage images: no reactive mask for FSR\n");
     }
+    // The stencil counts (view mode 5's log), host-visible: written by a counted pass, read after its fence.
+    const VkBufferCreateInfo counts_ci{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size = CountWords * sizeof(u32),
+        .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+    };
+    const VmaAllocationCreateInfo counts_alloc_ci{
+        .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT,
+        .usage = VMA_MEMORY_USAGE_AUTO_PREFER_HOST,
+    };
+    VmaAllocationInfo counts_info{};
+    if (vmaCreateBuffer(instance.GetAllocator(), &counts_ci, &counts_alloc_ci, &counts_buffer,
+                        &counts_allocation, &counts_info) != VK_SUCCESS) {
+        counts_buffer = VK_NULL_HANDLE;
+        reactive_supported = false;
+        std::printf("UE4 motion: no host memory for the stencil counts: no reactive mask for FSR\n");
+    } else {
+        counts_mapped = static_cast<const u32*>(counts_info.pMappedData);
+    }
     view_desc_layout = MakeLayout(device, {T::eSampledImage, T::eSampledImage, T::eStorageImage,
                                            T::eStorageImage, T::eStorageImage});
     MakePipeline(device, UE4_MOTION_VIEW_COMP, *view_desc_layout, sizeof(ViewPush), view_layout,
@@ -150,7 +175,11 @@ Ue4Motion::Ue4Motion(const Instance& instance_, Scheduler& scheduler_,
     std::printf("UE4 motion: on, view %d (F10 cycles)\n", view_mode.load());
 }
 
-Ue4Motion::~Ue4Motion() = default;
+Ue4Motion::~Ue4Motion() {
+    if (counts_buffer) {
+        vmaDestroyBuffer(instance.GetAllocator(), counts_buffer, counts_allocation);
+    }
+}
 
 void Ue4Motion::Ensure(OwnImage& own, u32 width, u32 height, vk::Format format,
                        vk::Format present_format) {
@@ -303,6 +332,13 @@ void Ue4Motion::OnTaa(const u8* view, std::span<const VAddr> reads, VideoCore::I
                               (for_fsr || view_mode.load(std::memory_order_relaxed) == 5);
     push.reactive = for_fsr ? float(std::min(reactive_percent, 100)) / 100.0f : 0.0f;
     reactive_written = use_reactive && for_fsr;
+    // View mode 5: count the stencil bits of one pass in CountEvery (the first one too) and log them.
+    const bool count = use_reactive && view_mode.load(std::memory_order_relaxed) == 5 &&
+                       !counting.load() && (counted_passes++ % CountEvery) == 0;
+    push.count = count ? 1u : 0u;
+    if (count) {
+        counting = true;
+    }
 
     Ensure(motion, width, height, vk::Format::eR16G16B16A16Sfloat);
     if (use_reactive) {
@@ -352,6 +388,7 @@ void Ue4Motion::OnTaa(const u8* view, std::span<const VAddr> reads, VideoCore::I
     if (use_reactive) {
         reactive.layout = vk::ImageLayout::eGeneral;
     }
+    const vk::Buffer counts = counts_buffer;
     const vk::Pipeline pipeline = use_reactive ? *reactive_pipeline : *motion_pipeline;
     const vk::PipelineLayout layout = use_reactive ? *reactive_layout : *motion_layout;
     scheduler.Record([=](vk::CommandBuffer cmdbuf) {
@@ -374,6 +411,17 @@ void Ue4Motion::OnTaa(const u8* view, std::span<const VAddr> reads, VideoCore::I
                 .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
             };
         }
+        if (count) {
+            cmdbuf.fillBuffer(counts, 0, VK_WHOLE_SIZE, 0);
+            const vk::MemoryBarrier2 cleared{
+                .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+                .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+                .dstStageMask = vk::PipelineStageFlagBits2::eComputeShader,
+                .dstAccessMask = vk::AccessFlagBits2::eShaderStorageRead |
+                                 vk::AccessFlagBits2::eShaderStorageWrite,
+            };
+            cmdbuf.pipelineBarrier2({.memoryBarrierCount = 1, .pMemoryBarriers = &cleared});
+        }
         cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = barriers, .pImageMemoryBarriers = to_write.data()});
         const vk::DescriptorImageInfo infos[5] = {
             {.imageView = velocity_view, .imageLayout = vk::ImageLayout::eGeneral},
@@ -385,20 +433,55 @@ void Ue4Motion::OnTaa(const u8* view, std::span<const VAddr> reads, VideoCore::I
         const vk::DescriptorType types[5] = {
             vk::DescriptorType::eSampledImage, vk::DescriptorType::eSampledImage, vk::DescriptorType::eStorageImage,
             vk::DescriptorType::eSampledImage, vk::DescriptorType::eStorageImage};
-        std::array<vk::WriteDescriptorSet, 5> writes{};
-        const u32 bindings = reactive_image ? 5 : 3;
+        std::array<vk::WriteDescriptorSet, 6> writes{};
+        const u32 bindings = reactive_image ? 6 : 3;
         for (u32 i = 0; i < bindings; ++i) {
             writes[i] = {.dstBinding = i,
                          .descriptorCount = 1,
                          .descriptorType = types[i],
                          .pImageInfo = &infos[i]};
         }
+        const vk::DescriptorBufferInfo counts_info{.buffer = counts, .offset = 0, .range = VK_WHOLE_SIZE};
+        writes[5] = {.dstBinding = 5,
+                     .descriptorCount = 1,
+                     .descriptorType = vk::DescriptorType::eStorageBuffer,
+                     .pBufferInfo = &counts_info};
         cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline);
         cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, layout, 0,
                                     vk::ArrayProxy<const vk::WriteDescriptorSet>(bindings, writes.data()));
         cmdbuf.pushConstants(layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(push), &push);
         cmdbuf.dispatch((width + 7) / 8, (height + 7) / 8, 1);
+        if (count) {
+            const vk::MemoryBarrier2 to_host{
+                .srcStageMask = vk::PipelineStageFlagBits2::eComputeShader,
+                .srcAccessMask = vk::AccessFlagBits2::eShaderStorageWrite,
+                .dstStageMask = vk::PipelineStageFlagBits2::eHost,
+                .dstAccessMask = vk::AccessFlagBits2::eHostRead,
+            };
+            cmdbuf.pipelineBarrier2({.memoryBarrierCount = 1, .pMemoryBarriers = &to_host});
+        }
     });
+    if (count) {
+        // After this pass's fence: one line, the share of the view rectangle per stencil bit.
+        const bool velocity_depth = depth_image == Find(depth);
+        const float view_width = push.view_size[0], view_height = push.view_size[1];
+        scheduler.DeferPriorityOperation([this, velocity_depth, width, height, view_width, view_height] {
+            vmaInvalidateAllocation(instance.GetAllocator(), counts_allocation, 0, VK_WHOLE_SIZE);
+            std::array<u32, CountWords> c;
+            std::memcpy(c.data(), counts_mapped, sizeof(c));
+            const double total = c[0] ? double(c[0]) : 1.0;
+            std::printf("UE4 motion: stencil of %s depth %ux%u (view %gx%g): %u px, any bit %.2f%%;",
+                        velocity_depth ? "the velocity pass" : "the G-buffer", width, height, view_width,
+                        view_height, c[0], 100.0 * c[1] / total);
+            for (u32 bit = 0; bit < 8; ++bit) {
+                std::printf(" bit %u%s %.2f%% (%u)", bit, bit == 3 ? " (responsive AA)" : "",
+                            100.0 * c[2 + bit] / total, c[2 + bit]);
+            }
+            std::printf("\n");
+            std::fflush(stdout);
+            counting = false;
+        });
+    }
     scheduler.DeferOperation([device, velocity_view, depth_view, stencil_view] {
         if (stencil_view) {
             device.destroyImageView(stencil_view);
