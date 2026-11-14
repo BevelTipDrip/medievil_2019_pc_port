@@ -377,6 +377,7 @@ struct MenuNav {
     int move = 0, step = 0;   // up / down and left / right since the last frame
     bool press = false;       // Cross since the last frame
     bool reveal = false;      // scroll the focused row into view
+    bool pin_end = false;     // the last row was revealed: the list stays at its end (TabBody)
     bool in_body = false;     // drawing the scrolled body
 } nav;
 
@@ -503,10 +504,12 @@ RowNav NavRow(ImVec2 min, ImVec2 max, const char* help, bool enabled) {
     footer_help = help;
     if (nav.reveal && nav.in_body) {
         nav.reveal = false;
+        nav.pin_end = false;
         if (index == 0) {
             ImGui::SetScrollY(0.0f);
         } else if (index == nav.body_rows - 1) {
             ImGui::SetScrollY(ImGui::GetScrollMaxY());
+            nav.pin_end = true;
         } else {
             const float margin = ImGui::GetFrameHeight();
             ImGui::ScrollToRect(ImGui::GetCurrentWindow(), ImRect(min.x, min.y - margin, max.x, max.y + margin),
@@ -1727,6 +1730,16 @@ void TabBody(int tab) {
     }
     nav.in_body = false;
     nav.body_rows = nav.rows;
+    // The last row revealed (wrapping up from the first, T-SM4): the end it scrolled to was measured at the old scroll,
+    // and the list measures a few pixels longer once scrolled (6 px at 25 rows offline, ImGui 1.92.9b; scratchpad
+    // menu-scroll harness), so it stayed short of the row. Kept at the end until the range settles; the focus moving, the wheel or a drag ends it.
+    if (nav.pin_end) {
+        if (Focus() != nav.body_rows - 1 || ImGui::GetIO().MouseWheel != 0.0f || ImGui::IsAnyItemActive()) {
+            nav.pin_end = false;
+        } else if (ImGui::GetScrollY() < ImGui::GetScrollMaxY()) {
+            ImGui::SetScrollY(ImGui::GetScrollMaxY());
+        }
+    }
 }
 
 // The menu key and the pad combination, for the title and the default help.

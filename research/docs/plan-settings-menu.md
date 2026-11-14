@@ -491,3 +491,10 @@ Build clean; pad-map-test PASS (new W/A/S/D cases), graphics-settings-test PASS.
 row reachable, no blank space at the end, the Controls tab opens without creeping), T-SM6 (W/A/S/D move in the
 menu and the Load list), T-SM8 (wheel, track click, thumb drag), T-SM9 (Deck Optimized, after the user's ini
 backup).
+
+**Second run (2026-11-13): 10.7's fixes verified** (last rows, the Controls tab, W/A/S/D, the scroll bar). **Found:**
+wrapping up from the first row to the last left the list short of it on tabs with a scroll bar (up then down
+showed it). The jump scrolled to the end measured before scrolling, and the list measures a few pixels longer once
+scrolled (offline: 6 px at 25 rows, every display height; up to 17 rows exact). Fix built, not run: after the
+last row is revealed the list stays at its end until the range settles (`MenuNav::pin_end`, TabBody); moving
+the focus, the wheel or any drag ends it. Offline with the pin: the end reached in two frames in every layout.
