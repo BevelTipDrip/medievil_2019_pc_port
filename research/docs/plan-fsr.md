@@ -180,3 +180,12 @@ So MediEvil never uses UE4's responsive AA: the TAA's bit-3 test (draw 16012, `b
 does not even read the stencil) never passes. The read path works; the stencil source is empty by design.
 Open: keep the stencil mask (it stays 0) or take the mask from the separate-translucency target's alpha (UE4 writes
 transmittance there: 1 - alpha = how much particles / fire / smoke cover a pixel), read in the same motion pass.
+
+T-F8b / T-F8c (2026-11-14, PC, 67%): with effects resolution 100 the game **does** mark death (blood) effects: bit 3 on
+5.6-11.4% of the screen in those frames, the mask works. Torches are never marked. Trace `5a796af` (draws that can write
+bit 3, per depth-stencil): below 100, UE4 writes bit 3 (write mask 0x8) into the separate-translucency depth-stencil
+(1288x724 at effects 50, colour target the same size), never copied to the scene stencil, so neither FSR's mask nor the
+game's own TAA sees it. (The trace's 0xff-mask lines on the scene stencil are the lighting draws, not marks.)
+**Decision (the user): stop here.** It covers one effect in busy scenes, only at an effects resolution kept below 100
+for the 0.1% lows (heavy combat ~110 FPS at a 220+ average); not worth more complexity. Not done: reading the
+separate-translucency stencil in the motion pass (one extra fetch while FSR runs with the slider above 0).
