@@ -1,0 +1,5 @@
+# Commits that changed only line endings: `git config blame.ignoreRevsFile .git-blame-ignore-revs`
+# Normalize line endings: .gitattributes, LF in the repository (2026-11-14)
+37f701e6c83cbc3385ac9f18594d83a30680ec44
+# Restore line endings flipped by 8585c5a (no content change)
+fcf9bfa8a6f44d9c382a138cc106aa3687b6c682

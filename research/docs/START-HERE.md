@@ -29,6 +29,11 @@ Entry point for every session. **Keep it current:** when a stage lands, update
   may be pushed there. `upstream` is bc160201983/medievil_2019_pc_port: never push to it.
 - Never roll back or delete work without asking.
 - Never touch the save folder. Back up `medievil.ini` before editing it.
+- **Line endings** (2026-11-14, `.gitattributes`): the repository stores LF; git converts on `git add`, so an editor
+  writing CRLF no longer flips files in commits. `*.cmd` / `*.bat` check out CRLF; `research/docs/data/**` and
+  `gpu/third_party/half/**` are byte-for-byte. Merging a branch made before the normalization commit (37f701e):
+  `git merge -X renormalize <branch>`. `git config blame.ignoreRevsFile .git-blame-ignore-revs` once per clone.
+  Untracked files are not covered: edit `medievil.ini` byte-safely (never Git Bash `sed -i`, which strips its CRs).
 - `C:\Users\Ty\MGS2-Lab` is **read only** (reference for the FSR FG / DLSS / DLSS FG work).
 - `bloodborne_pc\` is a reference repo. It is GPL-2.0 like this port, so its code may be ported, with the
   Bloodborne commit hash in the commit message.
