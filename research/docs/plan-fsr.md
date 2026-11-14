@@ -1,6 +1,7 @@
 # Plan: AMD FSR in place of UE4's TAA (FSR 3.x, FSR 4.x)
 
-Status (2026-11-12): step 1 on branch `fsr`, verified on the PC (T-F1); its Deck check goes with step 5. Parent: [START-HERE.md](START-HERE.md). Related:
+Status (2026-11-13): steps 1-3 verified on the PC (on deck-lab since `f4de291`); next step 5 (Deck), then 4 (reactive
+mask), then 6-7 (FSR 4); the side items (CAS bug, DLSS preset, cheaper upscaler stats) after those. Parent: [START-HERE.md](START-HERE.md). Related:
 [plan-dlss.md](plan-dlss.md), [plan-ue4-motion-vectors.md](plan-ue4-motion-vectors.md) (U2-U4, the inputs),
 [upscaler-reference.md](upscaler-reference.md) (the God of War III upscaler), [plan-fsr-frame-generation.md](plan-fsr-frame-generation.md).
 
@@ -138,3 +139,7 @@ slider live, the RCAS strength no longer changes FSR, and RCAS over TAA / DLSS i
 T-F7 (2026-11-12, `43d6e0f`, RTX 4090, FSR at 75%): the user: "it all works as expected", in the game and the
 launcher: FSR's sharpening follows its own slider live (0 = off), the RCAS strength leaves FSR alone, RCAS over TAA /
 DLSS as before. F2c verified.
+
+Step 3 (2026-11-13, the user): verified. Several render scales and cutscenes work; the default jitter sign is right.
+F8 (cycle the jitter sign) stays in place for later testing. Step 4 (reactive mask): no smearing noticed on torches,
+fire or death effects so far, still the next logical step after step 5 (the user's order: 5, 4, then 6-7).
