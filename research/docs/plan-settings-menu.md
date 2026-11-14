@@ -511,3 +511,4 @@ it; the levels page shrinks its lines to stay above the button (a full save, ~22
 before). The game behind dimmed 80% as under the settings menu; frame size and prompt bar unchanged.
 To run: T-SM12 again (mouse: hover, double-click load, wheel, scroll bar, prompts, the button; Triangle on the pad
 and its key; a left click no longer acts as Square).
+**Load list mouse, Triangle and the DETAILS button verified** (the user, 2026-11-13: "everything looks like it works").
