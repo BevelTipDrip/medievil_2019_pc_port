@@ -165,3 +165,18 @@ in the motion pass: about 0.03 ms or less on the Deck. The motion debug view's m
 F10 cycles) paints the marked pixels red: first, how much of the game is marked at all.
 Tests: T-F8 (PC): mode 5 on torches, fire, death effects; then the slider 0 vs 50 / 100 on the smearing. T-F9
 (Deck, later): the slider 0 vs on at a fixed GPU clock, frame times.
+
+T-F8 run (2026-11-14, PC, the Graveyard): **no pixel marked**, and the user saw no smearing on torches under FSR at 75%
+even with violent camera shakes (NVIDIA screenshots). Follow-up `bfc5a9e`: mode 5 shows the raw stencil (red bit 3,
+green bits 0-2, blue bits 4-7) and logs pixels per bit every 480 passes. Run at 75 / 67%: **0 pixels for every bit**, on
+the velocity pass's and the G-buffer's depth. Capture C (`mausoleum-pc_frame21929.rdc`, scratchpad scripts
+stencil_trace.py / stencil_groups.py, 2026-11-14) explains it, **confirmed**:
+- the base pass writes only bits 4-7 (write mask 0xf0, ref 128 / 160 / 176 / 0; 236 draws, eid 3267-4928);
+- eid 8797 (the V4 stencil-plane copy = the game's compute clear) sets every pixel to 0 before lighting;
+- lighting: light-volume IncWrap / DecWrap + Zero (455 draws) and Replace ref 1 (21 draws), all back to 0;
+- no draw in the frame can set bit 3; the separate-translucency depth-stencil (8699, 2880x1620) has no stencil writes;
+  at the TAA draws (16004 / 16012) the stencil is 0 on all 8,294,400 pixels.
+So MediEvil never uses UE4's responsive AA: the TAA's bit-3 test (draw 16012, `b373` / `9c89`; the 75% TAAU `a080`
+does not even read the stencil) never passes. The read path works; the stencil source is empty by design.
+Open: keep the stencil mask (it stays 0) or take the mask from the separate-translucency target's alpha (UE4 writes
+transmittance there: 1 - alpha = how much particles / fire / smoke cover a pixel), read in the same motion pass.

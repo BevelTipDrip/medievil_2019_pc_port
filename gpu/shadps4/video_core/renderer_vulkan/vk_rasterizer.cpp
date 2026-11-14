@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <chrono>
+#include <map>
+
 #include <xxhash.h>
 #include "video_core/renderer_vulkan/ui_composition.h"
 #include "gow3_decode_pacing.h"
@@ -4681,6 +4684,60 @@ bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
         }
         if (db_desc.first) {
             pass.depth = regs.depth_buffer.DepthAddress();
+        }
+        // plan-fsr.md F4 (GOW3_UE4_MOTION_VIEW set): draws that can write stencil bit 3 (UE4's
+        // responsive AA), by depth-stencil: which buffer gets the mark at an effects resolution
+        // below 100 (T-F8: the scene stencil gets none there). One line per buffer every ~3 s.
+        const auto& dc = regs.depth_control;
+        const auto writes_bit3 = [](u8 write_mask, AmdGpu::StencilFunc fail, AmdGpu::StencilFunc zpass,
+                                    AmdGpu::StencilFunc zfail) {
+            return (write_mask & 8) != 0 &&
+                   (fail != AmdGpu::StencilFunc::Keep || zpass != AmdGpu::StencilFunc::Keep ||
+                    zfail != AmdGpu::StencilFunc::Keep);
+        };
+        const auto& sc = regs.stencil_control;
+        if (Ue4Motion::Enabled() && dc.stencil_enable && regs.depth_buffer.StencilValid() &&
+            !regs.depth_render_control.stencil_clear_enable &&
+            (writes_bit3(regs.stencil_ref_front.stencil_write_mask, sc.stencil_fail_front,
+                         sc.stencil_zpass_front, sc.stencil_zfail_front) ||
+             (dc.backface_enable &&
+              writes_bit3(regs.stencil_ref_back.stencil_write_mask, sc.stencil_fail_back,
+                          sc.stencil_zpass_back, sc.stencil_zfail_back)))) [[unlikely]] {
+            struct Bit3Writes {
+                u64 draws = 0;
+                u32 width = 0, height = 0, op_val = 0, write_mask = 0, colour_w = 0, colour_h = 0;
+                u64 hash = 0;
+            };
+            static std::map<u64, Bit3Writes> bit3_writes;
+            static auto bit3_last = std::chrono::steady_clock::now();
+            auto& w = bit3_writes[regs.depth_buffer.StencilAddress()];
+            ++w.draws;
+            if (db_desc.first) {
+                w.width = db_desc.second.info.size.width;
+                w.height = db_desc.second.info.size.height;
+            }
+            w.op_val = regs.stencil_ref_front.stencil_op_val;
+            w.write_mask = regs.stencil_ref_front.stencil_write_mask;
+            w.colour_w = pass.target.width;
+            w.colour_h = pass.target.height;
+            for (const auto* stage : pipeline->GetStages()) {
+                if (stage && stage->sw_stage == Shader::SwStage::Fragment) {
+                    w.hash = stage->pgm_hash;
+                }
+            }
+            const auto now = std::chrono::steady_clock::now();
+            if (now - bit3_last > std::chrono::seconds(3)) {
+                bit3_last = now;
+                for (const auto& [address, b] : bit3_writes) {
+                    std::printf("UE4 stencil bit 3 writes: stencil 0x%llx %ux%u: %llu draws, op_val %u "
+                                "mask 0x%x, colour target %ux%u, last fs %016llx\n",
+                                static_cast<unsigned long long>(address), b.width, b.height,
+                                static_cast<unsigned long long>(b.draws), b.op_val, b.write_mask,
+                                b.colour_w, b.colour_h, static_cast<unsigned long long>(b.hash));
+                }
+                std::fflush(stdout);
+                bit3_writes.clear();
+            }
         }
     }
     // U4: the first storage image a dispatch writes (the TAAU dispatch's output), to find its
