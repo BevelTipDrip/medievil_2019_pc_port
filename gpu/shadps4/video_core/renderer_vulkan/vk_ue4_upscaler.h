@@ -55,6 +55,8 @@ struct Ue4UpscaleDesc {
 /// minus current), an RGBA16F storage output; jitter in render pixels (the sign F8 chose).
 struct Ue4UpscaleFrame {
     Ue4UpscaleImage color, depth, motion, output;
+    /// FSR's reactive mask (R8_UNORM, render size; from UE4's responsive-AA stencil bit); image null: none.
+    Ue4UpscaleImage reactive;
     float jitter_x, jitter_y;
     bool reset;
     float frame_ms;
@@ -104,6 +106,8 @@ public:
     /// An upscaler that sharpens itself (FSR) ran within the last 100 ms: the presenter's RCAS
     /// stays off then (the menu's sharpening is the upscaler's).
     static bool SharpensItself();
+    /// AMD FSR ran within the last 100 ms: the motion pass writes its reactive mask (plan-fsr.md step 4).
+    static bool FsrRunning();
     /// Enabled and an upscaler other than TAA chosen: worth looking up the TAAU output image.
     static bool On();
 

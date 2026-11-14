@@ -4,7 +4,8 @@
 // anti-aliasing when the input and output sizes match (render scale 100), upscaling below it. The inputs are
 // the front end's: the HDR colour before tonemapping (auto exposure), UE4's reversed infinite depth, U2's
 // motion vectors (render pixels, previous minus current: FSR's convention at scale 1) and the game's jitter.
-// No reactive mask yet (plan-fsr.md step 4). The menu's sharpening is FSR's own RCAS. GOW3_FSR=0 leaves it out.
+// The reactive mask (plan-fsr.md step 4, fsr_reactive above 0): UE4's responsive-AA pixels, from the motion pass.
+// The menu's sharpening is FSR's own RCAS. GOW3_FSR=0 leaves it out.
 
 #include <cstdio>
 #include <cstdlib>
@@ -124,6 +125,9 @@ public:
         info.motionVectors = Describe(frame.motion, FFX_VK_PORTABLE_RESOURCE_STATE_GENERIC_READ);
         info.output = Describe(frame.output, FFX_VK_PORTABLE_RESOURCE_STATE_UNORDERED_ACCESS);
         info.exposure.structSize = sizeof(info.exposure); // auto exposure
+        // Null (structSize only): FSR's own 1x1 blank mask, as before step 4.
+        info.reactiveMask = frame.reactive.image ? Describe(frame.reactive, FFX_VK_PORTABLE_RESOURCE_STATE_GENERIC_READ)
+                                                 : FfxVkPortableImage{};
         info.reactiveMask.structSize = sizeof(info.reactiveMask);
         info.transparencyAndCompositionMask.structSize = sizeof(info.transparencyAndCompositionMask);
         info.jitterOffset = {frame.jitter_x, frame.jitter_y};

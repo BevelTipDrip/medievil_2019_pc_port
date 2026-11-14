@@ -3,6 +3,8 @@
 // PostProcessTemporalCommon): the velocity target where the game wrote one (encoded x > 0),
 // else the camera's motion from scene depth and View.ClipToPrevClip. Output in render pixels,
 // previous position minus current (the DLSS / FSR convention), b = 1 where the game wrote velocity.
+// REACTIVE (plan-fsr.md step 4): also UE4's responsive-AA pixels, stencil bit 3 of the scene depth-stencil
+// (the bit the game's TAA tests): a = 1 there (the debug view), and FSR's reactive mask (`reactive` there, else 0).
 #version 450
 #extension GL_EXT_samplerless_texture_functions : require
 
@@ -11,12 +13,17 @@ layout(local_size_x = 8, local_size_y = 8) in;
 layout(binding = 0) uniform texture2D velocity_tex; // R16G16_UNORM, UE4-encoded, 0 = not written
 layout(binding = 1) uniform texture2D depth_tex;    // scene depth, reversed Z, infinite far plane
 layout(binding = 2, rgba16f) uniform writeonly image2D motion_img;
+#ifdef REACTIVE
+layout(binding = 3) uniform utexture2D stencil_tex;          // the same depth-stencil's stencil
+layout(binding = 4, r8) uniform writeonly image2D reactive_img; // FSR's reactive mask
+#endif
 
 layout(push_constant) uniform Constants {
     vec4 clip_to_prev_clip[4]; // View.ClipToPrevClip rows (row vector times matrix)
     vec2 view_size;            // View.ViewSizeAndInvSize.xy: the rendered rectangle, from (0, 0)
     vec2 image_size;           // the velocity / depth images
     uint has_velocity;         // 0: the TAA pass does not sample a velocity target (menus)
+    float reactive;            // REACTIVE: the mask's value on responsive-AA pixels (0-1)
 };
 
 void main() {
@@ -39,5 +46,10 @@ void main() {
     }
     // Screen units to pixels; screen y is up, pixel y down.
     const vec2 motion = vec2(-back.x, back.y) * 0.5 * view_size;
-    imageStore(motion_img, pixel, vec4(motion, written ? 1.0 : 0.0, 0.0));
+    float responsive = 0.0;
+#ifdef REACTIVE
+    responsive = (texelFetch(stencil_tex, pixel, 0).r & 8u) != 0u ? 1.0 : 0.0;
+    imageStore(reactive_img, pixel, vec4(responsive * reactive));
+#endif
+    imageStore(motion_img, pixel, vec4(motion, written ? 1.0 : 0.0, responsive));
 }

@@ -327,6 +327,9 @@ class ControlMapTest(unittest.TestCase):
         settings = (ROOT / 'gpu' / 'shim' / 'gow3_settings.h').read_text(encoding='utf-8')
         self.assertIn(': %s;' % d['fsr_sharpness'], re.search(r'ParseFsrSharpness[^}]*\}', graphics).group(0))
         self.assertIn('fsr_sharpness{%s}' % d['fsr_sharpness'], settings)
+        # FSR's reactive mask (plan-fsr.md step 4): the same default in the launcher, the parser and the settings.
+        self.assertIn(': %s;' % d['fsr_reactive'], re.search(r'ParseFsrReactive[^}]*}', graphics).group(0))
+        self.assertIn('fsr_reactive{%s}' % d['fsr_reactive'], settings)
         self.assertEqual([v for v, _t in launcher.FRAMES_QUEUED], ['1', '2', '0'])
         self.assertNotIn('GOW3_FRAMES_AHEAD', launcher.game_environment({**launcher.APP_DEFAULTS, 'frames_ahead': '2'}))
 

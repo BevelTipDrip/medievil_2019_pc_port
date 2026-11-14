@@ -3,8 +3,10 @@
 // first TAA pass of a frame (draws or the TAAU dispatch) a compute pass turns the game's
 // velocity target, where it wrote one, and otherwise the camera's motion (scene depth and the
 // View buffer's ClipToPrevClip) into render pixels, previous minus current (ue4_motion.comp).
-// Nothing in the game's frame changes. GOW3_UE4_MOTION_VIEW=1-4 shows them on the presented
-// frame (ue4_motion_view.comp); F10 cycles 1-4 and off. Off by default.
+// Nothing in the game's frame changes. GOW3_UE4_MOTION_VIEW=1-5 shows them on the presented
+// frame (ue4_motion_view.comp; 5: UE4's responsive-AA pixels); F10 cycles 1-5 and off. Off by default.
+// While AMD FSR runs with fsr_reactive above 0 (plan-fsr.md step 4) the pass also writes FSR's reactive
+// mask from the scene depth-stencil's bit 3 (the pass's REACTIVE variant; only with a stencil).
 
 #pragma once
 
@@ -30,7 +32,7 @@ class Ue4Motion {
 public:
     /// GOW3_UE4_MOTION_VIEW set (read once): the pass runs, the view starts in its mode.
     static bool Enabled();
-    /// F10: the next view mode (1-4, then 0 = picture unchanged).
+    /// F10: the next view mode (1-5, then 0 = picture unchanged).
     static void CycleViewMode();
 
     Ue4Motion(const Instance& instance, Scheduler& scheduler,
@@ -53,6 +55,9 @@ public:
         vk::ImageView view;
         u32 width, height;
         VideoCore::Image* depth;
+        /// FSR's reactive mask (R8_UNORM, General, the same size), written by the same pass; null if not.
+        vk::Image reactive;
+        vk::ImageView reactive_view;
     };
     bool GetPass(u32 frame_number, LastPass& pass);
     /// The velocity target's guest address (its last draw), or 0.
@@ -91,6 +96,10 @@ private:
     vk::UniqueDescriptorSetLayout motion_desc_layout;
     vk::UniquePipelineLayout motion_layout;
     vk::UniquePipeline motion_pipeline;
+    vk::UniqueDescriptorSetLayout reactive_desc_layout; ///< the REACTIVE variant (+ stencil, mask)
+    vk::UniquePipelineLayout reactive_layout;
+    vk::UniquePipeline reactive_pipeline;
+    bool reactive_supported = false; ///< R8_UNORM storage images
     vk::UniqueDescriptorSetLayout view_desc_layout;
     vk::UniquePipelineLayout view_layout;
     vk::UniquePipeline view_pipeline;
@@ -103,6 +112,8 @@ private:
     bool fresh = false;                ///< motion vectors of a frame not yet presented
     std::array<float, 2> view_size{};  ///< of the last motion vector pass
     OwnImage motion;
+    OwnImage reactive;
+    bool reactive_written = false; ///< the last pass wrote `reactive` for FSR
     OwnImage output;
     std::array<OwnImage, 2> history;
     u32 history_index = 0;

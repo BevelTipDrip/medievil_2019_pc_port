@@ -9,13 +9,16 @@
 #include <cstring>
 #include <memory>
 
+#include "gow3_settings.h"
 #include "video_core/host_shaders/ue4_motion_comp.h"
+#include "video_core/host_shaders/ue4_motion_reactive_comp.h"
 #include "video_core/host_shaders/ue4_motion_view_comp.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_runtime.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 #include "video_core/renderer_vulkan/vk_ue4_frame_map.h"
+#include "video_core/renderer_vulkan/vk_ue4_upscaler.h"
 #include "video_core/texture_cache/texture_cache.h"
 
 namespace Vulkan {
@@ -32,6 +35,7 @@ struct MotionPush {
     std::array<float, 2> view_size;
     std::array<float, 2> image_size;
     u32 has_velocity;
+    float reactive; ///< REACTIVE: the mask on responsive-AA pixels (0-1)
 };
 
 struct ViewPush {
@@ -102,7 +106,7 @@ bool Ue4Motion::Enabled() {
         if (!value || !*value) {
             return false;
         }
-        view_mode.store(std::clamp(std::atoi(value), 0, 4), std::memory_order_relaxed);
+        view_mode.store(std::clamp(std::atoi(value), 0, 5), std::memory_order_relaxed);
         return true;
     }();
     return enabled;
@@ -112,10 +116,11 @@ void Ue4Motion::CycleViewMode() {
     if (!Enabled()) {
         return;
     }
-    const int mode = (view_mode.load(std::memory_order_relaxed) + 1) % 5;
+    const int mode = (view_mode.load(std::memory_order_relaxed) + 1) % 6;
     view_mode.store(mode, std::memory_order_relaxed);
     static constexpr const char* names[] = {"off", "colours over the picture", "colours only",
-                                            "last frame moved", "difference x4"};
+                                            "last frame moved", "difference x4",
+                                            "responsive-AA pixels (FSR's reactive mask)"};
     std::printf("UE4 motion: view %d (%s)\n", mode, names[mode]);
     std::fflush(stdout);
 }
@@ -128,6 +133,16 @@ Ue4Motion::Ue4Motion(const Instance& instance_, Scheduler& scheduler_,
     motion_desc_layout = MakeLayout(device, {T::eSampledImage, T::eSampledImage, T::eStorageImage});
     MakePipeline(device, UE4_MOTION_COMP, *motion_desc_layout, sizeof(MotionPush), motion_layout,
                  motion_pipeline);
+    reactive_desc_layout = MakeLayout(device, {T::eSampledImage, T::eSampledImage, T::eStorageImage,
+                                               T::eSampledImage, T::eStorageImage});
+    MakePipeline(device, UE4_MOTION_REACTIVE_COMP, *reactive_desc_layout, sizeof(MotionPush),
+                 reactive_layout, reactive_pipeline);
+    // The mask is an R8_UNORM storage image (shaderStorageImageExtendedFormats; FSR's own masks need it too).
+    reactive_supported = bool(instance.GetPhysicalDevice().getFormatProperties(vk::Format::eR8Unorm).optimalTilingFeatures &
+                              vk::FormatFeatureFlagBits::eStorageImage);
+    if (!reactive_supported) {
+        std::printf("UE4 motion: no R8_UNORM storage images: no reactive mask for FSR\n");
+    }
     view_desc_layout = MakeLayout(device, {T::eSampledImage, T::eSampledImage, T::eStorageImage,
                                            T::eStorageImage, T::eStorageImage});
     MakePipeline(device, UE4_MOTION_VIEW_COMP, *view_desc_layout, sizeof(ViewPush), view_layout,
@@ -280,8 +295,19 @@ void Ue4Motion::OnTaa(const u8* view, std::span<const VAddr> reads, VideoCore::I
     push.image_size = {float(width), float(height)};
     push.has_velocity = velocity_image ? 1u : 0u;
     view_size = push.view_size;
+    // FSR's reactive mask from UE4's responsive-AA stencil bit (plan-fsr.md step 4): while FSR runs with
+    // fsr_reactive above 0, or for the debug view's responsive mode (5). Otherwise the plain pass, as before.
+    const int reactive_percent = Gow3Settings::Get().fsr_reactive.load(std::memory_order_relaxed);
+    const bool for_fsr = reactive_percent > 0 && Ue4Upscaler::FsrRunning();
+    const bool use_reactive = reactive_supported && depth_format == vk::Format::eD32SfloatS8Uint &&
+                              (for_fsr || view_mode.load(std::memory_order_relaxed) == 5);
+    push.reactive = for_fsr ? float(std::min(reactive_percent, 100)) / 100.0f : 0.0f;
+    reactive_written = use_reactive && for_fsr;
 
     Ensure(motion, width, height, vk::Format::eR16G16B16A16Sfloat);
+    if (use_reactive) {
+        Ensure(reactive, width, height, vk::Format::eR8Unorm);
+    }
     scheduler.EndRendering();
     if (velocity_image) {
         runtime.Transit(velocity_image, vk::ImageLayout::eGeneral,
@@ -307,45 +333,76 @@ void Ue4Motion::OnTaa(const u8* view, std::span<const VAddr> reads, VideoCore::I
                              .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
                          }))
                        : depth_view;
+    // The stencil alone (REACTIVE): an unsigned view of the same depth-stencil image, in General as above.
+    const vk::ImageView stencil_view =
+        use_reactive ? Check(device.createImageView({
+                           .image = depth_image->GetImage(),
+                           .viewType = vk::ImageViewType::e2D,
+                           .format = depth_format,
+                           .subresourceRange = {vk::ImageAspectFlagBits::eStencil, 0, 1, 0, 1},
+                       }))
+                     : vk::ImageView{};
     const vk::Image motion_image = vk::Image(motion.image);
     const vk::ImageView motion_view = *motion.view;
     const vk::ImageLayout old_layout = motion.layout;
     motion.layout = vk::ImageLayout::eGeneral;
-    scheduler.Record([=, pipeline = *motion_pipeline, layout = *motion_layout](
-                         vk::CommandBuffer cmdbuf) {
-        // Last frame's debug view read the motion image.
-        const vk::ImageMemoryBarrier2 to_write{
-            .srcStageMask = vk::PipelineStageFlagBits2::eComputeShader,
-            .srcAccessMask = vk::AccessFlagBits2::eShaderRead,
-            .dstStageMask = vk::PipelineStageFlagBits2::eComputeShader,
-            .dstAccessMask = vk::AccessFlagBits2::eShaderWrite,
-            .oldLayout = old_layout,
-            .newLayout = vk::ImageLayout::eGeneral,
-            .image = motion_image,
-            .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
-        };
-        cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &to_write});
-        const vk::DescriptorImageInfo infos[3] = {
+    const vk::Image reactive_image = use_reactive ? vk::Image(reactive.image) : vk::Image{};
+    const vk::ImageView reactive_view = use_reactive ? *reactive.view : vk::ImageView{};
+    const vk::ImageLayout reactive_old_layout = reactive.layout;
+    if (use_reactive) {
+        reactive.layout = vk::ImageLayout::eGeneral;
+    }
+    const vk::Pipeline pipeline = use_reactive ? *reactive_pipeline : *motion_pipeline;
+    const vk::PipelineLayout layout = use_reactive ? *reactive_layout : *motion_layout;
+    scheduler.Record([=](vk::CommandBuffer cmdbuf) {
+        // Last frame's debug view read the motion image (FSR the mask).
+        std::array<vk::ImageMemoryBarrier2, 2> to_write{};
+        u32 barriers = 0;
+        for (const auto& [image, old] : {std::pair{motion_image, old_layout},
+                                         std::pair{reactive_image, reactive_old_layout}}) {
+            if (!image) {
+                continue;
+            }
+            to_write[barriers++] = {
+                .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+                .srcAccessMask = vk::AccessFlagBits2::eShaderRead,
+                .dstStageMask = vk::PipelineStageFlagBits2::eComputeShader,
+                .dstAccessMask = vk::AccessFlagBits2::eShaderWrite,
+                .oldLayout = old,
+                .newLayout = vk::ImageLayout::eGeneral,
+                .image = image,
+                .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
+            };
+        }
+        cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = barriers, .pImageMemoryBarriers = to_write.data()});
+        const vk::DescriptorImageInfo infos[5] = {
             {.imageView = velocity_view, .imageLayout = vk::ImageLayout::eGeneral},
             {.imageView = depth_view, .imageLayout = vk::ImageLayout::eGeneral},
             {.imageView = motion_view, .imageLayout = vk::ImageLayout::eGeneral},
+            {.imageView = stencil_view, .imageLayout = vk::ImageLayout::eGeneral},
+            {.imageView = reactive_view, .imageLayout = vk::ImageLayout::eGeneral},
         };
-        const vk::DescriptorType types[3] = {vk::DescriptorType::eSampledImage,
-                                             vk::DescriptorType::eSampledImage,
-                                             vk::DescriptorType::eStorageImage};
-        std::array<vk::WriteDescriptorSet, 3> writes{};
-        for (u32 i = 0; i < 3; ++i) {
+        const vk::DescriptorType types[5] = {
+            vk::DescriptorType::eSampledImage, vk::DescriptorType::eSampledImage, vk::DescriptorType::eStorageImage,
+            vk::DescriptorType::eSampledImage, vk::DescriptorType::eStorageImage};
+        std::array<vk::WriteDescriptorSet, 5> writes{};
+        const u32 bindings = reactive_image ? 5 : 3;
+        for (u32 i = 0; i < bindings; ++i) {
             writes[i] = {.dstBinding = i,
                          .descriptorCount = 1,
                          .descriptorType = types[i],
                          .pImageInfo = &infos[i]};
         }
         cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline);
-        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, layout, 0, writes);
+        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, layout, 0,
+                                    vk::ArrayProxy<const vk::WriteDescriptorSet>(bindings, writes.data()));
         cmdbuf.pushConstants(layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(push), &push);
         cmdbuf.dispatch((width + 7) / 8, (height + 7) / 8, 1);
     });
-    scheduler.DeferOperation([device, velocity_view, depth_view] {
+    scheduler.DeferOperation([device, velocity_view, depth_view, stencil_view] {
+        if (stencil_view) {
+            device.destroyImageView(stencil_view);
+        }
         if (velocity_view != depth_view) {
             device.destroyImageView(velocity_view);
         }
@@ -371,7 +428,9 @@ bool Ue4Motion::GetPass(u32 frame_number, LastPass& pass) {
     if (!depth_image) {
         return false;
     }
-    pass = {vk::Image(motion.image), *motion.view, motion.width, motion.height, depth_image};
+    pass = {vk::Image(motion.image), *motion.view, motion.width, motion.height, depth_image,
+            reactive_written ? vk::Image(reactive.image) : vk::Image{},
+            reactive_written ? *reactive.view : vk::ImageView{}};
     return true;
 }
 

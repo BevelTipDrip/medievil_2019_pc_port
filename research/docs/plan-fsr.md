@@ -154,3 +154,14 @@ is fairly expensive on the Deck** (no numbers recorded). Image: at 67% render sc
 it looks great. The user: a good option for players targeting 30 or 45 FPS (the Deck runs arbitrary refresh rates).
 Decision: FSR stays available on the Deck as an option; the Deck default stays the game's TAAU. A cheaper FSR 2.x
 option for the Deck later (To do).
+
+F4 (step 4, fix built 2026-11-14, not run): the reactive mask from UE4's responsive-AA stencil bit (bit 3 of the scene
+depth-stencil, the bit the game's TAA tests; study-taau-frame-map.md). U2's motion pass gets a REACTIVE variant that
+also reads the stencil and writes an R8 mask (`fsr_reactive` / 100 on marked pixels, 0 elsewhere); FSR gets it as its
+reactive mask. Only while FSR runs with `fsr_reactive` above 0 (menu Display "AMD FSR reactive mask", launcher
+Graphics; 0-100, default 50 provisional); DLSS and TAA keep the plain pass. Cost (estimate, before measuring): FSR
+without a mask read its own 1x1 blank texture; now one byte a render pixel in its first pass, plus ~2 bytes a pixel
+in the motion pass: about 0.03 ms or less on the Deck. The motion debug view's mode 5 (`GOW3_UE4_MOTION_VIEW=5`,
+F10 cycles) paints the marked pixels red: first, how much of the game is marked at all.
+Tests: T-F8 (PC): mode 5 on torches, fire, death effects; then the slider 0 vs 50 / 100 on the smearing. T-F9
+(Deck, later): the slider 0 vs on at a fixed GPU clock, frame times.

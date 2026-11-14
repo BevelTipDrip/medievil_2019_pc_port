@@ -1412,6 +1412,9 @@ void DisplayTab() {
         if (s.ue4_fsr_available) {
             SliderRow("AMD FSR sharpening", s.fsr_sharpness, 0, 100, "%d%%",
                       "FSR's own sharpening while AMD FSR runs, apart from the RCAS strength. 0 turns it off.", 5);
+            SliderRow("AMD FSR reactive mask", s.fsr_reactive, 0, 100, "%d%%",
+                      "How much FSR trusts the current frame on the pixels the game marks for it (fire, effects): "
+                      "less smearing there, a little less smoothing. 0 turns it off.", 5);
         }
         ImGui::BeginDisabled(rcas_blocked);
         CheckRow("Sharpening (RCAS)", s.rcas,

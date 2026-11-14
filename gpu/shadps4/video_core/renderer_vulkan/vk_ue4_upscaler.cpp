@@ -133,6 +133,10 @@ const char* Ue4Upscaler::RunningName() {
 }
 
 bool Ue4Upscaler::SharpensItself() {
+    return FsrRunning();
+}
+
+bool Ue4Upscaler::FsrRunning() {
     return Running() && std::strcmp(RunningName(), "FSR") == 0;
 }
 
@@ -521,6 +525,9 @@ bool Ue4Upscaler::Run(const u8* view, std::span<const VAddr> reads, VideoCore::I
                    vk::ImageAspectFlagBits::eColor, out_width, out_height,
                    vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled |
                        vk::ImageUsageFlagBits::eTransferSrc},
+        // The motion pass's mask (it ran with fsr_reactive above 0 while FSR runs), at the same size.
+        .reactive = {pass.reactive, pass.reactive_view, vk::Format::eR8Unorm, vk::ImageAspectFlagBits::eColor, width,
+                     height, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled},
         .jitter_x = jitter_x,
         .jitter_y = jitter_y,
         .reset = reset_reason != nullptr,
@@ -538,11 +545,12 @@ bool Ue4Upscaler::Run(const u8* view, std::span<const VAddr> reads, VideoCore::I
     };
     const vk::Image taa_output = output_image->GetImage();
     const vk::Image motion_image = pass.image;
+    const vk::Image reactive_image = pass.reactive;
     // In order with the frame's other commands, on the recording thread: no CommandBuffer() here,
     // which made the GPU thread wait for that thread to catch up once a frame (U3 runs 1-3; the
     // user saw a small saw-tooth in the frame times once). A backend only records into `cmdbuf`.
-    scheduler.Record([backend, frame, output_handle, taa_output, motion_image, out_width, out_height,
-                      same_format](vk::CommandBuffer cmdbuf) {
+    scheduler.Record([backend, frame, output_handle, taa_output, motion_image, reactive_image, out_width,
+                      out_height, same_format](vk::CommandBuffer cmdbuf) {
         const s64 record_start = StatsClock();
         const std::array<vk::ImageMemoryBarrier2, 2> before{{
             {
@@ -571,6 +579,19 @@ bool Ue4Upscaler::Run(const u8* view, std::span<const VAddr> reads, VideoCore::I
         }};
         cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = u32(before.size()),
                                  .pImageMemoryBarriers = before.data()});
+        if (reactive_image) { // the same pass wrote FSR's reactive mask
+            const vk::ImageMemoryBarrier2 mask_written{
+                .srcStageMask = vk::PipelineStageFlagBits2::eComputeShader,
+                .srcAccessMask = vk::AccessFlagBits2::eShaderWrite,
+                .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+                .dstAccessMask = vk::AccessFlagBits2::eShaderRead,
+                .oldLayout = vk::ImageLayout::eGeneral,
+                .newLayout = vk::ImageLayout::eGeneral,
+                .image = reactive_image,
+                .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
+            };
+            cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &mask_written});
+        }
         if (!backend->Evaluate(cmdbuf, frame)) {
             // TAA's output keeps last frame's contents once; the GPU thread switches to UE4's
             // TAA at the next TAA draw.
