@@ -108,6 +108,13 @@ int main(void) {
     assert(apply_button_map(&bound,"cross=Escape",MAP_KEYS)==1);
     assert(menu_key_buttons(k,&bound)==BTN_CROSS);
     k[SDL_SCANCODE_ESCAPE]=false;
+    k[SDL_SCANCODE_W]=true; k[SDL_SCANCODE_D]=true; /* the left stick's keys: directions, as the stick in the game's menus */
+    assert(menu_key_buttons(k,&key_map)==(BTN_UP|BTN_RIGHT));
+    assert(menu_fixed_keys(k,&key_map)==(BTN_UP|BTN_RIGHT)); /* the Load list too */
+    ButtonMap w_square=key_map; /* a bind wins: W bound to Square is Square, not Up */
+    assert(apply_button_map(&w_square,"square=W",MAP_KEYS)==1);
+    assert(menu_key_buttons(k,&w_square)==(BTN_SQUARE|BTN_RIGHT));
+    k[SDL_SCANCODE_W]=k[SDL_SCANCODE_D]=false;
 
     /* Mouse binds in the menu: as bound, never from the left button (the pointer's). */
     assert(apply_button_map(&mouse_map,"circle=left,l1=right,cross=middle,r1=x1,square=x2",MAP_MOUSE)==5);

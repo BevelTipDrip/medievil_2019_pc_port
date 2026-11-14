@@ -804,6 +804,17 @@ Rows that break: N 25 (until neutralized), and N 6/8/10 without the wrapper; T 1
 3. Should keyboard prompts show the right key per action (S3 work), or are pad glyphs acceptable at first?
 4. Mouse buttons: keep them as pad buttons, or move them to native gameplay-only keys?
 
+**The user's answers (2026-11-13):**
+
+1. Keyboard menu set: W/A/S/D and the arrows navigate, Escape goes back, Enter and Space accept, Q / E change
+   tabs. (WASD in menus is not Slate's default navigation: it needs its own mappings, checked during X-N work.)
+2. Escape also opens and closes the pause menu, if possible.
+3. Pad glyphs are fine for the first setup; once N works, keyboard key glyphs replace them for consistency.
+4. Mouse buttons go the same native route as the keyboard: mouse navigation is planned for the game's menus and
+   ours.
+5. Both devices at once under the fallback: decided only if the fallback is needed.
+6. Cutscene skip stays fixed on Circle unless that adds difficulty.
+
 ## Scratch tools and data
 
 In `C:\Users\Ty\AppData\Local\Temp\claude\c--Users-Ty-MediEvil\78f7734e-4522-4580-95d1-94046d666589\scratchpad\`:

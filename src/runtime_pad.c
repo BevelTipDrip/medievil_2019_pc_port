@@ -511,15 +511,17 @@ static uint32_t list_buttons(void) {
  * sections 2.2 and 10): the D-pad, Cross (change), Circle (back), L1 / R1 (tabs), Square + the touchpad held
  * (APPLY & RESTART; the touchpad: Share / Create on a controller, Tab by default). Keys and mouse buttons act as the
  * PS buttons the launcher binds them to (the user, 2026-11-13). Standard fallbacks besides: the arrows are the
- * D-pad, Enter and keypad Enter Cross, Esc Circle, each only while the key is not bound to one of the menus'
- * buttons (a bind wins: an arrow bound to Square is Square; Enter, bound to Options by default, is Cross here as
- * Options does nothing in the menus). Backspace, Q, E and Tab are no fallbacks. One mask, so a key both bound and
- * fixed is one press. */
+ * D-pad, Enter and keypad Enter Cross, Esc Circle, and W / A / S / D (the keyboard's left stick in play) the
+ * directions, as the left stick moves through the game's own menus (T-SM6, 2026-11-13); each only while the key
+ * is not bound to one of the menus' buttons (a bind wins: an arrow bound to Square is Square; Enter, bound to
+ * Options by default, is Cross here as Options does nothing in the menus). Backspace, Q, E and Tab are no
+ * fallbacks. One mask, so a key both bound and fixed is one press. */
 #define MENU_BUTTONS (BTN_UP|BTN_DOWN|BTN_LEFT|BTN_RIGHT|BTN_CROSS|BTN_CIRCLE|BTN_L1|BTN_R1|BTN_SQUARE|BTN_TOUCHPAD)
 static const struct { int key; uint32_t ps; } menu_keys[]={
     {SDL_SCANCODE_UP,BTN_UP}, {SDL_SCANCODE_DOWN,BTN_DOWN}, {SDL_SCANCODE_LEFT,BTN_LEFT},
     {SDL_SCANCODE_RIGHT,BTN_RIGHT}, {SDL_SCANCODE_RETURN,BTN_CROSS}, {SDL_SCANCODE_KP_ENTER,BTN_CROSS},
     {SDL_SCANCODE_ESCAPE,BTN_CIRCLE},
+    {SDL_SCANCODE_W,BTN_UP}, {SDL_SCANCODE_S,BTN_DOWN}, {SDL_SCANCODE_A,BTN_LEFT}, {SDL_SCANCODE_D,BTN_RIGHT},
 };
 /* The fallback keys held in `k` (SDL_GetKeyboardState) that no bind of `map` gives a menu button. */
 static uint32_t menu_fixed_keys(const bool *k, const ButtonMap *map) {

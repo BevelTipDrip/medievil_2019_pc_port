@@ -292,9 +292,14 @@ void RecordItem(float top, float bottom) {
     }
 }
 
+// How far a row may stick out of the list and still count as whole: ImGui truncates the content height and the
+// scroll to whole pixels, so at the scroll's end the last row can overhang by up to ~1.6 px (4K, T-SM4: the last
+// row of most tabs was cut away for 1.14 px).
+constexpr float CutSlack = 2.0f;
+
 // Whether a row lies wholly in the band the list showed last frame (always outside the styled body).
 bool RowVisible(ImVec2 min, ImVec2 max) {
-    return !in_styled_body || (min.y >= body_visible_top - 0.5f && max.y <= body_visible_bottom + 0.5f);
+    return !in_styled_body || (min.y >= body_visible_top - CutSlack && max.y <= body_visible_bottom + CutSlack);
 }
 
 // The next row needs a new start to apply: a small "RESTART" tag left of its value (styled), or the word
@@ -1211,7 +1216,7 @@ void ControlsTab() {
     if (!s.camera_hook.load()) {
         ImGui::TextDisabled("Not available for this game build (the camera hook knows MediEvil 01.00 and 01.02).");
     } else {
-        ImGui::TextDisabled("Untick a move to turn it off; changes apply at once. Only the free camera changes: fixed, "
+        ImGui::TextDisabled("Turn off to disable behavior; changes apply at once. Only the free camera changes: fixed, "
                             "rail and boss cameras keep the game's moves.");
         if (!found) {
             ImGui::TextDisabled("Not seen yet: the moves are found once Dan is in a free camera area.");
@@ -2065,8 +2070,13 @@ void StyledMenu() {
             const ImVec2 start = ImGui::GetCursorScreenPos();
             const float view = body_size.y, bar = std::max(view * view / (view + range), Px(30.0f));
             const float thumb = body_pos.y + (view - bar) * ImGui::GetScrollY() / range;
+            // Not part of the list's content: placed at the scrolled top, it stretched the scroll range past the
+            // last row a little every frame (T-SM4: blank space, the list creeping on open).
+            ImGuiWindow* body = ImGui::GetCurrentWindow();
+            const ImVec2 content_end = body->DC.CursorMaxPos;
             ImGui::SetCursorScreenPos(ImVec2(body_pos.x + body_size.x - Px(16.0f), body_pos.y));
             ImGui::InvisibleButton("##scrollbar", ImVec2(Px(16.0f), view));
+            body->DC.CursorMaxPos = content_end;
             static float grab = 0.0f; // where the thumb was taken, from its top
             const float mouse = ImGui::GetIO().MousePos.y;
             if (ImGui::IsItemActivated()) {
@@ -2091,8 +2101,8 @@ void StyledMenu() {
         if (scroll_max > 0.0f && !body_items.empty()) {
             float top = cut_bottom, bottom = cut_top;
             for (const auto& [item_top, item_bottom] : body_items) {
-                if (item_top >= cut_top - 0.5f) top = std::min(top, item_top);
-                if (item_bottom <= cut_bottom + 0.5f) bottom = std::max(bottom, item_bottom);
+                if (item_top >= cut_top - CutSlack) top = std::min(top, item_top);
+                if (item_bottom <= cut_bottom + CutSlack) bottom = std::max(bottom, item_bottom);
             }
             if (bottom > top) {
                 cut_top = top;

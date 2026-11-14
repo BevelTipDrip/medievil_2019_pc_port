@@ -466,3 +466,28 @@ graphics-settings-test PASS, pad-map-test PASS (built by hand). Tests: 9.6 (T-SM
 updated for section 10, and T-SM16). Nothing launched. Commits: `3c42639` (binds-only input), `768ced0` (PlayStation
 glyphs), `6ab5c19` (restart-only frame buffer, held restart), `2364371` (settings_version), `dc330e1` (arrows / Enter
 fallbacks, the Load list on the binds), `fc4351d` (settings_version 2: stale readbacks).
+
+### 10.7 First run (2026-11-13, run) and its fixes (fix built, not run)
+
+The user's run of 9.6 on Windows at 4K (keyboard prompts, DualSense):
+
+- **Run, as intended:** the layout (T-SM4, no half rows), arrows / Enter / Esc and Space (T-SM6), the held restart
+  (T-SM7: empties when let go, restarts at 5 s, Square or Touchpad alone nothing), Frame buffer size (T-SM5), the
+  flip guard on (T-SM10), the Load list, PlayStation glyphs (T-SM16). The DualSense works throughout. The mouse
+  in the list did nothing on the first launch and worked on the second (nothing changed between them; not
+  explained).
+- **Found: the last row of most tabs hidden** (its help showed under the list). ImGui truncates the content height
+  and the scroll to whole pixels (imgui.cpp CalcWindowContentSizes), so at the scroll's end the last row overhung
+  the list by up to ~1.6 px (4K: 1.14 px) and the whole-row cut (0.5 px slack) dropped it. **Found too:** the
+  scroll bar's InvisibleButton, placed at the scrolled top, stretched the scroll range past the content every
+  frame (blank space, the list creeping). Confirmed offline (scratchpad `menu-scroll\harness.cpp`, real ImGui, the
+  list's geometry at 2160 / 1440 / 1080 / 800 lines, 10-30 rows): as built the last row was hidden in 19 of 76
+  layouts and the range too long in 57; with a 2 px slack (`CutSlack`) and the button's extent not counted, 0 and 0.
+- **W/A/S/D:** the keyboard's left stick in play, so the menus ignored them while the game's own menus move with
+  the stick. Now fallback directions like the arrows (a bind on the key wins); the Load list too.
+- **Camera note:** "Turn off to disable behavior" (the user's wording) instead of "Untick a move".
+
+Build clean; pad-map-test PASS (new W/A/S/D cases), graphics-settings-test PASS. To run: T-SM4 (every tab's last
+row reachable, no blank space at the end, the Controls tab opens without creeping), T-SM6 (W/A/S/D move in the
+menu and the Load list), T-SM8 (wheel, track click, thumb drag), T-SM9 (Deck Optimized, after the user's ini
+backup).
