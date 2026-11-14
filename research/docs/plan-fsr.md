@@ -1,7 +1,8 @@
 # Plan: AMD FSR in place of UE4's TAA (FSR 3.x, FSR 4.x)
 
-Status (2026-11-13): steps 1-3 verified on the PC (on deck-lab since `f4de291`); next step 5 (Deck), then 4 (reactive
-mask), then 6-7 (FSR 4); the side items (CAS bug, DLSS preset, cheaper upscaler stats) after those. Parent: [START-HERE.md](START-HERE.md). Related:
+Status (2026-11-14): steps 1-3 verified on the PC (on deck-lab since `f4de291`), step 5 run on the Deck (FSR 3.1 kept as an
+option, not the Deck default); next step 4 (reactive mask), then 6-7 (FSR 4); later FSR 2.x for the Deck and the side
+items (CAS bug, DLSS preset, cheaper upscaler stats). Parent: [START-HERE.md](START-HERE.md). Related:
 [plan-dlss.md](plan-dlss.md), [plan-ue4-motion-vectors.md](plan-ue4-motion-vectors.md) (U2-U4, the inputs),
 [upscaler-reference.md](upscaler-reference.md) (the God of War III upscaler), [plan-fsr-frame-generation.md](plan-fsr-frame-generation.md).
 
@@ -69,6 +70,9 @@ mask), then 6-7 (FSR 4); the side items (CAS bug, DLSS preset, cheaper upscaler 
   presenter's RCAS (CAS) slider; TAA needs far more RCAS than FSR needs its own sharpening. Verified (F2c, T-F7):
   `fsr_sharpness` 0-100 (0 = off, default 25), menu Image tab and launcher Graphics "AMD FSR sharpening"; the
   Sharpening (RCAS) box and strength are only the presenter's RCAS (the game's TAA, DLSS), off while FSR runs.
+- **FSR 2.x for the Deck** (the user, 2026-11-14, after T-FD1; later): FSR 3.1 is expensive on the Deck; FSR 2.1 is
+  much cheaper there (the user's experience) and should not look much worse than the game's TAA. A further choice
+  beside FSR 3.1, not a replacement. Source to check: AMD's FidelityFX FSR 2 (MIT, had a Vulkan backend).
 
 ## Step 1 (verified on the PC, T-F1)
 
@@ -143,3 +147,10 @@ DLSS as before. F2c verified.
 Step 3 (2026-11-13, the user): verified. Several render scales and cutscenes work; the default jitter sign is right.
 F8 (cycle the jitter sign) stays in place for later testing. Step 4 (reactive mask): no smearing noticed on torches,
 fire or death effects so far, still the next logical step after step 5 (the user's order: 5, 4, then 6-7).
+
+T-FD1, step 5 (2026-11-14, Deck, build `60de4b3` deployed over SSH, no logging, quiet extra-env; the user watched frame
+times in the overlay, a level with a fixed camera, TAA and FSR switched in the menu at several fixed GPU clocks): **FSR 3.1
+is fairly expensive on the Deck** (no numbers recorded). Image: at 67% render scale FSR clearly beats the game's TAA, at 80%
+it looks great. The user: a good option for players targeting 30 or 45 FPS (the Deck runs arbitrary refresh rates).
+Decision: FSR stays available on the Deck as an option; the Deck default stays the game's TAAU. A cheaper FSR 2.x
+option for the Deck later (To do).
