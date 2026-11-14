@@ -498,3 +498,16 @@ showed it). The jump scrolled to the end measured before scrolling, and the list
 scrolled (offline: 6 px at 25 rows, every display height; up to 17 rows exact). Fix built, not run: after the
 last row is revealed the list stays at its end until the range settles (`MenuNav::pin_end`, TabBody); moving
 the focus, the wheel or any drag ends it. Offline with the pin: the end reached in two frames in every layout.
+
+**Wrap fix verified** (the user, 2026-11-13). **Load list: the settings menu's mouse (the user, 2026-11-13; fix built,
+not run).** Moving over a save chooses it, a click chooses it, a double-click loads it; the wheel scrolls the list
+(one save per notch) and the scroll bar drags or jumps (brighter under the mouse); SELECT / GO BACK / DETAILS
+in the prompt bar are clickable (Gold under the mouse). The left button is the pointer's only (`list_mouse_buttons`,
+as `menu_mouse_buttons`); a pad or key move still scrolls the chosen save into view, the mouse does not
+(`choice_reveal`). DETAILS / SUMMARY moved from Square to Triangle (prompt picture `prompts/style/Triangle.png`,
+fallback the game's `PS4_Triangle.png`; `StyleTriangle`), with a clickable DETAILS / SUMMARY button under Play time
+(only when the save has a levels page). Title 66 -> 54 px and the content 20 px higher (ListTop 205 -> 185) to fit
+it; the levels page shrinks its lines to stay above the button (a full save, ~22 levels, ran past the frame
+before). The game behind dimmed 80% as under the settings menu; frame size and prompt bar unchanged.
+To run: T-SM12 again (mouse: hover, double-click load, wheel, scroll bar, prompts, the button; Triangle on the pad
+and its key; a left click no longer acts as Square).

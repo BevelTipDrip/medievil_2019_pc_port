@@ -451,10 +451,10 @@ extern "C" void gow3gpu_choice_style(const char* dir) {
         // scripts/ue4_glyphs.py overlay_prompts), else the game's own PS4 ones.
         const char* const images[] = {"menu/frame_options.png", "prompts/style/Cross.png", "prompts/style/Circle.png",
                                       "prompts/style/Square.png", "prompts/style/L1.png", "prompts/style/R1.png",
-                                      "prompts/style/Touchpad.png"};
+                                      "prompts/style/Touchpad.png", "prompts/style/Triangle.png"};
         const char* const fallbacks[] = {nullptr, "prompts/PS4_Cross.png", "prompts/PS4_Circle.png",
                                          "prompts/PS4_Square.png", "prompts/PS4_L1.png", "prompts/PS4_R1.png",
-                                         "prompts/PS4_Touch_Pad.png"};
+                                         "prompts/PS4_Touch_Pad.png", "prompts/PS4_Triangle.png"};
         static_assert(std::size(images) == sizeof(files.images) / sizeof(files.images[0]));
         for (size_t i = 0; i < std::size(images); ++i) {
             if (!Gow3Png::LoadRgba((dir + "/" + images[i]).c_str(), files.images[i]) &&

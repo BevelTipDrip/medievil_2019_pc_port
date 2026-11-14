@@ -73,6 +73,8 @@ extern "C" const unsigned char gow3_font_ttf_end[];
 
 namespace Gow3Overlay {
 
+void ChoiceStep(int move, int finish, bool toggle = false); // the Load list's step (defined after its drawing)
+
 namespace {
 
 std::mutex imgui_mutex; // the ImGui context: window thread (input) and present thread
@@ -93,11 +95,14 @@ std::atomic<bool> choice_active{false};
 std::string choice_title;
 std::vector<std::string> choice_items;
 std::vector<std::string> choice_details, choice_more; // per item; empty: the plain list
-bool choice_expanded = false;                           // Square: `more` in place of `details`
+bool choice_expanded = false;                           // Triangle: `more` in place of `details`
+bool choice_reveal = false; // scroll the chosen save into view (opened, or moved by the pad or keys; not the mouse)
 // The game's menu look for the list with details and the settings menu (SetChoiceStyle): images
 // become textures on the present thread (UpdateChoiceTextures); both fonts and all textures, or the
 // plain look.
-enum StyleImage { StyleFrame, StyleCross, StyleCircle, StyleSquare, StyleL1, StyleR1, StyleTouchpad, StyleImageCount };
+enum StyleImage {
+    StyleFrame, StyleCross, StyleCircle, StyleSquare, StyleL1, StyleR1, StyleTouchpad, StyleTriangle, StyleImageCount
+};
 struct ChoiceStyle {
     Gow3Png::Image pending[StyleImageCount];
     ImTextureData* textures[StyleImageCount] = {};
@@ -2286,19 +2291,32 @@ void StyledChoiceBox() {
     const auto text_width = [&](ImFont* face, float px, std::string_view s) {
         return face->CalcTextSizeA(px * u, FLT_MAX, 0.0f, s.data(), s.data() + s.size()).x;
     };
+    // The mouse as in the settings menu (2026-11-13): moving over a save chooses it, a double-click loads it, the wheel
+    // and the scroll bar scroll, the prompts and the DETAILS button are clickable; the left button is the pointer's
+    // only (runtime_pad.c list_mouse_buttons). Acted on after drawing: loading retires this frame's textures.
+    const ImGuiIO& io = ImGui::GetIO();
+    const bool moved = io.MouseDelta.x != 0.0f || io.MouseDelta.y != 0.0f;
+    const auto hovered = [&](ImVec2 min, ImVec2 max) { return ImGui::IsMouseHoveringRect(min, max, false); };
+    int finish = 0; // 1 load, 2 back
+    bool toggle = false;
 
-    // The frame's transparent middle is filled as in the Options menu (opaque: the title screen's
-    // logo showed through), then the frame drawn over it.
+    // The game dimmed 80% behind the frame, as under the settings menu. The frame's transparent middle is
+    // filled as in the Options menu (opaque: the title screen's logo showed through), then the frame drawn over it.
+    draw->AddRectFilled(viewport->Pos, ImVec2(viewport->Pos.x + viewport->Size.x, viewport->Pos.y + viewport->Size.y),
+                        IM_COL32(0, 0, 0, 204));
     draw->AddRectFilled(P(20, 106), P(1161, 768), PanelFill, 34.0f * u);
-    draw->AddImage(choice_style.textures[0]->GetTexRef(), at, ImVec2(at.x + width, at.y + height));
+    draw->AddImage(choice_style.textures[StyleFrame]->GetTexRef(), at, ImVec2(at.x + width, at.y + height));
     std::string heading = "-" + choice_title + "-";
     std::transform(heading.begin(), heading.end(), heading.begin(),
                    [](unsigned char c) { return char(std::toupper(c)); });
-    text(title_font, 66.0f, ImVec2(at.x + (width - text_width(title_font, 66.0f, heading)) * 0.5f, P(0, 112).y),
+    // 54 px (66 until 2026-11-13: the content moved up 20 px to make room for the DETAILS button).
+    constexpr float TitlePx = 54.0f;
+    text(title_font, TitlePx, ImVec2(at.x + (width - text_width(title_font, TitlePx, heading)) * 0.5f, P(0, 112).y),
          White, heading);
 
-    // Left: the saves, scrolled to keep the chosen one in view.
-    constexpr float ListX = 70.0f, ListTop = 205.0f, ListBottom = 742.0f, ListW = 450.0f;
+    // Left: the saves, scrolled to keep the chosen one in view after a pad or key move; the wheel and the scroll
+    // bar scroll freely.
+    constexpr float ListX = 70.0f, ListTop = 185.0f, ListBottom = 742.0f, ListW = 450.0f;
     constexpr float Big = 38.0f, Small = 25.0f, Line = 1.18f, Gap = 20.0f;
     std::vector<float> tops, heights;
     float total = 0.0f;
@@ -2309,12 +2327,51 @@ void StyledChoiceBox() {
         total += h + Gap;
     }
     static float scroll = 0.0f;
-    const float view = ListBottom - ListTop;
-    if (!tops.empty()) {
+    static bool bar_dragging = false;
+    static float bar_grab = 0.0f; // where the thumb was taken, from its top (frame pixels)
+    const float view = ListBottom - ListTop, scroll_max = std::max(total - Gap - view, 0.0f);
+    if (!tops.empty() && choice_reveal) {
         const int i = std::clamp(choice_index, 0, int(tops.size()) - 1);
         scroll = std::min(scroll, tops[i]);
         scroll = std::max(scroll, tops[i] + heights[i] - view);
-        scroll = std::clamp(scroll, 0.0f, std::max(total - Gap - view, 0.0f));
+    }
+    choice_reveal = false;
+    const bool over_list = hovered(P(ListX - 16, ListTop - 4), P(ListX + ListW + 16, ListBottom));
+    if (over_list && io.MouseWheel != 0.0f) {
+        scroll -= io.MouseWheel * (Big * Line + Gap);
+    }
+    // The scroll bar: a click on the track puts the thumb's middle there, the thumb drags.
+    const float bar = scroll_max > 0.0f ? std::max(view * view / (total - Gap), 30.0f) : 0.0f;
+    const ImVec2 track_min = P(ListX + ListW - 6, ListTop), track_max = P(ListX + ListW + 16, ListBottom);
+    const bool over_bar = scroll_max > 0.0f && hovered(track_min, track_max);
+    if (over_bar && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+        const float mouse = (io.MousePos.y - at.y) / u, thumb = ListTop + (view - bar) * scroll / scroll_max;
+        bar_dragging = true;
+        bar_grab = mouse >= thumb && mouse <= thumb + bar ? mouse - thumb : bar * 0.5f;
+    }
+    if (!ImGui::IsMouseDown(ImGuiMouseButton_Left) || scroll_max <= 0.0f) {
+        bar_dragging = false;
+    }
+    if (bar_dragging) {
+        const float mouse = (io.MousePos.y - at.y) / u;
+        scroll = std::clamp((mouse - bar_grab - ListTop) / (view - bar), 0.0f, 1.0f) * scroll_max;
+    }
+    scroll = std::clamp(scroll, 0.0f, scroll_max);
+    // The mouse over a save (its visible part): moving or a click chooses it, a double-click loads it.
+    for (int i = 0; i < int(choice_items.size()) && !bar_dragging && !over_bar; ++i) {
+        const float y = ListTop + tops[i] - scroll;
+        if (y + heights[i] < ListTop || y > ListBottom ||
+            !hovered(P(ListX - 14, std::max(y - 4, ListTop - 4)), P(ListX + ListW - 6, std::min(y + heights[i] + 4, ListBottom)))) {
+            continue;
+        }
+        if (moved || ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+            choice_index = i;
+        }
+        if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+            choice_index = i;
+            finish = 1;
+        }
+        break;
     }
     draw->PushClipRect(P(ListX - 16, ListTop - 4), P(ListX + ListW, ListBottom), true);
     for (int i = 0; i < int(choice_items.size()); ++i) {
@@ -2339,22 +2396,31 @@ void StyledChoiceBox() {
         }
     }
     draw->PopClipRect();
-    if (total - Gap > view) { // more saves than fit: a thin scroll bar
-        const float bar = view * view / (total - Gap), top = ListTop + (view - bar) * scroll / (total - Gap - view);
-        draw->AddRectFilled(P(ListX + ListW + 2, top), P(ListX + ListW + 7, top + bar), IM_COL32(200, 196, 190, 120),
-                            3.0f * u);
+    if (scroll_max > 0.0f) { // more saves than fit: a thin scroll bar, brighter under the mouse
+        const bool lit = over_bar || bar_dragging;
+        const float top = ListTop + (view - bar) * scroll / scroll_max;
+        if (lit) {
+            draw->AddRectFilled(P(ListX + ListW + 2, ListTop), P(ListX + ListW + 7, ListBottom),
+                                IM_COL32(200, 196, 190, 40), 3.0f * u);
+        }
+        draw->AddRectFilled(P(ListX + ListW + 2, top), P(ListX + ListW + 7, top + bar),
+                            IM_COL32(200, 196, 190, lit ? 200 : 120), 3.0f * u);
     }
 
-    // Right: the chosen save's level picture and details, or (Square) every level in it.
-    constexpr float RightX = 548.0f, RightW = 552.0f;
+    // Right: the chosen save's level picture and details, or (Triangle) every level in it; under them the
+    // DETAILS / SUMMARY button (the user, 2026-11-13: under Play time).
+    constexpr float RightX = 548.0f, RightW = 552.0f, ButtonH = 36.0f, ButtonTop = ListBottom - ButtonH;
     const int i = choice_index;
+    const bool has_more = !choice_more[i].empty();
     float y = ListTop;
-    if (choice_expanded && !choice_more[i].empty()) {
-        constexpr float Size = 24.0f;
+    if (choice_expanded && has_more) {
         const auto lines = SplitLines(choice_more[i]);
         const std::string_view header = "-LEVELS-";
         text(font, 32.0f, P(RightX + (RightW - text_width(font, 32.0f, header) / u) * 0.5f, y), Green, header);
         y += 32.0f * Line + 6.0f;
+        // 24 px, smaller when a save holds more levels than fit above the button (a full save: about 22).
+        const auto count = std::count_if(lines.begin() + 1, lines.end(), [](std::string_view l) { return !l.empty(); });
+        const float Size = count ? std::min(24.0f, (ButtonTop - 8.0f - y) / (float(count) * Line)) : 24.0f;
         for (size_t l = 1; l < lines.size(); ++l) {
             const std::string_view line = lines[l];
             if (line.empty()) {
@@ -2399,15 +2465,35 @@ void StyledChoiceBox() {
             y += Size * Line;
         }
     }
+    const char* const details_label = choice_expanded && has_more ? "SUMMARY" : "DETAILS";
+    if (has_more) { // the button: Triangle's picture and the label in a rounded outline, centred under the picture
+        constexpr float Icon = 28.0f, Label = 26.0f, Pad = 14.0f;
+        const float w = Pad + Icon + 10.0f + text_width(font, Label, details_label) / u + Pad;
+        const float x0 = RightX + (RightW - w) * 0.5f;
+        const ImVec2 min = P(x0, ButtonTop), max = P(x0 + w, ButtonTop + ButtonH);
+        const bool over = hovered(min, max) && !bar_dragging;
+        if (over) {
+            draw->AddRectFilled(min, max, FocusFill, ButtonH * 0.5f * u);
+        }
+        draw->AddRect(min, max, over ? Gold : IM_COL32(176, 166, 150, 150), ButtonH * 0.5f * u, 0, std::max(1.5f * u, 1.0f));
+        draw->AddImage(choice_style.textures[StyleTriangle]->GetTexRef(), P(x0 + Pad, ButtonTop + (ButtonH - Icon) * 0.5f),
+                       P(x0 + Pad + Icon, ButtonTop + (ButtonH + Icon) * 0.5f));
+        text(font, Label, P(x0 + Pad + Icon + 10.0f, ButtonTop + (ButtonH - Label) * 0.5f - 1.0f), over ? Gold : Cream,
+             details_label);
+        if (over && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+            toggle = true;
+        }
+    }
 
-    // The game's button prompts under the frame, as in its Options menu.
+    // The game's button prompts under the frame, as in its Options menu; each clickable (Gold under the mouse).
     struct Prompt {
         ImTextureData* icon;
         const char* label;
+        int finish; // 0: DETAILS / SUMMARY
     };
-    const Prompt prompts[] = {{choice_style.textures[1], "SELECT"},
-                              {choice_style.textures[2], "GO BACK"},
-                              {choice_style.textures[3], choice_expanded ? "SUMMARY" : "DETAILS"}};
+    const Prompt prompts[] = {{choice_style.textures[StyleCross], "SELECT", 1},
+                              {choice_style.textures[StyleCircle], "GO BACK", 2},
+                              {choice_style.textures[StyleTriangle], details_label, 0}};
     constexpr float Icon = 50.0f, Label = 36.0f, Space = 70.0f;
     float row = 0.0f;
     for (const Prompt& prompt : prompts) {
@@ -2416,15 +2502,29 @@ void StyledChoiceBox() {
     float x = (FrameW - (row - Space)) * 0.5f;
     const float top = FrameH + 8.0f;
     for (const Prompt& prompt : prompts) {
+        const float start = x, end = x + Icon + 12.0f + text_width(font, Label, prompt.label) / u;
+        const bool over = hovered(P(start, top), P(end, top + Icon)) && !bar_dragging;
+        if (over && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+            if (prompt.finish) {
+                finish = prompt.finish;
+            } else {
+                toggle = true;
+            }
+        }
         draw->AddImage(prompt.icon->GetTexRef(), P(x, top), P(x + Icon, top + Icon));
         x += Icon + 12.0f;
-        text(font, Label, P(x, top + (Icon - Label) * 0.5f - 2.0f), White, prompt.label);
-        x += text_width(font, Label, prompt.label) / u + Space;
+        text(font, Label, P(x, top + (Icon - Label) * 0.5f - 2.0f), over ? Gold : White, prompt.label);
+        x = end + Space;
+    }
+
+    // The mouse's actions, now that this frame's drawing (the save pictures) is done.
+    if (toggle || finish) {
+        ChoiceStep(0, finish, toggle);
     }
 }
 
 // The save list with details: the saves on the left (scrolling with the selection), the chosen
-// one's level picture and what it holds on the right; Square / Tab shows every level in it.
+// one's level picture and what it holds on the right; Triangle (or the DETAILS button) shows every level in it.
 void DetailedChoiceBox() {
     if (choice_style.Ready()) {
         StyledChoiceBox();
@@ -2473,7 +2573,7 @@ void DetailedChoiceBox() {
     }
     ImGui::EndChild();
     ImGui::Separator();
-    ImGui::TextDisabled("D-pad / arrows: choose   Cross / Enter: load   Circle / Esc: cancel   Square: %s "
+    ImGui::TextDisabled("D-pad / arrows: choose   Cross / Enter: load   Circle / Esc: cancel   Triangle: %s "
                         "(the buttons as bound in the launcher)",
                         choice_expanded ? "summary" : "all levels");
     ImGui::End();
@@ -2771,7 +2871,7 @@ void UpdateChoiceTextures() {
 // The save list takes the keys and buttons that move and confirm; the rest stays with the game
 // (held neutral by CapturesInput).
 // Moves or closes the list (lock held). finish: 1 accept, 2 cancel.
-void ChoiceStep(int move, int finish, bool toggle = false) {
+void ChoiceStep(int move, int finish, bool toggle) {
     if (!choice_active) {
         return;
     }
@@ -2781,6 +2881,7 @@ void ChoiceStep(int move, int finish, bool toggle = false) {
     const int count = int(choice_items.size());
     if (move && count) {
         choice_index = (choice_index + move + count) % count;
+        choice_reveal = true;
     }
     if (finish) {
         choice_result = finish == 1 && count ? choice_index : -2;
@@ -2814,7 +2915,7 @@ void PollChoiceInput() {
         previous = buttons;
         return;
     }
-    constexpr uint32_t Up = 0x10, Down = 0x40, Circle = 0x2000, Cross = 0x4000, Square = 0x8000;
+    constexpr uint32_t Up = 0x10, Down = 0x40, Triangle = 0x1000, Circle = 0x2000, Cross = 0x4000;
     const uint32_t pressed = buttons & ~previous;
     previous = buttons;
     int move = (pressed & Up) ? -1 : (pressed & Down) ? 1 : 0;
@@ -2825,7 +2926,7 @@ void PollChoiceInput() {
         repeat_at = now + std::chrono::milliseconds(120);
     }
     const int finish = (pressed & Cross) ? 1 : (pressed & Circle) ? 2 : 0;
-    const bool toggle = (pressed & Square) != 0;
+    const bool toggle = (pressed & Triangle) != 0; // DETAILS / SUMMARY (Square until 2026-11-13)
     if (move || finish || toggle) {
         std::scoped_lock lock{imgui_mutex};
         ChoiceStep(move, finish, toggle);
@@ -2837,7 +2938,7 @@ void PollChoiceInput() {
 // events act only without that poll: the fallback keys and the pad's default buttons.
 bool HandleChoiceEvent(const SDL_Event& event) {
     int move = 0, finish = 0; // finish: 1 accept, 2 cancel
-    bool toggle = false;      // Square: the details' other page
+    bool toggle = false;      // Triangle: the details' other page
     if (event.type == SDL_EVENT_KEY_DOWN) {
         if (choice_input) {
             return true; // PollChoiceInput reads the keys as bound
@@ -2852,7 +2953,19 @@ bool HandleChoiceEvent(const SDL_Event& event) {
         const u8 button = event.gbutton.button;
         move = button == SDL_GAMEPAD_BUTTON_DPAD_UP ? -1 : button == SDL_GAMEPAD_BUTTON_DPAD_DOWN ? 1 : 0;
         finish = button == SDL_GAMEPAD_BUTTON_SOUTH ? 1 : button == SDL_GAMEPAD_BUTTON_EAST ? 2 : 0;
-        toggle = button == SDL_GAMEPAD_BUTTON_WEST;
+        toggle = button == SDL_GAMEPAD_BUTTON_NORTH;
+    } else if (event.type == SDL_EVENT_MOUSE_MOTION) { // the pointer: the list's own (StyledChoiceBox)
+        const float density = PixelDensity(event.motion.windowID);
+        ImGui::GetIO().AddMousePosEvent(event.motion.x * density, event.motion.y * density);
+        return true;
+    } else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN || event.type == SDL_EVENT_MOUSE_BUTTON_UP) {
+        if (event.button.button == SDL_BUTTON_LEFT) {
+            ImGui::GetIO().AddMouseButtonEvent(0, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN);
+        }
+        return true;
+    } else if (event.type == SDL_EVENT_MOUSE_WHEEL) {
+        ImGui::GetIO().AddMouseWheelEvent(event.wheel.x, event.wheel.y);
+        return true;
     } else {
         return event.type == SDL_EVENT_KEY_UP || event.type == SDL_EVENT_GAMEPAD_BUTTON_UP;
     }
@@ -3116,6 +3229,7 @@ void BeginChoice(const std::string& title, const std::vector<std::string>& items
     }
     choice_expanded = false;
     choice_index = focus >= 0 && focus < int(items.size()) ? focus : 0;
+    choice_reveal = true;
     choice_result = -1;
     choice_active = true;
 }

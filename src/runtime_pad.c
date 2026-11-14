@@ -262,9 +262,11 @@ static uint32_t window_mouse_held(void) {
     return (m&SDL_BUTTON_LMASK ? 1u : 0u)|(m&SDL_BUTTON_RMASK ? 2u : 0u)|(m&SDL_BUTTON_MMASK ? 4u : 0u)|
            (m&SDL_BUTTON_X1MASK ? 8u : 0u)|(m&SDL_BUTTON_X2MASK ? 16u : 0u);
 }
-/* The PS4 buttons the mouse buttons held over the window press (the save list). */
+/* The PS4 buttons the mouse buttons held over the window press (the save list), never the left button: it is the
+ * pointer's there, as in the settings menu (menu_mouse_buttons; the list's saves, prompts and DETAILS button take
+ * it, 2026-11-13). */
 static uint32_t list_mouse_buttons(void) {
-    const uint32_t held=window_mouse_held();
+    const uint32_t held=window_mouse_held()&~1u;
     return held ? mouse_map_from(held) : 0;
 }
 

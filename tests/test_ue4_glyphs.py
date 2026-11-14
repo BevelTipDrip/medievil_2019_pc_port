@@ -174,6 +174,7 @@ class GlyphTests(unittest.TestCase):
             with Image.open(Path(cache) / 'prompts' / 'style' / 'Cross.png') as image:
                 self.assertEqual(image.getpixel((50, 50)), (10, 20, 30, 255))
             self.assertTrue((Path(cache) / 'prompts' / 'style' / 'Touchpad.png').is_file())  # Touchpad (APPLY & RESTART)
+            self.assertTrue((Path(cache) / 'prompts' / 'style' / 'Triangle.png').is_file())  # the Load list's DETAILS
             ue4_glyphs.overlay_prompts('xbox', cache)
             with Image.open(Path(cache) / 'prompts' / 'style' / 'Cross.png') as image:
                 self.assertEqual(image.size, (100, 100))
