@@ -1387,12 +1387,14 @@ void DisplayTab() {
                             "Frame buffer size with FSR 1.");
         {
             // The game's TAA, and the upscalers this system can run (Vulkan::Ue4Upscaler).
-            static constexpr const char* names[] = {"Game's TAA", "NVIDIA DLSS", "AMD FSR"};
+            static constexpr const char* names[] = {"Game's TAA", "NVIDIA DLSS", "AMD FSR 3.1", "AMD FSR 4"};
+            static_assert(std::size(names) == S::Ue4UpscalerCount);
             const char* labels[S::Ue4UpscalerCount];
             int values[S::Ue4UpscalerCount];
             int count = 0;
             for (int kind = 0; kind < S::Ue4UpscalerCount; ++kind) {
-                if (kind == 0 || (kind == 1 && s.ue4_dlss_available) || (kind == 2 && s.ue4_fsr_available)) {
+                if (kind == 0 || (kind == 1 && s.ue4_dlss_available) || (kind == 2 && s.ue4_fsr_available) ||
+                    (kind == 3 && s.ue4_fsr4_available)) {
                     labels[count] = names[kind];
                     values[count++] = kind;
                 }
@@ -1401,7 +1403,8 @@ void DisplayTab() {
                       "Replaces the game's anti-aliasing: native anti-aliasing at Render scale 100, upscaling "
                       "below it. AMD FSR sharpens by its own strength, DLSS and the game's TAA with Sharpening "
                       "(RCAS). F9 switches between them in the game. DLSS needs an NVIDIA RTX GPU and "
-                      "nvngx_dlss.dll in the bin folder (see README-Windows.txt).");
+                      "nvngx_dlss.dll in the bin folder (see README-Windows.txt). FSR 4 needs its model files "
+                      "(tools/fetch_fsr4_assets.sh) and is heavier than FSR 3.1.");
         }
         if (!IsGow3()) {
             RenderScaleRow();
@@ -1409,9 +1412,11 @@ void DisplayTab() {
             RenderScaleNotes();
             if (!BeginRows("##scaling_after")) return;
         }
-        if (s.ue4_fsr_available) {
+        if (s.ue4_fsr_available || s.ue4_fsr4_available) {
             SliderRow("AMD FSR sharpening", s.fsr_sharpness, 0, 100, "%d%%",
-                      "FSR's own sharpening while AMD FSR runs, apart from the RCAS strength. 0 turns it off.", 5);
+                      "FSR's own sharpening while AMD FSR (3.1 or 4) runs, apart from the RCAS strength. 0 turns "
+                      "it off.",
+                      5);
         }
         ImGui::BeginDisabled(rcas_blocked);
         CheckRow("Sharpening (RCAS)", s.rcas,

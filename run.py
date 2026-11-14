@@ -167,6 +167,10 @@ def main():
         trace.parent.mkdir(parents=True, exist_ok=True)
     if not env.get('GOW3_FSR411_DIR') and not (PORT / 'fsr4_411').is_dir() and (data / 'fsr4_411').is_dir():
         env['GOW3_FSR411_DIR'] = str(data / 'fsr4_411')
+    # FSR 4's v07 model files (tools/fetch_fsr4_assets.sh): beside the port, else in the data directory
+    # (the AppImage's port folder is read-only).
+    if not env.get('GOW3_FSR4_DIR') and not (PORT / 'fsr4_shaders').is_dir() and (data / 'fsr4_shaders').is_dir():
+        env['GOW3_FSR4_DIR'] = str(data / 'fsr4_shaders')
 
     probe = Path(env['GOW3_PROBE']) if env.get('GOW3_PROBE') else find_executable(RUNTIME)
     if not probe or not probe.is_file():

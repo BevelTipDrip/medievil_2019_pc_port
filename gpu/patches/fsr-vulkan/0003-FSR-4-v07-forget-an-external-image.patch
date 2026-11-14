@@ -1,0 +1,47 @@
+From: gow3
+Subject: [PATCH] FSR 4 v07: ffxFsr4VkForgetExternalImage (free a registry slot)
+
+The external image registry holds eight records and only grew: a host that replaces
+its images (a resize, a level load) filled it. Records are copied into each dispatch
+at registration, so dropping one between frames leaves recorded frames alone.
+
+---
+--- a/include/ffx_vk_fsr4_v07.h
++++ b/include/ffx_vk_fsr4_v07.h
+@@ -162,6 +162,12 @@
+ VkResult ffxFsr4VkSetExternalImageState(
+     FfxInterface* iface, const FfxFsr4VkExternalImageState* state);
+ 
++/* gow3: forget the record of one imported image (by its view), so a host that replaces its
++ * images (a resize, a level load) frees a slot of the bounded registry. Registration copies the
++ * record into each dispatch, so frames already recorded are not affected; the host must not
++ * dispatch with the view afterwards. VK_SUCCESS also when the view was not registered. */
++VkResult ffxFsr4VkForgetExternalImage(FfxInterface* iface, VkImageView view);
++
+ // ---------------------------------------------------------------------------
+ // Helpers for provider-side direct access to backend-owned resources.
+ //
+--- a/src/ffx_vk_fsr4_v07.c
++++ b/src/ffx_vk_fsr4_v07.c
+@@ -2003,6 +2003,21 @@
+     return VK_SUCCESS;
+ }
+ 
++/* gow3: drop one record; the last record takes its slot (records are looked up by view). */
++VkResult ffxFsr4VkForgetExternalImage(FfxInterface* iface, VkImageView view)
++{
++    if (!iface || !iface->device)
++        return VK_ERROR_INITIALIZATION_FAILED;
++    FfxFsr4VkContext* c = (FfxFsr4VkContext*)iface->device;
++    for (uint32_t i = 0; i < c->externalImageCount; ++i) {
++        if (c->externalImages[i].state.view == view) {
++            c->externalImages[i] = c->externalImages[--c->externalImageCount];
++            return VK_SUCCESS;
++        }
++    }
++    return VK_SUCCESS;
++}
++
+ // ---------------------------------------------------------------------------
+ // Helpers for narrow provider-side direct Vulkan access.
+ //

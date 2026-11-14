@@ -267,7 +267,8 @@ def menu_key(settings):
 
 
 # What replaces the game's TAA (medievil.ini ue4_upscaler, gow3_settings Ue4UpscalerKeys; F9 in the game).
-UPSCALERS = [('taa', ("The game's TAA",)), ('dlss', ('NVIDIA DLSS',)), ('fsr', ('AMD FSR 3.1',))]
+UPSCALERS = [('taa', ("The game's TAA",)), ('dlss', ('NVIDIA DLSS',)), ('fsr', ('AMD FSR 3.1',)),
+             ('fsr4', ('AMD FSR 4',))]
 
 
 # Mouse buttons a game button can take (GOW3_MOUSE_MAP, src/runtime_pad.c), next to its key: the names the
@@ -1700,7 +1701,9 @@ class Launcher:
                    'strength, DLSS and the game\'s TAA with the sharpening above. DLSS needs an NVIDIA RTX GPU and '
                    'gow3_dlss.dll + nvngx_dlss.dll next to '
                    'medievil-runtime.exe (the bin folder; nvngx_dlss.dll is not included: see README-Windows.txt). '
-                   'One the system cannot run falls back to the game\'s TAA. F9 switches it in the game.'))
+                   'AMD FSR 4 needs its model files (tools/fetch_fsr4_assets.sh, not included) and costs more '
+                   'than FSR 3.1. One the system cannot run falls back to the game\'s TAA. F9 switches it in the '
+                   'game.'))
         self.row(f, _('AMD FSR sharpening'), percent_slider('fsr_sharpness'),
                  _('FSR\'s own sharpening while AMD FSR runs, apart from the RCAS strength. 0 turns it off.'))
         self.section(f, _('Overlay'))

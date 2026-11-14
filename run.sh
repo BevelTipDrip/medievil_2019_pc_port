@@ -23,6 +23,10 @@ export GOW3_CONFIG=${GOW3_CONFIG:-$data/gow3.ini}
 if [[ -z ${GOW3_FSR411_DIR:-} && ! -d fsr4_411 && -d $data/fsr4_411 ]]; then
     export GOW3_FSR411_DIR=$data/fsr4_411
 fi
+# FSR 4's v07 model files (tools/fetch_fsr4_assets.sh): next to run.sh or in the data directory.
+if [[ -z ${GOW3_FSR4_DIR:-} && ! -d fsr4_shaders && -d $data/fsr4_shaders ]]; then
+    export GOW3_FSR4_DIR=$data/fsr4_shaders
+fi
 if [[ -z ${GOW3_PREBUILT:-} && -z ${GOW3_IN_NIX_SHELL:-} ]] && ! { command -v pkg-config >/dev/null && pkg-config --exists vulkan sdl3; } && command -v nix-shell >/dev/null; then
     args=''; if (( $# )); then args=$(printf '%q ' "$@"); fi
     exec env GOW3_IN_NIX_SHELL=1 nix-shell shell.nix --run "bash run.sh $args"

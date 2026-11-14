@@ -193,3 +193,38 @@ Then (the user): `fsr_reactive` defaults to 0 everywhere and its menu and launch
 tests); the user's ini set to 0. Audit of step 4's code: the motion pass's first barrier had widened from compute to
 all commands for every DLSS / FSR frame (fix built: back to compute only); 8585c5a flipped the line endings of 8
 files (restored; research/tools/eol_guard.py and its pre-commit hook now refuse such commits).
+(Since 772fbb3 the repository is normalized to LF by .gitattributes; eol_guard.py was removed.)
+
+## FSR 4 (steps 6-7), 2026-11-14
+
+What the tree already had (the God of War III upscaler, off for MediEvil): `vk_fsr4.cpp` (the FSR-Vulkan v07 INT8
+provider; assets from `tools/fetch_fsr4_assets.sh`, MIT, built by Q2RTX from AMD's FSR 4 source) and `fsr411/` (AMD's
+4.1.1 INT8 model replayed from the DLL, bit-exact; assets built by each user with `tools/fsr4cap/build_assets.sh`;
+docs/upscaler.md). The RTX 4090 has everything v07 checks (Float16, Int8, Int16, integer dot products,
+`computeDerivativeGroupLinear`, extended storage formats) but not `VK_VALVE_shader_mixed_float_dot_product`, which
+4.1.1 needs. Both use int8 dot products on the shader cores (dp4a), not NVIDIA's tensor cores (that would take
+`VK_KHR_cooperative_matrix` and a rewrite of the network passes). The user's order: 7a = v07 on the 4090 first;
+7b = 4.1.1 on NVIDIA (assets built without the VALVE instruction, ~40 dB instead of bit-exact) only if 7a is worth
+it; step 6 (AMD's SDK DLLs) when the RX 6900 XT is available (on NVIDIA they give only FSR 3.1.6).
+
+F7a (fix built 2026-11-14, not run): `ue4_upscaler=fsr4` ("AMD FSR 4": menu, launcher, F9), a new backend
+`vk_ue4_fsr4.cpp` on the v07 provider, written for our front end (the GoW3 wrapper waits on the scheduler, which our
+recording thread must not):
+- Frames: the front end passes the scheduler tick of the frame's commands (`Ue4UpscaleFrame::tick`); the backend
+  retires provider frames whose tick the GPU passed (semaphore queries only) and waits only when three are in
+  flight (counted in the log: "FSR 4 waited for the GPU").
+- Images: the provider registers views (eight, never freed) and put colour-aspect barriers on them. The front end's
+  colour / depth views are new each frame, so each frame's four are registered for the dispatch and forgotten
+  after it (fsr-vulkan patch 0003, `ffxFsr4VkForgetExternalImage`); D32S8 depth gets its own barrier aspect
+  (0004, `aspectMask`). Motion vectors are sampled (t1): our RGBA16F image works as is.
+- Model from the output / render ratio (`ffxFsr4SelectModelPreset`: below 1.5 native AA, 1.5 quality, 1.7
+  balanced, 2.0 performance, 3.0 ultra performance); `GOW3_FSR4_DRS=1` the dynamic-resolution model at any ratio.
+  1080 or 2160 tier from the output. The provider reads no camera data or depth flags.
+- Sharpening: `fsr_sharpness` (the menu's AMD FSR sharpening), FSR 4's own RCAS. No reactive mask (FSR 4 takes none).
+- Assets: `fsr4_shaders/` beside the port (git-ignored), else the data directory's (run.py / run.sh set
+  `GOW3_FSR4_DIR`); FSR 4 is offered only when they are there. `tools/fetch_fsr4_assets.sh` downloaded them on the
+  PC (190 files, 33 MB) and built 24 optimized passes into `opt/` (post through shared memory, pass 11 guard).
+- `GOW3_FSR4_PROFILE=1`: GPU time per FSR 4 pass (patch 0001), for the cost question.
+
+T-F10 (PC, next): FSR 4 at native and 67% against DLSS and FSR 3.1: image (stills, pans, fences, grass, effects),
+frame times and lows; the log's model / tier line; then 75% with and without `GOW3_FSR4_DRS=1`.

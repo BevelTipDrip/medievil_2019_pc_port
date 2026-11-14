@@ -4,7 +4,7 @@
 // native anti-aliasing (DLAA); below it (U4) at the TAAU compute dispatch, upscaling (DLSS's quality
 // from the output / render ratio). Linear HDR with auto exposure, reversed depth, on TAA's colour
 // input, the scene depth and U2's motion vectors with the game's jitter; the result goes into TAA's
-// output and UE4's TAA is skipped. Which upscaler: the ue4_upscaler setting (taa, dlss, fsr; menu,
+// output and UE4's TAA is skipped. Which upscaler: the ue4_upscaler setting (taa, dlss, fsr, fsr4; menu,
 // F9, ini). The front end here finds the inputs and owns the output; a backend (NVIDIA DLSS through
 // gow3_dlss.dll, Dlss::Get) only creates its context and records the evaluation.
 
@@ -33,7 +33,7 @@ class Runtime;
 class Ue4Motion;
 
 /// The ue4_upscaler setting (Gow3Settings; its ini names: Gow3Settings::Ue4UpscalerKeys).
-enum Ue4UpscalerKind : int { Ue4Taa = 0, Ue4DlssKind = 1, Ue4FsrKind = 2, Ue4UpscalerKinds = 3 };
+enum Ue4UpscalerKind : int { Ue4Taa = 0, Ue4DlssKind = 1, Ue4FsrKind = 2, Ue4Fsr4Kind = 3, Ue4UpscalerKinds = 4 };
 
 /// One image handed to a backend: the rectangle from (0, 0) it reads or writes.
 struct Ue4UpscaleImage {
@@ -65,11 +65,18 @@ struct Ue4UpscaleFrame {
     /// The menu's sharpening for a backend that sharpens itself (FSR): 0-1, 1 the strongest (the
     /// presenter's RCAS at the same strength); negative: off. DLSS has none (the presenter's RCAS).
     float sharpness;
+    /// The scheduler tick the frame's commands run under (recorded in order with them): a backend that
+    /// keeps frames in flight itself (FSR 4) retires one once the GPU passed it.
+    u64 tick;
 };
 
 class Ue4UpscalerBackend;
+class Semaphore;
 /// AMD FSR 3.1 (vk_ue4_fsr.cpp), or null when this GPU lacks what it needs.
 std::unique_ptr<Ue4UpscalerBackend> MakeFsrBackend(const Instance& instance);
+/// AMD FSR 4, the v07 INT8 model (vk_ue4_fsr4.cpp), or null without the GPU features or the assets.
+/// `semaphore`: the scheduler's, for its frames' ticks (thread-safe queries).
+std::unique_ptr<Ue4UpscalerBackend> MakeFsr4Backend(const Instance& instance, Semaphore& semaphore);
 
 class Ue4UpscalerBackend {
 public:
@@ -103,8 +110,8 @@ public:
     static bool Running();
     /// The upscaler that ran last (while Running()), for the menu: "DLSS", "FSR".
     static const char* RunningName();
-    /// An upscaler that sharpens itself (FSR) ran within the last 100 ms: the presenter's RCAS
-    /// stays off then (the menu's sharpening is the upscaler's).
+    /// An upscaler that sharpens itself (FSR 3.1 or FSR 4) ran within the last 100 ms: the presenter's
+    /// RCAS stays off then (the menu's sharpening is the upscaler's).
     static bool SharpensItself();
     /// AMD FSR ran within the last 100 ms: the motion pass writes its reactive mask (plan-fsr.md step 4).
     static bool FsrRunning();

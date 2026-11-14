@@ -113,7 +113,7 @@ private:
 };
 
 /// What F9's notice and the log call each upscaler.
-constexpr const char* KindLabels[Ue4UpscalerKinds] = {"UE4 TAA", "NVIDIA DLSS", "AMD FSR"};
+constexpr const char* KindLabels[Ue4UpscalerKinds] = {"UE4 TAA", "NVIDIA DLSS", "AMD FSR", "AMD FSR 4"};
 static_assert(Ue4UpscalerKinds == Gow3Settings::Ue4UpscalerCount);
 
 } // namespace
@@ -133,7 +133,7 @@ const char* Ue4Upscaler::RunningName() {
 }
 
 bool Ue4Upscaler::SharpensItself() {
-    return FsrRunning();
+    return Running() && std::strncmp(RunningName(), "FSR", 3) == 0; // "FSR" or "FSR 4"
 }
 
 bool Ue4Upscaler::FsrRunning() {
@@ -248,7 +248,8 @@ void Ue4Upscaler::Toggle() {
     const auto available = [&settings](int kind) {
         return kind == Ue4Taa ||
                (kind == Ue4DlssKind && settings.ue4_dlss_available.load(std::memory_order_relaxed)) ||
-               (kind == Ue4FsrKind && settings.ue4_fsr_available.load(std::memory_order_relaxed));
+               (kind == Ue4FsrKind && settings.ue4_fsr_available.load(std::memory_order_relaxed)) ||
+               (kind == Ue4Fsr4Kind && settings.ue4_fsr4_available.load(std::memory_order_relaxed));
     };
     int kind = settings.ue4_upscaler.load(std::memory_order_relaxed);
     do {
@@ -289,14 +290,17 @@ Ue4Upscaler::Ue4Upscaler(const Instance& instance_, Scheduler& scheduler_,
         backends[Ue4DlssKind] = std::make_unique<DlssBackend>();
     }
     backends[Ue4FsrKind] = MakeFsrBackend(instance);
+    backends[Ue4Fsr4Kind] = MakeFsr4Backend(instance, *scheduler.GetWorkSemaphore());
     auto& settings = Gow3Settings::Get();
     const auto available = [this](int kind) { return backends[kind] && backends[kind]->Available(); };
     settings.ue4_dlss_available.store(available(Ue4DlssKind), std::memory_order_relaxed);
     settings.ue4_fsr_available.store(available(Ue4FsrKind), std::memory_order_relaxed);
-    std::printf("UE4 upscaler: %s; DLSS %s, FSR %s (menu Image tab or F9)\n",
+    settings.ue4_fsr4_available.store(available(Ue4Fsr4Kind), std::memory_order_relaxed);
+    std::printf("UE4 upscaler: %s; DLSS %s, FSR %s, FSR 4 %s (menu Image tab or F9)\n",
                 KindLabels[std::clamp(settings.ue4_upscaler.load(), 0, Ue4UpscalerKinds - 1)],
                 available(Ue4DlssKind) ? "available" : "not available (DLLs or GPU)",
-                available(Ue4FsrKind) ? "available" : "not available");
+                available(Ue4FsrKind) ? "available" : "not available",
+                available(Ue4Fsr4Kind) ? "available" : "not available (GPU or assets)");
 }
 
 Ue4Upscaler::~Ue4Upscaler() = default;
@@ -357,8 +361,9 @@ bool Ue4Upscaler::Run(const u8* view, std::span<const VAddr> reads, VideoCore::I
     }
     Ue4UpscalerBackend* backend = backends[kind].get();
     if (!backend || !backend->Available()) {
-        return Fail(kind == Ue4DlssKind ? (Dlss::Get() ? "DLSS not available" : "DLSS DLLs not found")
-                                        : "FSR not available");
+        return Fail(kind == Ue4DlssKind  ? (Dlss::Get() ? "DLSS not available" : "DLSS DLLs not found")
+                    : kind == Ue4Fsr4Kind ? "FSR 4 not available (GPU or assets)"
+                                          : "FSR not available");
     }
     Ue4Motion::LastPass pass;
     if (!motion.GetPass(frame_number, pass)) {
@@ -542,6 +547,9 @@ bool Ue4Upscaler::Run(const u8* view, std::span<const VAddr> reads, VideoCore::I
             const int fsr = Gow3Settings::Get().fsr_sharpness.load(std::memory_order_relaxed);
             return fsr > 0 ? std::min(fsr, 100) / 100.0f : -1.0f;
         }(),
+        // The commands recorded below run under this tick (Record keeps them in order with this
+        // thread's, which the next submission ends).
+        .tick = scheduler.CurrentTick(),
     };
     const vk::Image taa_output = output_image->GetImage();
     const vk::Image motion_image = pass.image;
