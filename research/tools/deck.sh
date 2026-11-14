@@ -56,7 +56,8 @@ deploy)
     running && { echo 'The game is running on the Deck: not deploying.' >&2; exit 1; }
     commit=$(MSYS_NO_PATHCONV=1 wsl -d Debian -u root -- git -C "$tree" rev-parse --short HEAD | tr -d '\r\0')
     [[ $file == MediEvil-x86_64.AppImage ]] || commit="$commit-$(basename "$file" .AppImage | sed 's/^MediEvil-x86_64-//')"
-    old=$(remote 'cat ~/MediEvil/DEPLOYED 2>/dev/null || echo previous')
+    # The label names the backup file: one word (a hand-written "ed1297e v2.3.0" broke the copy, 2026-11-13).
+    old=$(remote 'cat ~/MediEvil/DEPLOYED 2>/dev/null || echo previous' | tr -d '\r' | tr -c 'A-Za-z0-9._\n-' '_')
     remote "cp ~/MediEvil/MediEvil-x86_64.AppImage ~/MediEvil/MediEvil-x86_64.AppImage.$old"
     MSYS_NO_PATHCONV=1 wsl -d Debian -u root -- cat "$tree/dist/$file" |
         remote "pgrep -x medievil-runtim >/dev/null && exit 1
