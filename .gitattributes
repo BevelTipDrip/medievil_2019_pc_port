@@ -1,0 +1,25 @@
+# Line endings: text files are stored with LF and checked out with LF, whatever the editor or tool wrote
+# (2026-11-14: CRLF and LF had mixed freely, and edits kept flipping whole files). Git converts on `git add`.
+* text=auto eol=lf
+
+# Windows batch files: CRLF in the working tree (cmd.exe misreads labels in LF batch files).
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Byte-for-byte, never converted: raw measurement captures and a vendored library as its authors ship it.
+research/docs/data/** -text
+gpu/third_party/half/** -text
+
+# Binary.
+*.png binary
+*.jpg binary
+*.ico binary
+*.ttf binary
+*.mp3 binary
+*.h264 binary
+*.dll binary
+*.exe binary
+*.rdc binary
+*.xlsx binary
+*.zip binary
+*.spv binary
