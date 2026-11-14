@@ -104,8 +104,9 @@ struct Values {
     /// the game's TAA needs far more RCAS than FSR needs its own sharpening (plan-fsr.md T-F6).
     std::atomic<int> fsr_sharpness{25};
     /// AMD FSR's reactive mask strength on UE4's responsive-AA pixels (ini fsr_reactive, 0 = off; plan-fsr.md
-    /// step 4): FSR trusts the current frame more there (fire, effects), as the game's TAA does.
-    std::atomic<int> fsr_reactive{50};
+    /// step 4): FSR trusts the current frame more there, as the game's TAA does. Off by default and in no menu (ini
+    /// only): the game marks only blood effects, and only at effects resolution 100 (T-F8).
+    std::atomic<int> fsr_reactive{0};
     /// Set by the presenter: sharpening ran on the last frame (it needs FSR 1 when the game's
     /// image is smaller than the window).
     std::atomic<bool> rcas_applied{false};

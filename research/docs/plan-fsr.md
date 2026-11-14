@@ -189,3 +189,7 @@ game's own TAA sees it. (The trace's 0xff-mask lines on the scene stencil are th
 **Decision (the user): stop here.** It covers one effect in busy scenes, only at an effects resolution kept below 100
 for the 0.1% lows (heavy combat ~110 FPS at a 220+ average); not worth more complexity. Not done: reading the
 separate-translucency stencil in the motion pass (one extra fetch while FSR runs with the slider above 0).
+Then (the user): `fsr_reactive` defaults to 0 everywhere and its menu and launcher sliders are gone (ini only, for
+tests); the user's ini set to 0. Audit of step 4's code: the motion pass's first barrier had widened from compute to
+all commands for every DLSS / FSR frame (fix built: back to compute only); 8585c5a flipped the line endings of 8
+files (restored; research/tools/eol_guard.py and its pre-commit hook now refuse such commits).

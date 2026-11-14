@@ -81,9 +81,9 @@ inline int ParseFsrSharpness(int value) {
     return value >= 0 && value <= 100 ? value : 25;
 }
 /// AMD FSR's reactive mask on UE4's responsive-AA pixels (ini fsr_reactive, plan-fsr.md step 4): 0-100, 0 is off;
-/// 50 by default (provisional, until T-F8).
+/// off by default and in no menu (T-F8: the game marks only blood effects, and only at effects resolution 100).
 inline int ParseFsrReactive(int value) {
-    return value >= 0 && value <= 100 ? value : 50;
+    return value >= 0 && value <= 100 ? value : 0;
 }
 /// FSR RCAS attenuation for a strength: 0 is the sharpest, 2 the softest.
 inline float RcasAttenuation(int strength) {

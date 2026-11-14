@@ -392,7 +392,7 @@ void Ue4Motion::OnTaa(const u8* view, std::span<const VAddr> reads, VideoCore::I
     const vk::Pipeline pipeline = use_reactive ? *reactive_pipeline : *motion_pipeline;
     const vk::PipelineLayout layout = use_reactive ? *reactive_layout : *motion_layout;
     scheduler.Record([=](vk::CommandBuffer cmdbuf) {
-        // Last frame's debug view read the motion image (FSR the mask).
+        // Last frame's debug view read the motion image (FSR the mask): compute readers only, as before step 4.
         std::array<vk::ImageMemoryBarrier2, 2> to_write{};
         u32 barriers = 0;
         for (const auto& [image, old] : {std::pair{motion_image, old_layout},
@@ -401,7 +401,7 @@ void Ue4Motion::OnTaa(const u8* view, std::span<const VAddr> reads, VideoCore::I
                 continue;
             }
             to_write[barriers++] = {
-                .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+                .srcStageMask = vk::PipelineStageFlagBits2::eComputeShader,
                 .srcAccessMask = vk::AccessFlagBits2::eShaderRead,
                 .dstStageMask = vk::PipelineStageFlagBits2::eComputeShader,
                 .dstAccessMask = vk::AccessFlagBits2::eShaderWrite,

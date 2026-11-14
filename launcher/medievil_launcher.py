@@ -167,7 +167,7 @@ INI_DEFAULTS = {'show_fps': '1', 'display_mode': 'windowed', 'vsync': '1', 'fps_
                 'async_shaders': '1', 'deferred_readback': '1', 'stale_readback': '1',
                 'output_resolution': '1920x1080', 'render_scale': '100', 'engine_fps': '60', 'fsr1': '0',
                 'rcas': '1', 'rcas_strength': '75', 'frames_queued': '1', 'ue4_quality': 'console',
-                'ue4_upscaler': 'taa', 'fsr_sharpness': '25', 'fsr_reactive': '50',
+                'ue4_upscaler': 'taa', 'fsr_sharpness': '25', 'fsr_reactive': '0',
                 'effects_resolution': '75',
                 'cheat_very_hard': '0', 'cheat_double_jumps': '0', 'cheat_menu': '0', 'cheat_infinite_ammo': '0',
                 'ue4_aa': 'taa', 'ue4_voice': '', 'button_prompts': 'playstation', 'pc_settings_entry': '1'}
@@ -1703,9 +1703,6 @@ class Launcher:
                    'One the system cannot run falls back to the game\'s TAA. F9 switches it in the game.'))
         self.row(f, _('AMD FSR sharpening'), percent_slider('fsr_sharpness'),
                  _('FSR\'s own sharpening while AMD FSR runs, apart from the RCAS strength. 0 turns it off.'))
-        self.row(f, _('AMD FSR reactive mask'), percent_slider('fsr_reactive'),
-                 _('How much FSR trusts the current frame on the pixels the game marks for it (fire, effects): less '
-                   'smearing there, a little less smoothing. 0 turns it off.'))
         self.section(f, _('Overlay'))
         self.check(f, 'show_fps', 'ini', _('Show performance overlay'),
                    _('Items, size and corner: in-game menu (Insert / R3+L2) > Overlay.'))

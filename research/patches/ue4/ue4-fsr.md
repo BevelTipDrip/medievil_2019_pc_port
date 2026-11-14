@@ -33,8 +33,9 @@ III upscaler):
   `ViewToClip[1][1]` (View offset 384 + 20), `viewSpaceToMeters` 0.01, pre-exposure 1.
 - Every image in VK_IMAGE_LAYOUT_GENERAL: FidelityFX's Vulkan backend maps GENERIC_READ and UNORDERED_ACCESS to
   GENERAL and returns each image to its state after the dispatch.
-- Reactive mask (step 4, fix built 2026-11-14, not run): `fsr_reactive` (0-100, 0 = off, default 50 provisional;
-  menu Display tab and launcher "AMD FSR reactive mask"). While FSR runs with it above 0, U2's motion pass runs its
+- Reactive mask (step 4, run 2026-11-14, parked): `fsr_reactive` (0-100, 0 = off, **default 0, ini only**: the menu
+  and launcher sliders were removed after T-F8: the game marks only blood effects, and only at effects resolution 100;
+  plan-fsr.md F4). While FSR runs with it above 0, U2's motion pass runs its
   REACTIVE variant (`ue4_motion_reactive_comp`): a stencil-aspect view of the same D32S8 depth-stencil, bit 3 (UE4's
   responsive AA, the bit the game's TAA tests) -> an R8_UNORM mask, strength / 100 there and 0 elsewhere, at render
   size; `LastPass::reactive` -> `Ue4UpscaleFrame::reactive` -> `reactiveMask`. Without a stencil (D32 only), R8
