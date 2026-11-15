@@ -17,7 +17,10 @@ public:
         return virtual_addr + size < 0x100'0000'0000ULL;
     }
     u64 ClampRangeSize(VAddr virtual_addr, u64 size);
-    void CopySparseMemory(VAddr source, u8* dest, u64 size);
+    /// `backing`: read through the backing view, never the guest mapping, so the copy cannot
+    /// fault on the GPU side's page protection (always so on Linux). For copies run off stage A
+    /// (BufferCache::RunGuestCopy): their faults deadlock (deferred-copy-backing).
+    void CopySparseMemory(VAddr source, u8* dest, u64 size, bool backing = false);
     bool TryWriteBacking(void* address, const void* data, u64 size);
     /// gow3 GOW3_GPU_FENCES: a fence label as one store (gow3gpu.cpp), through the backing view
     /// when `backing` (past the GPU side's page protection, as TryWriteBacking), else at its

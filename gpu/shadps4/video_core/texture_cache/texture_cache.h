@@ -148,6 +148,11 @@ public:
     bool ResolveReadbacks(VAddr address, u64 size, bool assume_locks = true,
                           ReadbackSource source = ReadbackSource::Unknown);
     void CancelReadbacks(VAddr address, u64 size);
+    /// gow3 copy-fault trace (page_manager.cpp): a pending image readback may cover the range
+    /// (lock-free; also true while the span list is being republished).
+    [[nodiscard]] bool MayHaveReadback(VAddr address, u64 size) const {
+        return !ReadbackSpansMiss(address, size);
+    }
 
     /// gow3 (MediEvil HZB remap, gpu/shim/medievil_hzb.cpp): numbers the readback copies of
     /// [address, address + size) from the first call on. Publishes the copies the GPU has

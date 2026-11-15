@@ -43,6 +43,7 @@ int runtime_memory_write_backing(uintptr_t address, const void* data, uint64_t s
 int runtime_memory_store_label(uintptr_t address, uint64_t value, uint32_t size);
 int runtime_memory_read_backing(uintptr_t address, void* data, uint64_t size);
 int runtime_memory_copy_backing(uintptr_t address, void* data, uint64_t size);
+int runtime_memory_copy_backing_deferred(uintptr_t address, void* data, uint64_t size);
 uint64_t runtime_memory_clamp(uintptr_t address, uint64_t size);
 int runtime_memory_region(uintptr_t address, uintptr_t* start, uintptr_t* end, int* mapped);
 void runtime_memory_gpu_protect(uintptr_t address, uint64_t size, int read, int write);
@@ -119,17 +120,26 @@ u64 MemoryManager::ClampRangeSize(VAddr virtual_addr, u64 size) {
     GOW3_SECTION(Clamp);
     return runtime_memory_clamp(virtual_addr, size);
 }
-static void CopySparseSerial(VAddr source, u8* dest, u64 size) {
+// `backing`: read through the backing view (past the GPU side's page protection), never through
+// the guest mapping. Always on Linux; on Windows for the copies run off stage A
+// (MemoryManager::CopySparseMemory's `backing`, deferred-copy-backing).
+static void CopySparseSerial(VAddr source, u8* dest, u64 size, bool backing) {
+    // gow3 copy-fault trace: a guest fault inside this copy is logged (page_manager.cpp).
+    const Gow3Copy::ReadingGuestScope reading{source, size};
 #ifndef _WIN32
+    backing = true;
     // gow3 A1 (impl-stage-a-decode.md; GOW3_BACKING_COPY=1, second toggle word 1048576 off): the
     // same bytes through the backing view without the region table lock; 0: the loop below.
     if (runtime_memory_copy_backing(source, dest, size)) {
         return;
     }
+#else
+    // gow3 deferred-copy-backing: the same lock-free copy, no opt-in; 0: the locked loop below.
+    if (backing && runtime_memory_copy_backing_deferred(source, dest, size)) {
+        return;
+    }
 #endif
-#ifndef _WIN32
     bool retried = false;
-#endif
     while (size) {
         uintptr_t start = 0, end = 0;
         int mapped = 0;
@@ -137,17 +147,19 @@ static void CopySparseSerial(VAddr source, u8* dest, u64 size) {
             end = source + size;
         }
         const u64 n = std::min<u64>(size, end - source);
-#ifndef _WIN32
-        // Linux: through the backing view, under the region lock, never through the guest
-        // mapping. Linux unmaps a pool page on every decommit (Windows keeps the view), and UE4
-        // recommits pool pages several times a frame: a copy thread reading the guest mapping
-        // crashed in CopySparseMemory (signal 11, Deck native run 7). From
-        // spacepepperoni/medievil_ps4_Linux 97f0ac9 (GPL-2.0). The lookup above is lock-free, so
-        // the range can be decommitted or split before the locked read: then read_backing fails,
-        // and the old fall-through memcpy from the now PROT_NONE guest address crashed the same way
-        // (native run 5, native run 7, nav-1: libc memcpy at a 1 MiB boundary). Look it up once
-        // more; a range still unreadable reads as zeros, as an unmapped one does.
-        if (mapped) {
+        if (!mapped) {
+            std::memset(dest, 0, n);
+        } else if (backing) {
+            // Linux: through the backing view, under the region lock, never through the guest
+            // mapping. Linux unmaps a pool page on every decommit (Windows keeps the view), and
+            // UE4 recommits pool pages several times a frame: a copy thread reading the guest
+            // mapping crashed in CopySparseMemory (signal 11, Deck native run 7). From
+            // spacepepperoni/medievil_ps4_Linux 97f0ac9 (GPL-2.0). The lookup above is lock-free,
+            // so the range can be decommitted or split before the locked read: then read_backing
+            // fails, and the old fall-through memcpy from the now PROT_NONE guest address crashed
+            // the same way (native run 5, native run 7, nav-1: libc memcpy at a 1 MiB boundary).
+            // Look it up once more; a range still unreadable reads as zeros, as an unmapped one
+            // does. Windows' deferred copies take this path when the lock-free copy declines.
             if (!runtime_memory_read_backing(source, dest, n)) {
                 if (!retried) {
                     retried = true;
@@ -156,25 +168,21 @@ static void CopySparseSerial(VAddr source, u8* dest, u64 size) {
                 std::memset(dest, 0, n);
             }
         } else {
-            std::memset(dest, 0, n);
+            std::memcpy(dest, reinterpret_cast<const void*>(source), n);
         }
         retried = false;
-#else
-        if (mapped) std::memcpy(dest, reinterpret_cast<const void*>(source), n);
-        else std::memset(dest, 0, n);
-#endif
         source += n; dest += n; size -= n;
     }
 }
-void MemoryManager::CopySparseMemory(VAddr source, u8* dest, u64 size) {
+void MemoryManager::CopySparseMemory(VAddr source, u8* dest, u64 size, bool backing) {
     // gow3: large uploads (streaming) are split across the copy threads.
     constexpr u64 Chunk = 512 * 1024;
     if (size < 4 * Chunk || !Gow3Copy::Enabled()) {
-        return CopySparseSerial(source, dest, size);
+        return CopySparseSerial(source, dest, size, backing);
     }
     Gow3Copy::ParallelFor((size + Chunk - 1) / Chunk, [&](std::size_t i) {
         const u64 offset = i * Chunk;
-        CopySparseSerial(source + offset, dest + offset, std::min(Chunk, size - offset));
+        CopySparseSerial(source + offset, dest + offset, std::min(Chunk, size - offset), backing);
     });
 }
 bool MemoryManager::ReadBacking(VAddr address, void* data, u64 size) {

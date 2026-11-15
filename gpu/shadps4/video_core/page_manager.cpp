@@ -1,7 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <atomic>
+#include <chrono>
+#include <cstdio>
 #include <boost/container/small_vector.hpp>
+#include "gow3_copy.h"
+#include "gow3_decode_pacing.h"
 #include "gow3_toggles.h"
 #include "common/assert.h"
 #include "common/debug.h"
@@ -9,6 +14,7 @@
 #include "common/error.h"
 #include "common/range_lock.h"
 #include "common/signal_context.h"
+#include "common/thread.h"
 #include "core/emulator_settings.h"
 #include "core/memory.h"
 #include "core/signals.h"
@@ -45,6 +51,75 @@ namespace VideoCore {
 constexpr size_t PM_PAGE_SIZE = 4_KB;
 constexpr size_t PM_PAGE_BITS = 12;
 
+namespace {
+
+// gow3 copy-fault trace (gow3_copy.h, ReadingGuest): a guest fault inside a host copy of guest
+// memory, one line before it is handled and one after. On the Vulkan recorder or a copy thread
+// the fault is handed to the GPU command thread and waited for: a fault with no "handled" line
+// never came back (the 200% render scale deadlock, 2026-11-15). The first 20 faults are logged,
+// then each power of two (#32, #64, ...), so a run that faults often still shows the count.
+class CopyFaultTrace {
+public:
+    CopyFaultTrace(Vulkan::Rasterizer* rasterizer, VAddr addr, bool is_write, bool gpu_thread) {
+        if (!Gow3Copy::fault_log_enabled) {
+            return;
+        }
+        const auto copy = Gow3Copy::reading_guest;
+        if (copy.size == 0) {
+            return;
+        }
+        static std::atomic<u32> faults{0};
+        const u32 count = faults.fetch_add(1, std::memory_order_relaxed) + 1;
+        if (count > 20 && (count & (count - 1)) != 0) {
+            return;
+        }
+        number = count;
+        const VAddr page = addr & ~VAddr(PM_PAGE_SIZE - 1);
+        // Who protects the page: the buffer cache (GPU-written buffer bytes) or the texture
+        // cache (a pending image readback). Both read-protect; at 150% every stage A copy fault
+        // was on a page the buffer cache did not count as GPU-modified.
+        const bool gpu_modified =
+            rasterizer->GetBufferCache().IsRegionGpuModified(page, PM_PAGE_SIZE);
+        const bool readback = rasterizer->GetTextureCache().MayHaveReadback(page, PM_PAGE_SIZE);
+        // Decode pacing lets the game run ahead of stage B: how many frames ended since a
+        // deferred copy was recorded, and how far ahead of the newest retired frame it is now.
+        const unsigned long long ended = Gow3DecodePacing::FramesEnded();
+        const unsigned long long retired = Gow3DecodePacing::FramesRetired();
+        char age[48] = "recording frame not known"; // not deferred, or decode pacing off
+        if (copy.queued_frame != 0) {
+            std::snprintf(age, sizeof(age), "recorded %lld frames ago",
+                          static_cast<long long>(ended - copy.queued_frame));
+        }
+        std::printf("Copy fault #%u: %s %s at %#llx, in a copy of %#llx %+lld (%llu bytes); page "
+                    "GPU-modified: %s, image readback: %s; %s; frames ended %llu, retired %llu; "
+                    "%s\n",
+                    number, Common::GetCurrentThreadName().c_str(), is_write ? "write" : "read",
+                    static_cast<unsigned long long>(addr), copy.source,
+                    static_cast<long long>(addr - copy.source), copy.size,
+                    gpu_modified ? "yes" : "no", readback ? "maybe" : "no", age, ended, retired,
+                    gpu_thread ? "handled inline (GPU-side thread)"
+                               : "sent to the GPU command thread");
+        std::fflush(stdout);
+        start = std::chrono::steady_clock::now();
+    }
+    ~CopyFaultTrace() {
+        if (number == 0) {
+            return;
+        }
+        const double ms =
+            std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start)
+                .count();
+        std::printf("Copy fault #%u handled in %.3f ms\n", number, ms);
+        std::fflush(stdout);
+    }
+
+private:
+    u32 number = 0;
+    std::chrono::steady_clock::time_point start{};
+};
+
+} // namespace
+
 struct PageManager::Impl {
     using PageState = VideoCore::PageState;
 
@@ -73,7 +148,9 @@ struct PageManager::Impl {
         if (is_gpu_thread) {
             Gow3Stats::gpu_signal_faults.fetch_add(1, std::memory_order_relaxed);
         }
-        if (Common::IsWriteError(context)) {
+        const bool is_write = Common::IsWriteError(context);
+        const CopyFaultTrace trace{rasterizer, addr, is_write, is_gpu_thread};
+        if (is_write) {
             Gow3Stats::Timer timer{Gow3Stats::t_write_faults};
             Gow3Stats::fault_rip = Common::GetRip(context);
             return rasterizer->OnWriteFault(addr, is_gpu_thread);

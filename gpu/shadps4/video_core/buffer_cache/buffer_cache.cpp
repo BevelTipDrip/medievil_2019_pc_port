@@ -19,6 +19,7 @@
 #include <string>
 #include <magic_enum/magic_enum.hpp>
 #include "gow3_copy.h"
+#include "gow3_decode_pacing.h"
 #include "gow3_sections.h"
 #include "gow3_toggles.h"
 #include "gow3_settings.h"
@@ -790,10 +791,22 @@ void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool assume_lock
 // pages marked CPU-modified without being written only cost an upload when bound.
 // Item: context = BufferCache, source = guest address, destination = host pointer, size,
 // extra = the Buffer whose mapping holds the destination (flushed after the copy).
+//
+// gow3 deferred-copy-backing (2026-11-15): the copy reads the backing view, not the guest
+// mapping. It runs off stage A (the recorder, a copy thread, a draw preparation worker), where a
+// fault on the GPU side's page protection deadlocked (200% render scale at 4K): the handler hands
+// it to stage A and waits, and stage A, resolving it, waits for the recorder or stage B. The
+// bytes the draw needs are the guest's (its range was not GPU-modified when the copy was queued),
+// which the backing view holds. GOW3_DEFERRED_COPY_BACKING=0: the guest mapping, as before.
+// Read once at start (a namespace-scope constant: no guard check per copy).
+static const bool deferred_copy_backing = [] {
+    const char* env = std::getenv("GOW3_DEFERRED_COPY_BACKING");
+    return !(env && env[0] == '0');
+}();
 void BufferCache::RunGuestCopy(const Gow3Copy::Item& item) {
     auto* cache = static_cast<BufferCache*>(item.context);
     auto* dst = reinterpret_cast<u8*>(item.destination);
-    cache->memory->CopySparseMemory(item.source, dst, item.size);
+    cache->memory->CopySparseMemory(item.source, dst, item.size, deferred_copy_backing);
     auto* buffer = reinterpret_cast<Buffer*>(item.extra);
     buffer->Flush(dst - buffer->mapped_data.data(), item.size);
 }
@@ -811,7 +824,12 @@ void BufferCache::SmallGuestCopy(const Gow3Copy::Item& item) {
     }
     scheduler.NoteHostCopySource(item.source, item.size);
     if (scheduler.IsRecordingDeferred() && !Gow3Toggle::Disabled(Gow3Toggle::PoolSmallCopies)) {
-        scheduler.RecordHostCopy([item] { item.run(item); });
+        // gow3 copy-fault trace: the frame it was recorded in, for the age of a faulting copy.
+        const u64 frame = Gow3Copy::fault_log_enabled ? Gow3DecodePacing::FramesEnded() : 0;
+        scheduler.RecordHostCopy([item, frame] {
+            const Gow3Copy::QueuedFrameScope queued{frame};
+            item.run(item);
+        });
         return;
     }
     Gow3Copy::QueueCopy(item);

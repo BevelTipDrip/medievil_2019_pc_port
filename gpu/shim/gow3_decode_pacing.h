@@ -54,6 +54,11 @@ void NoteIdleRun(bool raised, std::uint64_t handed_ns);
 
 std::uint64_t NowNs();
 
+/// sceGnmSubmitDone calls so far and the newest retired frame, read without the lock (for logs:
+/// the copy-fault trace, page_manager.cpp). Both 0 without the switch.
+std::uint64_t FramesEnded();
+std::uint64_t FramesRetired();
+
 // ---- GOW3_ONSUBMIT_STAGE_B: sceGnmSubmitDone's frame-end work on stage B (vk_rasterizer.cpp) ----
 
 /// GOW3_ONSUBMIT_STAGE_B (`1` on, `0` off; unset: as GOW3_DECODE_PACING). Never with

@@ -184,6 +184,14 @@ std::uint64_t NowNs() {
         .count();
 }
 
+std::uint64_t FramesEnded() {
+    return __atomic_load_n(&pacing.frames_ended, __ATOMIC_RELAXED);
+}
+
+std::uint64_t FramesRetired() {
+    return __atomic_load_n(&pacing.frames_retired, __ATOMIC_RELAXED);
+}
+
 std::uint64_t BeginFrame() {
     if (Gow3Stats::enabled) {
         counters.done_calls.fetch_add(1, std::memory_order_relaxed);

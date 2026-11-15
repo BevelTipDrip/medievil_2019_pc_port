@@ -42,4 +42,50 @@ void WaitAsync();
 /// Callbacks run in the order they were registered.
 void AfterCopies(std::function<void()> callback);
 
+/// gow3 copy-fault trace (2026-11-15): the guest range the calling thread's host copy is reading
+/// (CopySparseMemory), size 0 outside one. The guest fault handler (page_manager.cpp) logs a fault
+/// inside a copy: on the Vulkan recorder or a copy thread it is handed to the GPU command thread
+/// and waited for, which deadlocked a 200% render scale level load at 4K. `queued_frame`: the
+/// frames the game had ended (decode pacing) when a deferred copy was recorded; 0: not known.
+struct ReadingGuest {
+    unsigned long long source = 0, size = 0, queued_frame = 0;
+};
+extern thread_local ReadingGuest reading_guest;
+
+/// GOW3_COPY_FAULT_LOG (default on; 0: off, and the scopes below do nothing). Read once at start.
+extern const bool fault_log_enabled;
+
+/// Sets reading_guest's range for its lifetime.
+struct ReadingGuestScope {
+    ReadingGuest saved;
+    ReadingGuestScope(unsigned long long source, unsigned long long size) {
+        if (fault_log_enabled) {
+            saved = reading_guest;
+            reading_guest.source = source;
+            reading_guest.size = size;
+        }
+    }
+    ~ReadingGuestScope() {
+        if (fault_log_enabled) {
+            reading_guest = saved;
+        }
+    }
+};
+
+/// Sets reading_guest's queued_frame for its lifetime (a deferred copy being run).
+struct QueuedFrameScope {
+    unsigned long long saved = 0;
+    explicit QueuedFrameScope(unsigned long long frame) {
+        if (fault_log_enabled) {
+            saved = reading_guest.queued_frame;
+            reading_guest.queued_frame = frame;
+        }
+    }
+    ~QueuedFrameScope() {
+        if (fault_log_enabled) {
+            reading_guest.queued_frame = saved;
+        }
+    }
+};
+
 } // namespace Gow3Copy

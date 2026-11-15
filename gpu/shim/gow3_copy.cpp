@@ -237,6 +237,13 @@ thread_local Batch batch;
 
 } // namespace
 
+thread_local ReadingGuest reading_guest;
+
+const bool fault_log_enabled = [] {
+    const char* env = std::getenv("GOW3_COPY_FAULT_LOG");
+    return !(env && env[0] == '0');
+}();
+
 bool Enabled() {
     return GetPool().Enabled() && !Gow3Toggle::Disabled(Gow3Toggle::ParallelCopies);
 }

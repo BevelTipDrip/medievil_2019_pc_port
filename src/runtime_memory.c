@@ -1812,8 +1812,18 @@ void runtime_memory_usage(uint64_t *direct_live, uint64_t *flexible, uint64_t *p
 }
 /* gow3: reads through the backing view (past the page protection the GPU side keeps);
  * 0 when part of the range has no backing. */
+/* GOW3_FRAME_STATS (timed on Windows only): the locked reads, their wait for the table lock (total, worst)
+ * and their whole time (worst); deferred-copy-backing's fallback when the lock-free copy declines. */
+static uint64_t backing_read_count, backing_read_wait_ns, backing_read_wait_max_ns, backing_read_max_ns; /* atomic */
+static void atomic_max_u64(uint64_t *at, uint64_t v) {
+    uint64_t old=__atomic_load_n(at,__ATOMIC_RELAXED);
+    while (v>old && !__atomic_compare_exchange_n(at,&old,v,1,__ATOMIC_RELAXED,__ATOMIC_RELAXED)) {}
+}
 int runtime_memory_read_backing(uintptr_t address, void *data, uint64_t size) {
+    const int stats=runtime_fault_stats_enabled();
+    const uint64_t t0=stats ? host_now_ns() : 0;
     read_lock();
+    const uint64_t t1=stats ? host_now_ns() : 0;
     int ok=1;
     for (uintptr_t at=address, end=address+size; at<end && ok;) {
         size_t i=vma_index(at);
@@ -1823,6 +1833,13 @@ int runtime_memory_read_backing(uintptr_t address, void *data, uint64_t size) {
         at+=n;
     }
     read_unlock();
+    if (stats) {
+        const uint64_t t2=host_now_ns();
+        __atomic_fetch_add(&backing_read_count,1,__ATOMIC_RELAXED);
+        __atomic_fetch_add(&backing_read_wait_ns,t1-t0,__ATOMIC_RELAXED);
+        atomic_max_u64(&backing_read_wait_max_ns,t1-t0);
+        atomic_max_u64(&backing_read_max_ns,t2-t0);
+    }
     return ok;
 }
 /* Per-thread cache of recently found regions for the GPU's per-draw queries:
@@ -2093,12 +2110,10 @@ int runtime_memory_region(uintptr_t address, uintptr_t *start, uintptr_t *end, i
  * process's life (MAP_NORESERVE over the memfd, holes read as zero), so a stale offset cannot
  * fault; offsets are checked against its size anyway. */
 #define TOGGLE2_BACKING_COPY_OFF UINT64_C(1048576)
-#ifdef _WIN32
-int runtime_memory_copy_backing(uintptr_t address, void *data, uint64_t size) {
-    (void)address; (void)data; (void)size;
-    return 0; /* Windows copies from the guest mapping without a lock (kept views) */
-}
-#else
+/* Shared with Windows since 2026-11-15 (deferred-copy-backing): Windows' copies off stage A (the
+ * recorder's and copy threads' deferred copies) read through the backing view with
+ * runtime_memory_copy_backing_deferred; Windows' other copies still read the guest mapping
+ * (CopySparseSerial), and runtime_memory_copy_backing (A1) is only called on Linux. */
 static uint64_t backing_copy_counts[3]; /* atomic, GOW3_FRAME_STATS: from the index, searched, locked */
 static int backing_copy_wanted(void) {
     static int wanted=-1; /* atomic: any thread may read the environment first, same answer */
@@ -2117,8 +2132,21 @@ static int backing_copy_on(void) {
 static void backing_copy_count(int what) {
     if (runtime_fault_stats_enabled()) __atomic_fetch_add(&backing_copy_counts[what],1,__ATOMIC_RELAXED);
 }
+static int copy_backing_lockfree(uintptr_t address, void *data, uint64_t size);
 int runtime_memory_copy_backing(uintptr_t address, void *data, uint64_t size) {
-    if (!size || !backing_base || !backing_copy_on() || !optimistic_enabled()) return 0;
+    if (!backing_copy_on()) return 0;
+    return copy_backing_lockfree(address,data,size);
+}
+/* gow3 deferred-copy-backing (Windows; research card stage-b/deferred-copy-backing): the same
+ * lock-free copy without A1's opt-in. A copy run off stage A must never fault on the GPU side's
+ * page protection: its fault handler hands the fault to stage A and waits, and stage A, resolving
+ * it, waits for the recorder (a download's submit syncs the recording) or stage B: the 200%
+ * render scale deadlocks. 0: the caller copies the locked way (runtime_memory_read_backing). */
+int runtime_memory_copy_backing_deferred(uintptr_t address, void *data, uint64_t size) {
+    return copy_backing_lockfree(address,data,size);
+}
+static int copy_backing_lockfree(uintptr_t address, void *data, uint64_t size) {
+    if (!size || !backing_base || !optimistic_enabled()) return 0;
     const uint64_t view=POOL_SIZE+FLEX_SPAN;
     unsigned char *out=data;
     const uint64_t generation=__atomic_load_n(&table_generation,__ATOMIC_ACQUIRE);
@@ -2183,7 +2211,6 @@ int runtime_memory_copy_backing(uintptr_t address, void *data, uint64_t size) {
     backing_copy_count(1);
     return 1;
 }
-#endif
 /* gow3 gate 2 (research/docs/study-fence-waits.md 5.5), GOW3_FRAME_STATS=1: the GPU's write
  * faults by the PS4 memory type of the page (0 WB Onion, 3 WC Garlic, 10 WB Garlic), how many
  * distinct 16 KiB direct-memory pages fault in a window and how many fault in (nearly) every frame,
@@ -2381,20 +2408,28 @@ void runtime_memory_lock_report(char *out, size_t size, unsigned frames) {
                      threads>REGION_COUNT_THREADS ? ", more not counted" : "");
         }
     }
-#ifndef _WIN32
-    /* gow3 A1 (impl-stage-a-decode.md): CopySparseMemory's copies without the table lock. */
+    /* gow3 A1 (impl-stage-a-decode.md): CopySparseMemory's copies without the table lock; on Windows the
+     * deferred copies' (deferred-copy-backing), with the locked reads' wait for the table lock. */
     {
         double d[3];
         for (int k=0;k<3;++k) d[k]=__atomic_exchange_n(&backing_copy_counts[k],0,__ATOMIC_RELAXED)/f;
+#ifdef _WIN32
+        const char *state="deferred copies";
+#else
         const char *state=!backing_copy_wanted() ? "off" : backing_copy_on() ? "on" : "toggled off";
+#endif
+        const uint64_t reads=__atomic_exchange_n(&backing_read_count,0,__ATOMIC_RELAXED);
+        const uint64_t wait=__atomic_exchange_n(&backing_read_wait_ns,0,__ATOMIC_RELAXED);
+        const uint64_t wait_max=__atomic_exchange_n(&backing_read_wait_max_ns,0,__ATOMIC_RELAXED);
+        const uint64_t read_max=__atomic_exchange_n(&backing_read_max_ns,0,__ATOMIC_RELAXED);
         const size_t at=strlen(out);
         if (at<size) {
             snprintf(out+at,size-at,"Backing copies per frame (A1 %s): without the lock %.1f (from the index "
-                     "%.1f, searched %.1f), the locked way %.1f\n",
-                     state,d[0]+d[1],d[0],d[1],d[2]);
+                     "%.1f, searched %.1f), the locked way %.1f; locked reads %.1f per frame, lock wait "
+                     "%.1f us per frame, worst wait %.1f us, worst read %.1f us\n",
+                     state,d[0]+d[1],d[0],d[1],d[2],reads/f,wait/f/1000.0,wait_max/1000.0,read_max/1000.0);
         }
     }
-#endif
 }
 /* GPU page tracking: restrict host access, never beyond the guest's own protection. */
 void runtime_memory_gpu_protect(uintptr_t address, uint64_t size, int read, int write) {
