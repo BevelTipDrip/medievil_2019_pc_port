@@ -228,3 +228,16 @@ recording thread must not):
 
 T-F10 (PC, next): FSR 4 at native and 67% against DLSS and FSR 3.1: image (stills, pans, fences, grass, effects),
 frame times and lows; the log's model / tier line; then 75% with and without `GOW3_FSR4_DRS=1`.
+
+T-F10 (2026-11-14, `e49e67b`, RTX 4090, 4K output, `GOW3_FSR4_PROFILE=1`): FSR 4 ran (F9 among DLSS / FSR 3.1 /
+FSR 4; no "waited for the GPU" line, no failure). **2.6-2.7 ms of GPU time per frame at 4K output**, almost the same
+at 75% and 100% (the network runs at the output size): model passes 1-12 1.79 ms, post 0.45 (optimized), pre 0.31,
+RCAS + auto exposure 0.14. The user: at 100% "decent, comparable to DLSS", but about 80 FPS below native without an
+upscaler and 40 below DLSS / FSR 3.1 (expected); at 67% "quite good". RTSS current 210 -> 153 FPS, 1% low 195 -> 142.5
+when switching to FSR 4 (about 1.8 ms over the previous upscaler). Found: 67% (ratio 1.49) got the native model, the
+provider choosing the largest preset ratio at or below the ratio (quality starts at 1.5).
+
+T-F11 (`e647026`, the model nearest to the ratio): 67% and 75% now use the quality model, 100% native, at the same
+cost (2.62-2.78 ms). The user: everything ran fine. Not compared yet: 67% quality against 67% native (T-F10) side by
+side; `GOW3_FSR4_DRS=1` at 75%. Next per the user's order: 7b (4.1.1 on NVIDIA) only if worth it; step 6 (AMD's SDK)
+when the RX 6900 XT is available.
