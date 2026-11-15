@@ -1514,6 +1514,11 @@ void GraphicsTab() {
               "How far water and glass shift the image behind them. PS4 scale: the same share of the screen as "
               "the PS4 at 1080p. Game: the game grows the shift with the output size; above 1080p it overflows and "
               "copies Dan and nearby objects into the Sleeping Village water.");
+    static const char* const ripple_labels[] = {"Always", "Game cycle"};
+    static const int ripple_values[] = {1, 0};
+    ChoiceRow("Water ripples", s.water_ripples_always, ripple_labels, ripple_values, 2,
+              "What water shows through its surface. Game cycle: it ripples for 5 seconds, then goes still for 5, "
+              "and still water shows a hard line near the top of the screen. Always: it keeps rippling.");
     // The live settings in the table's order, then the ones a start applies (RESTART).
     for (const bool live : {true, false}) {
         for (int o = 0; o < S::UE4LiveCount; ++o) {

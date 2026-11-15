@@ -237,6 +237,9 @@ struct HwFragmentRuntimeInfo {
     /// MediEvil: output width UE4's distortion shift is scaled to (0: as the game draws it at the
     /// real output width) (RefractionScalePass).
     u32 refraction_ref_width{0};
+    /// MediEvil: the distortion shader's time pulse clamp(sin) becomes abs(sin): the water ripples
+    /// through the still half of its cycle (RefractionScalePass).
+    bool refraction_ripples{false};
 
     bool operator==(const HwFragmentRuntimeInfo& other) const noexcept {
         return std::ranges::equal(color_buffers, other.color_buffers) &&
@@ -250,6 +253,7 @@ struct HwFragmentRuntimeInfo {
                light_grid_scale_x == other.light_grid_scale_x &&
                light_grid_scale_y == other.light_grid_scale_y &&
                refraction_ref_width == other.refraction_ref_width &&
+               refraction_ripples == other.refraction_ripples &&
                std::ranges::equal(inputs.begin(), inputs.begin() + num_inputs, other.inputs.begin(),
                                   other.inputs.begin() + num_inputs);
     }

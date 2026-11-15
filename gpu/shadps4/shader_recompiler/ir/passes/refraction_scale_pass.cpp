@@ -12,6 +12,9 @@
 // (Info::uses_refraction_scale); the pipeline cache picks a variant with the reference width
 // (refraction_ref_width, ini refraction_ps4) that multiplies the constant by reference / the
 // UnscaledViewW the shader reads, so the shift is the share of the screen a 1920-wide output gets.
+// The same shaders carry the material's time pulse: rippling for half of a 10 s cycle, still for the
+// other half, when the refraction's hard line at the top edge stands out. refraction_ripples
+// (ini water_ripples_always) makes it ripple through both halves.
 
 #include <cmath>
 #include <cstdio>
@@ -113,11 +116,34 @@ void RefractionScalePass(IR::Program& program, const RuntimeInfo& runtime_info) 
         return;
     }
     program.info.uses_refraction_scale = true;
+    // The material's time pulse, saturate(sin(fract(time * rate))) (GCN v_sin with the clamp
+    // modifier): 0 for half of each cycle, still water. abs() ripples through that half too.
+    u32 pulses = 0;
+    if (runtime_info.hw.fs.refraction_ripples) {
+        for (IR::Block* const block : program.blocks) {
+            for (IR::Inst& inst : block->Instructions()) {
+                if (inst.GetOpcode() != IR::Opcode::FPSaturate32 || inst.Arg(0).IsImmediate()) {
+                    continue;
+                }
+                const IR::Inst* sin = inst.Arg(0).TryInst();
+                if (!sin || sin->GetOpcode() != IR::Opcode::FPSin || sin->Arg(0).IsImmediate()) {
+                    continue;
+                }
+                const IR::Inst* fract = sin->Arg(0).TryInst();
+                if (!fract || fract->GetOpcode() != IR::Opcode::FPFract32) {
+                    continue;
+                }
+                inst.ReplaceOpcode(IR::Opcode::FPAbs32);
+                ++pulses;
+            }
+        }
+    }
     static u32 logged = 0;
     if (logged++ < 64) {
-        std::printf("Shader: refraction constant in %016llx (%u), reference width %u%s\n",
+        std::printf("Shader: refraction constant in %016llx (%u), reference width %u%s, ripple "
+                    "pulses %u\n",
                     static_cast<unsigned long long>(program.info.pgm_hash), found, reference,
-                    reference ? "" : " (game)");
+                    reference ? "" : " (game)", pulses);
         std::fflush(stdout);
     }
 }

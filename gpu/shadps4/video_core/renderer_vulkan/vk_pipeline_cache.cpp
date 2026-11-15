@@ -47,6 +47,14 @@ namespace {
 /// thread: the view UE4's forward light grid is built for (LightGridScalePass).
 std::atomic<u32> g_light_grid_scene{0};
 
+/// MediEvil: the refraction settings a distortion variant is picked from (RefractionScalePass):
+/// bit 0 refraction_ps4, bit 1 water_ripples_always.
+int RefractionSetting() {
+    const auto& s = Gow3Settings::Get();
+    return (s.refraction_ps4.load(std::memory_order_relaxed) != 0 ? 1 : 0) |
+           (s.water_ripples_always.load(std::memory_order_relaxed) != 0 ? 2 : 0);
+}
+
 /// A draw's viewport size (width | height << 16; 0: none).
 u32 LightGridViewport(const AmdGpu::Regs& regs) {
     if (!regs.viewport_control.xscale_enable || !regs.viewport_control.yscale_enable) {
@@ -294,6 +302,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(PipelineSelection& se
         info.hw.fs.light_grid_scale_x = sel.light_grid_scale[0];
         info.hw.fs.light_grid_scale_y = sel.light_grid_scale[1];
         info.hw.fs.refraction_ref_width = sel.refraction_ref_width;
+        info.hw.fs.refraction_ripples = sel.refraction_ripples;
         u8 stencil_ref_export_enable = regs.depth_shader_control.stencil_op_val_export_enable |
                                        regs.depth_shader_control.stencil_test_val_export_enable;
         info.hw.fs.mrtz_mask = regs.depth_shader_control.z_export_enable |
@@ -762,8 +771,7 @@ const GraphicsPipeline* PipelineCache::TryPreparedPipeline(const PreparedDraw& p
     if (prepared.state.load(std::memory_order_acquire) != PreparedDraw::Ready ||
         prepared.reg_checksum != liverpool->gfx_reg_checksum ||
         prepared.light_grid_scene != g_light_grid_scene.load(std::memory_order_relaxed) ||
-        prepared.refraction_setting !=
-            Gow3Settings::Get().refraction_ps4.load(std::memory_order_relaxed)) {
+        prepared.refraction_setting != RefractionSetting()) {
         return nullptr;
     }
     // Same registers; the stage programs and their flattened user data (which also covers
@@ -962,7 +970,8 @@ bool PipelineCache::RefreshGraphicsKey(PipelineSelection& sel) {
     // keeps it for TryPreparedPipeline's check.
     sel.light_grid_scene = g_light_grid_scene.load(std::memory_order_relaxed);
     sel.refraction_ref_width = 0;
-    sel.refraction_setting = Gow3Settings::Get().refraction_ps4.load(std::memory_order_relaxed);
+    sel.refraction_ripples = false;
+    sel.refraction_setting = RefractionSetting();
 
     // First pass to fill render target information needed by shader recompiler
     for (s32 cb = 0; cb < AmdGpu::NUM_COLOR_BUFFERS && !skip_cb_binding; ++cb) {
@@ -1046,10 +1055,13 @@ bool PipelineCache::RefreshGraphicsKey(PipelineSelection& sel) {
         }
     }
     // MediEvil: UE4's distortion accumulate shaders get the variant that scales the shift to the
-    // share of the screen a 1920-wide output (the PS4's 1080p) gets.
+    // share of the screen a 1920-wide output (the PS4's 1080p) gets, and the one whose time pulse
+    // ripples through the still half of its cycle.
     if (const auto* fs = sel.infos[static_cast<u32>(Shader::SwStage::Fragment)];
         fs && fs->uses_refraction_scale && sel.refraction_setting != 0) {
-        sel.refraction_ref_width = Gow3Settings::RefractionReferenceWidth;
+        sel.refraction_ref_width =
+            (sel.refraction_setting & 1) ? Gow3Settings::RefractionReferenceWidth : 0;
+        sel.refraction_ripples = (sel.refraction_setting & 2) != 0;
         if (!RefreshGraphicsStages(sel)) {
             return false;
         }

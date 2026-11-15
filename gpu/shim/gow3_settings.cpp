@@ -255,6 +255,8 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         v.preshadows = i != 0;
     } else if (key == "refraction_ps4") {
         v.refraction_ps4 = value.empty() || i != 0 ? 1 : 0;
+    } else if (key == "water_ripples_always") {
+        v.water_ripples_always = value.empty() || i != 0 ? 1 : 0;
     } else if (key == "live_resolution") {
         v.live_resolution = value == "auto" ? -1 : std::clamp(i, 0, 1);
     } else if (key == "output_res") {
@@ -675,7 +677,8 @@ std::map<std::string, std::string> Serialize(const Values& v) {
     Append(out, "effects_resolution=%s\n", v.effects_resolution >= 0 ? UE4EffectsKeys[v.effects_resolution]
                                                                     : v.effects_resolution_raw.c_str());
     Append(out, "preshadows=%d\n", int(v.preshadows.load()));
-    Append(out, "refraction_ps4=%d\n", v.refraction_ps4.load());
+    Append(out, "refraction_ps4=%d\nwater_ripples_always=%d\n", v.refraction_ps4.load(),
+           v.water_ripples_always.load());
     for (int o = 0; o < UE4LiveCount; ++o) {
         Append(out, "%s=%s\n", UE4LiveOptions[o].key, UE4LiveOptions[o].tokens[v.ue4_live[o]]);
     }
