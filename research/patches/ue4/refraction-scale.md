@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: ours
 class: C
-commits: eeadcb3, 9d2f49a, 464877a
+commits: eeadcb3, 9d2f49a, 464877a, d60e380
 files: gpu/shadps4/shader_recompiler/ir/passes/refraction_scale_pass.cpp, gpu/shadps4/shader_recompiler/ir/passes/ir_passes.h, gpu/shadps4/shader_recompiler/recompiler.cpp, gpu/shadps4/shader_recompiler/runtime_info.h, gpu/shadps4/shader_recompiler/info.h, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h, gpu/shadps4/video_core/renderer_vulkan/vk_draw_prep.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_draw_prep.h, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_serialization.cpp, gpu/shim/gow3_settings.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_overlay.cpp
 symbols: RefractionScalePass, FindParams, ConstantSide, DistortionConstant, uses_refraction_scale, refraction_ref_width, refraction_setting, refraction_ps4, RefractionReferenceWidth, refraction_ripples, water_ripples_always, RefractionSetting, refraction_edge_stretch, SoftEdge, EdgeBand
 switches:
