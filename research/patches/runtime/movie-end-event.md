@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: ours
 class: C
-commits:
+commits: e7694d9
 files: gpu/shadps4/core/libraries/avplayer/avplayer_state.cpp
 symbols: UpdateEndOfFileState, EmitEvent, ORBIS_AVPLAYER_ERROR_WAR_LOOPING_BACK
 switches: GOW3_MOVIE_END_EVENT

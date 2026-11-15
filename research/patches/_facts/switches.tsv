@@ -125,6 +125,7 @@ GOW3_MOUSE	ours	gpu/shim/gow3_overlay.cpp:1201 src/runtime_mouse.c:18
 GOW3_MOUSE_BUTTONS	ours	src/runtime_mouse.c:151
 GOW3_MOUSE_LOG	ours	src/probe.c:1012 src/runtime_services.c:684
 GOW3_MOUSE_MAP	ours	src/runtime_pad.c:240
+GOW3_MOVIE_END_EVENT	ours	gpu/shadps4/core/libraries/avplayer/avplayer_state.cpp:399
 GOW3_MOVIE_SUSPEND	upstream	src/probe.c:619
 GOW3_NARROW_IMAGE_STAGES	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:2615
 GOW3_NEO	upstream	src/runtime_extra.c:173

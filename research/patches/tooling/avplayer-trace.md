@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: ours
 class: G
-commits: 6fd8e15ea7
+commits: 6fd8e15ea7, e7694d9
 files: gpu/shadps4/core/libraries/avplayer/avplayer.cpp, gpu/shadps4/core/libraries/avplayer/avplayer_state.cpp, gpu/shadps4/core/libraries/avplayer/avplayer_source.cpp, gpu/shadps4/core/libraries/avplayer/avplayer_common.h
 symbols: PlayerTrace, traces, trace_mutex, Trace, TraceSource, TraceFrame, TraceAudio, TraceActive, TraceForget, TraceSeconds, EmitEvent, SuspendPlayersForLevelChange, sceAvPlayerClose, sceAvPlayerGetVideoDataEx, sceAvPlayerInit, sceAvPlayerInitEx
 switches:

@@ -4,7 +4,7 @@ One line per card. Open a card for invariants, interactions and evidence; look u
 reading: `patchmap.py file <path>` / `switch <name>` / `commit <hash>` / `test <id>`.
 Card format and statuses: [README.md](README.md). W / D = default on Windows / Deck.
 
-221 cards.
+222 cards.
 
 ## memory
 
@@ -38,6 +38,7 @@ _loader, HLE libraries, threads, locks, files, audio, input (src/ outside memory
 | [load-list-continue](runtime/load-list-continue.md) | active | on / on | deck-lab |  | Load list: "Continue" (the newest save) in place of the dead "New save" entry; "Slot N" on every save |
 | [load-list-details](runtime/load-list-details.md) | active | on / on | deck-lab |  | Load list: per-save details, level picture and level list (Square), in the game's Options menu look |
 | [mouse-input](runtime/mouse-input.md) | active | off / n/a | deck-lab | GOW3_MOUSE, GOW3_MOUSE_BUTTONS, GOW3_MOUSE_LOG | Mouse input through the game's own sceMouse path, from a batched Raw Input reader (GOW3_MOUSE=1, Windows) |
+| [movie-end-event](runtime/movie-end-event.md) | active | on / on | deck-lab | GOW3_MOVIE_END_EVENT | A movie that plays to its end also sends WAR_LOOPING_BACK (UE4 PlaybackEndReached; the Best ending's second movie) |
 | [pad-hotplug](runtime/pad-hotplug.md) | active | on / on | deck-lab |  | Pads plugged in after start: SDL hotplug hints (fork port, #64) |
 | [quiet-log](runtime/quiet-log.md) | active | off / off | deck-lab | GOW3_FPS_LOG | GOW3_FPS_LOG=0 turns off the periodic log lines (FPS line, particle guard summary) |
 | [R2](runtime/r2.md) | active | on / on | lab |  | Runtime: rwlock handles validated through an open-addressing hash set, not a list walk |
