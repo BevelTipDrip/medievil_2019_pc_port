@@ -1,13 +1,18 @@
 # Saves a WPR trace from a key press while the game keeps focus: tabbing out changes how the
 # desktop window manager presents the game, which hides frame pacing problems.
 # Run once from an administrator PowerShell (WPR needs it), before or after launching the game:
-#   powershell -ExecutionPolicy Bypass -File <this file> -Key F9 -Tag heavy-episode
+#   powershell -ExecutionPolicy Bypass -File <this file> -Key F8 -Tag heavy-episode
+# Not F9 or F10 with MediEvil: the game uses them (UE4 upscaler, motion vector view).
+# Frame-time jitter: -WprProfile <tools>\wpr-jitter.wprp!Jitter. The default CPU profile walks the stack
+# on every context switch (~10% of the game's CPU at 237 FPS) and makes the jitter it should measure.
 # Default (ring): WPR records all the time into its in-memory ring buffer; a press saves what is
 # in it, i.e. the seconds BEFORE the press (how many depends on the profile's buffers and the load;
 # the trace shows it), then recording restarts. Nothing of an event is lost to start-up time.
 # -Forward: a press starts a -Seconds recording instead (wpr-capture.ps1, at once).
-# Traces: research-data\wpr\<tag>-1.etl, -2, ...; <tag>-N.times.txt holds the save time. One beep:
-# saving / recording; two beeps: saved. Presses while saving are ignored. Ctrl+C here ends it.
+# Traces: research-data\wpr\<tag>-1.etl, -2, ... (through its real path: wpr-common.ps1);
+# <tag>-N.times.txt holds the save time. One beep: saving / recording; two beeps: saved; one low
+# beep: failed (the message says why; recording restarts). Presses while saving are ignored.
+# Ctrl+C here ends it.
 param([string]$Key = 'F9', [string]$Tag = 'capture', [string]$WprProfile = 'CPU', [switch]$Forward,
       [int]$Seconds = 30, [int]$MinFreeGB = 10)
 $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
@@ -32,11 +37,9 @@ Add-Type -AssemblyName System.Windows.Forms
 $WM_HOTKEY = 0x0312
 $MOD_NOREPEAT = 0x4000
 $vk = [uint32][System.Windows.Forms.Keys]$Key
-$dir = 'C:\Users\Ty\MediEvil\research-data\wpr'
-New-Item -ItemType Directory -Force $dir | Out-Null
-# The ADK's WPR (Windows Performance Toolkit, installed 2026-10-18) if present, else Windows' own.
-$adk = 'C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\wpr.exe'
-$wpr = if (Test-Path $adk) { $adk } else { 'wpr' }
+. (Join-Path $PSScriptRoot 'wpr-common.ps1')
+$dir = $TraceDir
+Write-Host "Traces go to $dir"
 $capture = Join-Path $PSScriptRoot 'wpr-capture.ps1'
 function Start-Ring {
     & $wpr -start $WprProfile
@@ -67,9 +70,18 @@ try {
                 "saved $(Get-Date -Format 'HH:mm:ss.fff') (ring buffer: the trace ends here)" |
                     Out-File -Encoding utf8 (Join-Path $dir "$Tag-$n.times.txt")
                 & $wpr -stop $etl "MediEvil $Tag-$n" -skipPdbGen
+                if ($LASTEXITCODE -ne 0) {
+                    # A failed stop leaves the profile running: cancel it, or every later start fails
+                    # with "The profiles are already running" (0xc5583001).
+                    $code = $LASTEXITCODE
+                    "stop failed ($code)" | Out-File -Encoding utf8 -Append (Join-Path $dir "$Tag-$n.times.txt")
+                    & $wpr -cancel 2>$null | Out-Null
+                    Start-Ring
+                    throw "wpr -stop failed ($code): nothing saved; recording restarted."
+                }
                 Write-Host "Saved $etl"
-                $free = (Get-PSDrive C).Free / 1GB
-                if ($free -lt $MinFreeGB) { throw ("Only {0:N1} GB free on C: not restarting." -f $free) }
+                $free = Get-TraceFreeGB
+                if ($free -lt $MinFreeGB) { throw ("Only {0:N1} GB free on {1} not restarting." -f $free, $dir.Substring(0, 2)) }
                 Start-Ring
             }
             [console]::Beep(660, 150); [console]::Beep(660, 150)

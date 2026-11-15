@@ -3,7 +3,7 @@
 # Needs an elevated (administrator) PowerShell: the user runs it. It never starts or stops the game.
 #   powershell -ExecutionPolicy Bypass -File <this file> -Seconds 20 -Tag graveyard
 # Start it once the game is at the scene to measure; it waits 5 s (time to switch back), records,
-# and writes C:\Users\Ty\MediEvil\research-data\wpr\<tag>.etl.
+# and writes C:\Users\Ty\MediEvil\research-data\wpr\<tag>.etl (through its real path: wpr-common.ps1).
 # The full CPU profile (stacks) writes ~1 GB per 15-45 s: light profile, 20 s and a free-space check
 # by default; -WprProfile CPU for stacks.
 # -Delay 0 starts at once (wpr-hotkey.ps1 calls it so, from a key press inside the game).
@@ -14,14 +14,13 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
     throw 'Run this from an administrator PowerShell (WPR needs it).'
 }
 if (-not (Get-Process medievil-runtime -ErrorAction SilentlyContinue)) { throw 'The game is not running.' }
-$dir = 'C:\Users\Ty\MediEvil\research-data\wpr'
-New-Item -ItemType Directory -Force $dir | Out-Null
-$free = (Get-PSDrive C).Free / 1GB
-if ($free -lt $MinFreeGB) { throw ("Only {0:N1} GB free on C: (need {1}): the trace and its merge need room." -f $free, $MinFreeGB) }
+. (Join-Path $PSScriptRoot 'wpr-common.ps1')
+$dir = $TraceDir
+$free = Get-TraceFreeGB
+if ($free -lt $MinFreeGB) {
+    throw ("Only {0:N1} GB free on {1} (need {2}): the trace and its merge need room." -f $free, $dir.Substring(0, 2), $MinFreeGB)
+}
 $etl = Join-Path $dir "$Tag.etl"
-# The ADK's WPR (Windows Performance Toolkit, installed 2026-10-18) if present, else Windows' own.
-$adk = 'C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\wpr.exe'
-$wpr = if (Test-Path $adk) { $adk } else { 'wpr' }
 & $wpr -cancel 2>$null | Out-Null
 if ($Delay -gt 0) {
     Write-Host "Recording starts in $Delay s: switch back to the game."
@@ -37,4 +36,9 @@ Start-Sleep -Seconds $Seconds
 # unless given -tle (tolerate lost events) and -tti: xperf -tle -tti -i <etl> ...
 "stop $(Get-Date -Format 'HH:mm:ss.fff')" | Out-File -Encoding utf8 -Append (Join-Path $dir "$Tag.times.txt")
 & $wpr -stop $etl "MediEvil $Tag" -skipPdbGen
+if ($LASTEXITCODE -ne 0) {
+    $code = $LASTEXITCODE
+    & $wpr -cancel 2>$null | Out-Null
+    throw "wpr -stop failed ($code): nothing saved."
+}
 Write-Host "Saved $etl"
