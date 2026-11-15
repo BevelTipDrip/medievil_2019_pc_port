@@ -11,7 +11,7 @@ class: M
 commits: f4f13b8, e27103e, 870f584, 88bf535, a7c91f7, b4d9e6f, 5bb45d0, 7449317, 64da6dd, d76d3d0
 files: src/runtime_mouse.c, src/runtime_pad.c, src/mouse_hook.h, src/camera_hook.h, src/probe.c, src/runtime_services.c, gpu/shim/window.cpp, gpu/shim/sdl_window.h, scripts/ue4_override.py
 symbols: runtime_mouse_enabled, runtime_mouse_start, runtime_mouse_capture, runtime_mouse_take, drain, reader_thread, mouse_init, mouse_read, SetMouseCapture, mouse_captured, runtime_mouse_take_camera, medievil_mouse_yaw_find, medievil_mouse_yaw_script_ok, mouse_yaw, mouse_lock_record, install_mouse_yaw, list_mouse_buttons, mouse_map_from, camera_look, camera_look_class, camera_dancam, medievil_camera_pitch, medievil_camera_dancam
-switches: GOW3_MOUSE, GOW3_MOUSE_BUTTONS
+switches: GOW3_MOUSE, GOW3_MOUSE_BUTTONS, GOW3_MOUSE_LOG
 tests: T-MS1, T-MS2, T-MS3, T-MS4, T-MS5, T-MS6, T-MS7, T-MS8, T-MS9, T-MS10
 docs: study-mouse-input.md#t-ms1-ps4enablemouse-from-the-paks-ini-2026-11-11-launched-by-claude-with-the-users-go-log-datamouse-step1-enablelog
 depends_on:
@@ -110,6 +110,10 @@ tick path was verified (T-MS10; the user, 2026-11-12).
   "looks great". Verified.
 
 ## History and pitfalls
+
+- The step-1 diagnostics (`Mouse: sceMouseRead` every 1000 reads, `Mouse look:` every 5 s, each with a flush)
+  stayed on in every run until 2026-11-15 (about 1 line every 2.5 s while playing). Now only with
+  `GOW3_MOUSE_LOG=1`; the first 3 reads still log. Checked when the user saw frame dips tied to mouse input.
 
 - Found, low priority, left as is: the reader polls ~700 times a second with the mouse still (MGS2's verified
   "Every 1 ms" wait, line for line). Change only with an 8000 Hz A/B (study T-MS2).

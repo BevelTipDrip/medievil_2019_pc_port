@@ -1007,7 +1007,10 @@ static void camera_look(const void *stack) {
         }
     }
     if (ms - log_ms >= 5000) {
-        if (log_ms) {
+        /* GOW3_MOUSE_LOG=1: the 5-second mouse look summary (diagnostics; off: no periodic line). */
+        static int summary=-1;
+        if (summary<0) { const char *v=getenv("GOW3_MOUSE_LOG"); summary=v && v[0]=='1'; }
+        if (log_ms && summary) {
             float yaw_degrees, pitch_degrees;
             gow3_mouse_look(&yaw_degrees, &pitch_degrees);
             printf("Mouse look: last %.1f s: %" PRIu64 " camera ticks, %" PRIu64 " with mouse; x %lld counts = %.1f "

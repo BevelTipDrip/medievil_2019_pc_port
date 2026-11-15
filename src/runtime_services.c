@@ -662,7 +662,8 @@ static ABI int32_t mouse_open(int32_t user,int32_t type,int32_t index,const void
     return id;
 }
 /* One 40-byte SceMouseData entry a read (study 2.2): +0x00 timestamp, +0x08 connected, +0x0c buttons,
- * +0x10 / +0x14 x / y counts, +0x18 wheel. Every 1000th read logs the counts of the last 1000. */
+ * +0x10 / +0x14 x / y counts, +0x18 wheel. The first 3 reads log; with GOW3_MOUSE_LOG=1 also every 1000th, with
+ * the counts of the last 1000 (diagnostics only: periodic lines during play cost a flush each). */
 static ABI int32_t mouse_read(int32_t handle,unsigned char *data,int32_t count) {
     static atomic_uint_fast64_t reads; static struct timespec first;
     static long long sum_x, sum_y, moving, peak; /* the game thread only */
@@ -679,7 +680,9 @@ static ABI int32_t mouse_read(int32_t handle,unsigned char *data,int32_t count) 
         sum_x+=llabs(x); sum_y+=llabs(y);
         if (x || y) { moving++; const long long size=llabs(x)>llabs(y) ? llabs(x) : llabs(y); if (size>peak) peak=size; }
     }
-    if (n<=3 || n%1000==0) {
+    static int periodic=-1;
+    if (periodic<0) { const char *v=getenv("GOW3_MOUSE_LOG"); periodic=v && v[0]=='1'; }
+    if (n<=3 || (periodic && n%1000==0)) {
         struct timespec now; clock_gettime(CLOCK_MONOTONIC,&now);
         const double s=(double)(now.tv_sec-first.tv_sec)+(now.tv_nsec-first.tv_nsec)/1e9;
         char from[48]; runtime_save_trace_caller(__builtin_return_address(0),from,sizeof(from));
