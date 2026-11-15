@@ -15,9 +15,15 @@
 // The same shaders carry the material's time pulse: rippling for half of a 10 s cycle, still for the
 // other half, when the refraction's hard line at the top edge stands out. refraction_ripples
 // (ini water_ripples_always) makes it ripple through both halves.
+// The apply pass falls back to the unshifted image where the shifted spot leaves the screen: a hard
+// line, past it the pond bed with no ripples. refraction_edge_stretch (ini refraction_edge_stretch)
+// squeezes the shifted spot smoothly into the screen before the depth test instead: near the edge
+// an almost exact copy, stretching further from it.
 
 #include <cmath>
 #include <cstdio>
+#include <unordered_map>
+#include <vector>
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/ir_emitter.h"
@@ -29,6 +35,8 @@ namespace Shader::Optimization {
 
 namespace {
 constexpr float DistortionConstant = 0.000230000005103647708892822265625f;
+// Edge stretch: the view as buffer UV 0-1 (the port's views fill their render targets), a 15% band.
+constexpr float EdgeLo = 0.001f, EdgeHi = 0.999f, EdgeBand = 0.15f;
 
 struct ParamsRead {
     const IR::Inst* read{}; // a ReadConstBuffer of DistortionParams (index 0: proj00)
@@ -82,11 +90,38 @@ int ConstantSide(const IR::Inst& inst) {
     }
     return -1;
 }
+/// The shifted spot t squeezed into [EdgeLo, EdgeHi]: within EdgeBand of an edge,
+/// edge + band * exp((t - (edge + band)) / band), continuous with t in value and slope.
+IR::F32 SoftEdge(IR::IREmitter& ir, const IR::F32& t) {
+    constexpr float k = 1.4426950408889634f / EdgeBand; // log2(e) / band
+    const IR::F32 lo_band{ir.Imm32(EdgeLo + EdgeBand)};
+    const IR::F32 below{ir.FPFma(ir.Imm32(EdgeBand),
+                                 ir.FPExp2(ir.FPMul(ir.FPSub(t, lo_band), ir.Imm32(k))),
+                                 ir.Imm32(EdgeLo))};
+    const IR::F32 t1{ir.Select(ir.FPLessThan(t, lo_band), below, t)};
+    const IR::F32 hi_band{ir.Imm32(EdgeHi - EdgeBand)};
+    const IR::F32 above{ir.FPFma(ir.Imm32(-EdgeBand),
+                                 ir.FPExp2(ir.FPMul(ir.FPSub(hi_band, t1), ir.Imm32(k))),
+                                 ir.Imm32(EdgeHi))};
+    return IR::F32{ir.Select(ir.FPGreaterThan(t1, hi_band), above, t1)};
+}
+
+/// Index of each instruction of a block, in order.
+std::unordered_map<const IR::Inst*, size_t> Order(IR::Block& block) {
+    std::unordered_map<const IR::Inst*, size_t> order;
+    for (const IR::Inst& inst : block.Instructions()) {
+        order.emplace(&inst, order.size());
+    }
+    return order;
+}
 } // namespace
 
 void RefractionScalePass(IR::Program& program, const RuntimeInfo& runtime_info) {
     const u32 reference = runtime_info.hw.fs.refraction_ref_width;
     u32 found = 0;
+    // The shift's multiplies by their per-axis factor: one feeds the depth test's spot
+    // (FPAdd with the pixel's UV), the other the stored shift.
+    std::unordered_map<const IR::Inst*, std::vector<IR::Inst*>> axes;
     for (IR::Block* const block : program.blocks) {
         for (IR::Inst& inst : block->Instructions()) {
             const int side = ConstantSide(inst);
@@ -99,6 +134,9 @@ void RefractionScalePass(IR::Program& program, const RuntimeInfo& runtime_info) 
                 continue;
             }
             ++found;
+            if (const IR::Inst* factor = inst.Arg(1 - side).TryInst()) {
+                axes[factor].push_back(&inst);
+            }
             if (reference == 0) {
                 continue;
             }
@@ -138,12 +176,59 @@ void RefractionScalePass(IR::Program& program, const RuntimeInfo& runtime_info) 
             }
         }
     }
+    u32 edges = 0;
+    if (runtime_info.hw.fs.refraction_edge_stretch) {
+        for (auto& [factor, muls] : axes) {
+            // The depth test's spot: uv + shift (FPAdd32 user of one multiply).
+            IR::Inst* add = nullptr;
+            IR::Inst* tested = nullptr;
+            for (IR::Inst* mul : muls) {
+                for (const IR::Use& use : mul->Uses()) {
+                    if (!add && use.user->GetOpcode() == IR::Opcode::FPAdd32) {
+                        add = use.user;
+                        tested = mul;
+                    }
+                }
+            }
+            if (!add) {
+                continue;
+            }
+            const IR::Value uv = add->Arg(0).TryInst() == tested ? add->Arg(1) : add->Arg(0);
+            // The stored shift's multiplies must come after the add, in its block.
+            IR::Block& block = *add->GetParent();
+            const auto order = Order(block);
+            std::vector<IR::Inst*> stored;
+            bool placed = true;
+            for (IR::Inst* mul : muls) {
+                if (mul == tested) {
+                    continue;
+                }
+                const auto it = order.find(mul);
+                placed &= it != order.end() && it->second > order.at(add);
+                stored.push_back(mul);
+            }
+            if (!placed || stored.empty()) {
+                continue;
+            }
+            const std::vector<IR::Use> add_uses(add->Uses().begin(), add->Uses().end());
+            IR::IREmitter ir{block, std::next(IR::Block::InstructionList::s_iterator_to(*add))};
+            const IR::F32 spot = SoftEdge(ir, IR::F32{IR::Value{add}});
+            const IR::F32 shift{ir.FPSub(spot, IR::F32{uv})};
+            for (const IR::Use& use : add_uses) {
+                use.user->SetArg(use.operand, spot);
+            }
+            for (IR::Inst* mul : stored) {
+                mul->ReplaceUsesWith(shift);
+            }
+            ++edges;
+        }
+    }
     static u32 logged = 0;
     if (logged++ < 64) {
         std::printf("Shader: refraction constant in %016llx (%u), reference width %u%s, ripple "
-                    "pulses %u\n",
+                    "pulses %u, stretched axes %u\n",
                     static_cast<unsigned long long>(program.info.pgm_hash), found, reference,
-                    reference ? "" : " (game)", pulses);
+                    reference ? "" : " (game)", pulses, edges);
         std::fflush(stdout);
     }
 }

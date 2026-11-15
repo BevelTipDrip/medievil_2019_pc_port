@@ -10,7 +10,7 @@ origin: ours
 class: C
 commits: eeadcb3, 9d2f49a, 464877a
 files: gpu/shadps4/shader_recompiler/ir/passes/refraction_scale_pass.cpp, gpu/shadps4/shader_recompiler/ir/passes/ir_passes.h, gpu/shadps4/shader_recompiler/recompiler.cpp, gpu/shadps4/shader_recompiler/runtime_info.h, gpu/shadps4/shader_recompiler/info.h, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h, gpu/shadps4/video_core/renderer_vulkan/vk_draw_prep.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_draw_prep.h, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_serialization.cpp, gpu/shim/gow3_settings.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_overlay.cpp
-symbols: RefractionScalePass, FindParams, ConstantSide, DistortionConstant, uses_refraction_scale, refraction_ref_width, refraction_setting, refraction_ps4, RefractionReferenceWidth, refraction_ripples, water_ripples_always, RefractionSetting
+symbols: RefractionScalePass, FindParams, ConstantSide, DistortionConstant, uses_refraction_scale, refraction_ref_width, refraction_setting, refraction_ps4, RefractionReferenceWidth, refraction_ripples, water_ripples_always, RefractionSetting, refraction_edge_stretch, SoftEdge, EdgeBand
 switches:
 tests:
 docs: plan-work-queue.md
@@ -45,6 +45,12 @@ apply pass's off-screen fallback as a hard line near the top edge at steep angle
 abs, so the second half mirrors the first. Only the refraction ripples through; the water surface's own shading
 keeps the game's cycle.
 
+Optional, not the PS4's look either: where the shifted spot leaves the screen the apply pass falls back to no shift,
+a hard line with the pond bed past it and no water effect (the ripples ride on the shift). ini
+`refraction_edge_stretch` (default 1 for testing), live as "Refraction edge" (Stretch / Game (hard line)): the
+spot is squeezed into the screen before the depth test, `edge + 0.15 * exp((t - edge - 0.15) / 0.15)` within 15% of
+an edge (value and slope continuous): near the edge an almost exact copy, stretching further from it.
+
 ## Invariants
 
 - The pattern: an immediate +-0.00023 (bit exact) in an `FPMul32` whose other operand reaches, through at most 4
@@ -54,11 +60,16 @@ keeps the game's cycle.
   (no dominance questions); scale = 1920 / max(width, 1).
 - Ripples: only in shaders where the constant was found, only `FPSaturate32(FPSin(FPFract32(x)))`, replaced in place
   by `FPAbs32` (same operand). The pond's other sine (unclamped) is not touched.
-- The variants live in `HwFragmentRuntimeInfo::refraction_ref_width` and `refraction_ripples` (part of `operator==`);
+- Edge stretch: per axis the two multiplies share their factor operand; the one with an `FPAdd32` user is the depth
+  test's spot (`uv + shift`), the other the stored shift and must come after that add in its block (else skipped).
+  The add's users get the squeezed spot, the stored shift becomes `spot - uv`, so the depth test and the sample
+  agree. Bounds 0.001-0.999 of the buffer UV: the port's views fill their render targets (2880 x 1620 view and
+  buffer at 75%); the apply pass's own bounds test stays as the backstop.
+- The variants live in `HwFragmentRuntimeInfo::refraction_ref_width` and `refraction_ripples`, `refraction_edge_stretch` (part of `operator==`);
   cache versions bumped to shader binary 11, meta 11, pipeline key 9 (9 / 9 / 7 was the apply-side limit, 10 / 10 / 8
-  the scale alone).
+  the scale alone, 11 / 11 / 9 with ripples; now 12 / 12 / 10).
 - The setting is not in the registers: `PreparedDraw::refraction_setting` records the one a worker picked for, and
-  `TryPreparedPipeline` rejects a prepared draw when it changed (`RefractionSetting`: bit 0 scale, bit 1 ripples) (lineage-draw-preparation's rule).
+  `TryPreparedPipeline` rejects a prepared draw when it changed (`RefractionSetting`: bit 0 scale, bit 1 ripples, bit 2 edge stretch) (lineage-draw-preparation's rule).
 
 ## Interactions
 
@@ -80,7 +91,10 @@ keeps the game's cycle.
   the PS4's lanterns, no Dan or sword in the water, the town-centre flicker "does appear to be gone". The hard line
   stays at steep angles, higher up the screen; it stands out in the still half of the pulse.
 - Ripples: replay of 32266 (a still phase, pulse/replay-32266.txt) with abs(sin): the copied image ripples. No capture
-  at the steep angle; not run in game yet.
+  at the steep angle. Run in game: "ripple pulses 1" on the pond's 7303e465cd16f8c4 only; the user: the hard line
+  stays, above it no ripple at all, "like there's no water there" (the fallback drops the shift and its ripples).
+- Edge stretch: GLSL replay of 32266 in the pond shader (pulse/stretch-apply.png, s05stretch-apply.png): at the game's
+  scale the horizontal line is gone, a stretched copy of the stones, posts and money bag above it. Not run in game yet.
 
 ## History and pitfalls
 

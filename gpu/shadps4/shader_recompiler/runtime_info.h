@@ -240,6 +240,9 @@ struct HwFragmentRuntimeInfo {
     /// MediEvil: the distortion shader's time pulse clamp(sin) becomes abs(sin): the water ripples
     /// through the still half of its cycle (RefractionScalePass).
     bool refraction_ripples{false};
+    /// MediEvil: the distortion's shifted spot is squeezed into the screen instead of falling back
+    /// to no shift at the edge (RefractionScalePass).
+    bool refraction_edge_stretch{false};
 
     bool operator==(const HwFragmentRuntimeInfo& other) const noexcept {
         return std::ranges::equal(color_buffers, other.color_buffers) &&
@@ -254,6 +257,7 @@ struct HwFragmentRuntimeInfo {
                light_grid_scale_y == other.light_grid_scale_y &&
                refraction_ref_width == other.refraction_ref_width &&
                refraction_ripples == other.refraction_ripples &&
+               refraction_edge_stretch == other.refraction_edge_stretch &&
                std::ranges::equal(inputs.begin(), inputs.begin() + num_inputs, other.inputs.begin(),
                                   other.inputs.begin() + num_inputs);
     }

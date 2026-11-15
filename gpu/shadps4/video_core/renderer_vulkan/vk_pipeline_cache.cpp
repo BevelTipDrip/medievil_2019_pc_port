@@ -48,11 +48,12 @@ namespace {
 std::atomic<u32> g_light_grid_scene{0};
 
 /// MediEvil: the refraction settings a distortion variant is picked from (RefractionScalePass):
-/// bit 0 refraction_ps4, bit 1 water_ripples_always.
+/// bit 0 refraction_ps4, bit 1 water_ripples_always, bit 2 refraction_edge_stretch.
 int RefractionSetting() {
     const auto& s = Gow3Settings::Get();
     return (s.refraction_ps4.load(std::memory_order_relaxed) != 0 ? 1 : 0) |
-           (s.water_ripples_always.load(std::memory_order_relaxed) != 0 ? 2 : 0);
+           (s.water_ripples_always.load(std::memory_order_relaxed) != 0 ? 2 : 0) |
+           (s.refraction_edge_stretch.load(std::memory_order_relaxed) != 0 ? 4 : 0);
 }
 
 /// A draw's viewport size (width | height << 16; 0: none).
@@ -303,6 +304,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(PipelineSelection& se
         info.hw.fs.light_grid_scale_y = sel.light_grid_scale[1];
         info.hw.fs.refraction_ref_width = sel.refraction_ref_width;
         info.hw.fs.refraction_ripples = sel.refraction_ripples;
+        info.hw.fs.refraction_edge_stretch = sel.refraction_edge_stretch;
         u8 stencil_ref_export_enable = regs.depth_shader_control.stencil_op_val_export_enable |
                                        regs.depth_shader_control.stencil_test_val_export_enable;
         info.hw.fs.mrtz_mask = regs.depth_shader_control.z_export_enable |
@@ -971,6 +973,7 @@ bool PipelineCache::RefreshGraphicsKey(PipelineSelection& sel) {
     sel.light_grid_scene = g_light_grid_scene.load(std::memory_order_relaxed);
     sel.refraction_ref_width = 0;
     sel.refraction_ripples = false;
+    sel.refraction_edge_stretch = false;
     sel.refraction_setting = RefractionSetting();
 
     // First pass to fill render target information needed by shader recompiler
@@ -1062,6 +1065,7 @@ bool PipelineCache::RefreshGraphicsKey(PipelineSelection& sel) {
         sel.refraction_ref_width =
             (sel.refraction_setting & 1) ? Gow3Settings::RefractionReferenceWidth : 0;
         sel.refraction_ripples = (sel.refraction_setting & 2) != 0;
+        sel.refraction_edge_stretch = (sel.refraction_setting & 4) != 0;
         if (!RefreshGraphicsStages(sel)) {
             return false;
         }

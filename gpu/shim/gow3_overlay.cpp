@@ -1519,6 +1519,12 @@ void GraphicsTab() {
     ChoiceRow("Water ripples", s.water_ripples_always, ripple_labels, ripple_values, 2,
               "What water shows through its surface. Game cycle: it ripples for 5 seconds, then goes still for 5, "
               "and still water shows a hard line near the top of the screen. Always: it keeps rippling.");
+    static const char* const edge_labels[] = {"Stretch", "Game (hard line)"};
+    static const int edge_values[] = {1, 0};
+    ChoiceRow("Refraction edge", s.refraction_edge_stretch, edge_labels, edge_values, 2,
+              "Near the top of the screen, water would show something off screen. Game: it shows the pond bed "
+              "with no water effect past a hard line. Stretch: the image through the water stretches smoothly "
+              "toward the edge instead.");
     // The live settings in the table's order, then the ones a start applies (RESTART).
     for (const bool live : {true, false}) {
         for (int o = 0; o < S::UE4LiveCount; ++o) {
