@@ -4,7 +4,7 @@
 // runs on NVIDIA and older AMD GPUs too. Its SPIR-V passes and weights are not in the repository:
 // tools/fetch_fsr4_assets.sh downloads them (MIT, built by Q2RTX from AMD's FSR 4 source) into
 // fsr4_shaders/ (GOW3_FSR4_DIR overrides; run.py falls back to the data directory's). The model is chosen
-// from the output / render ratio (native AA, quality, balanced, performance, ultra performance;
+// nearest to the output / render ratio (native AA, quality, balanced, performance, ultra performance;
 // GOW3_FSR4_DRS=1: the dynamic-resolution model at any ratio), the 1080 or 2160 tier from the output.
 //
 // Unlike FSR 3.1 the provider leaves frame lifetimes to the host: at most three unretired frames, each
@@ -15,6 +15,8 @@
 // its own aspect (0004). GOW3_FSR4=0 leaves it out; GOW3_FSR4_PROFILE=1 logs GPU time per pass (0001).
 
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <deque>
@@ -50,6 +52,27 @@ bool ReadFile(const std::string& path, std::vector<u8>& data) {
     data.resize(size_t(file.tellg()));
     file.seekg(0);
     return bool(file.read(reinterpret_cast<char*>(data.data()), std::streamsize(data.size())));
+}
+
+/// The model trained nearest to this output / render ratio (AMD's presets: native AA 1.0, quality 1.5, balanced
+/// 1.7, performance 2.0, ultra performance 3.0). The provider's own choice takes the largest preset ratio at or
+/// below the ratio, so render scale 67% (1.49) got the native model (T-F10); here 67% and 75% get quality.
+/// `drs`: the dynamic-resolution model, at any ratio.
+FfxFsr4ModelPreset NearestModel(u32 render_width, u32 output_width, bool drs) {
+    if (drs) {
+        return FFX_FSR4_MODEL_PRESET_DRS;
+    }
+    static constexpr std::array<std::pair<float, FfxFsr4ModelPreset>, 5> presets{{
+        {1.0f, FFX_FSR4_MODEL_PRESET_NATIVE_AA},
+        {1.5f, FFX_FSR4_MODEL_PRESET_QUALITY},
+        {1.7f, FFX_FSR4_MODEL_PRESET_BALANCED},
+        {2.0f, FFX_FSR4_MODEL_PRESET_PERFORMANCE},
+        {3.0f, FFX_FSR4_MODEL_PRESET_ULTRA_PERFORMANCE},
+    }};
+    const float ratio = render_width ? float(output_width) / float(render_width) : 1.0f;
+    const auto nearest = std::ranges::min_element(
+        presets, {}, [ratio](const auto& preset) { return std::abs(preset.first - ratio); });
+    return nearest->second;
 }
 
 /// The aspect of the provider's barriers on an imported image: its whole aspect (a depth-stencil image
@@ -103,7 +126,7 @@ public:
             semaphore.Wait(tick);
         }
         Destroy();
-        const FfxFsr4ModelPreset preset = ffxFsr4SelectModelPreset(desc.input_width, desc.output_width, drs);
+        const FfxFsr4ModelPreset preset = NearestModel(desc.input_width, desc.output_width, drs);
         if (!CreateContext(preset, desc.output_width, desc.output_height)) {
             Destroy();
             return false;
