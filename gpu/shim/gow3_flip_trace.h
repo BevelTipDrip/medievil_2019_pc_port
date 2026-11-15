@@ -28,6 +28,19 @@ inline std::FILE* File() {
             std::fprintf(f, "start,0,%lld\n",
                          static_cast<long long>(std::chrono::duration_cast<std::chrono::nanoseconds>(
                                                     Start().time_since_epoch()).count()));
+            // The wall clock at a known trace time, to line the trace up with an ETW / WPR capture
+            // to the microsecond (an ETL's start time is wall clock; its boot time is printed to
+            // 0.1 s only): "wall,<Unix time ns>,<ns since start>", read between two steady clock
+            // reads (their midpoint). Its flip_arg never gets a "presented" row, so the frame tools
+            // skip it. (libc++'s system_clock is GetSystemTimePreciseAsFileTime on Windows.)
+            const auto before = std::chrono::steady_clock::now();
+            const auto wall = std::chrono::system_clock::now();
+            const auto after = std::chrono::steady_clock::now();
+            std::fprintf(f, "wall,%lld,%lld\n",
+                         static_cast<long long>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                                    wall.time_since_epoch()).count()),
+                         static_cast<long long>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                                    before - Start() + (after - before) / 2).count()));
         }
         return f;
     }();
