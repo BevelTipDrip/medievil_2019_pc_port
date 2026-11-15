@@ -23,6 +23,8 @@ inline bool IsFsr4(int upscaler) {
 enum Preset : int { NativeAA = 0, Quality, Balanced, Performance, UltraPerformance, PresetCount };
 enum DebugView : int { DebugNone = 0, DebugReactive = 1, DebugMotion = 2, DebugViewCount };
 
+/// Refraction limit (Values::refraction_limit), percent of the screen.
+inline constexpr int RefractionLimitDefault = 2;
 /// Live output resolutions: the upscaler's output and the UI host targets.
 inline constexpr int OutputWidths[] = {1280, 1920, 2560, 3840};
 inline constexpr int OutputHeights[] = {720, 1080, 1440, 2160};
@@ -167,6 +169,10 @@ struct Values {
     /// switched live through the game's console variable (runtime_ue4_request_cvar). Off: the
     /// heavy Graveyard view stayed at the frame cap (N-25).
     std::atomic<bool> preshadows{true};
+    /// MediEvil: longest shift of UE4's refraction (distortion), percent of the screen (ini refraction_limit,
+    /// 0 = as the game draws it; RefractionLimitPass). Live: the next draw picks the shader variant. The
+    /// Sleeping Village water shifts by 13-25% up / down and shows a copy of the scene above it.
+    std::atomic<int> refraction_limit{RefractionLimitDefault};
     /// MediEvil graphics settings (UE4LiveOptions): the chosen index (-1 while loading: a missing key or
     /// an old "preset", resolved from ue4_quality after the file is read); the ones this launch started
     /// with (RestartChanges: the settings that are not live).

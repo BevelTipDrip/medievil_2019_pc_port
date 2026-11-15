@@ -77,6 +77,8 @@ struct InfoPersistent {
     bool uses_dma{};
     /// MediEvil: looks up UE4's forward light grid by pixel position (LightGridScalePass).
     bool uses_light_grid{};
+    /// MediEvil: reads UE4's distortion offset buffer (RefractionLimitPass).
+    bool uses_refraction_offset{};
 
     InfoPersistent() = default;
     InfoPersistent(HwStage hw_stage_, SwStage sw_stage_, u64 pgm_hash_)

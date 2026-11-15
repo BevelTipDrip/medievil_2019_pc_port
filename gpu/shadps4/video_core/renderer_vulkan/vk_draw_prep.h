@@ -83,6 +83,8 @@ struct PreparedDraw {
     /// MediEvil: the full view the key's light grid variants were picked for (not in the
     /// registers: TryPreparedPipeline compares it).
     u32 light_grid_scene{};
+    /// MediEvil: the refraction limit setting the key's variants were picked for (the same).
+    int refraction_setting{};
     GraphicsPipelineKey key{};
     u32 num_stages{};
     std::array<PreparedStage, MaxShaderStages> stages{};
