@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: ours
 class: G
-commits: 0d091ec, 801c3cd
+commits: 0d091ec, 801c3cd, 667bb93
 files: launcher/bug_report.py, launcher/medievil_launcher.py, .github/ISSUE_TEMPLATE/bug_report.yml, .github/ISSUE_TEMPLATE/feature_request.yml, .github/ISSUE_TEMPLATE/config.yml, research/tools/issue2card.py, tests/test_bug_report.py, tests/test_run_logs.py
 symbols: redact, redaction_context, log_excerpt, issue_url, issue_fields, report_files, write_report, newest_dump, game_mode, build_report, refresh_report, submit_report, report_state, start_run_log, archive_run_log, prune_run_logs, run_log_header, run_log_footer, run_logs_folder, RUN_LOGS_KEPT, parse_form, queue_row, add_to_queue
 switches:
