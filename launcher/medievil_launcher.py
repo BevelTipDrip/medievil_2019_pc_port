@@ -2673,8 +2673,9 @@ class Launcher:
     def read_output(self, process):
         """The game's output for the Log page, also kept in <saves folder>/last_run.log."""
         log = None
+        started = time.time()
         try:
-            log = start_run_log(self.user_dir())
+            log = start_run_log(self.user_dir(), run_log_header(self.app))
         except OSError:
             pass
         for raw in iter(process.stdout.readline, b''):
@@ -2684,7 +2685,7 @@ class Launcher:
             self.output.put(text)
         code = process.wait()
         if log:
-            log.write(f'\nThe game exited (code {code}).\n')
+            log.write(f'\n{run_log_footer(started)}\nThe game exited (code {code}).\n')
             log.close()
         self.output.put((code,))
 
@@ -2955,24 +2956,126 @@ class GameJob:
             self.handle = None
 
 
-def start_run_log(folder):
-    """<saves folder>/last_run.log, opened for a new run; the run before's moves to last_run.1.log, so a
-    relaunch after a crash keeps the crash's log for a bug report."""
+# Every finished run's log is kept in <saves folder>/logs/runs: the newest RUN_LOGS_KEPT, and at most
+# RUN_LOGS_MAX_BYTES in all (a normal run's log is 80-120 KB; diagnostic runs can reach tens of MB).
+RUN_LOGS_KEPT = 200
+RUN_LOGS_MAX_BYTES = 500 * 1024 * 1024
+
+
+def run_logs_folder(folder):
+    return Path(folder) / 'logs' / 'runs'
+
+
+def prune_run_logs(runs, kept=RUN_LOGS_KEPT, max_bytes=RUN_LOGS_MAX_BYTES):
+    """Deletes the oldest run-*.log beyond `kept` files or `max_bytes` in all (names sort by time)."""
+    total = 0
+    for i, path in enumerate(sorted(Path(runs).glob('run-*.log'), key=lambda p: p.name, reverse=True)):
+        try:
+            total += path.stat().st_size
+            if i >= kept or total > max_bytes:
+                path.unlink()
+        except OSError:
+            pass
+
+
+def archive_run_log(log, runs):
+    """A copy of a finished run's log as runs/run-<when it was last written>[-v<launcher version>].log."""
+    runs = Path(runs)
+    runs.mkdir(parents=True, exist_ok=True)
+    stamp = time.strftime('%Y%m%d-%H%M%S', time.localtime(log.stat().st_mtime))
+    try:
+        with open(log, encoding='utf-8', errors='replace') as f:
+            first = f.readline()
+    except OSError:
+        first = ''
+    match = re.match(r'Run log: .*MediEvil launcher (\S+)', first)
+    name = f'run-{stamp}' + (f'-v{match.group(1)}' if match else '')
+    target, n = runs / f'{name}.log', 1
+    while target.exists():
+        n += 1
+        target = runs / f'{name}-{n}.log'
+    shutil.copy2(log, target)
+    prune_run_logs(runs)
+    return target
+
+
+def runtime_executable():
+    """The game's executable: bin/ in the Windows package, out/ in a source tree and the AppImage."""
+    for path in (PORT_DIR / 'bin' / 'medievil-runtime.exe', PORT_DIR / 'out' / 'medievil-runtime.exe',
+                 PORT_DIR / 'out' / 'medievil-runtime', PORT_DIR / 'bin' / 'medievil-runtime'):
+        if path.is_file():
+            return path
+    return None
+
+
+def run_log_header(settings):
+    """Lines that identify a run: when, which launcher and build, which system and which game."""
+    now = time.localtime()
+    lines = [f'Run log: {time.strftime("%Y-%m-%d %H:%M:%S", now)} (local), MediEvil launcher {VERSION}']
+    build = []
+    exe = runtime_executable()
+    if exe:
+        stat = exe.stat()
+        build.append(f'{exe.name} {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(stat.st_mtime))}, '
+                     f'{stat.st_size:,} bytes')
+    if (PORT_DIR / '.git').exists():
+        try:
+            commit = subprocess.run(['git', '-C', str(PORT_DIR), 'log', '-1', '--format=%h %cd', '--date=short'],
+                                    capture_output=True, text=True, timeout=5, creationflags=NO_WINDOW)
+            branch = subprocess.run(['git', '-C', str(PORT_DIR), 'rev-parse', '--abbrev-ref', 'HEAD'],
+                                    capture_output=True, text=True, timeout=5, creationflags=NO_WINDOW)
+            if commit.returncode == 0:
+                build.append(f'source {commit.stdout.strip()} ({branch.stdout.strip() or "?"})')
+        except (OSError, subprocess.SubprocessError):
+            pass
+    lines.append('Build: ' + ('; '.join(build) if build else 'unknown'))
+    lines.append(f'System: {platform.platform()}, Python {platform.python_version()}')
+    game = (settings or {}).get('game_dir') or ''
+    info = game_info(game) if game else None
+    if info:
+        try:
+            title_id, _profile = game_profile_of(game)
+        except Exception:  # the header must never stop a start
+            title_id = None
+        lines.append(f'Game: {info[0]} {title_id or "?"} version {info[1]} ({game})')
+    else:
+        lines.append(f'Game: no eboot.bin in {game or "(not chosen)"}')
+    return lines
+
+
+def run_log_footer(started):
+    """The line before the exit line: when the run ended and how long it lasted."""
+    seconds = int(time.time() - started)
+    return f'Run ended: {time.strftime("%Y-%m-%d %H:%M:%S")} (local), after {seconds // 60} min {seconds % 60} s'
+
+
+def start_run_log(folder, header=()):
+    """<saves folder>/last_run.log, opened for a new run with `header` first; the run before's moves to
+    last_run.1.log, so a relaunch after a crash keeps the crash's log for a bug report, and a copy of it
+    goes to logs/runs (archive_run_log)."""
     folder.mkdir(parents=True, exist_ok=True)
     log = folder / 'last_run.log'
     try:
         if log.exists():
+            try:
+                archive_run_log(log, run_logs_folder(folder))
+            except OSError:
+                pass
             log.replace(folder / 'last_run.1.log')
     except OSError:
         pass
-    return open(log, 'w', encoding='utf-8', buffering=1)
+    handle = open(log, 'w', encoding='utf-8', buffering=1)
+    for line in header:
+        handle.write(line + '\n')
+    return handle
 
 
 def play_without_window(settings):
     """--play: the game with the saved settings (shortcuts, Steam). Output goes to the console
     when there is one and to <saves folder>/last_run.log."""
     attach_stdio()
-    with start_run_log(Path(settings.get('user_dir') or DATA_DIR / 'user')) as log:
+    started = time.time()
+    with start_run_log(Path(settings.get('user_dir') or DATA_DIR / 'user'), run_log_header(settings)) as log:
         process = subprocess.Popen(run_command(), cwd=PORT_DIR, env=game_environment(settings),
                                    stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT, creationflags=NO_WINDOW)
@@ -2983,7 +3086,9 @@ def play_without_window(settings):
                 sys.stdout.write(text)
             except (OSError, ValueError):
                 pass
-        return process.wait()
+        code = process.wait()
+        log.write(f'\n{run_log_footer(started)}\nThe game exited (code {code}).\n')
+        return code
 
 
 def shortcut_script(folder, target, arguments, icon):

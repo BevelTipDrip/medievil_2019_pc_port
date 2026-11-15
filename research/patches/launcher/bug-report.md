@@ -9,8 +9,8 @@ default_deck: on
 origin: ours
 class: G
 commits: 0d091ec, 801c3cd
-files: launcher/bug_report.py, launcher/medievil_launcher.py, .github/ISSUE_TEMPLATE/bug_report.yml, .github/ISSUE_TEMPLATE/feature_request.yml, .github/ISSUE_TEMPLATE/config.yml, research/tools/issue2card.py, tests/test_bug_report.py
-symbols: redact, redaction_context, log_excerpt, issue_url, issue_fields, report_files, write_report, newest_dump, game_mode, build_report, refresh_report, submit_report, report_state, start_run_log, parse_form, queue_row, add_to_queue
+files: launcher/bug_report.py, launcher/medievil_launcher.py, .github/ISSUE_TEMPLATE/bug_report.yml, .github/ISSUE_TEMPLATE/feature_request.yml, .github/ISSUE_TEMPLATE/config.yml, research/tools/issue2card.py, tests/test_bug_report.py, tests/test_run_logs.py
+symbols: redact, redaction_context, log_excerpt, issue_url, issue_fields, report_files, write_report, newest_dump, game_mode, build_report, refresh_report, submit_report, report_state, start_run_log, archive_run_log, prune_run_logs, run_log_header, run_log_footer, run_logs_folder, RUN_LOGS_KEPT, parse_form, queue_row, add_to_queue
 switches:
 tests:
 docs: plan-work-queue.md
@@ -55,6 +55,8 @@ request uses `feature_request.yml` and sends no files.
 
 **The previous run's log.** `start_run_log` moves the previous run's log to `last_run.1.log` at each start. That
 way a relaunch after a crash keeps the crash's log. Both the launcher page and `--play` do this.
+
+**Every run's log** (2026-11-15). `start_run_log` also copies the previous log to `<saves folder>/logs/runs/run-<time>[-v<version>].log` (`archive_run_log`); `prune_run_logs` keeps the newest 200 and at most 500 MB (a normal log is 80-120 KB). Each log starts with `Run log:` (time, launcher version), `Build:` (the runtime executable's date and size, the source commit and branch when there is a .git), `System:` and `Game:` (title, title ID, version, folder) lines, and ends with `Run ended:` (time, length) before the exit line, which stays last (`log_excerpt` relies on it). A bug report adds the three archived runs before `last_run.1.log` (`runs/...`, redacted like the others).
 
 **Redaction** (`redact`) applies to every text that leaves the machine. It replaces:
 - the home folder (both slash styles) with `~`;

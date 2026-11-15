@@ -167,6 +167,9 @@ def report_files(user_dir, ini, config_file, data_dir):
                   ('medievil.ini', Path(ini)), ('settings.json', Path(config_file)),
                   ('extra-env.txt', data_dir / 'extra-env.txt'), ('mods.json', data_dir / 'mods.json'),
                   ('patches.json', data_dir / 'patches.json')]
+    # Three runs before those two (logs/runs keeps every run; its newest is last_run.1.log's copy).
+    runs = sorted((user_dir / 'logs' / 'runs').glob('run-*.log'), key=lambda p: p.name, reverse=True)
+    candidates += [(f'runs/{path.name}', path) for path in runs[1:4]]
     return [(name, path) for name, path in candidates if path.is_file()]
 
 
