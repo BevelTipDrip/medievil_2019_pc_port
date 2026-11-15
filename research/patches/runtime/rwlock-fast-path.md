@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: ours
 class: G
-commits:
+commits: 4632e2e
 files: src/runtime_rwlock.c, tests/test_rwlock.c, tests/test_rwlock_registry.c, gpu/CMakeLists.txt
 symbols: lookup, resolve, acquire, rw_unlock, rw_destroy, held_find, held_add, held_remove, host_lock, host_try, host_timed, host_unlock, reserve_locked, create_locked, users, RW_LIVE, RW_DEAD
 switches:
@@ -54,7 +54,7 @@ one atomic `users` count (an acquire in progress or a thread holding it). No swi
 
 - Found (jitter-1, 2026-11-15, card tooling/wpr-capture): in frame-time streaks the game thread spent ~17% in
   guest lock calls, `acquire` at runtime_rwlock.c:123 (registry / calloc) and :130 (host lock) among them.
-- Fix built, not run in the game: `tests/test_rwlock.c --bench` (Windows, CLANG64): read lock + unlock 90 -> 13.5 ns,
+- Fix built `4632e2e`, not run in the game: `tests/test_rwlock.c --bench` (Windows, CLANG64): read lock + unlock 90 -> 13.5 ns,
   write 90 -> 13 ns, 4 threads reading one lock 570 -> ~180 ns, 4 threads with 10% writes 1,050 -> ~190 ns,
   8 readers 1,900 -> ~425 ns. Linux (WSL gcc): 32 -> 14 ns, 10% writes 6,960 -> 875 ns, 8 readers 1,050 -> 557 ns.
   Both test files pass on Windows and Linux.

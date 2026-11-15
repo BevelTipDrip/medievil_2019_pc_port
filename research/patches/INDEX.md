@@ -4,7 +4,7 @@ One line per card. Open a card for invariants, interactions and evidence; look u
 reading: `patchmap.py file <path>` / `switch <name>` / `commit <hash>` / `test <id>`.
 Card format and statuses: [README.md](README.md). W / D = default on Windows / Deck.
 
-225 cards.
+226 cards.
 
 ## memory
 
@@ -42,6 +42,7 @@ _loader, HLE libraries, threads, locks, files, audio, input (src/ outside memory
 | [pad-hotplug](runtime/pad-hotplug.md) | active | on / on | deck-lab |  | Pads plugged in after start: SDL hotplug hints (fork port, #64) |
 | [quiet-log](runtime/quiet-log.md) | active | off / off | deck-lab | GOW3_FPS_LOG | GOW3_FPS_LOG=0 turns off the periodic log lines (FPS line, particle guard summary) |
 | [R2](runtime/r2.md) | active | on / on | lab |  | Runtime: rwlock handles validated through an open-addressing hash set, not a list walk |
+| [rwlock-fast-path](runtime/rwlock-fast-path.md) | active | on / on | copy-fault-trace |  | Guest rwlocks without a global lock or heap allocation per operation: lock-free handle lookup, per-thread ownership, SRW locks on Windows |
 | [save-date-last-write](runtime/save-date-last-write.md) | active | on / on | deck-lab |  | A save's date is its last write (param.bin or any save file), so MediEvil saves into the slot it loaded |
 | [save-trace](runtime/save-trace.md) | diagnostic | on / on | deck-lab |  | "Save trace:" log lines for every save call (search, mount, file writes, set param, dialogs) with the guest caller |
 | [settings-menu](runtime/settings-menu.md) | active | on / on | deck-lab | GOW3_MENU_PAD, GOW3_MENU_KEY, GOW3_PRESENT_MODE … | Settings menu in the game's Options menu look, usable with a pad alone (focus rows, L1 / R1 tabs, GOW3_MENU_PAD) |
