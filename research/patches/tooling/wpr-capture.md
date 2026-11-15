@@ -8,7 +8,7 @@ default_windows: off
 default_deck: n/a
 origin: ours
 class: G
-commits: 2ff26df
+commits: 2ff26df, e4b9ccb
 files: research/tools/wpr-hotkey.ps1, research/tools/wpr-capture.ps1, research/tools/wpr-common.ps1, research/tools/wpr-jitter.wprp, research/tools/etw_common.py, research/tools/etw_export.py, research/tools/etw_frame_threads.py, research/tools/etw_thread_profile.py, research/tools/etw_long_waits.py, research/tools/flip_plot.py
 symbols: Get-RealPath, Get-TraceFreeGB, Start-Ring, flip_to_etw, runtime_base, etl_span
 switches:
