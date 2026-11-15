@@ -4,7 +4,7 @@ One line per card. Open a card for invariants, interactions and evidence; look u
 reading: `patchmap.py file <path>` / `switch <name>` / `commit <hash>` / `test <id>`.
 Card format and statuses: [README.md](README.md). W / D = default on Windows / Deck.
 
-222 cards.
+225 cards.
 
 ## memory
 
@@ -79,6 +79,7 @@ _draw recording, rasterizer, pipelines, descriptors, recorder, fences, drains_
 | [bulk-descriptor-copy](stage-b/bulk-descriptor-copy.md) | active | on / on | lab | GOW3_LEAN_BINDING, perf_lean_binding, toggle2:BulkDescriptorCopy | Bulk descriptor copy per push: writes and info arrays copied into the chunk once, pointers rebased |
 | [C1-semaphore-poll](stage-b/c1-semaphore-poll.md) | active | on / on | deck-lab | GOW3_SEMAPHORE_POLL_US, toggle2:SemaphorePollInterval | Stage B polls the GPU's timeline semaphore at most every 100 us for end-of-pipe readback retirement |
 | [cacheline-groups](stage-b/cacheline-groups.md) | active | on / on | deck-lab |  | Deck #6: cache-line groups for draw pipe / scheduler fields written and read by different threads |
+| [deferred-copy-backing](stage-b/deferred-copy-backing.md) | active | on / n/a | copy-fault-trace | GOW3_DEFERRED_COPY_BACKING | Windows: deferred guest copies (recorder, copy threads) read the backing view, never the guest mapping (200% deadlock) |
 | [depth-write-effective](stage-b/depth-write-effective.md) | active | on / on | lab | GOW3_DEPTH_WRITE_EFFECTIVE | A depth target counts as written only with the depth test on or a pending clear (N-6) |
 | [E1](stage-b/e1.md) | active | on / on | lab | GOW3_EOS_DEFERRED, perf_gpu_data_no_waits | End-of-shader fences deferred like end-of-pipe ones (written by the recorder after queued copies) |
 | [frame-cost-dropped-ideas](stage-b/frame-cost-dropped-ideas.md) | rejected | n/a / n/a | - |  | Dropped on analysis (study-frame-cost section 4): mid-frame split submits, idle flush, recorder spin cut, shadow-map rename, shadow flush barrier |
@@ -275,6 +276,7 @@ _diagnostics, tracing, capture, stats, research tools (no gameplay effect)_
 |---|---|---|---|---|---|
 | [async-log-writer](tooling/async-log-writer.md) | diagnostic | on / on | lab |  | Slow-frame lines and the perf-diag report formatted on a background log writer, not ~30 printf on the flip path |
 | [avplayer-trace](tooling/avplayer-trace.md) | diagnostic | on / on | lab |  | AvPlayer trace: player calls and the frames each player delivered |
+| [copy-fault-trace](tooling/copy-fault-trace.md) | diagnostic | on / on | copy-fault-trace | GOW3_COPY_FAULT_LOG | GOW3_COPY_FAULT_LOG: a guest fault inside a host copy logged before and after it is handled (thread, copy, protection, age) |
 | [deck-test-tooling](tooling/deck-test-tooling.md) | diagnostic | off / off | deck-lab | GOW3_TOGGLE_FILE, GOW3_FLIP_TRACE | Clock push-pull tooling: APU trace beside the flip trace, frame alignment, live frame cap as the toggle file's third word |
 | [draw-classes](tooling/draw-classes.md) | diagnostic | off / off | deck-lab | GOW3_FRAME_STATS | N0: recorded draws per frame by class; particle sim on the previous run's target |
 | [fence-stats](tooling/fence-stats.md) | diagnostic | off / off | deck-lab | GOW3_FRAME_STATS | Deck gate 2 stats: guest fence waits, submission lock, cache actions, faults by PS4 type, fence lag, invalidations |
@@ -297,3 +299,4 @@ _diagnostics, tracing, capture, stats, research tools (no gameplay effect)_
 | [upstream-frame-analyzer-fix](tooling/upstream-frame-analyzer-fix.md) | active | on / on | - | GOW3_CAPTURE_TRIGGER, GOW3_CAPTURE_DIR | Upstream frame analyzer crash on flatbuf ring bindings (address 0 passed IsValidGpuMapping) |
 | [upstream-screenshots](tooling/upstream-screenshots.md) | active | on / on | - | GOW3_SCREENSHOT_DIR, GOW3_FRAME_DUMP_TRIGGER, GOW3_FRAME_DUMP_COUNT … | Upstream F12 PNG screenshots (Shift+F12 raw dump) |
 | [wait-sites](tooling/wait-sites.md) | diagnostic | off / off | lab | GOW3_WAIT_SITES | GOW3_WAIT_SITES: every guest wait by call site, requested and actual time (pthread exports, event queues) |
+| [wpr-capture](tooling/wpr-capture.md) | diagnostic | off / n/a | copy-fault-trace |  | WPR capture scripts: hotkey ring buffer and timed capture, junction-safe trace folder, failed stops reported, a light jitter profile |

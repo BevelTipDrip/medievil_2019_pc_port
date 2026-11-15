@@ -8,14 +8,14 @@ default_windows: off
 default_deck: off
 origin: ours
 class: G
-commits: 608f0ec5c6, d07cc4b2d3, 8f6718072c, daeebdb3b9
+commits: 608f0ec5c6, d07cc4b2d3, 8f6718072c, daeebdb3b9, d032cd4
 files: gpu/shim/gow3_flip_trace.h, gpu/shadps4/core/libraries/videoout/driver.cpp, gpu/shadps4/core/libraries/videoout/video_out.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, scripts/graphics_options.py, launcher/medievil_launcher.py, run.py
 symbols: Gow3FlipTrace, Note, File, Start, TraceGpuReady, GpuReadyThread, present_environment, FRAME_TRACE
 switches: GOW3_FLIP_TRACE, present_frame_trace
 tests: T-L2, T-L3, T-L4, N-27, N-32, Native run 4
 docs: fix-inventory.md#9-diagnostics-worth-taking, plan-stage-b-split.md#t-l2-flip-trace-uncapped-vs-120-cap-2026-10-22-0020-0029-launched-by-claude-with-the-users-go-build-1e657ca--nostats-gow3_flip_trace-trace-research-dataflip-trace-1csv, plan-linux-deck.md#native-run-4-flip-trace-2026-11-03-gow3_frame_stats1-gow3_flip_trace-log-datadeck-native-4log-trace-research-dataflipdeck-native-4csv, plan-frame-pacing.md#n-32-ring-reuse-retest-ab-inside-one-launch-2026-10-30-launched-by-claude-with-the-users-go-t-ring-1-build-9fb2d6c--nostats-flip-trace-research-dataflipt-ring-1csv
 depends_on:
-related: precise-limiter, present-side-limiter, reflex, display-trace, deck-test-tooling, ring-reuse, async-log-writer, presentation-settings
+related: wpr-capture, precise-limiter, present-side-limiter, reflex, display-trace, deck-test-tooling, ring-reuse, async-log-writer, presentation-settings
 checked: 2026-11-07
 ---
 ## What it does
@@ -26,7 +26,7 @@ Stages: `submit` (video_out.cpp, the game registers the flip), `irq` / `submit_d
 game's flip event), `dropped`. `d07cc4b` adds `gpu_ready`: `Presenter::TraceGpuReady` queues the frame's ready
 semaphore and tick for a `gow3:GpuReady` thread that waits on it and notes the time. It is started only when the
 trace is on. `8f67180` adds `present_start` right before `vkQueuePresentKHR`. `daeebdb` writes a first row `start`
-holding the trace origin in steady_clock ns (QueryPerformanceCounter on Windows), to line up with WPR. The
+holding the trace origin in steady_clock ns (QueryPerformanceCounter on Windows), to line up with WPR. `d032cd4` adds a `wall` row (`wall,<Unix time ns>,<ns since start>`, read between two steady clock reads): an ETL's start time is wall clock, so a frame maps onto ETW to the microsecond (the start row alone: +-0.5 s, the ETL's boot time is printed to 0.1 s). The
 launcher's Advanced > Diagnostics "Frame timing trace" (`present_frame_trace`, `FRAME_TRACE`, added with the
 Presentation settings in `44994b9`, presentation-settings) sets the variable to `user/logs/flip-trace.csv` through
 `present_environment` (`run.py`, unless the variable is already set). Tools: `research/tools/flip_*.py`.
