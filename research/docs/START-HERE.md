@@ -20,6 +20,11 @@ Entry point for every session. **Keep it current:** when a stage lands, update
 6. Before touching an area, its reference doc:
    [gpu-threading-reference.md](gpu-threading-reference.md) (scheduler, recording, submit) or
    [upscaler-reference.md](upscaler-reference.md) (motion vectors, FSR, DLSS, frame generation).
+7. Procedures as Claude Code skills (`.claude/skills/`, loaded by name): `native-diagnostics` (the runtime's
+   log / trace / stats switches and what each costs), `frame-jitter-capture` (flip trace + light WPR capture, per-frame
+   analysis with `research/tools/etw_*.py`), `hang-crash-capture` (cdb stacks, symbolizing, fault records),
+   `build-ab` (build, baselines, exe swaps, byte-safe settings edits, judging runs). Update a skill in the same
+   commit as the tool or rule it describes.
 
 ## Rules (the user's; also in Claude's memory)
 

@@ -9,8 +9,8 @@ default_deck: n/a
 origin: ours
 class: G
 commits: 2ff26df
-files: research/tools/wpr-hotkey.ps1, research/tools/wpr-capture.ps1, research/tools/wpr-common.ps1, research/tools/wpr-jitter.wprp
-symbols: Get-RealPath, Get-TraceFreeGB, Start-Ring
+files: research/tools/wpr-hotkey.ps1, research/tools/wpr-capture.ps1, research/tools/wpr-common.ps1, research/tools/wpr-jitter.wprp, research/tools/etw_common.py, research/tools/etw_export.py, research/tools/etw_frame_threads.py, research/tools/etw_thread_profile.py, research/tools/etw_long_waits.py, research/tools/flip_plot.py
+symbols: Get-RealPath, Get-TraceFreeGB, Start-Ring, flip_to_etw, runtime_base, etl_span
 switches:
 tests:
 docs: plan-work-queue.md
@@ -24,7 +24,9 @@ checked:
 (`research-data\wpr\<tag>-N.etl` + `.times.txt`); `-Forward` starts a timed capture (`wpr-capture.ps1`) instead.
 `wpr-common.ps1` (dot-sourced) resolves the trace folder through junctions (`Get-RealPath`), checks free space on
 that drive and picks the ADK's WPR. `wpr-jitter.wprp!Jitter`: context switches and ready-thread events without
-stacks, 1 kHz samples with stacks, DPC and interrupts, 3 GB of buffers (about 90 s at 237 FPS).
+stacks, 1 kHz samples with stacks, DPC and interrupts, 3 GB of buffers (about 90 s at 237 FPS). Analysis:
+`etw_export.py`, `etw_frame_threads.py` (per frame and thread), `etw_thread_profile.py`, `etw_long_waits.py`,
+`flip_plot.py`; procedure in the `frame-jitter-capture` skill.
 
 ## Invariants
 
