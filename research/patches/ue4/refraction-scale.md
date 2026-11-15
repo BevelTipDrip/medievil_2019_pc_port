@@ -111,8 +111,10 @@ of the shift with copies of the shader's own depth test (up to two more depth re
   the most water-like. The user picked vertical x6 and stepped + vertical. Run in game: "stepped fallback" in all 15
   water shaders; the user: "the effect is pretty much perfect", a few small artifacts at a very sharp angle through
   the arch (acceptable). The one tell left: the instant the always-rippling pulse passes 0.
-- Ripple floor: pond frame 32266 replayed at fixed strengths 0 / 0.25 / 0.5 / 1 (pulsefloor/*.png); 0.4 chosen. Not
-  run in game yet.
+- Ripple floor: pond frame 32266 replayed at fixed strengths 0 / 0.25 / 0.5 / 1 (pulsefloor/*.png); 0.4 chosen.
+- Verified (2026-11-15, 4K DLSS 75%, all three on: PS4 scale, Always, Stretch + stepped ripple): the user, "it
+  works great. This is much better than the PS4 behavior". Log: "stepped fallback" in every water shader, the pond
+  "ripple pulses 1".
 
 ## History and pitfalls
 
