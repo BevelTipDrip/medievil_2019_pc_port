@@ -41,17 +41,17 @@ under Effects resolution).
 Optional, not the PS4's look: the same shaders carry the material's time pulse
 `saturate(sin(fract(material[52] * time)))` (0.1: a 10 s cycle, rippling 5 s, still 5 s). Still water shows the
 apply pass's off-screen fallback as a hard line near the top edge at steep angles. ini `water_ripples_always`
-(default 1 for testing; 0 = the game's cycle), live as "Water ripples" (Always / Game cycle): the saturate becomes
+(default 1; 0 = the game's cycle), live as "Water ripples" (Always / Game cycle): the saturate becomes
 `0.4 + 0.6 * abs`, so the second half mirrors the first and the water never goes still (at 0 the copy reads as
 an upright copy, the one tell that it is not a reflection). Only the refraction ripples through; the water surface's own shading
 keeps the game's cycle.
 
 Optional, not the PS4's look either: where the shifted spot leaves the screen the apply pass falls back to no shift,
 a hard line with the pond bed past it and no water effect (the ripples ride on the shift). ini
-`refraction_edge_stretch` (default 1 for testing), live as "Refraction edge" (Stretch / Game (hard line)): the
+`refraction_edge_stretch` (default 3, see below), live as "Refraction edge": the
 spot is squeezed into the screen before the depth test, `edge + 0.15 * exp((t - edge - 0.15) / 0.15)` within 15% of
 an edge (value and slope continuous): near the edge an almost exact copy, stretching further from it.
-Modes 2 and 3 ("Stretch + ripple", "Stretch + stepped ripple", ini 2 / 3; default 3 for testing) also fill the
+Modes 2 and 3 ("Stretch + ripple", "Stretch + stepped ripple", ini 2 / 3; default 3) also fill the
 spots whose depth test drops the shift (a closer object at the shifted spot, the arch over the pond): a vertical
 ripple, `clamp(0.012 + 6 * sideways shift, 0, 0.03)` down, sideways unchanged; mode 3 first tries 2/3, then 1/3
 of the shift with copies of the shader's own depth test (up to two more depth reads per water pixel).
