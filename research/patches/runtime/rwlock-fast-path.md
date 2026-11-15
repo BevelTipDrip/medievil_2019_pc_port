@@ -58,6 +58,10 @@ one atomic `users` count (an acquire in progress or a thread holding it). No swi
   write 90 -> 13 ns, 4 threads reading one lock 570 -> ~180 ns, 4 threads with 10% writes 1,050 -> ~190 ns,
   8 readers 1,900 -> ~425 ns. Linux (WSL gcc): 32 -> 14 ns, 10% writes 6,960 -> 875 ns, 8 readers 1,050 -> 557 ns.
   Both test files pass on Windows and Linux.
+- Run 2026-11-15 16:00-16:07 (PC, 4K 75% DLSS, the same static view, build 15:49): no hang, no crash. The game
+  thread's time in rwlock calls went from ~1.5% of normal frames (acquire + rw_unlock; ~10% in streaks) to ~0.0%;
+  its remaining lock time is mutex / condition variable (~1.3%). Frame statistics unchanged within noise (no streak
+  happened in the recording; 0.1% lows swing 145-176 FPS in both builds by stretch). Not verified.
 
 ## History and pitfalls
 
