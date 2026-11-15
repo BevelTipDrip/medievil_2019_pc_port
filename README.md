@@ -153,7 +153,7 @@ Windows 11, RTX 4090, 4K. Some show the port's frame statistics along the top.
 - Saving and loading, with a backup of your saves before every start. The port's **Load list** shows each save's
   slot, level picture, chalices, levels, gold, bestiary entries and play time; Continue loads the newest.
 - **All the game's languages**, whatever region your copy is from, and the **voice language** separately (15 dubs).
-- **Cheats** (launcher > Game > Cheats): the developers' own debug menu (in a level: R3; 01.02: L1 + R1 + R3) with
+- **Cheats** (launcher > Game > Cheats): the developers' own debug menu (in a level; 01.00: R3, 01.02: hold L1 + R1, then R3) with
   level select, invincibility, all weapons and more, and unlimited ammo.
 - Both game versions, 01.00 and 01.02, of CUSA11227 and CUSA12982.
 - Audio (Wwise, ATRAC9, AAC) with the game's 7.1 mixed down properly for stereo.
@@ -162,18 +162,21 @@ Windows 11, RTX 4090, 4K. Some show the port's frame statistics along the top.
 **Launcher**
 - In MediEvil's style, with the game's own fonts and cover art (read from your copy, never shipped).
 - Installs from a fake PKG, handles mods and patches, save backups, controls, and checks this fork for updates.
-- **In-game menu** (Insert or your chosen key, or R3+L2): Game, Controls, Image, Performance and Overlay tabs, with
-  live settings and a performance overlay.
+- **In-game menu** in the game's own look (Insert or your chosen key, R3+L2, or **PC Settings** in the pause menu):
+  Controls, Display, Graphics, Performance and Overlay tabs, live settings and a performance overlay; controller,
+  keyboard and mouse.
 - **Screenshots**: F12 saves the game's picture at full resolution in `user/screenshots`.
 
 ### Known limits
 
 - Mouse look and mouse buttons are Windows only for now; fixed and scripted camera areas keep the game's camera.
-- With a native output above 1080p, the gamepad cannot reach menu items outside the top-left 1920×1080 area (the
-  pause menu's "Quit to Map", the debug menu's right column).
+- Going back to the main menu from a level can hang the game (the cause is found, not fixed yet).
+- Rarely the game closes during start-up; starting it again works.
 - **Radeon RX 400/500 and Vega** (older AMD drivers): some crash when the main menu loads. Try launcher >
   Performance > Safe GPU mode (older AMD GPUs), and send a bug report from the launcher.
-- Experimental PS4 Pro mode (`GOW3_NEO=1`) stops in the texture cache.
+- Experimental PS4 Pro mode (`GOW3_NEO=1`) is unfinished: it stopped in the texture cache when last tried.
+- Installing from .pkg files: if your 01.02 update package holds only the changed files, unpack the base game's
+  .pkg first, then the update into the same folder.
 
 ## Download and play
 
