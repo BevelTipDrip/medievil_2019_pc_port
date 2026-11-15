@@ -241,8 +241,9 @@ struct HwFragmentRuntimeInfo {
     /// through the still half of its cycle (RefractionScalePass).
     bool refraction_ripples{false};
     /// MediEvil: the distortion's shifted spot is squeezed into the screen instead of falling back
-    /// to no shift at the edge (RefractionScalePass).
-    bool refraction_edge_stretch{false};
+    /// to no shift at the edge; 2: a ripple where the depth test drops the shift, 3: shorter
+    /// shifts tested first (RefractionScalePass). 0: the game's.
+    u8 refraction_edge_stretch{0};
 
     bool operator==(const HwFragmentRuntimeInfo& other) const noexcept {
         return std::ranges::equal(color_buffers, other.color_buffers) &&

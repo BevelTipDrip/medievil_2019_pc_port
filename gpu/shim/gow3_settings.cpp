@@ -258,7 +258,7 @@ void Set(Values& v, const std::string& key, const std::string& value) {
     } else if (key == "water_ripples_always") {
         v.water_ripples_always = value.empty() || i != 0 ? 1 : 0;
     } else if (key == "refraction_edge_stretch") {
-        v.refraction_edge_stretch = value.empty() || i != 0 ? 1 : 0;
+        v.refraction_edge_stretch = value.empty() ? 3 : std::clamp(i, 0, 3);
     } else if (key == "live_resolution") {
         v.live_resolution = value == "auto" ? -1 : std::clamp(i, 0, 1);
     } else if (key == "output_res") {

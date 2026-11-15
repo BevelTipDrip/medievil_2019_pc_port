@@ -179,9 +179,10 @@ struct Values {
     /// screen's top edge. Live.
     std::atomic<int> water_ripples_always{1};
     /// MediEvil: where the refraction's shifted spot would leave the screen, squeeze it in smoothly (a stretched
-    /// copy) instead of the game's fallback to no shift: a hard line with the pond bed past it (ini
-    /// refraction_edge_stretch, 0 = the game's; RefractionScalePass). Live.
-    std::atomic<int> refraction_edge_stretch{1};
+    /// copy) instead of the game's fallback to no shift: a hard line with the pond bed past it. 2: also a
+    /// vertical ripple where a closer object blocks the spot (the arch over the pond); 3: shorter shifts tested
+    /// first (ini refraction_edge_stretch 0-3, 0 = the game's; RefractionScalePass). Live.
+    std::atomic<int> refraction_edge_stretch{3};
     /// MediEvil graphics settings (UE4LiveOptions): the chosen index (-1 while loading: a missing key or
     /// an old "preset", resolved from ue4_quality after the file is read); the ones this launch started
     /// with (RestartChanges: the settings that are not live).

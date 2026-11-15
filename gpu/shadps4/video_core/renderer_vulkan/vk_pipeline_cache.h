@@ -108,7 +108,7 @@ struct PipelineSelection {
     /// pulse, and the settings (RefractionSetting) they were picked from (RefractionScalePass).
     u32 refraction_ref_width = 0;
     bool refraction_ripples = false;
-    bool refraction_edge_stretch = false;
+    u8 refraction_edge_stretch = 0;
     int refraction_setting = 0;
     bool compilation_pending = false;
     DrawIndirectParams draw_indirect_params{};

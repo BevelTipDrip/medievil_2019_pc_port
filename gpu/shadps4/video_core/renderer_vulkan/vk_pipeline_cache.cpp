@@ -48,12 +48,12 @@ namespace {
 std::atomic<u32> g_light_grid_scene{0};
 
 /// MediEvil: the refraction settings a distortion variant is picked from (RefractionScalePass):
-/// bit 0 refraction_ps4, bit 1 water_ripples_always, bit 2 refraction_edge_stretch.
+/// bit 0 refraction_ps4, bit 1 water_ripples_always, bits 2-3 refraction_edge_stretch (0-3).
 int RefractionSetting() {
     const auto& s = Gow3Settings::Get();
     return (s.refraction_ps4.load(std::memory_order_relaxed) != 0 ? 1 : 0) |
            (s.water_ripples_always.load(std::memory_order_relaxed) != 0 ? 2 : 0) |
-           (s.refraction_edge_stretch.load(std::memory_order_relaxed) != 0 ? 4 : 0);
+           ((s.refraction_edge_stretch.load(std::memory_order_relaxed) & 3) << 2);
 }
 
 /// A draw's viewport size (width | height << 16; 0: none).
@@ -973,7 +973,7 @@ bool PipelineCache::RefreshGraphicsKey(PipelineSelection& sel) {
     sel.light_grid_scene = g_light_grid_scene.load(std::memory_order_relaxed);
     sel.refraction_ref_width = 0;
     sel.refraction_ripples = false;
-    sel.refraction_edge_stretch = false;
+    sel.refraction_edge_stretch = 0;
     sel.refraction_setting = RefractionSetting();
 
     // First pass to fill render target information needed by shader recompiler
@@ -1065,7 +1065,7 @@ bool PipelineCache::RefreshGraphicsKey(PipelineSelection& sel) {
         sel.refraction_ref_width =
             (sel.refraction_setting & 1) ? Gow3Settings::RefractionReferenceWidth : 0;
         sel.refraction_ripples = (sel.refraction_setting & 2) != 0;
-        sel.refraction_edge_stretch = (sel.refraction_setting & 4) != 0;
+        sel.refraction_edge_stretch = static_cast<u8>((sel.refraction_setting >> 2) & 3);
         if (!RefreshGraphicsStages(sel)) {
             return false;
         }
