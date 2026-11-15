@@ -8,10 +8,10 @@ default_windows: on
 default_deck: on
 origin: ours
 class: C
-commits:
+commits: eeadcb3
 files: gpu/shadps4/shader_recompiler/ir/passes/refraction_limit_pass.cpp, gpu/shadps4/shader_recompiler/ir/passes/ir_passes.h, gpu/shadps4/shader_recompiler/recompiler.cpp, gpu/shadps4/shader_recompiler/runtime_info.h, gpu/shadps4/shader_recompiler/info.h, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h, gpu/shadps4/video_core/renderer_vulkan/vk_draw_prep.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_draw_prep.h, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_serialization.cpp, gpu/shim/gow3_settings.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_overlay.cpp
 symbols: RefractionLimitPass, OffsetAxis, ExtractedComponent, uses_refraction_offset, refraction_limit, refraction_setting, RefractionLimitDefault
-switches: refraction_limit
+switches:
 tests:
 docs: plan-work-queue.md
 depends_on:

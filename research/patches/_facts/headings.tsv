@@ -2,10 +2,10 @@
 START-HERE.md	1	1	start-here-medievil-port-work	START HERE: MediEvil port work
 START-HERE.md	6	2	read-in-this-order	Read in this order
 START-HERE.md	24	2	rules-the-users-also-in-claudes-memory	Rules (the user's; also in Claude's memory)
-START-HERE.md	46	2	current-state-table-last-fully-updated-2026-10-18	Current state (table last fully updated 2026-10-18)
-START-HERE.md	68	2	knobs-and-triggers	Knobs and triggers
-START-HERE.md	85	2	document-index	Document index
-START-HERE.md	122	2	elsewhere	Elsewhere
+START-HERE.md	51	2	current-state-table-last-fully-updated-2026-10-18	Current state (table last fully updated 2026-10-18)
+START-HERE.md	73	2	knobs-and-triggers	Knobs and triggers
+START-HERE.md	90	2	document-index	Document index
+START-HERE.md	127	2	elsewhere	Elsewhere
 building-and-tools.md	1	1	building-and-tools	Building and tools
 building-and-tools.md	5	2	paths	Paths
 building-and-tools.md	19	2	toolchain-installed-2026-10-18	Toolchain (installed 2026-10-18)
@@ -371,13 +371,14 @@ plan-fsr-frame-generation.md	20	2	design	Design
 plan-fsr-frame-generation.md	30	2	stages-one-change-per-launch	Stages (one change per launch)
 plan-fsr-frame-generation.md	39	2	risks	Risks
 plan-fsr.md	1	1	plan-amd-fsr-in-place-of-ue4s-taa-fsr-3x-fsr-4x	Plan: AMD FSR in place of UE4's TAA (FSR 3.x, FSR 4.x)
-plan-fsr.md	7	2	the-users-goals-2026-11-12	The user's goals (2026-11-12)
-plan-fsr.md	16	2	what-the-repo-has-code-research-2026-11-12	What the repo has (code research, 2026-11-12)
-plan-fsr.md	31	2	outside-web-research-2026-11-12-sources-in-the-agent-report-key-ones-here	Outside (web research, 2026-11-12; sources in the agent report, key ones here)
-plan-fsr.md	47	2	steps-one-change-per-launch-the-users-order-2026-11-12	Steps (one change per launch; the user's order, 2026-11-12)
-plan-fsr.md	59	2	to-do-the-user-2026-11-12	To do (the user, 2026-11-12)
-plan-fsr.md	72	2	step-1-verified-on-the-pc-t-f1	Step 1 (verified on the PC, T-F1)
-plan-fsr.md	88	2	lows-with-an-upscaler-t-f2-2026-11-12	Lows with an upscaler (T-F2, 2026-11-12)
+plan-fsr.md	9	2	the-users-goals-2026-11-12	The user's goals (2026-11-12)
+plan-fsr.md	18	2	what-the-repo-has-code-research-2026-11-12	What the repo has (code research, 2026-11-12)
+plan-fsr.md	33	2	outside-web-research-2026-11-12-sources-in-the-agent-report-key-ones-here	Outside (web research, 2026-11-12; sources in the agent report, key ones here)
+plan-fsr.md	49	2	steps-one-change-per-launch-the-users-order-2026-11-12	Steps (one change per launch; the user's order, 2026-11-12)
+plan-fsr.md	61	2	to-do-the-user-2026-11-12	To do (the user, 2026-11-12)
+plan-fsr.md	77	2	step-1-verified-on-the-pc-t-f1	Step 1 (verified on the PC, T-F1)
+plan-fsr.md	93	2	lows-with-an-upscaler-t-f2-2026-11-12	Lows with an upscaler (T-F2, 2026-11-12)
+plan-fsr.md	198	2	fsr-4-steps-6-7-2026-11-14	FSR 4 (steps 6-7), 2026-11-14
 plan-gpu-threading.md	1	1	plan-port-the-bloodborne-ports-performance-work-threading-waits-memory	Plan: port the Bloodborne port's performance work (threading, waits, memory)
 plan-gpu-threading.md	7	2	answer	Answer
 plan-gpu-threading.md	16	2	threads-today-both-ports	Threads today (both ports)
@@ -524,6 +525,7 @@ plan-settings-menu.md	405	3	103-apply--restart-square--touchpad-held-5-s	10.3 AP
 plan-settings-menu.md	418	3	104-one-time-update-of-older-medievilini-files-settings_version	10.4 One-time update of older medievil.ini files (settings_version)
 plan-settings-menu.md	445	3	105-prompt-glyphs-the-physical-button-or-key-a-ps-button-is-bound-to	10.5 Prompt glyphs: the physical button or key a PS button is bound to
 plan-settings-menu.md	462	3	106-state	10.6 State
+plan-settings-menu.md	470	3	107-first-run-2026-11-13-run-and-its-fixes-fix-built-not-run	10.7 First run (2026-11-13, run) and its fixes (fix built, not run)
 plan-stage-b-split.md	1	1	plan-stage-bs-work-across-threads-feasibility-study	Plan: stage B's work across threads (feasibility study)
 plan-stage-b-split.md	7	2	why	Why
 plan-stage-b-split.md	13	2	profile-t-p3-2026-10-19-2100-2102-launched-by-claude-with-the-users-go-build-32eaea9--samples-log-datat-p3-stageb-profilelog-samples-in-research-datasamplest-p3-stageb-profile	Profile T-P3 (2026-10-19 21:00-21:02, launched by Claude with the user's go; build `32eaea9`; `-Samples`; log `data/t-p3-stageb-profile.log`, samples in `research-data\samples\t-p3-stageb-profile`)
@@ -598,7 +600,7 @@ plan-work-queue.md	7	2	the-users-quality-of-life-list-2026-11-03-after-the-v200-
 plan-work-queue.md	44	2	the-users-order-2026-10-30	The user's order (2026-10-30)
 plan-work-queue.md	73	2	pending-fixes-research-2026-10-29-ranked-there-state-now	Pending fixes (research 2026-10-29, ranked there; state now)
 plan-work-queue.md	101	2	found-on-the-way-2026-10-30	Found on the way (2026-10-30)
-plan-work-queue.md	123	2	from-github-issues	From GitHub issues
+plan-work-queue.md	126	2	from-github-issues	From GitHub issues
 pr-checklist.md	1	1	pr-checklist-the-bar-for-anything-proposed-upstream	PR checklist: the bar for anything proposed upstream
 pr-checklist.md	7	2	scope	Scope
 pr-checklist.md	14	2	code	Code
@@ -1014,6 +1016,41 @@ study-live-switches.md	343	3	perf_lean_barriers-restart--easy	perf_lean_barriers
 study-live-switches.md	351	3	presentation-launcher-only	Presentation (launcher only)
 study-live-switches.md	366	2	found-on-the-way	Found on the way
 study-live-switches.md	384	2	recommended-order-user-value-per-effort	Recommended order (user value per effort)
+study-menu-static-binds.md	1	1	study-the-games-menus-keep-their-buttons-while-gameplay-binds-are-custom-2026-11-13	Study: the game's menus keep their buttons while gameplay binds are custom (2026-11-13)
+study-menu-static-binds.md	18	2	summary-and-recommendation	Summary and recommendation
+study-menu-static-binds.md	49	2	1-how-binds-work-today-found-port-code	1. How binds work today (found, port code)
+study-menu-static-binds.md	64	2	2-how-the-game-reads-input-findings	2. How the game reads input (findings)
+study-menu-static-binds.md	66	3	21-overbiteconfigdefaultinputini-pakchunk0-both-builds-found	2.1 `OVERBITE/Config/DefaultInput.ini` (pakchunk0, both builds; found)
+study-menu-static-binds.md	85	3	22-the-layout-tables-and-the-remapper-found	2.2 The layout tables and the remapper (found)
+study-menu-static-binds.md	138	3	23-action-dispatch-and-menu-priorities-found	2.3 Action dispatch and menu priorities (found)
+study-menu-static-binds.md	153	3	24-how-each-menu-reads-input-found-0102-disassembly-the-same-assets-exist-in-0100	2.4 How each menu reads input (found, 01.02 disassembly; the same assets exist in 01.00)
+study-menu-static-binds.md	178	3	25-prompts-found	2.5 Prompts (found)
+study-menu-static-binds.md	189	3	26-natives-for-a-menu-signal-found-nativespy-on-both-eboots-slot--fnamenativeptrpair-exec-slot	2.6 Natives for a menu signal (found, `natives.py` on both eboots; slot = `FNameNativePtrPair` exec slot)
+study-menu-static-binds.md	208	2	3-approaches	3. Approaches
+study-menu-static-binds.md	210	3	a-rebind-gameplay-in-defaultinputini-only-pak-override	A. Rebind gameplay in `DefaultInput.ini` only (pak override)
+study-menu-static-binds.md	223	3	c-custom-layout-in-the-games-own-tables-recommended	C. Custom layout in the game's own tables (recommended)
+study-menu-static-binds.md	280	3	b-detect-in-a-menu-and-swap-the-runtimes-map	B. Detect "in a menu" and swap the runtime's map
+study-menu-static-binds.md	306	3	others	Others
+study-menu-static-binds.md	316	2	4-keyboard	4. Keyboard
+study-menu-static-binds.md	329	2	5-recommendation-and-staged-plan	5. Recommendation and staged plan
+study-menu-static-binds.md	353	3	t-sb1-s0-0102-the-users-daily-build-one-launch	T-SB1 (S0; 01.02, the user's daily build; one launch)
+study-menu-static-binds.md	373	2	6-open-questions-for-the-user	6. Open questions for the user
+study-menu-static-binds.md	384	2	7-follow-up-2026-11-13-keyboard-first-per-device-independence-kept	7. Follow-up (2026-11-13): keyboard-first, per-device independence kept
+study-menu-static-binds.md	399	3	71-per-device-tables-switched-at-run-time	7.1 Per-device tables, switched at run time
+study-menu-static-binds.md	505	3	72-additive-keyboard-keys-static-no-switching	7.2 Additive keyboard keys (static, no switching)
+study-menu-static-binds.md	524	3	73-cutscene-skip-plan-only-no-decision	7.3 Cutscene skip (plan only, no decision)
+study-menu-static-binds.md	551	3	74-summary-of-the-follow-up	7.4 Summary of the follow-up
+study-menu-static-binds.md	557	2	8-native-keyboard-input-the-users-preferred-idea	8. Native keyboard input (the user's preferred idea)
+study-menu-static-binds.md	563	3	81-what-the-build-has-found-both-eboots	8.1 What the build has (found, both eboots)
+study-menu-static-binds.md	598	3	82-the-injection-point	8.2 The injection point
+study-menu-static-binds.md	624	3	83-gameplay-through-defaultinputini-keyboard-mappings	8.3 Gameplay through `DefaultInput.ini` keyboard mappings
+study-menu-static-binds.md	659	3	84-menus	8.4 Menus
+study-menu-static-binds.md	681	3	85-prompts	8.5 Prompts
+study-menu-static-binds.md	695	3	86-mouse-both-devices-ps4-assumptions	8.6 Mouse, both devices, PS4 assumptions
+study-menu-static-binds.md	710	3	87-size-risks-first-experiment	8.7 Size, risks, first experiment
+study-menu-static-binds.md	736	2	9-truth-table	9. Truth table
+study-menu-static-binds.md	781	2	10-updated-recommendation-keyboard-first	10. Updated recommendation (keyboard-first)
+study-menu-static-binds.md	818	2	scratch-tools-and-data	Scratch tools and data
 study-mgs2-temporal-for-ue4.md	1	1	study-what-the-mgs2-temporal-work-gives-medievil-ue4-and-a-revised-dlss--fsr--fg-plan	Study: what the MGS2 temporal work gives MediEvil (UE4), and a revised DLSS / FSR / FG plan
 study-mgs2-temporal-for-ue4.md	13	2	1-the-answer-in-short	1. The answer in short
 study-mgs2-temporal-for-ue4.md	31	2	2-what-mgs2-built-question-1	2. What MGS2 built (question 1)

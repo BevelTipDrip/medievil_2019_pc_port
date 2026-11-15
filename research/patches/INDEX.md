@@ -4,7 +4,7 @@ One line per card. Open a card for invariants, interactions and evidence; look u
 reading: `patchmap.py file <path>` / `switch <name>` / `commit <hash>` / `test <id>`.
 Card format and statuses: [README.md](README.md). W / D = default on Windows / Deck.
 
-220 cards.
+221 cards.
 
 ## memory
 
@@ -43,7 +43,7 @@ _loader, HLE libraries, threads, locks, files, audio, input (src/ outside memory
 | [R2](runtime/r2.md) | active | on / on | lab |  | Runtime: rwlock handles validated through an open-addressing hash set, not a list walk |
 | [save-date-last-write](runtime/save-date-last-write.md) | active | on / on | deck-lab |  | A save's date is its last write (param.bin or any save file), so MediEvil saves into the slot it loaded |
 | [save-trace](runtime/save-trace.md) | diagnostic | on / on | deck-lab |  | "Save trace:" log lines for every save call (search, mount, file writes, set param, dialogs) with the guest caller |
-| [settings-menu](runtime/settings-menu.md) | active | on / on | menu-redesign | GOW3_MENU_PAD, GOW3_MENU_KEY, GOW3_PRESENT_MODE … | Settings menu in the game's Options menu look, usable with a pad alone (focus rows, L1 / R1 tabs, GOW3_MENU_PAD) |
+| [settings-menu](runtime/settings-menu.md) | active | on / on | deck-lab | GOW3_MENU_PAD, GOW3_MENU_KEY, GOW3_PRESENT_MODE … | Settings menu in the game's Options menu look, usable with a pad alone (focus rows, L1 / R1 tabs, GOW3_MENU_PAD) |
 | [upstream-audio-input](runtime/upstream-audio-input.md) | active | on / on | - | GOW3_AUDIO_SDL_DOWNMIX, GOW3_STICK_RANGE | Upstream audio and input: 7.1 -> stereo downmix, every controller merged, background pad events, stick range |
 | [upstream-hitch-work](runtime/upstream-hitch-work.md) | active | on / mixed | - | GOW3_TIMER_RES, GOW3_POWER_THROTTLE, GOW3_SPARE_IMAGE_BLOCK … | Upstream hitch work: 1 ms timer, no power throttling, spare GPU block, pageable memory, futex condvars, merged barrier ranges |
 
@@ -209,9 +209,10 @@ _UE4 config overrides, eboot patches, game hooks, particles, render scale, boot 
 | [particle-flip-guard](ue4/particle-flip-guard.md) | active | on / on | deck-lab | GOW3_PARTICLE_FLIP_GUARD, toggle2:ParticleFlipGuardOff, perf_particle_flip_guard | GPU particle flip guard: one state flip per main-phase simulation (fixes the single pass's torch / crypt floor bug) |
 | [particle-identity-skip](ue4/particle-identity-skip.md) | rejected | n/a / n/a | - |  | Skip identity GPU-particle sim draws (dt = 0, output equals input; not built) |
 | [particle-single-fixed](ue4/particle-single-fixed.md) | rejected | off / off | deck-lab |  | GPU particle fixed step in the single pass (eboot patch, GOW3_PARTICLE_SINGLE_FIXED) |
-| [pc-settings-entry](ue4/pc-settings-entry.md) | active | on / on | menu-redesign | GOW3_PC_SETTINGS_OPEN | PC Settings in the game's pause menu (its hidden Button_Controls), opening the port's settings menu (medievil.ini pc_settings_entry) |
+| [pc-settings-entry](ue4/pc-settings-entry.md) | active | on / on | deck-lab | GOW3_PC_SETTINGS_OPEN | PC Settings in the game's pause menu (its hidden Button_Controls), opening the port's settings menu (medievil.ini pc_settings_entry) |
 | [preshadows-live](ue4/preshadows-live.md) | active | off / on | lab |  | Preshadows (r.Shadow.Preshadows) as a live switch through the game's console variable |
 | [R4a](ue4/r4a.md) | rejected | off / off | - |  | r.NumBufferedOcclusionQueries=2 (rejected) |
+| [refraction-limit](ue4/refraction-limit.md) | active | on / on | deck-lab |  | UE4 distortion (refraction) shift shortened to a limit (Sleeping Village water copy) |
 | [S1-streaming](ue4/s1-streaming.md) | rejected | off / off | - |  | r.Streaming.AmortizeCPUToGPUCopy to split the panning bursts (streaming test S1) |
 | [single-particle-pass](ue4/single-particle-pass.md) | active | on / on | lab | perf_particle_single_pass, GOW3_PARTICLE_FIXED_STEP, toggle2:ParticleFixedStep | Single GPU particle pass (r.GPUParticle.FixDeltaSeconds=0): on by default with the flip guard, live switch |
 | [ue4-dlaa](ue4/ue4-dlaa.md) | diagnostic | off / n/a | deck-lab | GOW3_UE4_DLSS, GOW3_UE4_UPSCALER, GOW3_UE4_HOOKS … | DLSS in place of UE4's TAA - DLAA at render scale 100 (U3), upscaling at the TAAU dispatch below it (U4); F9 switches live |
