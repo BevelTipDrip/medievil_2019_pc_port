@@ -237,8 +237,8 @@ struct HwFragmentRuntimeInfo {
     /// MediEvil: output width UE4's distortion shift is scaled to (0: as the game draws it at the
     /// real output width) (RefractionScalePass).
     u32 refraction_ref_width{0};
-    /// MediEvil: the distortion shader's time pulse clamp(sin) becomes abs(sin): the water ripples
-    /// through the still half of its cycle (RefractionScalePass).
+    /// MediEvil: the distortion shader's time pulse clamp(sin) becomes 0.4 + 0.6 * abs(sin): the
+    /// water ripples through the still half of its cycle and never goes still (RefractionScalePass).
     bool refraction_ripples{false};
     /// MediEvil: the distortion's shifted spot is squeezed into the screen instead of falling back
     /// to no shift at the edge; 2: a ripple where the depth test drops the shift, 3: shorter

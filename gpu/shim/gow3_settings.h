@@ -174,8 +174,8 @@ struct Values {
     /// draw picks the shader variant. At 4K the Sleeping Village water's shift overflows its 8-bit store and
     /// copies Dan's sword into the water.
     std::atomic<int> refraction_ps4{1};
-    /// MediEvil: the refraction of water ripples all the time (ini water_ripples_always, 0 = the game's cycle of
-    /// 5 s rippling, 5 s still; RefractionScalePass). Still water shows the refraction's hard line at the
+    /// MediEvil: the refraction of water ripples all the time, never below 40% (ini water_ripples_always, 0 = the
+    /// game's cycle of 5 s rippling, 5 s still; RefractionScalePass). Still water shows the refraction's hard line at the
     /// screen's top edge. Live.
     std::atomic<int> water_ripples_always{1};
     /// MediEvil: where the refraction's shifted spot would leave the screen, squeeze it in smoothly (a stretched

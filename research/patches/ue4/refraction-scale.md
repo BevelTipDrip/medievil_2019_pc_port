@@ -10,7 +10,7 @@ origin: ours
 class: C
 commits: eeadcb3, 9d2f49a, 464877a, d60e380, ac5e385
 files: gpu/shadps4/shader_recompiler/ir/passes/refraction_scale_pass.cpp, gpu/shadps4/shader_recompiler/ir/passes/ir_passes.h, gpu/shadps4/shader_recompiler/recompiler.cpp, gpu/shadps4/shader_recompiler/runtime_info.h, gpu/shadps4/shader_recompiler/info.h, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h, gpu/shadps4/video_core/renderer_vulkan/vk_draw_prep.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_draw_prep.h, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_serialization.cpp, gpu/shim/gow3_settings.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_overlay.cpp
-symbols: RefractionScalePass, FindParams, ConstantSide, DistortionConstant, uses_refraction_scale, refraction_ref_width, refraction_setting, refraction_ps4, RefractionReferenceWidth, refraction_ripples, water_ripples_always, RefractionSetting, refraction_edge_stretch, SoftEdge, EdgeBand, ChainCopy, StoredProduct, FallbackLean
+symbols: RippleFloor, RefractionScalePass, FindParams, ConstantSide, DistortionConstant, uses_refraction_scale, refraction_ref_width, refraction_setting, refraction_ps4, RefractionReferenceWidth, refraction_ripples, water_ripples_always, RefractionSetting, refraction_edge_stretch, SoftEdge, EdgeBand, ChainCopy, StoredProduct, FallbackLean
 switches:
 tests:
 docs: plan-work-queue.md
@@ -42,7 +42,8 @@ Optional, not the PS4's look: the same shaders carry the material's time pulse
 `saturate(sin(fract(material[52] * time)))` (0.1: a 10 s cycle, rippling 5 s, still 5 s). Still water shows the
 apply pass's off-screen fallback as a hard line near the top edge at steep angles. ini `water_ripples_always`
 (default 1 for testing; 0 = the game's cycle), live as "Water ripples" (Always / Game cycle): the saturate becomes
-abs, so the second half mirrors the first. Only the refraction ripples through; the water surface's own shading
+`0.4 + 0.6 * abs`, so the second half mirrors the first and the water never goes still (at 0 the copy reads as
+an upright copy, the one tell that it is not a reflection). Only the refraction ripples through; the water surface's own shading
 keeps the game's cycle.
 
 Optional, not the PS4's look either: where the shifted spot leaves the screen the apply pass falls back to no shift,
@@ -63,7 +64,7 @@ of the shift with copies of the shader's own depth test (up to two more depth re
 - The width read is a new `ReadConstBuffer(handle, #2)` with the found read's flags, emitted right before the multiply
   (no dominance questions); scale = 1920 / max(width, 1).
 - Ripples: only in shaders where the constant was found, only `FPSaturate32(FPSin(FPFract32(x)))`, replaced in place
-  by `FPAbs32` (same operand). The pond's other sine (unclamped) is not touched.
+  by `FPAbs32` (same operand) and its users moved to `FPFma(abs, 0.6, 0.4)` (`RippleFloor`). The pond's other sine (unclamped) is not touched.
 - Edge stretch: per axis the two multiplies share their factor operand; the one with an `FPAdd32` user is the depth
   test's spot (`uv + shift`), the other the stored shift and must come after that add in its block (else skipped).
   The add's users get the squeezed spot, the stored shift becomes `spot - uv`, so the depth test and the sample
@@ -75,7 +76,7 @@ of the shift with copies of the shader's own depth test (up to two more depth re
   vertical on purpose: any sideways or upward unchecked shift pulled the arch's dark columns into the water.
 - The variants live in `HwFragmentRuntimeInfo::refraction_ref_width` and `refraction_ripples`, `refraction_edge_stretch` (part of `operator==`);
   cache versions bumped to shader binary 11, meta 11, pipeline key 9 (9 / 9 / 7 was the apply-side limit, 10 / 10 / 8
-  the scale alone, 11 / 11 / 9 with ripples; 12 / 12 / 10 the edge stretch; now 13 / 13 / 11 with the fallback modes).
+  the scale alone, 11 / 11 / 9 with ripples; 12 / 12 / 10 the edge stretch, 13 / 13 / 11 the fallback modes; now 14 / 14 / 12 with the ripple floor).
 - The setting is not in the registers: `PreparedDraw::refraction_setting` records the one a worker picked for, and
   `TryPreparedPipeline` rejects a prepared draw when it changed (`RefractionSetting`: bit 0 scale, bit 1 ripples, bits 2-3 edge mode) (lineage-draw-preparation's rule).
 
@@ -107,7 +108,11 @@ of the shift with copies of the shader's own depth test (up to two more depth re
   pond's pixels under the arch dropped by the depth test, gate/dbg7342-mask.png, capture 22245).
 - Fallback: GLSL replays of the arch frame (gate/*-final.png): sideways ripple (x6, x12) and an unchecked 25% copy pull
   black patches from the columns; vertical x6 lean 1.2% clean; x15 lean 2% pulls in the near bank; stepped + vertical
-  the most water-like. The user picked vertical x6 and stepped + vertical. Not run in game yet.
+  the most water-like. The user picked vertical x6 and stepped + vertical. Run in game: "stepped fallback" in all 15
+  water shaders; the user: "the effect is pretty much perfect", a few small artifacts at a very sharp angle through
+  the arch (acceptable). The one tell left: the instant the always-rippling pulse passes 0.
+- Ripple floor: pond frame 32266 replayed at fixed strengths 0 / 0.25 / 0.5 / 1 (pulsefloor/*.png); 0.4 chosen. Not
+  run in game yet.
 
 ## History and pitfalls
 

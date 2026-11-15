@@ -41,6 +41,9 @@ constexpr float EdgeLo = 0.001f, EdgeHi = 0.999f, EdgeBand = 0.15f;
 // Fallback where the depth test drops the shift: a vertical ripple, 1.2% of the screen down
 // plus 6x the sideways shift, at most 3% (RenderDoc replays of the gate frame 22245).
 constexpr float FallbackLean = 0.012f, FallbackRipple = 6.f, FallbackMax = 0.03f;
+// Always-rippling pulse: floor + (1 - floor) * |sin|. At 0 the copied scene reads as an upright copy;
+// 0.25 still shows shapes (replays of the still pond frame 32266).
+constexpr float RippleFloor = 0.4f;
 
 struct EdgeAxis {
     IR::Inst* add;     // uv + shift: the depth test's spot before the stretch
@@ -240,7 +243,8 @@ void RefractionScalePass(IR::Program& program, const RuntimeInfo& runtime_info) 
     }
     program.info.uses_refraction_scale = true;
     // The material's time pulse, saturate(sin(fract(time * rate))) (GCN v_sin with the clamp
-    // modifier): 0 for half of each cycle, still water. abs() ripples through that half too.
+    // modifier): 0 for half of each cycle, still water. floor + (1 - floor) * abs() ripples through
+    // that half too and never goes still.
     u32 pulses = 0;
     if (runtime_info.hw.fs.refraction_ripples) {
         for (IR::Block* const block : program.blocks) {
@@ -256,7 +260,14 @@ void RefractionScalePass(IR::Program& program, const RuntimeInfo& runtime_info) 
                 if (!fract || fract->GetOpcode() != IR::Opcode::FPFract32) {
                     continue;
                 }
+                const std::vector<IR::Use> uses(inst.Uses().begin(), inst.Uses().end());
                 inst.ReplaceOpcode(IR::Opcode::FPAbs32);
+                IR::IREmitter ir{*block, std::next(IR::Block::InstructionList::s_iterator_to(inst))};
+                const IR::F32 swell{ir.FPFma(IR::F32{IR::Value{&inst}}, ir.Imm32(1.f - RippleFloor),
+                                             ir.Imm32(RippleFloor))};
+                for (const IR::Use& use : uses) {
+                    use.user->SetArg(use.operand, swell);
+                }
                 ++pulses;
             }
         }

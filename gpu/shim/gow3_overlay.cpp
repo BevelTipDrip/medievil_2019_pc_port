@@ -1518,7 +1518,8 @@ void GraphicsTab() {
     static const int ripple_values[] = {1, 0};
     ChoiceRow("Water ripples", s.water_ripples_always, ripple_labels, ripple_values, 2,
               "What water shows through its surface. Game cycle: it ripples for 5 seconds, then goes still for 5, "
-              "and still water shows a hard line near the top of the screen. Always: it keeps rippling.");
+              "and still water shows a hard line near the top of the screen. Always: it keeps rippling, never "
+              "still enough to show what it copies.");
     static const char* const edge_labels[] = {"Stretch + stepped ripple", "Stretch + ripple", "Stretch",
                                               "Game (hard line)"};
     static const int edge_values[] = {3, 2, 1, 0};
