@@ -10,6 +10,10 @@
 
 #include <magic_enum/magic_enum.hpp>
 
+#include <atomic>
+#include <cstdio>
+#include <cstdlib>
+
 namespace Libraries::AvPlayer {
 
 void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, AvPlayerEvents event_id,
@@ -385,6 +389,20 @@ void AvPlayerState::UpdateEndOfFileState() {
     }
     lock.unlock();
 
+    // gow3: a movie that ran to its end also sends WAR_LOOPING_BACK first. UE4's PS4 media player
+    // (MediEvil 0x45c4b0) turns StateStop into PlaybackSuspended and only that warning into
+    // PlaybackEndReached, the event that moves a media playlist to its next item: without it the
+    // Best ending's GameOutro_Best playlist never opened gameoutro2.mp4 (black screen under its
+    // audio). A stop the game asks for (sceAvPlayerStop) still sends StateStop alone.
+    // GOW3_MOVIE_END_EVENT=0: StateStop alone, as before.
+    static const bool end_event = [] {
+        const char* value = std::getenv("GOW3_MOVIE_END_EVENT");
+        return !(value && value[0] == '0');
+    }();
+    if (end_event) {
+        s32 looping_back = ORBIS_AVPLAYER_ERROR_WAR_LOOPING_BACK;
+        EmitEvent(AvPlayerEvents::WarningId, &looping_back);
+    }
     EmitEvent(AvPlayerEvents::StateStop);
 }
 
@@ -442,6 +460,18 @@ std::optional<bool> AvPlayerState::OnBufferingCheckEvent(u32 num_frames) {
 // Called inside CONTROLLER thread
 void AvPlayerState::EmitEvent(AvPlayerEvents event_id, void* event_data) {
     LOG_INFO(Lib_AvPlayer, "Sending event to the game: id = {}", magic_enum::enum_name(event_id));
+    {
+        // gow3: the movie trace (avplayer.cpp); at most 400 lines a session.
+        static std::atomic<u32> logged{0};
+        if (logged.fetch_add(1, std::memory_order_relaxed) < 400) {
+            const auto name = magic_enum::enum_name(event_id);
+            std::printf("AvPlayer %.3f s: state %p event %.*s to the game (state %.*s)\n", TraceSeconds(),
+                        static_cast<const void*>(this), int(name.size()), name.data(),
+                        int(magic_enum::enum_name(m_current_state.load()).size()),
+                        magic_enum::enum_name(m_current_state.load()).data());
+            std::fflush(stdout);
+        }
+    }
     const auto callback = m_init_data.event_replacement.event_callback;
     if (callback) {
         const auto ptr = m_init_data.event_replacement.object_ptr;

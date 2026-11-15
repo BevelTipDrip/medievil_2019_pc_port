@@ -20,24 +20,35 @@ namespace {
 // gow3: one line per player call (not the per-frame polls) and the frames each player handed
 // to the game: MediEvil's 197 s intro kept decoding and uploading 1080p frames into gameplay
 // (90 MiB/s of texture uploads for 200 s in every run); this shows what the game asked for.
+// Since 2026-11-15 (the Best ending's playlist never reaching gameoutro2.mp4): the audio frames
+// the game took, its IsActive polls, a line when IsActive changes, and (avplayer_state.cpp,
+// avplayer_source.cpp) the events sent to the game and the queues at the end of a file.
 struct PlayerTrace {
     std::string source;
     unsigned long long frames = 0;
+    unsigned long long audio = 0;
+    unsigned long long polls = 0;
+    int active = -1; // the last IsActive answer (-1: not polled yet)
 };
 std::mutex trace_mutex;
 std::unordered_map<const void*, PlayerTrace> traces;
+} // namespace
 
 double TraceSeconds() {
     static const auto start = std::chrono::steady_clock::now();
     return std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
 }
 
+namespace {
+
 void Trace(const void* handle, const char* call, std::string_view detail, long long result) {
     std::scoped_lock lock{trace_mutex};
     auto& trace = traces[handle];
-    std::printf("AvPlayer %.3f s: %p %s%s%.*s -> %lld (%s, %llu frames delivered)\n", TraceSeconds(),
-                handle, call, detail.empty() ? "" : " ", int(detail.size()), detail.data(), result,
-                trace.source.empty() ? "no source" : trace.source.c_str(), trace.frames);
+    std::printf("AvPlayer %.3f s: %p %s%s%.*s -> %lld (%s, %llu frames delivered, %llu audio frames, "
+                "%llu IsActive polls)\n",
+                TraceSeconds(), handle, call, detail.empty() ? "" : " ", int(detail.size()), detail.data(),
+                result, trace.source.empty() ? "no source" : trace.source.c_str(), trace.frames, trace.audio,
+                trace.polls);
     std::fflush(stdout);
 }
 
@@ -49,6 +60,25 @@ void TraceSource(const void* handle, std::string_view path) {
 void TraceFrame(const void* handle) {
     std::scoped_lock lock{trace_mutex};
     ++traces[handle].frames;
+}
+
+void TraceAudio(const void* handle) {
+    std::scoped_lock lock{trace_mutex};
+    ++traces[handle].audio;
+}
+
+void TraceActive(const void* handle, bool active) {
+    std::scoped_lock lock{trace_mutex};
+    auto& trace = traces[handle];
+    ++trace.polls;
+    if (trace.active != int(active)) {
+        trace.active = int(active);
+        std::printf("AvPlayer %.3f s: %p IsActive -> %s (%s, %llu frames delivered, %llu audio frames, poll %llu)\n",
+                    TraceSeconds(), handle, active ? "true" : "false",
+                    trace.source.empty() ? "no source" : trace.source.c_str(), trace.frames, trace.audio,
+                    trace.polls);
+        std::fflush(stdout);
+    }
 }
 
 void TraceForget(const void* handle) {
@@ -144,7 +174,11 @@ bool PS4_SYSV_ABI sceAvPlayerGetAudioData(AvPlayerHandle handle, AvPlayerFrameIn
     if (handle == nullptr || p_info == nullptr) {
         return false;
     }
-    return handle->GetAudioData(*p_info);
+    const bool got = handle->GetAudioData(*p_info);
+    if (got) {
+        TraceAudio(handle);
+    }
+    return got;
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerGetStreamInfo(AvPlayerHandle handle, u32 stream_id,
@@ -161,7 +195,11 @@ bool PS4_SYSV_ABI sceAvPlayerGetVideoData(AvPlayerHandle handle, AvPlayerFrameIn
     if (handle == nullptr || video_info == nullptr) {
         return false;
     }
-    return handle->GetVideoData(*video_info);
+    const bool got = handle->GetVideoData(*video_info);
+    if (got) {
+        TraceFrame(handle);
+    }
+    return got;
 }
 
 bool PS4_SYSV_ABI sceAvPlayerGetVideoDataEx(AvPlayerHandle handle,
@@ -192,7 +230,11 @@ AvPlayerHandle PS4_SYSV_ABI sceAvPlayerInit(AvPlayerInitData* data) {
     }
 
     auto* player = new AvPlayer(*data);
-    Trace(player, "Init", data->auto_start ? "auto start" : "", 0);
+    char callback[64];
+    std::snprintf(callback, sizeof(callback), "event callback %p object %p",
+                  reinterpret_cast<const void*>(data->event_replacement.event_callback),
+                  data->event_replacement.object_ptr);
+    Trace(player, "Init", callback, 0);
     return player;
 }
 
@@ -228,7 +270,9 @@ bool PS4_SYSV_ABI sceAvPlayerIsActive(AvPlayerHandle handle) {
     if (handle == nullptr) {
         return false;
     }
-    return handle->IsActive();
+    const bool active = handle->IsActive();
+    TraceActive(handle, active);
+    return active;
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerJumpToTime(AvPlayerHandle handle, uint64_t time) {

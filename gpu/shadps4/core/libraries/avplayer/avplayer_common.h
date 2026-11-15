@@ -91,4 +91,7 @@ private:
 
 AvPlayerSourceType GetSourceType(std::string_view path);
 
+/// gow3: seconds since the movie trace's first line (avplayer.cpp), for its log lines.
+double TraceSeconds();
+
 } // namespace Libraries::AvPlayer

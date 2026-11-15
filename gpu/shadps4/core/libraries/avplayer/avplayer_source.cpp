@@ -12,6 +12,8 @@
 
 #include <magic_enum/magic_enum.hpp>
 
+#include <cstdio>
+
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -601,6 +603,13 @@ void AvPlayerSource::DemuxerThread(std::stop_token stop) {
 
     m_video_decoder_thread.Join();
     m_audio_decoder_thread.Join();
+    // gow3: the movie trace (avplayer.cpp): what is still queued for the game at the end of a file.
+    std::printf("AvPlayer %.3f s: source %p end of file (queued: video frames %llu, audio frames %llu, "
+                "video packets %llu, audio packets %llu)\n",
+                TraceSeconds(), static_cast<const void*>(this),
+                (unsigned long long)m_video_frames.Size(), (unsigned long long)m_audio_frames.Size(),
+                (unsigned long long)m_video_packets.Size(), (unsigned long long)m_audio_packets.Size());
+    std::fflush(stdout);
     m_state.OnEOF();
 
     LOG_INFO(Lib_AvPlayer, "Demuxer Thread exited normally");

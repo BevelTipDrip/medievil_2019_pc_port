@@ -9,8 +9,8 @@ default_deck: on
 origin: ours
 class: G
 commits: 6fd8e15ea7
-files: gpu/shadps4/core/libraries/avplayer/avplayer.cpp
-symbols: PlayerTrace, traces, trace_mutex, Trace, TraceSource, TraceFrame, TraceForget, TraceSeconds, SuspendPlayersForLevelChange, sceAvPlayerClose, sceAvPlayerGetVideoDataEx, sceAvPlayerInit, sceAvPlayerInitEx
+files: gpu/shadps4/core/libraries/avplayer/avplayer.cpp, gpu/shadps4/core/libraries/avplayer/avplayer_state.cpp, gpu/shadps4/core/libraries/avplayer/avplayer_source.cpp, gpu/shadps4/core/libraries/avplayer/avplayer_common.h
+symbols: PlayerTrace, traces, trace_mutex, Trace, TraceSource, TraceFrame, TraceAudio, TraceActive, TraceForget, TraceSeconds, EmitEvent, SuspendPlayersForLevelChange, sceAvPlayerClose, sceAvPlayerGetVideoDataEx, sceAvPlayerInit, sceAvPlayerInitEx
 switches:
 tests: T-D2d
 docs: plan-frame-pacing.md#upload-audit-what-is-copied-from-system-ram-to-the-gpu-2026-10-19-logs-only-no-launch, study-intro-movie.md#summary
@@ -26,6 +26,8 @@ AddSource(Ex), Start, Stop, Pause, Resume, SetLooping, the JumpToTime / SetTrick
 `sceAvPlayerGetVideoDataEx` counts the frames each player handed to the game (`TraceFrame`). The per-handle state
 lives in `traces` under `trace_mutex`.
 
+
+Since 2026-11-15 (the Best ending, card movie-end-event): each line also counts the audio frames the game took and its `IsActive` polls; one line when `IsActive` changes; one line at the end of a file with what is still queued (video / audio frames and packets); one line per event sent to the game (`state <ptr> event <name> to the game`, at most 400 a session); `Init` names the game's event callback and object. All once per change, none per frame.
 ## Invariants
 
 - `traces` is not only a log: movie-suspend's `SuspendPlayersForLevelChange` walks it as the list of live players.
