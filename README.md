@@ -174,7 +174,6 @@ Windows 11, RTX 4090, 4K. Some show the port's frame statistics along the top.
 - Rarely the game closes during start-up; starting it again works.
 - **Radeon RX 400/500 and Vega** (older AMD drivers): some crash when the main menu loads. Try launcher >
   Performance > Safe GPU mode (older AMD GPUs), and send a bug report from the launcher.
-- Experimental PS4 Pro mode (`GOW3_NEO=1`) is unfinished: it stopped in the texture cache when last tried.
 - Installing from .pkg files: if your 01.02 update package holds only the changed files, unpack the base game's
   .pkg first, then the update into the same folder.
 
