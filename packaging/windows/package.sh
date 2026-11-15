@@ -3,8 +3,8 @@
 # with PyInstaller so players need no Python), medievil-runtime.exe with the MSYS2 CLANG64 DLLs it needs,
 # the preparation scripts and run.py. Run from an MSYS2 CLANG64 shell after `bash build.sh`.
 # Freezing uses a Windows Python 3.10+ (python.org; WINPYTHON overrides) and a private venv in
-# out/pyenv with PyInstaller. The temporal upscalers are off, so neither the FSR 4 assets nor the
-# DLSS runtime are packaged.
+# out/pyenv with PyInstaller. FSR 3.1 is built into the runtime; FSR 4's model files
+# (tools/fetch_fsr4_assets.sh) and NVIDIA's DLSS runtime are not packaged: players add them.
 set -euo pipefail
 cd -- "$(dirname -- "$0")/../.."
 source ./msys2-env.sh

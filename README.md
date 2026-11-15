@@ -21,54 +21,61 @@ occlusion, reflections and volumetric fog still on.
 > folder or a fake package (.pkg). This project is not affiliated with Sony Interactive
 > Entertainment or Other Ocean. MediEvil is a trademark of Sony Interactive Entertainment.
 
-## What's new in 2.3.0
+## What's new in 2.4.0
 
-**Mouse and keyboard (Windows).** Launcher > Controls > Mouse > **Mouse look and buttons**.
+**A settings menu in the game's own look.** Open it with Insert or R3+L2, or pick **PC Settings** in the game's
+pause menu. The menu uses the game's Options frame, fonts and button prompts, and works with the controller, the
+keyboard and the mouse.
 
-- **Mouse look** on both axes, in the free camera and in Dan-cam (the aim camera). The mouse turns the camera inside
-  the game's own camera update, so both axes respond on the same frame. Sensitivity, vertical / horizontal ratio
-  and invert are in the launcher and, live, in the game's menu (Controls tab).
-- The game takes the mouse when its window has focus in borderless and fullscreen; Alt+Tab and the menu give it back.
-- **Mouse buttons and the wheel press game buttons**: a MOUSE column next to the keyboard's. Wheel up, wheel down,
-  or "wheel (up or down)", which is one press per scroll, so a fast scroll switches weapons once.
-- **Mouse button prompts**: with Keyboard prompts, buttons bound to the mouse show a mouse icon, in the game and
-  in the Load list ("Prefer mouse binds for glyphs").
-- **Keys**: right-click a key box while it waits for a key to leave that button without one. The key that opens
-  the port's menu (Insert) can be changed, for keyboards without Insert.
+- Five tabs: **Controls, Display, Graphics, Performance, Overlay**. Most rows apply at once; rows marked RESTART
+  wait, and holding **Square + Touchpad** for 5 seconds (or holding the mouse on the prompt) applies them and
+  restarts the game.
+- The menu and the Load list follow the buttons you bound in the launcher. The arrow keys and Enter always work
+  too, as fallbacks.
+- The Load list works with the mouse the same way as the menu, and DETAILS has its own button (Triangle).
+- With PlayStation prompts, a button bound to another pad button shows that button's picture (the touchpad bound
+  to Share shows SHARE).
+- Older settings files are updated once, to turn on fixes those versions shipped off by mistake
+  (single GPU particle pass, the particle flip guard, "Game reads GPU data without waiting"). Anything you turn
+  off afterwards stays off.
 
 | | |
 |---|---|
-| ![The in-game menu's Controls tab](docs/screenshots/controls-menu.jpg) | ![The Load list with mouse prompts](docs/screenshots/load-list-mouse.jpg) |
-| The in-game menu's Controls tab: mouse settings and the camera's automatic moves, live | The Load list with mouse prompts (right button: back, left button: details) |
-| ![Launcher: Controls](docs/screenshots/launcher-controls.jpg) | ![Launcher: buttons, with the MOUSE column](docs/screenshots/launcher-mouse-binds.jpg) |
-| Launcher > Controls: mouse, menu key and camera | The MOUSE column beside the keyboard and gamepad |
+| ![PC Settings in the game's pause menu](docs/screenshots/pause-pc-settings.jpg) | ![The settings menu's Display tab](docs/screenshots/settings-display-upscaler.jpg) |
+| **PC Settings** in the game's pause menu | Display: upscaler, render scale and sharpening |
 
-**Camera options.** The free camera's automatic moves can each be switched off (Controls > Advanced camera, or
-live in the game): the camera following Dan, the sideways swing, suggested directions, turning at posts, the
-running zoom and tilt, and the vertical re-centre. Ticking Mouse look sets a mouse-friendly mix (only suggested
-directions and posts on). The switches apply to the right stick too; fixed, rail and boss cameras keep the
-game's moves.
+**AMD FSR 3.1.** Upscaling for every graphics card: at render scale 100% it is a native-resolution
+anti-aliasing, below 100% it upscales. Pick it under Display > Anti-aliasing / upscaler, in the launcher or live
+in the game. FSR has its own sharpening slider (AMD FSR sharpening, default 25%). NVIDIA DLSS and FSR now share
+one upscaler front end, and its CPU time per frame was cut from about 120 to about 52 microseconds.
 
-**Submit Bug Report.** A button next to GitHub and Discord. It shows exactly what will be sent, saves a zip of
-your logs and settings with your user, PC and player names removed, and opens a filled-in GitHub issue to drag
-it into. Nothing is sent until you press Submit on GitHub. The log of the run before is now kept too
-(`last_run.1.log`), so a crash's log survives a relaunch.
+*Advanced:* **AMD FSR 4** (v07, INT8) works too, but its model files are not part of the download. Run
+`tools/fetch_fsr4_assets.sh` from this repository (Git Bash or WSL) (it downloads AMD's MIT-licensed model files) and put the
+`fsr4_shaders` folder next to `run.py`; "AMD FSR 4" then appears in the upscaler list. It is meant for AMD's
+newer cards; on an RTX 4090 it costs about 2.7 ms a frame at 4K.
 
-![Launcher: Submit Bug Report](docs/screenshots/launcher-bug-report.jpg)
+**Sleeping Village water fixed.** Above 1080p the water's refraction overflowed: Dan, his sword or a money bag
+were copied into the pond, a hard line cut across it, and the water in the town centre flickered. The water now
+shifts the image by the same share of the screen as the PS4 at 1080p. Three rows under Graphics > Effects
+resolution, all on by default, each with the game's behaviour as the other choice:
 
-**Fixes from the community** (upstream PRs, thanks to their authors):
-- **Torch flames and other effects missing** while shaders were still compiling: the main menu's torches on the first start, torches in levels, and the trail of small stars behind the firefly that follows Dan. Porticus, [upstream #52](https://github.com/bc160201983/medievil_2019_pc_port/pull/52).
-- **Movie ends**: the threads that play a movie no longer race when it stops. On Windows each movie end could wait up to 5 seconds; on Linux and the Steam Deck it could hang (black screen after the logo, or on the world map). dvilelaf, [upstream #68](https://github.com/bc160201983/medievil_2019_pc_port/pull/68).
-- **Controllers plugged in after start** are found on more systems. Porticus, [upstream #64](https://github.com/bc160201983/medievil_2019_pc_port/pull/64).
-- The Windows zip carries NVIDIA's DLSS licence next to the DLSS bridge.
+- **Refraction scale**: PS4 scale (the fix) or Game.
+- **Water ripples**: Always keeps the water rippling, so the copied scene never shows clearly as an upright copy;
+  Game cycle is the game's 5 seconds rippling, 5 seconds still.
+- **Refraction edge**: near the top of the screen and under objects in front of the water (the stone arch over
+  the pond), the game showed the bare pond bed past a hard line. Stretch fills it with a stretched, rippling image
+  instead.
 
-**Also:** settings the game's menu changes are no longer overwritten by the launcher after the game exits.
+![The Sleeping Village pond](docs/screenshots/sleeping-village-pond.jpg)
 
-![Fight in the Hilltop Mausoleum with the frame statistics](docs/screenshots/mausoleum-fight-stats.jpg)
-*A fight in the Hilltop Mausoleum, RTX 4090, 4K output with DLSS at 75% and a 237 FPS cap: 232 FPS average,
-1% low 204, 0.1% low 177 (the port's overlay, top right).*
+**Also:**
+- Steam Deck switches are stored in `medievil.ini`, so the in-game menu (Performance > Deck tuned) and
+  "Apply and restart" change them.
+- The mouse no longer writes diagnostic lines to the log every few seconds while you play. A tester's recurring
+  frame-time dips went away with it.
+- The frame buffer size (Display) applies at the next start; changing it live is gone.
 
-Earlier versions: see the [Releases page](../../releases).
+![The Graveyard at night, 4K](docs/screenshots/graveyard-night.jpg)
 
 ## Roadmap
 
@@ -97,13 +104,15 @@ What this fork has done, and what is next. Checked items are in a release or on 
 - [x] Real Unreal motion vectors and camera-cut detection for temporal upscalers
 - [x] NVIDIA DLAA and DLSS upscaling, in the launcher, the in-game menu and on F9
 - [ ] DLSS model (preset) per quality mode
-- [ ] AMD FSR upscaling on the same inputs (FSR 4 requested: [#1](../../issues/1))
+- [x] AMD FSR 3.1 upscaling on the same inputs; FSR 4 for advanced users ([#1](../../issues/1))
+- [x] Sleeping Village water: refraction at the PS4's scale, no hard line, no copied Dan
 - [ ] DLSS and FSR frame generation
 
 **Controls and launcher**
 - [x] Xbox and keyboard button prompts in the game, following your remaps
 - [x] Mouse look, mouse buttons and wheel, mouse prompts, camera options
 - [x] Bug reports from the launcher, Discord
+- [x] Settings menu in the game's look, PC Settings in the pause menu, mouse and binds in the menus
 - [ ] Mouse in the game's menus
 - [ ] Free camera in fixed and scripted camera areas
 - [ ] Mouse look on Linux / Steam Deck
@@ -126,6 +135,8 @@ Windows 11, RTX 4090, 4K. Some show the port's frame statistics along the top.
   the game's menu.
 - **NVIDIA DLSS** (RTX cards): DLAA at render scale 100, upscaling below it. NVIDIA's `nvngx_dlss.dll` is not
   included: copy it into the `bin` folder ([README-Windows.txt](packaging/windows/README-Windows.txt)).
+- **AMD FSR 3.1** (every GPU): native anti-aliasing at render scale 100, upscaling below it, with its own
+  sharpening. FSR 4 for advanced users (its model files are a separate download).
 - **Graphics quality**: Ultra, High, Console (the PS4's exact values), Medium, Low and Deck Optimized, each a set
   of 18 settings you can change one by one. Anti-aliasing: the game's TAA, FXAA or off.
 - **Frame rate**: the PS4 game's 60 FPS cap can be lifted (Engine frame rate) with normal game speed; NVIDIA
