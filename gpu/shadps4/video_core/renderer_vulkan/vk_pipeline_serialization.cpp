@@ -32,9 +32,9 @@
 
 namespace Serialization {
 /* You should increment versions below once corresponding serialization scheme is changed. */
-static constexpr u32 ShaderBinaryVersion = 9u; // MediEvil: refraction limit (RefractionLimitPass)
-static constexpr u32 ShaderMetaVersion = 9u; // MediEvil: Info::uses_refraction_offset, refraction limit
-static constexpr u32 PipelineKeyVersion = 7u; // MediEvil: Info / runtime info layout (refraction)
+static constexpr u32 ShaderBinaryVersion = 10u; // MediEvil: refraction scale (RefractionScalePass)
+static constexpr u32 ShaderMetaVersion = 10u; // MediEvil: Info::uses_refraction_scale, reference width
+static constexpr u32 PipelineKeyVersion = 8u; // MediEvil: Info / runtime info layout (refraction)
 } // namespace Serialization
 
 namespace Vulkan {

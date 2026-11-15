@@ -234,9 +234,9 @@ struct HwFragmentRuntimeInfo {
     /// full view (LightGridScalePass).
     u32 light_grid_scale_x{0};
     u32 light_grid_scale_y{0};
-    /// MediEvil: longest offset of UE4's distortion apply, a fraction of the screen (float bits;
-    /// 0: as the game draws it) (RefractionLimitPass).
-    u32 refraction_limit{0};
+    /// MediEvil: output width UE4's distortion shift is scaled to (0: as the game draws it at the
+    /// real output width) (RefractionScalePass).
+    u32 refraction_ref_width{0};
 
     bool operator==(const HwFragmentRuntimeInfo& other) const noexcept {
         return std::ranges::equal(color_buffers, other.color_buffers) &&
@@ -249,7 +249,7 @@ struct HwFragmentRuntimeInfo {
                motion_vectors == other.motion_vectors &&
                light_grid_scale_x == other.light_grid_scale_x &&
                light_grid_scale_y == other.light_grid_scale_y &&
-               refraction_limit == other.refraction_limit &&
+               refraction_ref_width == other.refraction_ref_width &&
                std::ranges::equal(inputs.begin(), inputs.begin() + num_inputs, other.inputs.begin(),
                                   other.inputs.begin() + num_inputs);
     }

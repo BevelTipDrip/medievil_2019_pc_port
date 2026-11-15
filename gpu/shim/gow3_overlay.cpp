@@ -1508,12 +1508,12 @@ void GraphicsTab() {
     if (s.effects_resolution != effects && s.effects_resolution >= 0) {
         runtime_ue4_request_cvar("r.SeparateTranslucencyScreenPercentage", S::UE4EffectsKeys[s.effects_resolution]);
     }
-    static const char* const refraction_labels[] = {"Off", "1%", "2%", "4%"};
-    static const int refraction_values[] = {0, 1, 2, 4};
-    ChoiceRow("Refraction limit", s.refraction_limit, refraction_labels, refraction_values, 4,
-              "Longest shift of the image seen through water and glass, as a share of the screen. The Sleeping "
-              "Village water shifts it by up to a quarter of the screen and shows a copy of the scene above it. "
-              "Off: as the game draws it.");
+    static const char* const refraction_labels[] = {"PS4 scale", "Game"};
+    static const int refraction_values[] = {1, 0};
+    ChoiceRow("Refraction scale", s.refraction_ps4, refraction_labels, refraction_values, 2,
+              "How far water and glass shift the image behind them. PS4 scale: the same share of the screen as "
+              "the PS4 at 1080p. Game: the game grows the shift with the output size; above 1080p it overflows and "
+              "copies Dan and nearby objects into the Sleeping Village water.");
     // The live settings in the table's order, then the ones a start applies (RESTART).
     for (const bool live : {true, false}) {
         for (int o = 0; o < S::UE4LiveCount; ++o) {

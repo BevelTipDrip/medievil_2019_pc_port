@@ -293,7 +293,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(PipelineSelection& se
         info.hw.fs.motion_vectors = sel.motion;
         info.hw.fs.light_grid_scale_x = sel.light_grid_scale[0];
         info.hw.fs.light_grid_scale_y = sel.light_grid_scale[1];
-        info.hw.fs.refraction_limit = sel.refraction_limit;
+        info.hw.fs.refraction_ref_width = sel.refraction_ref_width;
         u8 stencil_ref_export_enable = regs.depth_shader_control.stencil_op_val_export_enable |
                                        regs.depth_shader_control.stencil_test_val_export_enable;
         info.hw.fs.mrtz_mask = regs.depth_shader_control.z_export_enable |
@@ -763,7 +763,7 @@ const GraphicsPipeline* PipelineCache::TryPreparedPipeline(const PreparedDraw& p
         prepared.reg_checksum != liverpool->gfx_reg_checksum ||
         prepared.light_grid_scene != g_light_grid_scene.load(std::memory_order_relaxed) ||
         prepared.refraction_setting !=
-            Gow3Settings::Get().refraction_limit.load(std::memory_order_relaxed)) {
+            Gow3Settings::Get().refraction_ps4.load(std::memory_order_relaxed)) {
         return nullptr;
     }
     // Same registers; the stage programs and their flattened user data (which also covers
@@ -961,8 +961,8 @@ bool PipelineCache::RefreshGraphicsKey(PipelineSelection& sel) {
     // MediEvil: the full view as last recorded (RecordLightGridScene); a worker's prepared draw
     // keeps it for TryPreparedPipeline's check.
     sel.light_grid_scene = g_light_grid_scene.load(std::memory_order_relaxed);
-    sel.refraction_limit = 0;
-    sel.refraction_setting = Gow3Settings::Get().refraction_limit.load(std::memory_order_relaxed);
+    sel.refraction_ref_width = 0;
+    sel.refraction_setting = Gow3Settings::Get().refraction_ps4.load(std::memory_order_relaxed);
 
     // First pass to fill render target information needed by shader recompiler
     for (s32 cb = 0; cb < AmdGpu::NUM_COLOR_BUFFERS && !skip_cb_binding; ++cb) {
@@ -1045,10 +1045,11 @@ bool PipelineCache::RefreshGraphicsKey(PipelineSelection& sel) {
             return false;
         }
     }
-    // MediEvil: UE4's distortion apply gets the variant that shortens its offset to the limit.
+    // MediEvil: UE4's distortion accumulate shaders get the variant that scales the shift to the
+    // share of the screen a 1920-wide output (the PS4's 1080p) gets.
     if (const auto* fs = sel.infos[static_cast<u32>(Shader::SwStage::Fragment)];
-        fs && fs->uses_refraction_offset && sel.refraction_setting > 0) {
-        sel.refraction_limit = std::bit_cast<u32>(static_cast<float>(sel.refraction_setting) / 100.f);
+        fs && fs->uses_refraction_scale && sel.refraction_setting != 0) {
+        sel.refraction_ref_width = Gow3Settings::RefractionReferenceWidth;
         if (!RefreshGraphicsStages(sel)) {
             return false;
         }

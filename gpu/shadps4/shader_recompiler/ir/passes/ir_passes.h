@@ -27,8 +27,8 @@ void DeadCodeEliminationPass(IR::Program& program);
 void InterpolatedIntegerPass(IR::Program& program);
 /// MediEvil: UE4's forward light grid lookup at effects resolution (separate translucency).
 void LightGridScalePass(IR::Program& program, const RuntimeInfo& runtime_info);
-/// MediEvil: UE4's distortion apply offset shortened to a limit (Sleeping Village water).
-void RefractionLimitPass(IR::Program& program, const RuntimeInfo& runtime_info);
+/// MediEvil: UE4's distortion shift at a 1920-wide output's share of the screen (Sleeping Village water).
+void RefractionScalePass(IR::Program& program, const RuntimeInfo& runtime_info);
 void ConstantPropagationPass(IR::BlockList& program);
 void FlattenExtendedUserdataPass(IR::Program& program);
 void ReadLaneEliminationPass(IR::Program& program);

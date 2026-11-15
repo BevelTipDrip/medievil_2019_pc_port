@@ -104,9 +104,9 @@ struct PipelineSelection {
     /// and the full view (width | height << 16) it was computed from (LightGridScalePass).
     std::array<u32, 2> light_grid_scale{};
     u32 light_grid_scene = 0;
-    /// MediEvil: refraction limit of this draw's fragment variant (float bits, a fraction of the
-    /// screen; 0: none) and the setting (percent) it was picked from (RefractionLimitPass).
-    u32 refraction_limit = 0;
+    /// MediEvil: reference width of this draw's distortion variant (0: none) and the setting
+    /// (refraction_ps4) it was picked from (RefractionScalePass).
+    u32 refraction_ref_width = 0;
     int refraction_setting = 0;
     bool compilation_pending = false;
     DrawIndirectParams draw_indirect_params{};
