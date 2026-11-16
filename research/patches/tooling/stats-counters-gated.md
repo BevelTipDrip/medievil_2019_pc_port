@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: ours
 class: G
-commits:
+commits: fa136ee
 files: gpu/shim/gow3_toggles.h, gpu/shadps4/video_core/renderer_vulkan/vk_draw_pipe.h, gpu/shadps4/video_core/amdgpu/liverpool.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp, gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp, gpu/shadps4/video_core/buffer_cache/region_manager.h, gpu/shadps4/video_core/page_manager.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_constant_ring.h, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.h, gpu/shadps4/video_core/renderer_vulkan/vk_draw_prep.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_occlusion.cpp, gpu/shadps4/video_core/texture_cache/texture_cache.cpp, gpu/shim/gow3gpu.cpp, src/runtime.c, src/runtime_mutex.c, src/runtime_memory.c, tests/test_mutex.c
 symbols: Gow3Stats::Add, Gow3Stats::Sub, Gow3Stats::Switch, Gow3Stats::enabled, Gow3Stats::WaitTimer, DrawPipe::Run, count_memory_call, COUNT, runtime_fault_stats_enabled, runtime_mutex_report
 switches: GOW3_FRAME_STATS
