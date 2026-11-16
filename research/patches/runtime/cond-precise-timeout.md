@@ -63,7 +63,11 @@ sleeping when N us or less are left. Untimed waits, signals, broadcasts and mute
   B (precise) 228.1-228.5, C (spin 1000) 231.1-231.3; median frame 4.43 / 4.38 / 4.33 ms; presented jitter about the
   same; C's game-frame (submit) spread 0.18 -> 0.27 ms; lows decided by the flip trace's own spikes. The user chose
   B as the default (no CPU cost). Then B with every log off: RTSS 236.6 current, 1% low 233.2, 0.1% low 227.7 FPS
-  (cap 237), flat graph; how much of that is B and how much the flip trace's absence is open (A with logs off next).
+  (cap 237), flat graph.
+- Run with every log off, one change (2026-11-15, same area and direction, RTSS after 5-7 min): A (old,
+  `GOW3_COND_PRECISE=0`, log has no precise line) 236.5 current, 1% low 220.4, 0.1% low 193.7 FPS, small spikes in
+  the graph; B (precise) 236.6 / 233.2 / 227.7, flat. 1% low 4.54 -> 4.29 ms, 0.1% low 5.16 -> 4.39 ms. The user:
+  "B is legitimately better".
 
 ## History and pitfalls
 

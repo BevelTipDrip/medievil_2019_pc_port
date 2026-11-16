@@ -62,8 +62,9 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
 8b. **A/B runs with the flip trace on carry its cost** ([flip-trace](tooling/flip-trace.md)). 2026-11-15: the
    same static view ran ~228 FPS with isolated spikes every few seconds with `present_frame_trace=1`, and sat at the
    237 cap (1% low 233.2, 0.1% low 227.7) with every log off. Relative averages within one logging setup are
-   usable; lows and worst frames with the trace on mostly measure the trace. **Found, not yet isolated** (a run
-   with only the trace changed is pending).
+   usable; lows and worst frames with the trace on mostly measure the trace. **Confirmed** (the same build and
+   switches, only `present_frame_trace` changed, one launch each). Fix not started (buffer in memory, write off
+   the frame path).
 
 ## Latent bugs (code reading)
 

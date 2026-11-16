@@ -67,7 +67,7 @@ Presentation settings in `44994b9`, presentation-settings) sets the variable to 
   next step, buffer in memory and write at exit, is not done (the code still writes as it goes).
 - 2026-11-15 (PC, 4K 75% DLSS, static view, cond-precise-timeout B): with the trace on, ~228 FPS and isolated
   spikes every few seconds; with every log off, RTSS 236.6 current, 1% low 233.2, 0.1% low 227.7 (cap 237), flat
-  graph. Not yet one change per launch (A with logs off pending), but the trace's cost is large: A/B lows taken with
-  it on are its spikes (LANDMINES).
+  graph (same build and switches, only `present_frame_trace` changed). The trace's cost is large: A/B lows taken
+  with it on are its spikes (LANDMINES 8b).
 - "T-L2" also names the L2 region-bucket run (plan-stage-b-split.md); this card's is the flip-trace run.
 - Not verified in game: diagnostics only.
