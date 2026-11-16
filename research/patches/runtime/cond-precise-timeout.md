@@ -8,7 +8,7 @@ default_windows: on
 default_deck: n/a
 origin: ours
 class: G
-commits:
+commits: e12ffaa
 files: src/runtime_mutex.c, tests/test_mutex.c, gpu/CMakeLists.txt
 symbols: futex_cond_wait, precise_init, cond_precise, spin_wait, ns_until, rtl_wait_on_address, cond_spin_ns
 switches: GOW3_COND_PRECISE, GOW3_COND_SPIN_US

@@ -4,7 +4,7 @@ One line per card. Open a card for invariants, interactions and evidence; look u
 reading: `patchmap.py file <path>` / `switch <name>` / `commit <hash>` / `test <id>`.
 Card format and statuses: [README.md](README.md). W / D = default on Windows / Deck.
 
-226 cards.
+228 cards.
 
 ## memory
 
@@ -34,6 +34,7 @@ _loader, HLE libraries, threads, locks, files, audio, input (src/ outside memory
 | ID | Status | W / D | Branch | Switches | Title |
 |---|---|---|---|---|---|
 | [avplayer-join-hang](runtime/avplayer-join-hang.md) | active | on / on | deck-lab |  | Fix the game hanging after the first movie (AvPlayer thread joins, upstream PR #68) |
+| [cond-precise-timeout](runtime/cond-precise-timeout.md) | active | on / n/a | copy-fault-trace | GOW3_COND_PRECISE, GOW3_COND_SPIN_US | Timed guest condition waits end at their deadline (100 ns timeouts, 0.5 ms timer), not rounded up to whole ms; optional spin for short waits |
 | [crash-dump](runtime/crash-dump.md) | active | on / n/a | lab | GOW3_CRASH_DUMP | Minidump on any fatal fault, with fallbacks to smaller dump types and faults inside winpthreads |
 | [load-list-continue](runtime/load-list-continue.md) | active | on / on | deck-lab |  | Load list: "Continue" (the newest save) in place of the dead "New save" entry; "Slot N" on every save |
 | [load-list-details](runtime/load-list-details.md) | active | on / on | deck-lab |  | Load list: per-save details, level picture and level list (Square), in the game's Options menu look |
@@ -300,4 +301,5 @@ _diagnostics, tracing, capture, stats, research tools (no gameplay effect)_
 | [upstream-frame-analyzer-fix](tooling/upstream-frame-analyzer-fix.md) | active | on / on | - | GOW3_CAPTURE_TRIGGER, GOW3_CAPTURE_DIR | Upstream frame analyzer crash on flatbuf ring bindings (address 0 passed IsValidGpuMapping) |
 | [upstream-screenshots](tooling/upstream-screenshots.md) | active | on / on | - | GOW3_SCREENSHOT_DIR, GOW3_FRAME_DUMP_TRIGGER, GOW3_FRAME_DUMP_COUNT … | Upstream F12 PNG screenshots (Shift+F12 raw dump) |
 | [wait-sites](tooling/wait-sites.md) | diagnostic | off / off | lab | GOW3_WAIT_SITES | GOW3_WAIT_SITES: every guest wait by call site, requested and actual time (pthread exports, event queues) |
+| [wait-trace](tooling/wait-trace.md) | diagnostic | off / off | copy-fault-trace | GOW3_WAIT_TRACE, GOW3_WAIT_TRACE_MIN_US | GOW3_WAIT_TRACE: every guest wait over a threshold as one CSV row (thread, site, requested, actual), lined up with the flip trace |
 | [wpr-capture](tooling/wpr-capture.md) | diagnostic | off / n/a | copy-fault-trace |  | WPR capture scripts: hotkey ring buffer and timed capture, junction-safe trace folder, failed stops reported, a light jitter profile |

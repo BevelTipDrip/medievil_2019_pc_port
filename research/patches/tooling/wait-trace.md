@@ -8,7 +8,7 @@ default_windows: off
 default_deck: off
 origin: ours
 class: G
-commits:
+commits: 1562f4a
 files: src/runtime_waitsites.c, src/runtime.h, src/runtime_thread.c, research/tools/wait_frames.py
 symbols: trace_wait, trace_path, trace_min_ns, sites_on, wall_ns, runtime_thread_current_name
 switches: GOW3_WAIT_TRACE, GOW3_WAIT_TRACE_MIN_US
@@ -34,6 +34,12 @@ periodic long waits.
   is part of the timing it measures. MediEvil at 237 FPS wrote ~8,600 rows a second at 500 us (all threads).
 - Off: no change to wait-sites' cost (one cached load per wait).
 - `runtime_thread_current_name` is the guest thread's name (`main` is UE4's game thread), NULL on host threads.
+
+## Interactions
+
+- wait-sites: the same `RUNTIME_WAIT_BEGIN` / `END` pairs feed both; its invariants (measure in the export the guest
+  calls) apply to the trace's site column too.
+- flip-trace: `wait_frames.py` needs the flip trace's `wall` row; both traces cost frame time (LANDMINES 8b).
 
 ## Evidence
 
