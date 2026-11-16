@@ -22,6 +22,17 @@ option(GOW3_CACHELINE_PADDING "Cache-line aligned cross-thread fields" ON)
 if (NOT GOW3_CACHELINE_PADDING)
     add_compile_definitions(GOW3_CACHELINE_PADDING=0)
 endif()
+# gow3 (study-tooling-off-cost.md step 2): ON = dev build, the diagnostics (frame stats, sections, wait
+# sites, perf-diag, the toggle file, F11 frame analyzer, object names, ...) compiled in and switched on by
+# their variables; OFF = release build, their switches compile-time false (build.sh: out/gpu-release,
+# out/medievil-runtime.exe; dev: out/gpu, out/medievil-runtime-dev.exe). Every target sees the value
+# (C and C++: #if GOW3_DEV_TOOLS).
+option(GOW3_DEV_TOOLS "Diagnostics compiled in (dev build); OFF: release build" ON)
+if (GOW3_DEV_TOOLS)
+    add_compile_definitions(GOW3_DEV_TOOLS=1)
+else()
+    add_compile_definitions(GOW3_DEV_TOOLS=0)
+endif()
 set(GOW3_PGO "off" CACHE STRING "Profile-guided optimization: off, generate, use")
 set(GOW3_PGO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../pgo" CACHE PATH "Profile directory")
 if (GOW3_LTO)

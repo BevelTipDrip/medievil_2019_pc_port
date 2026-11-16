@@ -4,6 +4,7 @@
 // the draw pipe statistics. Ported from the Bloodborne port's bbport_sections.h (BB_SECTIONS).
 #pragma once
 
+#include "gow3_dev_tools.h"
 #include <array>
 #include <atomic>
 #include <cstdint>
@@ -105,11 +106,15 @@ inline void NoteTask(const void* fn, std::uint64_t task_cycles) {
 }
 
 inline bool Enabled() {
+#if GOW3_DEV_TOOLS
     static const bool on = [] {
         const char* env = std::getenv("GOW3_SECTIONS");
         return env && env[0] == '1';
     }();
     return on;
+#else
+    return false; // release build: every scope folds away
+#endif
 }
 /// Set on the draw recording thread (DrawPipe::Run): only its time is counted.
 inline thread_local bool recording_thread = false;

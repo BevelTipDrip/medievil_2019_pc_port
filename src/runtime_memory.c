@@ -1762,7 +1762,8 @@ int runtime_memory_precise_write(void *dst, const void *src, int value, uint64_t
     return 0;
 }
 void runtime_memory_set_gpu_hooks(GpuRange map, GpuRange unmap, GpuRange invalidate) {
-    const char *toggles=getenv("GOW3_TOGGLE_FILE");
+    /* Release build: no toggle file (the words stay 0, Gow3Toggle::Disabled is constant false). */
+    const char *toggles=GOW3_DEV_TOOLS ? getenv("GOW3_TOGGLE_FILE") : NULL;
     static pthread_t watcher;
     if (toggles && !watcher) pthread_create(&watcher,NULL,toggle_watcher,(void *)toggles);
     write_lock();
@@ -2227,6 +2228,9 @@ static struct { uint64_t site, count; int bucket; } fault_sites[FAULT_SITES]; /*
 int runtime_fault_stats_enabled(void) {
     /* Read on every guest lock and memcpy (2026-11-16): a cache line of its own (volatile, or LLVM
      * splits the struct into a bare int and drops the alignment). */
+#if !GOW3_DEV_TOOLS
+    return 0; /* release build: no frame stats, the counters' tests fold away (ThinLTO inlines this) */
+#endif
     static volatile struct { _Alignas(64) int value; } enabled = {-1};
     if (enabled.value<0) { const char *v=getenv("GOW3_FRAME_STATS"); enabled.value=v && v[0]=='1'; }
     return enabled.value;

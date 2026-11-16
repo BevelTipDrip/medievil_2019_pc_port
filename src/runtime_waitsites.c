@@ -61,6 +61,7 @@ static const char *trace_path(void) {
 }
 /* Either switch measures every wait; off: one cached load per wait (RUNTIME_WAIT_BEGIN). */
 int runtime_wait_sites_enabled(void) {
+    if (!GOW3_DEV_TOOLS) return 0; /* release build */
     static int enabled = -1;
     if (enabled < 0) enabled = sites_on() || trace_path() != NULL;
     return enabled;

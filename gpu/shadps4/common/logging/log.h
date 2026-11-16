@@ -22,6 +22,9 @@ using spdlog_stdout = spdlog::sinks::stdout_color_sink_mt;
 #include "common/logging/classes.h"
 #include "common/path_util.h"
 #include "common/thread.h"
+#ifndef GOW3_DEV_TOOLS // gow3: gpu/shim/gow3_dev_tools.h (CMake defines it for every target)
+#define GOW3_DEV_TOOLS 1
+#endif
 
 namespace Common::Log {
 extern bool g_should_append;
@@ -70,8 +73,18 @@ static constexpr std::array level_string_views{"Trace", "Debug",    "Info", "War
     LOG_GENERIC(Common::Log::Class::log_class, spdlog::level::trace, __VA_ARGS__)
 #endif
 
+#if GOW3_DEV_TOOLS
 #define LOG_DEBUG(log_class, ...)                                                                  \
     LOG_GENERIC(Common::Log::Class::log_class, spdlog::level::debug, __VA_ARGS__)
+#else
+// gow3 release build: no debug lines (each was a logger map lookup), arguments still checked.
+#define LOG_DEBUG(log_class, ...)                                                                  \
+    do {                                                                                           \
+        if (false) {                                                                               \
+            LOG_GENERIC(Common::Log::Class::log_class, spdlog::level::debug, __VA_ARGS__);         \
+        }                                                                                          \
+    } while (false)
+#endif
 #define LOG_INFO(log_class, ...)                                                                   \
     LOG_GENERIC(Common::Log::Class::log_class, spdlog::level::info, __VA_ARGS__)
 #define LOG_WARNING(log_class, ...)                                                                \

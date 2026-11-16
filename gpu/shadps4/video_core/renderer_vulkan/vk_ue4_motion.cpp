@@ -11,6 +11,7 @@
 
 #include <vk_mem_alloc.h>
 
+#include "gow3_overlay.h"
 #include "gow3_settings.h"
 #include "video_core/host_shaders/ue4_motion_comp.h"
 #include "video_core/host_shaders/ue4_motion_reactive_comp.h"
@@ -492,10 +493,7 @@ void Ue4Motion::OnTaa(const u8* view, std::span<const VAddr> reads, VideoCore::I
         device.destroyImageView(depth_view);
     });
     fresh = true;
-    static const bool quiet = [] {
-        const char* value = std::getenv("GOW3_FPS_LOG");
-        return value && std::strcmp(value, "0") == 0;
-    }();
+    const bool quiet = !Gow3Overlay::FpsLogOn(); // GOW3_FPS_LOG=1 only (default off)
     if (++passes == 1 || (!quiet && passes % 3000 == 0)) {
         std::printf("UE4 motion: %llu passes, last %ux%u (view %gx%g)\n",
                     static_cast<unsigned long long>(passes), width, height, push.view_size[0],

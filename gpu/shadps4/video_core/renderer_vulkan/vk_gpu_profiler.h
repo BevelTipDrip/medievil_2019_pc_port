@@ -14,6 +14,9 @@
 #include <vector>
 
 #include "common/types.h"
+#ifndef GOW3_DEV_TOOLS // gow3: gpu/shim/gow3_dev_tools.h (CMake defines it for every target)
+#define GOW3_DEV_TOOLS 1
+#endif
 #include "video_core/renderer_vulkan/vk_common.h"
 
 namespace Vulkan {
@@ -25,7 +28,11 @@ class GpuProfiler {
 public:
     /// The profiler when GOW3_GPU_PROFILE=1, else null.
     static GpuProfiler* Get() noexcept {
+#if GOW3_DEV_TOOLS
         return instance_ptr;
+#else
+        return nullptr; // release build: every profiler site folds away
+#endif
     }
     static void Init(const Instance& instance, Scheduler& scheduler);
 

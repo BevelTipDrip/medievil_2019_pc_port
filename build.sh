@@ -21,16 +21,40 @@ MINGW*|MSYS*)
             git -C gpu/third_party/fsr-vulkan apply "$PWD/$patch"
         fi
     done
-    cmake -S gpu -B out/gpu -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DGOW3_PGO=off \
-        -DGOW3_LTO="${GOW3_LTO:-ON}" -DGOW3_CACHELINE_PADDING="${GOW3_CACHELINE_PADDING:-ON}" \
-        -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ >/dev/null
-    echo "GPU library and loader: LTO ${GOW3_LTO:-ON}"
-    if ! ninja -C out/gpu medievil-runtime medievil-gpu-check medievil-play > out/gpu-build.log 2>&1; then
-        grep -v '^\[' out/gpu-build.log | tail -40 >&2
-        echo 'Build failed (full log: out/gpu-build.log)' >&2; exit 1
-    fi
-    cp out/gpu/medievil-runtime.exe out/gpu/medievil-gpu-check.exe out/gpu/medievil-play.exe out/
-    echo "Built $PWD/out/medievil-runtime.exe"
+    # GOW3_BUILD (study-tooling-off-cost.md step 2): release (default) = GOW3_DEV_TOOLS=OFF in
+    # out/gpu-release -> out/medievil-runtime.exe (what the launcher, medievil-play and package.sh use)
+    # with medievil-gpu-check and medievil-play; dev = the diagnostics compiled in, out/gpu (the tests'
+    # tree) -> out/medievil-runtime-dev.exe (launcher: Advanced > Diagnostics > Development build);
+    # both. A/B only between runs of the same build (the log's first line names it).
+    flavours=()
+    case ${GOW3_BUILD:-release} in
+    release) flavours=(release) ;;
+    dev) flavours=(dev) ;;
+    both) flavours=(release dev) ;;
+    *) echo "GOW3_BUILD: release, dev or both, not '${GOW3_BUILD}'" >&2; exit 1 ;;
+    esac
+    for flavour in "${flavours[@]}"; do
+        if [[ $flavour == release ]]; then
+            tree=out/gpu-release dev_tools=OFF targets=(medievil-runtime medievil-gpu-check medievil-play)
+        else
+            tree=out/gpu dev_tools=ON targets=(medievil-runtime)
+        fi
+        cmake -S gpu -B "$tree" -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DGOW3_PGO=off \
+            -DGOW3_LTO="${GOW3_LTO:-ON}" -DGOW3_CACHELINE_PADDING="${GOW3_CACHELINE_PADDING:-ON}" \
+            -DGOW3_DEV_TOOLS="$dev_tools" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ >/dev/null
+        echo "GPU library and loader ($flavour build, $tree): LTO ${GOW3_LTO:-ON}"
+        if ! ninja -C "$tree" "${targets[@]}" > "out/gpu-build-$flavour.log" 2>&1; then
+            grep -v '^\[' "out/gpu-build-$flavour.log" | tail -40 >&2
+            echo "Build failed (full log: out/gpu-build-$flavour.log)" >&2; exit 1
+        fi
+        if [[ $flavour == release ]]; then
+            cp "$tree/medievil-runtime.exe" "$tree/medievil-gpu-check.exe" "$tree/medievil-play.exe" out/
+            echo "Built $PWD/out/medievil-runtime.exe (release)"
+        else
+            cp "$tree/medievil-runtime.exe" out/medievil-runtime-dev.exe
+            echo "Built $PWD/out/medievil-runtime-dev.exe (dev)"
+        fi
+    done
     exit 0
     ;;
 esac

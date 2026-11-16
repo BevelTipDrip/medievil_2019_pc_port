@@ -9,6 +9,9 @@
 #include "common/logging/log.h"
 #include "common/string_literal.h"
 #include "common/types.h"
+#ifndef GOW3_DEV_TOOLS // gow3: gpu/shim/gow3_dev_tools.h (CMake defines it for every target)
+#define GOW3_DEV_TOOLS 1
+#endif
 #include "video_core/renderer_vulkan/vk_common.h"
 
 namespace Frontend {
@@ -32,6 +35,9 @@ concept VulkanHandleType = vk::isVulkanHandleType<T>::value;
 
 template <VulkanHandleType HandleType>
 void SetObjectName(vk::Device device, const HandleType& handle, std::string_view debug_name) {
+    if constexpr (!GOW3_DEV_TOOLS) {
+        return; // release build: no object names (a driver call per object created)
+    }
     const vk::DebugUtilsObjectNameInfoEXT name_info = {
         .objectType = HandleType::objectType,
         .objectHandle = reinterpret_cast<u64>(static_cast<typename HandleType::NativeType>(handle)),
@@ -46,6 +52,9 @@ void SetObjectName(vk::Device device, const HandleType& handle, std::string_view
 template <VulkanHandleType HandleType, typename... Args>
 void SetObjectName(vk::Device device, const HandleType& handle, const char* format,
                    const Args&... args) {
+    if constexpr (!GOW3_DEV_TOOLS) {
+        return; // release build: not even the name is formatted
+    }
     const std::string debug_name = fmt::vformat(format, fmt::make_format_args(args...));
     SetObjectName(device, handle, debug_name);
 }

@@ -1,5 +1,10 @@
 #ifndef GOW3_RUNTIME_H
 #define GOW3_RUNTIME_H
+/* GOW3_DEV_TOOLS (gpu/CMakeLists.txt, gpu/shim/gow3_dev_tools.h): 1 dev build, 0 release build
+ * (diagnostics compiled out). Compiles outside CMake count as dev. */
+#ifndef GOW3_DEV_TOOLS
+#define GOW3_DEV_TOOLS 1
+#endif
 #include <stdint.h>
 #include <stddef.h>
 #ifdef _WIN32
@@ -144,7 +149,12 @@ uint64_t runtime_image_size(void);
 int runtime_wait_sites_enabled(void);
 uint64_t runtime_wait_now(void);
 void runtime_wait_site(void *return_address, unsigned kind, uint64_t requested_ns, uint64_t actual_ns);
+#if GOW3_DEV_TOOLS
 #define RUNTIME_WAIT_BEGIN() const uint64_t runtime_wait_t0 = runtime_wait_sites_enabled() ? runtime_wait_now() : 0
+#else
+/* Release build: no wait sites (RUNTIME_WAIT_END folds away). */
+#define RUNTIME_WAIT_BEGIN() const uint64_t runtime_wait_t0 = 0
+#endif
 #define RUNTIME_WAIT_END(kind, requested_ns) \
     do { if (runtime_wait_t0) runtime_wait_site(__builtin_return_address(0), (kind), (requested_ns), \
                                                  runtime_wait_now() - runtime_wait_t0); } while (0)

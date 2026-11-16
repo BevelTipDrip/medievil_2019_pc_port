@@ -179,7 +179,7 @@ FPS_LIMITS = [('-2', ('Auto: refresh (VRR: below it, Reflex rule)',)), ('-3', ('
 APP_DEFAULTS = {'ui_language': 'en', 'game_dir': os.environ.get('GOW3_GAME_DIR', str(PORT_DIR.parent / 'medieval' / 'CUSA11227') if WINDOWS else ''), 'user_dir': '',
                 'mods_dir': '', 'mods_enabled': True, 'patches_dir': '', 'language': '1',
                 'player_name': '', 'hdr': False, 'draw_pipe': '', 'readbacks': '', 'vulkan_compat': False,
-                'background_warmup': True, 'parallel_warmup': True, 'pipeline_binary_cache': True, 'perf_diag': False, 'frame_capture_key': False, 'frame_stats': False, 'gpu_profile': False,
+                'background_warmup': True, 'parallel_warmup': True, 'pipeline_binary_cache': True, 'perf_diag': False, 'frame_capture_key': False, 'frame_stats': False, 'gpu_profile': False, 'dev_build': False,
                 'vk_validation': False, 'close_on_play': False, 'prep_workers': '', 'stage_b_core': False,
                 'update_check': True, 'game_patches': {}, 'game_patches_seen': {}, 'controls': {}, 'pad_style': 'playstation', 'stick_range': '',
                 'menu_key': 'Insert', 'mouse': False, 'prompts_prefer_mouse': True,
@@ -590,6 +590,11 @@ def game_environment(s):
         env['GOW3_STAGE_B_CORE'] = '1'
     # The Steam Deck switches are medievil.ini keys now (deck_*): run.py turns them into variables.
     env['GOW3_PIPELINE_BINARIES'] = '1' if s.get('pipeline_binary_cache', True) else '0'
+    # Advanced > Diagnostics > Development build: out/medievil-runtime-dev.exe (build.sh with GOW3_BUILD=dev or
+    # both), the diagnostics below compiled in. Otherwise run.py starts the release build (bin/ or out/
+    # medievil-runtime.exe), where those switches do nothing (study-tooling-off-cost.md step 2).
+    if s.get('dev_build') and (dev := dev_executable()):
+        env.setdefault('GOW3_PROBE', str(dev))
     env.setdefault('GOW3_PERF_DIAG', '1' if s.get('perf_diag', False) else '0')
     for key, name in (('frame_stats', 'GOW3_FRAME_STATS'), ('gpu_profile', 'GOW3_GPU_PROFILE'),
                       ('vk_validation', 'GOW3_VK_VALIDATION'), ('frame_capture_key', 'GOW3_FRAME_CAPTURE_KEY')):
@@ -607,7 +612,8 @@ def game_environment(s):
         env['GOW3_MOUSE'] = '1'  # its sensitivity and the camera switches are medievil.ini keys
         # Keyboard prompts show a game button's mouse button rather than its key (scripts/ue4_glyphs.py).
         env['GOW3_PROMPTS_PREFER_MOUSE'] = '1' if s.get('prompts_prefer_mouse', True) else '0'
-    env.setdefault('GOW3_FPS_LOG', '1')  # FPS and worst frame every 5 s in the log (diagnostics)
+    # GOW3_FPS_LOG=1 (FPS and worst frame every 5 s in the log): off by default since 2026-11-16, periodic
+    # log lines cost frame time stability; extra-env.txt turns it on for a benchmark.
     # Frame statistics (draws, compiles, stalls every 5 s) only with Advanced > Frame statistics:
     # part of them is printed by the draw recording thread and costs frame time stability (T-S2b).
     # F12 in the game saves a PNG screenshot of the game's picture.
@@ -2263,6 +2269,11 @@ class Launcher:
         body = ttk.Frame(f)
         body.columnconfigure(1, weight=1)
         body_row = self.next_row(f)
+        self.check(body, 'dev_build', 'app', _('Development build (the diagnostics below need it)'),
+                   _('Starts out/medievil-runtime-dev.exe (build.sh with GOW3_BUILD=dev or both). The normal '
+                     'build has the diagnostics compiled out: faster, and these switches do nothing there.')
+                   if dev_executable() else
+                   _('Not built: build.sh with GOW3_BUILD=dev or both makes out/medievil-runtime-dev.exe.'))
         self.check(body, 'frame_stats', 'app', _('Frame statistics in the log (every 5 s)', 'Статистика кадров в журнале (раз в 5 с)'))
         self.check(body, 'gpu_profile', 'app', _('GPU time per pass in the log', 'Профиль GPU в журнале'))
         self.check(body, 'perf_diag', 'app', _('GPU wait and readback report in the log (every 5 s)'),
@@ -2999,8 +3010,19 @@ def archive_run_log(log, runs):
     return target
 
 
-def runtime_executable():
-    """The game's executable: bin/ in the Windows package, out/ in a source tree and the AppImage."""
+def dev_executable():
+    """The development build (diagnostics compiled in), built beside the release one in a source tree."""
+    for path in (PORT_DIR / 'out' / 'medievil-runtime-dev.exe', PORT_DIR / 'out' / 'medievil-runtime-dev'):
+        if path.is_file():
+            return path
+    return None
+
+
+def runtime_executable(settings=None):
+    """The game's executable: bin/ in the Windows package, out/ in a source tree and the AppImage; the
+    development build when Advanced > Diagnostics asks for it and it exists (as game_environment)."""
+    if settings and settings.get('dev_build') and (dev := dev_executable()):
+        return dev
     for path in (PORT_DIR / 'bin' / 'medievil-runtime.exe', PORT_DIR / 'out' / 'medievil-runtime.exe',
                  PORT_DIR / 'out' / 'medievil-runtime', PORT_DIR / 'bin' / 'medievil-runtime'):
         if path.is_file():
@@ -3013,7 +3035,7 @@ def run_log_header(settings):
     now = time.localtime()
     lines = [f'Run log: {time.strftime("%Y-%m-%d %H:%M:%S", now)} (local), MediEvil launcher {VERSION}']
     build = []
-    exe = runtime_executable()
+    exe = runtime_executable(settings)
     if exe:
         stat = exe.stat()
         build.append(f'{exe.name} {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(stat.st_mtime))}, '

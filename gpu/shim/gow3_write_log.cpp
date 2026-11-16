@@ -21,7 +21,7 @@ struct Entry {
     std::uint64_t address, size, first, tsc;
     std::uint32_t source, tid;
 };
-constexpr std::size_t Size = 1 << 20;
+constexpr std::size_t Size = GOW3_DEV_TOOLS ? 1 << 20 : 1; // release build: no 40 MiB ring
 std::array<Entry, Size> ring;
 std::atomic<std::uint64_t> head{0};
 // Writes that contained the suspicious qword (see Note), with the exact address.
@@ -39,7 +39,7 @@ void Record(std::uint64_t address, const void* data, std::uint64_t size, Source 
 int Mode() {
     static const int mode = [] {
         const char* env = std::getenv("GOW3_WRITE_LOG");
-        return env ? std::atoi(env) : 0;
+        return GOW3_DEV_TOOLS && env ? std::atoi(env) : 0;
     }();
     return mode;
 }

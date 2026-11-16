@@ -2,6 +2,9 @@
 #pragma once
 
 #include "gow3_async_log.h"
+#ifndef GOW3_DEV_TOOLS // gow3: gpu/shim/gow3_dev_tools.h (CMake defines it for every target)
+#define GOW3_DEV_TOOLS 1
+#endif
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -42,11 +45,15 @@ public:
         return result;
     }
     static bool Enabled() {
+#if GOW3_DEV_TOOLS
         static const bool enabled = [] {
             const char* value = std::getenv("GOW3_PERF_DIAG");
             return value && value[0] == '1';
         }();
         return enabled;
+#else
+        return false; // release build
+#endif
     }
     static WaitDiagnostics& Get() {
         static WaitDiagnostics stats;

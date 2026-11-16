@@ -504,11 +504,16 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
     static int frame_dump_remaining = 0;
     // The trigger file is looked for 4 times a second (a remove() per frame cost 1% of the
     // draw recording thread).
+    // Shift+F12 (the overlay's key handler) asks through an atomic; the file is for outside tools,
+    // dev build only (release: no file poll on this thread).
+    if (frame_dump_remaining == 0 && Gow3Overlay::TakeFrameDumpRequest()) {
+        frame_dump_remaining = frame_dump_count;
+    }
     static auto next_trigger_check = std::chrono::steady_clock::now();
-    const auto trigger_now = std::chrono::steady_clock::now();
-    const bool check_trigger = frame_dump_trigger && frame_dump_remaining == 0 && trigger_now >= next_trigger_check;
+    const bool check_trigger = GOW3_DEV_TOOLS && frame_dump_trigger && frame_dump_remaining == 0 &&
+                               std::chrono::steady_clock::now() >= next_trigger_check;
     if (check_trigger) {
-        next_trigger_check = trigger_now + std::chrono::milliseconds(250);
+        next_trigger_check = std::chrono::steady_clock::now() + std::chrono::milliseconds(250);
     }
     if (check_trigger && std::remove(frame_dump_trigger) == 0) {
         frame_dump_remaining = frame_dump_count;

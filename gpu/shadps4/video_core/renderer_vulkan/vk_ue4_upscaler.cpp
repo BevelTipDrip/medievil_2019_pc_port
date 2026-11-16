@@ -10,6 +10,7 @@
 #include <cstring>
 #include <memory>
 
+#include "gow3_overlay.h"
 #include "gow3_settings.h"
 #include "video_core/renderer_vulkan/vk_dlss.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -211,6 +212,9 @@ void NoteFrame(const char* name, s64 run_ns) {
 } // namespace
 
 bool Ue4Upscaler::StatsOn() {
+    if constexpr (!GOW3_DEV_TOOLS) {
+        return false; // release build
+    }
     static const bool on = [] {
         const char* value = std::getenv("GOW3_UPSCALER_STATS");
         return value && value[0] == '1';
@@ -656,11 +660,8 @@ bool Ue4Upscaler::Run(const u8* view, std::span<const VAddr> reads, VideoCore::I
                         backend->Name(), reset_reason, frame_number, camera_jump);
         }
     }
-    // GOW3_FPS_LOG=0 (the user's quiet runs): no periodic lines.
-    static const bool quiet = [] {
-        const char* value = std::getenv("GOW3_FPS_LOG");
-        return value && std::strcmp(value, "0") == 0;
-    }();
+    // Periodic lines only with GOW3_FPS_LOG=1 (default off).
+    const bool quiet = !Gow3Overlay::FpsLogOn();
     if (++evaluations == 1 || (!quiet && evaluations % 3000 == 0)) {
         std::printf("UE4 upscaler: %s, %llu frames, %llu resets, %ux%u -> %ux%u, jitter %.3f %.3f px\n",
                     backend->Name(), static_cast<unsigned long long>(evaluations),

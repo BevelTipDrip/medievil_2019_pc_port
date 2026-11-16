@@ -155,6 +155,9 @@ void Write(VAddr presented) {
 } // namespace
 
 void FrameCapture::OnFlip(VAddr presented_address) {
+    if constexpr (!GOW3_DEV_TOOLS) {
+        return; // release build: no frame analyzer, no trigger file check
+    }
     last_presented.store(presented_address, std::memory_order_relaxed);
     flips.fetch_add(1, std::memory_order_release);
     static const char* trigger = std::getenv("GOW3_CAPTURE_TRIGGER");
@@ -181,6 +184,9 @@ void FrameCapture::OnFlip(VAddr presented_address) {
 }
 
 void FrameCapture::Request() {
+    if constexpr (!GOW3_DEV_TOOLS) {
+        return;
+    }
     SetResult("Capturing the next frame...");
     requested.store(true, std::memory_order_release);
 }
@@ -238,7 +244,7 @@ TargetWatchSpec& WatchSpec() {
 } // namespace
 
 bool FrameCapture::TargetWatch() {
-    return WatchSpec().remaining != 0;
+    return GOW3_DEV_TOOLS && WatchSpec().remaining != 0;
 }
 
 void FrameCapture::StartForTarget(const VideoCore::ImageInfo* const* colors, u32 num_colors) {

@@ -96,7 +96,10 @@ Functional, keep in release: `Gow3Sections::recording_thread`, `download_reason`
    on their own cache lines. Runtime: `memory_calls`, the mutex / cond counters, `queries` and the ungated pool
    counters only with frame stats on; the exit report leaves those lines out otherwise. A/B: a copy of today's exe
    against the new one, same settings, judged by lows (one change).
-2. **Step 2, `GOW3_DEV_TOOLS`.** Gates become `constexpr false` in release (`Gow3Stats::enabled`,
+2. **Step 2, `GOW3_DEV_TOOLS`.** Fix built 2026-11-16 (card `tooling/dev-tools-build`; the user: flip trace kept in
+   release, a separate dev exe chosen in the launcher, copy-fault trace off in release). Not compiled out after all:
+   the runtime C's direct reads of the toggle words (a load of a word that stays 0), fence-stats residue (TLS stores,
+   one exchange per submission). Planned: gates become `constexpr false` in release (`Gow3Stats::enabled`,
    `Gow3Sections::Enabled`, `WaitDiagnostics::Enabled`, `CacheStatsEnabled`, `StatsOn`, flip-trace `Get`, wait-sites,
    toggle words, `LOG_*` level); file polls replaced by key-handler atomics; object naming off; the 40 MiB ring out.
    Build script release variant; the run log's first line names the build type; LANDMINES: A/B only within one build

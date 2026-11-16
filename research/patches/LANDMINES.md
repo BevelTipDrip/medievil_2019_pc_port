@@ -139,6 +139,14 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
 17. **Thread nice**: if the live bit is already set when stage B starts, stage B keeps nice -10; live off never
     restores the vblank thread's timer slack ([thread-nice](deck/thread-nice.md)).
 
+8c. **Release and dev builds are different programs from 2026-11-16** ([dev-tools-build](tooling/dev-tools-build.md)):
+   `out/medievil-runtime.exe` (what the launcher runs) is the release build, with the diagnostics compiled out;
+   `out/medievil-runtime-dev.exe` (Advanced > Diagnostics > Development build) has them. Every run before that date
+   used today's dev build. Compare runs only within one build type: the run log's first runtime line says
+   `Runtime: release build` or `Runtime: dev build`. In a release build `GOW3_FRAME_STATS`, `GOW3_SECTIONS`, the toggle
+   file, `GOW3_WAIT_SITES` / `GOW3_WAIT_TRACE` and the F11 analyzer do nothing, silently. Also from that build:
+   `GOW3_FPS_LOG` is off unless `=1` (the launcher set 1 before), and the release build's copy-fault trace is off.
+
 ## Hidden dependencies (traps for the next change)
 
 18. `perf_lockfree_memory=0` also turns off A1 and R1-region-index (they need the optimistic clamp and the region

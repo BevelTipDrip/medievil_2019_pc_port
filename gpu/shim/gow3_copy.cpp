@@ -239,9 +239,10 @@ thread_local Batch batch;
 
 thread_local ReadingGuest reading_guest;
 
+// Release build: default off (GOW3_COPY_FAULT_LOG=1 turns it on); dev build: default on.
 const bool fault_log_enabled = [] {
     const char* env = std::getenv("GOW3_COPY_FAULT_LOG");
-    return !(env && env[0] == '0');
+    return GOW3_DEV_TOOLS ? !(env && env[0] == '0') : (env && env[0] == '1');
 }();
 
 bool Enabled() {

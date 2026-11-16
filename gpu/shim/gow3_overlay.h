@@ -40,6 +40,13 @@ bool Visible();
 /// F12: true once after a screenshot was asked for (the presenter saves the next frame).
 bool TakeScreenshotRequest();
 
+/// Shift+F12: true once after raw frames for a bug report were asked for (the presenter dumps from
+/// its next frame).
+bool TakeFrameDumpRequest();
+
+/// GOW3_FPS_LOG=1 (default off): periodic FPS / upscaler / motion lines in the log.
+bool FpsLogOn();
+
 /// Counts a presented frame for GOW3_FPS_LOG.
 void LogPresent();
 

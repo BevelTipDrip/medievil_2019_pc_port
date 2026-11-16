@@ -28,7 +28,7 @@
 
 extern Gow3ActorSlot gow3_actor_slots[2];
 namespace Gow3Overlay {
-extern std::atomic<bool> screenshot_requested;
+extern std::atomic<bool> screenshot_requested, frame_dump_requested;
 }
 extern "C" void runtime_restart(void); // src/probe.c: starts run.py again, ends this process
 extern "C" void runtime_ue4_request_cvar(const char* name, const char* value); // live console variables
@@ -3024,9 +3024,10 @@ bool HandleEvent(const SDL_Event& event) {
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP: {
         const bool down = event.type == SDL_EVENT_KEY_DOWN;
+        // Release build: no frame analyzer (vk_frame_capture.h), F11 goes to the game.
         static const bool capture_key = [] {
             const char* env = std::getenv("GOW3_FRAME_CAPTURE_KEY");
-            return env && *env == '1';
+            return GOW3_DEV_TOOLS && env && *env == '1';
         }();
         if (down && !event.key.repeat && capture_key && event.key.key == SDLK_F11) {
             Vulkan::FrameCapture::Request();
@@ -3053,21 +3054,19 @@ bool HandleEvent(const SDL_Event& event) {
             Vulkan::Ue4Motion::CycleViewMode();
             return true;
         }
-        // F12: a PNG screenshot of the game's picture. Shift+F12: raw frames for bug reports
-        // (GOW3_FRAME_DUMP_TRIGGER, set by the launcher).
+        // F12: a PNG screenshot of the game's picture. Shift+F12: raw frames for bug reports (the
+        // presenter takes the request at its next frame; GOW3_DUMP_DIR, GOW3_FRAME_DUMP_COUNT).
+        // Until 2026-11-16 the key wrote the GOW3_FRAME_DUMP_TRIGGER file that the presenter
+        // polls; the file still works in a dev build (outside tools), not in a release build.
         if (down && !event.key.repeat && plain_key && event.key.key == SDLK_F12 &&
             !(event.key.mod & SDL_KMOD_SHIFT)) {
             screenshot_requested.store(true, std::memory_order_release);
             return true;
         }
         if (down && !event.key.repeat && plain_key && event.key.key == SDLK_F12) {
-            if (const char* trigger = std::getenv("GOW3_FRAME_DUMP_TRIGGER")) {
-                if (std::FILE* f = std::fopen(trigger, "wb")) {
-                    std::fclose(f);
-                    std::printf("Overlay: F12 frame dump requested\n");
-                    std::fflush(stdout);
-                }
-            }
+            frame_dump_requested.store(true, std::memory_order_release);
+            std::printf("Overlay: F12 frame dump requested\n");
+            std::fflush(stdout);
             return true;
         }
         if (down && !event.key.repeat && event.key.key == MenuKey()) {
@@ -3215,9 +3214,16 @@ void SetLoading(bool active, u32 done, u32 total) {
 }
 
 std::atomic<bool> screenshot_requested{false};
+std::atomic<bool> frame_dump_requested{false};
 
 bool TakeScreenshotRequest() {
     return screenshot_requested.exchange(false, std::memory_order_acq_rel);
+}
+
+bool TakeFrameDumpRequest() {
+    // A load first: no locked exchange on the present path while nothing is asked for.
+    return frame_dump_requested.load(std::memory_order_relaxed) &&
+           frame_dump_requested.exchange(false, std::memory_order_acq_rel);
 }
 
 bool Visible() {
@@ -3296,13 +3302,19 @@ void SetTextEntry(bool active, const std::string& prompt, const std::string& tex
     text_entry_text = text;
 }
 
-// GOW3_FPS_LOG=1: presented frames per second and the worst frame, every 5 s (benchmarks). The launcher
-// sets 1; 0 (extra-env.txt) turns it off for a run without periodic log lines.
-void LogPresent() {
-    static const bool fps_log = [] {
+// GOW3_FPS_LOG=1: presented frames per second and the worst frame, every 5 s (benchmarks). Off by
+// default since 2026-11-16 (until then the launcher set 1): periodic log lines during play cost frame time
+// stability. Also the switch for the UE4 motion / upscaler periodic lines (FpsLogOn).
+bool FpsLogOn() {
+    static const bool on = [] {
         const char* value = std::getenv("GOW3_FPS_LOG");
-        return value != nullptr && std::strcmp(value, "0") != 0;
+        return value != nullptr && value[0] == '1';
     }();
+    return on;
+}
+
+void LogPresent() {
+    const bool fps_log = FpsLogOn();
     if (!fps_log) {
         return;
     }

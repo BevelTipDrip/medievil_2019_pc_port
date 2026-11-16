@@ -4,7 +4,7 @@ One line per card. Open a card for invariants, interactions and evidence; look u
 reading: `patchmap.py file <path>` / `switch <name>` / `commit <hash>` / `test <id>`.
 Card format and statuses: [README.md](README.md). W / D = default on Windows / Deck.
 
-229 cards.
+230 cards.
 
 ## memory
 
@@ -280,6 +280,7 @@ _diagnostics, tracing, capture, stats, research tools (no gameplay effect)_
 | [avplayer-trace](tooling/avplayer-trace.md) | diagnostic | on / on | lab |  | AvPlayer trace: player calls and the frames each player delivered |
 | [copy-fault-trace](tooling/copy-fault-trace.md) | diagnostic | on / on | copy-fault-trace | GOW3_COPY_FAULT_LOG | GOW3_COPY_FAULT_LOG: a guest fault inside a host copy logged before and after it is handled (thread, copy, protection, age) |
 | [deck-test-tooling](tooling/deck-test-tooling.md) | diagnostic | off / off | deck-lab | GOW3_TOGGLE_FILE, GOW3_FLIP_TRACE | Clock push-pull tooling: APU trace beside the flip trace, frame alignment, live frame cap as the toggle file's third word |
+| [dev-tools-build](tooling/dev-tools-build.md) | active | on / off | - | GOW3_DEV_TOOLS, GOW3_BUILD, GOW3_FPS_LOG … | Release and dev builds (GOW3_DEV_TOOLS): the release build has the diagnostics compiled out; the launcher runs it unless Development build is ticked |
 | [draw-classes](tooling/draw-classes.md) | diagnostic | off / off | deck-lab | GOW3_FRAME_STATS | N0: recorded draws per frame by class; particle sim on the previous run's target |
 | [fence-stats](tooling/fence-stats.md) | diagnostic | off / off | deck-lab | GOW3_FRAME_STATS | Deck gate 2 stats: guest fence waits, submission lock, cache actions, faults by PS4 type, fence lag, invalidations |
 | [flip-trace](tooling/flip-trace.md) | diagnostic | off / off | lab | GOW3_FLIP_TRACE, GOW3_FLIP_TRACE_GPU_READY, present_frame_trace | GOW3_FLIP_TRACE: per-flip timestamps from submit to the game's flip event, gpu_ready, present_start, WPR clock origin |

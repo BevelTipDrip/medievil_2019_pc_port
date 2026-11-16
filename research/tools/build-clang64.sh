@@ -2,6 +2,7 @@
 # Builds the port in MSYS2 CLANG64 and writes out/build.log.
 # From PowerShell (no quoting through PowerShell 5.1, which strips inner double quotes):
 #   $env:MSYSTEM='CLANG64'; & C:\msys64\usr\bin\bash.exe -l /c/Users/Ty/MediEvil/medievil_2019_pc_port/research/tools/build-clang64.sh
+# Release build by default (out/medievil-runtime.exe); $env:GOW3_BUILD='dev' or 'both' for out/medievil-runtime-dev.exe.
 cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 1
 mkdir -p out
 (

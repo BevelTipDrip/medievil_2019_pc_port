@@ -12,6 +12,9 @@
 #include <vector>
 
 #include "common/types.h"
+#ifndef GOW3_DEV_TOOLS // gow3: gpu/shim/gow3_dev_tools.h (CMake defines it for every target)
+#define GOW3_DEV_TOOLS 1
+#endif
 
 namespace VideoCore {
 struct ImageInfo;
@@ -30,8 +33,13 @@ public:
     static bool IsDisplayBuffer(VAddr address);
 
     /// GPU thread: whether passes are being looked at (armed or recording; cheap).
+    /// Release build: the frame analyzer is not compiled in (F11, the trigger file, target watch).
     static bool Active() {
+#if GOW3_DEV_TOOLS
         return state.load(std::memory_order_relaxed) != Idle;
+#else
+        return false;
+#endif
     }
     /// GPU thread, at every draw/dispatch: starts or ends a recording at frame boundaries.
     static void Poll();
@@ -47,7 +55,8 @@ public:
     /// Whether the current recording was started by StartForTarget (the rasterizer then logs the
     /// sampled float textures' texel statistics, TextureCache::LogTexelStats).
     static bool TargetRecording() {
-        return target_recording && state.load(std::memory_order_relaxed) == Recording;
+        return GOW3_DEV_TOOLS && target_recording &&
+               state.load(std::memory_order_relaxed) == Recording;
     }
     static void Draw(u64 vs_hash, u64 ps_hash, u32 num_indices, u32 num_instances);
     static void Dispatch(u64 cs_hash, u32 x, u32 y, u32 z);

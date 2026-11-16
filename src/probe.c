@@ -1339,6 +1339,8 @@ int main(int argc, char **argv) {
         SetStdHandle(STD_ERROR_HANDLE,(HANDLE)_get_osfhandle(_fileno(stderr)));
     }
 #endif
+    /* The run log names the build: A/B only between runs of the same build type (LANDMINES). */
+    printf("Runtime: %s build (GOW3_DEV_TOOLS=%d)\n", GOW3_DEV_TOOLS ? "dev" : "release", GOW3_DEV_TOOLS);
 #ifndef _WIN32
     /* Keep host heap objects handed to the guest (thread handles, TLS) in the
        non-PIE brk heap, i.e. below 1 TiB: the guest packs pointers into 40 bits. */

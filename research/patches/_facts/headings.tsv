@@ -5,7 +5,7 @@ START-HERE.md	29	2	rules-the-users-also-in-claudes-memory	Rules (the user's; als
 START-HERE.md	56	2	current-state-table-last-fully-updated-2026-10-18	Current state (table last fully updated 2026-10-18)
 START-HERE.md	78	2	knobs-and-triggers	Knobs and triggers
 START-HERE.md	95	2	document-index	Document index
-START-HERE.md	133	2	elsewhere	Elsewhere
+START-HERE.md	134	2	elsewhere	Elsewhere
 building-and-tools.md	1	1	building-and-tools	Building and tools
 building-and-tools.md	5	2	paths	Paths
 building-and-tools.md	19	2	toolchain-installed-2026-10-18	Toolchain (installed 2026-10-18)
@@ -600,7 +600,7 @@ plan-work-queue.md	7	2	the-users-quality-of-life-list-2026-11-03-after-the-v200-
 plan-work-queue.md	44	2	the-users-order-2026-10-30	The user's order (2026-10-30)
 plan-work-queue.md	73	2	pending-fixes-research-2026-10-29-ranked-there-state-now	Pending fixes (research 2026-10-29, ranked there; state now)
 plan-work-queue.md	101	2	found-on-the-way-2026-10-30	Found on the way (2026-10-30)
-plan-work-queue.md	140	2	from-github-issues	From GitHub issues
+plan-work-queue.md	141	2	from-github-issues	From GitHub issues
 pr-checklist.md	1	1	pr-checklist-the-bar-for-anything-proposed-upstream	PR checklist: the bar for anything proposed upstream
 pr-checklist.md	7	2	scope	Scope
 pr-checklist.md	14	2	code	Code
@@ -668,6 +668,13 @@ study-camera-moves.md	171	2	5-risks-and-unknowns	5. Risks and unknowns
 study-camera-moves.md	192	2	6-first-build-gow3_camera_off-override-pak-2026-11-11-replaced-by-section-7	6. First build: `GOW3_CAMERA_OFF` (override pak, 2026-11-11; replaced by section 7)
 study-camera-moves.md	215	2	7-built-live-switches-in-the-menus-controls-tab-10beddc-2026-11-11	7. Built: live switches in the menu's Controls tab (`10beddc`, 2026-11-11)
 study-camera-moves.md	240	2	8-vertical-look-pitch-read-for-the-mouse-2026-11-11	8. Vertical look (pitch), read for the mouse (2026-11-11)
+study-compiler-optimizations.md	1	1	compiler-level-optimizations-what-is-left-research-2026-11-16-no-launch	Compiler-level optimizations: what is left (research, 2026-11-16, no launch)
+study-compiler-optimizations.md	10	2	what-flags-can-reach	What flags can reach
+study-compiler-optimizations.md	20	2	todays-flags-windows-v	Today's flags (Windows) [V]
+study-compiler-optimizations.md	32	2	findings	Findings
+study-compiler-optimizations.md	63	2	rejected	Rejected
+study-compiler-optimizations.md	72	2	ranked-candidates	Ranked candidates
+study-compiler-optimizations.md	88	2	scratch-material	Scratch material
 study-deck-apu-deep-dive.md	1	1	study-the-decks-apu-and-linux-platform-in-depth-for-stage-b	Study: the Deck's APU and Linux platform, in depth, for stage B
 study-deck-apu-deep-dive.md	19	2	answer	Answer
 study-deck-apu-deep-dive.md	65	2	1-the-core-and-memory-seen-from-stage-b	1. The core and memory, seen from stage B

@@ -52,7 +52,8 @@ struct ReadingGuest {
 };
 extern thread_local ReadingGuest reading_guest;
 
-/// GOW3_COPY_FAULT_LOG (default on; 0: off, and the scopes below do nothing). Read once at start.
+/// GOW3_COPY_FAULT_LOG (dev build: default on, 0 off; release build: default off, 1 on; off, the scopes below
+/// do nothing). Read once at start.
 extern const bool fault_log_enabled;
 
 /// Sets reading_guest's range for its lifetime.

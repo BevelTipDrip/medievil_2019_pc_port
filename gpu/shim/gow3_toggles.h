@@ -1,6 +1,7 @@
 // gow3: optimizations that can be switched off while the game runs (GOW3_TOGGLE_FILE,
 // see runtime_memory.c), to find which one changes rendering without restarting.
 #pragma once
+#include "gow3_dev_tools.h"
 #include <atomic>
 #include <csetjmp>
 #include <chrono>
@@ -87,8 +88,13 @@ enum : std::uint64_t {
     TargetedHostCopyWaits = 1ull << 62, ///< WRITE_DATA waits only for copies reading its range
     // Bits 20-29 are used as raw debug toggles by the camera/object motion and the upscaler.
 };
-inline bool Disabled(std::uint64_t bit) {
+/// Release build: no toggle file (runtime_memory.c starts no watcher), nothing is switched off.
+inline bool Disabled([[maybe_unused]] std::uint64_t bit) {
+#if GOW3_DEV_TOOLS
     return (__atomic_load_n(&runtime_disabled_optimizations, __ATOMIC_RELAXED) & bit) != 0;
+#else
+    return false;
+#endif
 }
 } // namespace Gow3Toggle
 
@@ -185,8 +191,12 @@ enum : std::uint64_t {
     /// until done, as before (live).
     SignalSleepOff = 16777216,
 };
-inline bool Disabled(std::uint64_t bit) {
+inline bool Disabled([[maybe_unused]] std::uint64_t bit) {
+#if GOW3_DEV_TOOLS
     return (__atomic_load_n(&runtime_disabled_optimizations2, __ATOMIC_RELAXED) & bit) != 0;
+#else
+    return false;
+#endif
 }
 } // namespace Gow3Toggle2
 
@@ -310,13 +320,18 @@ inline std::atomic<std::uint64_t> t_resident{0}, t_protect{0}, t_image_create{0}
 /// of it kept missing.
 struct alignas(64) Switch {
     bool on;
-    operator bool() const { return on; }
+    constexpr operator bool() const { return on; }
 };
+#if GOW3_DEV_TOOLS
 /// Diagnostics are collected only with GOW3_FRAME_STATS=1.
 inline const Switch enabled{[] {
     const char* env = std::getenv("GOW3_FRAME_STATS");
     return env && env[0] == '1';
 }()};
+#else
+/// Release build: no frame stats; every test of `enabled` folds away.
+inline constexpr Switch enabled{false};
+#endif
 /// Adds to / subtracts from a counter only with GOW3_FRAME_STATS=1. Until 2026-11-16 most counters
 /// were bumped whatever the switch: locked adds per draw on stage A and B, some on the cache line
 /// that holds `enabled` itself (study-tooling-off-cost.md).

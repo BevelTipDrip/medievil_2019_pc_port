@@ -6,6 +6,7 @@
 // as "Draw classes per frame: ..."; every counter is reset by the report.
 #pragma once
 
+#include "gow3_dev_tools.h"
 #include <array>
 #include <atomic>
 #include <chrono>
@@ -130,11 +131,13 @@ inline void Note(Class c, std::uint64_t draw_cycles, std::uint64_t ps, std::uint
 /// One recorded draw: its time from construction to destruction, counted in the class set
 /// after its targets are known (nothing without GOW3_FRAME_STATS: `enabled` false).
 struct Scope {
-    explicit Scope(bool enabled) : start{enabled ? __rdtsc() : 0} {}
+    explicit Scope(bool enabled) : start{GOW3_DEV_TOOLS && enabled ? __rdtsc() : 0} {}
     ~Scope() {
+#if GOW3_DEV_TOOLS // release build: an empty destructor, nothing called per draw
         if (start && cls != Count) {
             Note(cls, __rdtsc() - start, ps, target);
         }
+#endif
     }
     std::uint64_t start;
     Class cls = Count;

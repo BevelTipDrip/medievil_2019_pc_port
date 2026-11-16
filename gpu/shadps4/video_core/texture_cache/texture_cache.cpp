@@ -92,6 +92,9 @@ struct CacheStats {
 };
 CacheStats cache_stats;
 bool CacheStatsEnabled() {
+    if constexpr (!GOW3_DEV_TOOLS) {
+        return false; // release build
+    }
     static const bool enabled = [] {
         const char* value = std::getenv("GOW3_TEXCACHE_STATS");
         return value && value[0] == '1';
