@@ -25,7 +25,7 @@ Stages: `submit` (video_out.cpp, the game registers the flip), `irq` / `submit_d
 `queued` (present recorded), `release` (present thread / limiter), `reflex_wake`, `presented`, `flipdone` (the
 game's flip event), `dropped`. `d07cc4b` adds `gpu_ready`: `Presenter::TraceGpuReady` queues the frame's ready
 semaphore and tick for a `gow3:GpuReady` thread that waits on it and notes the time. It is started only when the
-trace is on. `8f67180` adds `present_start` right before `vkQueuePresentKHR`. `daeebdb` writes a first row `start`
+trace is on (since 2026-11-16 only with `GOW3_FLIP_TRACE_GPU_READY=1`). `8f67180` adds `present_start` right before `vkQueuePresentKHR`. `daeebdb` writes a first row `start`
 holding the trace origin in steady_clock ns (QueryPerformanceCounter on Windows), to line up with WPR. `d032cd4` adds a `wall` row (`wall,<Unix time ns>,<ns since start>`, read between two steady clock reads): an ETL's start time is wall clock, so a frame maps onto ETW to the microsecond (the start row alone: +-0.5 s, the ETL's boot time is printed to 0.1 s). The
 launcher's Advanced > Diagnostics "Frame timing trace" (`present_frame_trace`, `FRAME_TRACE`, added with the
 Presentation settings in `44994b9`, presentation-settings) sets the variable to `user/logs/flip-trace.csv` through
@@ -34,8 +34,10 @@ Presentation settings in `44994b9`, presentation-settings) sets the variable to 
 Since 2026-11-15 the rows are kept in memory (24-byte rows in 65,536-row chunks) and `Write()` writes the file once:
 at the window-close exit (`gow3gpu.cpp`, before `std::_Exit`, which skips atexit), at atexit (the game's own
 `exit()`), and from the Windows crash handler (`probe.c` -> `gow3gpu_flip_trace_write`). The log says
-"Flip trace: N rows written to <file>". `GOW3_FLIP_TRACE_GPU_READY=0` leaves out the `gpu_ready` rows and their
-thread. `flip-trace-bench <dir>` (tests/bench_flip_trace.cpp) times the old writer against the new `Note`.
+"Flip trace: N rows written to <file>". `gpu_ready` rows and their thread are opt-in since 2026-11-16
+(`GOW3_FLIP_TRACE_GPU_READY=1`): the thread cost small overshoots at 237 FPS (Evidence). Without them
+`flip_slow_stages.py` leaves out its GPU column and `etw_common.flip_frames` stops requiring the stage;
+`frame_clocks.py` and `flip_stages.py` show NaN for it. Deck GPU studies need `=1` (deck.sh's trace note). `flip-trace-bench <dir>` (tests/bench_flip_trace.cpp) times the old writer against the new `Note`.
 
 ## Invariants
 
@@ -47,7 +49,7 @@ thread. `flip-trace-bench <dir>` (tests/bench_flip_trace.cpp) times the old writ
   ("Flip trace: not written (busy)") rather than hang the exit.
 - `flip_arg` is the game's frame tag: tools join stages by it (`flip_stages.py` keys rows by `flip_arg`). A new
   stage must note the same tag as the frame's other stages.
-- `gpu_ready` waits at most 1 s per frame, in queue order; a frame not finished by then has no `gpu_ready` row.
+- `gpu_ready` (only with `GOW3_FLIP_TRACE_GPU_READY=1`) waits at most 1 s per frame, in queue order; a frame not finished by then has no `gpu_ready` row.
 - The `start` row's ns must stay the absolute origin (not 0), and later rows relative to it: `flip_toggle_ab.py`
   (and `frame_clocks.py`, `state_power.py`) and WPR alignment read it. It carries `flip_arg` 0, so tools that key by
   `flip_arg` (`flip_stages.py`) file it under frame tag 0. It is captured when `Get()` first runs.
@@ -73,6 +75,10 @@ thread. `flip-trace-bench <dir>` (tests/bench_flip_trace.cpp) times the old writ
   view: 228.5 FPS, p99.9 4.95, worst 14.2, 16 > 6 ms). RTSS at the end: 1% low 229.2, 0.1% low 217.5 (the screenshot
   dips it; logs off: 233.2 / 227.7). The other stretches were first-time asset loading (stalls to 1.19 s) and heavy
   combat (~224 FPS, nothing > 8 ms), per the user.
+- 2026-11-16, the same with `GOW3_FLIP_TRACE_GPU_READY=0` (one change, 555 s): steady 300-550 s 236.9 FPS, p99.9
+  4.50 ms, worst 4.66 ms, 0 frames > 4.7 ms (gpu_ready on: 7 and 96 in its two stretches, worst 5.6 / 5.9). The
+  user: stutters less frequent and smaller, spikes only on loading and first-time asset streaming. One run each,
+  scenes not identical; enough to make gpu_ready opt-in.
 - Deck native run 4: submit -> irq 12.53 ms, queued -> gpu_ready 15.62 ms (PC 0.26 / 0.44): the Deck's GPU is busy
   almost the whole frame.
 
@@ -85,6 +91,7 @@ thread. `flip-trace-bench <dir>` (tests/bench_flip_trace.cpp) times the old writ
   spikes every few seconds; with every log off, RTSS 236.6 current, 1% low 233.2, 0.1% low 227.7 (cap 237), flat
   graph (same build and switches, only `present_frame_trace` changed). The trace's cost is large: A/B lows taken
   with it on are its spikes (LANDMINES 8b). Same day: rows kept in memory, written at exit (fix built, run;
-  Evidence). Traces from earlier builds still carry the old cost.
+  Evidence). Traces from earlier builds still carry the old cost. 2026-11-16: gpu_ready opt-in (its thread's
+  overshoots); traces from 2026-11-15 and earlier have gpu_ready rows unless it was set to 0.
 - "T-L2" also names the L2 region-bucket run (plan-stage-b-split.md); this card's is the flip-trace run.
 - Not verified in game: diagnostics only.

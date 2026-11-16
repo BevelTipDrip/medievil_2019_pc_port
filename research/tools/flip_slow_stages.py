@@ -13,7 +13,11 @@ ratio = float(sys.argv[3]) if len(sys.argv) > 3 else 1.25
 ev = collections.defaultdict(dict)
 for r in csv.DictReader(open(path)):
     ev[int(r['flip_arg'])].setdefault(r['stage'], int(r['ns']))
-need = ('submit', 'irq', 'queued', 'gpu_ready', 'present_start', 'presented')
+# gpu_ready rows only with GOW3_FLIP_TRACE_GPU_READY=1; without them GPU time is not split out.
+has_gpu = any('gpu_ready' in e for e in ev.values())
+if not has_gpu:
+    print('no gpu_ready rows (GOW3_FLIP_TRACE_GPU_READY=1 for them): queued -> present_start (GPU) not shown')
+need = ('submit', 'irq', 'queued') + (('gpu_ready',) if has_gpu else ()) + ('present_start', 'presented')
 args = sorted(x for x in ev if all(k in ev[x] for k in need))
 rows = []
 for i in range(1, len(args)):
@@ -23,9 +27,10 @@ for i in range(1, len(args)):
         continue
     ms = lambda x, y: (e[y] - e[x]) / 1e6
     rows.append(dict(t=t, ft=(e['presented'] - p['presented']) / 1e6, game=(e['submit'] - p['submit']) / 1e6,
-                     A=ms('submit', 'irq'), Brec=ms('irq', 'queued'), GPU=ms('queued', 'gpu_ready'),
+                     A=ms('submit', 'irq'), Brec=ms('irq', 'queued'),
+                     GPU=ms('queued', 'gpu_ready') if has_gpu else 0.0,
                      present=ms('present_start', 'presented')))
-keys = ('game', 'A', 'Brec', 'GPU', 'present')
+keys = ('game', 'A', 'Brec') + (('GPU',) if has_gpu else ()) + ('present',)
 blame = collections.Counter(); excess = collections.defaultdict(list); slow = 0
 times = [r['t'] for r in rows]
 import bisect

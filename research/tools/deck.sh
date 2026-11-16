@@ -108,7 +108,8 @@ summary)
     ;;
 trace)
     # The flip trace needs GOW3_FLIP_TRACE=/home/deck/.local/share/medievil-pc/user/flip-trace.csv in
-    # extra-env.txt before the start (the game opens the file once); frame_clocks.py lines the two up.
+    # extra-env.txt before the start, and GOW3_FLIP_TRACE_GPU_READY=1 for the GPU column (off by default
+    # since 2026-11-16); frame_clocks.py lines the two up.
     seconds=${1:-60}; interval=${2:-8}
     running || { echo 'game not running' >&2; exit 1; }
     remote 'cat > ~/MediEvil/apu_trace.py' < "$here/apu_trace.py"

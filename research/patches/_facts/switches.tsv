@@ -62,8 +62,8 @@ GOW3_FAULT_PAGE_DOWNLOAD	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cac
 GOW3_FAULT_WINDOW	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:840
 GOW3_FILE_TRACE	upstream	src/runtime_file.c:244
 GOW3_FLIP_DEFERRED	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:621
-GOW3_FLIP_TRACE	upstream	gpu/shim/gow3_flip_trace.h:51 tests/bench_flip_trace.cpp:71 tests/bench_flip_trace.cpp:73
-GOW3_FLIP_TRACE_GPU_READY	ours	gpu/shim/gow3_flip_trace.h:82
+GOW3_FLIP_TRACE	upstream	gpu/shim/gow3_flip_trace.h:53 tests/bench_flip_trace.cpp:71 tests/bench_flip_trace.cpp:73
+GOW3_FLIP_TRACE_GPU_READY	ours	gpu/shim/gow3_flip_trace.h:84
 GOW3_FORCE_ANISO	upstream	gpu/shadps4/video_core/texture_cache/sampler.cpp:20
 GOW3_FPS_CAP	upstream	gpu/shim/core/emulator_settings.h:52
 GOW3_FPS_LIMIT	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1478 gpu/shim/core/emulator_settings.h:46

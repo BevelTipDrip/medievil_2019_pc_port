@@ -115,11 +115,14 @@ def flip_to_etw(flip_csv, etl_start_local):
 
 
 def flip_frames(flip_csv, stages=('submit', 'irq', 'queued', 'gpu_ready', 'present_start', 'presented')):
-    """{flip_arg: {stage: ns}} with every listed stage present."""
+    """{flip_arg: {stage: ns}} with every listed stage present. A stage with no rows in the whole file
+    (gpu_ready unless GOW3_FLIP_TRACE_GPU_READY=1) is not required."""
     ev = collections.defaultdict(dict)
     with open(flip_csv, newline='') as f:
         r = csv.reader(f); next(r)
         for st, arg, ns in r:
             if st in stages:
                 ev[int(arg)].setdefault(st, int(ns))
-    return {a: e for a, e in ev.items() if len(e) == len(stages)}
+    seen = set().union(*ev.values()) if ev else set()
+    need = [s for s in stages if s in seen]
+    return {a: e for a, e in ev.items() if all(s in e for s in need)}

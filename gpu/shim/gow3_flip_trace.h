@@ -13,7 +13,9 @@
 // from the window-close exit (gow3gpu.cpp, std::_Exit), atexit (the game's exit()) and the Windows
 // crash handler (gow3gpu_flip_trace_write); a process killed from outside writes nothing. ~24 bytes
 // a row, ~1,900 rows a second at 237 FPS: ~80 MB an hour.
-// GOW3_FLIP_TRACE_GPU_READY=0: no gpu_ready rows (no thread waiting on every frame's GPU work).
+// GOW3_FLIP_TRACE_GPU_READY=1: also gpu_ready rows (when the GPU finished each frame), from a thread
+// that waits on every frame's GPU work. Off by default since 2026-11-16: that thread cost small
+// overshoots in a 237 FPS static view (worst frame 5.9 ms with it, 4.66 ms without).
 #pragma once
 
 #include <chrono>
@@ -80,7 +82,7 @@ inline bool Enabled() {
 inline bool GpuReadyEnabled() {
     static const bool on = [] {
         const char* value = std::getenv("GOW3_FLIP_TRACE_GPU_READY");
-        return Enabled() && !(value && value[0] == '0');
+        return Enabled() && value && value[0] && value[0] != '0';
     }();
     return on;
 }
