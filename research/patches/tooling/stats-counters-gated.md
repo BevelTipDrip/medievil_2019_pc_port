@@ -69,7 +69,13 @@ Step 1 of the off-cost work (study-tooling-off-cost.md). Counters the frame-stat
   stage B, not measured.
 - Fix built (2026-11-16 08:16): `guest_memcpy` tests the flag, then skips the `lock incq`; `Gow3Stats::enabled` at
   0x1433baf80, next symbol at bafc0; the runtime flag at 0x140b723c0, next at 72400. `mutex-test`: all passed.
-- A/B: to run (baseline `out/medievil-runtime-baseline-aa4c74b.exe` against this build, same settings).
+- A/B, run (2026-11-16, 4K 75% DLSS, flip trace on, logs off, frame stats off; baseline `aa4c74b` run first, then
+  this build; traces `flip-S0` / `flip-S1`, 20 s windows grouped). Steady at the cap: 236.6 / 237.0 FPS, worst
+  4.77 / 4.70 ms, 0 frames > 6 ms in both. Heavy (combat, busy views, windows < 235 FPS): average 225.6 / 225.3 FPS,
+  p99.9 6.07 -> 5.79 ms, 0.1% low 133.9 -> 152.8 FPS, frames > 6 ms 18.5 -> 3.6 a minute, > 8 ms 1.7 -> 0.6.
+  Loading windows: worst 909 -> 608 ms, > 6 ms 254 -> 132 a minute (weaker: the second run had a warm file cache).
+  The user: "That seemed to clean up most of the remaining stutters, and the ones from asset loads seemed to be
+  reduced in amplitude." One run each, combat not identical; a reverse-order pair would rule out run order.
 
 ## History and pitfalls
 

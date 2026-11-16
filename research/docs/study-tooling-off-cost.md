@@ -89,7 +89,9 @@ Functional, keep in release: `Gow3Sections::recording_thread`, `download_reason`
 
 ## Plan
 
-1. **Step 1, the unconditional counters (no build option).** GPU: every `Gow3Stats` counter, the draw-pipe
+1. **Step 1, the unconditional counters (no build option).** Run 2026-11-16 (`fa136ee`, card
+   `tooling/stats-counters-gated`): under load frames > 6 ms 18.5 -> 3.6 a minute, 0.1% low 133.9 -> 152.8 FPS;
+   unchanged at the cap. GPU: every `Gow3Stats` counter, the draw-pipe
    `rdtsc` timing, `WaitTimer` and stage A idle accounting only when `Gow3Stats::enabled`; the read-mostly switches
    on their own cache lines. Runtime: `memory_calls`, the mutex / cond counters, `queries` and the ungated pool
    counters only with frame stats on; the exit report leaves those lines out otherwise. A/B: a copy of today's exe
