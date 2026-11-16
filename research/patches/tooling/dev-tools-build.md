@@ -8,7 +8,7 @@ default_windows: on
 default_deck: off
 origin: ours
 class: G
-commits:
+commits: 21886b6
 files: gpu/CMakeLists.txt, build.sh, gpu/shim/gow3_dev_tools.h, gpu/shim/gow3_toggles.h, gpu/shim/gow3_sections.h, gpu/shim/gow3_draw_classes.h, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3_copy.cpp, gpu/shim/gow3_copy.h, gpu/shim/gow3_write_log.cpp, gpu/shadps4/common/logging/log.h, gpu/shadps4/video_core/renderer_vulkan/vk_platform.h, gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.h, gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_gpu_profiler.h, gpu/shadps4/video_core/renderer_vulkan/vk_gpu_profiler.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_wait_diagnostics.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp, gpu/shadps4/video_core/texture_cache/texture_cache.cpp, src/runtime.h, src/runtime_memory.c, src/runtime_waitsites.c, src/probe.c, launcher/medievil_launcher.py
 symbols: GOW3_DEV_TOOLS, Gow3Stats::enabled, Gow3Toggle::Disabled, Gow3Toggle2::Disabled, Gow3Sections::Enabled, WaitDiagnostics::Enabled, CacheStatsEnabled, Ue4Upscaler::StatsOn, GpuProfiler::Get, FrameCapture::Active, FrameCapture::OnFlip, Gow3Overlay::TakeFrameDumpRequest, Gow3Overlay::FpsLogOn, SetObjectName, LOG_DEBUG, runtime_fault_stats_enabled, runtime_wait_sites_enabled, RUNTIME_WAIT_BEGIN, dev_executable, runtime_executable
 switches: GOW3_DEV_TOOLS, GOW3_BUILD, GOW3_FPS_LOG, GOW3_COPY_FAULT_LOG, GOW3_FRAME_DUMP_TRIGGER, dev_build
