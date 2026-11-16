@@ -129,6 +129,8 @@ void runtime_saveinfo_text(const RuntimeSaveInfo *info, int level, char *line, s
 void runtime_thread_attach_host(const char *name);
 /* Name of a guest thread handle, or NULL when it is not a live thread. */
 const char *runtime_thread_name(void *handle);
+/* The calling thread's guest thread name, or NULL when it has no record (never creates one). */
+const char *runtime_thread_current_name(void);
 uint64_t runtime_memory_flexible_available(void);
 uintptr_t runtime_extra_resolve(const char *name);
 void runtime_extra_report(void);

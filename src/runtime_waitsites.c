@@ -5,11 +5,27 @@
  * report, as guest+offset (eboot image offsets, for Ghidra: add 0x400000). Off: one load.
  * Panning stalls (2026-10-19): the game thread spins while workers hand work to each other; timed
  * waits on Windows round up to the timer resolution, which this shows as actual >> requested. */
+/* GOW3_WAIT_TRACE=<file.csv> (diagnostics, 2026-11-15): every guest wait that took at least
+ * GOW3_WAIT_TRACE_MIN_US (default 500) microseconds, one row each, to line up with the flip trace's slow frames
+ * (research/tools/wait_frames.py; card tooling/wait-trace). It turns on the measurement above without the 5 s
+ * report (that stays GOW3_WAIT_SITES=1). Rows:
+ *   wall,<Unix time ns>,<monotonic ns>                      once, the two clocks read together
+ *   w,<monotonic ns at the end>,<thread id>,<guest thread>,<kind>,<site>,<requested ns>,<actual ns>
+ * site: guest+0x... (eboot image offset; Ghidra: add 0x400000) or the raw address. Written under one mutex,
+ * flushed every 1,024 rows: event-driven, a few hundred to ~1,000 rows a second in MediEvil's game. */
 #include "runtime.h"
+#include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <sys/syscall.h>
+#include <unistd.h>
+#endif
 
 #define SLOTS 4096
 #define REPORT_NS UINT64_C(5000000000)
@@ -32,13 +48,81 @@ static uint64_t now_ns(void) {
 }
 uint64_t runtime_wait_now(void) { return now_ns() | 1; /* never 0: 0 means "not measured" */ }
 
+/* GOW3_WAIT_SITES=1: the table and its 5 s report. */
+static int sites_on(void) {
+    static int on = -1;
+    if (on < 0) { const char *value = getenv("GOW3_WAIT_SITES"); on = value && value[0] == '1'; }
+    return on;
+}
+static const char *trace_path(void) {
+    static const char *path; static int read;
+    if (!read) { const char *value = getenv("GOW3_WAIT_TRACE"); path = value && value[0] ? value : NULL; read = 1; }
+    return path;
+}
+/* Either switch measures every wait; off: one cached load per wait (RUNTIME_WAIT_BEGIN). */
 int runtime_wait_sites_enabled(void) {
     static int enabled = -1;
-    if (enabled < 0) {
-        const char *value = getenv("GOW3_WAIT_SITES");
-        enabled = value && value[0] == '1';
-    }
+    if (enabled < 0) enabled = sites_on() || trace_path() != NULL;
     return enabled;
+}
+
+static pthread_mutex_t trace_lock = PTHREAD_MUTEX_INITIALIZER;
+static FILE *trace_file;
+static int trace_failed;
+static unsigned trace_rows;
+static uint64_t trace_min_ns(void) {
+    static uint64_t min = 0; static int read;
+    if (!read) {
+        const char *value = getenv("GOW3_WAIT_TRACE_MIN_US");
+        min = (uint64_t)(value && value[0] ? strtoull(value, NULL, 10) : 500) * 1000;
+        read = 1;
+    }
+    return min;
+}
+static uint64_t wall_ns(void) {
+#ifdef _WIN32
+    FILETIME ft; GetSystemTimePreciseAsFileTime(&ft);
+    const uint64_t t = ((uint64_t)ft.dwHighDateTime << 32) | ft.dwLowDateTime;
+    return (t - UINT64_C(116444736000000000)) * 100;
+#else
+    struct timespec t; clock_gettime(CLOCK_REALTIME, &t);
+    return (uint64_t)t.tv_sec * 1000000000u + (uint64_t)t.tv_nsec;
+#endif
+}
+static unsigned long thread_id(void) {
+#ifdef _WIN32
+    return GetCurrentThreadId();
+#else
+    return (unsigned long)syscall(SYS_gettid);
+#endif
+}
+static void trace_wait(void *return_address, unsigned kind, uint64_t requested_ns, uint64_t ns) {
+    const uint64_t end = now_ns();
+    const char *name = runtime_thread_current_name();
+    char thread[40];
+    snprintf(thread, sizeof(thread), "%s", name ? name : "-");
+    for (char *c = thread; *c; ++c) if (*c == ',' || *c == '\n') *c = ';';
+    const uintptr_t image = (uintptr_t)runtime_image_base(), at = (uintptr_t)return_address;
+    char where[40];
+    if (image && at - image < 0x20000000) snprintf(where, sizeof(where), "guest+0x%llx", (unsigned long long)(at - image));
+    else snprintf(where, sizeof(where), "%p", return_address);
+    pthread_mutex_lock(&trace_lock);
+    if (!trace_file && !trace_failed) {
+        trace_file = fopen(trace_path(), "w");
+        if (!trace_file) { trace_failed = 1; fprintf(stderr, "Wait trace: cannot open %s\n", trace_path()); }
+        else {
+            setvbuf(trace_file, NULL, _IOFBF, 1 << 20);
+            const uint64_t before = now_ns(), wall = wall_ns(), after = now_ns();
+            fprintf(trace_file, "wall,%llu,%llu\n", (unsigned long long)wall, (unsigned long long)(before + (after - before) / 2));
+            printf("Wait trace: guest waits of %llu us or more to %s\n", (unsigned long long)(trace_min_ns() / 1000), trace_path());
+        }
+    }
+    if (trace_file) {
+        fprintf(trace_file, "w,%llu,%lu,%s,%s,%s,%llu,%llu\n", (unsigned long long)end, thread_id(), thread,
+                kind_names[kind], where, (unsigned long long)requested_ns, (unsigned long long)ns);
+        if (++trace_rows % 1024 == 0) fflush(trace_file);
+    }
+    pthread_mutex_unlock(&trace_lock);
 }
 
 static void report(uint64_t now) {
@@ -81,6 +165,8 @@ static void report(uint64_t now) {
 }
 
 void runtime_wait_site(void *return_address, unsigned kind, uint64_t requested_ns, uint64_t ns) {
+    if (trace_path() && ns >= trace_min_ns()) trace_wait(return_address, kind, requested_ns, ns);
+    if (!sites_on()) return;
     const uint64_t key = (uint64_t)(uintptr_t)return_address | (uint64_t)(kind + 1) << 56;
     unsigned i = (unsigned)((key * UINT64_C(0x9E3779B97F4A7C15)) >> 52) & (SLOTS - 1);
     for (unsigned probe = 0; probe < 64; ++probe, i = (i + 1) & (SLOTS - 1)) {

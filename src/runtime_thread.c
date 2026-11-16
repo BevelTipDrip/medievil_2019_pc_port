@@ -156,6 +156,7 @@ const char *runtime_thread_name(void *handle) {
     GuestThread *t=find_thread(handle);
     return t ? t->name : NULL;
 }
+const char *runtime_thread_current_name(void) { return current ? current->name : NULL; }
 static ABI int32_t *guest_error(void) { return &guest_errno; }
 int32_t *runtime_errno(void) { return &guest_errno; }
 

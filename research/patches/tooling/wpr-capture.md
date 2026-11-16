@@ -24,7 +24,9 @@ checked:
 (`research-data\wpr\<tag>-N.etl` + `.times.txt`); `-Forward` starts a timed capture (`wpr-capture.ps1`) instead.
 `wpr-common.ps1` (dot-sourced) resolves the trace folder through junctions (`Get-RealPath`), checks free space on
 that drive and picks the ADK's WPR. `wpr-jitter.wprp!Jitter`: context switches and ready-thread events without
-stacks, 1 kHz samples with stacks, DPC and interrupts, 3 GB of buffers (about 90 s at 237 FPS). Analysis:
+stacks, 1 kHz samples with stacks, DPC and interrupts, 3 GB of buffers (about 90 s at 237 FPS);
+`!JitterGpu` adds the graphics kernel (DxgKrnl GUID provider, keywords 0x277, `NonPagedMemory`, state captured at
+start: a version without them recorded no DxgKrnl event), disk I/O and hard faults. Analysis:
 `etw_export.py`, `etw_frame_threads.py` (per frame and thread), `etw_thread_profile.py`, `etw_long_waits.py`,
 `flip_plot.py`; procedure in the `frame-jitter-capture` skill.
 

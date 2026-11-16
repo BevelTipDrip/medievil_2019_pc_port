@@ -1,26 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  A light WPR profile for frame-time jitter at high frame rates (2026-11-15).
+  Light WPR profiles for frame-time jitter at high frame rates (2026-11-15).
 
   WPR's built-in CPU profile walks the stack on every context switch and ready-thread event: in MediEvil
   at ~237 FPS that was ~160,000 switches a second, 10.5% of the game's CPU time in the kernel's stack
   walks (16-37% on threads that switch often), and the game's frame times bumped and alternated until
-  the recording stopped (static-1/2 captures, research/docs/plan-work-queue.md). This profile keeps:
+  the recording stopped (static-1/2 captures, research/docs/plan-work-queue.md).
+
+  Jitter keeps:
   - context switches and ready-thread events WITHOUT stacks (who ran, who waited, who woke whom);
   - 1 kHz CPU samples WITH stacks (which functions: ~1,000 walks a second per CPU);
   - DPC and interrupt events (short stalls from drivers);
   - process, thread and image events (names, load addresses), power and CPU configuration.
+  JitterGpu adds the graphics kernel (Microsoft-Windows-DxgKrnl, no stacks: presents, GPU queue packets,
+  video-memory work; keywords as WPR's GPU profile, 0x277) and disk I/O / hard
+  faults, for driver stalls on the present or recording path (the 1.36 s periodic stall, 2026-11-15).
 
-  Ring buffer (hotkey):  wpr-hotkey.ps1 -Key F8 -Tag <tag> -WprProfile <this file>!Jitter
+  Ring buffer (hotkey):  wpr-hotkey.ps1 -Key F8 -Tag <tag> -WprProfile <this file>!Jitter   (or !JitterGpu)
   To a file (forward):   wpr-capture.ps1 -Seconds 20 -Tag <tag> -WprProfile <this file>!Jitter
+  WPR's schema: every collector first, then providers, then profiles.
 -->
-<WindowsPerformanceRecorder Version="1.0" Author="MediEvil PC port research" Comments="Light jitter profile">
+<WindowsPerformanceRecorder Version="1.0" Author="MediEvil PC port research" Comments="Light jitter profiles">
   <Profiles>
     <SystemCollector Id="SC_Jitter" Name="NT Kernel Logger">
       <BufferSize Value="1024" />
       <!-- 3 GB of RAM, as the built-in CPU profile: ~90 s of this profile at ~35 MB/s (MediEvil at 237 FPS). -->
       <Buffers Value="3072" />
     </SystemCollector>
+    <EventCollector Id="EC_JitterGpu" Name="Jitter GPU events">
+      <BufferSize Value="1024" />
+      <Buffers Value="512" />
+    </EventCollector>
 
     <SystemProvider Id="SP_Jitter">
       <Keywords>
@@ -38,6 +48,35 @@
         <Stack Value="SampledProfile" />
       </Stacks>
     </SystemProvider>
+    <SystemProvider Id="SP_JitterGpu">
+      <Keywords>
+        <Keyword Value="ProcessThread" />
+        <Keyword Value="Loader" />
+        <Keyword Value="CSwitch" />
+        <Keyword Value="ReadyThread" />
+        <Keyword Value="SampledProfile" />
+        <Keyword Value="DPC" />
+        <Keyword Value="Interrupt" />
+        <Keyword Value="Power" />
+        <Keyword Value="CpuConfig" />
+        <Keyword Value="DiskIO" />
+        <Keyword Value="HardFaults" />
+      </Keywords>
+      <Stacks>
+        <Stack Value="SampledProfile" />
+      </Stacks>
+    </SystemProvider>
+    <!-- As WPR's built-in GPU profile (wpr -exportprofile GPU.light), without its stacks. NonPagedMemory is required:
+         a first version without it recorded no DxgKrnl event at all (kernel-mode events at raised IRQL are dropped
+         into pageable buffers). CaptureStateOnStart: the adapters / devices that exist when recording starts. -->
+    <EventProvider Id="EP_DxgKrnl" Name="802ec45a-1e99-4b83-9920-87c98277ba9d" NonPagedMemory="true" Level="5" Strict="true">
+      <Keywords>
+        <Keyword Value="0x277" />
+      </Keywords>
+      <CaptureStateOnStart Timeout="30">
+        <Keyword Value="0x277" />
+      </CaptureStateOnStart>
+    </EventProvider>
 
     <Profile Id="Jitter.Verbose.Memory" Name="Jitter" Description="Frame-time jitter: switches without stacks, sampled stacks, DPC/ISR" LoggingMode="Memory" DetailLevel="Verbose">
       <Collectors>
@@ -52,6 +91,19 @@
         <SystemCollectorId Value="SC_Jitter">
           <SystemProviderId Value="SP_Jitter" />
         </SystemCollectorId>
+      </Collectors>
+    </Profile>
+
+    <Profile Id="JitterGpu.Verbose.Memory" Name="JitterGpu" Description="Jitter plus graphics kernel events (presents, GPU packets, video-memory paging), disk I/O, hard faults" LoggingMode="Memory" DetailLevel="Verbose">
+      <Collectors>
+        <SystemCollectorId Value="SC_Jitter">
+          <SystemProviderId Value="SP_JitterGpu" />
+        </SystemCollectorId>
+        <EventCollectorId Value="EC_JitterGpu">
+          <EventProviders>
+            <EventProviderId Value="EP_DxgKrnl" />
+          </EventProviders>
+        </EventCollectorId>
       </Collectors>
     </Profile>
   </Profiles>
