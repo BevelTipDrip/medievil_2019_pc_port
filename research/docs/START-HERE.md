@@ -107,6 +107,7 @@ Environment variables and settings already in the port that this work uses (full
 | [study-camera-moves.md](study-camera-moves.md) | Every automatic camera move per area class (free, fixed, spline, boss), and the live switches built from it (menu Controls tab, 2026-11-11) |
 | [study-pc-settings-entry.md](study-pc-settings-entry.md) | How the game's Options and pause menus are built; "PC Settings" in the pause menu (the hidden Button_Controls, translated, opens the settings menu; built 2026-11-12, T-PC1) and the Options-menu row still to do |
 | [study-live-switches.md](study-live-switches.md) | What can be switched live and what needs a restart; cvar objects in the 01.00 eboot |
+| [study-tooling-off-cost.md](study-tooling-off-cost.md) | What every log, trace and stats path costs when switched off (2026-11-16 inventory): unconditional counters, shared cache lines, the `GOW3_DEV_TOOLS` release-build plan and the user's decisions |
 | [study-particle-fixed-step.md](study-particle-fixed-step.md) | The single GPU particle pass's torch / crypt floor bug (2026-11-05): what FixDeltaSeconds changes, the opt-in patch, flip guard and diagnostic, the test |
 | [plan-roadmap.md](plan-roadmap.md) | Working plan: rule, order, Progress table (2026-10-18; superseded by the work queue for order) |
 | [plan-baseline-issues.md](plan-baseline-issues.md) | Run 1 findings: menu navigation, frame pacing; tests |
