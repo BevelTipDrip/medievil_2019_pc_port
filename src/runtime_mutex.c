@@ -207,15 +207,81 @@ static int futex_cond_enabled(void) {
     if (value < 0) { const char *e = getenv("GOW3_FUTEX_COND"); value = !(e && e[0] == '0'); }
     return value;
 }
+/* Timed waits to their deadline (2026-11-15). WaitOnAddress takes whole ms: a wait was rounded up to the next
+ * ms and then to the 1 ms timer tick. UE4's FPThreadEvent::Wait(1) asks for 0-1 ms (its start time cut to whole
+ * ms); the game thread polls the render thread with it (guest+0x70df3a, ~450 waits a second, 91% expire, and
+ * most frames go on from an expired wait, not a signal): it waited 1.01 ms (median) for 0.50 ms asked.
+ *   GOW3_COND_PRECISE=0: the old whole-ms waits. Default 1: ntdll's RtlWaitOnAddress (100 ns timeout units) and
+ *     a 0.5 ms timer resolution (NtSetTimerResolution), so a wait ends within ~0.5 ms of its deadline; an early
+ *     timeout waits again instead of returning a spurious wakeup.
+ *   GOW3_COND_SPIN_US=N (default 0): timed waits with N us or less left spin to the deadline on the sequence
+ *     word instead of sleeping (exact, but the waiting thread keeps its core busy). */
+typedef LONG (NTAPI *RtlWaitOnAddressFn)(volatile VOID *, PVOID, SIZE_T, PLARGE_INTEGER);
+typedef LONG (NTAPI *NtSetTimerResolutionFn)(ULONG, BOOLEAN, PULONG);
+static RtlWaitOnAddressFn rtl_wait_on_address;
+static int64_t cond_spin_ns, qpc_per_s;
+static INIT_ONCE precise_once = INIT_ONCE_STATIC_INIT;
+static BOOL CALLBACK precise_init(PINIT_ONCE once, PVOID param, PVOID *context) {
+    (void)once; (void)param; (void)context;
+    const char *e = getenv("GOW3_COND_PRECISE");
+    HMODULE ntdll = GetModuleHandleW(L"ntdll.dll");
+    if (!(e && e[0] == '0') && ntdll) {
+        rtl_wait_on_address = (RtlWaitOnAddressFn)(void (*)(void))GetProcAddress(ntdll, "RtlWaitOnAddress");
+        NtSetTimerResolutionFn set = (NtSetTimerResolutionFn)(void (*)(void))GetProcAddress(ntdll, "NtSetTimerResolution");
+        ULONG now = 0;
+        LONG status = set ? set(5000, TRUE, &now) : -1;
+        const char *spin = getenv("GOW3_COND_SPIN_US");
+        cond_spin_ns = spin ? (int64_t)strtoll(spin, NULL, 10) * 1000 : 0;
+        if (cond_spin_ns < 0) cond_spin_ns = 0;
+        LARGE_INTEGER f; QueryPerformanceFrequency(&f); qpc_per_s = f.QuadPart;
+        printf("Host scheduling: condition variable timeouts to 100 ns%s, timer resolution %.2f ms%s, spin the last %lld us"
+               " (GOW3_COND_PRECISE=0: whole ms)\n", rtl_wait_on_address ? "" : " - RtlWaitOnAddress MISSING",
+               now / 10000.0, status ? " - NtSetTimerResolution REFUSED" : "", (long long)(cond_spin_ns / 1000));
+    }
+    return TRUE;
+}
+static int cond_precise(void) {
+    InitOnceExecuteOnce(&precise_once, precise_init, NULL, NULL);
+    return rtl_wait_on_address != NULL;
+}
+/* Until the sequence word moves (1) or left_ns pass (0), without sleeping. */
+static int spin_wait(volatile int *seq, int seen, int64_t left_ns) {
+    LARGE_INTEGER t0, t;
+    QueryPerformanceCounter(&t0);
+    const int64_t ticks = left_ns * qpc_per_s / 1000000000;
+    for (unsigned i = 1;; ++i) {
+        if (__atomic_load_n(seq, __ATOMIC_ACQUIRE) != seen) return 1;
+        YieldProcessor();
+        if (!(i & 15)) {
+            QueryPerformanceCounter(&t);
+            if (t.QuadPart - t0.QuadPart >= ticks) return 0;
+        }
+    }
+}
+static int64_t ns_until(const struct timespec *end) {
+    struct timespec now;
+    clock_gettime(CLOCK_REALTIME, &now);
+    return ((int64_t)end->tv_sec - (int64_t)now.tv_sec) * 1000000000LL + (end->tv_nsec - now.tv_nsec);
+}
 /* 0 or ETIMEDOUT; the mutex is held again on return. end = CLOCK_REALTIME deadline or NULL. */
 static int futex_cond_wait(GuestCond *c, GuestMutex *m, const struct timespec *end) {
     int seen = __atomic_load_n(&c->seq, __ATOMIC_ACQUIRE);
     DWORD ms = INFINITE;
     if (end) {
-        struct timespec now;
-        clock_gettime(CLOCK_REALTIME, &now);
-        int64_t left = ((int64_t)end->tv_sec - (int64_t)now.tv_sec) * 1000000000LL + (end->tv_nsec - now.tv_nsec);
+        int64_t left = ns_until(end);
         if (left <= 0) return ETIMEDOUT;
+        if (cond_precise()) {
+            pthread_mutex_unlock(&m->native);
+            int woke;
+            for (;;) {
+                if (left <= cond_spin_ns) { woke = spin_wait(&c->seq, seen, left); break; }
+                LARGE_INTEGER timeout = { .QuadPart = -((left + 99) / 100) }; /* relative, 100 ns units */
+                woke = (DWORD)rtl_wait_on_address(&c->seq, &seen, sizeof(seen), &timeout) != STATUS_TIMEOUT;
+                if (woke || (left = ns_until(end)) <= 0) break;
+            }
+            pthread_mutex_lock(&m->native);
+            return woke ? 0 : ETIMEDOUT;
+        }
         ms = (DWORD)((left + 999999) / 1000000);
     }
     pthread_mutex_unlock(&m->native);

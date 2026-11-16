@@ -59,6 +59,12 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
    The first start after this release also turns both on in older inis once (`settings_version` 1, run.py logs
    "Settings: one-time update"), whatever the old key said: an A/B across that start changed them too.
 
+8b. **A/B runs with the flip trace on carry its cost** ([flip-trace](tooling/flip-trace.md)). 2026-11-15: the
+   same static view ran ~228 FPS with isolated spikes every few seconds with `present_frame_trace=1`, and sat at the
+   237 cap (1% low 233.2, 0.1% low 227.7) with every log off. Relative averages within one logging setup are
+   usable; lows and worst frames with the trace on mostly measure the trace. **Found, not yet isolated** (a run
+   with only the trace changed is pending).
+
 ## Latent bugs (code reading)
 
 9. **Windows half of the pool leak** ([pool-kept-pages](memory/pool-kept-pages.md), [M1](memory/m1.md)):

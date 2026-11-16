@@ -272,11 +272,14 @@ if (WIN32)
     # under rebuilds and garbage handles (R2): ninja -C out/gpu rwlock-test rwlock-registry-test.
     add_executable(rwlock-test EXCLUDE_FROM_ALL ../tests/test_rwlock.c ../src/runtime_rwlock.c ../src/compat_win.c)
     add_executable(rwlock-registry-test EXCLUDE_FROM_ALL ../tests/test_rwlock_registry.c ../src/runtime_rwlock.c ../src/compat_win.c)
-    foreach(test rwlock-test rwlock-registry-test)
+    # gow3: guest mutexes and condition variables, semantics, a benchmark (--bench) and how long expiring timed
+    # waits really last (--timing): ninja -C out/gpu mutex-test.
+    add_executable(mutex-test EXCLUDE_FROM_ALL ../tests/test_mutex.c ../src/runtime_mutex.c ../src/compat_win.c)
+    foreach(test rwlock-test rwlock-registry-test mutex-test)
         set_target_properties(${test} PROPERTIES C_STANDARD 11 C_EXTENSIONS OFF)
         target_compile_options(${test} PRIVATE -UNDEBUG -Wall -Wextra -Werror)
         target_include_directories(${test} PRIVATE .. ../src)
-        target_link_libraries(${test} PRIVATE bcrypt winmm -pthread)
+        target_link_libraries(${test} PRIVATE bcrypt winmm synchronization -pthread)
     endforeach()
     add_executable(pad-map-test EXCLUDE_FROM_ALL ../tests/test_pad_map.c ../src/compat_win.c)
     set_target_properties(pad-map-test PROPERTIES C_STANDARD 11 C_EXTENSIONS OFF)
