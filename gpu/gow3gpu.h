@@ -26,6 +26,8 @@ int gow3gpu_handle_fault(void *ucontext, void *address);
 void gow3gpu_dump_guest_writes(void *ucontext);
 /* After a crash: the Vulkan barrier batch the faulting thread was recording, if any. */
 void gow3gpu_dump_recording_barriers(void);
+/* GOW3_FLIP_TRACE: writes the in-memory flip trace now (once; later calls do nothing). */
+void gow3gpu_flip_trace_write(void);
 /* Keyboard text entry through the game window (IME dialog). begin returns 0 when
  * no window exists; poll returns 0 typing, 1 confirmed, 2 cancelled (UTF-8 text). */
 int gow3gpu_text_input_begin(const char *initial_utf8, const char *prompt_utf8);

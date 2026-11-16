@@ -4,6 +4,7 @@
 #include "gow3_png.h"
 #include "gow3_settings.h"
 #include "gow3_copy.h"
+#include "gow3_flip_trace.h"
 #ifndef _WIN32
 #include <sys/resource.h>
 #endif
@@ -294,6 +295,10 @@ static void StartProfileWriter() {
 }
 #endif
 
+extern "C" void gow3gpu_flip_trace_write(void) {
+    Gow3FlipTrace::Write();
+}
+
 extern "C" int gow3gpu_init(const Gow3GpuConfig* config) {
     Gow3Settings::Load();
 #ifdef GOW3_PGO_GENERATE
@@ -322,6 +327,7 @@ extern "C" int gow3gpu_init(const Gow3GpuConfig* config) {
             SDL_Delay(2);
         }
         LOG_INFO(Frontend, "Window closed by user");
+        Gow3FlipTrace::Write(); // _Exit skips atexit
         std::fflush(stdout);
         std::_Exit(0);
     });

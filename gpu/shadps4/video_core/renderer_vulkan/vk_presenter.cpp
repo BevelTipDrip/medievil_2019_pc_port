@@ -1071,7 +1071,7 @@ bool Presenter::WaitFrameReady(Frame* frame, std::chrono::steady_clock::time_poi
 }
 
 void Presenter::TraceGpuReady(const Frame* frame, s64 flip_arg) {
-    if (frame == nullptr || !Gow3FlipTrace::File()) {
+    if (frame == nullptr || !Gow3FlipTrace::GpuReadyEnabled()) {
         return;
     }
     {

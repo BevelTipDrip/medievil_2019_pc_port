@@ -239,7 +239,7 @@ static LONG fatal_exception(EXCEPTION_POINTERS *info) {
             RtlVirtualUnwind(UNW_FLAG_NHANDLER,base,u.Rip,fn,&u,&handler_data,&frame,NULL);
         }
     }
-    if (gpu_enabled) { gow3gpu_dump_recording_barriers(); gow3gpu_dump_guest_writes(info); }
+    if (gpu_enabled) { gow3gpu_dump_recording_barriers(); gow3gpu_dump_guest_writes(info); gow3gpu_flip_trace_write(); }
     /* Top stack words: after a call through a null pointer [rsp] is the caller's return address. */
     uintptr_t words[8];
     SIZE_T read=0;

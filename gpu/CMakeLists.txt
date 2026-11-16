@@ -281,6 +281,11 @@ if (WIN32)
         target_include_directories(${test} PRIVATE .. ../src)
         target_link_libraries(${test} PRIVATE bcrypt winmm synchronization -pthread)
     endforeach()
+    # gow3: GOW3_FLIP_TRACE's cost per row, the old file writer against the in-memory rows:
+    # ninja -C out/gpu flip-trace-bench; flip-trace-bench <dir>.
+    add_executable(flip-trace-bench EXCLUDE_FROM_ALL ../tests/bench_flip_trace.cpp)
+    target_include_directories(flip-trace-bench PRIVATE shim)
+    target_link_libraries(flip-trace-bench PRIVATE winmm -pthread)
     add_executable(pad-map-test EXCLUDE_FROM_ALL ../tests/test_pad_map.c ../src/compat_win.c)
     set_target_properties(pad-map-test PROPERTIES C_STANDARD 11 C_EXTENSIONS OFF)
     target_compile_options(pad-map-test PRIVATE -UNDEBUG -Wall -Wextra -Werror)

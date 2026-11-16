@@ -63,8 +63,10 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
    same static view ran ~228 FPS with isolated spikes every few seconds with `present_frame_trace=1`, and sat at the
    237 cap (1% low 233.2, 0.1% low 227.7) with every log off. Relative averages within one logging setup are
    usable; lows and worst frames with the trace on mostly measure the trace. **Confirmed** (the same build and
-   switches, only `present_frame_trace` changed, one launch each). Fix not started (buffer in memory, write off
-   the frame path).
+   switches, only `present_frame_trace` changed, one launch each). From 2026-11-15 the rows are kept in memory and
+   written at exit (fix built, run): with the trace on, steady stretches sat at 237.0 with no frame over 6 ms (old
+   trace: 228.5, 16). A trace from before that build still carries the old cost; a run killed from outside now
+   writes no trace.
 
 ## Latent bugs (code reading)
 
