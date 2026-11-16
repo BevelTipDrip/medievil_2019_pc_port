@@ -1818,7 +1818,7 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
 
     if (same_key && previous.image_id == image_id && previous.view_mip == view_mip &&
         previous.view_slice == view_slice) {
-        Gow3Stats::image_generation_misses.fetch_add(1, std::memory_order_relaxed);
+        Gow3Stats::Add(Gow3Stats::image_generation_misses, 1);
     }
     cached = FindImageCacheEntry{
         .address = info.guest_address,
@@ -2140,7 +2140,7 @@ void TextureCache::RefreshImage(Image& image, std::source_location caller) {
     const bool is_gpu_modified = True(image.flags & ImageFlagBits::GpuModified);
     const bool is_gpu_dirty = True(image.flags & ImageFlagBits::GpuDirty);
 
-    Gow3Stats::image_upload_bytes.fetch_add(image.info.guest_size, std::memory_order_relaxed);
+    Gow3Stats::Add(Gow3Stats::image_upload_bytes, image.info.guest_size);
     boost::container::small_vector<vk::BufferImageCopy, 14> image_copies;
     for (u32 m = 0; m < num_mips; m++) {
         const u32 width = std::max(image.info.size.width >> m, 1u);
@@ -2253,7 +2253,7 @@ void TextureCache::NoteImageChurn(bool registered, u32 line, const ImageInfo& in
 }
 
 void TextureCache::RegisterImage(ImageId image_id) {
-    Gow3Stats::images_registered.fetch_add(1, std::memory_order_relaxed);
+    Gow3Stats::Add(Gow3Stats::images_registered, 1);
     CACHE_STAT(registered, 1);
     Image& image = slot_images[image_id];
     if (image_stats) {
@@ -2529,7 +2529,7 @@ void TextureCache::GarbageCollectImages() {
         lru_cache.ForEachItemBelow(gc_tick - ticks_to_destroy, clean_up);
     }
     // gow3: evictions under memory pressure, at most every 5 s (GOW3_FRAME_STATS or not).
-    static const bool frame_stats = std::getenv("GOW3_FRAME_STATS") != nullptr;
+    static const bool frame_stats = Gow3Stats::enabled; // =1 only, like every other stats site;
     if (pressured || gc_downloads != 0 || (frame_stats && gc_evictions != 0)) {
         const auto now = std::chrono::steady_clock::now();
         if (now - gc_report_time >= std::chrono::seconds(5)) {

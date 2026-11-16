@@ -223,11 +223,11 @@ bool MemoryManager::StoreLabel(void* address, u64 value, u32 size, bool backing)
 void AddressSpace::Protect(VAddr virtual_addr, u64 size, MemoryPermission perms) {
     Gow3Stats::Timer timer{Gow3Stats::t_protect};
     const u64 pages = (size + 4095) / 4096;
-    Gow3Stats::protect_calls.fetch_add(1, std::memory_order_relaxed);
-    Gow3Stats::protect_pages.fetch_add(pages, std::memory_order_relaxed);
+    Gow3Stats::Add(Gow3Stats::protect_calls, 1);
+    Gow3Stats::Add(Gow3Stats::protect_pages, pages);
     if (!True(perms & MemoryPermission::Write)) {
-        Gow3Stats::protect_revoke_calls.fetch_add(1, std::memory_order_relaxed);
-        Gow3Stats::protect_revoke_pages.fetch_add(pages, std::memory_order_relaxed);
+        Gow3Stats::Add(Gow3Stats::protect_revoke_calls, 1);
+        Gow3Stats::Add(Gow3Stats::protect_revoke_pages, pages);
     }
     runtime_memory_gpu_protect(virtual_addr, size, True(perms & MemoryPermission::Read),
                                True(perms & MemoryPermission::Write));

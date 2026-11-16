@@ -189,7 +189,7 @@ void Scheduler::EndRendering(std::source_location caller) {
     if (!is_rendering) {
         return;
     }
-    Gow3Stats::render_pass_ends.fetch_add(1, std::memory_order_relaxed);
+    Gow3Stats::Add(Gow3Stats::render_pass_ends, 1);
     if (WaitDiagnostics::Enabled()) {
         WaitDiagnostics::RenderPassEnds().Add(caller.file_name(), caller.line(), 0, 0);
         last_ended = render_state;
@@ -443,7 +443,7 @@ void Scheduler::WaitHostCopiesFor(u64 address, u64 size, std::source_location ca
                       (slot.granule == g || slot.granule == HostCopyWildcard);
         }
         if (!overlap) {
-            Gow3Stats::host_copy_waits_skipped.fetch_add(1, std::memory_order_relaxed);
+            Gow3Stats::Add(Gow3Stats::host_copy_waits_skipped, 1);
             return;
         }
     }
@@ -472,7 +472,7 @@ void Scheduler::WaitHostCopies(std::source_location caller) {
     if (host_copies_done.load(std::memory_order_acquire) < host_copies_issued) {
         waited = true;
         Gow3Stats::WaitTimer timer{Gow3Stats::host_copies_wait_ns};
-        Gow3Stats::host_copy_waits.fetch_add(1, std::memory_order_relaxed);
+        Gow3Stats::Add(Gow3Stats::host_copy_waits, 1);
         KickRecording(true);
         const u64 issued = host_copies_issued;
         const auto done = [&] { return host_copies_done.load(std::memory_order_acquire) >= issued; };
@@ -567,7 +567,7 @@ void CountRecorderWake(u64 start_ns) {
     // gow3 (study-stage-b-per-draw.md C1): wake-ups by thread kind, with their cost
     // ("Stage B syscalls" line, GOW3_FRAME_STATS).
     const unsigned kind = Gow3Sections::recording_thread ? 0 : 1;
-    Gow3Stats::recorder_wakes[kind].fetch_add(1, std::memory_order_relaxed);
+    Gow3Stats::Add(Gow3Stats::recorder_wakes[kind], 1);
     Gow3Stats::recorder_wake_ns[kind].fetch_add(Semaphore::NowNs() - start_ns,
                                                 std::memory_order_relaxed);
 }
@@ -733,7 +733,7 @@ void Scheduler::RecorderThread(std::stop_token stoken) {
                 }
                 if (Gow3Stats::enabled && !recorder_queue.empty() &&
                     wake_deadline_ns.load(std::memory_order_relaxed)) {
-                    Gow3Stats::recorder_backstop_wakes.fetch_add(1, std::memory_order_relaxed);
+                    Gow3Stats::Add(Gow3Stats::recorder_backstop_wakes, 1);
                 }
             } else {
                 recorder_cv.wait(lk, stoken, ready);
@@ -854,10 +854,13 @@ void Scheduler::Wait(u64 tick, std::source_location caller, u64 submit_ns) {
     }
     Gow3Stats::WaitTimer timer{Gow3Stats::tick_wait_ns};
     const auto submitted = diagnose ? std::chrono::steady_clock::now() : start;
+    // Its own start: WaitTimer reads no clock without GOW3_FRAME_STATS=1.
+    const auto long_start = LongWaits::Enabled() ? std::chrono::steady_clock::now()
+                                                 : std::chrono::steady_clock::time_point{};
     work_semaphore.Wait(tick);
     if (LongWaits::Enabled()) {
         const u64 ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                           std::chrono::steady_clock::now() - timer.start).count();
+                           std::chrono::steady_clock::now() - long_start).count();
         if (ns >= 1'000'000) LongWaits::Note(caller, ns);
     }
     if (diagnose) {

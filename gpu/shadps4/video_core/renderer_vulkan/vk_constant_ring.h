@@ -65,7 +65,7 @@ public:
             }
         }
         position = at + size;
-        Gow3Stats::constant_ring_bytes.fetch_add(size, std::memory_order_relaxed);
+        Gow3Stats::Add(Gow3Stats::constant_ring_bytes, size);
         if (absolute) {
             *absolute = at;
         }

@@ -242,7 +242,7 @@ private:
             if (writeable.Get(page)) {
                 continue; // not protected: no fault
             }
-            Gow3Stats::tracker_faults.fetch_add(1, std::memory_order_relaxed);
+            Gow3Stats::Add(Gow3Stats::tracker_faults, 1);
             if (!hot_enabled) {
                 continue;
             }
@@ -256,7 +256,7 @@ private:
                 }
                 hot.Set(page);
                 ++num_hot;
-                Gow3Stats::hot_pages.fetch_add(1, std::memory_order_relaxed);
+                Gow3Stats::Add(Gow3Stats::hot_pages, 1);
             }
         }
     }
@@ -268,7 +268,7 @@ private:
         if (!HotPagesEnabled() ||
             std::chrono::steady_clock::now() - hot_since > HotPeriod) {
             // Re-protect them (on this upload) and start counting again.
-            Gow3Stats::hot_pages.fetch_sub(num_hot, std::memory_order_relaxed);
+            Gow3Stats::Sub(Gow3Stats::hot_pages, num_hot);
             hot.Clear();
             write_faults.fill(0);
             num_hot = 0;

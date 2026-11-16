@@ -113,7 +113,7 @@ public:
         buffer_cache.ProcessCpuWrites();
         if (occlusion && occlusion->TakeSubmitWanted()) {
             scheduler.Flush();
-            Gow3Stats::occlusion_submits.fetch_add(1, std::memory_order_relaxed);
+            Gow3Stats::Add(Gow3Stats::occlusion_submits, 1);
         }
     }
 

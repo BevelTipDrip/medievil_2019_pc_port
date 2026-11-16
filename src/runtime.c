@@ -19,7 +19,11 @@ static size_t handler_count, handler_capacity, calls_init, calls_atexit, calls_c
 static uint64_t capabilities;
 static _Atomic size_t guards_acquired, guards_released;
 static uint64_t stack_canary;
-static _Atomic size_t memory_calls;
+static _Atomic size_t memory_calls; /* GOW3_FRAME_STATS only (2026-11-16): a locked add on every guest memcpy */
+int runtime_fault_stats_enabled(void);
+static inline void count_memory_call(void) {
+    if (runtime_fault_stats_enabled()) atomic_fetch_add_explicit(&memory_calls,1,memory_order_relaxed);
+}
 /* Dynamic TLS of linked modules: module IDs 2..7 (1 is the eboot's static TLS). */
 #define TLS_MODULES 8
 static struct { const void *data; uint64_t filesz, memsz; } tls_modules[TLS_MODULES];
@@ -83,7 +87,7 @@ void runtime_report(void) {
     runtime_extra_report();
     runtime_savedata_report();
     runtime_file_report();
-    printf("Runtime: memory operations=%zu\n", (size_t)memory_calls);
+    if (runtime_fault_stats_enabled()) printf("Runtime: memory operations=%zu\n", (size_t)memory_calls);
 }
 static ABI void init_env(void) {
     /* prepare.py verified the supplied libc export consists of exactly C3. */
@@ -162,22 +166,22 @@ static ABI __attribute__((noreturn)) void stack_fail(void) {
     exit(22);
 }
 static ABI void *guest_memset(void *dst, int value, size_t size) {
-    atomic_fetch_add_explicit(&memory_calls,1,memory_order_relaxed);
+    count_memory_call();
     if (runtime_memory_precise_write(dst, NULL, value, size)) return dst;
     return memset(dst, value, size);
 }
 static ABI void *guest_memcpy(void *dst, const void *src, size_t size) {
-    atomic_fetch_add_explicit(&memory_calls,1,memory_order_relaxed);
+    count_memory_call();
     if (runtime_memory_precise_write(dst, src, 0, size)) return dst;
     return memcpy(dst, src, size);
 }
 static ABI void *guest_memmove(void *dst, const void *src, size_t size) {
-    atomic_fetch_add_explicit(&memory_calls,1,memory_order_relaxed);
+    count_memory_call();
     if (runtime_memory_precise_write(dst, src, 0, size)) return dst; /* copies src first */
     return memmove(dst, src, size);
 }
 static ABI int guest_memcmp(const void *a, const void *b, size_t size) {
-    atomic_fetch_add_explicit(&memory_calls,1,memory_order_relaxed); return memcmp(a, b, size);
+    count_memory_call(); return memcmp(a, b, size);
 }
 static ABI size_t guest_strlen(const char *text) { return strlen(text); }
 static ABI __attribute__((noreturn)) void guest_libc_exit(int status) {

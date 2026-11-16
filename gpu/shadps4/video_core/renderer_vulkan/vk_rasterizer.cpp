@@ -497,7 +497,7 @@ void Rasterizer::DrainDrawPipe(u32 reason, u32 line, const char* function) {
     if (!draw_pipe || !OnStageA()) {
         return;
     }
-    static const bool stats = std::getenv("GOW3_FRAME_STATS") != nullptr;
+    static const bool stats = Gow3Stats::enabled; // =1 only, like every other stats site;
     if (!stats) {
         draw_pipe->Drain(reason);
         return;
@@ -609,9 +609,9 @@ static void NoteGuestPipelineBind(vk::Pipeline handle) {
         return;
     }
     thread_local vk::Pipeline last;
-    Gow3Stats::pipeline_binds.fetch_add(1, std::memory_order_relaxed);
+    Gow3Stats::Add(Gow3Stats::pipeline_binds, 1);
     if (handle == last) {
-        Gow3Stats::pipeline_bind_repeats.fetch_add(1, std::memory_order_relaxed);
+        Gow3Stats::Add(Gow3Stats::pipeline_bind_repeats, 1);
     }
     last = handle;
 }
@@ -649,7 +649,7 @@ void Rasterizer::CollectRingBindings(const Shader::Info& stage, const PreparedDr
             entry = &ring_reuse[(hash >> 52) % ring_reuse.size()];
             if (entry->epoch == ring_reuse_epoch && entry->address == address &&
                 entry->size == size) {
-                Gow3Stats::constant_ring_reused_bytes.fetch_add(size, std::memory_order_relaxed);
+                Gow3Stats::Add(Gow3Stats::constant_ring_reused_bytes, size);
                 if (Gow3Stats::enabled) {
                     Gow3StageA::Add(Gow3StageA::ring_reused);
                 }
@@ -993,7 +993,7 @@ void Rasterizer::RunDrawPacket(void* context, const u8* data, u32 size) {
 }
 
 void Rasterizer::PrintPipeStats() {
-    static const bool stats = std::getenv("GOW3_FRAME_STATS") != nullptr;
+    static const bool stats = Gow3Stats::enabled; // =1 only, like every other stats site;
     if (!stats || (draw_pipe->packets & 1023) != 0) {
         return;
     }
@@ -1119,7 +1119,7 @@ bool Rasterizer::FilterDrawPasses() const {
 
 void Rasterizer::Draw(bool is_indexed, u32 index_offset, const PreparedDraw* prepared) {
     RENDERER_TRACE;
-    Gow3Stats::draws.fetch_add(1, std::memory_order_relaxed);
+    Gow3Stats::Add(Gow3Stats::draws, 1);
 
     // gow3: with the draw pipeline this thread only selects the pipeline and hands the draw
     // to the recording thread (DrawRecord there); draws FilterDraw handles itself run here.
@@ -1549,7 +1549,7 @@ void Rasterizer::DrawIndirectRecord(const GraphicsPipeline* pipeline, bool is_in
 
 void Rasterizer::DispatchDirect() {
     RENDERER_TRACE;
-    Gow3Stats::dispatches.fetch_add(1, std::memory_order_relaxed);
+    Gow3Stats::Add(Gow3Stats::dispatches, 1);
     // gow3: like draws, handed to the draw recording thread after the pipeline selection.
     const bool pipelined = UseDrawPipe() && !Gow3Toggle::Disabled(Gow3Toggle::PipelinedDispatch);
     if (!pipelined) {
@@ -1894,7 +1894,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
 
     bool uses_dma = false;
 
-    static const bool stats = std::getenv("GOW3_FRAME_STATS") != nullptr;
+    static const bool stats = Gow3Stats::enabled; // =1 only, like every other stats site;
     if (stats && ((helper_full + helper_partial + helper_serial) & 1023) == 0) {
         static auto window = std::chrono::steady_clock::now();
         const auto now = std::chrono::steady_clock::now();

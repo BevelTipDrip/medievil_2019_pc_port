@@ -24,6 +24,7 @@
 int runtime_wait_sites_enabled(void) { return 0; }
 uint64_t runtime_wait_now(void) { return 0; }
 void runtime_wait_site(void *a, unsigned k, uint64_t r, uint64_t n) { (void)a; (void)k; (void)r; (void)n; }
+int runtime_fault_stats_enabled(void) { return 0; } /* lock counters off, as in a normal run */
 
 typedef struct { int64_t sec, nsec; } GuestTime;
 typedef int32_t (ABI *Op)(void **);

@@ -132,7 +132,7 @@ public:
         const u64 waited = __rdtsc() - start;
         drain_cycles += waited;
         cycles_by_reason[slot] += waited;
-        Gow3Stats::stage_a_drain_cycles.fetch_add(waited, std::memory_order_relaxed);
+        Gow3Stats::Add(Gow3Stats::stage_a_drain_cycles, waited);
         if (Gow3Stats::enabled) {
             Gow3DrainWait::waits.fetch_add(1, std::memory_order_relaxed);
             Gow3DrainWait::wait_ns.fetch_add(Gow3DrainWait::NowNs() - start_ns,
@@ -361,11 +361,17 @@ private:
                 Consumed(at);
                 continue;
             }
-            const u64 start = __rdtsc();
-            handler(context, reinterpret_cast<const u8*>(header + 1), header->payload);
-            const u64 busy = __rdtsc() - start;
-            busy_cycles.fetch_add(busy, std::memory_order_relaxed);
-            Gow3Stats::stage_b_busy_cycles.fetch_add(busy, std::memory_order_relaxed);
+            // Busy time only with GOW3_FRAME_STATS=1 (2026-11-16: two rdtsc and two locked adds a
+            // packet before; read by the pipe stats and slow-frame lines only).
+            if (Gow3Stats::enabled) {
+                const u64 start = __rdtsc();
+                handler(context, reinterpret_cast<const u8*>(header + 1), header->payload);
+                const u64 busy = __rdtsc() - start;
+                busy_cycles.fetch_add(busy, std::memory_order_relaxed);
+                Gow3Stats::stage_b_busy_cycles.fetch_add(busy, std::memory_order_relaxed);
+            } else {
+                handler(context, reinterpret_cast<const u8*>(header + 1), header->payload);
+            }
             at += header->size;
             Consumed(at);
         }

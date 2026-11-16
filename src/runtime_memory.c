@@ -193,7 +193,7 @@ static GpuRange hook_map, hook_unmap, hook_invalidate;
 enum { HOOK_MAP, HOOK_UNMAP, HOOK_INVALIDATE };
 typedef struct { int kind; uintptr_t address; uint64_t size; } PendingHook;
 static PendingHook pending[64]; static size_t pending_count;
-static size_t allocations, maps, flexible_maps, protects, queries;
+static size_t allocations, maps, flexible_maps, protects, queries; /* queries: GOW3_FRAME_STATS only (2026-11-16) */
 static uint64_t live_bytes, flexible_bytes;
 /* gow3 GOW3_GPU_FENCES leak view (runtime_memory_usage): pool pages committed, under the lock. */
 static uint64_t pool_committed_bytes;
@@ -903,7 +903,7 @@ static ABI int32_t query_protection(void *address, void **start, void **end, uin
     if (start) *start=(void *)vmas[first].start;
     if (end) *end=(void *)vmas[last].end;
     if (prot) *prot=(uint32_t)vmas[i].prot;
-    __atomic_add_fetch(&queries,1,__ATOMIC_RELAXED);
+    if (runtime_fault_stats_enabled()) __atomic_add_fetch(&queries,1,__ATOMIC_RELAXED);
     read_unlock();
     return 0;
 }
@@ -919,7 +919,7 @@ static ABI int32_t virtual_query(const void *address, int flags, VirtualQueryInf
     info->protection=v.prot; info->memory_type=v.type;
     info->flags=(v.kind==KIND_FLEXIBLE ? 1u : 0) | (v.kind==KIND_DIRECT ? 2u : 0) | (v.kind!=KIND_RESERVED ? 16u : 0);
     strcpy(info->name, v.kind==KIND_RESERVED ? "reserved" : v.kind==KIND_DIRECT ? "direct" : "flexible");
-    __atomic_add_fetch(&queries,1,__ATOMIC_RELAXED);
+    if (runtime_fault_stats_enabled()) __atomic_add_fetch(&queries,1,__ATOMIC_RELAXED);
     read_unlock();
     return 0;
 }
@@ -1193,7 +1193,7 @@ static void pool_zero_foreign_locked(uint64_t phys, uint64_t pages) {
         if (!pool_owner[c][i+n]) continue;
         pool_owner[c][i+n]=0;
         host_discard(phys+n*PAGE,PAGE);
-        __atomic_fetch_add(&kept_foreign_zeroed,1,__ATOMIC_RELAXED);
+        if (runtime_fault_stats_enabled()) __atomic_fetch_add(&kept_foreign_zeroed,1,__ATOMIC_RELAXED);
     }
 }
 #ifdef _WIN32
@@ -1219,7 +1219,7 @@ static void pool_hand_over_locked(uint64_t phys, uint64_t pages) {
     for (uint64_t n=0; n<pages && i+n<pool_chunks[c].pages; ++n)
         if (pool_owner[c][i+n]) {
             pool_owner[c][i+n]=0;
-            __atomic_fetch_add(&foreign_handed,1,__ATOMIC_RELAXED);
+            if (runtime_fault_stats_enabled()) __atomic_fetch_add(&foreign_handed,1,__ATOMIC_RELAXED);
         }
 }
 #endif
@@ -1276,10 +1276,10 @@ static int pool_take_kept_locked(uintptr_t va, uint64_t want, uint64_t *phys, ui
         }
         if (!n) break;
         *phys=k.phys; *pages=n;
-        __atomic_fetch_add(&kept_hits,n,__ATOMIC_RELAXED);
+        if (runtime_fault_stats_enabled()) __atomic_fetch_add(&kept_hits,n,__ATOMIC_RELAXED);
         return 1;
     }
-    __atomic_fetch_add(&kept_misses,1,__ATOMIC_RELAXED);
+    if (runtime_fault_stats_enabled()) __atomic_fetch_add(&kept_misses,1,__ATOMIC_RELAXED);
     return 0;
 }
 #endif
@@ -1299,13 +1299,13 @@ static int pool_take_at_locked(uint64_t phys, uint64_t want, uint64_t *pages, ui
                    (!strict || !owner || !owner[first+n] || owner[first+n]==va+n*PAGE)) {
                 if (owner) {
                     if (owner[first+n] && owner[first+n]!=va+n*PAGE)
-                        __atomic_fetch_add(&foreign_handed,1,__ATOMIC_RELAXED);
+                        if (runtime_fault_stats_enabled()) __atomic_fetch_add(&foreign_handed,1,__ATOMIC_RELAXED);
                     owner[first+n]=0;
                 }
                 ++n;
             }
             if (!n) return 0;
-            __atomic_fetch_add(&view_pages_back,n,__ATOMIC_RELAXED);
+            if (runtime_fault_stats_enabled()) __atomic_fetch_add(&view_pages_back,n,__ATOMIC_RELAXED);
             memset(pool_chunks[c].used+first,POOL_TAKEN,n);
             if (pool_chunks[c].free_hint==first) pool_chunks[c].free_hint=first+n;
             *pages=n;
@@ -2225,9 +2225,11 @@ static size_t fault_page_count;
 enum { FAULT_SITES=64 };
 static struct { uint64_t site, count; int bucket; } fault_sites[FAULT_SITES]; /* atomic site/count */
 int runtime_fault_stats_enabled(void) {
-    static int enabled=-1;
-    if (enabled<0) { const char *v=getenv("GOW3_FRAME_STATS"); enabled=v && v[0]=='1'; }
-    return enabled;
+    /* Read on every guest lock and memcpy (2026-11-16): a cache line of its own (volatile, or LLVM
+     * splits the struct into a bare int and drops the alignment). */
+    static volatile struct { _Alignas(64) int value; } enabled = {-1};
+    if (enabled.value<0) { const char *v=getenv("GOW3_FRAME_STATS"); enabled.value=v && v[0]=='1'; }
+    return enabled.value;
 }
 static int fault_bucket(int kind, int type) {
     if (kind==KIND_FLEXIBLE) return FT_FLEXIBLE;
@@ -2457,7 +2459,8 @@ int runtime_memory_is_mapped(uintptr_t address, uint64_t size) {
 void runtime_memory_report(void) {
     printf("Runtime: direct memory allocations=%zu, maps=%zu, live=%" PRIu64 ", budget=%" PRIu64 "\n",
            allocations, maps, live_bytes, POOL_SIZE);
-    printf("Runtime: flexible maps=%zu, in use=%" PRIu64 ", protects=%zu, queries=%zu, regions=%zu\n",
-           flexible_maps, flexible_bytes, protects, queries, vma_count);
+    printf("Runtime: flexible maps=%zu, in use=%" PRIu64 ", protects=%zu, regions=%zu\n",
+           flexible_maps, flexible_bytes, protects, vma_count);
+    if (runtime_fault_stats_enabled()) printf("Runtime: memory queries=%zu\n", queries);
 }
 

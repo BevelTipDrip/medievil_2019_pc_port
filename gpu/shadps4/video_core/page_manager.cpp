@@ -146,7 +146,7 @@ struct PageManager::Impl {
         // gow3: the draw recording thread handles its faults inline too (vk_draw_pipe.h).
         const auto is_gpu_thread = rasterizer->IsGpuSideThread();
         if (is_gpu_thread) {
-            Gow3Stats::gpu_signal_faults.fetch_add(1, std::memory_order_relaxed);
+            Gow3Stats::Add(Gow3Stats::gpu_signal_faults, 1);
         }
         const bool is_write = Common::IsWriteError(context);
         const CopyFaultTrace trace{rasterizer, addr, is_write, is_gpu_thread};
@@ -155,7 +155,7 @@ struct PageManager::Impl {
             Gow3Stats::fault_rip = Common::GetRip(context);
             return rasterizer->OnWriteFault(addr, is_gpu_thread);
         } else {
-            Gow3Stats::read_faults.fetch_add(1, std::memory_order_relaxed);
+            Gow3Stats::Add(Gow3Stats::read_faults, 1);
             Gow3Stats::Timer timer{Gow3Stats::t_read_faults};
             return rasterizer->ReadMemory(addr, 8, is_gpu_thread);
         }

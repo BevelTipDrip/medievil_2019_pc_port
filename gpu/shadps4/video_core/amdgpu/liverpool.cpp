@@ -177,14 +177,18 @@ void Liverpool::Process(std::stop_token stoken) {
             }
         }
         {
-            const auto idle_start = std::chrono::steady_clock::now();
+            // Idle time only with GOW3_FRAME_STATS=1 (frame-stats and slow-frame lines).
+            const auto idle_start = Gow3Stats::enabled ? std::chrono::steady_clock::now()
+                                                       : std::chrono::steady_clock::time_point{};
             std::unique_lock lk{submit_mutex};
             Common::CondvarWait(submit_cv, lk, stoken,
                                 [this] { return num_commands || num_submits || submit_done; });
-            const u64 idle_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                std::chrono::steady_clock::now() - idle_start).count();
-            Gow3Stats::gpu_idle_ns.fetch_add(idle_ns, std::memory_order_relaxed);
-            Gow3Stats::gpu_idle_total_ns.fetch_add(idle_ns, std::memory_order_relaxed);
+            if (Gow3Stats::enabled) {
+                const u64 idle_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                    std::chrono::steady_clock::now() - idle_start).count();
+                Gow3Stats::gpu_idle_ns.fetch_add(idle_ns, std::memory_order_relaxed);
+                Gow3Stats::gpu_idle_total_ns.fetch_add(idle_ns, std::memory_order_relaxed);
+            }
         }
         if (stoken.stop_requested()) {
             break;
@@ -1692,7 +1696,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     // registers: ApplyGraphicsRegisterPacket
                 } else if (event->event_index.Value() == EventIndex::ZpassDone) {
                     if (event->event_type.Value() == EventType::PixelPipeStatDump) {
-                        Gow3Stats::occlusion_dumps.fetch_add(1, std::memory_order_relaxed);
+                        Gow3Stats::Add(Gow3Stats::occlusion_dumps, 1);
                         // gow3 GOW3_OCCLUSION=1: counted by Vulkan occlusion queries in order
                         // with the draws, written once the GPU has them (vk_occlusion.h).
                         if (rasterizer && rasterizer->OcclusionEvent(event->Address<VAddr>(),

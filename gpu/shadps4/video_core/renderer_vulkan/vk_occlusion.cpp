@@ -255,7 +255,7 @@ void OcclusionQueries::CompletionLoop(std::stop_token stop) {
 }
 
 void OcclusionQueries::Report() {
-    static const bool stats = std::getenv("GOW3_FRAME_STATS") != nullptr;
+    static const bool stats = Gow3Stats::enabled; // =1 only, like every other stats site;
     const auto now = std::chrono::steady_clock::now();
     if (!stats || now - last_report < std::chrono::seconds(5)) {
         return;

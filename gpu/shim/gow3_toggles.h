@@ -305,11 +305,33 @@ inline std::atomic<std::uint64_t> gpu_frames{0};
 inline std::atomic<std::uint64_t> t_resident{0}, t_protect{0}, t_image_create{0}, t_refresh{0},
     t_staging{0}, t_host_wait{0}, t_copy{0}, copy_bytes{0}, t_read_faults{0}, read_faults{0},
     t_write_faults{0}, t_copy_cpu{0}, copy_sys_us{0}, copy_minflt{0}, t_gc{0}, t_readback_wait{0};
+/// A switch read on every draw, on a cache line of its own: until 2026-11-16 `enabled` sat on a
+/// line that stage A wrote every draw (`draws`, `constant_ring_reused_bytes`), so stage B's reads
+/// of it kept missing.
+struct alignas(64) Switch {
+    bool on;
+    operator bool() const { return on; }
+};
 /// Diagnostics are collected only with GOW3_FRAME_STATS=1.
-inline const bool enabled = [] {
+inline const Switch enabled{[] {
     const char* env = std::getenv("GOW3_FRAME_STATS");
     return env && env[0] == '1';
-}();
+}()};
+/// Adds to / subtracts from a counter only with GOW3_FRAME_STATS=1. Until 2026-11-16 most counters
+/// were bumped whatever the switch: locked adds per draw on stage A and B, some on the cache line
+/// that holds `enabled` itself (study-tooling-off-cost.md).
+template <class T, class V>
+inline void Add(std::atomic<T>& counter, V value) {
+    if (enabled) {
+        counter.fetch_add(static_cast<T>(value), std::memory_order_relaxed);
+    }
+}
+template <class T, class V>
+inline void Sub(std::atomic<T>& counter, V value) {
+    if (enabled) {
+        counter.fetch_sub(static_cast<T>(value), std::memory_order_relaxed);
+    }
+}
 struct Timer {
     std::atomic<std::uint64_t>& total;
     std::chrono::steady_clock::time_point start =
@@ -348,10 +370,15 @@ inline std::atomic<std::uint64_t> sync_recording_ns{0}, host_copies_wait_ns{0}, 
     copy_threads_wait_ns{0}, host_copy_waits{0};
 /// WRITE_DATA packets that skipped the host copy wait (no pending copy reads their range).
 inline std::atomic<std::uint64_t> host_copy_waits_skipped{0};
+/// Like Timer: no clock reads without GOW3_FRAME_STATS=1.
 struct WaitTimer {
     std::atomic<std::uint64_t>& total;
-    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::time_point start =
+        enabled ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
     ~WaitTimer() {
+        if (!enabled) {
+            return;
+        }
         total.fetch_add(std::chrono::duration_cast<std::chrono::nanoseconds>(
                             std::chrono::steady_clock::now() - start).count(),
                         std::memory_order_relaxed);

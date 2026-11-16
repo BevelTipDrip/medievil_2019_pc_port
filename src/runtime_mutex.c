@@ -12,6 +12,11 @@
 #endif
 typedef struct { int type; } GuestAttr;
 typedef struct { pthread_mutex_t native; } GuestMutex;
+/* locks / unlocks / waits / wakeups: GOW3_FRAME_STATS only (2026-11-16). Every thread wrote them on
+ * every call, and they shared cache lines with the region table's vma_seq / vma_count / vmas, which the
+ * GPU threads read on every lookup (study-tooling-off-cost.md). */
+int runtime_fault_stats_enabled(void);
+#define COUNT(counter) do { if (runtime_fault_stats_enabled()) ++(counter); } while (0)
 static size_t created, locks, unlocks;
 static int32_t orbis_error(int e) {
     if (!e) return 0;
@@ -84,7 +89,7 @@ static int32_t mutex_lock_impl(GuestMutex **mutex) {
     int32_t e = ensure_mutex(mutex);
     if (e) return e;
     e = orbis_error(pthread_mutex_lock(&(*mutex)->native));
-    if (!e) ++locks;
+    if (!e) COUNT(locks);
     return e;
 }
 /* GOW3_WAIT_SITES: each export the guest calls measures, so its return address is the call site. */
@@ -98,14 +103,14 @@ static ABI int32_t mutex_trylock(GuestMutex **mutex) {
     int32_t e = ensure_mutex(mutex);
     if (e) return e;
     e = orbis_error(pthread_mutex_trylock(&(*mutex)->native));
-    if (!e) ++locks;
+    if (!e) COUNT(locks);
     return e;
 }
 static ABI int32_t mutex_unlock(GuestMutex **mutex) {
     if (!mutex || (uintptr_t)*mutex == 2) return orbis_error(EINVAL);
     if ((uintptr_t)*mutex < 2) return orbis_error(EPERM);
     int32_t e = orbis_error(pthread_mutex_unlock(&(*mutex)->native));
-    if (!e) ++unlocks;
+    if (!e) COUNT(unlocks);
     return e;
 }
 /* Destroyed mutexes are retired through a ring and only freed after many later destroys: a game
@@ -147,7 +152,7 @@ static ABI int32_t mutex_timedlock(GuestMutex **mutex, uint32_t usec) {
     struct timespec end;
     if (deadline_after(&end, usec)) return orbis_error(EINVAL);
     e = timed_error(pthread_mutex_timedlock(&(*mutex)->native, &end));
-    if (!e) ++locks;
+    if (!e) COUNT(locks);
     return e;
 }
 /* Condition variables: opaque handles over host pthread_cond (CLOCK_REALTIME,
@@ -308,7 +313,7 @@ static int32_t cond_wait_impl(GuestCond **cond, GuestMutex **mutex) {
     int32_t e = ensure_cond(cond);
     if (e) return e;
     if (!mutex || (uintptr_t)*mutex < 3) return orbis_error(EINVAL);
-    ++waits;
+    COUNT(waits);
     return orbis_error(futex_cond_enabled() ? futex_cond_wait(*cond, *mutex, NULL)
                                             : pthread_cond_wait(&(*cond)->native, &(*mutex)->native));
 }
@@ -322,7 +327,7 @@ static int32_t cond_wait_until(GuestCond **cond, GuestMutex **mutex, const struc
     int32_t e = ensure_cond(cond);
     if (e) return e;
     if (!mutex || (uintptr_t)*mutex < 3 || !end) return orbis_error(EINVAL);
-    ++waits;
+    COUNT(waits);
     return timed_error(futex_cond_enabled() ? futex_cond_wait(*cond, *mutex, end)
                                             : pthread_cond_timedwait(&(*cond)->native, &(*mutex)->native, end));
 }
@@ -337,14 +342,14 @@ static ABI int32_t cond_timedwait(GuestCond **cond, GuestMutex **mutex, uint32_t
 static ABI int32_t cond_signal(GuestCond **cond) {
     int32_t e = ensure_cond(cond);
     if (e) return e;
-    ++wakeups;
+    COUNT(wakeups);
     if (futex_cond_enabled()) { futex_cond_wake(*cond, 0); return 0; }
     return orbis_error(pthread_cond_signal(&(*cond)->native));
 }
 static ABI int32_t cond_broadcast(GuestCond **cond) {
     int32_t e = ensure_cond(cond);
     if (e) return e;
-    ++wakeups;
+    COUNT(wakeups);
     if (futex_cond_enabled()) { futex_cond_wake(*cond, 1); return 0; }
     return orbis_error(pthread_cond_broadcast(&(*cond)->native));
 }
@@ -440,6 +445,10 @@ uintptr_t runtime_mutex_resolve(const char *name) {
     return 0;
 }
 void runtime_mutex_report(void) {
+    if (!runtime_fault_stats_enabled()) {
+        printf("Runtime: mutexes created=%zu, condition variables created=%zu\n", created, conds);
+        return;
+    }
     printf("Runtime: mutexes created=%zu, locks=%zu, unlocks=%zu\n", created, locks, unlocks);
     printf("Runtime: condition variables created=%zu, waits=%zu, wakeups=%zu\n", conds, waits, wakeups);
 }

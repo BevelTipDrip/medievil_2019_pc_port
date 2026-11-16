@@ -952,7 +952,7 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
             ForgetGpuWritten(device_addr, size);
             memory_tracker->UnmarkRegionAsGpuModified(device_addr, size);
             memory_tracker->MarkRegionAsCpuModified(device_addr, size);
-            Gow3Stats::unmap_discards.fetch_add(1, std::memory_order_relaxed);
+            Gow3Stats::Add(Gow3Stats::unmap_discards, 1);
             return;
         }
         Gow3Stats::DownloadReasonScope scope{reason};
@@ -987,7 +987,7 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
                         });
                 }
                 memory_tracker->MarkRegionAsCpuModified(device_addr, size);
-                Gow3Stats::twin_faults.fetch_add(1, std::memory_order_relaxed);
+                Gow3Stats::Add(Gow3Stats::twin_faults, 1);
                 return;
             }
         }
@@ -1018,7 +1018,7 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
             if (gpu_bytes != 0 && tick != 0 && scheduler.IsFree(tick)) {
                 DownloadMemory(arena, page_begin, page_end - page_begin);
                 memory_tracker->MarkRegionAsCpuModified(device_addr, size);
-                Gow3Stats::page_downloads.fetch_add(1, std::memory_order_relaxed);
+                Gow3Stats::Add(Gow3Stats::page_downloads, 1);
                 return;
             }
             // t-map2: the oscillation's faults took none of the paths above. Nothing the GPU wrote
@@ -1027,7 +1027,7 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
             if (gpu_bytes == 0) {
                 memory_tracker->UnmarkRegionAsGpuModified(page_begin, page_end - page_begin);
                 memory_tracker->MarkRegionAsCpuModified(device_addr, size);
-                Gow3Stats::fault_no_gpu_bytes.fetch_add(1, std::memory_order_relaxed);
+                Gow3Stats::Add(Gow3Stats::fault_no_gpu_bytes, 1);
                 return;
             }
             // Left for the window below (each counted): no write tick known for the page's GPU
@@ -1127,15 +1127,14 @@ void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 siz
                                            scheduler.GetWorkSemaphore()->Handle(), write_tick)) {
             WriteBackDownload(arena_base, copies, data, 0);
             memory_tracker->UnmarkRegionAsGpuModified(device_addr, size);
-            Gow3Stats::fast_downloads.fetch_add(1, std::memory_order_relaxed);
+            Gow3Stats::Add(Gow3Stats::fast_downloads, 1);
             const unsigned reason = Gow3Stats::download_reason;
-            Gow3Stats::download_count[reason].fetch_add(1, std::memory_order_relaxed);
-            Gow3Stats::download_bytes[reason].fetch_add(total_size_bytes, std::memory_order_relaxed);
-            Gow3Stats::download_ns[reason].fetch_add(
-                u64(std::chrono::duration_cast<std::chrono::nanoseconds>(
-                        std::chrono::steady_clock::now() - start)
-                        .count()),
-                std::memory_order_relaxed);
+            Gow3Stats::Add(Gow3Stats::download_count[reason], 1);
+            Gow3Stats::Add(Gow3Stats::download_bytes[reason], total_size_bytes);
+            Gow3Stats::Add(Gow3Stats::download_ns[reason],
+                           std::chrono::duration_cast<std::chrono::nanoseconds>(
+                               std::chrono::steady_clock::now() - start)
+                               .count());
             return;
         }
     }
@@ -1147,13 +1146,12 @@ void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 siz
     scheduler.Finish();
     {
         const unsigned reason = Gow3Stats::download_reason;
-        Gow3Stats::download_count[reason].fetch_add(1, std::memory_order_relaxed);
-        Gow3Stats::download_bytes[reason].fetch_add(total_size_bytes, std::memory_order_relaxed);
-        Gow3Stats::download_ns[reason].fetch_add(
-            u64(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() -
-                                                                     start)
-                    .count()),
-            std::memory_order_relaxed);
+        Gow3Stats::Add(Gow3Stats::download_count[reason], 1);
+        Gow3Stats::Add(Gow3Stats::download_bytes[reason], total_size_bytes);
+        Gow3Stats::Add(Gow3Stats::download_ns[reason],
+                       std::chrono::duration_cast<std::chrono::nanoseconds>(
+                           std::chrono::steady_clock::now() - start)
+                           .count());
     }
 
     download.buffer->Invalidate(download.offset, download.size);
@@ -1276,7 +1274,7 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
         GOW3_SECTION(ObtRegions);
         if (!IsRegionCpuModified(device_addr, size)) {
             small_in_arena = true;
-            Gow3Stats::small_arena_binds.fetch_add(1, std::memory_order_relaxed);
+            Gow3Stats::Add(Gow3Stats::small_arena_binds, 1);
         } else {
             std::scoped_lock lk{stream_class_mutex};
             // Direct-mapped: an address in another's slot replaces it (starts again as new).
@@ -1287,18 +1285,18 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
             }
             if (entry.state == 1) {
                 entry.state = 2; // written again after its upload
-                Gow3Stats::small_dynamic.fetch_add(1, std::memory_order_relaxed);
+                Gow3Stats::Add(Gow3Stats::small_dynamic, 1);
             } else if (entry.state == 0 && !scheduler.IsRendering()) {
                 entry.state = 1;
                 small_in_arena = true;
-                Gow3Stats::small_promotions.fetch_add(1, std::memory_order_relaxed);
+                Gow3Stats::Add(Gow3Stats::small_promotions, 1);
             }
         }
     }
     // For read-only buffers use device local stream buffer to reduce renderpass breaks.
     if (!small_in_arena && !is_written && size <= STREAM_THRESHOLD && !small_gpu_modified) {
         GOW3_SECTION(ObtStream);
-        if (stream_clean) Gow3Stats::small_stream_copies.fetch_add(1, std::memory_order_relaxed);
+        if (stream_clean) Gow3Stats::Add(Gow3Stats::small_stream_copies, 1);
         if (stats) {
             auto& region = Stats().regions[RegionKey(device_addr)];
             ++region.stream_count;
@@ -1332,7 +1330,8 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
         GOW3_SECTION(ObtResident);
         EnsureResident(arena, first_block, last_block);
     }
-    const u64 uploaded_before = Gow3Stats::buffer_upload_bytes.load(std::memory_order_relaxed);
+    const u64 uploaded_before =
+        stats ? Gow3Stats::buffer_upload_bytes.load(std::memory_order_relaxed) : 0;
     {
         GOW3_SECTION(ObtSync);
         SynchronizeMemory(arena, device_addr, size, is_written, is_texel_buffer);
@@ -1511,7 +1510,9 @@ size_t BufferCache::UploadDirect(boost::container::small_vector<vk::BufferCopy, 
     for (const auto& copy : direct) {
         texture_cache.ResolveReadbacks(copy.dstOffset, copy.size, true, ReadbackSource::BufferUpload);
     }
-    Gow3Stats::buffer_upload_bytes.fetch_add(direct_bytes, std::memory_order_relaxed);
+    if (Gow3Stats::enabled || BufferStatsEnabled()) { // GOW3_BUFFER_STATS reads it too
+        Gow3Stats::buffer_upload_bytes.fetch_add(direct_bytes, std::memory_order_relaxed);
+    }
     // The guest bytes are copied as the staging path copies them (UploadCopies): on the copy
     // threads in groups of about 1 MiB, small uploads in the calling thread's batch; submission
     // and guest-visible fences wait for them (Scheduler::WaitHostCopies).
@@ -1602,8 +1603,8 @@ bool BufferCache::PreciseCpuWrite(VAddr addr, const void* src, int value, u64 si
     if (!memory->TryWriteBacking(reinterpret_cast<void*>(addr), data.data(), size)) {
         return false; // part of it has no backing: the normal write faults as before
     }
-    Gow3Stats::precise_writes.fetch_add(1, std::memory_order_relaxed);
-    Gow3Stats::precise_write_bytes.fetch_add(size, std::memory_order_relaxed);
+    Gow3Stats::Add(Gow3Stats::precise_writes, 1);
+    Gow3Stats::Add(Gow3Stats::precise_write_bytes, size);
     return true;
 }
 
@@ -1950,7 +1951,9 @@ const Buffer* BufferCache::UploadCopies(const Buffer* arena, std::span<vk::Buffe
     for (const auto& copy : copies) {
         texture_cache.ResolveReadbacks(copy.dstOffset, copy.size, true, ReadbackSource::BufferUpload);
     }
-    Gow3Stats::buffer_upload_bytes.fetch_add(total_size_bytes, std::memory_order_relaxed);
+    if (Gow3Stats::enabled || BufferStatsEnabled()) { // GOW3_BUFFER_STATS reads it too
+        Gow3Stats::buffer_upload_bytes.fetch_add(total_size_bytes, std::memory_order_relaxed);
+    }
     const auto staging = staging_pool.Request(total_size_bytes, MemoryType::HostUncached);
     // gow3: the guest memory is copied into staging on the copy threads, started now in
     // groups of about 1 MiB; submission and guest-visible fences wait for them
