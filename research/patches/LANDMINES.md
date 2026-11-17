@@ -146,6 +146,9 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
    `Runtime: release build` or `Runtime: dev build`. In a release build `GOW3_FRAME_STATS`, `GOW3_SECTIONS`, the toggle
    file, `GOW3_WAIT_SITES` / `GOW3_WAIT_TRACE` and the F11 analyzer do nothing, silently. Also from that build:
    `GOW3_FPS_LOG` is off unless `=1` (the launcher set 1 before), and the release build's copy-fault trace is off.
+   **Linux / Deck:** the same split from 2026-11-16 (step 3): every AppImage and Deck run before it was a dev build;
+   `dist/MediEvil-x86_64.AppImage` is release, `MediEvil-x86_64-dev.AppImage` (GOW3_APPIMAGE_DEV=1) is dev, and the
+   Deck test loop's frame stats / toggle-file A/Bs need the dev one.
 8d. **A PGO release build is a build type of its own** ([clang-pgo](tooling/clang-pgo.md)): `GOW3_PGO=use` builds the
    release exe with `pgo/windows/medievil.profdata` (off by default: the first profile made gameplay spikes and lows
    worse), and every new profile changes the whole binary. The runtime's first line says `PGO profile 0x<md5>` (or

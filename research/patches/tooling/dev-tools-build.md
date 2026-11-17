@@ -3,15 +3,15 @@ id: dev-tools-build
 title: Release and dev builds (GOW3_DEV_TOOLS): the release build has the diagnostics compiled out; the launcher runs it unless Development build is ticked
 area: tooling
 status: active
-platforms: windows
+platforms: all
 default_windows: on
-default_deck: off
+default_deck: on
 origin: ours
 class: G
 commits: 21886b6
-files: gpu/CMakeLists.txt, build.sh, gpu/shim/gow3_dev_tools.h, gpu/shim/gow3_toggles.h, gpu/shim/gow3_sections.h, gpu/shim/gow3_draw_classes.h, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3_copy.cpp, gpu/shim/gow3_copy.h, gpu/shim/gow3_write_log.cpp, gpu/shadps4/common/logging/log.h, gpu/shadps4/video_core/renderer_vulkan/vk_platform.h, gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.h, gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_gpu_profiler.h, gpu/shadps4/video_core/renderer_vulkan/vk_gpu_profiler.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_wait_diagnostics.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp, gpu/shadps4/video_core/texture_cache/texture_cache.cpp, src/runtime.h, src/runtime_memory.c, src/runtime_waitsites.c, src/probe.c, launcher/medievil_launcher.py
-symbols: GOW3_DEV_TOOLS, Gow3Stats::enabled, Gow3Toggle::Disabled, Gow3Toggle2::Disabled, Gow3Sections::Enabled, WaitDiagnostics::Enabled, CacheStatsEnabled, Ue4Upscaler::StatsOn, GpuProfiler::Get, FrameCapture::Active, FrameCapture::OnFlip, Gow3Overlay::TakeFrameDumpRequest, Gow3Overlay::FpsLogOn, SetObjectName, LOG_DEBUG, runtime_fault_stats_enabled, runtime_wait_sites_enabled, RUNTIME_WAIT_BEGIN, dev_executable, runtime_executable
-switches: GOW3_DEV_TOOLS, GOW3_BUILD, GOW3_FPS_LOG, GOW3_COPY_FAULT_LOG, GOW3_FRAME_DUMP_TRIGGER, dev_build
+files: gpu/CMakeLists.txt, build.sh, packaging/linux/appimage.sh, tests/test_launcher_controls.py, gpu/shim/gow3_dev_tools.h, gpu/shim/gow3_toggles.h, gpu/shim/gow3_sections.h, gpu/shim/gow3_draw_classes.h, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3_copy.cpp, gpu/shim/gow3_copy.h, gpu/shim/gow3_write_log.cpp, gpu/shadps4/common/logging/log.h, gpu/shadps4/video_core/renderer_vulkan/vk_platform.h, gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.h, gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_gpu_profiler.h, gpu/shadps4/video_core/renderer_vulkan/vk_gpu_profiler.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_wait_diagnostics.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp, gpu/shadps4/video_core/texture_cache/texture_cache.cpp, src/runtime.h, src/runtime_memory.c, src/runtime_waitsites.c, src/probe.c, launcher/medievil_launcher.py
+symbols: DEV_DIAGNOSTICS, dev_diagnostics_off_reason, dev_build_missing, GOW3_DEV_TOOLS, Gow3Stats::enabled, Gow3Toggle::Disabled, Gow3Toggle2::Disabled, Gow3Sections::Enabled, WaitDiagnostics::Enabled, CacheStatsEnabled, Ue4Upscaler::StatsOn, GpuProfiler::Get, FrameCapture::Active, FrameCapture::OnFlip, Gow3Overlay::TakeFrameDumpRequest, Gow3Overlay::FpsLogOn, SetObjectName, LOG_DEBUG, runtime_fault_stats_enabled, runtime_wait_sites_enabled, RUNTIME_WAIT_BEGIN, dev_executable, runtime_executable
+switches: GOW3_DEV_TOOLS, GOW3_BUILD, GOW3_APPIMAGE_DEV, GOW3_FPS_LOG, GOW3_COPY_FAULT_LOG, GOW3_FRAME_DUMP_TRIGGER, dev_build
 tests: launcher-controls
 docs: study-tooling-off-cost.md, plan-work-queue.md
 depends_on: stats-counters-gated
@@ -72,10 +72,19 @@ defaults **off** in release (`GOW3_COPY_FAULT_LOG=1` on); in dev it stays on by 
 ## Interactions
 
 - Every diagnostic launcher option (frame stats, GPU profile, perf diag, F11) does nothing without "Development build"
-  (step 3 will grey them out). `extra-env.txt` diagnostics (`GOW3_SECTIONS`, `GOW3_WAIT_TRACE`, toggle-file A/Bs) also
+  (greyed out since step 3). `extra-env.txt` diagnostics (`GOW3_SECTIONS`, `GOW3_WAIT_TRACE`, toggle-file A/Bs) also
   need the dev build.
-- Linux / AppImage / Deck: `build.sh`'s Linux path is unchanged (no `-DGOW3_DEV_TOOLS`, so dev). Moving the AppImage
-  to a release build needs a WSL build and a Deck check first.
+- Linux / AppImage / Deck (2026-11-16, step 3): `build.sh` on Linux has the same `GOW3_BUILD` (release default:
+  `out/gpu-release` or `out/gpu-v3-release` -> `out/medievil-runtime`, `out/build-type` = release; dev: `out/gpu` /
+  `out/gpu-v3` -> `out/medievil-runtime-dev`, `out/cpu-level-dev`; both). `--test` builds the dev tree too (the
+  tests run there). The shared-library build (`GOW3_STATIC_GPU=OFF`) is dev only. `appimage.sh` packs the release
+  build and refuses one without `out/build-type` = release; `GOW3_APPIMAGE_DEV=1` packs the dev build as
+  `MediEvil-x86_64[-v3]-dev.AppImage` for the Deck test loop (frame stats, the toggle file, wait traces).
+  Until then every AppImage and Deck run was a dev build.
+- Launcher (step 3): frame stats, GPU profile, the perf report and the F11 capture key (`DEV_DIAGNOSTICS`) are
+  greyed until Development build is ticked and the dev exe exists, with the reason below it
+  (`dev_diagnostics_off_reason`); without a dev exe the Development build box is greyed too ("not built" in a
+  source tree, "not in this package" in the zip / AppImage). The flip trace and validation layers stay.
 
 ## Evidence
 
@@ -95,6 +104,12 @@ defaults **off** in release (`GOW3_COPY_FAULT_LOG=1` on); in dev it stays on by 
   one at a Tome pickup; in dev, deeper dips in combat, much larger and longer asset-load spikes, worse 0.1% lows in
   the static view. Traces and logs: `research-data/off-cost-step2-20261116/` (not in git); summary script
   `ab_windows.py` (session scratchpad).
+- Linux (2026-11-17 00:07, WSL Debian, clang, `bda5f7f`): release `out/medievil-runtime` 0 tooling symbols, 50 `rdtsc`
+  sites, no dev switch name; dev 428 `rdtsc`. `dist/MediEvil-x86_64.AppImage` (release) and `-dev.AppImage` packed;
+  the 2.4.0 one kept as `MediEvil-x86_64-2.4.0.AppImage`. On the way: a new tree defaulted to GCC, which rejects
+  `vk_instance.cpp`'s out-of-order `.occlusionQueryPrecise` (now in order; new trees use clang, `262bf6f`), and
+  `runtime_waitsites.c` lacked `_GNU_SOURCE` for `syscall` since the wait trace (`599380c`): the Linux build had not
+  compiled since 2026-11-15. `build.sh --test` still fails (tests/test_pad.c, queue). Not yet run on the Deck.
 
 ## History and pitfalls
 

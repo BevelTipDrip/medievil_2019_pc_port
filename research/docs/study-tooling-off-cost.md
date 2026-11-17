@@ -105,6 +105,8 @@ Functional, keep in release: `Gow3Sections::recording_thread`, `download_reason`
    Build script release variant; the run log's first line names the build type; LANDMINES: A/B only within one build
    type. `GOW3_FPS_LOG` default off; copy-fault trace default off in release.
 3. **Step 3, launcher.** In a release build the diagnostic options are greyed out with the reason; the Start-menu
-   icon points at the release build.
+   icon points at the release build. **Fix built 2026-11-16** (card `tooling/dev-tools-build`, `3b05a90`): launcher
+   greying, Linux `GOW3_BUILD`, the AppImage packs the release build (`GOW3_APPIMAGE_DEV=1` for a dev one). The
+   Windows zip already shipped `out/medievil-runtime.exe` (release).
 4. **Small fixes, any time:** semaphore `getenv` inside the global lock; `GOW3_FRAME_STATS=0` parsing; marker labels
    before the gate.

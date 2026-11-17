@@ -269,10 +269,10 @@ plan-baseline-issues.md	270	3	t-race-result-2026-10-18-0401-0410-launched-by-cla
 plan-baseline-issues.md	278	3	root-cause-found-2026-10-18-read-only-trace--checked-by-hand	Root cause found (2026-10-18, read-only trace + checked by hand)
 plan-baseline-issues.md	316	2	c1-next-catch-it-when-it-happens	C1 next: catch it when it happens
 plan-baseline-issues.md	340	2	s1-silent-exit-with-code-5-at-startup-2026-10-18-1253-once	S1. Silent exit with code 5 at startup (2026-10-18 12:53, once)
-plan-baseline-issues.md	386	2	v2-fire--torches-broken-more-box-shadows-the-user-2026-10-18-run-perfdiag-heavy	V2. Fire / torches broken, more box shadows (the user, 2026-10-18, run `perfdiag-heavy`)
-plan-baseline-issues.md	399	2	v1-shadows-sometimes-drawn-as-a-big-box-the-user-2026-10-18	V1. Shadows sometimes drawn as a big box (the user, 2026-10-18)
-plan-baseline-issues.md	436	2	v3-effects-wrong-blending-misplaced-missing-at-an-angle-the-user-2026-10-31-play-session-on-3cea271	V3. Effects: wrong blending, misplaced, missing at an angle (the user, 2026-10-31, play session on `3cea271`)
-plan-baseline-issues.md	463	2	tests-one-change-per-launch-the-users-go-each-time	Tests (one change per launch, the user's go each time)
+plan-baseline-issues.md	393	2	v2-fire--torches-broken-more-box-shadows-the-user-2026-10-18-run-perfdiag-heavy	V2. Fire / torches broken, more box shadows (the user, 2026-10-18, run `perfdiag-heavy`)
+plan-baseline-issues.md	406	2	v1-shadows-sometimes-drawn-as-a-big-box-the-user-2026-10-18	V1. Shadows sometimes drawn as a big box (the user, 2026-10-18)
+plan-baseline-issues.md	443	2	v3-effects-wrong-blending-misplaced-missing-at-an-angle-the-user-2026-10-31-play-session-on-3cea271	V3. Effects: wrong blending, misplaced, missing at an angle (the user, 2026-10-31, play session on `3cea271`)
+plan-baseline-issues.md	470	2	tests-one-change-per-launch-the-users-go-each-time	Tests (one change per launch, the user's go each time)
 plan-dlss.md	1	1	plan-dlss-sr-on-correct-inputs-then-dlss-frame-generation-ngx-vulkan	Plan: DLSS SR on correct inputs, then DLSS frame generation (NGX Vulkan)
 plan-dlss.md	6	2	what-is-known-today-read-2026-10-18	What is known today (read, 2026-10-18)
 plan-dlss.md	20	2	design	Design
@@ -600,7 +600,7 @@ plan-work-queue.md	7	2	the-users-quality-of-life-list-2026-11-03-after-the-v200-
 plan-work-queue.md	44	2	the-users-order-2026-10-30	The user's order (2026-10-30)
 plan-work-queue.md	73	2	pending-fixes-research-2026-10-29-ranked-there-state-now	Pending fixes (research 2026-10-29, ranked there; state now)
 plan-work-queue.md	101	2	found-on-the-way-2026-10-30	Found on the way (2026-10-30)
-plan-work-queue.md	141	2	from-github-issues	From GitHub issues
+plan-work-queue.md	142	2	from-github-issues	From GitHub issues
 pr-checklist.md	1	1	pr-checklist-the-bar-for-anything-proposed-upstream	PR checklist: the bar for anything proposed upstream
 pr-checklist.md	7	2	scope	Scope
 pr-checklist.md	14	2	code	Code

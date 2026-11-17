@@ -132,7 +132,7 @@ GOW3_MOUSE_LOG	ours	src/probe.c:1012 src/runtime_services.c:684
 GOW3_MOUSE_MAP	ours	src/runtime_pad.c:240
 GOW3_MOVIE_END_EVENT	ours	gpu/shadps4/core/libraries/avplayer/avplayer_state.cpp:399
 GOW3_MOVIE_SUSPEND	upstream	src/probe.c:619
-GOW3_MUTEX_HOLDERS	ours	src/runtime_waitsites.c:151
+GOW3_MUTEX_HOLDERS	ours	src/runtime_waitsites.c:152
 GOW3_NARROW_IMAGE_STAGES	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:2619
 GOW3_NEO	upstream	src/runtime_extra.c:173
 GOW3_NEWEST_FRAME	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:106 gpu/shadps4/core/libraries/videoout/driver.cpp:1534
@@ -232,7 +232,7 @@ GOW3_SIGNAL_SLEEP	upstream	gpu/shim/gow3_signal_wait.h:32
 GOW3_SIGNAL_SPIN_US	upstream	gpu/shim/gow3_signal_wait.h:46
 GOW3_SKIPPED_TARGET_LOG	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:1881
 GOW3_SKIP_READ_BARRIERS	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:3774 gpu/shadps4/video_core/texture_cache/image.cpp:554 gpu/shim/gow3_settings.cpp:456
-GOW3_SKIP_TOOL_INFO	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:995
+GOW3_SKIP_TOOL_INFO	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:996
 GOW3_SLOW_FRAMES	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:568
 GOW3_SPARE_IMAGE_BLOCK	upstream	gpu/shadps4/video_core/texture_cache/image.cpp:245
 GOW3_SQUARE_PASS	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:4332
@@ -288,9 +288,9 @@ GOW3_VO_LABEL_DRAIN	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:1870 gp
 GOW3_VULKANINFO	upstream	launcher/vulkan_check.py:122
 GOW3_VULKAN_COMPAT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:230
 GOW3_WAIT_REG_MEM_GIVEUP_MS	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:850
-GOW3_WAIT_SITES	upstream	src/runtime_waitsites.c:54
-GOW3_WAIT_TRACE	ours	src/runtime_waitsites.c:59
-GOW3_WAIT_TRACE_MIN_US	ours	src/runtime_waitsites.c:77
+GOW3_WAIT_SITES	upstream	src/runtime_waitsites.c:55
+GOW3_WAIT_TRACE	ours	src/runtime_waitsites.c:60
+GOW3_WAIT_TRACE_MIN_US	ours	src/runtime_waitsites.c:78
 GOW3_WARN_META_TEXTURE	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:2733
 GOW3_WINDOW_ICON	upstream	gpu/shim/window.cpp:56
 GOW3_WORK_RETIRED	upstream	gpu/shadps4/video_core/amdgpu/liverpool.h:126
