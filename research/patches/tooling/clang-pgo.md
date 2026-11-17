@@ -68,7 +68,13 @@ combat), wider than the A/B route.
 
 - Mechanism checked before coding (2026-11-16, scratch program): generate -> `__llvm_profile_write_file` ->
   `llvm-profdata merge` -> `-fprofile-use` round trip with clang 23.1.3.
-- Not yet measured: training session, then A/B `out/medievil-runtime-nopgo-cb36368.exe` vs the PGO release build.
+- Fix built (2026-11-16, `ef5d9d2`): the training exe has ~10,700 instrumented functions and the profile runtime;
+  the same 6 old warnings.
+- Training (2026-11-16, the user, 4K 75% DLSS): two sessions on the instrumented build, 4 min 48 s (the A/B route)
+  and 17 min 49 s (a longer level), 10 + 36 writes, no failed write, no crash. Merged: 10,818 functions, 122,477
+  blocks, total count 1.27e12 -> `pgo/windows/medievil.profdata` (MD5 prefix e938b8820701). The PGO release exe:
+  141.5 MB (136.1 without), no counters, the same 6 warnings.
+- Not yet measured: A/B `out/medievil-runtime-nopgo-cb36368.exe` vs the PGO release build.
 
 ## History and pitfalls
 
