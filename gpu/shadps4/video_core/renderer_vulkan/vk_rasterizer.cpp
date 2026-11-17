@@ -716,13 +716,16 @@ const Ue4Grade& Ue4GradeOverride() {
     (void)parsed;
     return grade;
 }
+/// The LUT builder's parameter block, when GOW3_UE4_GRADE or the menu's colour grading
+/// (Gow3Settings::GradeAt, live) changes it; otherwise the draw binds as before.
 bool Ue4GradeTarget(const Shader::Info& stage, u32 index, u64 size) {
     return stage.pgm_hash == Ue4CombineLutPs && index == 0 &&
-           size >= Ue4CombineLutDwords * sizeof(u32) && !Ue4GradeOverride().values.empty();
+           size >= Ue4CombineLutDwords * sizeof(u32) &&
+           (!Ue4GradeOverride().values.empty() || !Gow3Settings::GradeNeutral());
 }
 void ApplyUe4Grade(u8* block) {
     auto& grade = const_cast<Ue4Grade&>(Ue4GradeOverride());
-    if (!grade.logged.exchange(true)) {
+    if (!grade.values.empty() && !grade.logged.exchange(true)) {
         std::string line = "UE4 grade: first combine LUT draw, game values:";
         for (const auto& [index, value] : grade.values) {
             float before;
@@ -734,6 +737,33 @@ void ApplyUe4Grade(u8* block) {
     }
     for (const auto& [index, value] : grade.values) {
         std::memcpy(block + index * sizeof(u32), &value, sizeof(float));
+    }
+    // The menu's grading (Color tab), relative to the game's values (or GOW3_UE4_GRADE's, set above).
+    static std::atomic<bool> menu_logged{false};
+    const auto& settings = Gow3Settings::Get();
+    std::string line;
+    const bool log = !menu_logged.load(std::memory_order_relaxed);
+    for (int g = 0; g < Gow3Settings::GradeCount; ++g) {
+        const float change = settings.grade[g].load(std::memory_order_relaxed);
+        if (change == Gow3Settings::GradeNeutralValue(g)) {
+            continue;
+        }
+        const Gow3Settings::GradeInfo info = Gow3Settings::GradeAt(g);
+        float value;
+        std::memcpy(&value, block + info.dword * sizeof(u32), sizeof(float));
+        const float game = value;
+        value = info.add ? value + change : value * change;
+        if (info.dword >= 136) { // shadows max, highlights min, blue correction, gamut expansion: 0-1
+            value = std::clamp(value, 0.0f, 1.0f);
+        }
+        std::memcpy(block + info.dword * sizeof(u32), &value, sizeof(float));
+        if (log) {
+            line += " " + Gow3Settings::GradeKey(g) + " " + std::to_string(game) + " -> " +
+                    std::to_string(value);
+        }
+    }
+    if (log && !line.empty() && !menu_logged.exchange(true)) {
+        std::printf("UE4 grade: colour grading (menu / medievil.ini) on, first draw:%s\n", line.c_str());
     }
 }
 } // namespace

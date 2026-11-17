@@ -49,6 +49,24 @@ void Set(Values& v, const std::string& key, const std::string& value) {
             return;
         }
     }
+    if (key.starts_with("grade_")) {
+        for (int g = 0; g < GradeCount; ++g) {
+            if (key == GradeKey(g)) {
+                const GradeInfo info = GradeAt(g);
+                v.grade[g] = value.empty() ? GradeNeutralValue(g) : std::clamp(f, info.lo, info.hi);
+                return;
+            }
+        }
+        return;
+    }
+    if (key == "hdr_ui_nits") {
+        v.hdr_ui_nits = value.empty() ? HdrUiNitsDefault : std::clamp(i, HdrUiNitsMin, HdrUiNitsMax);
+        return;
+    }
+    if (key == "hdr_curve") {
+        v.hdr_curve = value == "2000" ? 1 : 0;
+        return;
+    }
     if (key.starts_with("deck_")) {
         for (int d = 0; d < DeckSwitchCount; ++d) {
             if (key.compare(5, std::string::npos, DeckSwitches[d].key) == 0) {
@@ -272,6 +290,55 @@ void Set(Values& v, const std::string& key, const std::string& value) {
 
 } // namespace
 
+std::string GradeKey(int i) {
+    static constexpr const char* extras[] = {"grade_wb_temp",         "grade_wb_tint",         "grade_shadows_max",
+                                             "grade_highlights_min",  "grade_blue_correction", "grade_expand_gamut"};
+    if (i >= GradeWbTemp) {
+        return extras[std::clamp(i - GradeWbTemp, 0, int(std::size(extras)) - 1)];
+    }
+    static constexpr const char* channels[] = {"_r", "_g", "_b", ""};
+    return std::string("grade_") + GradeRanges[i / (GradeFieldCount * 4)] + "_" + GradeFields[(i / 4) % GradeFieldCount] +
+           channels[i % 4];
+}
+
+bool GradeNeutral() {
+    const auto& v = Get();
+    for (int g = 0; g < GradeCount; ++g) {
+        if (v.grade[g].load(std::memory_order_relaxed) != GradeNeutralValue(g)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void ResetGrade() {
+    auto& v = Get();
+    for (int g = 0; g < GradeCount; ++g) {
+        v.grade[g] = GradeNeutralValue(g);
+    }
+}
+
+bool HdrGame() {
+    static const bool on = [] {
+        const char* hdr = std::getenv("GOW3_HDR");
+        const char* game = std::getenv("GOW3_HDR_GAME");
+        return hdr && std::strcmp(hdr, "1") == 0 && game && std::strcmp(game, "1") == 0;
+    }();
+    return on;
+}
+
+void RequestHdrUi() {
+    char text[16];
+    std::snprintf(text, sizeof(text), "%.2f", double(Get().hdr_ui_nits.load()) / 100.0);
+    runtime_ue4_request_cvar("r.HDR.UI.Level", text);
+}
+
+void RequestHdrCurve() {
+    if (HdrGame()) {
+        runtime_ue4_request_cvar("r.HDR.Display.OutputDevice", Get().hdr_curve ? "4" : "3");
+    }
+}
+
 void RequestUE4Live(int o, int choice) {
     if (o < 0 || o >= UE4LiveCount || choice < 0 || choice >= UE4LiveOptions[o].count || !UE4LiveOptions[o].live) {
         return;
@@ -446,6 +513,29 @@ void Load() {
     }
     if (v.effects_resolution > 0) { // the override pak sets it at boot too (run.py)
         runtime_ue4_request_cvar("r.SeparateTranslucencyScreenPercentage", UE4EffectsKeys[v.effects_resolution]);
+    }
+    // HDR: the UI level is in the override pak too (run.py), for the screens before the first poll; the curve can
+    // only be set live (the engine's HDR sink outranks the pak).
+    if (v.hdr_ui_nits != HdrUiNitsDefault) {
+        RequestHdrUi();
+    }
+    if (v.hdr_curve != 0) {
+        RequestHdrCurve();
+    }
+    // GOW3_UE4_LIVE_CVARS="name=value;..." (tests, research): console variables of the runtime's live table
+    // (src/runtime_extra.c ue4_cvars[]) set once the game reaches its menu, after the device profile. For the
+    // ones a pak cannot set, such as r.HDR.Display.ColorGamut; values up to 15 characters.
+    if (const char* env = std::getenv("GOW3_UE4_LIVE_CVARS"); env && env[0]) {
+        const std::string text = env;
+        for (std::size_t at = 0; at < text.size();) {
+            const std::size_t end = std::min(text.find(';', at), text.size());
+            const std::string item = text.substr(at, end - at);
+            at = end + 1;
+            if (const auto eq = item.find('='); eq != std::string::npos && eq > 0) {
+                std::printf("Settings: live console variable %s (GOW3_UE4_LIVE_CVARS)\n", item.c_str());
+                runtime_ue4_request_cvar(item.substr(0, eq).c_str(), item.substr(eq + 1).c_str());
+            }
+        }
     }
     // A launch's own switches (run.py from medievil.ini, or a test) show as the patches' state: the first
     // variable of each bundle and its off value (graphics_options.PERF_SWITCHES).
@@ -683,6 +773,10 @@ std::map<std::string, std::string> Serialize(const Values& v) {
            v.refraction_ps4.load(), v.water_ripples_always.load(), v.refraction_edge_stretch.load());
     for (int o = 0; o < UE4LiveCount; ++o) {
         Append(out, "%s=%s\n", UE4LiveOptions[o].key, UE4LiveOptions[o].tokens[v.ue4_live[o]]);
+    }
+    Append(out, "hdr_ui_nits=%d\nhdr_curve=%s\n", v.hdr_ui_nits.load(), v.hdr_curve ? "2000" : "1000");
+    for (int g = 0; g < GradeCount; ++g) {
+        Append(out, "%s=%.4g\n", GradeKey(g).c_str(), double(v.grade[g].load()));
     }
     std::map<std::string, std::string> values;
     std::size_t at = 0;

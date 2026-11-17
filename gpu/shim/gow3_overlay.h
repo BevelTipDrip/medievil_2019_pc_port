@@ -50,8 +50,9 @@ bool FpsLogOn();
 /// Counts a presented frame for GOW3_FPS_LOG.
 void LogPresent();
 
-/// Present thread: draws into `view` (layout ColorAttachmentOptimal).
-void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent);
+/// Present thread: draws into `view` (layout ColorAttachmentOptimal). `hdr`: the swapchain is HDR10
+/// (A2B10G10R10, PQ): drawn with a pipeline for that format whose shader encodes the colours as PQ.
+void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent, bool hdr = false);
 
 /// The menu is open or a text entry is shown: the game's input is held neutral.
 bool CapturesInput();

@@ -211,6 +211,18 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
 - **H17, `global.contrast=1.3`** (5,999 ring + 1 stream patched): p1 0.218 -> 0.082, p5 0.37 -> 0.143, p50 1.2 -> 0.57,
   p95 6.0 -> 5.3, p95/p5 17 -> 37. UE4 grading acts in HDR [V]; it pivots at mid-grey, so this scene (mostly below it)
   darkens overall: contrast plus a mid-tone gain.
+- **H18, the overlay in HDR** (an ImGui pipeline for `A2B10G10R10`, `imgui_hdr.frag`: gamma 2.2 -> BT.2020 -> PQ, white
+  203 nits): the user: "the menus look good, they're no longer over-saturated" [V]. The user keeps game UI at ~100 nits
+  (OLED burn-in): one UI brightness for the game's UI and the overlay.
+- **H19, `r.HDR.UI.Level=0.5`** (pak, `GOW3_UE4_CVARS`; JXRs 09.52.47 run 18 / 12.49.09 run 19, same gate view): health
+  bar median / p99 55 / 105 -> 27 / 52 nits, mana bar 39 / 98 -> 19 / 49, icons p99 108-115 -> 55-58; the overlay's FPS
+  box 203 both; sky median 4.1 / 4.9 [V]. The cvar scales the UI linearly, 1.0 = ~100-105 nits; nothing else moves.
+  Built on it: Display > HDR (UI brightness, curve) and the Color tab (card hdr-output).
+- **H20, the HDR section and the Color tab** (release 13:23): the overlay at 100 nits (log `white 100 nits`), 6,000 of 6,000
+  combine LUT draws patched in the ring. White balance, Global and Ranges and gamut work; Shadows / Mid-tones / Highlights
+  showed ImGui's "2 visible items with conflicting ID" and a change in one range moved all four: the styled rows' IDs are
+  their names, which the four ranges share.
+- **H21, an ID scope per range** (`ImGui::PushID(range)`, release 13:51): the user: "all the sliders appear to work" [V].
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.

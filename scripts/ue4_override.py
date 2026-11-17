@@ -467,15 +467,25 @@ def preset_cvars(game, quality):
     return result
 
 
+def hdr_ui_level(nits):
+    """r.HDR.UI.Level for a UI brightness in nits (gow3_settings.h HdrUiNitsMin-Max, 50-400; 100 = 1)."""
+    try:
+        value = min(max(int(nits), 50), 400)
+    except (TypeError, ValueError):
+        value = 100
+    return f'{value / 100:g}'
+
+
 def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_menu=False,
           infinite_ammo=False, hzb=False, effects='75', aa='taa', voice='', graphics=None, glyphs='',
-          controls=('', ''), pc_settings=False):
+          controls=('', ''), pc_settings=False, hdr_ui_nits='100'):
     """Writes or removes the override pak. Returns a short description of the active state.
     `glyphs`: the button prompt style (medievil.ini button_prompts, ue4_glyphs.STYLES); `controls`: the
     launcher's (GOW3_KEY_MAP, GOW3_PAD_MAP), so the prompts show the mapped key or pad button.
     `graphics`: the graphics settings' console variables (graphics_options.graphics_cvars, run.py), which
     replace the quality preset's; a diagnostic preset (diag_*) still adds its own on top.
-    `pc_settings`: the pause menu's PC Settings row (medievil.ini pc_settings_entry, ue4_pc_settings.py)."""
+    `pc_settings`: the pause menu's PC Settings row (medievil.ini pc_settings_entry, ue4_pc_settings.py).
+    `hdr_ui_nits`: the HDR UI brightness (medievil.ini hdr_ui_nits, in-game menu > Display > HDR)."""
     pak = paks_dir(game) / PAK_NAME
     # Earlier builds wrote the `_P` spelling: on Linux it stayed behind, unread.
     (paks_dir(game) / OLD_PAK_NAME).unlink(missing_ok=True)
@@ -540,6 +550,11 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
     # RHI init, so they go into the pak; without the reported display PreInit sets both back to 0.
     if os.environ.get('GOW3_HDR') == '1' and os.environ.get('GOW3_HDR_GAME') == '1':
         values.update({'r.AllowHDR': '1', 'r.HDR.EnableHDROutput': '1'})
+        # UI brightness (study-hdr.md H18 / H19: r.HDR.UI.Level 1.0 puts the UI at ~100 nits, linear): from the
+        # first screen; the runtime sets it live as the menu changes it (gow3_settings.cpp RequestHdrUi).
+        level = hdr_ui_level(hdr_ui_nits)
+        if level != '1':
+            values['r.HDR.UI.Level'] = level
     # Extra console variables for experiments, "name=value;name=value" (GOW3_UE4_CVARS); they win
     # over the presets above.
     extra = {}

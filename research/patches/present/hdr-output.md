@@ -1,6 +1,6 @@
 ---
 id: hdr-output
-title: HDR10 output through the game's own UE4 path (route A): log lines, GOW3_HDR_GAME reports an HDR display and sets the pak cvars, a 10-bit frame image, the UI composite LUT compiled on the spot
+title: HDR10 output through the game's own UE4 path (route A): log lines, GOW3_HDR_GAME reports an HDR display and sets the pak cvars, a 10-bit frame image, the UI composite LUT compiled on the spot, the overlay in HDR, UI brightness and colour grading in the menu
 area: present
 status: active
 platforms: all
@@ -9,9 +9,9 @@ default_deck: off
 origin: ours
 class: G
 commits:
-files: gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/core/libraries/videoout/video_out.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_swapchain.cpp, gpu/shim/core/emulator_settings.h, scripts/ue4_override.py, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.cpp, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h
-symbols: Ue4GradeOverride, ApplyUe4Grade, sceVideoOutGetDeviceCapabilityInfo, sceVideoOutConfigureOutputMode_, sceVideoOutRegisterBuffers, FindPresentFormat, Swapchain::SetHDR, IsHdrGameForced, PostProcessingPass::HDR_FRAME_FORMAT, RecreateFrame, MustCompileSync
-switches: GOW3_HDR, GOW3_HDR_GAME, GOW3_UE4_GRADE
+files: gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_settings.h, gpu/shadps4/video_core/host_shaders/imgui_hdr.frag, gpu/patches/imgui/0001-vulkan-pipeline-for-another-format-and-fragment-shader.patch, src/runtime_extra.c, run.py, build.sh, gpu/shadps4/core/libraries/videoout/video_out.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_swapchain.cpp, gpu/shim/core/emulator_settings.h, scripts/ue4_override.py, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.cpp, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h
+symbols: Ue4GradeOverride, ApplyUe4Grade, Ue4GradeTarget, HdrPipeline, ImGui_ImplVulkan_CreatePipelineForFormat, ColorTab, GradeAt, GradeKey, RequestHdrUi, RequestHdrCurve, hdr_ui_level, sceVideoOutGetDeviceCapabilityInfo, sceVideoOutConfigureOutputMode_, sceVideoOutRegisterBuffers, FindPresentFormat, Swapchain::SetHDR, IsHdrGameForced, PostProcessingPass::HDR_FRAME_FORMAT, RecreateFrame, MustCompileSync
+switches: GOW3_HDR, GOW3_HDR_GAME, GOW3_UE4_GRADE, GOW3_UE4_LIVE_CVARS
 tests:
 docs: study-hdr.md, plan-work-queue.md
 depends_on: particle-curve-sync-compile
@@ -43,6 +43,29 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
   (a bare name sets `.w`), `shadows_max`, `highlights_min`, `blue_correction`, `expand_gamut`, `d<index>`. Log: the parsed
   values, the game's values at the first builder draw, counts at 600 / 6,000 draws (ring / stream / not patched).
   In HDR the grading acts (H17: contrast 1.3, floor 0.22 -> 0.08 nits), the film curve does not (H16).
+- **The overlay in HDR:** while the swapchain is HDR10 the port's menu, FPS counter and notices draw with a second ImGui
+  pipeline for `A2B10G10R10` (`ImGui_ImplVulkan_CreatePipelineForFormat`, a local patch to the upstream submodule in
+  `gpu/patches/imgui`, applied by build.sh) whose `imgui_hdr.frag` decodes gamma 2.2, converts BT.709 to BT.2020 and
+  encodes PQ with white at the UI brightness (its one specialization constant, written into the SPIR-V; one pipeline
+  per value, kept). Log: `Overlay: HDR10 pipeline ready (PQ, white N nits)`.
+- **UI brightness** (Display > HDR, shown while HDR10 is on; medievil.ini `hdr_ui_nits`, 50-400, default 100): the
+  game's UI through `r.HDR.UI.Level` = nits / 100 (H19: linear, 1.0 measures ~100-105 nits), live through the
+  runtime's cvar table and at boot through the pak (`ue4_override.hdr_ui_level`), and the overlay's white. One setting
+  for both: OLED owners keep UI dim against burn-in (the user, 2026-11-17).
+- **HDR curve** (Display > HDR; `hdr_curve` 1000 / 2000): `r.HDR.Display.OutputDevice` 3 / 4, set live only (the
+  engine's HDR sink sets it at device-profile priority, above the pak) and only when the game started in HDR.
+- **Color tab** (medievil.ini `grade_*`; `Gow3Settings::GradeAt`): white balance, then saturation / contrast / gamma /
+  gain / offset for global, shadows, mid-tones and highlights, the shadow / highlight bounds, blue correction and gamut
+  expansion, and Reset. Relative to the game's values, so each area's own grading stays: multipliers (1 = the game's)
+  and additions (0). Per-channel values are ini only (`grade_<range>_<field>_r|_g|_b`). Applied in `ApplyUe4Grade`
+  after `GOW3_UE4_GRADE`, in SDR and HDR (the same builder program runs in both). Neutral: the draw binds as before.
+- **Not in the menu, settable by us:** the film curve and any dword through `GOW3_UE4_GRADE` (absolute); boot cvars
+  through `GOW3_UE4_CVARS`; `GOW3_UE4_LIVE_CVARS="name=value;..."` sets cvars of the runtime's live table once the game
+  reaches its menu (for the ones the pak cannot outrank). The table now has `r.HDR.UI.Level`,
+  `r.HDR.Display.OutputDevice` / `ColorGamut`, `r.HDR.UI.CompositeMode`, `r.Tonemapper.Sharpen` / `GrainQuantization`
+  / `Quality`, `r.TonemapperGamma`, `r.TonemapperFilm`, `r.Gamma`, `r.Color.Min` / `Mid` / `Max` (sites checked against
+  the 01.02 eboot: each loads its own name; 01.00 from the same scan, unchecked). A Dev tab (dev build only) can use
+  them later.
 
 ## Invariants
 
@@ -54,9 +77,13 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
   (async path, a new skip in the draw path) brings the black UI back. `GOW3_DROP_LOG=1` names dropped draws.
 - `GOW3_UE4_GRADE` keys on the builder's program hash and on dword offsets of UE 4.21's parameter layout: another game
   build or engine version needs the map checked again (a RenderDoc dump of the builder's buffer 0).
-- Not finished: the port's overlay is drawn in the SDR format into the PQ swapchain (RTSS likewise: its text reads
-  as 10,000-nit red); FSR1 / RCAS's HDR mode squares PQ values; screenshots save raw PQ; no paper-white / peak /
-  contrast control. Diagnostic runs only until those are done.
+- `hdr_curve` must never reach the runtime in SDR: OutputDevice 3 / 4 on an SDR swapchain would draw PQ as sRGB
+  (`RequestHdrCurve` checks `HdrGame`).
+- Rows that share a name (the four ranges' Saturation ... Offset) need their own `ImGui::PushID` scope: a styled row's
+  ID is its name, and shared IDs move every copy at once (H20).
+- Grading is relative: replacing the game's values instead would flatten every area's own post-process grading.
+- Not finished: RTSS's text reads as 10,000-nit red (its own drawing); FSR1 / RCAS's HDR mode squares PQ values;
+  screenshots save raw PQ; no peak roll-off. Diagnostic runs only until those are done.
 
 ## Interactions
 
@@ -72,7 +99,10 @@ Runs H1-H13 in [study-hdr.md](../../docs/study-hdr.md#runs-2026-11-17-release-bu
 (2026-11-17): the switch works (game buffers `0x88740000`, colorimetry 12). Black UI traced through the frame map,
 a shader dump, the image watch by address, a dropped-draw log and a RenderDoc capture (`research-data/hdr-ui-20261117`,
 LUT all zero) to the dropped LUT draw; with the whole-draw sync compile the UI shows with the right colours, about
-100 nits (H13, the user: "confirmed, that fixed it"). Blacks raised, contrast poor (the user, H3): open.
+100 nits (H13, the user: "confirmed, that fixed it"). Blacks raised, contrast poor (the user, H3): open. H18: the overlay
+in HDR, the user: "the menus look good, they're no longer over-saturated". H19: `r.HDR.UI.Level=0.5` halved the HUD
+(health bar p99 105 -> 52 nits) and left the scene and the overlay as they were. H20 / H21: the Color tab and the HDR
+section, every slider working once each range got its own ImGui ID scope (the user, 2026-11-17).
 
 ## History and pitfalls
 

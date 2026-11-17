@@ -50,7 +50,74 @@ inline float ClampMouseRatio(float v) { ///< also to 0.01 steps
 /// Performance patches (PerfPatch, below) and Steam Deck switches (DeckSwitches): their counts, for Values.
 inline constexpr int PerfPatchCount = 13, DeckSwitchCount = 10;
 
+/// Colour grading (the menu's Color tab, medievil.ini grade_*; research/docs/study-hdr.md "LUT parameters"):
+/// changes to the game's own values in the parameter block of UE 4.21's combine LUT builder, applied by the
+/// renderer as it copies the block (vk_rasterizer.cpp), in SDR and HDR. Relative, so each area's own grading
+/// stays: saturation / contrast / gamma / gain multiply the game's value (1 = the game's), the rest are added
+/// (0 = the game's). Index range * 20 + field * 4 + component (0 r, 1 g, 2 b, 3 the whole colour, UE4's .w) is
+/// dword 56 + index; the extras follow.
+inline constexpr int GradeRangeCount = 4, GradeFieldCount = 5;
+inline constexpr const char* GradeRanges[GradeRangeCount] = {"global", "shadows", "midtones", "highlights"};
+inline constexpr const char* GradeRangeTitles[GradeRangeCount] = {"Global", "Shadows", "Mid-tones", "Highlights"};
+inline constexpr const char* GradeFields[GradeFieldCount] = {"saturation", "contrast", "gamma", "gain", "offset"};
+inline constexpr const char* GradeFieldTitles[GradeFieldCount] = {"Saturation", "Contrast", "Gamma", "Gain", "Offset"};
+enum GradeExtra : int {
+    GradeWbTemp = GradeRangeCount * GradeFieldCount * 4, ///< white balance temperature, kelvin added
+    GradeWbTint,          ///< white balance tint, added
+    GradeShadowsMax,      ///< where shadows end (0-1 luminance), added
+    GradeHighlightsMin,   ///< where highlights begin, added
+    GradeBlueCorrection,  ///< UE4's blue correction (0-1), added
+    GradeExpandGamut,     ///< UE4's gamut expansion (0-1), added
+    GradeCount
+};
+inline constexpr int GradeIndex(int range, int field, int component = 3) {
+    return range * GradeFieldCount * 4 + field * 4 + component;
+}
+struct GradeInfo {
+    int dword; ///< in the 144-dword block
+    bool add;  ///< added to the game's value (else multiplied)
+    float lo, hi, step;
+    const char* format;
+};
+inline constexpr GradeInfo GradeAt(int i) {
+    if (i < GradeWbTemp) {
+        return (i / 4) % GradeFieldCount == 4 ? GradeInfo{56 + i, true, -0.1f, 0.1f, 0.001f, "%+.3f"}
+                                               : GradeInfo{56 + i, false, 0.0f, 2.0f, 0.01f, "%.2f"};
+    }
+    switch (i) {
+    case GradeWbTemp: return {52, true, -3000.0f, 3000.0f, 50.0f, "%+.0f K"};
+    case GradeWbTint: return {53, true, -1.0f, 1.0f, 0.01f, "%+.2f"};
+    case GradeShadowsMax: return {136, true, -0.5f, 0.5f, 0.01f, "%+.2f"};
+    case GradeHighlightsMin: return {137, true, -0.5f, 0.5f, 0.01f, "%+.2f"};
+    case GradeBlueCorrection: return {140, true, -1.0f, 1.0f, 0.05f, "%+.2f"};
+    default: return {141, true, -1.0f, 1.0f, 0.05f, "%+.2f"};
+    }
+}
+inline constexpr float GradeNeutralValue(int i) {
+    return GradeAt(i).add ? 0.0f : 1.0f;
+}
+/// medievil.ini key: grade_<range>_<field> (the whole colour), with _r / _g / _b for one channel (ini only);
+/// grade_wb_temp, grade_wb_tint, grade_shadows_max, grade_highlights_min, grade_blue_correction, grade_expand_gamut.
+std::string GradeKey(int i);
+
+/// UI brightness range in nits (HDR): the game's UI at r.HDR.UI.Level = nits / 100 (H18, H19: 1.0 measures ~100-105).
+inline constexpr int HdrUiNitsMin = 50, HdrUiNitsMax = 400, HdrUiNitsDefault = 100;
+
 struct Values {
+    Values() {
+        for (int i = 0; i < GradeCount; ++i) {
+            grade[i].store(GradeNeutralValue(i), std::memory_order_relaxed);
+        }
+    }
+    /// HDR (Display tab > HDR, shown while the game outputs HDR10; study-hdr.md). UI brightness in nits: the
+    /// game's UI (r.HDR.UI.Level = nits / 100, live) and the port's overlay (its HDR pipeline's white). HDR curve:
+    /// 0 the game's 1000-nit ACES curve, 1 the 2000-nit one (r.HDR.Display.OutputDevice 3 / 4, live). hdr_active:
+    /// set by the presenter, the swapchain is HDR10.
+    std::atomic<int> hdr_ui_nits{HdrUiNitsDefault};
+    std::atomic<int> hdr_curve{0};
+    std::atomic<bool> hdr_active{false};
+    /// Colour grading (GradeAt), live: read by the renderer at each combine LUT draw.
+    std::atomic<float> grade[GradeCount];
     std::atomic<int> upscaler{UpscalerFsr3};
     std::atomic<int> preset{NativeAA};
     std::atomic<bool> sharpen{true};
@@ -476,6 +543,17 @@ int UE4MatchedLevel(const Values& v, int picked);
 /// Graphics quality picked in the menu: every option set to the level's choice, the live ones at once. Deck
 /// Optimized (UE4DeckLevel) sets only its graphics settings, with ue4_quality low as the launcher writes it.
 void UE4ApplyLevel(int level);
+
+/// HDR: requests r.HDR.UI.Level for hdr_ui_nits, and r.HDR.Display.OutputDevice for hdr_curve (only while the game
+/// was started in HDR: the SDR output device must stay 0). Live, on the next game-thread poll.
+void RequestHdrUi();
+void RequestHdrCurve();
+/// The game was started with its HDR output on (GOW3_HDR=1 and GOW3_HDR_GAME=1).
+bool HdrGame();
+/// Every grading value is the game's (nothing to patch).
+bool GradeNeutral();
+/// Sets every grading value back to the game's.
+void ResetGrade();
 
 /// Startup options changed since this launch (applied by "Apply and restart").
 int RestartChanges();

@@ -11,6 +11,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <iterator>
+#include <map>
 #include <mutex>
 #include <string_view>
 #include <thread>
@@ -40,6 +42,8 @@ extern "C" const char* runtime_file_user_dir(void); // src/runtime_file.c: the s
 #include "imgui.h"
 #include "imgui_internal.h" // RegisterUserTexture (save pictures)
 #include "imgui_impl_vulkan.h"
+#include "video_core/host_shaders/imgui_hdr_frag.h"
+#include "video_core/renderer_vulkan/host_passes/pp_pass.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_frame_capture.h"
@@ -267,7 +271,7 @@ void Store(std::atomic<T>& target, T value, bool changed) {
 // The help of the focused row (pad, keys or the mouse over it), shown in the footer.
 const char* footer_help = nullptr;
 
-constexpr int TabCount = 5;
+constexpr int TabCount = 6;
 
 // The PS4 buttons the menu reads (the runtime's bits, runtime_pad.c menu_buttons).
 namespace Ps4 {
@@ -1431,6 +1435,33 @@ void DisplayTab() {
         EndRows();
     }
 
+    // HDR (study-hdr.md): while the game outputs HDR10. UI brightness sets the game's UI level and the white of
+    // this menu's own HDR pipeline together; the curve is the engine's other HDR output device.
+    if (s.hdr_active) {
+        Section("HDR");
+        if (BeginRows("##hdr")) {
+            const int nits = s.hdr_ui_nits;
+            const int next = IntSliderRow("UI brightness", nits, S::HdrUiNitsMin, S::HdrUiNitsMax, 10, "%d nits",
+                                          "Brightness of the game's menus, HUD and subtitles, and of this menu. Lower "
+                                          "it to spare an OLED screen; 100 is the game's own.");
+            if (next != nits) {
+                s.hdr_ui_nits = next;
+                dirty = true;
+                S::RequestHdrUi();
+            }
+            if (S::HdrGame()) {
+                static const char* const curve_labels[] = {"1000 nits (game default)", "2000 nits"};
+                const int curve = s.hdr_curve;
+                ChoiceRow("HDR curve", s.hdr_curve, curve_labels, nullptr, 2,
+                          "The engine's HDR tone curve: the peak brightness it is made for. The game picks 1000.");
+                if (s.hdr_curve != curve) {
+                    S::RequestHdrCurve();
+                }
+            }
+            EndRows();
+        }
+    }
+
     Section("Information");
     if (BeginRows("##information")) {
         char text[96];
@@ -1743,11 +1774,92 @@ void OverlayTab() {
     }
 }
 
+// A grading value kept on its steps and in its range (NumberRow's clamp; one per kind of value).
+template <int I>
+float ClampGrade(float v) {
+    constexpr Gow3Settings::GradeInfo info = Gow3Settings::GradeAt(I);
+    return std::clamp(std::round(v / info.step) * info.step, info.lo, info.hi);
+}
+float (*GradeClamp(int i))(float) {
+    namespace S = Gow3Settings;
+    switch (i) {
+    case S::GradeWbTemp: return &ClampGrade<S::GradeWbTemp>;
+    case S::GradeWbTint: return &ClampGrade<S::GradeWbTint>;
+    case S::GradeShadowsMax: return &ClampGrade<S::GradeShadowsMax>;
+    case S::GradeHighlightsMin: return &ClampGrade<S::GradeHighlightsMin>;
+    case S::GradeBlueCorrection: return &ClampGrade<S::GradeBlueCorrection>;
+    case S::GradeExpandGamut: return &ClampGrade<S::GradeExpandGamut>;
+    default:
+        return S::GradeAt(i).add ? &ClampGrade<S::GradeIndex(0, 4)> : &ClampGrade<S::GradeIndex(0, 0)>;
+    }
+}
+
+void GradeRow(const char* label, int i, const char* help) {
+    const Gow3Settings::GradeInfo info = Gow3Settings::GradeAt(i);
+    NumberRow(label, Gow3Settings::Get().grade[i], info.lo, info.hi, info.step, info.format, GradeClamp(i), help);
+}
+
+// Color: UE4's colour grading (the combine LUT's parameters), live, relative to the game's values: each area's own
+// grading stays. In SDR and HDR. Per-channel values (grade_*_r / _g / _b) are in medievil.ini only.
+void ColorTab() {
+    namespace S = Gow3Settings;
+    if (IsGow3()) {
+        Section("Colour grading");
+        Note("God of War III has no colour grading here.");
+        return;
+    }
+    Note("Changes to the game's own colour grading, applied at once in SDR and HDR. 1.00 and +0 keep the game's "
+         "look; each area keeps its own grading. Per-channel (red / green / blue) values are in medievil.ini.");
+    Section("White balance");
+    if (BeginRows("##white_balance")) {
+        GradeRow("Temperature", S::GradeWbTemp, "Warmer (+) or cooler (-) than the game's white, in kelvin.");
+        GradeRow("Tint", S::GradeWbTint, "Towards magenta (+) or green (-).");
+        EndRows();
+    }
+    static constexpr const char* help[S::GradeFieldCount] = {
+        "Colour strength: 0 is grey, 1.00 the game's.",
+        "Spread around mid-grey: higher darkens shadows and brightens highlights.",
+        "Mid-tone brightness curve: higher brightens mid-tones.",
+        "Brightness multiplier.",
+        "Added to every colour: lifts (+) or lowers (-) the blacks.",
+    };
+    for (int range = 0; range < S::GradeRangeCount; ++range) {
+        Section(S::GradeRangeTitles[range]);
+        char id[32];
+        std::snprintf(id, sizeof(id), "##grade_%s", S::GradeRanges[range]);
+        if (BeginRows(id)) {
+            // The four ranges share their row names: an ID scope per range, or the styled rows (whose IDs are
+            // their names) share one slider and number box and a change in one range moves all four (run 20).
+            ImGui::PushID(range);
+            for (int field = 0; field < S::GradeFieldCount; ++field) {
+                GradeRow(S::GradeFieldTitles[field], S::GradeIndex(range, field), help[field]);
+            }
+            ImGui::PopID();
+            EndRows();
+        }
+    }
+    Section("Ranges and gamut");
+    if (BeginRows("##grade_ranges")) {
+        GradeRow("Shadows end", S::GradeShadowsMax, "Where the Shadows controls stop (luminance, the game's 0.09).");
+        GradeRow("Highlights start", S::GradeHighlightsMin,
+                 "Where the Highlights controls begin (luminance, the game's 0.5).");
+        GradeRow("Blue correction", S::GradeBlueCorrection, "UE4's fix for bright blue lights turning purple (the game's 0.6).");
+        GradeRow("Expand gamut", S::GradeExpandGamut, "UE4's widening of saturated colours (the game's 1).");
+        static const char* const reset_label[] = {"Reset"};
+        static const bool enabled[] = {true};
+        if (ButtonsRow("All colour grading", reset_label, 1, enabled, "Back to the game's own grading.") == 0) {
+            S::ResetGrade();
+            dirty = true;
+        }
+        EndRows();
+    }
+}
+
 int RestartChanges() {
     return Gow3Settings::RestartChanges();
 }
 
-// The tab's content: CONTROLS, DISPLAY, GRAPHICS, PERFORMANCE, OVERLAY (2026-11-13). GameTab (God of War
+// The tab's content: CONTROLS, DISPLAY, GRAPHICS, COLOR (2026-11-17), PERFORMANCE, OVERLAY (2026-11-13). GameTab (God of War
 // III's cheats and multipliers) is kept but has no tab for now.
 void TabBody(int tab) {
     nav.in_body = true;
@@ -1755,7 +1867,8 @@ void TabBody(int tab) {
     case 0: ControlsTab(); break;
     case 1: DisplayTab(); break;
     case 2: GraphicsTab(); break;
-    case 3: PerformanceTab(); break;
+    case 3: ColorTab(); break;
+    case 4: PerformanceTab(); break;
     default: OverlayTab(); break;
     }
     nav.in_body = false;
@@ -1800,7 +1913,7 @@ void PlainMenu() {
     }
     const float footer = ImGui::GetFrameHeightWithSpacing() * 2.0f + ImGui::GetTextLineHeightWithSpacing() * 2.0f;
     if (ImGui::BeginTabBar("##tabs")) {
-        static const char* const tabs[TabCount] = {"Controls", "Display", "Graphics", "Performance", "Overlay"};
+        static const char* const tabs[TabCount] = {"Controls", "Display", "Graphics", "Color", "Performance", "Overlay"};
         for (int tab = 0; tab < TabCount; ++tab) {
             const ImGuiTabItemFlags flags = requested_tab == tab ? ImGuiTabItemFlags_SetSelected : 0;
             if (!ImGui::BeginTabItem(tabs[tab], nullptr, flags)) {
@@ -1966,7 +2079,7 @@ void StyledMenu() {
 
     // The tabs between the L1 and R1 prompts (each clickable); the current one Gold and underlined.
     {
-        static const char* const tabs[TabCount] = {"CONTROLS", "DISPLAY", "GRAPHICS", "PERFORMANCE", "OVERLAY"};
+        static const char* const tabs[TabCount] = {"CONTROLS", "DISPLAY", "GRAPHICS", "COLOR", "PERFORMANCE", "OVERLAY"};
         float size = TextPx(TabPx), icon = Px(TabIcon), gap = Px(22.0f);
         float total = 2.0f * (icon + gap) - gap;
         for (const char* name : tabs) {
@@ -3335,7 +3448,43 @@ void LogPresent() {
     }
 }
 
-void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent) {
+/// The overlay's pipeline for an HDR10 swapchain with white at `nits` (the menu's UI brightness; study-hdr.md):
+/// made on its first use for each value and kept (a value's pipeline may still be in a frame in flight, and the
+/// menu's steps give a few dozen at most).
+static VkPipeline HdrPipeline(int nits) {
+    static std::map<int, VkPipeline> pipelines;
+    if (const auto it = pipelines.find(nits); it != pipelines.end()) {
+        return it->second;
+    }
+    // imgui_hdr.frag's one OpSpecConstant (opcode 50, 4 words: type, id, value) gets the value.
+    std::vector<u32> code(std::begin(IMGUI_HDR_FRAG), std::end(IMGUI_HDR_FRAG));
+    bool patched = false;
+    for (std::size_t at = 5; at < code.size();) {
+        const u32 words = code[at] >> 16, opcode = code[at] & 0xffff;
+        if (words == 0) {
+            break;
+        }
+        if (opcode == 50 && words == 4 && at + 3 < code.size()) {
+            const float value = float(nits);
+            std::memcpy(&code[at + 3], &value, sizeof(value));
+            patched = true;
+        }
+        at += words;
+    }
+    VkShaderModuleCreateInfo frag{};
+    frag.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    frag.codeSize = code.size() * sizeof(u32);
+    frag.pCode = code.data();
+    const VkPipeline pipeline = ImGui_ImplVulkan_CreatePipelineForFormat(
+        static_cast<VkFormat>(Vulkan::HostPasses::PostProcessingPass::HDR_FRAME_FORMAT), &frag);
+    std::printf("Overlay: HDR10 pipeline %s (PQ, white %d nits%s)\n",
+                pipeline ? "ready" : "failed; the menu draws in the SDR pipeline", patched ? nits : 100,
+                patched ? "" : ", the shader's default: no specialization constant found");
+    pipelines.emplace(nits, pipeline);
+    return pipeline;
+}
+
+void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent, bool hdr) {
     // Present interval for the FPS readout (measured also while nothing is drawn).
     const auto now = std::chrono::steady_clock::now();
     const float ms = std::chrono::duration<float, std::milli>(now - last_present).count();
@@ -3345,6 +3494,7 @@ void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent) {
     }
     ConfirmRestart();
     PollChoiceInput();
+    Gow3Settings::Get().hdr_active.store(hdr, std::memory_order_relaxed); // the menu's HDR rows
     if (open_requested.exchange(false)) {
         SetOpen(true);
     }
@@ -3412,7 +3562,8 @@ void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent) {
     {
         // Font atlas uploads submit to the graphics queue themselves.
         std::scoped_lock submit_lock{Vulkan::Scheduler::submit_mutex};
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdbuf);
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdbuf,
+                                        hdr ? HdrPipeline(Gow3Settings::Get().hdr_ui_nits.load()) : VK_NULL_HANDLE);
     }
     cmdbuf.endRendering();
 }
