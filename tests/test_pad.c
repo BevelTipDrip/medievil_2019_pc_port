@@ -62,7 +62,7 @@ int main(void) {
     SDL_UpdateJoysticks();
     SDL_UpdateGamepads();
     assert(pad_read_state(1,&data)==0);
-    assert(gamepad && data.touch_count==2 && (data.buttons & BTN_TOUCHPAD));
+    assert(gamepad_count==1 && gamepads[0] && data.touch_count==2 && (data.buttons & BTN_TOUCHPAD));
     assert(data.touches[0].x==1439 && data.touches[0].y==471 && data.touches[0].id==0);
     assert(data.touches[1].x==480 && data.touches[1].y==942 && data.touches[1].id==1);
     capture=1;
@@ -74,8 +74,9 @@ int main(void) {
     SDL_UpdateGamepads();
     assert(pad_read_state(1,&data)==0 && data.touch_count==1 && data.touches[0].x==480);
     SDL_CloseJoystick(joystick);
-    if (gamepad) SDL_CloseGamepad(gamepad);
-    gamepad=NULL;
+    /* runtime_pad.c keeps every open controller since 1.3.6 (gamepads[], gamepad_count). */
+    for (int i=0;i<gamepad_count;++i) if (gamepads[i]) SDL_CloseGamepad(gamepads[i]), gamepads[i]=NULL;
+    gamepad_count=0;
     assert(SDL_DetachVirtualJoystick(id));
     SDL_Quit();
     unlink(path);
