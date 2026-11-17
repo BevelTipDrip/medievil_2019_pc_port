@@ -54,6 +54,10 @@ option, so it is not in `switches.tsv`.
   `data/deck-v3-1.log` and a 10 s `perf record` (`research-data/perf/deck-v3-perf-report.txt`) were read for
   addresses and hot spots (impl-cpu-waste.md, impl-stage-a-decode.md), but its FPS was never compared with a
   baseline launch: **no v3 vs baseline A/B is recorded**. Not verified in game.
+- The user (2026-11-16): the Deck's v3 build *was* tested and performed worse than the baseline (the numbers were
+  not written down). That was before the stats counters were gated (stats-counters-gated) and before the CPU-side
+  fixes that raised the 1% / 0.1% lows (rwlock fast path, precise condition timeouts, release build), so worth
+  re-testing soon; the Windows v3 / v4 A/B (cpu-level-windows) comes first.
 
 ## History and pitfalls
 

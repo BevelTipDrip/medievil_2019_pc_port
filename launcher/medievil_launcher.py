@@ -3030,15 +3030,34 @@ def runtime_executable(settings=None):
     return None
 
 
+def extra_env_probe():
+    """GOW3_PROBE from <data>/extra-env.txt, which run.py applies over the launcher's choice (an A/B of
+    another build); relative paths are from the port folder, as in run.py."""
+    try:
+        lines = (DATA_DIR / 'extra-env.txt').read_text(encoding='utf-8').splitlines()
+    except OSError:
+        return None
+    probe = None
+    for line in lines:
+        key, sep, value = line.strip().partition('=')
+        if sep and key.strip() == 'GOW3_PROBE' and value.strip():
+            probe = value.strip()
+    return (PORT_DIR / probe) if probe else None
+
+
 def run_log_header(settings):
     """Lines that identify a run: when, which launcher and build, which system and which game."""
     now = time.localtime()
     lines = [f'Run log: {time.strftime("%Y-%m-%d %H:%M:%S", now)} (local), MediEvil launcher {VERSION}']
     build = []
     exe = runtime_executable(settings)
+    override = extra_env_probe()
+    if override and override.is_file():
+        exe = override
     if exe:
         stat = exe.stat()
-        build.append(f'{exe.name} {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(stat.st_mtime))}, '
+        build.append(f'{exe.name}{" (extra-env.txt)" if exe == override else ""} '
+                     f'{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(stat.st_mtime))}, '
                      f'{stat.st_size:,} bytes')
     if (PORT_DIR / '.git').exists():
         try:

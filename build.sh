@@ -33,6 +33,14 @@ MINGW*|MSYS*)
     # research/tools/pgo-merge.sh then writes pgo/windows/medievil.profdata (in git). The release build
     # uses that profile only with GOW3_PGO=use: off by default since the 2026-11-16 A/B (worse spikes and
     # lows in gameplay, average unchanged; card tooling/clang-pgo). The dev build never does.
+    # GOW3_CPU_LEVEL=v3|v4 (card tooling/cpu-level-windows; release only): the release build for x86-64-v3
+    # (AVX2) / -v4 (AVX-512) in out/gpu-release-<level> -> out/medievil-runtime-<level>.exe beside the
+    # baseline exe, which stays as it is. Nothing checks the CPU yet: start it only on a CPU that has it.
+    cpu_level=${GOW3_CPU_LEVEL:-}
+    case $cpu_level in ''|v3|v4) ;; *) echo "GOW3_CPU_LEVEL on Windows: empty, v3 or v4, not '$cpu_level'" >&2; exit 1 ;; esac
+    if [[ -n $cpu_level && ${GOW3_BUILD:-release} != release ]]; then
+        echo "GOW3_CPU_LEVEL=$cpu_level: release build only (GOW3_BUILD=release)" >&2; exit 1
+    fi
     flavours=()
     case ${GOW3_BUILD:-release} in
     release) flavours=(release) ;;
@@ -51,6 +59,7 @@ MINGW*|MSYS*)
         case $flavour in
         release)
             tree=out/gpu-release dev_tools=OFF targets=(medievil-runtime medievil-gpu-check medievil-play)
+            if [[ -n $cpu_level ]]; then tree=out/gpu-release-$cpu_level targets=(medievil-runtime); fi
             if [[ ${GOW3_PGO:-} == use ]]; then pgo=use; fi ;;
         dev) tree=out/gpu dev_tools=ON targets=(medievil-runtime) ;;
         pgo-train)
@@ -62,14 +71,21 @@ MINGW*|MSYS*)
         cmake -S gpu -B "$tree" -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DGOW3_PGO="$pgo" \
             -DGOW3_PGO_DIR="$pgo_dir" \
             -DGOW3_LTO="${GOW3_LTO:-ON}" -DGOW3_CACHELINE_PADDING="${GOW3_CACHELINE_PADDING:-ON}" \
-            -DGOW3_DEV_TOOLS="$dev_tools" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ >/dev/null
-        echo "GPU library and loader ($flavour build, $tree): LTO ${GOW3_LTO:-ON}, PGO $pgo"
-        if ! ninja -C "$tree" "${targets[@]}" > "out/gpu-build-$flavour.log" 2>&1; then
-            grep -v '^\[' "out/gpu-build-$flavour.log" | tail -40 >&2
-            echo "Build failed (full log: out/gpu-build-$flavour.log)" >&2; exit 1
+            -DGOW3_DEV_TOOLS="$dev_tools" -DGOW3_CPU_LEVEL="$cpu_level" \
+            -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ >/dev/null
+        log=out/gpu-build-$flavour${cpu_level:+-$cpu_level}.log
+        echo "GPU library and loader ($flavour build, $tree): LTO ${GOW3_LTO:-ON}, PGO $pgo, CPU level ${cpu_level:-baseline}"
+        if ! ninja -C "$tree" "${targets[@]}" > "$log" 2>&1; then
+            grep -v '^\[' "$log" | tail -40 >&2
+            echo "Build failed (full log: $log)" >&2; exit 1
         fi
         case $flavour in
         release)
+            if [[ -n $cpu_level ]]; then
+                cp "$tree/medievil-runtime.exe" "out/medievil-runtime-$cpu_level.exe"
+                echo "Built $PWD/out/medievil-runtime-$cpu_level.exe (release, x86-64-$cpu_level, PGO $pgo)"
+                continue
+            fi
             cp "$tree/medievil-runtime.exe" "$tree/medievil-gpu-check.exe" "$tree/medievil-play.exe" out/
             echo "Built $PWD/out/medievil-runtime.exe (release, PGO $pgo)" ;;
         dev)

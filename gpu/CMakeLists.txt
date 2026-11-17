@@ -96,16 +96,23 @@ endif()
 # (packaging/linux/AppRun). -ffp-contract=off: no a*b+c becomes an FMA, so float results (the
 # shader recompiler's constant folding, pacing and scaling math) stay those of the default build;
 # only instruction selection and tuning change. Empty (default): x86-64 baseline, the default linker.
-set(GOW3_CPU_LEVEL "" CACHE STRING "Host CPU level: empty (x86-64 baseline) or v3 (Linux)")
-if (GOW3_CPU_LEVEL STREQUAL "v3")
-    if (WIN32)
-        message(FATAL_ERROR "GOW3_CPU_LEVEL=v3 is a Linux build flavour")
-    endif()
+# Windows (card tooling/cpu-level-windows, 2026-11-16): v3 (AVX2, BMI1/2, FMA) or v4 (also AVX-512
+# F/BW/CD/DQ/VL), generic tuning (Intel and AMD desktops), the same -fno-math-errno -ffp-contract=off;
+# Windows links with lld already. The exe cannot check the CPU itself (AVX2 code can run in
+# constructors before main): whatever starts it must (build.sh writes it beside the baseline exe).
+set(GOW3_CPU_LEVEL "" CACHE STRING "Host CPU level: empty (x86-64 baseline), v3, or v4 (Windows)")
+if (GOW3_CPU_LEVEL STREQUAL "v3" AND NOT WIN32)
     add_compile_options(-march=x86-64-v3 -mtune=znver2 -fno-math-errno -ffp-contract=off)
     # The link sees -march too: the LTO code generator then targets the same CPU.
     add_link_options(-fuse-ld=lld -march=x86-64-v3 -mtune=znver2)
+elseif (GOW3_CPU_LEVEL MATCHES "^v[34]$" AND WIN32)
+    add_compile_options(-march=x86-64-${GOW3_CPU_LEVEL} -mtune=generic -fno-math-errno -ffp-contract=off)
+    add_link_options(-march=x86-64-${GOW3_CPU_LEVEL} -mtune=generic)
 elseif (NOT GOW3_CPU_LEVEL STREQUAL "")
-    message(FATAL_ERROR "GOW3_CPU_LEVEL: empty or v3, not '${GOW3_CPU_LEVEL}'")
+    message(FATAL_ERROR "GOW3_CPU_LEVEL: empty, v3, or v4 (Windows), not '${GOW3_CPU_LEVEL}'")
+endif()
+if (NOT GOW3_CPU_LEVEL STREQUAL "")
+    add_compile_definitions(GOW3_CPU_LEVEL_NAME="x86-64-${GOW3_CPU_LEVEL}")
 endif()
 
 find_package(Vulkan REQUIRED)

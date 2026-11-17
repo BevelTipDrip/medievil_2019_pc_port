@@ -1350,8 +1350,14 @@ int main(int argc, char **argv) {
 #else
 #define RUNTIME_PGO ""
 #endif
-    printf("Runtime: %s build (GOW3_DEV_TOOLS=%d%s)\n", GOW3_DEV_TOOLS ? "dev" : "release", GOW3_DEV_TOOLS,
-           RUNTIME_PGO);
+    /* CPU level (GOW3_CPU_LEVEL v3 / v4): a build type of its own as well. */
+#ifdef GOW3_CPU_LEVEL_NAME
+#define RUNTIME_CPU ", " GOW3_CPU_LEVEL_NAME
+#else
+#define RUNTIME_CPU ""
+#endif
+    printf("Runtime: %s build (GOW3_DEV_TOOLS=%d%s%s)\n", GOW3_DEV_TOOLS ? "dev" : "release", GOW3_DEV_TOOLS,
+           RUNTIME_PGO, RUNTIME_CPU);
 #ifndef _WIN32
     /* Keep host heap objects handed to the guest (thread handles, TLS) in the
        non-PIE brk heap, i.e. below 1 TiB: the guest packs pointers into 40 bits. */
