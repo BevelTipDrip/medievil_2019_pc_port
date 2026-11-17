@@ -74,8 +74,10 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
     camera_motion->SetObjectMotion(object_motion.get());
     upscaler = std::make_unique<TemporalUpscaler>(instance, scheduler, texture_cache, runtime,
                                                   *camera_motion, *scene_targets);
-    if (Ue4FrameMap::Enabled()) {
-        frame_map = std::make_unique<Ue4FrameMap>();
+    if constexpr (GOW3_DEV_TOOLS) { // the frame map (log only) is a dev-build tool
+        if (Ue4FrameMap::Enabled()) {
+            frame_map = std::make_unique<Ue4FrameMap>();
+        }
     }
     if (Ue4Motion::Enabled() || Ue4Upscaler::Enabled()) {
         ue4_motion = std::make_unique<Ue4Motion>(instance, scheduler, texture_cache, runtime);
@@ -628,7 +630,7 @@ static void NoteGuestPipelineBind(vk::Pipeline handle) {
 /// shoulder / blackclip / whiteclip, wb.temp / tint, {global,shadows,midtones,highlights}.
 /// {saturation,contrast,gamma,gain,offset} (a scalar sets .w: UE4 multiplies rgb by it, or adds it
 /// for offset; .r .g .b .w set one component), shadows_max, highlights_min, blue_correction,
-/// expand_gamut, d<index> (any dword as a float). Read once at start.
+/// expand_gamut, d<index> (any dword as a float). Read once at start. Dev build only (GOW3_DEV_TOOLS).
 namespace {
 constexpr u64 Ue4CombineLutPs = 0xa4152b3be93c832aull;
 constexpr u32 Ue4CombineLutDwords = 144;
@@ -641,6 +643,9 @@ struct Ue4Grade {
 };
 const Ue4Grade& Ue4GradeOverride();
 void CountUe4Grade(std::atomic<u32> Ue4Grade::*path) {
+    if constexpr (!GOW3_DEV_TOOLS) {
+        return; // release build: the coverage counts are a dev-build check
+    }
     auto& grade = const_cast<Ue4Grade&>(Ue4GradeOverride());
     (grade.*path).fetch_add(1, std::memory_order_relaxed);
     const u32 total = grade.ring.load() + grade.stream.load() + grade.unpatched.load();
@@ -653,6 +658,9 @@ void CountUe4Grade(std::atomic<u32> Ue4Grade::*path) {
 const Ue4Grade& Ue4GradeOverride() {
     static Ue4Grade grade;
     static const bool parsed = [] {
+        if constexpr (!GOW3_DEV_TOOLS) {
+            return true; // release build: GOW3_UE4_GRADE is a dev-build tool; the menu's grading stays
+        }
         const char* env = std::getenv("GOW3_UE4_GRADE");
         if (!env || !*env) {
             return true;

@@ -66,6 +66,14 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
   / `Quality`, `r.TonemapperGamma`, `r.TonemapperFilm`, `r.Gamma`, `r.Color.Min` / `Mid` / `Max` (sites checked against
   the 01.02 eboot: each loads its own name; 01.00 from the same scan, unchecked). A Dev tab (dev build only) can use
   them later.
+- **Color panel** ("Adjust while playing" in the Color tab): the Color tab's rows in a small copy of the game's Options
+  frame in the bottom-right corner (30% of the width, 62% of the height), no dimming, rows 1.35x the frame's scale;
+  Circle goes back to the full menu, L1 / R1 do nothing there. The full menu and the panel share `StyledBody` (the
+  scrolled list).
+- **Release build** (`GOW3_DEV_TOOLS=0`): `GOW3_UE4_GRADE`, the grading coverage counts, `GOW3_UE4_LIVE_CVARS`, the
+  frame map (with its shader traces), the image watch and the dropped-draw log are compiled out (strings absent from
+  the release exe, present in the dev one). The HDR post-process pipeline is built only with `GOW3_HDR=1`. Kept: the
+  capped start-up HDR log lines and the one "colour grading on" line.
 
 ## Invariants
 
@@ -102,7 +110,8 @@ LUT all zero) to the dropped LUT draw; with the whole-draw sync compile the UI s
 100 nits (H13, the user: "confirmed, that fixed it"). Blacks raised, contrast poor (the user, H3): open. H18: the overlay
 in HDR, the user: "the menus look good, they're no longer over-saturated". H19: `r.HDR.UI.Level=0.5` halved the HUD
 (health bar p99 105 -> 52 nits) and left the scene and the overlay as they were. H20 / H21: the Color tab and the HDR
-section, every slider working once each range got its own ImGui ID scope (the user, 2026-11-17).
+section, every slider working once each range got its own ImGui ID scope (the user, 2026-11-17). H22: the Color panel
+and the release build without the diagnostics, "everything functions as expected".
 
 ## History and pitfalls
 

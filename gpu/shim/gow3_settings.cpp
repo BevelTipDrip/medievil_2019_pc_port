@@ -525,7 +525,8 @@ void Load() {
     // GOW3_UE4_LIVE_CVARS="name=value;..." (tests, research): console variables of the runtime's live table
     // (src/runtime_extra.c ue4_cvars[]) set once the game reaches its menu, after the device profile. For the
     // ones a pak cannot set, such as r.HDR.Display.ColorGamut; values up to 15 characters.
-    if (const char* env = std::getenv("GOW3_UE4_LIVE_CVARS"); env && env[0]) {
+    // Dev build only (GOW3_DEV_TOOLS).
+    if (const char* env = GOW3_DEV_TOOLS ? std::getenv("GOW3_UE4_LIVE_CVARS") : nullptr; env && env[0]) {
         const std::string text = env;
         for (std::size_t at = 0; at < text.size();) {
             const std::size_t end = std::min(text.find(';', at), text.size());

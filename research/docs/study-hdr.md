@@ -223,6 +223,8 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
   showed ImGui's "2 visible items with conflicting ID" and a change in one range moved all four: the styled rows' IDs are
   their names, which the four ranges share.
 - **H21, an ID scope per range** (`ImGui::PushID(range)`, release 13:51): the user: "all the sliders appear to work" [V].
+- **H22, the Color panel and the release build without the HDR diagnostics** (release 15:29; the user's run 21 grading
+  active): the user: "everything functions as expected" [V].
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.

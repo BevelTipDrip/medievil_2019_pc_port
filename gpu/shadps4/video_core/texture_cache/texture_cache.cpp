@@ -996,6 +996,9 @@ ImageWatchSpec& ImageWatch() {
 } // namespace
 
 bool TextureCache::Watched(const ImageInfo& info) const {
+    if constexpr (!GOW3_DEV_TOOLS) {
+        return false; // release build: GOW3_IMAGE_WATCH / GOW3_IMAGE_WATCH_ADDR are dev-build tools
+    }
     const auto& spec = ImageWatch();
     if (spec.addr && info.guest_address < spec.addr + spec.addr_size &&
         spec.addr < info.guest_address + info.guest_size) {

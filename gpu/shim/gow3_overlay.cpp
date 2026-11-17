@@ -90,6 +90,9 @@ std::atomic<bool> loading{false};
 std::atomic<u32> loading_done{0}, loading_total{0};
 std::atomic<u32> background_done{0}, background_total{0};
 bool dirty = false; // settings changed while open: saved on close
+// The Color tab as a small panel in the bottom-right corner over the undimmed game (ColorPanel; the Color tab's
+// "Adjust while playing"): Circle goes back to the full menu, closing the menu closes both.
+bool color_panel = false;
 int requested_tab = -1; // switch on the next frame (L1/R1, Q/E, menu opened)
 // The game's text dialog (SetTextEntry), guarded by imgui_mutex.
 bool text_entry_active = false;
@@ -161,6 +164,7 @@ void SetOpen(bool value) {
     }
     if (!value) {
         ApplyRenderScale(true);
+        color_panel = false;
     }
     if (!value && dirty) {
         dirty = false;
@@ -407,12 +411,16 @@ void MenuPress(uint32_t pressed) {
     nav.move += (pressed & Ps4::Up) ? -1 : (pressed & Ps4::Down) ? 1 : 0;
     nav.step += (pressed & Ps4::Left) ? -1 : (pressed & Ps4::Right) ? 1 : 0;
     nav.press |= (pressed & Ps4::Cross) != 0;
-    if (pressed & (Ps4::L1 | Ps4::R1)) {
+    if ((pressed & (Ps4::L1 | Ps4::R1)) && !color_panel) { // the panel shows the Color tab only
         const int from = requested_tab >= 0 ? requested_tab : Gow3Settings::Get().menu_tab.load();
         requested_tab = (from + ((pressed & Ps4::R1) ? 1 : TabCount - 1)) % TabCount;
     }
     if (pressed & Ps4::Circle) {
-        SetOpen(false);
+        if (color_panel) {
+            color_panel = false; // back to the full menu
+        } else {
+            SetOpen(false);
+        }
     }
 }
 
@@ -1808,8 +1816,20 @@ void ColorTab() {
         Note("God of War III has no colour grading here.");
         return;
     }
-    Note("Changes to the game's own colour grading, applied at once in SDR and HDR. 1.00 and +0 keep the game's "
-         "look; each area keeps its own grading. Per-channel (red / green / blue) values are in medievil.ini.");
+    if (!color_panel) {
+        Note("Changes to the game's own colour grading, applied at once in SDR and HDR. 1.00 and +0 keep the game's "
+             "look; each area keeps its own grading. Per-channel (red / green / blue) values are in medievil.ini.");
+        if (styled && BeginRows("##color_panel_open")) {
+            static const char* const open_label[] = {"Open"};
+            static const bool enabled[] = {true};
+            if (ButtonsRow("Adjust while playing", open_label, 1, enabled,
+                           "These settings in a small panel in the corner, over the game without dimming it. Circle "
+                           "comes back here.") == 0) {
+                color_panel = true;
+            }
+            EndRows();
+        }
+    }
     Section("White balance");
     if (BeginRows("##white_balance")) {
         GradeRow("Temperature", S::GradeWbTemp, "Warmer (+) or cooler (-) than the game's white, in kelvin.");
@@ -2021,6 +2041,87 @@ constexpr float PromptRule = 714.0f, PromptTop = 722.0f, PromptIcon = 34.0f, Pro
 constexpr float HelpText = 22.0f, HelpLines = 3.0f, HelpTop = PromptRule - 8.0f - HelpLines * HelpText;
 constexpr float BodyBottom = HelpTop - 4.0f;
 
+// The settings menu's (or the Color panel's) scrolled rows at `pos`, `size` screen pixels: tab `tab`'s rows, whole
+// rows only, with a thin scroll bar drawn into `draw` (the frame's list) when they do not fit.
+void StyledBody(ImVec2 pos, ImVec2 size, int tab, ImDrawList* draw) {
+    // The tab's rows, scrolled, whole rows only, with a thin scroll bar (wheel, click or drag) when they do not fit.
+    ImGui::SetCursorScreenPos(pos);
+    PushMenuStyle();
+    ImVec2 body_pos{}, body_size{};
+    float scroll = 0.0f, scroll_max = 0.0f;
+    if (ImGui::BeginChild("##body", size, ImGuiChildFlags_None,
+                          ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar)) {
+        body_pos = ImGui::GetWindowPos();
+        body_size = ImGui::GetWindowSize();
+        // The scroll bar's mouse area first (ImGui gives the hover to the first item), from the last frame's
+        // scroll range: a click on the track jumps there, the thumb drags.
+        scrollbar_hovered = false;
+        if (const float range = ImGui::GetScrollMaxY(); range > 0.0f) {
+            const ImVec2 start = ImGui::GetCursorScreenPos();
+            const float view = body_size.y, bar = std::max(view * view / (view + range), Px(30.0f));
+            const float thumb = body_pos.y + (view - bar) * ImGui::GetScrollY() / range;
+            // Not part of the list's content: placed at the scrolled top, it stretched the scroll range past the
+            // last row a little every frame (T-SM4: blank space, the list creeping on open).
+            ImGuiWindow* body = ImGui::GetCurrentWindow();
+            const ImVec2 content_end = body->DC.CursorMaxPos;
+            ImGui::SetCursorScreenPos(ImVec2(body_pos.x + body_size.x - Px(16.0f), body_pos.y));
+            ImGui::InvisibleButton("##scrollbar", ImVec2(Px(16.0f), view));
+            body->DC.CursorMaxPos = content_end;
+            static float grab = 0.0f; // where the thumb was taken, from its top
+            const float mouse = ImGui::GetIO().MousePos.y;
+            if (ImGui::IsItemActivated()) {
+                grab = mouse >= thumb && mouse <= thumb + bar ? mouse - thumb : bar * 0.5f;
+            }
+            if (ImGui::IsItemActive() && view > bar) {
+                ImGui::SetScrollY(std::clamp((mouse - grab - body_pos.y) / (view - bar), 0.0f, 1.0f) * range);
+            }
+            scrollbar_hovered = ImGui::IsItemHovered() || ImGui::IsItemActive();
+            ImGui::SetCursorScreenPos(start);
+        }
+        body_items.clear();
+        in_styled_body = true;
+        NavStartTab(tab);
+        TabBody(tab);
+        in_styled_body = false;
+        scroll = ImGui::GetScrollY();
+        scroll_max = ImGui::GetScrollMaxY();
+        // Whole items only: the list's drawing is cut at the bottom of the last item that fits and at the top of
+        // the first one wholly in view (the last row was cut mid-text, T-SM1).
+        float cut_top = body_pos.y, cut_bottom = body_pos.y + body_size.y;
+        if (scroll_max > 0.0f && !body_items.empty()) {
+            float top = cut_bottom, bottom = cut_top;
+            for (const auto& [item_top, item_bottom] : body_items) {
+                if (item_top >= cut_top - CutSlack) top = std::min(top, item_top);
+                if (item_bottom <= cut_bottom + CutSlack) bottom = std::max(bottom, item_bottom);
+            }
+            if (bottom > top) {
+                cut_top = top;
+                cut_bottom = bottom;
+                for (ImDrawCmd& cmd : ImGui::GetWindowDrawList()->CmdBuffer) {
+                    cmd.ClipRect.y = std::max(cmd.ClipRect.y, cut_top);
+                    cmd.ClipRect.w = std::min(cmd.ClipRect.w, cut_bottom);
+                }
+            }
+        }
+        body_visible_top = cut_top;
+        body_visible_bottom = cut_bottom;
+    }
+    ImGui::EndChild();
+    PopMenuStyle();
+    if (scroll_max > 0.0f) { // the scroll bar (the frame's draw list: the list's own is cut to whole rows)
+        const float view = body_size.y, bar = std::max(view * view / (view + scroll_max), Px(30.0f));
+        const float top = body_pos.y + (view - bar) * scroll / scroll_max;
+        const float x = body_pos.x + body_size.x - Px(5.0f);
+        if (scrollbar_hovered) {
+            draw->AddRectFilled(ImVec2(x, body_pos.y), ImVec2(x + Px(5.0f), body_pos.y + view),
+                                IM_COL32(200, 196, 190, 40), Px(3.0f));
+        }
+        draw->AddRectFilled(ImVec2(x, top), ImVec2(x + Px(5.0f), top + bar),
+                            IM_COL32(200, 196, 190, scrollbar_hovered ? 200 : 120), Px(3.0f));
+    }
+
+}
+
 void StyledMenu() {
     auto& s = Gow3Settings::Get();
     if (requested_tab >= 0) {
@@ -2210,81 +2311,7 @@ void StyledMenu() {
         }
     }
 
-    // The tab's rows, scrolled, whole rows only, with a thin scroll bar (wheel, click or drag) when they do not fit.
-    ImGui::SetCursorScreenPos(P(BodyX, BodyTop));
-    PushMenuStyle();
-    ImVec2 body_pos{}, body_size{};
-    float scroll = 0.0f, scroll_max = 0.0f;
-    if (ImGui::BeginChild("##body", ImVec2(Px(BodyW), Px(BodyBottom + stretch - BodyTop)), ImGuiChildFlags_None,
-                          ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar)) {
-        body_pos = ImGui::GetWindowPos();
-        body_size = ImGui::GetWindowSize();
-        // The scroll bar's mouse area first (ImGui gives the hover to the first item), from the last frame's
-        // scroll range: a click on the track jumps there, the thumb drags.
-        scrollbar_hovered = false;
-        if (const float range = ImGui::GetScrollMaxY(); range > 0.0f) {
-            const ImVec2 start = ImGui::GetCursorScreenPos();
-            const float view = body_size.y, bar = std::max(view * view / (view + range), Px(30.0f));
-            const float thumb = body_pos.y + (view - bar) * ImGui::GetScrollY() / range;
-            // Not part of the list's content: placed at the scrolled top, it stretched the scroll range past the
-            // last row a little every frame (T-SM4: blank space, the list creeping on open).
-            ImGuiWindow* body = ImGui::GetCurrentWindow();
-            const ImVec2 content_end = body->DC.CursorMaxPos;
-            ImGui::SetCursorScreenPos(ImVec2(body_pos.x + body_size.x - Px(16.0f), body_pos.y));
-            ImGui::InvisibleButton("##scrollbar", ImVec2(Px(16.0f), view));
-            body->DC.CursorMaxPos = content_end;
-            static float grab = 0.0f; // where the thumb was taken, from its top
-            const float mouse = ImGui::GetIO().MousePos.y;
-            if (ImGui::IsItemActivated()) {
-                grab = mouse >= thumb && mouse <= thumb + bar ? mouse - thumb : bar * 0.5f;
-            }
-            if (ImGui::IsItemActive() && view > bar) {
-                ImGui::SetScrollY(std::clamp((mouse - grab - body_pos.y) / (view - bar), 0.0f, 1.0f) * range);
-            }
-            scrollbar_hovered = ImGui::IsItemHovered() || ImGui::IsItemActive();
-            ImGui::SetCursorScreenPos(start);
-        }
-        body_items.clear();
-        in_styled_body = true;
-        NavStartTab(tab);
-        TabBody(tab);
-        in_styled_body = false;
-        scroll = ImGui::GetScrollY();
-        scroll_max = ImGui::GetScrollMaxY();
-        // Whole items only: the list's drawing is cut at the bottom of the last item that fits and at the top of
-        // the first one wholly in view (the last row was cut mid-text, T-SM1).
-        float cut_top = body_pos.y, cut_bottom = body_pos.y + body_size.y;
-        if (scroll_max > 0.0f && !body_items.empty()) {
-            float top = cut_bottom, bottom = cut_top;
-            for (const auto& [item_top, item_bottom] : body_items) {
-                if (item_top >= cut_top - CutSlack) top = std::min(top, item_top);
-                if (item_bottom <= cut_bottom + CutSlack) bottom = std::max(bottom, item_bottom);
-            }
-            if (bottom > top) {
-                cut_top = top;
-                cut_bottom = bottom;
-                for (ImDrawCmd& cmd : ImGui::GetWindowDrawList()->CmdBuffer) {
-                    cmd.ClipRect.y = std::max(cmd.ClipRect.y, cut_top);
-                    cmd.ClipRect.w = std::min(cmd.ClipRect.w, cut_bottom);
-                }
-            }
-        }
-        body_visible_top = cut_top;
-        body_visible_bottom = cut_bottom;
-    }
-    ImGui::EndChild();
-    PopMenuStyle();
-    if (scroll_max > 0.0f) { // the scroll bar (the frame's draw list: the list's own is cut to whole rows)
-        const float view = body_size.y, bar = std::max(view * view / (view + scroll_max), Px(30.0f));
-        const float top = body_pos.y + (view - bar) * scroll / scroll_max;
-        const float x = body_pos.x + body_size.x - Px(5.0f);
-        if (scrollbar_hovered) {
-            draw->AddRectFilled(ImVec2(x, body_pos.y), ImVec2(x + Px(5.0f), body_pos.y + view),
-                                IM_COL32(200, 196, 190, 40), Px(3.0f));
-        }
-        draw->AddRectFilled(ImVec2(x, top), ImVec2(x + Px(5.0f), top + bar),
-                            IM_COL32(200, 196, 190, scrollbar_hovered ? 200 : 120), Px(3.0f));
-    }
+    StyledBody(P(BodyX, BodyTop), ImVec2(Px(BodyW), Px(BodyBottom + stretch - BodyTop)), tab, draw);
 
     // Under the list: the focused row's help (up to three lines), else how to open and close the menu.
     {
@@ -2303,12 +2330,97 @@ void StyledMenu() {
     ImGui::End();
 }
 
+// The Color tab as a small panel in the bottom-right corner (color_panel): the game's Options frame scaled down, its
+// middle filled slightly see-through, no dimming of the game, the rows a little larger for the frame's size, the
+// SELECT and GO BACK prompts. The rows, scrolling and pad are the full menu's (StyledBody, tab 3).
+void ColorPanel() {
+    constexpr int ColorTabIndex = 3;
+    constexpr float PanelTextScale = 1.35f;                    // rows and text relative to the frame
+    constexpr float PanelRule = 196.0f, PanelBodyTop = 206.0f; // frame pixels: under the title
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    const float width =
+        std::floor(std::min(std::max(viewport->WorkSize.x * 0.30f, 520.0f), viewport->WorkSize.x * 0.95f));
+    const float frame_u = width / FrameW;
+    const float stretch = std::max(0.0f, viewport->WorkSize.y * 0.62f / frame_u - FrameH);
+    const float height = (FrameH + stretch) * frame_u;
+    const ImVec2 at(std::floor(viewport->WorkPos.x + viewport->WorkSize.x - width - viewport->WorkSize.x * 0.015f),
+                    std::floor(viewport->WorkPos.y +
+                               std::max(viewport->WorkSize.y - height - viewport->WorkSize.y * 0.03f, 0.0f)));
+    const auto P = [&](float x, float y) { return ImVec2(at.x + x * frame_u, at.y + y * frame_u); };
+    const auto B = [&](float x, float y) { return P(x, y + stretch); }; // under the stretched middle
+    ImGui::SetNextWindowPos(at, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(width, height), ImGuiCond_Always);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    const bool shown = ImGui::Begin("##color_panel", nullptr,
+                                    ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
+                                        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
+                                        ImGuiWindowFlags_NoScrollWithMouse);
+    ImGui::PopStyleVar(2);
+    if (!shown) {
+        ImGui::End();
+        return;
+    }
+    ImDrawList* draw = ImGui::GetWindowDrawList();
+    draw->AddRectFilled(P(20, 106), B(1161, 768), IM_COL32(28, 19, 13, 224), 34.0f * frame_u);
+    {
+        const ImTextureRef frame = choice_style.textures[StyleFrame]->GetTexRef();
+        const float top = 300.0f / FrameH, bottom = 600.0f / FrameH;
+        draw->AddImage(frame, P(0, 0), P(FrameW, 300), ImVec2(0.0f, 0.0f), ImVec2(1.0f, top));
+        draw->AddImage(frame, P(0, 300), B(FrameW, 600), ImVec2(0.0f, top), ImVec2(1.0f, bottom));
+        draw->AddImage(frame, B(0, 600), B(FrameW, FrameH), ImVec2(0.0f, bottom), ImVec2(1.0f, 1.0f));
+    }
+    {
+        const char* title = "-COLOR-";
+        const float size = std::max(std::round(TitlePx * frame_u * 1.15f), 10.0f);
+        const float w = choice_style.title->CalcTextSizeA(size, FLT_MAX, 0.0f, title).x;
+        draw->AddText(choice_style.title, size, ImVec2(at.x + (width - w) * 0.5f, P(0, TitleY - 4.0f).y), White, title);
+        draw->AddLine(P(64, PanelRule), P(1117, PanelRule), IM_COL32(245, 196, 30, 70), std::max(2.0f * frame_u, 1.0f));
+    }
+    // SELECT and GO BACK, centred in the frame's bottom (a click presses them).
+    {
+        const float icon = PromptIcon * frame_u * 1.2f;
+        const float label = std::max(std::round(PromptLabel * frame_u * 1.2f), 8.0f);
+        const float pair = 8.0f * frame_u, space = 40.0f * frame_u;
+        struct Prompt {
+            StyleImage icon;
+            const char* label;
+            uint32_t press;
+        };
+        const Prompt prompts[] = {{StyleCross, "SELECT", Ps4::Cross}, {StyleCircle, "GO BACK", Ps4::Circle}};
+        float total = -space;
+        for (const Prompt& prompt : prompts) {
+            total += icon + pair + choice_style.text->CalcTextSizeA(label, FLT_MAX, 0.0f, prompt.label).x + space;
+        }
+        float x = at.x + (width - total) * 0.5f;
+        const float y = B(0, PromptTop).y;
+        draw->AddLine(B(64, PromptRule), B(1117, PromptRule), IM_COL32(245, 196, 30, 70), std::max(2.0f * frame_u, 1.0f));
+        for (const Prompt& prompt : prompts) {
+            const float w = icon + pair + choice_style.text->CalcTextSizeA(label, FLT_MAX, 0.0f, prompt.label).x;
+            draw->AddImage(choice_style.textures[prompt.icon]->GetTexRef(), ImVec2(x, y), ImVec2(x + icon, y + icon));
+            draw->AddText(choice_style.text, label, ImVec2(x + icon + pair, y + (icon - label) * 0.5f - 1.0f), White,
+                          prompt.label);
+            ImGui::SetCursorScreenPos(ImVec2(x, y));
+            if (ImGui::InvisibleButton(prompt.label, ImVec2(w, icon))) {
+                MenuPress(prompt.press);
+            }
+            x += w + space;
+        }
+    }
+    menu_u = frame_u * PanelTextScale; // the rows' sizes (Px, TextPx)
+    const ImVec2 body = P(BodyX, PanelBodyTop);
+    StyledBody(body, ImVec2(BodyW * frame_u, B(0, PromptRule - 10.0f).y - body.y), ColorTabIndex, draw);
+    ImGui::End();
+}
+
 void Menu() {
     ApplyRenderScale(false);
     footer_help = nullptr;
     // The game's look needs its files, and room (a tiny window keeps the plain look).
     styled = choice_style.Ready() && ImGui::GetMainViewport()->WorkSize.y >= 360.0f;
-    if (styled) {
+    if (styled && color_panel) {
+        ColorPanel();
+    } else if (styled) {
         StyledMenu();
     } else {
         PlainMenu();

@@ -509,6 +509,9 @@ namespace {
 // compiles (a once-only draw dropped there is lost; MustCompileSync; study-hdr.md H10). GPU
 // thread only.
 void NoteDroppedDraw(const std::array<const Shader::Info*, MaxShaderStages>& infos) {
+    if constexpr (!GOW3_DEV_TOOLS) {
+        return; // release build
+    }
     static const bool enabled = [] {
         const char* env = std::getenv("GOW3_DROP_LOG");
         return env && env[0] == '1';

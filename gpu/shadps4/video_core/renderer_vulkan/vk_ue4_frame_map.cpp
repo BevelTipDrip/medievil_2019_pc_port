@@ -59,6 +59,9 @@ std::string Shader(const char* stage, u64 hash) {
 } // namespace
 
 bool Ue4FrameMap::Enabled() {
+    if constexpr (!GOW3_DEV_TOOLS) {
+        return false; // release build: the frame map and its shader traces are dev-build tools
+    }
     static const bool enabled = [] {
         const char* value = std::getenv("GOW3_UE4_FRAME_MAP");
         return value && value[0] == '1';
