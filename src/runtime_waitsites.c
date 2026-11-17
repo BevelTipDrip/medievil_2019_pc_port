@@ -13,6 +13,7 @@
  *   w,<monotonic ns at the end>,<thread id>,<guest thread>,<kind>,<site>,<requested ns>,<actual ns>
  * site: guest+0x... (eboot image offset; Ghidra: add 0x400000) or the raw address. Written under one mutex,
  * flushed every 1,024 rows: event-driven, a few hundred to ~1,000 rows a second in MediEvil's game. */
+#define _GNU_SOURCE /* Linux: syscall(SYS_gettid) under -std=c11 */
 #include "runtime.h"
 #include <pthread.h>
 #include <stdint.h>
