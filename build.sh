@@ -31,7 +31,8 @@ MINGW*|MSYS*)
     # -> out/medievil-runtime-pgo-train.exe, writing pgo/windows/raw/*.profraw while the game runs
     # (extra-env.txt GOW3_PROBE=<that exe> for the training session; building it clears raw/);
     # research/tools/pgo-merge.sh then writes pgo/windows/medievil.profdata (in git). The release build
-    # uses that profile when it exists (GOW3_PGO=off: without it). The dev build never does.
+    # uses that profile only with GOW3_PGO=use: off by default since the 2026-11-16 A/B (worse spikes and
+    # lows in gameplay, average unchanged; card tooling/clang-pgo). The dev build never does.
     flavours=()
     case ${GOW3_BUILD:-release} in
     release) flavours=(release) ;;
@@ -40,14 +41,17 @@ MINGW*|MSYS*)
     pgo-train) flavours=(pgo-train) ;;
     *) echo "GOW3_BUILD: release, dev, both or pgo-train, not '${GOW3_BUILD}'" >&2; exit 1 ;;
     esac
-    case ${GOW3_PGO:-} in ''|off) ;; *) echo "GOW3_PGO on Windows: empty or off, not '${GOW3_PGO}'" >&2; exit 1 ;; esac
+    case ${GOW3_PGO:-} in ''|off|use) ;; *) echo "GOW3_PGO on Windows: empty, off or use, not '${GOW3_PGO}'" >&2; exit 1 ;; esac
+    if [[ ${GOW3_PGO:-} == use && ! -f pgo/windows/medievil.profdata ]]; then
+        echo 'GOW3_PGO=use: no pgo/windows/medievil.profdata (research/tools/pgo-merge.sh)' >&2; exit 1
+    fi
     pgo_dir=$(cygpath -m "$PWD/pgo/windows")
     for flavour in "${flavours[@]}"; do
         pgo=off
         case $flavour in
         release)
             tree=out/gpu-release dev_tools=OFF targets=(medievil-runtime medievil-gpu-check medievil-play)
-            if [[ -f pgo/windows/medievil.profdata && ${GOW3_PGO:-} != off ]]; then pgo=use; fi ;;
+            if [[ ${GOW3_PGO:-} == use ]]; then pgo=use; fi ;;
         dev) tree=out/gpu dev_tools=ON targets=(medievil-runtime) ;;
         pgo-train)
             tree=out/gpu-pgo-train dev_tools=OFF targets=(medievil-runtime) pgo=generate

@@ -278,7 +278,7 @@ _diagnostics, tracing, capture, stats, research tools (no gameplay effect)_
 |---|---|---|---|---|---|
 | [async-log-writer](tooling/async-log-writer.md) | diagnostic | on / on | lab |  | Slow-frame lines and the perf-diag report formatted on a background log writer, not ~30 printf on the flip path |
 | [avplayer-trace](tooling/avplayer-trace.md) | diagnostic | on / on | lab |  | AvPlayer trace: player calls and the frames each player delivered |
-| [clang-pgo](tooling/clang-pgo.md) | active | off / off | - | GOW3_PGO, GOW3_BUILD, GOW3_PROBE | Clang PGO for the Windows release build (GOW3_BUILD=pgo-train, research/tools/pgo-merge.sh, pgo/windows/medievil.profdata) |
+| [clang-pgo](tooling/clang-pgo.md) | rejected | off / off | copy-fault-trace | GOW3_PGO, GOW3_BUILD, GOW3_PROBE | Clang PGO for the Windows release build (GOW3_BUILD=pgo-train, pgo-merge.sh, GOW3_PGO=use); off, the first profile made gameplay spikes and lows worse |
 | [copy-fault-trace](tooling/copy-fault-trace.md) | diagnostic | on / on | copy-fault-trace | GOW3_COPY_FAULT_LOG | GOW3_COPY_FAULT_LOG: a guest fault inside a host copy logged before and after it is handled (thread, copy, protection, age) |
 | [deck-test-tooling](tooling/deck-test-tooling.md) | diagnostic | off / off | deck-lab | GOW3_TOGGLE_FILE, GOW3_FLIP_TRACE | Clock push-pull tooling: APU trace beside the flip trace, frame alignment, live frame cap as the toggle file's third word |
 | [dev-tools-build](tooling/dev-tools-build.md) | active | on / off | copy-fault-trace | GOW3_DEV_TOOLS, GOW3_BUILD, GOW3_FPS_LOG … | Release and dev builds (GOW3_DEV_TOOLS): the release build has the diagnostics compiled out; the launcher runs it unless Development build is ticked |
