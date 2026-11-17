@@ -32,7 +32,7 @@ only if `pgo/` holds `.gcda` files.
 
 ## Invariants
 
-- Do not build `GOW3_PGO=use` with clang: its flags are GCC options and a `.gcda` profile is GCC's format. A Linux
+- (Until 2026-11-16; clang now has its own branch, card clang-pgo.) Do not build `GOW3_PGO=use` with clang: its flags are GCC options and a `.gcda` profile is GCC's format. A Linux
   build picks `use` by itself when `pgo/` holds any `.gcda` file, so a stale GCC profile there changes the build.
   A clang PGO needs `__llvm_profile_write_file` in place of `__gcov_dump` (gow3gpu.cpp), plus
   llvm-profdata and `-fprofile-instr-use` (study-frame-cost: "Only after LTO pays").
@@ -59,6 +59,10 @@ only if `pgo/` holds `.gcda` files.
   Rescore C14: -0.3 to -0.5 ms; C15: 0-3%, "never measured".
 
 ## History and pitfalls
+
+- 2026-11-16: clang PGO for the Windows release build built as its own card, [clang-pgo](../tooling/clang-pgo.md)
+  (the `GOW3_PGO` clang branch, the `__llvm_profile_*` writer, `GOW3_BUILD=pgo-train`). What stays here: BOLT, PGO on
+  the Deck / Linux, `-march=znver2`.
 
 - N-29: "PGO stays out (needs clang profile code, study item 6)".
 - `rejected` here means "not built, gated", not "measured and dropped": the README has no status for that.

@@ -4,7 +4,11 @@ user/
 *.mp4
 medievil.ini
 fsr4_shaders/
-pgo/
+# PGO: training output stays local; the merged profile the release build uses is kept (card tooling/clang-pgo).
+/pgo/*
+!/pgo/windows/
+/pgo/windows/*
+!/pgo/windows/medievil.profdata
 *.png
 # ...except the button prompt icons the port ships (CC0, scripts/ue4_glyphs.py).
 !third_party/input-prompts/**/*.png

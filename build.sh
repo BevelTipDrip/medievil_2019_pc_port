@@ -3,8 +3,9 @@ set -euo pipefail
 cd -- "$(dirname -- "$0")"
 mkdir -p out
 # Windows: MSYS2 CLANG64 (packages in packaging/windows/README.md). The GPU library is static
-# there and CMake links medievil-runtime.exe as well; no PGO (GCC-only flags). ThinLTO on by default
-# (GOW3_LTO=OFF disables it): stage B per draw equal or slightly better, t-lto-a1/b, 2026-10-30.
+# there and CMake links medievil-runtime.exe as well. ThinLTO on by default (GOW3_LTO=OFF disables
+# it): stage B per draw equal or slightly better, t-lto-a1/b, 2026-10-30. Clang PGO for the release
+# build: see GOW3_BUILD=pgo-train below.
 case $(uname -s) in
 MINGW*|MSYS*)
     # shellcheck source=msys2-env.sh
@@ -26,34 +27,54 @@ MINGW*|MSYS*)
     # with medievil-gpu-check and medievil-play; dev = the diagnostics compiled in, out/gpu (the tests'
     # tree) -> out/medievil-runtime-dev.exe (launcher: Advanced > Diagnostics > Development build);
     # both. A/B only between runs of the same build (the log's first line names it).
+    # Clang PGO (card tooling/clang-pgo): pgo-train = the release build instrumented, out/gpu-pgo-train
+    # -> out/medievil-runtime-pgo-train.exe, writing pgo/windows/raw/*.profraw while the game runs
+    # (extra-env.txt GOW3_PROBE=<that exe> for the training session; building it clears raw/);
+    # research/tools/pgo-merge.sh then writes pgo/windows/medievil.profdata (in git). The release build
+    # uses that profile when it exists (GOW3_PGO=off: without it). The dev build never does.
     flavours=()
     case ${GOW3_BUILD:-release} in
     release) flavours=(release) ;;
     dev) flavours=(dev) ;;
     both) flavours=(release dev) ;;
-    *) echo "GOW3_BUILD: release, dev or both, not '${GOW3_BUILD}'" >&2; exit 1 ;;
+    pgo-train) flavours=(pgo-train) ;;
+    *) echo "GOW3_BUILD: release, dev, both or pgo-train, not '${GOW3_BUILD}'" >&2; exit 1 ;;
     esac
+    case ${GOW3_PGO:-} in ''|off) ;; *) echo "GOW3_PGO on Windows: empty or off, not '${GOW3_PGO}'" >&2; exit 1 ;; esac
+    pgo_dir=$(cygpath -m "$PWD/pgo/windows")
     for flavour in "${flavours[@]}"; do
-        if [[ $flavour == release ]]; then
+        pgo=off
+        case $flavour in
+        release)
             tree=out/gpu-release dev_tools=OFF targets=(medievil-runtime medievil-gpu-check medievil-play)
-        else
-            tree=out/gpu dev_tools=ON targets=(medievil-runtime)
-        fi
-        cmake -S gpu -B "$tree" -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DGOW3_PGO=off \
+            if [[ -f pgo/windows/medievil.profdata && ${GOW3_PGO:-} != off ]]; then pgo=use; fi ;;
+        dev) tree=out/gpu dev_tools=ON targets=(medievil-runtime) ;;
+        pgo-train)
+            tree=out/gpu-pgo-train dev_tools=OFF targets=(medievil-runtime) pgo=generate
+            # Profiles of an older instrumented build do not merge with the new one's.
+            mkdir -p pgo/windows/raw
+            rm -f pgo/windows/raw/*.profraw ;;
+        esac
+        cmake -S gpu -B "$tree" -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DGOW3_PGO="$pgo" \
+            -DGOW3_PGO_DIR="$pgo_dir" \
             -DGOW3_LTO="${GOW3_LTO:-ON}" -DGOW3_CACHELINE_PADDING="${GOW3_CACHELINE_PADDING:-ON}" \
             -DGOW3_DEV_TOOLS="$dev_tools" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ >/dev/null
-        echo "GPU library and loader ($flavour build, $tree): LTO ${GOW3_LTO:-ON}"
+        echo "GPU library and loader ($flavour build, $tree): LTO ${GOW3_LTO:-ON}, PGO $pgo"
         if ! ninja -C "$tree" "${targets[@]}" > "out/gpu-build-$flavour.log" 2>&1; then
             grep -v '^\[' "out/gpu-build-$flavour.log" | tail -40 >&2
             echo "Build failed (full log: out/gpu-build-$flavour.log)" >&2; exit 1
         fi
-        if [[ $flavour == release ]]; then
+        case $flavour in
+        release)
             cp "$tree/medievil-runtime.exe" "$tree/medievil-gpu-check.exe" "$tree/medievil-play.exe" out/
-            echo "Built $PWD/out/medievil-runtime.exe (release)"
-        else
+            echo "Built $PWD/out/medievil-runtime.exe (release, PGO $pgo)" ;;
+        dev)
             cp "$tree/medievil-runtime.exe" out/medievil-runtime-dev.exe
-            echo "Built $PWD/out/medievil-runtime-dev.exe (dev)"
-        fi
+            echo "Built $PWD/out/medievil-runtime-dev.exe (dev)" ;;
+        pgo-train)
+            cp "$tree/medievil-runtime.exe" out/medievil-runtime-pgo-train.exe
+            echo "Built $PWD/out/medievil-runtime-pgo-train.exe (instrumented release; profiles: $pgo_dir/raw)" ;;
+        esac
     done
     exit 0
     ;;

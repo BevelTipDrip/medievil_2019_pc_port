@@ -1340,7 +1340,18 @@ int main(int argc, char **argv) {
     }
 #endif
     /* The run log names the build: A/B only between runs of the same build type (LANDMINES). */
-    printf("Runtime: %s build (GOW3_DEV_TOOLS=%d)\n", GOW3_DEV_TOOLS ? "dev" : "release", GOW3_DEV_TOOLS);
+    /* PGO (card tooling/clang-pgo): a profiled or instrumented build is a build type of its own too. */
+#define RUNTIME_STR2(x) #x
+#define RUNTIME_STR(x) RUNTIME_STR2(x)
+#if defined(GOW3_PGO_GENERATE)
+#define RUNTIME_PGO ", PGO training (instrumented)"
+#elif defined(GOW3_PGO_PROFILE)
+#define RUNTIME_PGO ", PGO profile " RUNTIME_STR(GOW3_PGO_PROFILE)
+#else
+#define RUNTIME_PGO ""
+#endif
+    printf("Runtime: %s build (GOW3_DEV_TOOLS=%d%s)\n", GOW3_DEV_TOOLS ? "dev" : "release", GOW3_DEV_TOOLS,
+           RUNTIME_PGO);
 #ifndef _WIN32
     /* Keep host heap objects handed to the guest (thread handles, TLS) in the
        non-PIE brk heap, i.e. below 1 TiB: the guest packs pointers into 40 bits. */

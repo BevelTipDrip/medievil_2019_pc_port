@@ -277,19 +277,41 @@ u32 Gow3DisplayRefreshHz() {
 }
 
 #ifdef GOW3_PGO_GENERATE
+#ifdef __clang__
+// clang IR PGO (card tooling/clang-pgo): the runtime's own write runs at exit, which the game skips
+// (_Exit, _exit). -fprofile-generate=<dir> names the file default_<id>.profraw, merged on every write.
+extern "C" int __llvm_profile_write_file(void);
+extern "C" void __llvm_profile_reset_counters(void);
+static bool DumpProfile() {
+    const bool ok = __llvm_profile_write_file() == 0;
+    __llvm_profile_reset_counters();
+    return ok;
+}
+#else
 extern "C" void __gcov_dump(void);
 extern "C" void __gcov_reset(void);
+static bool DumpProfile() {
+    __gcov_dump();
+    __gcov_reset();
+    return true;
+}
+#endif
 // Instrumented build (GOW3_PGO=generate): the game often ends through _exit (watchdog, guest
-// exit), which skips the profile write at exit. Write every 30 s and reset: the files sum the
-// intervals.
+// exit), which skips the profile write at exit. Write every 30 s and when the window closes, and
+// reset: the file sums the intervals.
+static std::mutex g_profile_mutex;
+static void WriteProfile(const char* when) {
+    std::scoped_lock lock{g_profile_mutex};
+    const bool ok = DumpProfile();
+    std::printf("PGO: profile %s (%s)\n", ok ? "written" : "write FAILED", when);
+    std::fflush(stdout);
+}
 static void StartProfileWriter() {
     std::thread([] {
         Common::SetCurrentThreadName("gow3:pgo");
         for (;;) {
             std::this_thread::sleep_for(std::chrono::seconds(30));
-            __gcov_dump();
-            __gcov_reset();
-            std::printf("PGO: profile written\n");
+            WriteProfile("30 s");
         }
     }).detach();
 }
@@ -328,6 +350,9 @@ extern "C" int gow3gpu_init(const Gow3GpuConfig* config) {
         }
         LOG_INFO(Frontend, "Window closed by user");
         Gow3FlipTrace::Write(); // _Exit skips atexit
+#ifdef GOW3_PGO_GENERATE
+        WriteProfile("window closed");
+#endif
         std::fflush(stdout);
         std::_Exit(0);
     });

@@ -23,3 +23,4 @@ gpu/third_party/half/** -text
 *.xlsx binary
 *.zip binary
 *.spv binary
+*.profdata binary

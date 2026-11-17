@@ -44,7 +44,39 @@ if (GOW3_LTO)
         message(WARNING "LTO unavailable: ${gow3_ipo_error}")
     endif()
 endif()
-if (GOW3_PGO STREQUAL "generate")
+if (NOT GOW3_PGO MATCHES "^(off|generate|use)$")
+    message(FATAL_ERROR "GOW3_PGO: off, generate or use, not '${GOW3_PGO}'")
+endif()
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT GOW3_PGO STREQUAL "off")
+    # gow3 (card tooling/clang-pgo): clang IR PGO. generate: the instrumented build writes
+    # ${GOW3_PGO_DIR}/raw/default_<id>.profraw (gow3gpu.cpp: every 30 s and when the window closes,
+    # each write merged into the file); research/tools/pgo-merge.sh turns it into
+    # ${GOW3_PGO_DIR}/medievil.profdata, which use reads. Atomic counters: the GPU, recording,
+    # preparation and copy threads run the same code. use: functions changed since the training
+    # (or built differently for it, gow3gpu_init) are compiled without a profile; the warnings for
+    # that are off (the runtime C builds with -Werror).
+    if (GOW3_PGO STREQUAL "generate")
+        add_compile_options(-fprofile-generate=${GOW3_PGO_DIR}/raw -fprofile-update=atomic)
+        add_link_options(-fprofile-generate=${GOW3_PGO_DIR}/raw)
+        add_compile_definitions(GOW3_PGO_GENERATE)
+    else()
+        set(gow3_profdata "${GOW3_PGO_DIR}/medievil.profdata")
+        if (NOT EXISTS "${gow3_profdata}")
+            message(FATAL_ERROR "GOW3_PGO=use: no ${gow3_profdata} (research/tools/pgo-merge.sh)")
+        endif()
+        add_compile_options(-fprofile-use=${gow3_profdata} -Wno-profile-instr-out-of-date
+                            -Wno-profile-instr-unprofiled -Wno-profile-instr-missing -Wno-backend-plugin)
+        add_link_options(-fprofile-use=${gow3_profdata})
+        # A new profile rebuilds everything: CMake reconfigures when the file changes, and its hash
+        # in every command line makes ninja recompile (the flag's path stays the same).
+        set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${gow3_profdata}")
+        file(MD5 "${gow3_profdata}" gow3_profdata_md5)
+        string(SUBSTRING "${gow3_profdata_md5}" 0 12 gow3_profdata_md5)
+        add_compile_definitions(GOW3_PGO_PROFILE=0x${gow3_profdata_md5})
+        message(STATUS "PGO profile: ${gow3_profdata} (${gow3_profdata_md5})")
+    endif()
+elseif (GOW3_PGO STREQUAL "generate")
+    # GCC (inherited from the Bloodborne port; the Linux build): .gcda files in GOW3_PGO_DIR.
     # Atomic counters: the GPU, recording, preparation and copy threads run the same code.
     add_compile_options(-fprofile-generate=${GOW3_PGO_DIR} -fprofile-update=atomic)
     add_link_options(-fprofile-generate=${GOW3_PGO_DIR})
