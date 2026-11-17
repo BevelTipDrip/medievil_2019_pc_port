@@ -84,7 +84,7 @@ defaults **off** in release (`GOW3_COPY_FAULT_LOG=1` on); in dev it stays on by 
   `runtime_fault_stats_enabled.enabled` or `toggle_watcher` symbol in release, 0 calls to
   `runtime_fault_stats_enabled`; the strings `GOW3_SECTIONS`, `GOW3_PERF_DIAG`, `GOW3_TOGGLE_FILE`,
   `GOW3_CAPTURE_TRIGGER` absent. Launcher tests pass (Python 3.14).
-- A/B, run (2026-11-16 evening, 4K 75% DLSS, Reflex 237, flip trace on, FPS log and copy-fault trace off, both logs
+- A/B, **verified** (the user: "clearly better than run B, by quite a bit"; 2026-11-16 evening, 4K 75% DLSS, Reflex 237, flip trace on, FPS log and copy-fault trace off, both logs
   quiet; release run first, then dev, the same route: save menu, the Graveyard's long view after the load, a Tome
   pickup, combat). 20 s windows grouped (steady >= 235 FPS, heavy < 235, loading = a frame > 50 ms), release / dev:
   steady 0.1% low 216.3 / 185.2 FPS, worst 5.2 / 6.9 ms, frames > 6 ms 0 / 1.4 a minute; heavy average
