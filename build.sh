@@ -175,7 +175,14 @@ for patch in gpu/patches/fsr-vulkan/*.patch; do
 done
 for flavour in "${flavours[@]}"; do
     if [[ $flavour == release ]]; then build=$base-release dev_tools=OFF; else build=$base dev_tools=ON; fi
-    cmake -S gpu -B "$build" -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DGOW3_PGO="$pgo" \
+    # A new tree uses clang when it is installed, as every Deck / AppImage build so far did (GCC also
+    # builds it, but differs: stricter designated initializers, its own LTO). A tree keeps its compiler;
+    # CXX set in the environment (CMake's own choice) wins.
+    compilers=()
+    if [[ ! -f $build/CMakeCache.txt && -z ${CXX:-} ]] && command -v clang >/dev/null && command -v clang++ >/dev/null; then
+        compilers=(-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++)
+    fi
+    cmake -S gpu -B "$build" -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DGOW3_PGO="$pgo" "${compilers[@]}" \
         -DGOW3_LTO="${GOW3_LTO:-ON}" -DGOW3_STATIC_GPU="$static" -DGOW3_PGO_DIR="$PWD/pgo" \
         -DGOW3_CACHELINE_PADDING="${GOW3_CACHELINE_PADDING:-ON}" -DGOW3_CPU_LEVEL="$cpu_level" \
         -DGOW3_DEV_TOOLS="$dev_tools" >/dev/null

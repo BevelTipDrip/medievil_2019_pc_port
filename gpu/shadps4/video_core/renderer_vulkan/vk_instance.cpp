@@ -570,13 +570,14 @@ bool Instance::CreateDevice() {
                 .multiDrawIndirect = features.multiDrawIndirect,
                 .depthClamp = features.depthClamp,
                 .depthBiasClamp = features.depthBiasClamp,
-                // gow3: exact sample counts for the game's occlusion queries (vk_occlusion.h).
-                .occlusionQueryPrecise = features.occlusionQueryPrecise,
                 .fillModeNonSolid = features.fillModeNonSolid,
                 .depthBounds = features.depthBounds,
                 .wideLines = features.wideLines,
                 .multiViewport = features.multiViewport,
                 .samplerAnisotropy = features.samplerAnisotropy,
+                // gow3: exact sample counts for the game's occlusion queries (vk_occlusion.h). In
+                // declaration order (GCC rejects designators out of order; clang only warns).
+                .occlusionQueryPrecise = features.occlusionQueryPrecise,
                 .vertexPipelineStoresAndAtomics = features.vertexPipelineStoresAndAtomics,
                 .fragmentStoresAndAtomics = features.fragmentStoresAndAtomics,
                 .shaderImageGatherExtended = features.shaderImageGatherExtended,
