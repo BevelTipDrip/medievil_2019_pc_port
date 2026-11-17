@@ -207,7 +207,10 @@ static void report(uint64_t now) {
 }
 
 void runtime_wait_site(void *return_address, unsigned kind, uint64_t requested_ns, uint64_t ns) {
-    if (trace_path() && ns >= trace_min_ns()) trace_wait(return_address, kind, requested_ns, ns);
+    if (trace_path()) {
+        runtime_thread_sampler_start(); /* GOW3_SAMPLE_THREADS (runtime_mutex.c) */
+        if (ns >= trace_min_ns()) trace_wait(return_address, kind, requested_ns, ns);
+    }
     if (!sites_on()) return;
     const uint64_t key = (uint64_t)(uintptr_t)return_address | (uint64_t)(kind + 1) << 56;
     unsigned i = (unsigned)((key * UINT64_C(0x9E3779B97F4A7C15)) >> 52) & (SLOTS - 1);

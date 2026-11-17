@@ -1,6 +1,6 @@
 ---
 id: mutex-holders
-title: GOW3_MUTEX_HOLDERS: who holds a guest mutex while a thread waits on it, and the holder's stack (sampled)
+title: GOW3_MUTEX_HOLDERS / GOW3_SAMPLE_THREADS: who holds a guest mutex a thread waits on, and sampled stacks of holders and named threads
 area: tooling
 status: diagnostic
 platforms: windows
@@ -10,8 +10,8 @@ origin: ours
 class: G
 commits:
 files: src/runtime_mutex.c, src/runtime_waitsites.c, src/runtime.h, tests/test_mutex.c, research/tools/mutex_holders.py
-symbols: runtime_mutex_holders_enabled, runtime_wait_trace_line, runtime_wait_format_site, runtime_wait_thread_name, traced_lock, holder_taken, holder_releasing, holder_sampler, return_after_call, cond_release, cond_retake
-switches: GOW3_MUTEX_HOLDERS, GOW3_WAIT_TRACE, GOW3_WAIT_TRACE_MIN_US
+symbols: runtime_thread_sampler_start, name_scanner, find_named_threads, runtime_mutex_holders_enabled, runtime_wait_trace_line, runtime_wait_format_site, runtime_wait_thread_name, traced_lock, holder_taken, holder_releasing, holder_sampler, return_after_call, cond_release, cond_retake
+switches: GOW3_MUTEX_HOLDERS, GOW3_SAMPLE_THREADS, GOW3_WAIT_TRACE, GOW3_WAIT_TRACE_MIN_US
 tests: mutex-test
 docs: plan-work-queue.md
 depends_on: wait-trace, dev-tools-build
@@ -39,10 +39,17 @@ who held the lock and what the holder was doing. Dev build only (`#if GOW3_DEV_T
   call), and, if that gives fewer than 3 frames, return addresses found by scanning the copy, marked `~` (can be
   stale). Frames are `exe+0x<rva>`, `guest+0x<offset>` or `<dll>+0x<offset>`.
 - An `exe,<path>,<base>` row after `wall` (Windows) names the exe for `llvm-symbolizer`.
+- `GOW3_SAMPLE_THREADS=<name>[,<name>...]` (2026-11-16, with `GOW3_WAIT_TRACE`; holders optional): host threads named
+  that way (`SetThreadDescription`: `shadPS4:GpuCommandProcessor` = stage A, `gow3:DrawRec` = stage B, ...) are
+  sampled on every tick by the same sampler, waiting or not; a `t,<tid>,<name>` row names each. A scanner thread of
+  its own (below normal) finds them every ~2 s until every name is found: a Toolhelp list of all the system's
+  threads takes tens of ms, and inside the sampler's loop it left gaps. Stacks up to 12 frames.
 
 `research/tools/mutex_holders.py <trace> [--site guest+0x6795a1]`: waits by site with their holders, the chosen
 site's holders and lock sites, long holds, and the holder samples by module / pc / first exe frame / first game
-frame (exe offsets named from the exe's debug info).
+frame (exe offsets named from the exe's debug info). `--thread <name> [--flip flip-trace.csv] [--window 10]
+[--from S --to S]`: a sampled thread's samples by module / first exe frames, and per window the top places with the
+presented FPS (the two files' wall rows put them on one clock).
 
 ## Invariants
 
@@ -67,6 +74,10 @@ frame (exe offsets named from the exe's debug info).
 - First game run (2026-11-16 22:45, dev build, 4 min 49 s, 311 MB trace: 61,712 m, 284,273 h, 297,652 s rows; no crash or
   hang): RHIThread's lock holder named (SubmitGPUCommandsAsyncTaskThread) and its wait found (`sceKernelWaitEqueue`, the
   per-frame EOP wait); 92% of the samples unwound to the same three exe frames. Details: plan-work-queue.md, RHIThread row.
+
+- `GOW3_SAMPLE_THREADS` in `mutex-test` (2026-11-16): a thread named `mutex-test:pinned` is found (t row) and sampled
+  3-5 times while it spins, every sample in `pinned_spin`; three runs passed. Overhead: each sample suspends the
+  thread for a register read and a stack copy (tens of us), ~2,000 a second per thread: a few % of that thread.
 
 ## History and pitfalls
 

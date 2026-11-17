@@ -156,6 +156,8 @@ void runtime_wait_format_site(uintptr_t at, char *out, size_t size);
 void runtime_wait_thread_name(const char *name, char *out, size_t size);
 unsigned long runtime_wait_thread_id(void);
 uint64_t runtime_wait_trace_min_ns(void);
+/* GOW3_SAMPLE_THREADS=<names> with GOW3_WAIT_TRACE (dev build, Windows): named host threads sampled all the time. */
+void runtime_thread_sampler_start(void);
 #if GOW3_DEV_TOOLS
 #define RUNTIME_WAIT_BEGIN() const uint64_t runtime_wait_t0 = runtime_wait_sites_enabled() ? runtime_wait_now() : 0
 #else

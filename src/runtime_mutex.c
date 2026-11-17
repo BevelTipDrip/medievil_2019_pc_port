@@ -9,6 +9,7 @@
 #include <time.h>
 #ifdef _WIN32
 #include <windows.h>
+#include <tlhelp32.h>
 #endif
 typedef struct { int type; } GuestAttr;
 typedef struct {
@@ -156,6 +157,75 @@ static int return_after_call(uint64_t v) {
            (b[1] == 0xFF && (b[2] & 0x38) == 0x10) ||   /* call [rip+d32] / [reg+d32] */
            (b[3] == 0xFF && (b[4] & 0x38) == 0x10);     /* call [reg+index+d8] */
 }
+/* GOW3_SAMPLE_THREADS=<name>[,<name>...] with GOW3_WAIT_TRACE (dev build): host threads named that way
+ * (SetThreadDescription, e.g. shadPS4:GpuCommandProcessor = stage A, gow3:DrawRec = stage B) are sampled on every
+ * tick, not only while someone waits on them. A scanner thread of its own looks for them every ~2 s until each name
+ * is found (a Toolhelp list of every thread on the system takes tens of ms: in the sampler's loop it left gaps);
+ * each one found writes t,<tid>,<name>. */
+#define PINNED 16
+static DWORD pinned[PINNED];
+static int pinned_count;
+static const char *sample_threads(void) {
+    static const char *list; static int read;
+    if (!read) { const char *value = getenv("GOW3_SAMPLE_THREADS"); list = value && value[0] ? value : NULL; read = 1; }
+    return list;
+}
+static int name_listed(const char *list, const char *name) {
+    const size_t n = strlen(name);
+    for (const char *p = list;;) {
+        const char *end = strchr(p, ',');
+        const size_t len = end ? (size_t)(end - p) : strlen(p);
+        if (len == n && !strncmp(p, name, n)) return 1;
+        if (!end) return 0;
+        p = end + 1;
+    }
+}
+static void find_named_threads(void) {
+    const char *list = sample_threads();
+    typedef HRESULT (WINAPI *GetDescription)(HANDLE, PWSTR *);
+    static GetDescription get_description;
+    if (!get_description)
+        get_description = (GetDescription)(void (*)(void))GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "GetThreadDescription");
+    if (!list || !get_description || pinned_count == PINNED) return;
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+    if (snapshot == INVALID_HANDLE_VALUE) return;
+    THREADENTRY32 entry = { .dwSize = sizeof(entry) };
+    const DWORD pid = GetCurrentProcessId();
+    for (BOOL more = Thread32First(snapshot, &entry); more && pinned_count < PINNED; more = Thread32Next(snapshot, &entry)) {
+        if (entry.th32OwnerProcessID != pid) continue;
+        int known = 0;
+        for (int i = 0; i < pinned_count && !known; ++i) known = pinned[i] == entry.th32ThreadID;
+        if (known) continue;
+        HANDLE thread = OpenThread(THREAD_QUERY_LIMITED_INFORMATION, FALSE, entry.th32ThreadID);
+        if (!thread) continue;
+        PWSTR wide = NULL;
+        char name[64] = "";
+        if (SUCCEEDED(get_description(thread, &wide)) && wide) {
+            WideCharToMultiByte(CP_UTF8, 0, wide, -1, name, sizeof(name), NULL, NULL);
+            LocalFree(wide);
+        }
+        CloseHandle(thread);
+        if (!name[0] || !name_listed(list, name)) continue;
+        pinned[pinned_count] = entry.th32ThreadID;
+        __atomic_store_n(&pinned_count, pinned_count + 1, __ATOMIC_RELEASE); /* the sampler reads it */
+        char row[120];
+        for (char *c = name; *c; ++c) if (*c == ',' || *c == '\n') *c = ';';
+        snprintf(row, sizeof(row), "t,%lu,%s\n", (unsigned long)entry.th32ThreadID, name);
+        runtime_wait_trace_line(row);
+    }
+    CloseHandle(snapshot);
+}
+static DWORD WINAPI name_scanner(LPVOID unused) {
+    (void)unused;
+    const char *list = sample_threads();
+    int names = 1;
+    for (const char *c = list; *c; ++c) names += *c == ',';
+    while (pinned_count < names && pinned_count < PINNED) {
+        find_named_threads();
+        Sleep(2000);
+    }
+    return 0;
+}
 static DWORD WINAPI holder_sampler(LPVOID unused) {
     (void)unused;
     SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);
@@ -167,10 +237,11 @@ static DWORD WINAPI holder_sampler(LPVOID unused) {
         LARGE_INTEGER due = { .QuadPart = -2000 }; /* 200 us, relative */
         if (timer && SetWaitableTimer(timer, &due, 0, NULL, NULL, FALSE)) WaitForSingleObject(timer, INFINITE);
         else Sleep(1);
-        DWORD holders[WAIT_SLOTS];
+        DWORD holders[WAIT_SLOTS + PINNED];
         int count = 0;
-        for (int i = 0; i < WAIT_SLOTS; ++i) {
-            const DWORD tid = (DWORD)wait_holder[i];
+        const int pins = __atomic_load_n(&pinned_count, __ATOMIC_ACQUIRE);
+        for (int i = 0; i < WAIT_SLOTS + pins; ++i) {
+            const DWORD tid = i < WAIT_SLOTS ? (DWORD)wait_holder[i] : pinned[i - WAIT_SLOTS];
             int seen = !tid || tid == self;
             for (int j = 0; j < count && !seen; ++j) seen = holders[j] == tid;
             if (!seen) holders[count++] = tid;
@@ -207,13 +278,13 @@ static DWORD WINAPI holder_sampler(LPVOID unused) {
              * copy, with rsp / rbp moved into it, so it reads the copy, not the live stack; game code has no unwind
              * tables: its rbp chain, each return address after a call. If that gives fewer than 3 frames: return
              * addresses found by scanning the copy, marked ~ (they can be stale, left by earlier calls). */
-            uint64_t pcs[8] = { context.Rip };
-            int frames = 1, scanned = 8;
+            uint64_t pcs[12] = { context.Rip };
+            int frames = 1, scanned = 12;
             const uint64_t base = context.Rsp, copy = (uint64_t)(uintptr_t)stack, delta = copy - base;
 #define TO_COPY(x) ((x) >= base && (x) < base + got ? (x) + delta : (x))
             CONTEXT c = context;
             c.Rsp = copy; c.Rbp = TO_COPY(c.Rbp);
-            while (frames < 8 && got) {
+            while (frames < 12 && got) {
                 DWORD64 image = 0;
                 PRUNTIME_FUNCTION entry = RtlLookupFunctionEntry(c.Rip, &image, NULL);
                 const uintptr_t game = (uintptr_t)runtime_image_base();
@@ -236,10 +307,10 @@ static DWORD WINAPI holder_sampler(LPVOID unused) {
 #undef TO_COPY
             if (frames < 3) {
                 scanned = frames;
-                for (SIZE_T k = 0; k < got / 8 && frames < 8; ++k)
+                for (SIZE_T k = 0; k < got / 8 && frames < 12; ++k)
                     if (stack[k] != pcs[frames - 1] && return_after_call(stack[k])) pcs[frames++] = stack[k];
             }
-            char row[800];
+            char row[1200];
             int at = snprintf(row, sizeof(row), "s,%llu,%lu", (unsigned long long)runtime_wait_now(), (unsigned long)holders[i]);
             for (int f = 0; f < frames; ++f) {
                 char site[80];
@@ -270,6 +341,10 @@ static BOOL CALLBACK sampler_start(PINIT_ONCE once, PVOID param, PVOID *context)
     exe_lo = (uintptr_t)exe; exe_hi = exe_lo + nt->OptionalHeader.SizeOfImage;
     HANDLE thread = CreateThread(NULL, 0, holder_sampler, NULL, 0, NULL);
     if (thread) CloseHandle(thread);
+    if (sample_threads() && (thread = CreateThread(NULL, 0, name_scanner, NULL, 0, NULL))) {
+        SetThreadPriority(thread, THREAD_PRIORITY_BELOW_NORMAL);
+        CloseHandle(thread);
+    }
     return TRUE;
 }
 static int wait_register(unsigned long holder) {
@@ -283,9 +358,14 @@ static void wait_unregister(int slot) {
     InterlockedExchange(&wait_holder[slot], 0);
     InterlockedExchange(&wait_claim[slot], 0);
 }
+/* GOW3_SAMPLE_THREADS: starts the sampler (the wait trace calls this on its waits; one load once started). */
+void runtime_thread_sampler_start(void) {
+    if (sample_threads()) InitOnceExecuteOnce(&sampler_once, sampler_start, NULL, NULL);
+}
 #else
 static int wait_register(unsigned long holder) { (void)holder; return -1; }
 static void wait_unregister(int slot) { (void)slot; }
+void runtime_thread_sampler_start(void) {}
 #endif
 /* A lock with the holder recorded: trylock first; when that fails, note the holder, wait, and write an m row if the
  * wait was long. */
@@ -319,6 +399,7 @@ static int traced_lock(GuestMutex *m, uintptr_t site) {
 static void holder_taken(GuestMutex *m, uintptr_t site) { (void)m; (void)site; }
 static void holder_releasing(GuestMutex *m, uintptr_t site) { (void)m; (void)site; }
 static int traced_lock(GuestMutex *m, uintptr_t site) { (void)site; return pthread_mutex_lock(&m->native); }
+void runtime_thread_sampler_start(void) {}
 #endif
 
 static int32_t mutex_lock_impl(GuestMutex **mutex, uintptr_t site) {

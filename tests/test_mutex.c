@@ -356,6 +356,9 @@ static void *hold_20ms(void *p) {
 }
 static void holder_rows(void) {
 #if GOW3_DEV_TOOLS
+#ifdef _WIN32
+    _putenv("GOW3_SAMPLE_THREADS=mutex-test:pinned"); /* read once, when the sampler starts below */
+#endif
     atomic_store(&holders_on, 1);
     void *m = make(1);
     pthread_t t;
@@ -393,11 +396,55 @@ static void holder_rows(void) {
         pthread_mutex_unlock(&holder_log_lock);
         if (!sampled) Sleep(1);
     }
+    if (!sampled) fputs(holder_log, stderr);
     CHECK(sampled);
 #endif
     CHECK(!strstr(holder_log, ",cond_wait,cond_wait,")); /* a 2 ms condition wait is not a hold */
     printf("  mutex holder rows: ok (%zu bytes)\n", holder_log_used);
     if (getenv("MUTEX_TEST_SHOW_ROWS")) fputs(holder_log, stdout);
+#endif
+}
+
+/* GOW3_SAMPLE_THREADS: a thread named mutex-test:pinned is found by name (t row) and sampled (s rows) without
+ * anyone waiting on it. The sampler looks for names every ~2 s: up to 6 s. */
+#ifdef _WIN32
+static atomic_int pinned_stop;
+static atomic_ulong pinned_tid;
+static void *pinned_spin(void *unused) {
+    (void)unused;
+    SetThreadDescription(GetCurrentThread(), L"mutex-test:pinned");
+    atomic_store(&pinned_tid, GetCurrentThreadId());
+    while (!atomic_load(&pinned_stop)) {}
+    return NULL;
+}
+#endif
+static void pinned_rows(void) {
+#if GOW3_DEV_TOOLS && defined(_WIN32)
+    pthread_t t;
+    pthread_create(&t, NULL, pinned_spin, NULL);
+    while (!atomic_load(&pinned_tid)) {}
+    char named[64];
+    snprintf(named, sizeof(named), "t,%lu,mutex-test:pinned\n", (unsigned long)atomic_load(&pinned_tid));
+    int found = 0, samples = 0;
+    for (int i = 0; i < 6000 && !(found && samples >= 3); ++i) {
+        pthread_mutex_lock(&holder_log_lock);
+        found = strstr(holder_log, named) != NULL;
+        samples = 0;
+        char needle[40];
+        snprintf(needle, sizeof(needle), ",%lu,", (unsigned long)atomic_load(&pinned_tid));
+        for (const char *s = strstr(holder_log, "\ns,"); s; s = strstr(s + 1, "\ns,")) {
+            const char *end = strchr(s + 1, '\n');
+            const char *hit = strstr(s, needle);
+            if (hit && (!end || hit < end)) ++samples;
+        }
+        pthread_mutex_unlock(&holder_log_lock);
+        if (!(found && samples >= 3)) Sleep(1);
+    }
+    atomic_store(&pinned_stop, 1);
+    pthread_join(t, NULL);
+    CHECK(found && samples >= 3);
+    printf("  pinned thread sampling: ok (%d samples)\n", samples);
+    if (getenv("MUTEX_TEST_SHOW_ROWS")) fputs(holder_log, stdout); /* all rows so far (the holder test's again) */
 #endif
 }
 
@@ -685,6 +732,7 @@ int main(int argc, char **argv) {
     timed_wake();
     stress();
     holder_rows();
+    pinned_rows();
     puts("mutex-test: all passed");
     return 0;
 }
