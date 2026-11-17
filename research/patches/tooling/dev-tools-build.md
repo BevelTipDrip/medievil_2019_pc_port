@@ -83,8 +83,18 @@ defaults **off** in release (`GOW3_COPY_FAULT_LOG=1` on); in dev it stays on by 
   warnings each). Release exe 136.1 MB vs dev 139.4 MB; `rdtsc` sites 52 vs 419; no `Gow3Stats::enabled`,
   `runtime_fault_stats_enabled.enabled` or `toggle_watcher` symbol in release, 0 calls to
   `runtime_fault_stats_enabled`; the strings `GOW3_SECTIONS`, `GOW3_PERF_DIAG`, `GOW3_TOGGLE_FILE`,
-  `GOW3_CAPTURE_TRIGGER` absent. Launcher tests pass (Python 3.14). Not yet measured: the A/B is release vs dev,
-  same settings, flip trace on.
+  `GOW3_CAPTURE_TRIGGER` absent. Launcher tests pass (Python 3.14).
+- A/B, run (2026-11-16 evening, 4K 75% DLSS, Reflex 237, flip trace on, FPS log and copy-fault trace off, both logs
+  quiet; release run first, then dev, the same route: save menu, the Graveyard's long view after the load, a Tome
+  pickup, combat). 20 s windows grouped (steady >= 235 FPS, heavy < 235, loading = a frame > 50 ms), release / dev:
+  steady 0.1% low 216.3 / 185.2 FPS, worst 5.2 / 6.9 ms, frames > 6 ms 0 / 1.4 a minute; heavy average
+  226.5 / 224.3, 0.1% low 157.7 / 141.2, p99.9 5.94 / 6.52 ms, frames > 6 ms **10.1 / 68.6** a minute, > 8 ms
+  0.4 / 1.0; loading p99.9 26 / 171 ms, frames > 8 ms 115 / 284 a minute. The dev run came second (warm file and
+  shader caches), so run order favoured it. The user: in release, spikes only at the save menu (opening it, after
+  it, the map screen load), a small series at the Graveyard's first long view (shrinking over recent patches) and
+  one at a Tome pickup; in dev, deeper dips in combat, much larger and longer asset-load spikes, worse 0.1% lows in
+  the static view. Traces and logs: `research-data/off-cost-step2-20261116/` (not in git); summary script
+  `ab_windows.py` (session scratchpad).
 
 ## History and pitfalls
 
