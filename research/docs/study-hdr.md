@@ -190,6 +190,27 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
   the cache expands that into the 3D LUT with its contents. Menus, prompts and movies show with the right colours
   (the title yellow / orange; the blue in H12's PNG was RenderDoc's view of the 8-bit texture); the UI measures
   ~100 nits (p99 105). The user: "confirmed, that fixed it".
+- **H14, SDR / HDR pair of the main menu** (SDR: game off HDR, NVIDIA PNG = the game's 8-bit pixels, 07.06.18;
+  HDR: H13's JXR 06.55.01; 8x8 blocks, UI / RTSS masked; SDR modelled as gamma 2.2 at 200 nits): HDR p1 / p5 / p50 /
+  p95 / p99 0.22 / 0.37 / 1.2 / 6.3 / 19 nits against SDR 0.05 / 0.21 / 1.8 / 14.6 / 37; p95/p5 17 against 71 (Windows'
+  own sRGB decode of SDR: 25). Shadows lifted (floor ~0.2-0.4 nits), mid-tones where SDR at a 100-nit white puts
+  them, highlights about half [V]. Scripts: scratchpad `hdr/curve.py`, `compare.py` (not kept).
+- **LUT parameters** (`research-data/hdr-ui-20261117/lutbuf/eid3495_b0_*.bin`, menu capture, combine LUT builder `fs
+  a4152b3be93c832a` buffer 0, 144 dwords) [V values, I names from UE 4.21's FCombineLUTsPS]: 40-44 film slope / toe /
+  shoulder / black clip / white clip (0.88 / 0.55 / 0.26 / 0 / 0.04, UE4 defaults); 52-53 white temp / tint (6500 / 0);
+  56-75 global saturation / contrast / gamma / gain / offset (float4 each, 1 / 1 / 1 / 1 / 0); 76-95 shadows; 96-115
+  midtones; 116-135 highlights; 136 / 137 shadows max / highlights min (0.09 / 0.5); 138 output device (3); 139 gamut
+  (2); 140 / 141 blue correction / expand gamut (0.6 / 1). The menu scene is not graded (all neutral). In the
+  decompiled builder the HDR branch (`data[138] == 3 || 5`) takes the colour computed at line 735; the grading values
+  are read before it (lines 498-709), the film values after it (890-1000, SDR path only) [V].
+- **`GOW3_UE4_GRADE`** (runtime, `vk_rasterizer.cpp`): replaces named values of that block in the constant ring copy
+  (and, outside the ring, in a patched stream copy); counters at 600 / 6,000 builder draws.
+- **H15 / H16, `film.toe=1.0`**: no change at the dark end (H16: 6,000 of 6,000 draws patched; p1 0.211-0.228 against
+  0.218). The film curve does not act in HDR [V: measurement and code]. The user saw black areas in the intro pan:
+  not from the toe.
+- **H17, `global.contrast=1.3`** (5,999 ring + 1 stream patched): p1 0.218 -> 0.082, p5 0.37 -> 0.143, p50 1.2 -> 0.57,
+  p95 6.0 -> 5.3, p95/p5 17 -> 37. UE4 grading acts in HDR [V]; it pivots at mid-grey, so this scene (mostly below it)
+  darkens overall: contrast plus a mid-tone gain.
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.

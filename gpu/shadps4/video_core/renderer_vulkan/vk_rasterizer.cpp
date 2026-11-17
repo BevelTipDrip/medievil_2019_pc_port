@@ -1,8 +1,14 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <atomic>
+#include <cctype>
 #include <chrono>
+#include <cstdio>
+#include <cstdlib>
 #include <map>
+#include <string>
+#include <vector>
 
 #include <xxhash.h>
 #include "video_core/renderer_vulkan/ui_composition.h"
@@ -616,6 +622,122 @@ static void NoteGuestPipelineBind(vk::Pipeline handle) {
     last = handle;
 }
 
+/// gow3 HDR grading (study-hdr.md "LUT parameters"): GOW3_UE4_GRADE="name=value;..." replaces values in
+/// the parameter block (buffer 0, 144 dwords) of UE 4.21's combine LUT builder (fs a4152b3be93c832a)
+/// as the constant ring copies it; the game's memory is not touched. Names: film.slope / toe /
+/// shoulder / blackclip / whiteclip, wb.temp / tint, {global,shadows,midtones,highlights}.
+/// {saturation,contrast,gamma,gain,offset} (a scalar sets .w: UE4 multiplies rgb by it, or adds it
+/// for offset; .r .g .b .w set one component), shadows_max, highlights_min, blue_correction,
+/// expand_gamut, d<index> (any dword as a float). Read once at start.
+namespace {
+constexpr u64 Ue4CombineLutPs = 0xa4152b3be93c832aull;
+constexpr u32 Ue4CombineLutDwords = 144;
+struct Ue4Grade {
+    std::vector<std::pair<u32, float>> values; ///< dword index, value
+    std::atomic<bool> logged{false};
+    std::atomic<bool> missed{false};
+    /// LUT builder draws patched in the constant ring, in a stream copy (outside the ring), or not.
+    std::atomic<u32> ring{0}, stream{0}, unpatched{0};
+};
+const Ue4Grade& Ue4GradeOverride();
+void CountUe4Grade(std::atomic<u32> Ue4Grade::*path) {
+    auto& grade = const_cast<Ue4Grade&>(Ue4GradeOverride());
+    (grade.*path).fetch_add(1, std::memory_order_relaxed);
+    const u32 total = grade.ring.load() + grade.stream.load() + grade.unpatched.load();
+    if (total == 600 || total == 6000) {
+        std::printf("UE4 grade: %u combine LUT draws: %u patched in the constant ring, %u in a stream "
+                    "copy, %u not patched\n",
+                    total, grade.ring.load(), grade.stream.load(), grade.unpatched.load());
+    }
+}
+const Ue4Grade& Ue4GradeOverride() {
+    static Ue4Grade grade;
+    static const bool parsed = [] {
+        const char* env = std::getenv("GOW3_UE4_GRADE");
+        if (!env || !*env) {
+            return true;
+        }
+        static const std::pair<const char*, u32> fixed[] = {
+            {"film.slope", 40},      {"film.toe", 41},        {"film.shoulder", 42},
+            {"film.blackclip", 43},  {"film.whiteclip", 44},  {"wb.temp", 52},
+            {"wb.tint", 53},         {"shadows_max", 136},    {"highlights_min", 137},
+            {"blue_correction", 140}, {"expand_gamut", 141},
+        };
+        static const std::pair<const char*, u32> ranges[] = {
+            {"global", 56}, {"shadows", 76}, {"midtones", 96}, {"highlights", 116}};
+        static const char* const fields[] = {"saturation", "contrast", "gamma", "gain", "offset"};
+        std::string text = env;
+        std::string applied;
+        size_t pos = 0;
+        while (pos <= text.size()) {
+            const size_t end = std::min(text.find(';', pos), text.size());
+            const std::string item = text.substr(pos, end - pos);
+            pos = end + 1;
+            const size_t eq = item.find('=');
+            if (eq == std::string::npos) {
+                continue;
+            }
+            const std::string name = item.substr(0, eq);
+            const float value = std::strtof(item.c_str() + eq + 1, nullptr);
+            int index = -1;
+            if (name.size() > 1 && name[0] == 'd' && std::isdigit(u8(name[1]))) {
+                index = std::atoi(name.c_str() + 1);
+            }
+            for (const auto& [key, dword] : fixed) {
+                if (name == key) {
+                    index = int(dword);
+                }
+            }
+            for (const auto& [range, base] : ranges) {
+                for (u32 f = 0; f < 5; ++f) {
+                    const std::string key = std::string(range) + "." + fields[f];
+                    if (name.rfind(key, 0) != 0) {
+                        continue;
+                    }
+                    const std::string rest = name.substr(key.size());
+                    const u32 component = rest == ".r" ? 0 : rest == ".g" ? 1 : rest == ".b" ? 2 : 3;
+                    if (rest.empty() || rest == ".r" || rest == ".g" || rest == ".b" || rest == ".w") {
+                        index = int(base + f * 4 + component);
+                    }
+                }
+            }
+            if (index < 0 || index >= int(Ue4CombineLutDwords)) {
+                std::printf("UE4 grade: unknown name \"%s\" ignored\n", name.c_str());
+                continue;
+            }
+            grade.values.emplace_back(u32(index), value);
+            applied += (applied.empty() ? "" : ", ") + name + "=" + std::to_string(value) + " (d" +
+                       std::to_string(index) + ")";
+        }
+        std::printf("UE4 grade: %zu values for the combine LUT: %s\n", grade.values.size(),
+                    applied.c_str());
+        return true;
+    }();
+    (void)parsed;
+    return grade;
+}
+bool Ue4GradeTarget(const Shader::Info& stage, u32 index, u64 size) {
+    return stage.pgm_hash == Ue4CombineLutPs && index == 0 &&
+           size >= Ue4CombineLutDwords * sizeof(u32) && !Ue4GradeOverride().values.empty();
+}
+void ApplyUe4Grade(u8* block) {
+    auto& grade = const_cast<Ue4Grade&>(Ue4GradeOverride());
+    if (!grade.logged.exchange(true)) {
+        std::string line = "UE4 grade: first combine LUT draw, game values:";
+        for (const auto& [index, value] : grade.values) {
+            float before;
+            std::memcpy(&before, block + index * sizeof(u32), sizeof(float));
+            line += " d" + std::to_string(index) + " " + std::to_string(before) + " -> " +
+                    std::to_string(value);
+        }
+        std::printf("%s\n", line.c_str());
+    }
+    for (const auto& [index, value] : grade.values) {
+        std::memcpy(block + index * sizeof(u32), &value, sizeof(float));
+    }
+}
+} // namespace
+
 void Rasterizer::CollectRingBindings(const Shader::Info& stage, const PreparedDraw* prepared,
                            boost::container::static_vector<RingBinding, Shader::NUM_BUFFERS>& out) {
     const PreparedStage* prepared_stage = nullptr;
@@ -644,7 +766,9 @@ void Rasterizer::CollectRingBindings(const Shader::Info& stage, const PreparedDr
                        liverpool->OnGfxQueue();
     const auto copy = [&](u32 index, const void* source, VAddr address, u64 size) {
         RingReuse* entry = nullptr;
-        if (reuse && address) {
+        // gow3 HDR grading: the LUT builder's patched block is never shared through ring reuse.
+        const bool grade = Ue4GradeTarget(stage, index, size);
+        if (reuse && address && !grade) {
             u64 hash = (address ^ size << 40) * 0x9E3779B97F4A7C15ull;
             entry = &ring_reuse[(hash >> 52) % ring_reuse.size()];
             if (entry->epoch == ring_reuse_epoch && entry->address == address &&
@@ -671,6 +795,10 @@ void Rasterizer::CollectRingBindings(const Shader::Info& stage, const PreparedDr
             std::memcpy(dst, source, size);
         } else {
             memory->CopySparseMemory(address, dst, size);
+        }
+        if (grade) {
+            ApplyUe4Grade(dst);
+            CountUe4Grade(&Ue4Grade::ring);
         }
         constant_ring->Flush(*offset, size);
         if (Gow3Stats::enabled) {
@@ -2533,6 +2661,36 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, const PreparedStage* pre
                 if (size != vsharp.GetSize()) {
                     LOG_ERROR(Render, "Clamped size from {} to {} for stage {:#x}",
                               vsharp.GetSize(), size, stage.pgm_hash);
+                }
+                if (Ue4GradeTarget(stage, buffer_index, size) && !desc.is_written &&
+                    memory->IsValidGpuMapping(vsharp.base_address, size)) {
+                    // gow3 HDR grading: outside the constant ring (its region marked GPU-modified, a
+                    // pending write, the ring full): a patched copy from guest memory in the stream
+                    // buffer, as the ring would have made.
+                    if (!const_cast<Ue4Grade&>(Ue4GradeOverride()).missed.exchange(true)) {
+                        std::printf("UE4 grade: a combine LUT draw bound its parameters outside the "
+                                    "constant ring; patched in a stream copy\n");
+                    }
+                    std::array<u8, Ue4CombineLutDwords * sizeof(u32)> block{};
+                    memory->CopySparseMemory(vsharp.base_address, block.data(), block.size());
+                    ApplyUe4Grade(block.data());
+                    CountUe4Grade(&Ue4Grade::stream);
+                    auto& vk_buffer = buffer_cache.GetStreamBuffer();
+                    const u64 offset = vk_buffer.Copy(block.data(), block.size(), alignment);
+                    push_data.AddOffset(binding.buffer, 0);
+                    buffer_infos.emplace_back(vk_buffer.Handle(), offset, block.size());
+                    auto& set_write = set_writes[write_index++];
+                    set_write.dstSet = VK_NULL_HANDLE;
+                    set_write.dstBinding = binding.unified++;
+                    set_write.dstArrayElement = 0;
+                    set_write.descriptorCount = 1;
+                    set_write.descriptorType = vk::DescriptorType::eStorageBuffer;
+                    set_write.pBufferInfo = &buffer_infos.back();
+                    ++binding.buffer;
+                    continue;
+                }
+                if (Ue4GradeTarget(stage, buffer_index, size)) {
+                    CountUe4Grade(&Ue4Grade::unpatched);
                 }
                 const auto [buffer, offset] = buffer_cache.ObtainBuffer(
                     vsharp.base_address, size, desc.is_written, desc.is_formatted);

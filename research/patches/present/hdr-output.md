@@ -9,9 +9,9 @@ default_deck: off
 origin: ours
 class: G
 commits:
-files: gpu/shadps4/core/libraries/videoout/video_out.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_swapchain.cpp, gpu/shim/core/emulator_settings.h, scripts/ue4_override.py, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.cpp, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h
-symbols: sceVideoOutGetDeviceCapabilityInfo, sceVideoOutConfigureOutputMode_, sceVideoOutRegisterBuffers, FindPresentFormat, Swapchain::SetHDR, IsHdrGameForced, PostProcessingPass::HDR_FRAME_FORMAT, RecreateFrame, MustCompileSync
-switches: GOW3_HDR, GOW3_HDR_GAME
+files: gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/core/libraries/videoout/video_out.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_swapchain.cpp, gpu/shim/core/emulator_settings.h, scripts/ue4_override.py, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.cpp, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h
+symbols: Ue4GradeOverride, ApplyUe4Grade, sceVideoOutGetDeviceCapabilityInfo, sceVideoOutConfigureOutputMode_, sceVideoOutRegisterBuffers, FindPresentFormat, Swapchain::SetHDR, IsHdrGameForced, PostProcessingPass::HDR_FRAME_FORMAT, RecreateFrame, MustCompileSync
+switches: GOW3_HDR, GOW3_HDR_GAME, GOW3_UE4_GRADE
 tests:
 docs: study-hdr.md, plan-work-queue.md
 depends_on: particle-curve-sync-compile
@@ -36,6 +36,13 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
   (`fs c401ca35ab81eb39`, vs `f7457b588f171402` / `f7457b588a024e47`). Async compilation dropped it, the LUT stayed
   zero and every UI element and movie was black. The program is in `MustCompileSync`, and a listed pixel program now
   compiles its whole draw on the spot ([particle-curve-sync-compile](../stage-b/particle-curve-sync-compile.md)).
+- **`GOW3_UE4_GRADE="name=value;..."`** (diagnostic, read at start): replaces values of UE 4.21's combine LUT
+  parameters (`fs a4152b3be93c832a` buffer 0, 144 dwords; map in study-hdr.md "LUT parameters") in the constant ring
+  copy, or in a patched stream copy when the block is bound outside the ring; ring reuse is skipped for it. Names:
+  `film.*`, `wb.temp` / `tint`, `{global,shadows,midtones,highlights}.{saturation,contrast,gamma,gain,offset}[.r|.g|.b|.w]`
+  (a bare name sets `.w`), `shadows_max`, `highlights_min`, `blue_correction`, `expand_gamut`, `d<index>`. Log: the parsed
+  values, the game's values at the first builder draw, counts at 600 / 6,000 draws (ring / stream / not patched).
+  In HDR the grading acts (H17: contrast 1.3, floor 0.22 -> 0.08 nits), the film curve does not (H16).
 
 ## Invariants
 
@@ -45,6 +52,8 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
   nothing (PreInit sets both to 0 at SetByCode).
 - The UI composite LUT is drawn once per HDR mode / output device change: any change that lets that draw be dropped
   (async path, a new skip in the draw path) brings the black UI back. `GOW3_DROP_LOG=1` names dropped draws.
+- `GOW3_UE4_GRADE` keys on the builder's program hash and on dword offsets of UE 4.21's parameter layout: another game
+  build or engine version needs the map checked again (a RenderDoc dump of the builder's buffer 0).
 - Not finished: the port's overlay is drawn in the SDR format into the PQ swapchain (RTSS likewise: its text reads
   as 10,000-nit red); FSR1 / RCAS's HDR mode squares PQ values; screenshots save raw PQ; no paper-white / peak /
   contrast control. Diagnostic runs only until those are done.
