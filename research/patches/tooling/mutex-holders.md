@@ -78,6 +78,8 @@ presented FPS (the two files' wall rows put them on one clock).
 - `GOW3_SAMPLE_THREADS` in `mutex-test` (2026-11-16): a thread named `mutex-test:pinned` is found (t row) and sampled
   3-5 times while it spins, every sample in `pinned_spin`; three runs passed. Overhead: each sample suspends the
   thread for a register read and a stack copy (tens of us), ~2,000 a second per thread: a few % of that thread.
+- Stage sampling run (2026-11-16 23:28, dev, 2 min 52 s; `GOW3_SAMPLE_THREADS=shadPS4:GpuCommandProcessor,gow3:DrawRec`):
+  ~284k samples per thread, 144 MB trace, no crash; findings in plan-work-queue.md (RHIThread row).
 
 ## History and pitfalls
 
