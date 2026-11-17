@@ -1,8 +1,8 @@
 ---
 id: cpu-level-windows
-title: x86-64-v3 (AVX2) and x86-64-v4 (AVX-512) release exes on Windows (GOW3_CPU_LEVEL=v3|v4), beside the baseline exe
+title: x86-64-v3 (AVX2) and x86-64-v4 (AVX-512) release exes on Windows (GOW3_CPU_LEVEL=v3|v4); measured, not shipped (the baseline won)
 area: tooling
-status: active
+status: rejected
 platforms: windows
 default_windows: off
 default_deck: off
@@ -58,8 +58,19 @@ dispatch), SRW locks, the driver.
   VEX or EVEX instructions 0 / 69,927 / 75,721; `%ymm` 0 / 13,160 / 5,217; `%zmm` 0 / 0 / 12,924 (clang uses 512-bit
   vectors for v4); mask registers 0 / 0 / 5,407; BMI2 35 / 1,183 / 1,177; **FMA 0 in all three**. 136.10 / 136.15 /
   136.21 MB.
-- Not yet measured. A/B plan: baseline, v3, v3, baseline (run order balanced), each from the same Graveyard save; v4
-  only if v3 shows a difference.
+- A/B, run (2026-11-16 21:50-22:02, 4K 75% DLSS, Reflex 237, flip trace on, logs off; same Graveyard save and route
+  as the baselines; the user cut the plan to one v3 and one v4 run, compared with the two clean baseline runs of the
+  same code: 19:30 (dev-tools A/B) and 21:18 (PGO pair 2); traces `research-data/cpu-level-ab-20261116/`, not in
+  git, graph `cpu-level-frametimes.png`). Heavy stretches, baseline 19:30 / 21:18 / v3 / v4: frames > 6 ms
+  10.1 / 1.3 / 27.3 / 17.7 a minute, > 8 ms 0.4 / 0 / 2.0 / 1.1, 0.1% low 157.7 / 172.3 / 142.0 / 148.5 FPS,
+  average 226.5 / 225.6 / 227.3 / 224.8. Loading slightly better with v3 / v4: p99.9 26.1 / 25.4 / 21.7 / 22.5 ms,
+  frames > 8 ms 115 / 157 / 101 / 105 a minute, longest load frame 1,515 / 1,333 / 1,075 / 892 ms. In the graph, v3
+  and v4 have isolated 8-12 ms spikes in gameplay (v3 ~138, 153, 155, 241 s; v4 ~104, 121 s) that the baselines
+  lack. No crash, no visual fault (the bit_array AVX2 path ran). The user: v4 seemed to give better 0.1% lows in
+  heavy combat, with a trade-off elsewhere (a mixed bag); from the graph: "the baseline is the winner here".
+- Decision (the user, 2026-11-16): ship the baseline (x86-64, no PGO). No run.py CPU dispatch. The builds stay
+  available (`GOW3_CPU_LEVEL`); the compiler's better prospect is a refined PGO (card clang-pgo, retry ideas).
+  One run per build, so v3 / v4 are not proven worse, only not better where it counts (spikes, lows).
 
 ## History and pitfalls
 
