@@ -97,17 +97,8 @@ static unsigned long thread_id(void) {
     return (unsigned long)syscall(SYS_gettid);
 #endif
 }
-static void trace_wait(void *return_address, unsigned kind, uint64_t requested_ns, uint64_t ns) {
-    const uint64_t end = now_ns();
-    const char *name = runtime_thread_current_name();
-    char thread[40];
-    snprintf(thread, sizeof(thread), "%s", name ? name : "-");
-    for (char *c = thread; *c; ++c) if (*c == ',' || *c == '\n') *c = ';';
-    const uintptr_t image = (uintptr_t)runtime_image_base(), at = (uintptr_t)return_address;
-    char where[40];
-    if (image && at - image < 0x20000000) snprintf(where, sizeof(where), "guest+0x%llx", (unsigned long long)(at - image));
-    else snprintf(where, sizeof(where), "%p", return_address);
-    pthread_mutex_lock(&trace_lock);
+/* Opens the trace on first use; call with trace_lock held. 0: no file. */
+static int trace_open_locked(void) {
     if (!trace_file && !trace_failed) {
         trace_file = fopen(trace_path(), "w");
         if (!trace_file) { trace_failed = 1; fprintf(stderr, "Wait trace: cannot open %s\n", trace_path()); }
@@ -115,10 +106,60 @@ static void trace_wait(void *return_address, unsigned kind, uint64_t requested_n
             setvbuf(trace_file, NULL, _IOFBF, 1 << 20);
             const uint64_t before = now_ns(), wall = wall_ns(), after = now_ns();
             fprintf(trace_file, "wall,%llu,%llu\n", (unsigned long long)wall, (unsigned long long)(before + (after - before) / 2));
-            printf("Wait trace: guest waits of %llu us or more to %s\n", (unsigned long long)(trace_min_ns() / 1000), trace_path());
+#ifdef _WIN32
+            /* Host addresses in m / h / s rows: llvm-symbolizer on this exe at address - base + its ImageBase. */
+            char exe[512] = "";
+            GetModuleFileNameA(NULL, exe, sizeof(exe));
+            for (char *c = exe; *c; ++c) if (*c == ',') *c = ';';
+            fprintf(trace_file, "exe,%s,0x%llx\n", exe, (unsigned long long)(uintptr_t)GetModuleHandleW(NULL));
+#endif
+            printf("Wait trace: guest waits of %llu us or more to %s%s\n", (unsigned long long)(trace_min_ns() / 1000),
+                   trace_path(), runtime_mutex_holders_enabled() ? " (with mutex holders, GOW3_MUTEX_HOLDERS=1)" : "");
         }
     }
-    if (trace_file) {
+    return trace_file != NULL;
+}
+/* One raw row (with its newline) into the trace, for the mutex holder rows (runtime_mutex.c). */
+void runtime_wait_trace_line(const char *line) {
+    pthread_mutex_lock(&trace_lock);
+    if (trace_open_locked()) {
+        fputs(line, trace_file);
+        if (++trace_rows % 1024 == 0) fflush(trace_file);
+    }
+    pthread_mutex_unlock(&trace_lock);
+}
+/* guest+0x... for an eboot address, else 0x... (host: the exe, a DLL, the driver). */
+void runtime_wait_format_site(uintptr_t at, char *out, size_t size) {
+    const uintptr_t image = (uintptr_t)runtime_image_base();
+    if (!at) snprintf(out, size, "-");
+    else if (image && at - image < 0x20000000) snprintf(out, size, "guest+0x%llx", (unsigned long long)(at - image));
+    else snprintf(out, size, "0x%llx", (unsigned long long)at);
+}
+/* The current guest thread's name for a CSV field (commas and newlines replaced). */
+void runtime_wait_thread_name(const char *name, char *out, size_t size) {
+    snprintf(out, size, "%s", name ? name : "-");
+    for (char *c = out; *c; ++c) if (*c == ',' || *c == '\n') *c = ';';
+}
+unsigned long runtime_wait_thread_id(void) { return thread_id(); }
+uint64_t runtime_wait_trace_min_ns(void) { return trace_min_ns(); }
+/* GOW3_MUTEX_HOLDERS=1 with GOW3_WAIT_TRACE (dev build; card tooling/mutex-holders): guest mutexes record their
+ * holder, long waits name it (m rows), long holds are written (h rows), and the holder is sampled while a thread
+ * waits on it (s rows, Windows). */
+int runtime_mutex_holders_enabled(void) {
+    if (!GOW3_DEV_TOOLS) return 0;
+    static int on = -1;
+    if (on < 0) { const char *value = getenv("GOW3_MUTEX_HOLDERS"); on = value && value[0] == '1' && trace_path() != NULL; }
+    return on;
+}
+
+static void trace_wait(void *return_address, unsigned kind, uint64_t requested_ns, uint64_t ns) {
+    const uint64_t end = now_ns();
+    char thread[40], where[40];
+    runtime_wait_thread_name(runtime_thread_current_name(), thread, sizeof(thread));
+    runtime_wait_format_site((uintptr_t)return_address, where, sizeof(where));
+    if (where[0] == '0') snprintf(where, sizeof(where), "%p", return_address); /* as before for host sites */
+    pthread_mutex_lock(&trace_lock);
+    if (trace_open_locked()) {
         fprintf(trace_file, "w,%llu,%lu,%s,%s,%s,%llu,%llu\n", (unsigned long long)end, thread_id(), thread,
                 kind_names[kind], where, (unsigned long long)requested_ns, (unsigned long long)ns);
         if (++trace_rows % 1024 == 0) fflush(trace_file);

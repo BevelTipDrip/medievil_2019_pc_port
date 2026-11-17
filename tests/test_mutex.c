@@ -23,9 +23,36 @@
 #undef NDEBUG
 /* runtime_mutex.c reports guest wait sites; off here. */
 int runtime_wait_sites_enabled(void) { return 0; }
-uint64_t runtime_wait_now(void) { return 0; }
+uint64_t runtime_wait_now(void) { /* the holder rows' clock (wait sites stay off: runtime_wait_sites_enabled is 0) */
+    struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t);
+    return ((uint64_t)t.tv_sec * 1000000000u + (uint64_t)t.tv_nsec) | 1;
+}
 void runtime_wait_site(void *a, unsigned k, uint64_t r, uint64_t n) { (void)a; (void)k; (void)r; (void)n; }
 int runtime_fault_stats_enabled(void) { return 0; } /* lock counters off, as in a normal run */
+/* GOW3_MUTEX_HOLDERS (runtime_waitsites.c): off except in holder_rows(), whose rows land in holder_log. */
+static atomic_int holders_on;
+static char holder_log[1 << 16];
+static size_t holder_log_used;
+static pthread_mutex_t holder_log_lock = PTHREAD_MUTEX_INITIALIZER;
+int runtime_mutex_holders_enabled(void) { return atomic_load(&holders_on); }
+void runtime_wait_trace_line(const char *line) {
+    pthread_mutex_lock(&holder_log_lock);
+    const size_t n = strlen(line);
+    if (holder_log_used + n < sizeof(holder_log)) { memcpy(holder_log + holder_log_used, line, n + 1); holder_log_used += n; }
+    pthread_mutex_unlock(&holder_log_lock);
+}
+void runtime_wait_format_site(uintptr_t at, char *out, size_t size) { snprintf(out, size, "0x%llx", (unsigned long long)at); }
+void runtime_wait_thread_name(const char *name, char *out, size_t size) { snprintf(out, size, "%s", name ? name : "-"); }
+unsigned long runtime_wait_thread_id(void) {
+#ifdef _WIN32
+    return GetCurrentThreadId();
+#else
+    return (unsigned long)pthread_self();
+#endif
+}
+uint64_t runtime_wait_trace_min_ns(void) { return 500000; }
+const char *runtime_thread_current_name(void) { return NULL; }
+unsigned char *runtime_image_base(void) { return NULL; } /* no game image here: return addresses into the exe only */
 
 typedef struct { int64_t sec, nsec; } GuestTime;
 typedef int32_t (ABI *Op)(void **);
@@ -317,6 +344,63 @@ static void stress(void) {
     CHECK(s.sum == (long long)ITEMS * (ITEMS + 1) / 2);
 }
 
+/* ---- GOW3_MUTEX_HOLDERS rows (dev build) ---- */
+static void *hold_20ms(void *p) {
+    void **m = p;
+    CHECK(lock(m) == OK);
+    atomic_store(&holders_on, 2); /* "holding": the main thread may wait now (still on: nonzero) */
+    const int64_t end = mono_ns() + 20000000; /* long enough for a few samples, the first one slow (cold DLL lookups) */
+    while (mono_ns() < end) {}
+    CHECK(unlock(m) == OK);
+    return NULL;
+}
+static void holder_rows(void) {
+#if GOW3_DEV_TOOLS
+    atomic_store(&holders_on, 1);
+    void *m = make(1);
+    pthread_t t;
+    pthread_create(&t, NULL, hold_20ms, &m);
+    while (atomic_load(&holders_on) != 2) {}
+    CHECK(lock(&m) == OK);   /* waits ~20 ms for the holder */
+    CHECK(unlock(&m) == OK);
+    pthread_join(t, NULL);
+    /* A hold through a condition wait: the hold ends at the wait (site cond_wait), no h row for the wait itself. */
+    void *c = NULL;
+    CHECK(cinit(&c, NULL, "holders") == OK);
+    CHECK(lock(&m) == OK);
+    CHECK(ctimed(&c, &m, 2000) == (int32_t)ETIMEDOUT_);
+    CHECK(unlock(&m) == OK);
+    cdestroy(&c);
+    atomic_store(&holders_on, 0);
+    destroy(&m);
+    char *mrow = strstr(holder_log, "m,"), *hrow = strstr(holder_log, "h,");
+    CHECK(mrow && hrow);
+    unsigned long long end, waiter, holder, held, waited, hend, htid, hheld;
+    char wname[40], wsite[40], hname[40], hsite[40], tname[40], lsite[40], usite[40];
+    CHECK(sscanf(mrow, "m,%llu,%llu,%39[^,],%39[^,],%llu,%39[^,],%39[^,],%llu,%llu", &end, &waiter, wname, wsite, &holder,
+                 hname, hsite, &held, &waited) == 9);
+    CHECK(holder != 0 && holder != waiter && waited >= 2000000 && strcmp(hsite, "-"));
+    CHECK(sscanf(hrow, "h,%llu,%llu,%39[^,],%39[^,],%39[^,],%llu", &hend, &htid, tname, lsite, usite, &hheld) == 6);
+    CHECK(htid == holder && hheld >= 15000000);
+#ifdef _WIN32
+    /* The holder was sampled while it spun, and the unwinder reached hold_20ms in the exe (the sampler writes after
+     * its unwinding: allow it up to 200 ms). */
+    int sampled = 0;
+    for (int i = 0; i < 200 && !sampled; ++i) {
+        pthread_mutex_lock(&holder_log_lock);
+        const char *s = strstr(holder_log, "\ns,");
+        sampled = s && strstr(s, ",exe+0x") != NULL;
+        pthread_mutex_unlock(&holder_log_lock);
+        if (!sampled) Sleep(1);
+    }
+    CHECK(sampled);
+#endif
+    CHECK(!strstr(holder_log, ",cond_wait,cond_wait,")); /* a 2 ms condition wait is not a hold */
+    printf("  mutex holder rows: ok (%zu bytes)\n", holder_log_used);
+    if (getenv("MUTEX_TEST_SHOW_ROWS")) fputs(holder_log, stdout);
+#endif
+}
+
 /* ---- benchmark ---- */
 static void bench_uncontended(void) {
     void *m = make(1), *c = NULL;
@@ -600,6 +684,7 @@ int main(int argc, char **argv) {
     conditions();
     timed_wake();
     stress();
+    holder_rows();
     puts("mutex-test: all passed");
     return 0;
 }

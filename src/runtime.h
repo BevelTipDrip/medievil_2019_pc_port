@@ -149,6 +149,13 @@ uint64_t runtime_image_size(void);
 int runtime_wait_sites_enabled(void);
 uint64_t runtime_wait_now(void);
 void runtime_wait_site(void *return_address, unsigned kind, uint64_t requested_ns, uint64_t actual_ns);
+/* GOW3_MUTEX_HOLDERS=1 with GOW3_WAIT_TRACE (dev build, card tooling/mutex-holders): helpers for the holder rows. */
+int runtime_mutex_holders_enabled(void);
+void runtime_wait_trace_line(const char *line);
+void runtime_wait_format_site(uintptr_t at, char *out, size_t size);
+void runtime_wait_thread_name(const char *name, char *out, size_t size);
+unsigned long runtime_wait_thread_id(void);
+uint64_t runtime_wait_trace_min_ns(void);
 #if GOW3_DEV_TOOLS
 #define RUNTIME_WAIT_BEGIN() const uint64_t runtime_wait_t0 = runtime_wait_sites_enabled() ? runtime_wait_now() : 0
 #else

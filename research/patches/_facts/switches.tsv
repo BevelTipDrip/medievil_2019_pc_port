@@ -19,8 +19,8 @@ GOW3_CAPTURE_ON_TARGET_COUNT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_
 GOW3_CAPTURE_TRIGGER	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.cpp:163
 GOW3_CLEAR_SKIPS_UPLOAD	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:3627
 GOW3_CMASK_FILL	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:2038
-GOW3_COND_PRECISE	ours	src/runtime_mutex.c:231 tests/test_mutex.c:437 tests/test_mutex.c:437
-GOW3_COND_SPIN_US	ours	src/runtime_mutex.c:238 tests/test_mutex.c:438 tests/test_mutex.c:438
+GOW3_COND_PRECISE	ours	src/runtime_mutex.c:470 tests/test_mutex.c:657 tests/test_mutex.c:657
+GOW3_COND_SPIN_US	ours	src/runtime_mutex.c:477 tests/test_mutex.c:658 tests/test_mutex.c:658
 GOW3_CONFIG	upstream	gpu/shim/gow3_settings.cpp:29 tests/test_graphics_settings.cpp:46 tests/test_orb_multiplier.cpp:97 tests/test_orb_multiplier.cpp:99 tests/test_perf_overlay.cpp:57 tests/test_stat_multipliers.cpp:130 tests/test_stat_multipliers.cpp:132 tests/test_upscaler_support.cpp:16
 GOW3_CONSTANT_RING_MB	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_constant_ring.h:35
 GOW3_COPY_FAULT_LOG	ours	gpu/shim/gow3_copy.cpp:244
@@ -84,7 +84,7 @@ GOW3_FSR4_PROFILE	upstream	gpu/patches/fsr-vulkan/0001-FSR-4-v07-provider-GOW3_F
 GOW3_FSR4_STATS	upstream	gpu/patches/fsr-vulkan/0001-FSR-4-v07-provider-GOW3_FSR4_PROFILE-pass-timings-GOW3_F.patch:87 gpu/tools/fsr4_bench.cpp:281
 GOW3_FSR_SHARPNESS	upstream	gpu/shim/gow3_settings.cpp:411
 GOW3_FULLSCREEN	upstream	gpu/shim/window.cpp:83
-GOW3_FUTEX_COND	upstream	src/runtime_mutex.c:212 tests/test_mutex.c:436 tests/test_mutex.c:436
+GOW3_FUTEX_COND	upstream	src/runtime_mutex.c:451 tests/test_mutex.c:656 tests/test_mutex.c:656
 GOW3_GC_BUDGET_MB	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:2453
 GOW3_GC_STARTUP_RULE	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:2457
 GOW3_GC_TOTAL_MB	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:207
@@ -132,6 +132,7 @@ GOW3_MOUSE_LOG	ours	src/probe.c:1012 src/runtime_services.c:684
 GOW3_MOUSE_MAP	ours	src/runtime_pad.c:240
 GOW3_MOVIE_END_EVENT	ours	gpu/shadps4/core/libraries/avplayer/avplayer_state.cpp:399
 GOW3_MOVIE_SUSPEND	upstream	src/probe.c:619
+GOW3_MUTEX_HOLDERS	ours	src/runtime_waitsites.c:151
 GOW3_NARROW_IMAGE_STAGES	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:2619
 GOW3_NEO	upstream	src/runtime_extra.c:173
 GOW3_NEWEST_FRAME	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:106 gpu/shadps4/core/libraries/videoout/driver.cpp:1534
