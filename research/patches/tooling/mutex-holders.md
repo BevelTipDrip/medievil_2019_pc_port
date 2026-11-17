@@ -64,7 +64,9 @@ frame (exe offsets named from the exe's debug info).
 - `mutex-test` (2026-11-16): a 20 ms hold waited on gives one `m` row naming the holder, one `h` row (20.0 ms), and
   ~40 samples, all unwound to the holder's function (`hold_20ms`) through ntdll / winpthread; a 2 ms timed condition
   wait gives no hold row. Three runs, all passed. `--handoff` and the semantics tests unchanged.
-- Not yet run in the game.
+- First game run (2026-11-16 22:45, dev build, 4 min 49 s, 311 MB trace: 61,712 m, 284,273 h, 297,652 s rows; no crash or
+  hang): RHIThread's lock holder named (SubmitGPUCommandsAsyncTaskThread) and its wait found (`sceKernelWaitEqueue`, the
+  per-frame EOP wait); 92% of the samples unwound to the same three exe frames. Details: plan-work-queue.md, RHIThread row.
 
 ## History and pitfalls
 
