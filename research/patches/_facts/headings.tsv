@@ -5,7 +5,7 @@ START-HERE.md	29	2	rules-the-users-also-in-claudes-memory	Rules (the user's; als
 START-HERE.md	56	2	current-state-table-last-fully-updated-2026-10-18	Current state (table last fully updated 2026-10-18)
 START-HERE.md	78	2	knobs-and-triggers	Knobs and triggers
 START-HERE.md	95	2	document-index	Document index
-START-HERE.md	134	2	elsewhere	Elsewhere
+START-HERE.md	135	2	elsewhere	Elsewhere
 building-and-tools.md	1	1	building-and-tools	Building and tools
 building-and-tools.md	5	2	paths	Paths
 building-and-tools.md	19	2	toolchain-installed-2026-10-18	Toolchain (installed 2026-10-18)
@@ -600,7 +600,7 @@ plan-work-queue.md	7	2	the-users-quality-of-life-list-2026-11-03-after-the-v200-
 plan-work-queue.md	44	2	the-users-order-2026-10-30	The user's order (2026-10-30)
 plan-work-queue.md	73	2	pending-fixes-research-2026-10-29-ranked-there-state-now	Pending fixes (research 2026-10-29, ranked there; state now)
 plan-work-queue.md	101	2	found-on-the-way-2026-10-30	Found on the way (2026-10-30)
-plan-work-queue.md	142	2	from-github-issues	From GitHub issues
+plan-work-queue.md	144	2	from-github-issues	From GitHub issues
 pr-checklist.md	1	1	pr-checklist-the-bar-for-anything-proposed-upstream	PR checklist: the bar for anything proposed upstream
 pr-checklist.md	7	2	scope	Scope
 pr-checklist.md	14	2	code	Code
@@ -942,6 +942,13 @@ study-guest-memory-direct.md	128	3	c-by-resource-class	(c) By resource class
 study-guest-memory-direct.md	142	2	3-what-it-costs-today-heavy-view-queries-off-4k	3. What it costs today (heavy view, queries off, 4K)
 study-guest-memory-direct.md	161	2	4-expected-gain-and-risks	4. Expected gain and risks
 study-guest-memory-direct.md	187	2	5-if-it-is-pursued-anyway-probe-first-no-game-launch	5. If it is pursued anyway: probe first (no game launch)
+study-hdr.md	1	1	hdr-what-the-port-and-the-game-have-and-what-exposing-it-takes-research-2026-11-17-no-launch	HDR: what the port and the game have, and what exposing it takes (research, 2026-11-17, no launch)
+study-hdr.md	11	2	summary	Summary
+study-hdr.md	43	2	the-checkbox-path-today-v	The checkbox path today [V]
+study-hdr.md	71	2	engine-variables-both-builds-register-the-same-set-v	Engine variables (both builds register the same set) [V]
+study-hdr.md	105	2	how-the-port-can-set-them	How the port can set them
+study-hdr.md	123	2	two-routes	Two routes
+study-hdr.md	137	2	open-questions-each-needs-a-run-with-the-users-go	Open questions (each needs a run with the user's go)
 study-heavy-frame-map.md	1	1	study-heavy-view-frame-map-2026-10-21	Study: heavy-view frame map (2026-10-21)
 study-heavy-frame-map.md	12	2	1-frame-map	1. Frame map
 study-heavy-frame-map.md	47	2	2-h3-gpu-particle-double-run	2. H3: GPU-particle double run
