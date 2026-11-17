@@ -53,8 +53,10 @@ presented FPS (the two files' wall rows put them on one clock).
 
 ## Invariants
 
-- Compiled out of the release build (the `GuestMutex` owner fields too); off in the dev build: one call per lock to
-  a cached switch.
+- Compiled out of the release build (the `GuestMutex` owner fields too; checked 2026-11-16: no tooling symbol or switch
+  name in `medievil-runtime.exe`). Off in the dev build: the switch check is inlined, one cached load and a branch per
+  mutex operation (`mutex_unlock` disassembly; `getenv` only on the first call); the sampler and scanner threads never
+  start; 40 bytes more per mutex.
 - The sampler must never take a lock (heap, loader, trace, stdio) between `SuspendThread` and `ResumeThread`: the
   holder may hold it, and the sampler would never resume it. Everything after resuming reads only the copy.
 - Owner fields are written by the holder while it holds the lock and read by waiters without it (relaxed): a
