@@ -134,6 +134,66 @@ HDR ? (nits <= 1000 ? 3 : 4) : 0 and ColorGamut = HDR ? 2 : 0 at SetByDeviceProf
 - **B, port-side SDR -> HDR** (inverse tonemap of the SDR frame to PQ / scRGB with paper-white): simpler, the overlay
   stays consistent, but highlights are only expanded. Windows Auto HDR / RTX HDR on the Vulkan swapchain: no code [I].
 
+## Runs (2026-11-17, release build of the uncommitted step 1 + 2 code, 4K, Windows HDR on)
+
+Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's NVIDIA captures (JXR, scRGB),
+`Videos/NVIDIA/medievil-runtime.exe/* 2026.11.17 - 05.2*.jxr`.
+
+- **H1, log lines only** ("Allow HDR output" on): `HDR10 surface offered`; 7 surface pairs, including
+  `A2B10G10R10UnormPack32/Hdr10St2084EXT` and `R16G16B16A16Sfloat/ExtendedSrgbLinearEXT` (scRGB, an option for the
+  port later). The game is told capability `0x0` (param.sfo HDR no), registers 2 buffers `A8R8G8B8Srgb (0x80000000)`
+  3840x2160 and sets colorimetry 255 (Any). Open questions 1 and 2 answered. [V]
+- **H2, `GOW3_HDR_GAME=1`** (two runs): capability `0x80`, buffers `A2R10G10B10Bt2020Pq (0x88740000)`, colorimetry 12,
+  `Swapchain: HDR output on`. The game's own HDR10 path runs [V]. The 3D scene renders; **every UMG element is black**
+  (options panel, title, button prompts; movies black too). RTSS's text is bright red (its SDR values read as PQ, ~10,000
+  nits red: the capture's 2,690-nit peak). The user: the menu render looks washed out. Measured on the title capture:
+  median 1.3 nits, 90% under 7, 99% under 74 [V]: a dim, flat picture.
+- **H3, + `r.HDR.UI.CompositeMode=0`** (pak, `GOW3_UE4_CVARS`): movies and menus show up, oversaturated (sRGB UI values
+  drawn straight onto the PQ frame), so the black UI is **confirmed** to come from the UI composite pass (mode 1). The
+  user: legitimately brighter highlights, but raised blacks and poor contrast; the game's options menu has no HDR
+  setting (open question 4 answered: none).
+- **H4, 10-bit frame image** (`pp_pass` HDR pipeline, `RecreateFrame` in `A2B10G10R10` with HDR; mode 0 still): runs;
+  a 600-px sky strip has 464 distinct values against 39 in an H2 capture of another view (a hint, not an A/B). Levels
+  unchanged (median 1.7 nits, p90 9.6); the mode-0 UI peaks at 10,000 nits (its 0-1 values read as PQ).
+- **H5, mode 1 + `r.HDR.UI.Level=4`**: UI still black. No eboot code writes `r.HDR.UI.Level` (xrefs: registration
+  only, default 1.0) [V].
+- **H6, frame map + shader dump** (`GOW3_UE4_FRAME_MAP=1 GOW3_DUMP_SHADERS=1 GOW3_PIPELINE_CACHE=0`; dumps in
+  `user/shader/dumps`, the old SDR set moved to `dumps-sdr-20261029`): display-buffer draws in HDR are `fs
+  12178a9314cb761e` (HDR tonemap) and, last, `fs c401ca35f9bceb8e`; neither is in the SDR dump [V]. `c401` is UE4's UI
+  composite [V, IR]: scene (tex 0) PQ -> nits; UI (tex 1) rgba; where 0 < a < 1 the scene is compressed against
+  `cb[0]`; UI colour * 1e-4 -> PQ -> **3D LUT (tex 2, `sampler3D`, 32^3)** -> x1.05 -> nits -> x `cb[0]`; out =
+  PQ(scene * (1 - a) + UI term). Black where the UI is = alpha arrives, the UI term is 0. Both tonemaps (SDR `3632`,
+  HDR `12178`) also sample a 32^3 `sampler3D` LUT and the scene is right, so 3D LUTs work in general. Lead [I]: the UI
+  LUT is rendered once (when HDR turns on) where the scene LUT is re-rendered, and the texture cache's volume-slice
+  path (`IsVolumeSliceTarget`, `texture_cache.cpp`) only serves a slice target that comes after its 3D image; a
+  once-rendered LUT goes through `ExpandImage` or an upload from guest memory instead.
+- **H7, image watch 32x32** (6,000 lines, cap reached at 27.9 s by a per-frame LUT): two 32-layer LUT targets, one
+  re-rendered every frame through its 3D image, one rendered once. Which one the composite reads: unknown.
+- **H8, frame map prints each display draw's sampled images** (new line `UE4 frame map: display draw ...`): `c401`
+  reads `[2] 0x2001700000 32x32`; the HDR tonemap's LUT is another address, rendered every frame. The image watch:
+  `0x2001700000` created at 0.23 s "for use as texture", uploaded from guest memory, **never rendered** [V].
+- **H9, image watch by address** (`GOW3_IMAGE_WATCH_ADDR`, new; the watch lines now print depth and format): the only
+  image ever over that memory is the 3D LUT `32x32x32 A2B10G10R10`, loaded once at boot [V]. Not a write in another
+  shape.
+- **H10, dropped-draw log + shader trace** (`GOW3_DROP_LOG=1`, `GOW3_UE4_FRAME_MAP_SHADERS`, new): the LUT builder `fs
+  c401ca35ab81eb39` (no samplers, ~2,300 IR lines of PQ / ACES maths, in the H6 dump, HDR only) never drew; a draw
+  with unnamed (still translating) stages was dropped right before the first composite. Precedent: the particle
+  curve injection (`MustCompileSync`).
+- **H11, the builder's pixel program in `MustCompileSync`**: still black. It compiled on the spot (3.3-4.1 ms), but
+  the drop log shows `fs c401ca35ab81eb39, vs 0`: its vertex stage was still compiling in the background.
+- **H12, RenderDoc** (`GOW3_RENDERDOC`, cold cache; captures `research-data/hdr-ui-20261117/menu_frame14681.rdc`,
+  `16094`; script `research/tools/renderdoc/shader_draws.py` with `RD_EIDS`): composite eid 3569 reads the scene (PQ,
+  max 0.75), the UI (RGBA8, full menu art) and the 32^3 LUT, **zero in every channel of every slice checked**; the
+  scene LUT in the same frame is filled (0.002-0.72) [V]. Confirmed: the empty LUT is the cause.
+- **H13, a listed pixel program compiles its whole draw on the spot** (`PipelineSelection::sync_all`): the builder
+  and its stages (`f7457b588f171402`, `f7457b588a024e47`) compile at boot, it draws into `0x2001700000` (32 layers),
+  the cache expands that into the 3D LUT with its contents. Menus, prompts and movies show with the right colours
+  (the title yellow / orange; the blue in H12's PNG was RenderDoc's view of the 8-bit texture); the UI measures
+  ~100 nits (p99 105). The user: "confirmed, that fixed it".
+- Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
+  so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
+  Needs a same-view SDR / HDR capture pair to measure.
+
 ## Open questions (each needs a run with the user's go)
 
 1. With `GOW3_HDR=1`, Windows HDR on and the 4090: is the HDR10 surface pair offered? (needs a log line)

@@ -1,6 +1,6 @@
 ---
 id: particle-curve-sync-compile
-title: Compile UE4 particle curve injection synchronously (torch flames on a cold cache, fork port #52)
+title: Compile once-drawn programs synchronously: UE4 particle curve injection (torch flames, fork port #52), HDR UI composite LUT
 area: stage-b
 status: active
 platforms: all
@@ -10,10 +10,10 @@ origin: upstream PR #52 (Porticus 40d105e)
 class: M
 commits: f130b8de78, dd14bd3
 files: gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp
-symbols: GetGraphicsPipeline, GetProgram, AsyncCompilation, TryPreparedPipeline
+symbols: GetGraphicsPipeline, GetProgram, AsyncCompilation, TryPreparedPipeline, MustCompileSync, RefreshGraphicsStages, PipelineSelection::sync_all
 docs: study-forks-survey.md#9-worth-porting-shortlist, study-forks-survey.md#unverified--open
 related: lineage-draw-preparation, particle-bounds, particle-flip-guard, single-particle-pass, publish-graphics-empty
-checked: 2026-11-07
+checked: 2026-11-17
 ---
 ## What it does
 
@@ -25,11 +25,18 @@ selection that uses one. Everything else stays async. `GOW3_CURVE_SYNC=0` (on th
 async path. Each run prints `gow3: curve injection program 0x... ready synchronously (N ms)` once per program
 compiled that way.
 
+**2026-11-17 (copy-fault-trace, HDR work):** the list gained UE4's HDR UI composite LUT builder (ps
+`0xc401ca35ab81eb39`), and a listed pixel program now makes every stage of its draw compile on the spot
+(`PipelineSelection::sync_all`, set in `RefreshGraphicsStages` after the pixel stage binds, read in `GetProgram`). The
+log line is now `gow3: listed|same-draw program 0x... ready synchronously (N ms)`. See
+[hdr-output.md](../present/hdr-output.md) and study-hdr.md H6-H13.
+
 ## Invariants
 
 - The injection draws run once at level load into `FParticleCurveTexture` (512x512), and nothing redraws it. A
   draw skipped while its pipeline compiles (`GetGraphicsPipeline` returns null) is lost for good. Any program of
-  that "drawn once" kind needs the same exception: the list is closed.
+  that "drawn once" kind needs the same exception: the list is closed. Listing the pixel program is enough since
+  `sync_all` (2026-11-17); before it, every stage had to be listed (the curve entries list vs and ps).
 - The hashes come from the shader code in the paks and match the user's CUSA11227 cache
   (`0x113f0c20873a7659_0.spv`, `0x1b1e7c76d6a281d3_0.spv`). A game build with other shaders silently loses the
   fix.
@@ -58,6 +65,12 @@ compiled that way.
   cold cache (rename `user\cache`, never the rest of `user\`), crypt start, `GOW3_CURVE_SYNC=0` then the default.
 
 ## History and pitfalls
+
+- H11 / H13 (2026-11-17, HDR UI LUT): listing only the LUT's pixel program was not enough. The log said it was "ready
+  synchronously", but its vertex stage (`0xf7457b588f171402`, with `0xf7457b588a024e47`) still went to the
+  background and the draw was dropped (`GOW3_DROP_LOG`: `fs c401ca35ab81eb39, vs 0`); a RenderDoc capture showed the
+  LUT all zero. With `sync_all` the three programs compile on the spot (3.3 / 0.4 / 0.3 ms), the builder draws into
+  the LUT at boot, and the UI shows (the user: "confirmed, that fixed it").
 
 - T-UP1 (2026-11-12, `upstream-ports`, PC, shader cache renamed away; log research/docs/data/upstream-ports-t-up1.log):
   both programs "ready synchronously" at 0.3 ms each; the user: the crypt torch has its flame, the main menu's

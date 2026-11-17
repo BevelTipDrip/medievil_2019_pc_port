@@ -14,6 +14,9 @@ namespace Vulkan::HostPasses {
 
 class PostProcessingPass {
 public:
+    /// gow3: the frame image's format while the swapchain is HDR10 (Presenter::RecreateFrame).
+    static constexpr vk::Format HDR_FRAME_FORMAT = vk::Format::eA2B10G10R10UnormPack32;
+
     struct Settings {
         float gamma = 1.0f;
         u32 hdr = 0;
@@ -27,6 +30,7 @@ public:
 
 private:
     vk::UniquePipeline pipeline{};
+    vk::UniquePipeline pipeline_hdr{};
     vk::UniquePipelineLayout pipeline_layout{};
     vk::UniqueDescriptorSetLayout desc_set_layout{};
     vk::UniqueSampler sampler{};

@@ -100,6 +100,9 @@ struct PipelineSelection {
     std::optional<Shader::Gcn::FetchShaderData> fetch_shader{};
     GraphicsPipelineKey graphics_key{};
     bool motion = false;
+    /// gow3: the draw's pixel program must compile on the spot (MustCompileSync), so every other
+    /// stage does too: a background vertex stage still dropped the draw (study-hdr.md H11).
+    bool sync_all = false;
     /// MediEvil: light grid scale of this draw's fragment variant (float bits per axis; 0: none)
     /// and the full view (width | height << 16) it was computed from (LightGridScalePass).
     std::array<u32, 2> light_grid_scale{};

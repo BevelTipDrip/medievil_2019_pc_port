@@ -11,7 +11,7 @@ class: M
 commits: ba013b4, d61dd6c
 files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.h, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.h, tests/test_ue4_frame_map.cpp, gpu/CMakeLists.txt
 symbols: Ue4FrameMap, ObserveFrameMap, frame_map
-switches: GOW3_UE4_FRAME_MAP
+switches: GOW3_UE4_FRAME_MAP, GOW3_UE4_FRAME_MAP_SHADERS
 tests: u1-frame-map
 docs: plan-ue4-motion-vectors.md#u1-run-time-frame-map-log-only, study-taau-frame-map.md#5-shader-identity-the-port-can-match-at-run-time
 depends_on:
@@ -58,6 +58,13 @@ the last frame in full. Nothing in the frame changes.
 
 - None with the upscaler path (off for MediEvil, `GOW3_UPSCALER=none`); the hook sits next to its `OnDraw` /
   `OnDispatch` calls and does not use them.
+
+2026-11-17 (HDR UI, study-hdr.md H8 / H10): a line per display-buffer draw shader and sampled-image set
+(`UE4 frame map: display draw fs <hash> into <target> reads [i] <address> WxH ...`, at most 32), and
+`GOW3_UE4_FRAME_MAP_SHADERS=hash,hash` (hex program hashes) traces those passes wherever they draw: colour target count,
+colour buffer 0's register address (also when no image is bound), its image, size, layers and depth, the sampled
+images; compute: groups and storage writes (`UE4 frame map: traced ...`, once per shader / image set, at most 64).
+A shader that never shows there never reached the frame map (dropped before it: `GOW3_DROP_LOG=1`).
 
 ## Evidence
 

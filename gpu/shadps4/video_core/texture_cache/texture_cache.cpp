@@ -965,6 +965,10 @@ void TextureCache::InvalidateAlias(Image& image) {
 namespace {
 struct ImageWatchSpec {
     u32 width = 0, height = 0, min_layers = 0;
+    // GOW3_IMAGE_WATCH_ADDR=0xADDR[+0xSIZE]: also every image of any shape overlapping that guest
+    // range (default size 0x20000, a 32^3 RGBA8 LUT; study-hdr.md H8).
+    VAddr addr = 0;
+    u64 addr_size = 0;
     std::atomic<u32> lines{0};
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 };
@@ -972,7 +976,15 @@ ImageWatchSpec& ImageWatch() {
     static ImageWatchSpec spec;
     static const bool parsed = [] {
         const char* env = std::getenv("GOW3_IMAGE_WATCH");
-        if (env && std::sscanf(env, "%ux%u:%u", &spec.width, &spec.height, &spec.min_layers) >= 2) {
+        const bool by_size =
+            env && std::sscanf(env, "%ux%u:%u", &spec.width, &spec.height, &spec.min_layers) >= 2;
+        const char* addr = std::getenv("GOW3_IMAGE_WATCH_ADDR");
+        if (addr && *addr) {
+            char* end = nullptr;
+            spec.addr = VAddr(std::strtoull(addr, &end, 0));
+            spec.addr_size = end && *end == '+' ? std::strtoull(end + 1, nullptr, 0) : 0x20000;
+        }
+        if (by_size || spec.addr) {
             const char* lines = std::getenv("GOW3_IMAGE_WATCH_LINES");
             spec.lines = lines && *lines ? u32(std::strtoul(lines, nullptr, 10)) : 4000;
         }
@@ -985,6 +997,10 @@ ImageWatchSpec& ImageWatch() {
 
 bool TextureCache::Watched(const ImageInfo& info) const {
     const auto& spec = ImageWatch();
+    if (spec.addr && info.guest_address < spec.addr + spec.addr_size &&
+        spec.addr < info.guest_address + info.guest_size) {
+        return true;
+    }
     return spec.width != 0 && info.size.width == spec.width && info.size.height == spec.height &&
            info.resources.layers >= spec.min_layers;
 }
@@ -1000,9 +1016,13 @@ void TextureCache::WatchNote(const Image& image, const char* event, const std::s
     const double seconds =
         std::chrono::duration<double>(std::chrono::steady_clock::now() - spec.start).count();
     const auto flags = image.flags;
-    std::printf("Image watch %.3f s: %#llx %ux%u L%u/%u %s%s [%s%s%s%s%s] tick %llu\n", seconds,
+    // gow3: depth (3D images) and Vulkan format after the size, e.g. "32x32x32 L1/1 R8G8B8A8Unorm".
+    const std::string depth =
+        image.info.size.depth > 1 ? "x" + std::to_string(image.info.size.depth) : std::string();
+    std::printf("Image watch %.3f s: %#llx %ux%u%s %s L%u/%u %s%s [%s%s%s%s%s] tick %llu\n", seconds,
                 static_cast<unsigned long long>(image.info.guest_address), image.info.size.width,
-                image.info.size.height, image.info.resources.levels, image.info.resources.layers,
+                image.info.size.height, depth.c_str(), vk::to_string(image.info.pixel_format).c_str(),
+                image.info.resources.levels, image.info.resources.layers,
                 event, detail.c_str(), True(flags & ImageFlagBits::Undefined) ? " undefined" : "",
                 True(flags & ImageFlagBits::CpuDirty) ? " cpu-dirty" : "",
                 True(flags & ImageFlagBits::MaybeCpuDirty) ? " maybe-cpu-dirty" : "",

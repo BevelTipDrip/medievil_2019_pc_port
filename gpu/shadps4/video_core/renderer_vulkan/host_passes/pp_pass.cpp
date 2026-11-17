@@ -71,7 +71,7 @@ void PostProcessingPass::Create(vk::Device device, const vk::Format surface_form
     pipeline_layout =
         Check<"create pp pipeline layout">(device.createPipelineLayoutUnique(layout_info));
 
-    const std::array pp_color_formats{
+    std::array pp_color_formats{
         surface_format,
     };
     const vk::PipelineRenderingCreateInfo pipeline_rendering_ci{
@@ -165,6 +165,11 @@ void PostProcessingPass::Create(vk::Device device, const vk::Format surface_form
 
     pipeline = Check<"create post process pipeline">(device.createGraphicsPipelineUnique(
         /*pipeline_cache*/ {}, pipeline_info));
+    // gow3: the same pass into the 10-bit HDR frame image (the HDR10 swapchain's format), so the
+    // game's PQ output keeps its 10 bits on the way to the swapchain (study-hdr.md, step 3).
+    pp_color_formats[0] = HDR_FRAME_FORMAT;
+    pipeline_hdr = Check<"create post process pipeline (HDR)">(device.createGraphicsPipelineUnique(
+        /*pipeline_cache*/ {}, pipeline_info));
 
     // Once pipeline is compiled, we don't need the shader module anymore
     device.destroyShaderModule(vs_module);
@@ -231,7 +236,8 @@ void PostProcessingPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
         },
     };
 
-    cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline);
+    cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics,
+                        frame.is_hdr ? *pipeline_hdr : *pipeline);
 
     const std::array viewports = {
         vk::Viewport{

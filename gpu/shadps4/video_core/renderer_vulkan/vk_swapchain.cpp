@@ -185,6 +185,7 @@ void Swapchain::SetHDR(bool hdr) {
     }
 
     needs_hdr = hdr;
+    std::printf("Swapchain: HDR output %s (the game's video-out mode)\n", hdr ? "on" : "off");
     Recreate(width, height);
     ImGui::Core::OnSurfaceFormatChange(needs_hdr ? SURFACE_FORMAT_HDR.format
                                                  : surface_format.format);
@@ -278,8 +279,19 @@ void Swapchain::FindPresentFormat() {
         std::find_if(formats.begin(), formats.end(), [](const vk::SurfaceFormatKHR& format) {
             return format == SURFACE_FORMAT_HDR;
         }) != formats.end();
+    const bool hdr10_offered = supports_hdr;
     // Also make sure that user allowed us to use HDR
     supports_hdr &= EmulatorSettings.IsHdrAllowed();
+    // gow3: one start-up line for HDR work (study-hdr.md, open question 1): is the HDR10 pair
+    // offered (Windows HDR on), is it allowed, and every surface format / colour space pair.
+    std::string pairs;
+    for (const vk::SurfaceFormatKHR& sformat : formats) {
+        pairs += pairs.empty() ? "" : ", ";
+        pairs += vk::to_string(sformat.format) + "/" + vk::to_string(sformat.colorSpace);
+    }
+    std::printf("Swapchain: HDR10 surface %s, GOW3_HDR %s; %zu formats: %s\n",
+                hdr10_offered ? "offered" : "not offered",
+                EmulatorSettings.IsHdrAllowed() ? "on" : "off", formats.size(), pairs.c_str());
 
     // If there is a single undefined surface format, the device doesn't care, so we'll just use
     // RGBA sRGB.

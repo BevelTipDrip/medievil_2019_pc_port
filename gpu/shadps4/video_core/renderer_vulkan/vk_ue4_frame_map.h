@@ -51,6 +51,9 @@ public:
         bool target_rg16 = false;    ///< R16G16_UNORM, UE4's velocity format
         bool target_rgba16f = false; ///< R16G16B16A16_SFLOAT (scene colour, TAA's output)
         bool display = false;        ///< the target is a display buffer
+        VAddr cb0 = 0;               ///< colour buffer 0's register address (even with no image)
+        u32 target_layers = 0;       ///< first colour target's layers / depth (volume slices)
+        u32 target_depth = 0;
         VAddr depth = 0;             ///< bound depth buffer (draws)
         std::array<VAddr, 16> reads{}; ///< sampled images
         std::array<std::array<u32, 2>, 16> read_sizes{};
@@ -70,6 +73,10 @@ public:
     explicit Ue4FrameMap(Sink sink = {});
 
     void OnPass(const Pass& pass);
+
+private:
+    void TracePass(const Pass& pass);
+public:
 
 private:
     struct View {
@@ -140,6 +147,11 @@ private:
     VAddr last_depth = 0;
     std::string last_signature;
     std::vector<std::pair<const char*, u64>> seen_readers;
+    /// GOW3_UE4_FRAME_MAP_SHADERS=hash,hash: passes of these shaders logged with target and images.
+    std::vector<u64> traced_shaders;
+    std::vector<std::pair<u64, std::array<VAddr, 17>>> seen_traced;
+    /// Display-buffer draws already logged with their sampled images (shader, images).
+    std::vector<std::pair<u64, std::array<VAddr, 16>>> seen_display_reads;
     std::vector<std::pair<float, float>> jitters; ///< distinct this summary
     bool have_frame_number = false;
     u32 last_frame_number = 0;

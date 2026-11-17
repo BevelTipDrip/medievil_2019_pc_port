@@ -535,6 +535,11 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
     # (src/runtime_mouse.c, Windows); the cvar is read once at start-up, so it goes into the pak.
     if os.environ.get('GOW3_MOUSE') == '1':
         values['PS4.EnableMouse'] = '1'
+    # HDR10 output, the game's own UE4 path (study-hdr.md, route A): with the HDR checkbox (GOW3_HDR)
+    # and GOW3_HDR_GAME=1 the runtime reports an HDR display and these let the engine use it. Read at
+    # RHI init, so they go into the pak; without the reported display PreInit sets both back to 0.
+    if os.environ.get('GOW3_HDR') == '1' and os.environ.get('GOW3_HDR_GAME') == '1':
+        values.update({'r.AllowHDR': '1', 'r.HDR.EnableHDROutput': '1'})
     # Extra console variables for experiments, "name=value;name=value" (GOW3_UE4_CVARS); they win
     # over the presets above.
     extra = {}

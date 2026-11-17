@@ -4679,8 +4679,13 @@ bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
     } else {
         const auto& key = static_cast<const GraphicsPipeline*>(pipeline)->GetGraphicsKey();
         pass.targets = std::popcount(key.mrt_mask);
+        if (key.mrt_mask & 1) {
+            pass.cb0 = regs.color_buffers[0].Address();
+        }
         if ((key.mrt_mask & 1) && cb_descs[0].first) {
             const auto& info = cb_descs[0].second.info;
+            pass.target_layers = info.resources.layers;
+            pass.target_depth = info.size.depth;
             pass.target = {regs.color_buffers[0].Address(), info.size.width, info.size.height};
             pass.target_rg16 = info.pixel_format == vk::Format::eR16G16Unorm;
             pass.target_rgba16f = info.pixel_format == vk::Format::eR16G16B16A16Sfloat;

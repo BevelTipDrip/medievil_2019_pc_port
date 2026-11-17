@@ -68,6 +68,49 @@ bool Ue4FrameMap::Enabled() {
 
 Ue4FrameMap::Ue4FrameMap(Sink sink_) : sink{std::move(sink_)} {
     Print("UE4 frame map: on (log only)");
+    if (const char* list = std::getenv("GOW3_UE4_FRAME_MAP_SHADERS")) {
+        for (const char* p = list; *p;) {
+            char* end = nullptr;
+            const u64 hash = std::strtoull(p, &end, 16);
+            if (end == p) {
+                break;
+            }
+            traced_shaders.push_back(hash);
+            p = *end == ',' ? end + 1 : end;
+        }
+        Print(Format("UE4 frame map: tracing %zu shaders (GOW3_UE4_FRAME_MAP_SHADERS)",
+                     traced_shaders.size()));
+    }
+}
+
+void Ue4FrameMap::TracePass(const Pass& pass) {
+    std::pair<u64, std::array<VAddr, 17>> key{pass.hash, {}};
+    std::copy(pass.reads.begin(), pass.reads.end(), key.second.begin());
+    key.second[16] = pass.compute ? (pass.num_writes ? pass.writes[0].address : 0) : pass.cb0;
+    if (seen_traced.size() >= 64 || std::ranges::find(seen_traced, key) != seen_traced.end()) {
+        return;
+    }
+    seen_traced.push_back(key);
+    std::string line = "UE4 frame map: traced " + Shader(pass.stage, pass.hash);
+    if (pass.compute) {
+        line += Format(" groups %ux%ux%u writes", pass.groups[0], pass.groups[1], pass.groups[2]);
+        for (u32 i = 0; i < pass.num_writes; ++i) {
+            line += Format(" %#llx %ux%u", static_cast<unsigned long long>(pass.writes[i].address),
+                           pass.writes[i].width, pass.writes[i].height);
+        }
+    } else {
+        line += Format(" targets %u cb0 %#llx image %#llx %ux%u layers %u depth %u%s", pass.targets,
+                       static_cast<unsigned long long>(pass.cb0),
+                       static_cast<unsigned long long>(pass.target.address), pass.target.width,
+                       pass.target.height, pass.target_layers, pass.target_depth,
+                       pass.display ? " (display)" : "");
+    }
+    line += " reads";
+    for (u32 i = 0; i < pass.num_reads; ++i) {
+        line += Format(" [%u] %#llx %ux%u", i, static_cast<unsigned long long>(pass.reads[i]),
+                       pass.read_sizes[i][0], pass.read_sizes[i][1]);
+    }
+    Print(line);
 }
 
 void Ue4FrameMap::Print(const std::string& line) const {
@@ -127,6 +170,9 @@ Ue4FrameMap::View Ue4FrameMap::ReadView(const u8* data) {
 }
 
 void Ue4FrameMap::OnPass(const Pass& pass) {
+    if (!traced_shaders.empty() && std::ranges::find(traced_shaders, pass.hash) != traced_shaders.end()) {
+        TracePass(pass);
+    }
     // A new frame: a draw into a display buffer other than this frame's, or a second tonemap.
     if (!pass.compute && pass.display &&
         ((frame.display && pass.target.address != frame.display) ||
@@ -217,6 +263,21 @@ void Ue4FrameMap::OnPass(const Pass& pass) {
         }
         ++frame.display_draws;
         AddDistinct(frame.display_shaders, frame.num_display_shaders, pass.hash);
+        // The images a display-buffer draw samples, once per shader and image set (HDR: which
+        // LUT the UI composite reads; study-hdr.md). At most 32 lines.
+        const std::pair<u64, std::array<VAddr, 16>> key{pass.hash, pass.reads};
+        if (seen_display_reads.size() < 32 &&
+            std::ranges::find(seen_display_reads, key) == seen_display_reads.end()) {
+            seen_display_reads.push_back(key);
+            std::string line = "UE4 frame map: display draw " + Shader(pass.stage, pass.hash) +
+                               Format(" into %#llx reads",
+                                      static_cast<unsigned long long>(pass.target.address));
+            for (u32 i = 0; i < pass.num_reads; ++i) {
+                line += Format(" [%u] %#llx %ux%u", i, static_cast<unsigned long long>(pass.reads[i]),
+                               pass.read_sizes[i][0], pass.read_sizes[i][1]);
+            }
+            Print(line);
+        }
         if (pass.hash == Tonemap) {
             ++frame.tonemap_draws;
         } else if (pass.hash == FirstUi) {

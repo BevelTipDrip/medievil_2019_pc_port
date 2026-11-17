@@ -232,7 +232,10 @@ void Presenter::RecreateFrame(Frame* frame, u32 width, u32 height) {
         vmaDestroyImage(instance.GetAllocator(), frame->image, frame->allocation);
     }
 
-    const vk::Format format = swapchain.GetSurfaceFormat().format;
+    // gow3: 10-bit while the swapchain is HDR10, so the game's PQ frame is not cut to 8 bits before
+    // the blit (pp_pass draws it with its HDR pipeline; study-hdr.md, step 3).
+    const vk::Format format = swapchain.GetHDR() ? HostPasses::PostProcessingPass::HDR_FRAME_FORMAT
+                                                 : swapchain.GetSurfaceFormat().format;
     const vk::ImageCreateInfo image_info = {
         .flags = vk::ImageCreateFlagBits::eMutableFormat,
         .imageType = vk::ImageType::e2D,

@@ -176,6 +176,10 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
     first, or L2, R1 and A1 break ([L2](memory/l2.md)).
 26. `GOW3_FRAME_STATS` is parsed three ways: `=0` turns on the stage A/B printf lines, `=y` opens the driver block
     with counters reading 0.
+27. Async compilation drops a draw whose pipeline is not built yet (`GetGraphicsPipeline` returns null, nothing logs
+    it without `GOW3_DROP_LOG=1`). A draw the game issues once (a LUT or curve texture built at load) is then lost
+    for good; its pixel program must be in `MustCompileSync`, which makes the whole draw compile on the spot
+    ([particle-curve-sync-compile](stage-b/particle-curve-sync-compile.md); the HDR UI LUT, H6-H13 in study-hdr.md).
 
 ## Test IDs that mean more than one run
 
