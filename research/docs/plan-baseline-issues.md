@@ -339,6 +339,13 @@ opens in cdb, `.ecxr` gives the faulting context. Built clean (no new warnings).
 
 ## S1. Silent exit with code 5 at startup (2026-10-18 12:53, once)
 
+**Status 2026-11-16 (read-only history by an agent; plan-work-queue.md S1 row has the details):** 16 occurrences
+10-18..11-15, all `libwinpthread-1.dll+0x3583` (`pthread_mutex_lock+0x33`, null object or null vtable slot); since `513ca7f`
+the port's crash handler catches them (exit code 3, dump in `user/crashdumps`), so WER and the event log no longer show them.
+Last one 2026-11-15 15:58; 27 clean launches since. Likely made rarer by `e12ffaa`'s boot timing change, not fixed: watch
+for exit code 3 with `libwinpthread-1.dll+0x3583` in the run log's fault report. The 11-08 23:49 crash once counted here is
+DLSS (`_nvngx.dll`), not S1.
+
 First launch of the R2 + R3 build (`2097554`, run `t-r23`): the process exited with code 5 about 8 s in, right
 after `Runtime: mapped flexible memory 0000001201000000, size=6291456` — where a good run goes on with the PSN toolkit
 (`libSceNpToolkit2`) creating `Toolkit::NP::Main` / `Notifications` / `AbortThread`. No fault report, no dump, no
