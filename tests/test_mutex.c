@@ -4,6 +4,7 @@
  *   mutex-test           semantics (exit 0 = all pass)
  *   mutex-test --bench   ns per operation (for before / after comparisons)
  *   mutex-test --timing  timed waits that expire: requested vs actual, and the waiting thread's CPU use
+ *   mutex-test --handoff today's mutex vs an SRWLOCK prototype: hand-off latency, contention with work (2b)
  * Run under the switches the game uses (GOW3_FUTEX_COND, GOW3_COND_PRECISE, GOW3_COND_SPIN_US): each is read
  * once per process. --timing's "ue4 1 ms" row is UE4's FPThreadEvent::Wait(1): a deadline 1 ms after the
  * current time cut down to whole ms (the game thread's waits at guest+0x70df3a, 2026-11-15). */
@@ -382,6 +383,141 @@ static void bench_pingpong(void) {
     cdestroy(&s.c); destroy(&s.m);
 }
 
+/* ---- change 2b, measure first: today's mutex vs an SRWLOCK one (plan-work-queue.md) ----
+ * --handoff runs the same three measurements on both:
+ *   hand-off: a thread holds the lock 300 us (the waiter is asleep by then), notes the time and unlocks; the
+ *     waiter notes the time it has the lock. Unlock -> acquire latency: median, p90, p99, max.
+ *   work: N threads each lock, spin ~0.3 us inside, unlock, spin ~2 us outside (closer to the game than the
+ *     tight loop above). ns per lock+unlock pair over all threads, and the slowest thread's share.
+ *   tight: lock+unlock in a loop (as bench_contended).
+ * The SRWLOCK mutex is a prototype here only: an owner field for ERRORCHECK / RECURSIVE as 2b would need. */
+static int cmp64(const void *a, const void *b);
+typedef struct { Op lock, unlock; void *(*make)(void); void (*destroy)(void **); const char *name; } Impl;
+static void *make_runtime(void) { return make(1); }
+static void destroy_runtime(void **m) { destroy(m); }
+#ifdef _WIN32
+typedef struct { SRWLOCK l; DWORD owner; int type; unsigned depth; } SrwMutex;
+static ABI int32_t srw_lock(void **p) {
+    SrwMutex *m = *p;
+    const DWORD self = GetCurrentThreadId();
+    if (__atomic_load_n(&m->owner, __ATOMIC_RELAXED) == self) {
+        if (m->type == 2) { ++m->depth; return 0; }
+        return (int32_t)EDEADLK_;
+    }
+    AcquireSRWLockExclusive(&m->l);
+    __atomic_store_n(&m->owner, self, __ATOMIC_RELAXED);
+    m->depth = 1;
+    return 0;
+}
+static ABI int32_t srw_unlock(void **p) {
+    SrwMutex *m = *p;
+    if (__atomic_load_n(&m->owner, __ATOMIC_RELAXED) != GetCurrentThreadId()) return (int32_t)EPERM_;
+    if (--m->depth) return 0;
+    __atomic_store_n(&m->owner, 0, __ATOMIC_RELAXED);
+    ReleaseSRWLockExclusive(&m->l);
+    return 0;
+}
+static void *make_srw(void) {
+    SrwMutex *m = calloc(1, sizeof(*m));
+    InitializeSRWLock(&m->l); m->type = 1;
+    return m;
+}
+static void destroy_srw(void **m) { free(*m); *m = NULL; }
+#endif
+static void spin_ns(int64_t ns) { const int64_t end = mono_ns() + ns; while (mono_ns() < end) {} }
+
+typedef struct { const Impl *impl; void *m; atomic_int phase; int64_t t_unlock, *lat; int rounds; } Handoff;
+static void *handoff_waiter(void *p) {
+    Handoff *h = p;
+    for (int i = 0; i < h->rounds; ++i) {
+        while (atomic_load(&h->phase) != 1) {}       /* the holder has the lock */
+        atomic_store(&h->phase, 2);
+        h->impl->lock(&h->m);                         /* blocks */
+        const int64_t t = mono_ns();
+        h->lat[i] = t - h->t_unlock;
+        h->impl->unlock(&h->m);
+        atomic_store(&h->phase, 3);
+    }
+    return NULL;
+}
+static void bench_handoff(const Impl *impl, int64_t hold_ns) {
+    enum { ROUNDS = 400 };
+    static int64_t lat[ROUNDS];
+    Handoff h = { impl, impl->make(), 0, 0, lat, ROUNDS };
+    pthread_t t;
+    pthread_create(&t, NULL, handoff_waiter, &h);
+    for (int i = 0; i < ROUNDS; ++i) {
+        impl->lock(&h.m);
+        atomic_store(&h.phase, 1);
+        while (atomic_load(&h.phase) != 2) {}
+        spin_ns(hold_ns);                             /* the waiter goes to sleep in lock */
+        h.t_unlock = mono_ns();
+        impl->unlock(&h.m);
+        while (atomic_load(&h.phase) != 3) {}
+        atomic_store(&h.phase, 0);
+    }
+    pthread_join(t, NULL);
+    qsort(lat, ROUNDS, sizeof(lat[0]), cmp64);
+    printf("  %-9s hand-off after a %3lld us hold: median %6.1f us, p90 %6.1f, p99 %6.1f, max %6.1f\n", impl->name,
+           (long long)(hold_ns / 1000), lat[ROUNDS / 2] / 1e3, lat[ROUNDS * 9 / 10] / 1e3, lat[ROUNDS * 99 / 100] / 1e3,
+           lat[ROUNDS - 1] / 1e3);
+    impl->destroy(&h.m);
+}
+typedef struct { const Impl *impl; void *m; atomic_int *go; int n; int64_t inside, outside, took; } Worker;
+static void *worker(void *p) {
+    Worker *w = p;
+    while (!atomic_load(w->go)) {}
+    const int64_t t0 = mono_ns();
+    for (int i = 0; i < w->n; ++i) {
+        w->impl->lock(&w->m);
+        if (w->inside) spin_ns(w->inside);
+        w->impl->unlock(&w->m);
+        if (w->outside) spin_ns(w->outside);
+    }
+    w->took = mono_ns() - t0;
+    return NULL;
+}
+static void bench_work(const Impl *impl, int threads, int64_t inside, int64_t outside, int n, const char *label) {
+    atomic_int go = 0;
+    void *m = impl->make();
+    Worker w[16];
+    pthread_t t[16];
+    for (int i = 0; i < threads; ++i) {
+        w[i] = (Worker){ impl, m, &go, n, inside, outside, 0 };
+        pthread_create(&t[i], NULL, worker, &w[i]);
+    }
+    const int64_t t0 = mono_ns();
+    atomic_store(&go, 1);
+    int64_t slowest = 0, fastest = INT64_MAX;
+    for (int i = 0; i < threads; ++i) {
+        pthread_join(t[i], NULL);
+        if (w[i].took > slowest) slowest = w[i].took;
+        if (w[i].took < fastest) fastest = w[i].took;
+    }
+    const int64_t all = mono_ns() - t0;
+    printf("  %-9s %-5s %d threads: %7.1f ns per pair (all threads), slowest thread %.2fx the fastest\n", impl->name,
+           label, threads, (double)all / ((double)n * threads), (double)slowest / (double)fastest);
+    impl->destroy(&m);
+}
+static void handoff_compare(void) {
+    const Impl impls[] = {
+        { lock, unlock, make_runtime, destroy_runtime, "today" },
+#ifdef _WIN32
+        { srw_lock, srw_unlock, make_srw, destroy_srw, "SRWLOCK" },
+#endif
+    };
+    const int count = (int)(sizeof(impls) / sizeof(impls[0]));
+    for (int round = 0; round < 2; ++round) {         /* twice: the first pass warms up */
+        printf("pass %d\n", round + 1);
+        for (int i = 0; i < count; ++i) bench_handoff(&impls[i], 300000);
+        for (int i = 0; i < count; ++i) bench_handoff(&impls[i], 2000000);
+        for (int n = 2; n <= 8; n *= 2)
+            for (int i = 0; i < count; ++i) bench_work(&impls[i], n, 300, 2000, 20000, "work");
+        for (int n = 1; n <= 8; n *= 2) /* 1 thread: uncontended */
+            for (int i = 0; i < count; ++i) bench_work(&impls[i], n, 0, 0, n == 1 ? 2000000 : 200000, "tight");
+    }
+}
+
 /* ---- timed waits that expire ---- */
 static uint64_t thread_cycles(void) {
 #ifdef _WIN32
@@ -457,6 +593,7 @@ int main(int argc, char **argv) {
         return 0;
     }
     if (argc > 1 && !strcmp(argv[1], "--timing")) { timing(); return 0; }
+    if (argc > 1 && !strcmp(argv[1], "--handoff")) { handoff_compare(); return 0; }
     mutex_types();
     static_handles();
     timed_lock();
