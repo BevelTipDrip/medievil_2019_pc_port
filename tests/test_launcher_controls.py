@@ -347,6 +347,32 @@ class ShortcutTest(unittest.TestCase):
         self.assertIn("$s.Arguments='\"launcher.py\"'", script)
 
 
+class DevBuildDiagnosticsTest(unittest.TestCase):
+    """Step 3 of study-tooling-off-cost.md: the switches the release build compiles out need the dev build."""
+
+    def test_diagnostics_need_the_dev_build_ticked_and_present(self):
+        for key in launcher.DEV_DIAGNOSTICS:
+            self.assertIn(key, launcher.APP_DEFAULTS)
+        saved = launcher.dev_executable
+        try:
+            launcher.dev_executable = lambda: None
+            self.assertIn('missing', launcher.dev_diagnostics_off_reason({'dev_build': True}))
+            launcher.dev_executable = lambda: Path('out/medievil-runtime-dev')
+            self.assertIn('ticked', launcher.dev_diagnostics_off_reason({'dev_build': False}))
+            self.assertIsNone(launcher.dev_diagnostics_off_reason({'dev_build': True}))
+        finally:
+            launcher.dev_executable = saved
+
+    def test_the_dev_build_starts_only_when_ticked(self):
+        saved = launcher.dev_executable
+        try:
+            launcher.dev_executable = lambda: Path('out/medievil-runtime-dev')
+            self.assertEqual(launcher.runtime_executable({'dev_build': True}), Path('out/medievil-runtime-dev'))
+            self.assertNotEqual(launcher.runtime_executable({'dev_build': False}), Path('out/medievil-runtime-dev'))
+        finally:
+            launcher.dev_executable = saved
+
+
 class ReleaseVersionTest(unittest.TestCase):
     def test_fork_release_is_newer_than_upstream_and_checks_the_fork(self):
         self.assertEqual(launcher.VERSION, '2.4.0')

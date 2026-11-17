@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # Builds dist/MediEvil-x86_64.AppImage from the Linux build (run build.sh first);
 # dist/MediEvil-x86_64-v3.AppImage from a GOW3_CPU_LEVEL=v3 build (its AppRun checks the CPU).
+# The release build (out/medievil-runtime, the diagnostics compiled out; out/build-type says release).
+# GOW3_APPIMAGE_DEV=1: the development build instead (out/medievil-runtime-dev, build.sh GOW3_BUILD=dev or
+# both) as dist/MediEvil-x86_64[-v3]-dev.AppImage, for the Deck test loop (frame stats, toggles, wait trace).
 #
 # What is inside: medievil-runtime (the GPU library linked in; or libgow3gpu.so beside it from a
 # GOW3_STATIC_GPU=OFF build), the libraries a desktop may not have
@@ -32,16 +35,26 @@ while (( $# )); do
         *) echo "Unknown option $1" >&2; exit 1 ;;
     esac
 done
-[[ -f out/medievil-runtime ]] || { echo 'Build first: bash build.sh' >&2; exit 1; }
+# Which build goes in (card tooling/dev-tools-build): release unless GOW3_APPIMAGE_DEV=1.
+if [[ ${GOW3_APPIMAGE_DEV:-} == 1 ]]; then
+    exe=out/medievil-runtime-dev level_file=out/cpu-level-dev flavour=-dev
+    [[ -f $exe ]] || { echo 'Build the development build first: GOW3_BUILD=dev bash build.sh' >&2; exit 1; }
+else
+    exe=out/medievil-runtime level_file=out/cpu-level flavour=
+    [[ -f $exe ]] || { echo 'Build first: bash build.sh' >&2; exit 1; }
+    [[ $(cat out/build-type 2>/dev/null) == release ]] || {
+        echo 'out/medievil-runtime is not known to be a release build (no out/build-type: built before 2026-11-16?);' \
+             'run bash build.sh again, or GOW3_APPIMAGE_DEV=1 for a development AppImage.' >&2; exit 1; }
+fi
 # A GOW3_STATIC_GPU=OFF build loads libgow3gpu.so (DT_NEEDED); the default build has it linked in.
 shared_gpu=0
-if objdump -p out/medievil-runtime | grep 'NEEDED *libgow3gpu\.so' >/dev/null; then
+if objdump -p "$exe" | grep 'NEEDED *libgow3gpu\.so' >/dev/null; then
     shared_gpu=1
     [[ -f out/gpu/libgow3gpu.so ]] || { echo 'out/gpu/libgow3gpu.so missing: bash build.sh' >&2; exit 1; }
 fi
 # The CPU level build.sh built for (GOW3_CPU_LEVEL; out/cpu-level, absent for the default build).
-cpu_level=$(cat out/cpu-level 2>/dev/null || true)
-case $cpu_level in ''|x86-64-v3) ;; *) echo "Unknown CPU level in out/cpu-level: $cpu_level" >&2; exit 1 ;; esac
+cpu_level=$(cat "$level_file" 2>/dev/null || true)
+case $cpu_level in ''|x86-64-v3) ;; *) echo "Unknown CPU level in $level_file: $cpu_level" >&2; exit 1 ;; esac
 if [[ -n ${MEDIEVIL_DEPS:-} ]]; then
     export LD_LIBRARY_PATH=$MEDIEVIL_DEPS/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
 fi
@@ -154,7 +167,7 @@ mkdir -p "$share/packaging/linux" && cp packaging/linux/README-Linux.md "$share/
 find "$share" -name '__pycache__' -prune -exec rm -rf {} +
 # Native programs: run.py finds bin/medievil-runtime; with a shared GPU library its RUNPATH has
 # $ORIGIN/gpu.
-install -m755 out/medievil-runtime "$share/bin/"
+install -m755 "$exe" "$share/bin/medievil-runtime"
 install -m755 out/medievil-gpu-check "$share/bin/" 2>/dev/null || true
 patchelf=${PATCHELF:-$(command -v patchelf || echo "${MEDIEVIL_DEPS:-/opt/mdeps}/bin/patchelf")}
 elves=("$share/bin/medievil-runtime")
@@ -272,7 +285,7 @@ cat > "$app/usr/share/metainfo/medievil-pc.appdata.xml" <<'EOF'
 EOF
 
 mkdir -p dist
-out=dist/MediEvil-x86_64${cpu_level:+-${cpu_level#x86-64-}}.AppImage
+out=dist/MediEvil-x86_64${cpu_level:+-${cpu_level#x86-64-}}$flavour.AppImage
 rm -f "$out"
 # No FUSE needed to build: the tool runs from its extracted copy.
 ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 "$tool" --no-appstream --runtime-file "$runtime" "$app" "$out" >out/appimagetool.log 2>&1 \

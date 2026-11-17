@@ -2269,17 +2269,34 @@ class Launcher:
         body = ttk.Frame(f)
         body.columnconfigure(1, weight=1)
         body_row = self.next_row(f)
-        self.check(body, 'dev_build', 'app', _('Development build (the diagnostics below need it)'),
-                   _('Starts out/medievil-runtime-dev.exe (build.sh with GOW3_BUILD=dev or both). The normal '
-                     'build has the diagnostics compiled out: faster, and these switches do nothing there.')
-                   if dev_executable() else
-                   _('Not built: build.sh with GOW3_BUILD=dev or both makes out/medievil-runtime-dev.exe.'))
-        self.check(body, 'frame_stats', 'app', _('Frame statistics in the log (every 5 s)', 'Статистика кадров в журнале (раз в 5 с)'))
-        self.check(body, 'gpu_profile', 'app', _('GPU time per pass in the log', 'Профиль GPU в журнале'))
-        self.check(body, 'perf_diag', 'app', _('GPU wait and readback report in the log (every 5 s)'),
-                   _('Shows where the frame waits for the GPU and which reads cause it. For performance tests.'))
-        self.check(body, 'frame_capture_key', 'app', _('F11 captures a frame for analysis'),
-                   _('Records how the next frame is drawn into the captures folder.'))
+        dev_exe = dev_executable()
+        dev_box = self.check(body, 'dev_build', 'app', _('Development build (the diagnostics below need it)'),
+                             _('Starts {} (build.sh with GOW3_BUILD=dev or both). The normal build has these '
+                               'diagnostics compiled out: faster, and they do nothing there.').format(
+                                 'out/' + dev_exe.name if dev_exe else '')
+                             if dev_exe else dev_build_missing())
+        if not dev_exe:
+            dev_box.state(['disabled'])
+        # Step 3 of study-tooling-off-cost.md: the switches the release build compiles out are greyed until the
+        # development build is ticked (and exists), with the reason under them.
+        why = ttk.Label(body, text='', style='Muted.TLabel', wraplength=self.px(640), justify='left')
+        why.grid(row=self.next_row(body), column=0, columnspan=2, sticky='w', pady=(2, 0))
+        dev_boxes = [
+            self.check(body, 'frame_stats', 'app', _('Frame statistics in the log (every 5 s)', 'Статистика кадров в журнале (раз в 5 с)')),
+            self.check(body, 'gpu_profile', 'app', _('GPU time per pass in the log', 'Профиль GPU в журнале')),
+            self.check(body, 'perf_diag', 'app', _('GPU wait and readback report in the log (every 5 s)'),
+                       _('Shows where the frame waits for the GPU and which reads cause it. For performance tests.')),
+            self.check(body, 'frame_capture_key', 'app', _('F11 captures a frame for analysis'),
+                       _('Records how the next frame is drawn into the captures folder.')),
+        ]
+
+        def follow_dev_build(*_args):
+            reason = dev_diagnostics_off_reason({'dev_build': self.var('dev_build', 'app').get()})
+            for box in dev_boxes:
+                box.state(['disabled'] if reason else ['!disabled'])
+            why.configure(text=_('The next four do nothing now: {}.').format(reason) if reason else '')
+        self.var('dev_build', 'app').trace_add('write', follow_dev_build)
+        follow_dev_build()
         key, title, hint = FRAME_TRACE
         self.check(body, key, 'ini', _(title), _(hint), restart=True)
         self.check(body, 'vk_validation', 'app', _('Vulkan validation layers (needs the Vulkan SDK; much slower)',
@@ -3015,6 +3032,26 @@ def dev_executable():
     for path in (PORT_DIR / 'out' / 'medievil-runtime-dev.exe', PORT_DIR / 'out' / 'medievil-runtime-dev'):
         if path.is_file():
             return path
+    return None
+
+
+# The diagnostics the release build compiles out (GOW3_DEV_TOOLS=0): they need the development build.
+DEV_DIAGNOSTICS = ('frame_stats', 'gpu_profile', 'perf_diag', 'frame_capture_key')
+
+
+def dev_build_missing():
+    """Why there is no development build to start: not built in a source tree, or a package without one."""
+    if (PORT_DIR / 'out').is_dir() and (PORT_DIR / 'build.sh').is_file():
+        return _('Not built: build.sh with GOW3_BUILD=dev or both makes out/medievil-runtime-dev.')
+    return _('Not in this package: the development build comes from a source build (build.sh, GOW3_BUILD=dev).')
+
+
+def dev_diagnostics_off_reason(settings):
+    """None when the DEV_DIAGNOSTICS switches work (the development build ticked and present); else why not."""
+    if not dev_executable():
+        return _('they need the development build, which is missing ({})').format(dev_build_missing().rstrip('.'))
+    if not settings.get('dev_build'):
+        return _('they need "Development build" ticked above')
     return None
 
 
