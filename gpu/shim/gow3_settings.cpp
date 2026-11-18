@@ -67,6 +67,24 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         v.hdr_curve = value == "2000" ? 1 : 0;
         return;
     }
+    if (key == "hdr_look") {
+        v.hdr_look = value == "game" ? HdrLookGame : HdrLookSdr;
+        return;
+    }
+    if (key == "hdr_game_nits") {
+        v.hdr_game_nits = value.empty() ? HdrGameNitsDefault : std::clamp(i, HdrGameNitsMin, HdrGameNitsMax);
+        return;
+    }
+    if (key == "hdr_gamma") {
+        const int tenths = value == "srgb" ? 0 : int(f * 10.0f + 0.5f);
+        v.hdr_gamma = HdrGammaDefault;
+        for (const int g : HdrGammaValues) {
+            if (g == tenths) {
+                v.hdr_gamma = g;
+            }
+        }
+        return;
+    }
     if (key.starts_with("deck_")) {
         for (int d = 0; d < DeckSwitchCount; ++d) {
             if (key.compare(5, std::string::npos, DeckSwitches[d].key) == 0) {
@@ -776,8 +794,16 @@ std::map<std::string, std::string> Serialize(const Values& v) {
         Append(out, "%s=%s\n", UE4LiveOptions[o].key, UE4LiveOptions[o].tokens[v.ue4_live[o]]);
     }
     Append(out, "hdr_ui_nits=%d\nhdr_curve=%s\n", v.hdr_ui_nits.load(), v.hdr_curve ? "2000" : "1000");
+    Append(out, "hdr_look=%s\nhdr_game_nits=%d\n", v.hdr_look == HdrLookGame ? "game" : "sdr",
+           v.hdr_game_nits.load());
+    if (const int g = v.hdr_gamma.load(); g == 0) {
+        Append(out, "hdr_gamma=srgb\n");
+    } else {
+        Append(out, "hdr_gamma=%d.%d\n", g / 10, g % 10);
+    }
     for (int g = 0; g < GradeCount; ++g) {
-        Append(out, "%s=%.4g\n", GradeKey(g).c_str(), double(v.grade[g].load()));
+        // + 0.0: a negative zero (a value stepped back to 0) is written as 0, not -0.
+        Append(out, "%s=%.4g\n", GradeKey(g).c_str(), double(v.grade[g].load()) + 0.0);
     }
     std::map<std::string, std::string> values;
     std::size_t at = 0;

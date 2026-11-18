@@ -1452,11 +1452,29 @@ void DisplayTab() {
             const int next = IntSliderRow("UI brightness", nits, S::HdrUiNitsMin, S::HdrUiNitsMax, 10, "%d nits",
                                           "Brightness of the game's menus, HUD and subtitles, and of this menu. Lower "
                                           "it to spare an OLED screen; 100 is the game's own.");
-            if (next != nits) {
-                s.hdr_ui_nits = next;
+            // On steps of 10 (a mouse drag too): each value is its own overlay pipeline (HdrPipeline).
+            if (const int snapped = (next + 5) / 10 * 10; snapped != nits) {
+                s.hdr_ui_nits = snapped;
                 dirty = true;
                 S::RequestHdrUi();
             }
+            // HDR look (research/docs/plan-hdr-sdr-match.md): the game's SDR grading in HDR (our grading LUT pass) or
+            // the game's own ACES output.
+            static const char* const look_labels[] = {"Game's (ACES)", "SDR grading kept"};
+            ChoiceRow("HDR look", s.hdr_look, look_labels, nullptr, 2,
+                      "SDR grading kept: the game's own colours, contrast and blacks as in SDR, at the game "
+                      "brightness below. Game's: the engine's ACES HDR output (lifted blacks, less contrast).");
+            ImGui::BeginDisabled(s.hdr_look != S::HdrLookSdr);
+            SliderRow("Game brightness", s.hdr_game_nits, S::HdrGameNitsMin, S::HdrGameNitsMax, "%d nits",
+                      "How bright SDR white is in HDR (203 is the HDR standard for paper white). Raises or lowers "
+                      "the whole picture, not the UI.",
+                      1);
+            static const char* const gamma_labels[] = {"Off (sRGB)", "2.0", "2.1", "2.2 (PC monitor)", "2.3",
+                                                       "2.4 (TV)", "2.5", "2.6"};
+            ChoiceRow("Gamma", s.hdr_gamma, gamma_labels, S::HdrGammaValues, int(std::size(S::HdrGammaValues)),
+                      "The gamma of the SDR screen the game was made for: the shadows and blacks as that screen "
+                      "showed them. 2.2 matches a PC monitor; Off keeps the sRGB curve (lighter shadows).");
+            ImGui::EndDisabled();
             if (S::HdrGame()) {
                 static const char* const curve_labels[] = {"1000 nits (game default)", "2000 nits"};
                 const int curve = s.hdr_curve;

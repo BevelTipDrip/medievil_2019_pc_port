@@ -9,8 +9,8 @@ default_deck: off
 origin: ours
 class: G
 commits:
-files: gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_settings.h, gpu/shadps4/video_core/host_shaders/imgui_hdr.frag, gpu/patches/imgui/0001-vulkan-pipeline-for-another-format-and-fragment-shader.patch, src/runtime_extra.c, run.py, build.sh, gpu/shadps4/core/libraries/videoout/video_out.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_swapchain.cpp, gpu/shim/core/emulator_settings.h, scripts/ue4_override.py, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.cpp, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h
-symbols: Ue4GradeOverride, ApplyUe4Grade, Ue4GradeTarget, HdrPipeline, ImGui_ImplVulkan_CreatePipelineForFormat, ColorTab, GradeAt, GradeKey, RequestHdrUi, RequestHdrCurve, hdr_ui_level, sceVideoOutGetDeviceCapabilityInfo, sceVideoOutConfigureOutputMode_, sceVideoOutRegisterBuffers, FindPresentFormat, Swapchain::SetHDR, IsHdrGameForced, PostProcessingPass::HDR_FRAME_FORMAT, RecreateFrame, MustCompileSync
+files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.h, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.vert, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.frag, gpu/shadps4/video_core/host_shaders/ue4_grade.glsl, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_settings.h, gpu/shadps4/video_core/host_shaders/imgui_hdr.frag, gpu/patches/imgui/0001-vulkan-pipeline-for-another-format-and-fragment-shader.patch, src/runtime_extra.c, run.py, build.sh, gpu/shadps4/core/libraries/videoout/video_out.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_swapchain.cpp, gpu/shim/core/emulator_settings.h, scripts/ue4_override.py, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.cpp, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h
+symbols: Ue4HdrGrading, ReplaceHdrGrading, GradeScene, LutDecodeHdrTexel, Ue4GradeOverride, ApplyUe4Grade, Ue4GradeTarget, HdrPipeline, ImGui_ImplVulkan_CreatePipelineForFormat, ColorTab, GradeAt, GradeKey, RequestHdrUi, RequestHdrCurve, hdr_ui_level, sceVideoOutGetDeviceCapabilityInfo, sceVideoOutConfigureOutputMode_, sceVideoOutRegisterBuffers, FindPresentFormat, Swapchain::SetHDR, IsHdrGameForced, PostProcessingPass::HDR_FRAME_FORMAT, RecreateFrame, MustCompileSync
 switches: GOW3_HDR, GOW3_HDR_GAME, GOW3_UE4_GRADE, GOW3_UE4_LIVE_CVARS
 tests:
 docs: study-hdr.md, plan-work-queue.md
@@ -70,6 +70,15 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
   frame in the bottom-right corner (30% of the width, 62% of the height), no dimming, rows 1.35x the frame's scale;
   Circle goes back to the full menu, L1 / R1 do nothing there. The full menu and the panel share `StyledBody` (the
   scrolled list).
+- **HDR look "SDR grading kept"** (Display > HDR > HDR look, default; plan-hdr-sdr-match.md step 1): while the game
+  outputs HDR10, its grading LUT draw (`fs a4152b3be93c832a`) is replaced (`Rasterizer::ReplaceHdrGrading`, before
+  BindResources, like DLSS's TAA replacement) by `Ue4HdrGrading`: a layered draw (3 vertices x 32 instances,
+  `gl_Layer`) into the same 32-slice target (`FindRenderTarget`: marked written), from the game's parameter block with
+  the Color tab applied. `ue4_grade.glsl` is the game's chain (white balance, expand gamut, ColorCorrectAll, blue
+  correction, film curve, polynomial, scale / overlay), ported from the translated shader and equal to it on all 32^3
+  texels offline (`research-data/hdr-ui-20261117/port`, not in git). Output: the SDR-graded colour, sRGB-encoded,
+  decoded at Gamma (2.2 default; Off = sRGB), x Game brightness (203), BT.2020 PQ / 1.05. The game's Brightness
+  (dword 5, InverseGamma.y) is forced to 1 in HDR (H26). Settings: `hdr_look`, `hdr_game_nits`, `hdr_gamma`.
 - **Release build** (`GOW3_DEV_TOOLS=0`): `GOW3_UE4_GRADE`, the grading coverage counts, `GOW3_UE4_LIVE_CVARS`, the
   frame map (with its shader traces), the image watch and the dropped-draw log are compiled out (strings absent from
   the release exe, present in the dev one). The HDR post-process pipeline is built only with `GOW3_HDR=1`. Kept: the
@@ -87,6 +96,8 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
   build or engine version needs the map checked again (a RenderDoc dump of the builder's buffer 0).
 - `hdr_curve` must never reach the runtime in SDR: OutputDevice 3 / 4 on an SDR swapchain would draw PQ as sRGB
   (`RequestHdrCurve` checks `HdrGame`).
+- `Ue4HdrGrading::Wanted` reads dword 138 as an integer (the game tests `data[138] >= 3u`; a float read never matched,
+  H24). The pass only replaces a 32^3 target; anything else is logged once and keeps the game's LUT.
 - Rows that share a name (the four ranges' Saturation ... Offset) need their own `ImGui::PushID` scope: a styled row's
   ID is its name, and shared IDs move every copy at once (H20).
 - Grading is relative: replacing the game's values instead would flatten every area's own post-process grading.

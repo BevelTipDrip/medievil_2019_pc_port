@@ -88,6 +88,10 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
         ue4_upscaler = std::make_unique<Ue4Upscaler>(instance, scheduler, texture_cache, runtime,
                                                      *ue4_motion);
     }
+    // HDR (plan-hdr-sdr-match.md): only with the launcher's "Allow HDR output"; the swapchain is never HDR10 without.
+    if (EmulatorSettings.IsHdrAllowed()) {
+        ue4_hdr = std::make_unique<Ue4HdrGrading>(instance, scheduler, texture_cache, buffer_cache, runtime);
+    }
     if (!EmulatorSettings.IsNullGPU()) {
         liverpool->BindRasterizer(this);
     }
@@ -1396,6 +1400,14 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
     if (frame_map || (ue4_motion && (Ue4Motion::Enabled() || Ue4Upscaler::On()))) [[unlikely]] {
         if (ObserveFrameMap(pipeline)) {
             // gow3 U3: DLSS wrote TAA's output; the TAA draw is not recorded.
+            bind_prepared = nullptr;
+            ResetBindings(false);
+            return;
+        }
+    }
+    // gow3 HDR: one relaxed load per draw while the swapchain is SDR.
+    if (ue4_hdr && Gow3Settings::Get().hdr_active.load(std::memory_order_relaxed)) [[unlikely]] {
+        if (ReplaceHdrGrading(pipeline)) {
             bind_prepared = nullptr;
             ResetBindings(false);
             return;
@@ -4855,6 +4867,41 @@ void Rasterizer::NoteFrameStart() {
         std::printf("\n");
         lag_histogram = {};
     }
+}
+
+bool Rasterizer::ReplaceHdrGrading(const Pipeline* pipeline) {
+    const auto stages = pipeline->GetStages();
+    const u32 fragment = static_cast<u32>(Shader::SwStage::Fragment);
+    const Shader::Info* fs = fragment < stages.size() ? stages[fragment] : nullptr;
+    if (!fs || fs->pgm_hash != Ue4HdrGrading::LutBuilderPs) {
+        return false;
+    }
+    // Once per reason: why a builder draw keeps the game's LUT (run 24 declined silently).
+    static u32 declined = 0;
+    const auto decline = [](u32 bit, const char* why) {
+        if (!(declined & bit)) {
+            declined |= bit;
+            std::printf("UE4 HDR grading: the game's LUT kept: %s\n", why);
+        }
+        return false;
+    };
+    if (fs->buffers.empty() || !cb_descs[0].first) {
+        return decline(1, "no parameter buffer or no colour target");
+    }
+    // The game's parameter block (buffer 0) as its draw would bind it, with the Color tab's grading applied.
+    const PreparedStage* prepared = FindPreparedStage(*fs);
+    const auto vsharp = prepared ? prepared->buffer_sharps[0] : fs->buffers[0].GetSharp(*fs);
+    std::array<u32, Ue4HdrGrading::ParamDwords> block{};
+    if (vsharp.GetSize() < sizeof(block) || !memory->IsValidGpuMapping(vsharp.base_address, sizeof(block))) {
+        return decline(2, "the parameter block is smaller than 576 bytes or not mapped");
+    }
+    memory->CopySparseMemory(vsharp.base_address, reinterpret_cast<u8*>(block.data()), sizeof(block));
+    if (!Ue4HdrGrading::Wanted(block)) {
+        // The HDR look set to the game's, or an SDR output device: normal, not logged.
+        return false;
+    }
+    ApplyUe4Grade(reinterpret_cast<u8*>(block.data()));
+    return ue4_hdr->Run(cb_descs[0].first, cb_descs[0].second, block);
 }
 
 bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {

@@ -102,6 +102,13 @@ std::string GradeKey(int i);
 
 /// UI brightness range in nits (HDR): the game's UI at r.HDR.UI.Level = nits / 100 (H18, H19: 1.0 measures ~100-105).
 inline constexpr int HdrUiNitsMin = 50, HdrUiNitsMax = 400, HdrUiNitsDefault = 100;
+/// HDR look (research/docs/plan-hdr-sdr-match.md): the game's SDR grading kept (our grading LUT pass, vk_ue4_hdr.cpp),
+/// or the game's own ACES HDR output. Game brightness: SDR white in nits (BT.2408's 203 by default). Gamma emulation:
+/// the SDR display's gamma in tenths (22 = 2.2), 0 = none (the sRGB curve as it is).
+enum HdrLook : int { HdrLookGame = 0, HdrLookSdr = 1 };
+inline constexpr int HdrGameNitsMin = 80, HdrGameNitsMax = 500, HdrGameNitsDefault = 203;
+inline constexpr int HdrGammaValues[] = {0, 20, 21, 22, 23, 24, 25, 26};
+inline constexpr int HdrGammaDefault = 22;
 
 struct Values {
     Values() {
@@ -116,6 +123,10 @@ struct Values {
     std::atomic<int> hdr_ui_nits{HdrUiNitsDefault};
     std::atomic<int> hdr_curve{0};
     std::atomic<bool> hdr_active{false};
+    /// HDR look (HdrLook), game brightness (nits), gamma emulation (tenths, 0 = off); live.
+    std::atomic<int> hdr_look{HdrLookSdr};
+    std::atomic<int> hdr_game_nits{HdrGameNitsDefault};
+    std::atomic<int> hdr_gamma{HdrGammaDefault};
     /// Colour grading (GradeAt), live: read by the renderer at each combine LUT draw.
     std::atomic<float> grade[GradeCount];
     std::atomic<int> upscaler{UpscalerFsr3};

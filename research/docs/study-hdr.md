@@ -225,9 +225,69 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
 - **H21, an ID scope per range** (`ImGui::PushID(range)`, release 13:51): the user: "all the sliders appear to work" [V].
 - **H22, the Color panel and the release build without the HDR diagnostics** (release 15:29; the user's run 21 grading
   active): the user: "everything functions as expected" [V].
+- **H23, the UI composite's view formats** (RenderDoc replay of `menu_frame14681.rdc` eid 3569, `draw_state.py`, no
+  launch): scene `R10G10B10A2_UNORM`, UI `R8G8B8A8_UNORM` (no sRGB view), LUT `R10G10B10A2_UNORM` 3D [V]. The UI's
+  gamma-encoded values reach the UI LUT as linear: the washed-out UI and movies. Design: plan-hdr-sdr-match.md.
+- **H24, our grading LUT pass (plan-hdr-sdr-match.md step 1)**: no effect, no log line: `Wanted` read dword 138 as a
+  float; the game tests it as an integer (`data[138] >= 3u`) [V]. Fixed; the HDR flag now set every present.
+- **H25, the pass running** (log `UE4 HDR grading: ... 32x32x32, A2B10G10R10`): the user: grey, lacking colour in the
+  shadows / mid-tones. Menu JXR against the SDR menu frame: mid-tones 5-20x darker than SDR^2.2 x 203, darker than the
+  ACES look (skull 6.5 nits, ACES 9.2, SDR-predicted 49). Offline, our table is brighter than ACES in the mid-tones
+  (grey texel 3: 73 against 33 nits) [V]: the table or its input was off.
+- **H26, RenderDoc** (`research-data/hdr-sdr-match-20261117`, `research/tools/renderdoc/lut_probe.py`, `draw_buffers.py`):
+  our pass (eid 3589, 3 x 32) writes the 3D LUT the HDR tonemapper (eid 3614) samples; the diagonal is neutral; low
+  end crushed (texel 1 0.01 against 0.63 nits, top 214 as expected). The block our pass received: dword 4 / 5
+  (InverseGamma.x / .y) 0.615 / 1.354 against 0.428 / 0.942 in the H12 capture, everything else equal [V]: the game's
+  Brightness setting (UE display gamma 1.625 now, 2.335 then) as a power on the graded colour. The ACES path never
+  applied it, so it had no effect in HDR. Fix: dword 5 = 1 in our pass (Game brightness and Gamma take its place).
+  The same slider in SDR bends the mid-tones, not the black level: the user's "Brightness looks wrong" (issue #1) [I].
+- **H27, the game's Brightness neutral in our pass** (RenderDoc `run27_frame14247.rdc`, `save_target.py` of the composite's
+  output, PQ decoded; gamma 2.2, 203 nits): our table matches the offline maths (grey texels 0.71 / 17 / 69 / 124 nits);
+  the displayed menu re-encoded as an SDR screen would is close to the user's Nov 17 SDR screenshot, but that shot was
+  taken with Windows HDR on (the user had flagged it) and is lighter than their Nov 11 SDR screenshot by about a power
+  of 1.3 in linear. The user: run 27 looks much better than the morning's HDR, but the black floor is raised (their
+  settings then: gamma Off (sRGB), game brightness 250) and the SDR re-encode is "extremely blown out" on a calibrated
+  SDR screen.
+- **H28, an SDR reference from the pre-HDR build** (worktree `../medievil_cft`, copy-fault-trace `22744f1`; RenderDoc
+  `cft_frame12411.rdc`): the game's Brightness at the user's calibration (the skull just visible, slider ~30%) is UE
+  display gamma 1.985 (dword 4 0.504, dword 5 1.108); the SDR LUT is built by the game (eid 3422, device 0). The SDR
+  tonemapper writes `R8G8B8A8_SRGB`; its stored image equals sRGB(G^1.108) at static points (BGR bytes; sky 0 / 63 / 123
+  against 14 / 64 / 123 predicted): encoded once, not twice [V]. The user's screenshot of the same menu equals the
+  stored image within a few levels (slightly darker) [V]: the port's SDR presentation adds no brightening. Textures:
+  colour textures are BC1 / BC3 `_SRGB` and every sampled view has its image's format (81 G-buffer draws) [V]. A
+  washed-out default would then come from the game (scene exposure, its tuning) or a setting before its grading, not
+  from the output. Next: test patterns through the whole pipeline, measured against the desktop with the user's meter.
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.
+
+## RenoDX's Unreal Engine approach (research agent, 2026-11-17; MIT licence)
+
+Read from source: clshortfuse/renodx `bfdb52d` (`src/games/unrealengine`, `src/shaders/{draw,tonemap,colorcorrect}.hlsl`,
+`tonemap/reno_drt.hlsl`, `games/halocampaignevolved`, `games/robocop`) and marat569/renodx `11089c9`
+(`src/games/ue-extended`). [V] read in source, [I] inference.
+
+- **What it replaces [V]:** only UE's LUT builder (CombineLUTs; ~217 hash-specific copies) plus one swap-chain pass;
+  the generic mod leaves the tonemapper and the UI composite alone (per-game mods replace the composite). The 32^3
+  R10G10B10A2 LUT is upgraded to RGBA16F.
+- **Keeping the SDR look [V]:** inside the builder it captures the untonemapped colour U (after white balance and
+  ColorCorrectAll, before blue correction and the film curve), lets the whole SDR chain run to the graded SDR colour G,
+  then skips UE's output-device switch (no ACES ODT) and outputs an upgrade: N = neutral SDR tonemap of U (100-nit
+  peak, 0.18 -> 0.18); ratio = Y(U)/Y(N) below the curve, else (Y(G) + Y(U) - Y(N)) / Y(G); faded in by
+  saturate(Y(U)); out = hue-corrected (OKLab) G * ratio. So the SDR grade holds up to SDR white and only the luminance
+  the SDR curve removed comes back above it. Newer UE mods instead extend UE's own film curve linearly above 0.18.
+- **Then [V]:** a luminance-based Reinhard roll-off (RenoDRT: mid-grey kept, peak reached at a white clip of 65,
+  OKLab hue correction, gamut clamp), gamma 2.2 emulation (`decode2.2(encode_sRGB(c))`, the default "Gamma correction
+  2.2"), x game nits, PQ BT.2020, / 1.05 for UE's LUT scaling. No BT.2390 EETF in the UE paths.
+- **Defaults [V]:** peak 1000 (replaced by the detected display peak), game brightness 203, UI brightness 203, gamma
+  correction 2.2, hue processor OKLab, scene grading strength 100. UE mods override FilmBlackClip to 0 ("prevents
+  crushing or black raise").
+- **UI and video [V]:** the UI is decoded sRGB (or 2.2 with UI gamma correction), the scene PQ normalised by UI nits,
+  both re-encoded 2.2 and blended premultiplied (ui + scene * (1 - a)), then x UI nits, clamp to peak, PQ. Videos drawn
+  as UI land at UI nits with 2.2 decoding; startup videos as sRGB at paper white, no expansion.
+- **For MediEvil [I]:** the raised blacks / low contrast (H3, H14) match the ACES ODT path plus sRGB-vs-2.2; the washed
+  out UI and movies (the user, 2026-11-17) match an sRGB UI decode where the SDR display used 2.2. Both point at our own
+  versions of the combine LUT builder (`a4152b3be93c832a`) and the UI composite (`c401ca35f9bceb8e`).
 
 ## Open questions (each needs a run with the user's go)
 

@@ -23,7 +23,10 @@ def fields(obj, names):
     parts = []
     for n in names:
         try:
-            parts.append(f'{n}={getattr(obj, n)}')
+            value = getattr(obj, n)
+            if hasattr(value, 'Name'):  # ResourceFormat and other SWIG objects: their readable name
+                value = value.Name()
+            parts.append(f'{n}={value}')
         except Exception:
             pass
     return ' '.join(parts)
