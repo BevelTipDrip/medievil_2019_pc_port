@@ -1080,8 +1080,11 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
                          vk::ImageLayout::eTransferDstOptimal, blit, vk::Filter::eLinear);
         // gow3 test patterns: a raw patch over the frame (the image is still a copy destination after the blit).
         if (Gow3Patterns::Active()) [[unlikely]] {
-            RecordRawPatch(instance, cmdbuf, swapchain_image, extent, swapchain.GetSurfaceFormat().format,
-                           color_range);
+            // The image's format now: GetSurfaceFormat is the SDR format even while the swapchain is HDR10 (the first
+            // HDR meter run packed 8-bit BGRA into the 10-bit image: white / magenta patches).
+            const vk::Format format = swapchain.GetHDR() ? HostPasses::PostProcessingPass::HDR_FRAME_FORMAT
+                                                         : swapchain.GetSurfaceFormat().format;
+            RecordRawPatch(instance, cmdbuf, swapchain_image, extent, format, color_range);
         }
         // gow3: the settings menu / FPS counter over the frame, at display resolution.
         // gow3 HDR: every present, overlay or not (the grading LUT pass and the menu's HDR rows read it).

@@ -119,7 +119,7 @@ GOW3_LANGUAGE	upstream	src/runtime_services.c:75
 GOW3_LEAK_LIMIT_MB	upstream	gpu/shim/gow3_gpu_fences.cpp:45
 GOW3_LEAK_WATCH	upstream	gpu/shim/gow3_gpu_fences.cpp:36
 GOW3_LEAN_BINDING	upstream	gpu/shim/gow3_settings.cpp:565
-GOW3_LIMIT_AFTER_PRESENT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:1161
+GOW3_LIMIT_AFTER_PRESENT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:1164
 GOW3_LIMIT_HOLD	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1551
 GOW3_LIMIT_IN_PRESENT	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1547
 GOW3_LONG_WAITS	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp:806
@@ -154,7 +154,7 @@ GOW3_ONE_CLOCK	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1587
 GOW3_ONSUBMIT_STAGE_B	upstream	gpu/shim/gow3_decode_pacing.cpp:255
 GOW3_OPTIMISTIC_CLAMP	upstream	gpu/shim/gow3_settings.cpp:563 src/runtime_memory.c:1977
 GOW3_OUTPUT_RES	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:184
-GOW3_PACER_SPIN_US	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1265 gpu/shadps4/core/libraries/videoout/driver.cpp:1555 gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:1168
+GOW3_PACER_SPIN_US	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1265 gpu/shadps4/core/libraries/videoout/driver.cpp:1555 gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:1171
 GOW3_PAD_FILE	upstream	src/runtime_pad.c:375 tests/test_pad.c:26
 GOW3_PAD_HOTPLUG	ours	gpu/shim/window.cpp:32 src/runtime_pad.c:104
 GOW3_PAD_MAP	upstream	src/runtime_pad.c:238

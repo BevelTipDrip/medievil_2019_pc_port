@@ -273,6 +273,17 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     calibration (skull just visible) is ~25-30%, a little darker than neutral, on a screen measured at ~2.1.
   - So the over-bright default is the game's own slider mapping (the centre brightens), not the port: the port's output
     and its reproduction of the game's grading are both verified.
+- **H30, HDR meter runs** (HDR 400 True Black, Windows HDR on; game: SDR grading kept, 203 nits, gamma 2.2) [V meter]:
+  - Raw PQ codes (after the fix below): 20-400 nits within +-4%, peak 435 cd/m2; under ~10 nits the screen shows more
+    than asked (10: 1.08x, 1: 1.42x, 0.1: 2.6x, 0.05: 3.2x); code 0 stays black. The first try packed the SDR surface
+    format (B8G8R8A8) into the HDR10 image (white / magenta patches): `GetSurfaceFormat` stays the SDR format while the
+    swapchain is HDR10; the presenter now passes the HDR format.
+  - Scene greys through our HDR pass: measured = target through the screen's measured PQ response within 0.5-6% from
+    scene 0.01 up; and = the SDR neutral run scaled to a 203-nit white within ~2-4% from 0.05 up (mid-grey 37.9 against
+    39.4, scene 1.0 145.5 against 150.3). The SDR look is kept, measured.
+  - The raised HDR black floor is the screen: the AW3225QF's near-black rises after pixel-refresh cycles (a known issue,
+    the user, 2026-11-18); it also lifted SDR near-black (H29), so the user needed the game's Brightness lower on this
+    monitor than on their TV. A fix belongs in an opt-in calibration from meter data, not in defaults.
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.
