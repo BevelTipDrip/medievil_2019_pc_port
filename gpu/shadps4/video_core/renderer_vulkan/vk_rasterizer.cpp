@@ -21,6 +21,7 @@
 #include "common/debug.h"
 #include "core/debug_state.h"
 #include "core/emulator_settings.h"
+#include "gow3_patterns.h"
 #include "core/memory.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/liverpool.h"
@@ -88,10 +89,9 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
         ue4_upscaler = std::make_unique<Ue4Upscaler>(instance, scheduler, texture_cache, runtime,
                                                      *ue4_motion);
     }
-    // HDR (plan-hdr-sdr-match.md): only with the launcher's "Allow HDR output"; the swapchain is never HDR10 without.
-    if (EmulatorSettings.IsHdrAllowed()) {
-        ue4_hdr = std::make_unique<Ue4HdrGrading>(instance, scheduler, texture_cache, buffer_cache, runtime);
-    }
+    // HDR (plan-hdr-sdr-match.md) and the test patterns' game patch (gow3_patterns.h): two shader modules, used only
+    // while the swapchain is HDR10 or a game patch is shown.
+    ue4_hdr = std::make_unique<Ue4HdrGrading>(instance, scheduler, texture_cache, buffer_cache, runtime);
     if (!EmulatorSettings.IsNullGPU()) {
         liverpool->BindRasterizer(this);
     }
@@ -1405,8 +1405,9 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
             return;
         }
     }
-    // gow3 HDR: one relaxed load per draw while the swapchain is SDR.
-    if (ue4_hdr && Gow3Settings::Get().hdr_active.load(std::memory_order_relaxed)) [[unlikely]] {
+    // gow3 HDR: two relaxed loads per draw while the swapchain is SDR and no game patch is shown.
+    if (ue4_hdr && (Gow3Settings::Get().hdr_active.load(std::memory_order_relaxed) || Gow3Patterns::GameActive()))
+        [[unlikely]] {
         if (ReplaceHdrGrading(pipeline)) {
             bind_prepared = nullptr;
             ResetBindings(false);
@@ -1585,6 +1586,9 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
         }
     }
     DebugState.IncDrawCall();
+    if (Gow3Patterns::GameActive()) [[unlikely]] {
+        PatternAfterTonemap(pipeline);
+    }
 
     ResetBindings(false);
     scheduler.KickRecording();
@@ -4869,6 +4873,32 @@ void Rasterizer::NoteFrameStart() {
     }
 }
 
+void Rasterizer::PatternAfterTonemap(const GraphicsPipeline* pipeline) {
+    // The game's tonemappers: SDR (3632d4c4faaa85d2) and HDR (12178a9314cb761e).
+    constexpr u64 SdrTonemap = 0x3632d4c4faaa85d2ull, HdrTonemap = 0x12178a9314cb761eull;
+    const Shader::Info* fs = pipeline->GetStages()[static_cast<u32>(Shader::SwStage::Fragment)];
+    if (!fs || (fs->pgm_hash != SdrTonemap && fs->pgm_hash != HdrTonemap) || !cb_descs[0].first) {
+        return;
+    }
+    static bool noted = false;
+    if (!pattern_block_ok) {
+        if (!std::exchange(noted, true)) {
+            std::printf("Patterns: no grading block yet this session; the game patch waits for the LUT builder\n");
+        }
+        return;
+    }
+    const bool hdr = fs->pgm_hash == HdrTonemap;
+    if (hdr && Gow3Settings::Get().hdr_look.load(std::memory_order_relaxed) != Gow3Settings::HdrLookSdr) {
+        if (!std::exchange(noted, true)) {
+            std::printf("Patterns: the game patch needs HDR look \"SDR grading kept\" in HDR\n");
+        }
+        return;
+    }
+    const Gow3Patterns::Patch patch = Gow3Patterns::Current();
+    ue4_hdr->RunPatch(cb_descs[0].first, cb_descs[0].second, pattern_block, patch.value, patch.area, hdr,
+                      patch.neutral_brightness);
+}
+
 bool Rasterizer::ReplaceHdrGrading(const Pipeline* pipeline) {
     const auto stages = pipeline->GetStages();
     const u32 fragment = static_cast<u32>(Shader::SwStage::Fragment);
@@ -4896,7 +4926,13 @@ bool Rasterizer::ReplaceHdrGrading(const Pipeline* pipeline) {
         return decline(2, "the parameter block is smaller than 576 bytes or not mapped");
     }
     memory->CopySparseMemory(vsharp.base_address, reinterpret_cast<u8*>(block.data()), sizeof(block));
-    if (!Ue4HdrGrading::Wanted(block)) {
+    if (Gow3Patterns::GameActive()) {
+        // The game patch grades with this frame's block (the Color tab applied, as the frame's own grading).
+        pattern_block = block;
+        ApplyUe4Grade(reinterpret_cast<u8*>(pattern_block.data()));
+        pattern_block_ok = true;
+    }
+    if (!Gow3Settings::Get().hdr_active.load(std::memory_order_relaxed) || !Ue4HdrGrading::Wanted(block)) {
         // The HDR look set to the game's, or an SDR output device: normal, not logged.
         return false;
     }

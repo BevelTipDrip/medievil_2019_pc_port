@@ -257,6 +257,22 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
   colour textures are BC1 / BC3 `_SRGB` and every sampled view has its image's format (81 G-buffer draws) [V]. A
   washed-out default would then come from the game (scene exposure, its tuning) or a setting before its grading, not
   from the output. Next: test patterns through the whole pipeline, measured against the desktop with the user's meter.
+- **H29, meter runs (test patterns, research/tools/meter/measure_patches.py, ArgyllCMS 3.5.0 spotread, display type `o`,
+  no correction; CSVs in research-data/meter, 2026-11-18)** [V meter]:
+  - Desktop reference (full-screen window, 10% window on black): white 102 cd/m2 (HCFR 100); effective gamma 2.01 (10%)
+    to 2.14; neutral grey.
+  - Game raw patches on black (written before presentation): white 99-101; within 1-3% of the desktop from 30% up, a
+    little darker near black (10%: 0.81-0.96 against 1.03). The port's SDR output path is clean. Earlier raw runs over
+    the game's own image read 50 and up to 83 at white: the screen's brightness limiting reacting to the surroundings.
+  - Game patches through the game's grading at neutral Brightness (power 1, `--neutral-brightness`): measured =
+    predicted (the offline port through the measured display response) within 1-4% from scene 0.05 up, in absolute
+    cd/m2 (mid-grey 0.18: 19.4 against 19.1; scene 1.0: 74.0 against 73.2).
+  - The same with the game's Brightness slider centred: a power of 0.758 on the graded colour (0.73-0.77 at every level),
+    UE display gamma 2.90: mid-grey 29.4 cd/m2 (1.5x neutral), scene 0.05 2.6x. Neutral (power 1, display gamma 2.2)
+    sits near 35% of the slider (30% read 1.985 in H28; linear in display gamma between the two points). The user's
+    calibration (skull just visible) is ~25-30%, a little darker than neutral, on a screen measured at ~2.1.
+  - So the over-bright default is the game's own slider mapping (the centre brightens), not the port: the port's output
+    and its reproduction of the game's grading are both verified.
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.

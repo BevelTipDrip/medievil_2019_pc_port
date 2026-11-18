@@ -21,6 +21,7 @@
 #include "video_core/renderdoc.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
 #include "gow3_overlay.h"
+#include "gow3_patterns.h"
 #include "gow3_settings.h"
 #include "gow3_graphics.h"
 #include "video_core/renderer_vulkan/vk_temporal_upscaler.h"
@@ -55,6 +56,123 @@
 #endif
 
 namespace Vulkan {
+
+namespace {
+// gow3 test patterns (gow3_patterns.h, research/docs/plan-meter-measurement.md): a raw patch written into the swapchain
+// image by a buffer-to-image copy (exact bits, any format), the rest of the frame optionally cleared. Three slots in one
+// host buffer, one per frame in flight, refilled when the patch or the format changes.
+struct RawPatchBuffer {
+    VkBuffer buffer = VK_NULL_HANDLE;
+    VmaAllocation allocation = nullptr;
+    u8* mapped = nullptr;
+    static constexpr u32 SlotPixels = 2048u * 2048u;
+    struct Slot {
+        u32 pixel = 0, width = 0, height = 0;
+        bool filled = false;
+    } slots[3];
+    u32 next = 0;
+} raw_patch;
+
+/// The pixel of normalized codes `v` in `format`, or false for a format this does not know.
+bool PackPixel(vk::Format format, const float v[3], u32& pixel) {
+    const auto c8 = [&](int i) { return u32(std::lround(std::clamp(v[i], 0.0f, 1.0f) * 255.0f)); };
+    const auto c10 = [&](int i) { return u32(std::lround(std::clamp(v[i], 0.0f, 1.0f) * 1023.0f)); };
+    switch (format) {
+    case vk::Format::eB8G8R8A8Unorm:
+    case vk::Format::eB8G8R8A8Srgb:
+        pixel = c8(2) | c8(1) << 8 | c8(0) << 16 | 255u << 24;
+        return true;
+    case vk::Format::eR8G8B8A8Unorm:
+    case vk::Format::eR8G8B8A8Srgb:
+        pixel = c8(0) | c8(1) << 8 | c8(2) << 16 | 255u << 24;
+        return true;
+    case vk::Format::eA2B10G10R10UnormPack32:
+        pixel = c10(0) | c10(1) << 10 | c10(2) << 20 | 3u << 30;
+        return true;
+    case vk::Format::eA2R10G10B10UnormPack32:
+        pixel = c10(2) | c10(1) << 10 | c10(0) << 20 | 3u << 30;
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool IsSrgbFormat(vk::Format format) {
+    return format == vk::Format::eB8G8R8A8Srgb || format == vk::Format::eR8G8B8A8Srgb;
+}
+
+/// Records the patch into `image` (TransferDstOptimal, after the frame's blit). The image stays TransferDstOptimal.
+void RecordRawPatch(const Instance& instance, vk::CommandBuffer cmdbuf, vk::Image image, vk::Extent2D extent,
+                    vk::Format format, const vk::ImageSubresourceRange& range) {
+    const Gow3Patterns::Patch patch = Gow3Patterns::Current();
+    if (patch.mode != Gow3Patterns::Raw) {
+        return;
+    }
+    u32 pixel = 0;
+    if (!PackPixel(format, patch.value, pixel)) {
+        static bool warned = false;
+        if (!std::exchange(warned, true)) {
+            std::printf("Patterns: swapchain format %s not supported for raw patches\n",
+                        vk::to_string(format).c_str());
+        }
+        return;
+    }
+    if (!raw_patch.buffer) {
+        const VkBufferCreateInfo ci{.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+                                    .size = VkDeviceSize(RawPatchBuffer::SlotPixels) * 4 * 3,
+                                    .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT};
+        const VmaAllocationCreateInfo alloc{.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT |
+                                                     VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+                                            .usage = VMA_MEMORY_USAGE_AUTO_PREFER_HOST};
+        VmaAllocationInfo info{};
+        if (vmaCreateBuffer(instance.GetAllocator(), &ci, &alloc, &raw_patch.buffer, &raw_patch.allocation,
+                            &info) != VK_SUCCESS) {
+            raw_patch.buffer = VK_NULL_HANDLE;
+            std::printf("Patterns: no host buffer for raw patches\n");
+            return;
+        }
+        raw_patch.mapped = static_cast<u8*>(info.pMappedData);
+    }
+    const float side = std::sqrt(std::clamp(patch.area, 0.001f, 1.0f));
+    const u32 width = std::clamp(u32(std::lround(side * float(extent.width))), 1u, std::min(extent.width, 2048u));
+    const u32 height = std::clamp(u32(std::lround(side * float(extent.height))), 1u, std::min(extent.height, 2048u));
+    const u32 slot_index = raw_patch.next++ % 3;
+    auto& slot = raw_patch.slots[slot_index];
+    u32* const pixels = reinterpret_cast<u32*>(raw_patch.mapped) + size_t(slot_index) * RawPatchBuffer::SlotPixels;
+    if (!slot.filled || slot.pixel != pixel || slot.width != width || slot.height != height) {
+        std::fill(pixels, pixels + size_t(width) * height, pixel);
+        vmaFlushAllocation(instance.GetAllocator(), raw_patch.allocation,
+                           VkDeviceSize(slot_index) * RawPatchBuffer::SlotPixels * 4, VkDeviceSize(width) * height * 4);
+        slot = {pixel, width, height, true};
+    }
+    const vk::MemoryBarrier after_write{.srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+                                        .dstAccessMask = vk::AccessFlagBits::eTransferWrite};
+    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {},
+                           after_write, {}, {});
+    if (patch.background) {
+        // A clear colour is linear for an sRGB format (encoded on write) and the code itself for UNORM.
+        std::array<float, 4> bg{patch.bg[0], patch.bg[1], patch.bg[2], 1.0f};
+        if (IsSrgbFormat(format)) {
+            for (int c = 0; c < 3; ++c) {
+                const float v = bg[c];
+                bg[c] = v <= 0.04045f ? v / 12.92f : std::pow((v + 0.055f) / 1.055f, 2.4f);
+            }
+        }
+        cmdbuf.clearColorImage(image, vk::ImageLayout::eTransferDstOptimal, vk::ClearColorValue{bg}, range);
+        cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {},
+                               after_write, {}, {});
+    }
+    const vk::BufferImageCopy region{
+        .bufferOffset = VkDeviceSize(slot_index) * RawPatchBuffer::SlotPixels * 4,
+        .bufferRowLength = width,
+        .bufferImageHeight = height,
+        .imageSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
+        .imageOffset = {s32((extent.width - width) / 2), s32((extent.height - height) / 2), 0},
+        .imageExtent = {width, height, 1},
+    };
+    cmdbuf.copyBufferToImage(vk::Buffer(raw_patch.buffer), image, vk::ImageLayout::eTransferDstOptimal, region);
+}
+} // namespace
 
 bool CanBlitToSwapchain(const vk::PhysicalDevice physical_device, vk::Format format) {
     const vk::FormatProperties props{physical_device.getFormatProperties(format)};
@@ -939,10 +1057,32 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
         };
         cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer,
                                vk::DependencyFlagBits::eByRegion, clear_done, {}, {});
+        vk::ImageBlit blit = MakeImageBlitFit(frame->width, frame->height, extent.width, extent.height);
+        if (Gow3Patterns::Active()) [[unlikely]] {
+            // gow3 test patterns: a game patch on black: only the patch's part of the frame (its centre, the patch's
+            // share of the screen) reaches the cleared swapchain image, so nothing around it lights the screen.
+            if (const auto patch = Gow3Patterns::Current(); patch.mode == Gow3Patterns::Game && patch.background) {
+                const float side = std::sqrt(std::clamp(patch.area, 0.001f, 1.0f));
+                const auto centre = [side](std::array<vk::Offset3D, 2>& o) {
+                    for (const int axis : {0, 1}) {
+                        auto get = [&](vk::Offset3D& v) -> s32& { return axis == 0 ? v.x : v.y; };
+                        const s32 a = get(o[0]), b = get(o[1]);
+                        const float mid = 0.5f * float(a + b), half = 0.5f * side * float(b - a);
+                        get(o[0]) = s32(std::lround(mid - half));
+                        get(o[1]) = s32(std::lround(mid + half));
+                    }
+                };
+                centre(blit.srcOffsets);
+                centre(blit.dstOffsets);
+            }
+        }
         cmdbuf.blitImage(frame->image, vk::ImageLayout::eTransferSrcOptimal, swapchain_image,
-                         vk::ImageLayout::eTransferDstOptimal,
-                         MakeImageBlitFit(frame->width, frame->height, extent.width, extent.height),
-                         vk::Filter::eLinear);
+                         vk::ImageLayout::eTransferDstOptimal, blit, vk::Filter::eLinear);
+        // gow3 test patterns: a raw patch over the frame (the image is still a copy destination after the blit).
+        if (Gow3Patterns::Active()) [[unlikely]] {
+            RecordRawPatch(instance, cmdbuf, swapchain_image, extent, swapchain.GetSurfaceFormat().format,
+                           color_range);
+        }
         // gow3: the settings menu / FPS counter over the frame, at display resolution.
         // gow3 HDR: every present, overlay or not (the grading LUT pass and the menu's HDR rows read it).
         Gow3Settings::Get().hdr_active.store(swapchain.GetHDR(), std::memory_order_relaxed);
@@ -976,6 +1116,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
                                vk::PipelineStageFlagBits::eAllCommands,
                                vk::DependencyFlagBits::eByRegion, {}, {}, post_barriers);
         Gow3Overlay::LogPresent();
+        Gow3Patterns::NotePresented();
         if (overlay) {
             Gow3Overlay::Render(cmdbuf, swapchain.ImageView(), extent, swapchain.GetHDR());
             const vk::ImageMemoryBarrier to_present{

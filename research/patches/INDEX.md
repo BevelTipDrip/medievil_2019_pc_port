@@ -4,7 +4,7 @@ One line per card. Open a card for invariants, interactions and evidence; look u
 reading: `patchmap.py file <path>` / `switch <name>` / `commit <hash>` / `test <id>`.
 Card format and statuses: [README.md](README.md). W / D = default on Windows / Deck.
 
-234 cards.
+235 cards.
 
 ## memory
 
@@ -301,6 +301,7 @@ _diagnostics, tracing, capture, stats, research tools (no gameplay effect)_
 | [slow-frames](tooling/slow-frames.md) | diagnostic | off / off | lab | GOW3_SLOW_FRAMES, GOW3_FRAME_STATS | GOW3_SLOW_FRAMES: what slow frames did, against samples; stage A idle, stage B sections, misses and unprepared draws per frame |
 | [stage-b-counters](tooling/stage-b-counters.md) | diagnostic | off / off | lab | GOW3_FRAME_STATS, GOW3_SECTIONS | Stage B counters: texture sets not kept and why, descriptor writes, FindImage time, sleep ms by site, ordered tasks by kind |
 | [stats-counters-gated](tooling/stats-counters-gated.md) | active | on / on | copy-fault-trace,hdr | GOW3_FRAME_STATS | Stats counters, packet timing and their switches cost nothing without GOW3_FRAME_STATS=1 (no locked adds per draw or per guest memcpy / lock; switches on cache lines of their own) |
+| [test-patterns](tooling/test-patterns.md) | diagnostic | off / off | - | GOW3_PATTERN_SERVER, GOW3_PATTERN_PORT | Test patterns for a colorimeter: a local socket asks for raw patches (written before presentation) or game patches (a scene value through the game's grading over the tonemapper's output); a meter script |
 | [texcache-stats](tooling/texcache-stats.md) | diagnostic | off / off | lab | GOW3_TEXCACHE_STATS | GOW3_TEXCACHE_STATS: per 5 s images created / freed, lookups, overlaps, expands, uploads, re-created and re-uploaded images |
 | [ue4-cvars-tool](tooling/ue4-cvars-tool.md) | diagnostic | off / off | lab |  | UE4 override pak: GOW3_UE4_CVARS adds console variables (opt-in test tool) |
 | [ue4-frame-map](tooling/ue4-frame-map.md) | diagnostic | off / off | deck-lab | GOW3_UE4_FRAME_MAP, GOW3_UE4_FRAME_MAP_SHADERS | UE4 frame map (U1): logs the velocity pass, TAA (draws or compute), the View buffer, tonemap and first UI draw each frame |

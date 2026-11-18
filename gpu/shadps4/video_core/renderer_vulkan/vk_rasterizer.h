@@ -480,6 +480,8 @@ private:
     /// gow3 HDR (plan-hdr-sdr-match.md): the game's grading LUT draw replaced by Ue4HdrGrading while the game
     /// outputs HDR10 and the HDR look is the SDR one. Before BindResources. True: written, skip the draw.
     bool ReplaceHdrGrading(const Pipeline* pipeline);
+    /// gow3 test patterns (gow3_patterns.h "game" mode): after the tonemapper's draw, the patch over its output.
+    void PatternAfterTonemap(const GraphicsPipeline* pipeline);
     /// GOW3_GPU_PROFILE: a timestamp where a render pass starts (vk_gpu_profiler.h).
     void MarkPass(const GraphicsPipeline* pipeline, const RenderState& state);
     void BindVertexBuffers(const GraphicsPipeline* pipeline,
@@ -523,7 +525,9 @@ private:
     std::unique_ptr<TemporalUpscaler> upscaler; // gow3: FSR (docs/upscaler.md)
     std::unique_ptr<Ue4FrameMap> frame_map;     // gow3 U1: null unless GOW3_UE4_FRAME_MAP=1
     std::unique_ptr<Ue4Motion> ue4_motion;      // gow3 U2: null unless GOW3_UE4_MOTION_VIEW or U3
-    std::unique_ptr<Ue4HdrGrading> ue4_hdr;     // gow3 HDR: null without "Allow HDR output" (GOW3_HDR)
+    std::unique_ptr<Ue4HdrGrading> ue4_hdr;     // gow3 HDR grading pass and the test patterns' game patch
+    std::array<u32, Ue4HdrGrading::ParamDwords> pattern_block{}; // the grading block of this frame
+    bool pattern_block_ok = false;
     std::unique_ptr<Ue4Upscaler> ue4_upscaler;  // gow3 U3 / F1: null with GOW3_UE4_HOOKS=0
     std::array<float, 2> draw_jitter{};         ///< viewport offset of the current draw, pixels
     std::array<float, 2> target_scale{1.0f, 1.0f}; ///< pass drawn into the upscaler's output-size images

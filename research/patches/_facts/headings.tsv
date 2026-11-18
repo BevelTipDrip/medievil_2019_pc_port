@@ -508,6 +508,11 @@ plan-live-switches.md	14	2	mechanism-built	Mechanism (built)
 plan-live-switches.md	23	2	done	Done
 plan-live-switches.md	35	2	next-in-order	Next, in order
 plan-live-switches.md	58	2	stays-a-restart-study	Stays a restart (study)
+plan-meter-measurement.md	1	1	measuring-the-games-output-with-the-users-colorimeter-plan-2026-11-17-not-built	Measuring the game's output with the user's colorimeter (plan, 2026-11-17, not built)
+plan-meter-measurement.md	9	2	what-is-on-the-machine	What is on the machine
+plan-meter-measurement.md	21	2	readings-from-a-script	Readings from a script
+plan-meter-measurement.md	28	2	hcfrs-conventions-to-match-its-numbers	HCFR's conventions (to match its numbers)
+plan-meter-measurement.md	41	2	plan	Plan
 plan-roadmap.md	1	1	plan-faster-medievil-with-real-motion-vectors-fsr-3-fg-and-dlss-srfg	Plan: faster MediEvil with real motion vectors, FSR 3 FG and DLSS SR/FG
 plan-roadmap.md	7	2	the-rule	The rule
 plan-roadmap.md	13	2	order-proposed-2026-10-18-the-user-to-confirm	Order (proposed 2026-10-18; the user to confirm)
@@ -964,8 +969,8 @@ study-hdr.md	71	2	engine-variables-both-builds-register-the-same-set-v	Engine va
 study-hdr.md	105	2	how-the-port-can-set-them	How the port can set them
 study-hdr.md	123	2	two-routes	Two routes
 study-hdr.md	137	2	runs-2026-11-17-release-build-of-the-uncommitted-step-1--2-code-4k-windows-hdr-on	Runs (2026-11-17, release build of the uncommitted step 1 + 2 code, 4K, Windows HDR on)
-study-hdr.md	264	2	renodxs-unreal-engine-approach-research-agent-2026-11-17-mit-licence	RenoDX's Unreal Engine approach (research agent, 2026-11-17; MIT licence)
-study-hdr.md	292	2	open-questions-each-needs-a-run-with-the-users-go	Open questions (each needs a run with the user's go)
+study-hdr.md	280	2	renodxs-unreal-engine-approach-research-agent-2026-11-17-mit-licence	RenoDX's Unreal Engine approach (research agent, 2026-11-17; MIT licence)
+study-hdr.md	308	2	open-questions-each-needs-a-run-with-the-users-go	Open questions (each needs a run with the user's go)
 study-heavy-frame-map.md	1	1	study-heavy-view-frame-map-2026-10-21	Study: heavy-view frame map (2026-10-21)
 study-heavy-frame-map.md	12	2	1-frame-map	1. Frame map
 study-heavy-frame-map.md	47	2	2-h3-gpu-particle-double-run	2. H3: GPU-particle double run

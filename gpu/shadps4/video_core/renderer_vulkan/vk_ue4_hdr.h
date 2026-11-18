@@ -43,21 +43,29 @@ public:
     /// `block` (the game's parameters, grading applied). True: written, the game's draw is to be skipped.
     bool Run(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc, const std::array<u32, ParamDwords>& block);
 
+    /// Test patterns (gow3_patterns.h "game" mode): a centred patch over the tonemapper's output (`target`, `desc`),
+    /// scene-linear `scene` graded from `block` (the game's, this frame) as the tonemapper would write it; HDR in our
+    /// SDR-look encoding (the game's Brightness neutral), SDR the game's device 0 (its Brightness kept).
+    void RunPatch(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc,
+                  const std::array<u32, ParamDwords>& block, const float scene[3], float area, bool hdr_output,
+                  bool neutral_brightness = false);
+
 private:
-    vk::Pipeline Pipeline(vk::Format format);
+    vk::Pipeline Pipeline(vk::Format format, bool patch = false);
 
     const Instance& instance;
     Scheduler& scheduler;
     VideoCore::TextureCache& texture_cache;
     VideoCore::BufferCache& buffer_cache;
     Runtime& runtime;
-    vk::UniqueShaderModule vert, frag;
+    vk::UniqueShaderModule vert, frag, patch_frag;
     vk::UniqueDescriptorSetLayout set_layout;
     vk::UniquePipelineLayout layout;
-    std::vector<std::pair<vk::Format, vk::UniquePipeline>> pipelines;
+    std::vector<std::pair<std::pair<vk::Format, bool>, vk::UniquePipeline>> pipelines;
     u64 runs = 0;
     bool failed = false;
     bool brightness_noted = false; ///< the game's Brightness logged once
+    u64 patch_runs = 0;
 };
 
 } // namespace Vulkan

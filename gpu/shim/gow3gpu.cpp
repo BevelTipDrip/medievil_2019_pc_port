@@ -3,6 +3,7 @@
 #include "gow3_overlay.h"
 #include "gow3_png.h"
 #include "gow3_settings.h"
+#include "gow3_patterns.h"
 #include "gow3_copy.h"
 #include "gow3_flip_trace.h"
 #ifndef _WIN32
@@ -323,6 +324,7 @@ extern "C" void gow3gpu_flip_trace_write(void) {
 
 extern "C" int gow3gpu_init(const Gow3GpuConfig* config) {
     Gow3Settings::Load();
+    Gow3Patterns::Start(); // GOW3_PATTERN_SERVER only (test patterns for a colorimeter)
 #ifdef GOW3_PGO_GENERATE
     StartProfileWriter();
 #endif

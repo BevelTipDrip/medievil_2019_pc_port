@@ -3,12 +3,15 @@
 
 #include "video_core/renderer_vulkan/vk_ue4_hdr.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include "gow3_settings.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/host_shaders/ue4_hdr_lut_frag.h"
 #include "video_core/host_shaders/ue4_hdr_lut_vert.h"
+#include "video_core/host_shaders/ue4_pattern_frag.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_runtime.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -24,7 +27,16 @@ struct LutPush {
     float lut_size;
     u32 flags;
 };
+/// ue4_pattern.frag's push constants (the layout's range is this size; LutPush fills its start).
+struct PatchPush {
+    float game_nits;
+    float gamma;
+    u32 flags;
+    float pad;
+    float scene[4];
+};
 constexpr u32 OutputDeviceDword = 138; ///< study-hdr.md "LUT parameters"
+constexpr u32 InverseGammaDword = 5;   ///< the game's Brightness (2.2 / UE display gamma)
 } // namespace
 
 Ue4HdrGrading::Ue4HdrGrading(const Instance& instance_, Scheduler& scheduler_,
@@ -35,6 +47,7 @@ Ue4HdrGrading::Ue4HdrGrading(const Instance& instance_, Scheduler& scheduler_,
     const auto device = instance.GetDevice();
     vert = vk::UniqueShaderModule(CompileSPV(UE4_HDR_LUT_VERT, device), device);
     frag = vk::UniqueShaderModule(CompileSPV(UE4_HDR_LUT_FRAG, device), device);
+    patch_frag = vk::UniqueShaderModule(CompileSPV(UE4_PATTERN_FRAG, device), device);
     const vk::DescriptorSetLayoutBinding binding{0, vk::DescriptorType::eStorageBuffer, 1,
                                                  vk::ShaderStageFlagBits::eFragment};
     set_layout = Check(device.createDescriptorSetLayoutUnique({
@@ -43,7 +56,7 @@ Ue4HdrGrading::Ue4HdrGrading(const Instance& instance_, Scheduler& scheduler_,
         .pBindings = &binding,
     }));
     const auto set = *set_layout;
-    const vk::PushConstantRange push{vk::ShaderStageFlagBits::eFragment, 0, sizeof(LutPush)};
+    const vk::PushConstantRange push{vk::ShaderStageFlagBits::eFragment, 0, sizeof(PatchPush)};
     layout = Check(device.createPipelineLayoutUnique({
         .setLayoutCount = 1,
         .pSetLayouts = &set,
@@ -63,9 +76,9 @@ bool Ue4HdrGrading::Wanted(const std::array<u32, ParamDwords>& block) {
     return device >= 3 && device <= 6; // the ST-2084 / scRGB devices: the LUT indexed by PQ
 }
 
-vk::Pipeline Ue4HdrGrading::Pipeline(vk::Format format) {
-    for (const auto& [f, pipeline] : pipelines) {
-        if (f == format) {
+vk::Pipeline Ue4HdrGrading::Pipeline(vk::Format format, bool patch) {
+    for (const auto& [key, pipeline] : pipelines) {
+        if (key.first == format && key.second == patch) {
             return *pipeline;
         }
     }
@@ -76,7 +89,8 @@ vk::Pipeline Ue4HdrGrading::Pipeline(vk::Format format) {
                                                           .pDynamicStates = dynamic_states.data()};
     const std::array stages{
         vk::PipelineShaderStageCreateInfo{.stage = vk::ShaderStageFlagBits::eVertex, .module = *vert, .pName = "main"},
-        vk::PipelineShaderStageCreateInfo{.stage = vk::ShaderStageFlagBits::eFragment, .module = *frag, .pName = "main"},
+        vk::PipelineShaderStageCreateInfo{.stage = vk::ShaderStageFlagBits::eFragment,
+                                          .module = patch ? *patch_frag : *frag, .pName = "main"},
     };
     const vk::PipelineRenderingCreateInfo rendering{.colorAttachmentCount = 1, .pColorAttachmentFormats = &format};
     const vk::PipelineColorBlendAttachmentState blend{
@@ -108,7 +122,7 @@ vk::Pipeline Ue4HdrGrading::Pipeline(vk::Format format) {
         return {};
     }
     const vk::Pipeline result = *pipeline.value;
-    pipelines.emplace_back(format, std::move(pipeline.value));
+    pipelines.emplace_back(std::pair{format, patch}, std::move(pipeline.value));
     std::printf("UE4 HDR grading: pipeline ready (%s)\n", vk::to_string(format).c_str());
     return result;
 }
@@ -146,7 +160,6 @@ bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache
     // the graded colour made for SDR screens. The game's ACES HDR path never applied it; ours would (run 26: 1.354, a
     // display gamma of 1.625, crushed the shadows). In HDR it is neutral: Game brightness and Gamma take its place.
     std::array<u32, ParamDwords> params_block = block;
-    constexpr u32 InverseGammaDword = 5;
     if (const u32 game_power = block[InverseGammaDword]; game_power != 0x3f800000u && !brightness_noted) {
         brightness_noted = true;
         float power;
@@ -201,6 +214,79 @@ bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache
                     push.gamma > 0.0f ? std::to_string(push.gamma).substr(0, 3).c_str() : "off (sRGB)");
     }
     return true;
+}
+
+
+void Ue4HdrGrading::RunPatch(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc,
+                             const std::array<u32, ParamDwords>& block, const float scene[3], float area,
+                             bool hdr_output, bool neutral_brightness) {
+    if (!target) {
+        return;
+    }
+    const vk::Pipeline pipeline = Pipeline(desc.view_info.format, true);
+    if (!pipeline) {
+        return;
+    }
+    const auto& range = desc.view_info.range;
+    const u32 width = std::max(desc.info.size.width >> range.base.level, 1u);
+    const u32 height = std::max(desc.info.size.height >> range.base.level, 1u);
+    const float side = std::sqrt(std::clamp(area, 0.001f, 1.0f));
+    const u32 patch_w = std::clamp(u32(std::lround(side * float(width))), 1u, width);
+    const u32 patch_h = std::clamp(u32(std::lround(side * float(height))), 1u, height);
+    const vk::Rect2D scissor{{s32((width - patch_w) / 2), s32((height - patch_h) / 2)}, {patch_w, patch_h}};
+    scheduler.EndRendering();
+    const vk::ImageView view = *texture_cache.FindRenderTarget(target, desc).image_view;
+    runtime.Transit(&texture_cache.GetImage(target), vk::ImageLayout::eColorAttachmentOptimal,
+                    vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                    vk::AccessFlagBits2::eColorAttachmentWrite | vk::AccessFlagBits2::eColorAttachmentRead, range);
+    runtime.FlushBarriers();
+    std::array<u32, ParamDwords> params_block = block;
+    if (hdr_output || neutral_brightness) {
+        params_block[InverseGammaDword] = 0x3f800000u; // neutral: HDR as Run does; SDR when asked ("neutral")
+    }
+    auto& stream = buffer_cache.GetStreamBuffer();
+    const u64 offset = stream.Copy(params_block.data(), sizeof(params_block), instance.StorageMinAlignment());
+    const vk::Buffer params = stream.Handle();
+    const auto& settings = Gow3Settings::Get();
+    const PatchPush push{
+        .game_nits = float(settings.hdr_game_nits.load(std::memory_order_relaxed)),
+        .gamma = float(settings.hdr_gamma.load(std::memory_order_relaxed)) / 10.0f,
+        .flags = hdr_output ? 1u : 0u,
+        .pad = 0.0f,
+        .scene = {scene[0], scene[1], scene[2], 0.0f},
+    };
+    const vk::PipelineLayout pipeline_layout = *layout;
+    scheduler.Record([=](vk::CommandBuffer cmdbuf) {
+        const vk::RenderingAttachmentInfo attachment{
+            .imageView = view,
+            .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
+            .loadOp = vk::AttachmentLoadOp::eLoad,
+            .storeOp = vk::AttachmentStoreOp::eStore,
+        };
+        cmdbuf.beginRendering({
+            .renderArea = {{0, 0}, {width, height}},
+            .layerCount = 1,
+            .colorAttachmentCount = 1,
+            .pColorAttachments = &attachment,
+        });
+        const vk::DescriptorBufferInfo info{.buffer = params, .offset = offset, .range = sizeof(params_block)};
+        const vk::WriteDescriptorSet write{.dstBinding = 0,
+                                           .descriptorCount = 1,
+                                           .descriptorType = vk::DescriptorType::eStorageBuffer,
+                                           .pBufferInfo = &info};
+        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, write);
+        cmdbuf.pushConstants(pipeline_layout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(push), &push);
+        cmdbuf.setViewportWithCount(vk::Viewport{0.f, 0.f, float(width), float(height), 0.f, 1.f});
+        cmdbuf.setScissorWithCount(scissor);
+        cmdbuf.draw(3, 1, 0, 0);
+        cmdbuf.endRendering();
+    });
+    scheduler.GetDynamicState().Invalidate();
+    if (++patch_runs == 1) {
+        std::printf("Patterns: game patch over the tonemapper's output (%ux%u %s, %s)\n", width, height,
+                    vk::to_string(desc.view_info.format).c_str(), hdr_output ? "HDR" : "SDR");
+    }
 }
 
 } // namespace Vulkan
