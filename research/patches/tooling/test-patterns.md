@@ -33,7 +33,8 @@ framing) or a newline; a patch is answered `OK` two presents after it changed.
   SDR-look encoding) and written as the tonemapper writes (blue first). Then the UI composite and presentation.
 - `research/tools/meter/measure_patches.py`: drives the game or a full-screen desktop window (the reference) with the
   same patches and timing, reads ArgyllCMS `spotread -e -x -O` (3.5.0 outside the repo), HCFR's low-light averaging,
-  CSV in `research-data/meter`.
+  CSV in `research-data/meter`. Sequence `hdr-nearblack` (raw PQ, 0.005-30 nits) with `--write-correction` writes
+  `hdr-black-correction.txt` beside medievil.ini for the near-black correction (card present/hdr-output).
 
 ## Invariants
 

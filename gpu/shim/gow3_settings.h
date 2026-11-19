@@ -127,6 +127,9 @@ struct Values {
     std::atomic<int> hdr_look{HdrLookSdr};
     std::atomic<int> hdr_game_nits{HdrGameNitsDefault};
     std::atomic<int> hdr_gamma{HdrGammaDefault};
+    /// HDR near-black correction from a meter measurement (hdr-black-correction.txt beside medievil.ini; the
+    /// presenter's final pass), opt-in: specific to one display and mode.
+    std::atomic<bool> hdr_black_correction{false};
     /// Colour grading (GradeAt), live: read by the renderer at each combine LUT draw.
     std::atomic<float> grade[GradeCount];
     std::atomic<int> upscaler{UpscalerFsr3};

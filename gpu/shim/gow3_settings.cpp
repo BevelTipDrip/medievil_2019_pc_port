@@ -67,6 +67,10 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         v.hdr_curve = value == "2000" ? 1 : 0;
         return;
     }
+    if (key == "hdr_black_correction") {
+        v.hdr_black_correction = value == "1";
+        return;
+    }
     if (key == "hdr_look") {
         v.hdr_look = value == "game" ? HdrLookGame : HdrLookSdr;
         return;
@@ -794,6 +798,7 @@ std::map<std::string, std::string> Serialize(const Values& v) {
         Append(out, "%s=%s\n", UE4LiveOptions[o].key, UE4LiveOptions[o].tokens[v.ue4_live[o]]);
     }
     Append(out, "hdr_ui_nits=%d\nhdr_curve=%s\n", v.hdr_ui_nits.load(), v.hdr_curve ? "2000" : "1000");
+    Append(out, "hdr_black_correction=%d\n", int(v.hdr_black_correction.load()));
     Append(out, "hdr_look=%s\nhdr_game_nits=%d\n", v.hdr_look == HdrLookGame ? "game" : "sdr",
            v.hdr_game_nits.load());
     if (const int g = v.hdr_gamma.load(); g == 0) {

@@ -9,7 +9,7 @@ default_deck: off
 origin: ours
 class: G
 commits:
-files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.h, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.vert, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.frag, gpu/shadps4/video_core/host_shaders/ue4_grade.glsl, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_settings.h, gpu/shadps4/video_core/host_shaders/imgui_hdr.frag, gpu/patches/imgui/0001-vulkan-pipeline-for-another-format-and-fragment-shader.patch, src/runtime_extra.c, run.py, build.sh, gpu/shadps4/core/libraries/videoout/video_out.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_swapchain.cpp, gpu/shim/core/emulator_settings.h, scripts/ue4_override.py, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.cpp, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h
+files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.h, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.vert, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.frag, gpu/shadps4/video_core/host_shaders/ue4_grade.glsl, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_settings.h, gpu/shadps4/video_core/host_shaders/imgui_hdr.frag, gpu/patches/imgui/0001-vulkan-pipeline-for-another-format-and-fragment-shader.patch, src/runtime_extra.c, run.py, build.sh, gpu/shadps4/core/libraries/videoout/video_out.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_swapchain.cpp, gpu/shim/core/emulator_settings.h, scripts/ue4_override.py, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.cpp, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.h, gpu/shadps4/video_core/host_shaders/post_process.frag, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h
 symbols: Ue4HdrGrading, ReplaceHdrGrading, GradeScene, LutDecodeHdrTexel, Ue4GradeOverride, ApplyUe4Grade, Ue4GradeTarget, HdrPipeline, ImGui_ImplVulkan_CreatePipelineForFormat, ColorTab, GradeAt, GradeKey, RequestHdrUi, RequestHdrCurve, hdr_ui_level, sceVideoOutGetDeviceCapabilityInfo, sceVideoOutConfigureOutputMode_, sceVideoOutRegisterBuffers, FindPresentFormat, Swapchain::SetHDR, IsHdrGameForced, PostProcessingPass::HDR_FRAME_FORMAT, RecreateFrame, MustCompileSync
 switches: GOW3_HDR, GOW3_HDR_GAME, GOW3_UE4_GRADE, GOW3_UE4_LIVE_CVARS
 tests:
@@ -79,6 +79,12 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
   texels offline (`research-data/hdr-ui-20261117/port`, not in git). Output: the SDR-graded colour, sRGB-encoded,
   decoded at Gamma (2.2 default; Off = sRGB), x Game brightness (203), BT.2020 PQ / 1.05. The game's Brightness
   (dword 5, InverseGamma.y) is forced to 1 in HDR (H26). Settings: `hdr_look`, `hdr_game_nits`, `hdr_gamma`.
+- **Near-black correction** (`hdr_black_correction`, Display > HDR > Near-black correction; off by default): the
+  presenter reads `hdr-black-correction.txt` beside medievil.ini (pairs `requested_nits measured_nits` from the meter
+  script's `hdr-nearblack --write-correction`; re-read once a second), inverts the measured response below its last
+  point (at most 24 points, blended to identity over the top 15%) and passes it in the post-process push constants
+  (128 bytes); `post_process.frag` applies it per channel in the HDR branch only. Logs one line per load
+  ("HDR near-black correction: N points ...").
 - **Release build** (`GOW3_DEV_TOOLS=0`): `GOW3_UE4_GRADE`, the grading coverage counts, `GOW3_UE4_LIVE_CVARS`, the
   frame map (with its shader traces), the image watch and the dropped-draw log are compiled out (strings absent from
   the release exe, present in the dev one). The HDR post-process pipeline is built only with `GOW3_HDR=1`. Kept: the
@@ -101,6 +107,11 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
 - Rows that share a name (the four ranges' Saturation ... Offset) need their own `ImGui::PushID` scope: a styled row's
   ID is its name, and shared IDs move every copy at once (H20).
 - Grading is relative: replacing the game's values instead would flatten every area's own post-process grading.
+- The post-process push block is exactly 128 bytes (`static_assert` in `pp_pass.h`, the Vulkan minimum): more
+  correction points need a buffer, not a bigger push block. The correction runs only when `black_count > 1` and the
+  frame is HDR; SDR frames never touch it.
+- The correction file describes one screen at one moment: it goes stale as the panel drifts (re-measure after pixel
+  refreshes) and must be off while a system-wide profile already corrects the same thing.
 - Not finished: RTSS's text reads as 10,000-nit red (its own drawing); FSR1 / RCAS's HDR mode squares PQ values;
   screenshots save raw PQ; no peak roll-off. Diagnostic runs only until those are done.
 
@@ -122,7 +133,11 @@ LUT all zero) to the dropped LUT draw; with the whole-draw sync compile the UI s
 in HDR, the user: "the menus look good, they're no longer over-saturated". H19: `r.HDR.UI.Level=0.5` halved the HUD
 (health bar p99 105 -> 52 nits) and left the scene and the overlay as they were. H20 / H21: the Color tab and the HDR
 section, every slider working once each range got its own ImGui ID scope (the user, 2026-11-17). H22: the Color panel
-and the release build without the diagnostics, "everything functions as expected".
+and the release build without the diagnostics, "everything functions as expected". H29 / H30: the meter runs (card
+tooling/test-patterns); the near-black correction from the `20261118-111751` hdr-nearblack run, game-grey at 203 nits /
+2.2 on 2026-11-18 11:30: scene 0.02 / 0.05 / 0.1 / 0.18 / 0.3 at 1.05 / 1.03 / 1.01 / 1.04 / 1.00 of target (the user:
+"looks a lot better ... fairly close to my SDR + brightness slider turned down"); highlights read 5-15% low in that run,
+not explained by the raw PQ run after (0.98 at 203): open.
 
 ## History and pitfalls
 

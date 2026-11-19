@@ -57,3 +57,20 @@ reading. Averaging: repeat readings per HCFR's Adapt rule. [V spotread doc]
 
 User setup: a fixed AW3225QF mode (HDR 400 True Black or Peak 1000); Windows HDR on for HDR runs, off for SDR; Auto HDR,
 Night light and automatic colour management off; dark room, 15 min warm-up, meter centred on the window.
+
+## The display's raised near-black (research agent, 2026-11-18)
+
+The user's AW3225QF shows near-black too bright (H29 / H30 in study-hdr.md). Found publicly [V, links in the agent's
+report, summarised]: no report ties it to pixel refresh (the user's own observation); a Dell Community thread (firmware
+M2B105, Creator sRGB 2.2) got "working as design"; a pcmonitors owner saw lifted near-dark gamma in SDR and HDR Peak
+1000 that an exchanged unit did not have (unit variation). TFTCentral (M2B103): Creator mode HAS a gamma setting (sRGB
+defaults to 1.8, set 2.2 by hand); Dark Stabilizer 2-3 raises blacks; the HDR "Desktop" mode tracked PQ darker in dark
+greys; pixel refresh runs after 4 h of use (6-8 min). No firmware changelog mentions near-black.
+
+Fixes, in order: (1) free checks, one per measurement: HDR "Desktop" mode, Creator sRGB at gamma 2.2 / 2.4 for SDR,
+Dark Stabilizer 0, NVIDIA colour "Accurate"; (2) a warranty exchange (unit variation); (3) system-wide HDR: an MHC2 ICC
+profile whose 1D LUT (applied at scanout, PQ codes in HDR; learn.microsoft.com/windows/win32/wcs/display-calibration-mhc)
+inverts the measured near-black, built from the same spotread data (no free tool does PQ calibration properly;
+msovideo_srgb comes closest); reports differ on whether it reaches fullscreen games: verify in the game; (4) the port's
+own correction (hdr-black-correction.txt, Display > HDR > Near-black correction), deterministic for the game only. Any
+of them goes stale as the panel drifts: re-measure (hdr-nearblack) after refreshes.

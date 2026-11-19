@@ -1475,6 +1475,10 @@ void DisplayTab() {
                       "The gamma of the SDR screen the game was made for: the shadows and blacks as that screen "
                       "showed them. 2.2 matches a PC monitor; Off keeps the sRGB curve (lighter shadows).");
             ImGui::EndDisabled();
+            CheckRow("Near-black correction", s.hdr_black_correction,
+                     "Corrects a display that shows near-black too bright in HDR, from a colorimeter measurement "
+                     "(hdr-black-correction.txt beside medievil.ini, made by research/tools/meter/measure_patches.py "
+                     "--sequence hdr-nearblack --write-correction). Specific to one display and mode.");
             if (S::HdrGame()) {
                 static const char* const curve_labels[] = {"1000 nits (game default)", "2000 nits"};
                 const int curve = s.hdr_curve;
