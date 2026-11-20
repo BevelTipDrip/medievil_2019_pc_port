@@ -294,8 +294,8 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     above the knee and 0.57-0.64 up to scene 2 (no kink), 0.38 from 2 to 3 where the roll-off starts (225 nits). The top
     is 0.94 of 450: the screen's tracking under PQ in this range, as white (190-195 against 203) in earlier runs.
   - Grey x/y 0.312 / 0.331 from 36 to 416 nits (the user's new per-channel calibration; slightly green of D65). At the
-    peak (scene 64 and up) y drops to 0.326 while luminance barely moves: probably the screen clipping a channel at the
-    450-nit code in this mode (measured peak ~435-438) [I]; a lower Peak brightness would show it. Not run.
+    peak (scene 64 and up) y drops to 0.326 while luminance barely moves: the user's monitor LUT (the correction for
+    the screen's raised blacks and colour shifts) at the top of its range, not the port (the user, 2026-11-19).
   - The user, on screen: "it all looks good to me".
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
