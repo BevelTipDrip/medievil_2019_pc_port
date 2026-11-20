@@ -1474,6 +1474,15 @@ void DisplayTab() {
             ChoiceRow("Gamma", s.hdr_gamma, gamma_labels, S::HdrGammaValues, int(std::size(S::HdrGammaValues)),
                       "The gamma of the SDR screen the game was made for: the shadows and blacks as that screen "
                       "showed them. 2.2 matches a PC monitor; Off keeps the sRGB curve (lighter shadows).");
+            SliderRow("Peak brightness", s.hdr_peak_nits, S::HdrPeakNitsMin, S::HdrPeakNitsMax, "%d nits",
+                      "Your display's peak brightness in this mode: the brightest highlights roll off to it. "
+                      "Measure it or use the display's rating (e.g. ~450 in an HDR 400 mode, ~1000 in a 1000 mode).",
+                      10);
+            SliderRow("Highlights", s.hdr_highlights, 0, 100, "%d%%",
+                      "Highlights above SDR white: 0 keeps the SDR picture (everything above ~half of SDR white "
+                      "compressed as in SDR); 100 gives back the brightness the SDR curve took from lights, fire "
+                      "and the sky.",
+                      5);
             ImGui::EndDisabled();
             CheckRow("Near-black correction", s.hdr_black_correction,
                      "Corrects a display that shows near-black too bright in HDR, from a colorimeter measurement "

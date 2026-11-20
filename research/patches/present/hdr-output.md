@@ -9,14 +9,14 @@ default_deck: off
 origin: ours
 class: G
 commits:
-files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.h, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.vert, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.frag, gpu/shadps4/video_core/host_shaders/ue4_grade.glsl, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_settings.h, gpu/shadps4/video_core/host_shaders/imgui_hdr.frag, gpu/patches/imgui/0001-vulkan-pipeline-for-another-format-and-fragment-shader.patch, src/runtime_extra.c, run.py, build.sh, gpu/shadps4/core/libraries/videoout/video_out.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_swapchain.cpp, gpu/shim/core/emulator_settings.h, scripts/ue4_override.py, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.cpp, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.h, gpu/shadps4/video_core/host_shaders/post_process.frag, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h
-symbols: Ue4HdrGrading, ReplaceHdrGrading, GradeScene, LutDecodeHdrTexel, Ue4GradeOverride, ApplyUe4Grade, Ue4GradeTarget, HdrPipeline, ImGui_ImplVulkan_CreatePipelineForFormat, ColorTab, GradeAt, GradeKey, RequestHdrUi, RequestHdrCurve, hdr_ui_level, sceVideoOutGetDeviceCapabilityInfo, sceVideoOutConfigureOutputMode_, sceVideoOutRegisterBuffers, FindPresentFormat, Swapchain::SetHDR, IsHdrGameForced, PostProcessingPass::HDR_FRAME_FORMAT, RecreateFrame, MustCompileSync
+files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.h, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.vert, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.frag, gpu/shadps4/video_core/host_shaders/ue4_grade.glsl, gpu/shadps4/video_core/host_shaders/ue4_hdr_map.glsl, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_settings.h, gpu/shadps4/video_core/host_shaders/imgui_hdr.frag, gpu/patches/imgui/0001-vulkan-pipeline-for-another-format-and-fragment-shader.patch, src/runtime_extra.c, run.py, build.sh, gpu/shadps4/core/libraries/videoout/video_out.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_swapchain.cpp, gpu/shim/core/emulator_settings.h, scripts/ue4_override.py, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.cpp, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.h, gpu/shadps4/video_core/host_shaders/post_process.frag, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h
+symbols: Ue4HdrGrading, ReplaceHdrGrading, GradeScene, HdrSceneToNits, HdrRollOff, LutDecodeHdrTexel, Ue4GradeOverride, ApplyUe4Grade, Ue4GradeTarget, HdrPipeline, ImGui_ImplVulkan_CreatePipelineForFormat, ColorTab, GradeAt, GradeKey, RequestHdrUi, RequestHdrCurve, hdr_ui_level, sceVideoOutGetDeviceCapabilityInfo, sceVideoOutConfigureOutputMode_, sceVideoOutRegisterBuffers, FindPresentFormat, Swapchain::SetHDR, IsHdrGameForced, PostProcessingPass::HDR_FRAME_FORMAT, RecreateFrame, MustCompileSync
 switches: GOW3_HDR, GOW3_HDR_GAME, GOW3_UE4_GRADE, GOW3_UE4_LIVE_CVARS
 tests:
 docs: study-hdr.md, plan-work-queue.md
 depends_on: particle-curve-sync-compile
 related: ue4-frame-map, mausoleum-diagnostics, renderdoc-capture
-checked: 2026-11-17
+checked: 2026-11-19
 ---
 ## What it does
 
@@ -76,9 +76,12 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
   `gl_Layer`) into the same 32-slice target (`FindRenderTarget`: marked written), from the game's parameter block with
   the Color tab applied. `ue4_grade.glsl` is the game's chain (white balance, expand gamut, ColorCorrectAll, blue
   correction, film curve, polynomial, scale / overlay), ported from the translated shader and equal to it on all 32^3
-  texels offline (`research-data/hdr-ui-20261117/port`, not in git). Output: the SDR-graded colour, sRGB-encoded,
-  decoded at Gamma (2.2 default; Off = sRGB), x Game brightness (203), BT.2020 PQ / 1.05. The game's Brightness
-  (dword 5, InverseGamma.y) is forced to 1 in HDR (H26). Settings: `hdr_look`, `hdr_game_nits`, `hdr_gamma`.
+  texels offline (`research-data/hdr-ui-20261117/port`, not in git). Output (`ue4_hdr_map.glsl`, shared with the
+  meter's game patches): the SDR-graded colour, sRGB-encoded, decoded at Gamma (2.2 default; Off = sRGB), x Game
+  brightness (203); above a knee at Y(U) = 0.5 the luminance continues the SDR look's slope at the knee (Highlights,
+  plan-hdr-sdr-match.md step 2), then a luminance roll-off (identity to half the peak, extended Reinhard reaching the
+  peak at 4x); BT.2020 PQ / 1.05. The game's Brightness (dword 5, InverseGamma.y) is forced to 1 in HDR (H26).
+  Settings: `hdr_look`, `hdr_game_nits`, `hdr_gamma`, `hdr_peak_nits` (default 1000), `hdr_highlights` (default 100).
 - **Near-black correction** (`hdr_black_correction`, Display > HDR > Near-black correction; off by default): the
   presenter reads `hdr-black-correction.txt` beside medievil.ini (pairs `requested_nits measured_nits` from the meter
   script's `hdr-nearblack --write-correction`; re-read once a second), inverts the measured response below its last
@@ -137,7 +140,9 @@ and the release build without the diagnostics, "everything functions as expected
 tooling/test-patterns); the near-black correction from the `20261118-111751` hdr-nearblack run, game-grey at 203 nits /
 2.2 on 2026-11-18 11:30: scene 0.02 / 0.05 / 0.1 / 0.18 / 0.3 at 1.05 / 1.03 / 1.01 / 1.04 / 1.00 of target (the user:
 "looks a lot better ... fairly close to my SDR + brightness slider turned down"); highlights read 5-15% low in that run,
-not explained by the raw PQ run after (0.98 at 203): open.
+not explained by the raw PQ run after (0.98 at 203): not seen again in H31. H31 (2026-11-19): Highlights 0 = step 1
+within 1-4%; Highlights 100 identical up to the knee, smooth above it, flat at the peak (421 nits measured at Peak 450,
+the screen's 0.94 tracking); the user: "it all looks good to me".
 
 ## History and pitfalls
 

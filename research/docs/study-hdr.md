@@ -284,6 +284,19 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
   - The raised HDR black floor is the screen: the AW3225QF's near-black rises after pixel-refresh cycles (a known issue,
     the user, 2026-11-18); it also lifted SDR near-black (H29), so the user needed the game's Brightness lower on this
     monitor than on their TV. A fix belongs in an opt-in calibration from meter data, not in defaults.
+- **H31, HDR highlights (step 2)** (2026-11-19; HDR 400 True Black, the user's own HDR ICC profile, near-black
+  correction off, meter with the AW3225QF i1d3 ccmx; game at 203 nits, gamma 2.2, Peak brightness 450) [V meter]:
+  - `game-highlights` with Highlights 0 (`20261119-214244`): scene 0.18 / 0.5 / 1 / 2 / 16 / 256 at 35.8 / 102.2 /
+    141.9 / 167.3 / 195.4 / 203.2 nits, within 1-4% of the 2026-11-18 game-grey run: step 1's curve unchanged by the
+    move to the shared include. The highlights-low reading of 2026-11-18 11:30 (white 173) did not come back.
+  - Highlights 100 (`20261119-214748`): up to the knee within 0.5% of Highlights 0; above it 132 / 159 / 243 / 306 /
+    391 / 416 nits at scene 0.75 / 1 / 2 / 4 / 16 / 32, flat at 420-422 from 64 to 256. Local log-log slope 0.66 just
+    above the knee and 0.57-0.64 up to scene 2 (no kink), 0.38 from 2 to 3 where the roll-off starts (225 nits). The top
+    is 0.94 of 450: the screen's tracking under PQ in this range, as white (190-195 against 203) in earlier runs.
+  - Grey x/y 0.312 / 0.331 from 36 to 416 nits (the user's new per-channel calibration; slightly green of D65). At the
+    peak (scene 64 and up) y drops to 0.326 while luminance barely moves: probably the screen clipping a channel at the
+    450-nit code in this mode (measured peak ~435-438) [I]; a lower Peak brightness would show it. Not run.
+  - The user, on screen: "it all looks good to me".
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.

@@ -169,7 +169,7 @@ set(SHADER_INCLUDE ${CMAKE_CURRENT_BINARY_DIR}/include)
 set(SHADER_DIR ${SHADER_INCLUDE}/video_core/host_shaders)
 set(SHADER_HEADERS "")
 # Files the host shaders #include (GL_GOOGLE_include_directive): a change rebuilds every host shader.
-set(HOST_SHADER_INCLUDES ${SHADER_SRC}/ue4_grade.glsl)
+set(HOST_SHADER_INCLUDES ${SHADER_SRC}/ue4_grade.glsl ${SHADER_SRC}/ue4_hdr_map.glsl)
 function(add_host_shader FILENAME SHADER_NAME)
     set(OUT ${SHADER_DIR}/${SHADER_NAME}.h)
     string(TOUPPER ${SHADER_NAME} SYMBOL)

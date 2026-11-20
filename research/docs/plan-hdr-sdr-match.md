@@ -1,4 +1,4 @@
-# HDR that keeps the SDR look: our own grading LUT and UI composite (design 2026-11-17; step 1 built and run, H24-H28)
+# HDR that keeps the SDR look: our own grading LUT and UI composite (design 2026-11-17; steps 1 and 2 run, H24-H31)
 
 Parent: [study-hdr.md](study-hdr.md) (route A, runs H1-H22, "RenoDX's Unreal Engine approach"). Shader map:
 [notes-ue421-lut-builder-map.md](notes-ue421-lut-builder-map.md) (line-referenced, from the game's own translated
@@ -70,6 +70,15 @@ record per frame each. SDR: nothing changes. Diagnostics behind `GOW3_DEV_TOOLS`
    proves the port of the game's chain.
 2. **Upgrade + roll-off + 2.2 emulation**, with the settings. Check: blacks as SDR, highlights above SDR white up to the
    peak, no clipping edge; the user's eyes on 1000 and 450.
+   **Built and run 2026-11-19 (study-hdr.md H31; the user: "it all looks good"), not as designed above:**
+   `ue4_hdr_map.glsl`, shared by the grading LUT and the meter's game patches. (a) The SDR look as step 1 up to a knee
+   at Y(U) = 0.5 (~100 nits at 203). (b) Above it, luminance continues the SDR look's own log-log slope at the knee
+   (the same pixel graded again at knee brightness and 1.05x, so per-area grading is kept; slope clamped 0-1.5, never
+   darker than the SDR look); colour stays G's. Simpler than RenoDX's UpgradeToneMap (no neutral curve, no OKLab).
+   (c) Roll-off on luminance: identity up to half the peak, then an extended Reinhard reaching the peak at 4x the peak.
+   Not BT.2390: with a 10,000-nit source it starts compressing at ~80 nits for a 450-nit peak, below SDR white.
+   Settings: Peak brightness (`hdr_peak_nits`, 250-4000, default 1000; no Auto yet) and Highlights (`hdr_highlights`,
+   0-100 %, default 100; 0 = step 1's output while the peak is at least ~2x SDR white).
 3. **UI composite:** UI colours against SDR (same menu, PNG / JXR), the movies, a dimmed menu.
 4. Then the meter test chart and calibration, the SDR Brightness setting (dw4 / dw5 InverseGamma: probably UE's
    DisplayGamma, 2.335 in the capture [I]), the regression A/B against copy-fault-trace.

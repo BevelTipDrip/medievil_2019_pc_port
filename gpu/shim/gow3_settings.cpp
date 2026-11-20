@@ -79,6 +79,14 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         v.hdr_game_nits = value.empty() ? HdrGameNitsDefault : std::clamp(i, HdrGameNitsMin, HdrGameNitsMax);
         return;
     }
+    if (key == "hdr_peak_nits") {
+        v.hdr_peak_nits = value.empty() ? HdrPeakNitsDefault : std::clamp(i, HdrPeakNitsMin, HdrPeakNitsMax);
+        return;
+    }
+    if (key == "hdr_highlights") {
+        v.hdr_highlights = value.empty() ? HdrHighlightsDefault : std::clamp(i, 0, 100);
+        return;
+    }
     if (key == "hdr_gamma") {
         const int tenths = value == "srgb" ? 0 : int(f * 10.0f + 0.5f);
         v.hdr_gamma = HdrGammaDefault;
@@ -806,6 +814,7 @@ std::map<std::string, std::string> Serialize(const Values& v) {
     } else {
         Append(out, "hdr_gamma=%d.%d\n", g / 10, g % 10);
     }
+    Append(out, "hdr_peak_nits=%d\nhdr_highlights=%d\n", v.hdr_peak_nits.load(), v.hdr_highlights.load());
     for (int g = 0; g < GradeCount; ++g) {
         // + 0.0: a negative zero (a value stepped back to 0) is written as 0, not -0.
         Append(out, "%s=%.4g\n", GradeKey(g).c_str(), double(v.grade[g].load()) + 0.0);

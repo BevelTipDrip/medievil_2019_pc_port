@@ -12,6 +12,7 @@ Sequences:
   hdr-nearblack  raw HDR10 levels 0.005-30 nits; with --write-correction the game's near-black correction file
                  (hdr-black-correction.txt beside medievil.ini; Display > HDR > Near-black correction)
   game-grey      scene-linear greys through the game's grading (target game only)
+  game-highlights  the same from the HDR highlight knee (scene 0.5) up to 256 (Highlights / Peak brightness)
   custom         --values a,b,c (raw: 0-255 codes for SDR / nits for HDR; game: scene-linear)
 Examples:
   py -3 measure_patches.py --target game --sequence sdr-grey
@@ -44,6 +45,9 @@ SEQUENCES = {
     'hdr-nearblack': [0.005, 0.01, 0.02, 0.035, 0.05, 0.075, 0.1, 0.15, 0.2, 0.3, 0.5, 0.75, 1, 1.5, 2, 3, 5, 7.5,
                       10, 15, 20, 30],
     'game-grey': [0, 0.001, 0.003, 0.01, 0.02, 0.05, 0.1, 0.18, 0.3, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0],
+    # HDR highlights (plan-hdr-sdr-match.md step 2): the knee (0.5) and above, up to past the roll-off.
+    'game-highlights': [0.18, 0.3, 0.4, 0.5, 0.6, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 8.0, 12.0, 16.0, 24.0, 32.0, 64.0,
+                        128.0, 256.0],
 }
 
 
@@ -186,7 +190,7 @@ def main():
     args = ap.parse_args()
 
     values = [float(v) for v in args.values.split(',')] if args.sequence == 'custom' else SEQUENCES[args.sequence]
-    kind = args.kind or ('game' if args.sequence == 'game-grey' else 'raw')
+    kind = args.kind or ('game' if args.sequence in ('game-grey', 'game-highlights') else 'raw')
     if args.target == 'desktop' and kind != 'raw':
         sys.exit('the desktop shows raw SDR codes only')
     extra = []

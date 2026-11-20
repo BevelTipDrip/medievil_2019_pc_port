@@ -109,6 +109,10 @@ enum HdrLook : int { HdrLookGame = 0, HdrLookSdr = 1 };
 inline constexpr int HdrGameNitsMin = 80, HdrGameNitsMax = 500, HdrGameNitsDefault = 203;
 inline constexpr int HdrGammaValues[] = {0, 20, 21, 22, 23, 24, 25, 26};
 inline constexpr int HdrGammaDefault = 22;
+/// HDR highlights (plan-hdr-sdr-match.md step 2, ue4_hdr_map.glsl): the display's peak in nits (roll-off target) and
+/// the highlight strength in percent (0 = the SDR look only, 100 = the full extension above the knee).
+inline constexpr int HdrPeakNitsMin = 250, HdrPeakNitsMax = 4000, HdrPeakNitsDefault = 1000;
+inline constexpr int HdrHighlightsDefault = 100;
 
 struct Values {
     Values() {
@@ -127,6 +131,9 @@ struct Values {
     std::atomic<int> hdr_look{HdrLookSdr};
     std::atomic<int> hdr_game_nits{HdrGameNitsDefault};
     std::atomic<int> hdr_gamma{HdrGammaDefault};
+    /// Display peak (nits) and highlight strength (percent); live.
+    std::atomic<int> hdr_peak_nits{HdrPeakNitsDefault};
+    std::atomic<int> hdr_highlights{HdrHighlightsDefault};
     /// HDR near-black correction from a meter measurement (hdr-black-correction.txt beside medievil.ini; the
     /// presenter's final pass), opt-in: specific to one display and mode.
     std::atomic<bool> hdr_black_correction{false};

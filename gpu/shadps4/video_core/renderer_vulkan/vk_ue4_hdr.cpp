@@ -26,15 +26,20 @@ struct LutPush {
     float gamma;
     float lut_size;
     u32 flags;
+    float peak_nits;
+    float highlights;
 };
 /// ue4_pattern.frag's push constants (the layout's range is this size; LutPush fills its start).
 struct PatchPush {
     float game_nits;
     float gamma;
     u32 flags;
-    float pad;
-    float scene[4];
+    float peak_nits;
+    float highlights;
+    float pad[3];
+    float scene[4]; ///< offset 32 (a vec4 in the shader's block)
 };
+static_assert(sizeof(PatchPush) == 48 && sizeof(LutPush) <= sizeof(PatchPush));
 constexpr u32 OutputDeviceDword = 138; ///< study-hdr.md "LUT parameters"
 constexpr u32 InverseGammaDword = 5;   ///< the game's Brightness (2.2 / UE display gamma)
 } // namespace
@@ -177,6 +182,8 @@ bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache
         .gamma = float(settings.hdr_gamma.load(std::memory_order_relaxed)) / 10.0f,
         .lut_size = float(width),
         .flags = 0u,
+        .peak_nits = float(settings.hdr_peak_nits.load(std::memory_order_relaxed)),
+        .highlights = float(settings.hdr_highlights.load(std::memory_order_relaxed)) / 100.0f,
     };
     const vk::PipelineLayout pipeline_layout = *layout;
     scheduler.Record([=](vk::CommandBuffer cmdbuf) {
@@ -252,7 +259,9 @@ void Ue4HdrGrading::RunPatch(VideoCore::ImageId target, const VideoCore::Texture
         .game_nits = float(settings.hdr_game_nits.load(std::memory_order_relaxed)),
         .gamma = float(settings.hdr_gamma.load(std::memory_order_relaxed)) / 10.0f,
         .flags = hdr_output ? 1u : 0u,
-        .pad = 0.0f,
+        .peak_nits = float(settings.hdr_peak_nits.load(std::memory_order_relaxed)),
+        .highlights = float(settings.hdr_highlights.load(std::memory_order_relaxed)) / 100.0f,
+        .pad = {},
         .scene = {scene[0], scene[1], scene[2], 0.0f},
     };
     const vk::PipelineLayout pipeline_layout = *layout;
