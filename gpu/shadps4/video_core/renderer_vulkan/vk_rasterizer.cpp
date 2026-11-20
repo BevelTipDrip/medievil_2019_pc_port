@@ -1408,7 +1408,7 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
     // gow3 HDR: two relaxed loads per draw while the swapchain is SDR and no game patch is shown.
     if (ue4_hdr && (Gow3Settings::Get().hdr_active.load(std::memory_order_relaxed) || Gow3Patterns::GameActive()))
         [[unlikely]] {
-        if (ReplaceHdrGrading(pipeline)) {
+        if (ReplaceHdrGrading(pipeline) || ReplaceHdrComposite(pipeline)) {
             bind_prepared = nullptr;
             ResetBindings(false);
             return;
@@ -4897,6 +4897,74 @@ void Rasterizer::PatternAfterTonemap(const GraphicsPipeline* pipeline) {
     const Gow3Patterns::Patch patch = Gow3Patterns::Current();
     ue4_hdr->RunPatch(cb_descs[0].first, cb_descs[0].second, pattern_block, patch.value, patch.area, hdr,
                       patch.neutral_brightness);
+}
+
+bool Rasterizer::ReplaceHdrComposite(const Pipeline* pipeline) {
+    const auto stages = pipeline->GetStages();
+    const u32 fragment = static_cast<u32>(Shader::SwStage::Fragment);
+    const Shader::Info* fs = fragment < stages.size() ? stages[fragment] : nullptr;
+    if (!fs || fs->pgm_hash != Ue4HdrGrading::UiCompositePs) {
+        return false;
+    }
+    const auto& settings = Gow3Settings::Get();
+    if (!settings.hdr_active.load(std::memory_order_relaxed) ||
+        settings.hdr_look.load(std::memory_order_relaxed) != Gow3Settings::HdrLookSdr) {
+        return false; // the game's composite with the game's HDR look
+    }
+    static u32 declined = 0;
+    const auto decline = [](u32 bit, const char* why) {
+        if (!(declined & bit)) {
+            declined |= bit;
+            std::printf("UE4 HDR UI composite: the game's kept: %s\n", why);
+        }
+        return false;
+    };
+    if (!cb_descs[0].first || fs->images.size() < 2) {
+        return decline(1, "no colour target or fewer than two images");
+    }
+    // Images 0 and 1 (the IR's samples #0 and #65537): the scene (10-bit PQ) and Slate's UI (8-bit), told apart by
+    // format. Read through the game's own views (format and mapping): ue4_ui_composite.frag writes as the game does.
+    const auto is_8bit = [](vk::Format format) {
+        return format == vk::Format::eR8G8B8A8Unorm || format == vk::Format::eR8G8B8A8Srgb ||
+               format == vk::Format::eB8G8R8A8Unorm || format == vk::Format::eB8G8R8A8Srgb;
+    };
+    const PreparedStage* prepared = FindPreparedStage(*fs);
+    scheduler.EndRendering();
+    std::array<Ue4HdrGrading::CompositeInput, 2> inputs{};
+    std::array<vk::Format, 2> formats{};
+    for (u32 i = 0; i < 2; ++i) {
+        const auto& image_desc = fs->images[i];
+        const auto tsharp = prepared ? prepared->image_sharps[i] : image_desc.GetSharp(*fs);
+        if (image_desc.is_written || tsharp.Address() == 0) {
+            return decline(2, "an input is written or has no address");
+        }
+        VideoCore::TextureCache::ImageDesc desc(tsharp, image_desc);
+        const VideoCore::ImageId id = texture_cache.FindImage(desc);
+        if (!id) {
+            return decline(4, "an input image not found");
+        }
+        auto& image_view = texture_cache.FindTexture(id, desc);
+        auto& image = texture_cache.GetImage(id);
+        runtime.Transit(&image, vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader,
+                        vk::AccessFlagBits2::eShaderRead, desc.view_info.range);
+        image.usage.texture = 1u;
+        vk::ImageView view = *image_view.image_view;
+        vk::ImageLayout layout = image.backing->state.layout;
+        if (upscaler->Enabled()) {
+            upscaler->RedirectSampled(id, image_view.info, view, layout);
+        }
+        inputs[i] = {view, layout};
+        formats[i] = desc.view_info.format;
+    }
+    if (is_8bit(formats[0]) && !is_8bit(formats[1])) {
+        std::swap(inputs[0], inputs[1]);
+        std::swap(formats[0], formats[1]);
+    }
+    if (is_8bit(formats[0]) || !is_8bit(formats[1])) {
+        return decline(8, "the inputs are not one 10-bit scene and one 8-bit UI image");
+    }
+    const bool ui_srgb = formats[1] == vk::Format::eR8G8B8A8Srgb || formats[1] == vk::Format::eB8G8R8A8Srgb;
+    return ue4_hdr->RunComposite(cb_descs[0].first, cb_descs[0].second, inputs[0], inputs[1], ui_srgb);
 }
 
 bool Rasterizer::ReplaceHdrGrading(const Pipeline* pipeline) {

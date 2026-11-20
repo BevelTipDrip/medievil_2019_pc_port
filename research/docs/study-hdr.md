@@ -297,6 +297,21 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     peak (scene 64 and up) y drops to 0.326 while luminance barely moves: the user's monitor LUT (the correction for
     the screen's raised blacks and colour shifts) at the top of its range, not the port (the user, 2026-11-19).
   - The user, on screen: "it all looks good to me".
+- **H32, the UI composite (step 3) and the black menu background** (2026-11-19):
+  - Captures (replay only): `menu_frame19708.rdc` (11-17) is the weapons tab. The composite (eid 9318) gets an intact
+    scene, but the UI image is opaque everywhere (alpha min 1.0). Pixel history of a background pixel: the clear, then
+    eid 8746, a full-screen copy (no blend) of a black image writing (0, 0, 0, 1). Its chain: eid 8726 and 8736, two
+    passes of shader `8c6fbe78cd6698bb` (a blur), whose source is **the UI image itself** (just cleared). UE's
+    background-blur widget blurs what is already drawn; in SDR the UI goes onto the finished frame (the scene), in HDR
+    into its own empty image, so the blur is black and covers the screen [V]. The other menu captures have no blur.
+  - The game's composite squashes the scene under translucent UI to about (1 - a)^2, close to SDR's (1 - a)^2.2: not
+    the black background (the old lead in plan-hdr-sdr-match.md) [V maths].
+  - Channels: `draw_io.py` (now printing view swizzles) shows the composite's scene and UI views as `bgra`; the images
+    store blue first, RenderDoc's values and PNGs show that stored order (LANDMINES.md 28).
+  - Our composite (`ue4_ui_composite.frag`, release 22:45): first build through identity views: the pass-through right,
+    the BT.709 -> 2020 matrix on swapped channels, greens mint (the user's screenshot). Fixed (release 23:05): the
+    game's views, maths in true RGB, written `.bgr`. The user: "The intro movies look correct now ... the menu looks
+    like the correct color scheme" [V the user].
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.

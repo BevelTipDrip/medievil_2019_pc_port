@@ -180,6 +180,17 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
     it without `GOW3_DROP_LOG=1`). A draw the game issues once (a LUT or curve texture built at load) is then lost
     for good; its pixel program must be in `MustCompileSync`, which makes the whole draw compile on the spot
     ([particle-curve-sync-compile](stage-b/particle-curve-sync-compile.md); the HDR UI LUT, H6-H13 in study-hdr.md).
+28. **Channel order: RenderDoc's texel values are not what the shader sees** (2026-11-19, study-hdr.md H32). The port
+    stores many images in one channel order and gives the game's shaders views with a swizzle (UE4's tonemapper output
+    and Slate's UI image are read through `bgra` views), and colour-buffer exports swap back. RenderDoc's pixel
+    values, pixel history and saved PNGs show the *stored* order, so a PNG of these images shows red and blue
+    swapped (the title logo looks icy blue in RenderDoc; on screen it is orange). A host pass reading through identity
+    views does its colour maths on swapped channels: the first HDR UI composite build passed the scene through right
+    but ran BT.709 -> 2020 on swapped channels and turned greens mint. Rules: read through the game's own view (keep
+    `view_info.mapping`); write in the order the game's shader writes (its IR: which input channel feeds
+    `RenderTarget0` component 0); `draw_io.py` prints each view's swizzle and flags `<<< CHANNEL ORDER`; judge colours
+    only from the screen or the user's screenshots (logo orange, the title's night sky blue), never from RenderDoc
+    PNGs of swizzled images. Skill: `.claude/skills/renderdoc-replay`.
 
 ## Test IDs that mean more than one run
 

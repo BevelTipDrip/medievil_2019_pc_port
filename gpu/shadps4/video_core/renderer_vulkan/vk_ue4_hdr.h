@@ -4,7 +4,9 @@
 // gow3: HDR that keeps the game's SDR look (research/docs/plan-hdr-sdr-match.md). While the game outputs HDR10, its
 // scene grading LUT draw (UE 4.21's combine LUT builder, fs a4152b3be93c832a) is replaced by our own pass
 // (ue4_hdr_lut.vert / .frag): the same 32-slice LUT target, written from the game's parameter block (with the Color
-// tab's changes), the SDR-graded colour at the game brightness in BT.2020 PQ. Menu: Display > HDR > HDR look.
+// tab's changes), the SDR-graded colour at the game brightness in BT.2020 PQ. Its UI composite (fs c401ca35f9bceb8e)
+// is replaced by ue4_ui_composite.frag: the UI as an SDR screen shows it at the UI brightness, blended as SDR blends.
+// Menu: Display > HDR > HDR look.
 
 #pragma once
 
@@ -31,6 +33,14 @@ public:
     /// UE 4.21's combine LUT builder (MediEvil 01.00 / 01.02) and its parameter block size.
     static constexpr u64 LutBuilderPs = 0xa4152b3be93c832aull;
     static constexpr u32 ParamDwords = 144;
+    /// UE 4.21's HDR UI composite (scene PQ + Slate's UI image -> the display buffer).
+    static constexpr u64 UiCompositePs = 0xc401ca35f9bceb8eull;
+
+    /// A sampled input of the UI composite: its view (identity mapping) and layout.
+    struct CompositeInput {
+        vk::ImageView view;
+        vk::ImageLayout layout;
+    };
 
     Ue4HdrGrading(const Instance& instance, Scheduler& scheduler, VideoCore::TextureCache& texture_cache,
                   VideoCore::BufferCache& buffer_cache, Runtime& runtime);
@@ -50,22 +60,30 @@ public:
                   const std::array<u32, ParamDwords>& block, const float scene[3], float area, bool hdr_output,
                   bool neutral_brightness = false);
 
+    /// Records our UI composite into the game's composite target (`target`, `desc`) from the scene (the tonemapper's
+    /// PQ output) and Slate's UI image (`ui_srgb`: its view decodes sRGB). True: written, the game's draw is skipped.
+    bool RunComposite(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc,
+                      const CompositeInput& scene, const CompositeInput& ui, bool ui_srgb);
+
 private:
-    vk::Pipeline Pipeline(vk::Format format, bool patch = false);
+    enum class Kind : u8 { Lut, Patch, Composite };
+    vk::Pipeline Pipeline(vk::Format format, Kind kind = Kind::Lut);
 
     const Instance& instance;
     Scheduler& scheduler;
     VideoCore::TextureCache& texture_cache;
     VideoCore::BufferCache& buffer_cache;
     Runtime& runtime;
-    vk::UniqueShaderModule vert, frag, patch_frag;
-    vk::UniqueDescriptorSetLayout set_layout;
-    vk::UniquePipelineLayout layout;
-    std::vector<std::pair<std::pair<vk::Format, bool>, vk::UniquePipeline>> pipelines;
+    vk::UniqueShaderModule vert, frag, patch_frag, composite_frag;
+    vk::UniqueDescriptorSetLayout set_layout, composite_set_layout;
+    vk::UniquePipelineLayout layout, composite_layout;
+    std::vector<std::pair<std::pair<vk::Format, Kind>, vk::UniquePipeline>> pipelines;
     u64 runs = 0;
     bool failed = false;
     bool brightness_noted = false; ///< the game's Brightness logged once
     u64 patch_runs = 0;
+    u64 composite_runs = 0;
+    bool composite_failed = false;
 };
 
 } // namespace Vulkan

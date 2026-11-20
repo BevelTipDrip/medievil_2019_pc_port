@@ -480,6 +480,7 @@ private:
     /// gow3 HDR (plan-hdr-sdr-match.md): the game's grading LUT draw replaced by Ue4HdrGrading while the game
     /// outputs HDR10 and the HDR look is the SDR one. Before BindResources. True: written, skip the draw.
     bool ReplaceHdrGrading(const Pipeline* pipeline);
+    bool ReplaceHdrComposite(const Pipeline* pipeline);
     /// gow3 test patterns (gow3_patterns.h "game" mode): after the tonemapper's draw, the patch over its output.
     void PatternAfterTonemap(const GraphicsPipeline* pipeline);
     /// GOW3_GPU_PROFILE: a timestamp where a render pass starts (vk_gpu_profiler.h).

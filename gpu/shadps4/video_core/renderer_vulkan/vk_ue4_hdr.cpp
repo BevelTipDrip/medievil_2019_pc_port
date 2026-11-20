@@ -12,6 +12,7 @@
 #include "video_core/host_shaders/ue4_hdr_lut_frag.h"
 #include "video_core/host_shaders/ue4_hdr_lut_vert.h"
 #include "video_core/host_shaders/ue4_pattern_frag.h"
+#include "video_core/host_shaders/ue4_ui_composite_frag.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_runtime.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -40,6 +41,14 @@ struct PatchPush {
     float scene[4]; ///< offset 32 (a vec4 in the shader's block)
 };
 static_assert(sizeof(PatchPush) == 48 && sizeof(LutPush) <= sizeof(PatchPush));
+/// ue4_ui_composite.frag's push constants.
+struct CompositePush {
+    float target_size[2];
+    float ui_nits;
+    float gamma;
+    u32 flags;
+};
+static_assert(sizeof(CompositePush) == 20);
 constexpr u32 OutputDeviceDword = 138; ///< study-hdr.md "LUT parameters"
 constexpr u32 InverseGammaDword = 5;   ///< the game's Brightness (2.2 / UE display gamma)
 } // namespace
@@ -53,6 +62,7 @@ Ue4HdrGrading::Ue4HdrGrading(const Instance& instance_, Scheduler& scheduler_,
     vert = vk::UniqueShaderModule(CompileSPV(UE4_HDR_LUT_VERT, device), device);
     frag = vk::UniqueShaderModule(CompileSPV(UE4_HDR_LUT_FRAG, device), device);
     patch_frag = vk::UniqueShaderModule(CompileSPV(UE4_PATTERN_FRAG, device), device);
+    composite_frag = vk::UniqueShaderModule(CompileSPV(UE4_UI_COMPOSITE_FRAG, device), device);
     const vk::DescriptorSetLayoutBinding binding{0, vk::DescriptorType::eStorageBuffer, 1,
                                                  vk::ShaderStageFlagBits::eFragment};
     set_layout = Check(device.createDescriptorSetLayoutUnique({
@@ -68,6 +78,24 @@ Ue4HdrGrading::Ue4HdrGrading(const Instance& instance_, Scheduler& scheduler_,
         .pushConstantRangeCount = 1,
         .pPushConstantRanges = &push,
     }));
+    // The UI composite: two sampled images (scene, UI; texelFetch, no sampler).
+    const std::array composite_bindings{
+        vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eSampledImage, 1, vk::ShaderStageFlagBits::eFragment},
+        vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eSampledImage, 1, vk::ShaderStageFlagBits::eFragment},
+    };
+    composite_set_layout = Check(device.createDescriptorSetLayoutUnique({
+        .flags = vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR,
+        .bindingCount = u32(composite_bindings.size()),
+        .pBindings = composite_bindings.data(),
+    }));
+    const auto composite_set = *composite_set_layout;
+    const vk::PushConstantRange composite_push{vk::ShaderStageFlagBits::eFragment, 0, sizeof(CompositePush)};
+    composite_layout = Check(device.createPipelineLayoutUnique({
+        .setLayoutCount = 1,
+        .pSetLayouts = &composite_set,
+        .pushConstantRangeCount = 1,
+        .pPushConstantRanges = &composite_push,
+    }));
 }
 
 Ue4HdrGrading::~Ue4HdrGrading() = default;
@@ -81,9 +109,9 @@ bool Ue4HdrGrading::Wanted(const std::array<u32, ParamDwords>& block) {
     return device >= 3 && device <= 6; // the ST-2084 / scRGB devices: the LUT indexed by PQ
 }
 
-vk::Pipeline Ue4HdrGrading::Pipeline(vk::Format format, bool patch) {
+vk::Pipeline Ue4HdrGrading::Pipeline(vk::Format format, Kind kind) {
     for (const auto& [key, pipeline] : pipelines) {
-        if (key.first == format && key.second == patch) {
+        if (key.first == format && key.second == kind) {
             return *pipeline;
         }
     }
@@ -95,7 +123,10 @@ vk::Pipeline Ue4HdrGrading::Pipeline(vk::Format format, bool patch) {
     const std::array stages{
         vk::PipelineShaderStageCreateInfo{.stage = vk::ShaderStageFlagBits::eVertex, .module = *vert, .pName = "main"},
         vk::PipelineShaderStageCreateInfo{.stage = vk::ShaderStageFlagBits::eFragment,
-                                          .module = patch ? *patch_frag : *frag, .pName = "main"},
+                                          .module = kind == Kind::Patch       ? *patch_frag
+                                                    : kind == Kind::Composite ? *composite_frag
+                                                                              : *frag,
+                                          .pName = "main"},
     };
     const vk::PipelineRenderingCreateInfo rendering{.colorAttachmentCount = 1, .pColorAttachmentFormats = &format};
     const vk::PipelineColorBlendAttachmentState blend{
@@ -119,7 +150,7 @@ vk::Pipeline Ue4HdrGrading::Pipeline(vk::Format format, bool patch) {
                             .pDepthStencilState = &depth_state,
                             .pColorBlendState = &color_blending,
                             .pDynamicState = &dynamic_info,
-                            .layout = *layout,
+                            .layout = kind == Kind::Composite ? *composite_layout : *layout,
                         });
     if (pipeline.result != vk::Result::eSuccess) {
         std::printf("UE4 HDR grading: pipeline for format %s failed; the game's grading LUT is kept\n",
@@ -127,7 +158,7 @@ vk::Pipeline Ue4HdrGrading::Pipeline(vk::Format format, bool patch) {
         return {};
     }
     const vk::Pipeline result = *pipeline.value;
-    pipelines.emplace_back(std::pair{format, patch}, std::move(pipeline.value));
+    pipelines.emplace_back(std::pair{format, kind}, std::move(pipeline.value));
     std::printf("UE4 HDR grading: pipeline ready (%s)\n", vk::to_string(format).c_str());
     return result;
 }
@@ -230,7 +261,7 @@ void Ue4HdrGrading::RunPatch(VideoCore::ImageId target, const VideoCore::Texture
     if (!target) {
         return;
     }
-    const vk::Pipeline pipeline = Pipeline(desc.view_info.format, true);
+    const vk::Pipeline pipeline = Pipeline(desc.view_info.format, Kind::Patch);
     if (!pipeline) {
         return;
     }
@@ -296,6 +327,78 @@ void Ue4HdrGrading::RunPatch(VideoCore::ImageId target, const VideoCore::Texture
         std::printf("Patterns: game patch over the tonemapper's output (%ux%u %s, %s)\n", width, height,
                     vk::to_string(desc.view_info.format).c_str(), hdr_output ? "HDR" : "SDR");
     }
+}
+
+bool Ue4HdrGrading::RunComposite(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc,
+                                 const CompositeInput& scene, const CompositeInput& ui, bool ui_srgb) {
+    if (composite_failed || !target || !scene.view || !ui.view) {
+        return false;
+    }
+    const vk::Pipeline pipeline = Pipeline(desc.view_info.format, Kind::Composite);
+    if (!pipeline) {
+        composite_failed = true;
+        return false;
+    }
+    const auto& range = desc.view_info.range;
+    const u32 width = std::max(desc.info.size.width >> range.base.level, 1u);
+    const u32 height = std::max(desc.info.size.height >> range.base.level, 1u);
+    scheduler.EndRendering();
+    const vk::ImageView view = *texture_cache.FindRenderTarget(target, desc).image_view;
+    runtime.Transit(&texture_cache.GetImage(target), vk::ImageLayout::eColorAttachmentOptimal,
+                    vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite,
+                    range);
+    runtime.FlushBarriers();
+    const auto& settings = Gow3Settings::Get();
+    const CompositePush push{
+        .target_size = {float(width), float(height)},
+        .ui_nits = float(settings.hdr_ui_nits.load(std::memory_order_relaxed)),
+        .gamma = float(settings.hdr_gamma.load(std::memory_order_relaxed)) / 10.0f,
+        .flags = ui_srgb ? 1u : 0u,
+    };
+    const vk::PipelineLayout pipeline_layout = *composite_layout;
+    scheduler.Record([=](vk::CommandBuffer cmdbuf) {
+        const vk::RenderingAttachmentInfo attachment{
+            .imageView = view,
+            .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
+            .loadOp = vk::AttachmentLoadOp::eDontCare,
+            .storeOp = vk::AttachmentStoreOp::eStore,
+        };
+        cmdbuf.beginRendering({
+            .renderArea = {{0, 0}, {width, height}},
+            .layerCount = 1,
+            .colorAttachmentCount = 1,
+            .pColorAttachments = &attachment,
+        });
+        const std::array infos{
+            vk::DescriptorImageInfo{VK_NULL_HANDLE, scene.view, scene.layout},
+            vk::DescriptorImageInfo{VK_NULL_HANDLE, ui.view, ui.layout},
+        };
+        const std::array writes{
+            vk::WriteDescriptorSet{.dstBinding = 0,
+                                   .descriptorCount = 1,
+                                   .descriptorType = vk::DescriptorType::eSampledImage,
+                                   .pImageInfo = &infos[0]},
+            vk::WriteDescriptorSet{.dstBinding = 1,
+                                   .descriptorCount = 1,
+                                   .descriptorType = vk::DescriptorType::eSampledImage,
+                                   .pImageInfo = &infos[1]},
+        };
+        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, writes);
+        cmdbuf.pushConstants(pipeline_layout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(push), &push);
+        cmdbuf.setViewportWithCount(vk::Viewport{0.f, 0.f, float(width), float(height), 0.f, 1.f});
+        cmdbuf.setScissorWithCount(vk::Rect2D{{0, 0}, {width, height}});
+        cmdbuf.draw(3, 1, 0, 0);
+        cmdbuf.endRendering();
+    });
+    scheduler.GetDynamicState().Invalidate();
+    if (++composite_runs == 1) {
+        std::printf("UE4 HDR UI composite: ours (%ux%u %s; UI %.0f nits, gamma %s%s)\n", width, height,
+                    vk::to_string(desc.view_info.format).c_str(), push.ui_nits,
+                    push.gamma > 0.0f ? std::to_string(push.gamma).substr(0, 3).c_str() : "off (sRGB)",
+                    ui_srgb ? ", UI view sRGB" : "");
+    }
+    return true;
 }
 
 } // namespace Vulkan

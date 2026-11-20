@@ -28,6 +28,33 @@ def fields(obj, names):
     return ' '.join(parts)
 
 
+SWZ = {'Red': 'r', 'Green': 'g', 'Blue': 'b', 'Alpha': 'a', 'Zero': '0', 'One': '1'}
+
+
+def channel_view(view_fmt, swizzle, image_fmt):
+    """The view's format and swizzle against the image's format, with a CHANNEL ORDER flag when the shader sees the
+    channels in another order than RenderDoc's texel values and PNGs (which show the image's storage order).
+    LANDMINES.md "Channel order": never reason about red / blue from texel values alone."""
+    parts, differs = [], False
+    try:
+        parts.append(f'fmt {view_fmt.Name()}')
+        if image_fmt is not None and view_fmt.BGRAOrder() != image_fmt.BGRAOrder():
+            differs = True
+            parts.append('(BGRA order differs from the image)')
+    except Exception:
+        pass
+    try:
+        s = ''.join(SWZ.get(str(getattr(swizzle, c)).split('.')[-1], '?') for c in ('red', 'green', 'blue', 'alpha'))
+        parts.append(f'swizzle {s}')
+        if s[:3] not in ('rgb',):
+            differs = True
+    except Exception:
+        pass
+    if differs:
+        parts.append('<<< CHANNEL ORDER: shader sees channels reordered vs the stored texels')
+    return ' '.join(parts)
+
+
 def used_list(fn, stage):
     try:
         return fn(stage, True)
@@ -122,8 +149,12 @@ def main():
                 for used in used_list(fn, stage):
                     d = used.descriptor
                     a = used.access
-                    extra = fields(d, ['byteOffset', 'byteSize']) if kind == 'cbuf' or int(d.resource) in [int(x) for x in buffers] \
-                        else fields(d, ['format', 'firstMip', 'numMips', 'firstSlice', 'numSlices'])
+                    if kind == 'cbuf' or int(d.resource) in [int(x) for x in buffers]:
+                        extra = fields(d, ['byteOffset', 'byteSize'])
+                    else:
+                        t = textures.get(d.resource)
+                        extra = channel_view(d.format, getattr(d, 'swizzle', None), t.format if t else None) + ' ' + \
+                            fields(d, ['firstMip', 'numMips', 'firstSlice', 'numSlices'])
                     lines.append(f'    {kind:5s} {bind_of(lst, a)} -> {res(d.resource)} | view {int(getattr(d, "view", 0))} {extra}')
         if not compute:
             for i, vs in enumerate(vk.viewportScissor.viewportScissors):
@@ -134,7 +165,9 @@ def main():
             for o in pipe.GetOutputTargets():
                 rid = getattr(o, 'resource', None)
                 if rid is not None and rid != rd.ResourceId.Null():
-                    lines.append(f'  color out {res(rid)} | view fmt {o.format.Name()} mip {o.firstMip} slice {o.firstSlice}')
+                    t = textures.get(rid)
+                    lines.append(f'  color out {res(rid)} | view {channel_view(o.format, None, t.format if t else None)}'
+                                 f' mip {o.firstMip} slice {o.firstSlice}')
             dt = pipe.GetDepthTarget()
             if dt.resource != rd.ResourceId.Null():
                 lines.append(f'  depth out {res(dt.resource)}')

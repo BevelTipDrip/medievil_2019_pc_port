@@ -80,6 +80,11 @@ record per frame each. SDR: nothing changes. Diagnostics behind `GOW3_DEV_TOOLS`
    Settings: Peak brightness (`hdr_peak_nits`, 250-4000, default 1000; no Auto yet) and Highlights (`hdr_highlights`,
    0-100 %, default 100; 0 = step 1's output while the peak is at least ~2x SDR white).
 3. **UI composite:** UI colours against SDR (same menu, PNG / JXR), the movies, a dimmed menu.
+   **Composite built and run 2026-11-19 (study-hdr.md H32):** `ue4_ui_composite.frag` replaces `c401ca35f9bceb8e`
+   with "SDR grading kept": UI decoded at Gamma, at UI brightness, BT.709 -> 2020, blended over the scene in the 2.2
+   signal (white = UI brightness), the scene untouched where the UI is empty; one full-screen pass. The user: movies
+   and menu colours correct. Left: the black background behind blurred menus (the blur reads the empty HDR UI image;
+   fix: give its first pass the scene in SDR with the UI so far), the game's Brightness on the UI (lock to neutral).
 4. Then the meter test chart and calibration, the SDR Brightness setting (dw4 / dw5 InverseGamma: probably UE's
    DisplayGamma, 2.335 in the capture [I]), the regression A/B against copy-fault-trace.
 
