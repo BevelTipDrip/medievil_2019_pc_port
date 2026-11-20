@@ -320,8 +320,9 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
   - The map screen's level-select and back-to-main-menu popups stayed black. RenderDoc (`research-data/
     hdr-blur-menus-20261120/mapmenu_frame20618.rdc`, `26047`): a second first pass, `8c6fbe7824203398` (eid 7690),
     downsamples the UI image (1093) to 1920x1080, then the blur `8c6fbe78cd6698bb` runs twice at half size (7700,
-    7710) and eid 7722 copies the result back [V]. Fix built (release 00:27): both first passes recognised. The
-    user's 00:47 run logged no backdrop line (no blurred menu opened, or the fix did not fire): not yet run.
+    7710) and eid 7722 copies the result back [V]. Fix (release 00:27): both first passes recognised. Run
+    00:44-00:47 (`user/logs/runs/run-20261120-004741`, `background blur reads our backdrop`): the user: both popups
+    worked [V the user].
   - The game's Brightness reaches the UI too: every Slate pixel shader runs `if (cb[1] != 1) sRGB_encode(pow(c,
     cb[0]))` (fs `4fe20af683865713` IR); cb = (1.35385, 0.615385) in `menu_frame19708` = 2.2 / display gamma and its
     inverse, the grading block's dword 4 / 5 at the same setting [V]. The user's choice: no shader change; the

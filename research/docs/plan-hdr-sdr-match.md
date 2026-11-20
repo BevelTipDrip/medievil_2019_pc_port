@@ -86,7 +86,7 @@ record per frame each. SDR: nothing changes. Diagnostics behind `GOW3_DEV_TOOLS`
    and menu colours correct. Left: the black background behind blurred menus (the blur reads the empty HDR UI image;
    fix: give its first pass the scene in SDR with the UI so far), the game's Brightness on the UI (lock to neutral).
    **2026-11-20 (H33):** the blur backdrop built; the weapons tab fixed (the user); the map popups' half-size variant
-   added (fix built, not yet run). The game's Brightness: the launcher's "Set to neutral" (save slots) plus a note in
+   added; the user: both work. The game's Brightness: the launcher's "Set to neutral" (save slots) plus a note in
    the UI brightness help; no shader change (the user's choice).
 4. Then the meter test chart and calibration, the SDR Brightness setting (dw4 / dw5 InverseGamma: probably UE's
    DisplayGamma, 2.335 in the capture [I]), the regression A/B against copy-fault-trace.

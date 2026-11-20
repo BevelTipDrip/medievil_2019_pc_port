@@ -166,7 +166,7 @@ within 1-4%; Highlights 100 identical up to the knee, smooth above it, flat at t
 the screen's 0.94 tracking); the user: "it all looks good to me". H32 (2026-11-19): the UI composite; movies and menu
 colours correct after the channel fix (the user); the black blurred-menu background traced to the blur reading the
 empty HDR UI image. H33 (2026-11-20): the backdrop; the weapons tab fixed (the user); the map popups' half-size
-first pass found in RenderDoc and added (fix built).
+first pass found in RenderDoc and added; the user: both popups work.
 
 ## History and pitfalls
 
