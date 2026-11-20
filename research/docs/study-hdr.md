@@ -330,6 +330,23 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     save slot (`scripts/save_brightness.py`: backup first, 4 bytes in place, file times kept; the slider steps 0.02
     from that default; slots without the property are at the default), and the UI brightness help says to leave the
     slider at its default.
+- **H34, regression A/B against copy-fault-trace `22744f1`** (2026-11-20; release builds of both, saved in
+  `C:\Users\Ty\MediEvil\baselines`; the user's graveyard run, Windows HDR on, flip trace on, periodic FPS line off;
+  traces and logs in `research-data/regression-hdr-20261120`, figure `regression-4runs.png`). 105 s of gameplay from
+  5 s after the level load:
+
+  | Run | avg FPS | 1% | 0.1% | >6 ms / min | worst ms |
+  |---|---|---|---|---|---|
+  | A baseline, SDR | 219.6 | 152.7 | 128.1 | 114 | 13.5, 7.8, 7.7 |
+  | B hdr, SDR | 218.1 | 148.0 | 127.0 | 279 | 12.4, 12.3, 7.9 |
+  | B2 hdr, SDR (repeat) | 219.1 | 147.2 | 82.1 | 75 | 14.2, 14.1, 14.0 |
+  | C hdr, HDR on | 215.5 | 170.3 | 149.7 | 13 | 12.1, 11.9, 6.5 |
+
+  The frames over 6 ms are smooth 1-2 s rises in the fight; how high depends on the camera (the heavy background in
+  view) and on how many enemies die at once (the user), so they swing 2-4x between runs of one build. B2's 0.1% low
+  is one burst at 115 s (~30 frames 6-14 ms in half a second; `flip_slow_stages.py`: game + stage A +3.8 ms each,
+  recording and present unchanged; nothing in the log): cause not found, seen once. Read: SDR within 0.2-0.7% of
+  the baseline, HDR output ~1.7% [V run; the user: run-to-run variance].
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.
