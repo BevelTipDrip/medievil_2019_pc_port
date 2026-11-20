@@ -312,6 +312,23 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     the BT.709 -> 2020 matrix on swapped channels, greens mint (the user's screenshot). Fixed (release 23:05): the
     game's views, maths in true RGB, written `.bgr`. The user: "The intro movies look correct now ... the menu looks
     like the correct color scheme" [V the user].
+- **H33, the blur backdrop and the game's Brightness on the UI** (2026-11-19 / 20):
+  - Backdrop (release 23:45): before the blur's first pass samples the HDR UI image, our pass (the composite shader,
+    flag 2) writes the UI so far over the scene in the SDR signal into a 4K RGBA8 image, and only that draw samples it
+    (`PrepareHdrBlur`, patched into `BindTextures`, that draw kept off the bind helper). Log: `background blur reads
+    our backdrop`. The user: the weapons tab fixed [V the user].
+  - The map screen's level-select and back-to-main-menu popups stayed black. RenderDoc (`research-data/
+    hdr-blur-menus-20261120/mapmenu_frame20618.rdc`, `26047`): a second first pass, `8c6fbe7824203398` (eid 7690),
+    downsamples the UI image (1093) to 1920x1080, then the blur `8c6fbe78cd6698bb` runs twice at half size (7700,
+    7710) and eid 7722 copies the result back [V]. Fix built (release 00:27): both first passes recognised. The
+    user's 00:47 run logged no backdrop line (no blurred menu opened, or the fix did not fire): not yet run.
+  - The game's Brightness reaches the UI too: every Slate pixel shader runs `if (cb[1] != 1) sRGB_encode(pow(c,
+    cb[0]))` (fs `4fe20af683865713` IR); cb = (1.35385, 0.615385) in `menu_frame19708` = 2.2 / display gamma and its
+    inverse, the grading block's dword 4 / 5 at the same setting [V]. The user's choice: no shader change; the
+    launcher's Display > Game brightness > Set to neutral writes the default 0.3778 (display gamma 2.2) into every
+    save slot (`scripts/save_brightness.py`: backup first, 4 bytes in place, file times kept; the slider steps 0.02
+    from that default; slots without the property are at the default), and the UI brightness help says to leave the
+    slider at its default.
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.

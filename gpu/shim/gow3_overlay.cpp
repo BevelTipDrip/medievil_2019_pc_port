@@ -1450,8 +1450,9 @@ void DisplayTab() {
         if (BeginRows("##hdr")) {
             const int nits = s.hdr_ui_nits;
             const int next = IntSliderRow("UI brightness", nits, S::HdrUiNitsMin, S::HdrUiNitsMax, 10, "%d nits",
-                                          "Brightness of the game's menus, HUD and subtitles, and of this menu. Lower "
-                                          "it to spare an OLED screen; 100 is the game's own.");
+                                          "Brightness of the game's menus, HUD and subtitles, and of this menu (100 = "
+                                          "the game's own). The game's own Brightness slider (Options > Brightness) "
+                                          "also affects the UI: leave it at its default.");
             // On steps of 10 (a mouse drag too): each value is its own overlay pipeline (HdrPipeline).
             if (const int snapped = (next + 5) / 10 * 10; snapped != nits) {
                 s.hdr_ui_nits = snapped;

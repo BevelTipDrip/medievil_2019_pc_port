@@ -1413,6 +1413,7 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
             ResetBindings(false);
             return;
         }
+        PrepareHdrBlur(pipeline);
     }
     const PreparedDraw* draw_prepared = bind_prepared;
     // gow3: vertex and index buffers are resolved while the helper binds textures (their
@@ -1420,6 +1421,7 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
     draw_inputs = {pipeline, draw_prepared, index_offset, is_indexed, true, false};
     const bool bound = BindResources(pipeline);
     bind_prepared = nullptr; // indirect draws and dispatches bind without prepared sharps
+    hdr_blur_view = VK_NULL_HANDLE; // gow3 HDR: the backdrop serves this draw only
     const bool inputs_resolved = draw_inputs.resolved;
     draw_inputs.pending = false;
     if (!bound) {
@@ -1994,6 +1996,9 @@ bool Rasterizer::HelperEligible(const Pipeline* pipeline) const {
 
 bool Rasterizer::TexturesBindableOnHelper(const Shader::Info& stage,
                                           const PreparedStage* prepared) {
+    if (hdr_blur_view) [[unlikely]] {
+        return false; // gow3 HDR: the blur's backdrop is patched in on the draw thread (BindTextures)
+    }
     const u64 generation = texture_cache.RegistryGeneration();
     for (u32 image_index = 0; image_index < stage.images.size(); ++image_index) {
         const auto& image_desc = stage.images[image_index];
@@ -2846,7 +2851,17 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
     GOW3_SECTION(BindTextures);
     const u32 first_image_idx = image_infos.size();
     TextureSetSlot set_slot;
+    // gow3 HDR (PrepareHdrBlur): the background blur's first pass samples our backdrop instead of the HDR UI image.
+    // Its stage has one image; the kept set still records the game's view.
+    const auto blur_backdrop = [&] {
+        if (hdr_blur_view && Ue4HdrGrading::IsUiBlurFirstPass(stage.pgm_hash) && stage.images.size() == 1 &&
+            image_infos.size() > first_image_idx) [[unlikely]] {
+            image_infos[first_image_idx] =
+                vk::DescriptorImageInfo{VK_NULL_HANDLE, hdr_blur_view, vk::ImageLayout::eShaderReadOnlyOptimal};
+        }
+    };
     if (!on_helper && BindTexturesFromSet(stage, prepared, first_image_idx, barrier, set_slot)) {
+        blur_backdrop();
         // Descriptor writes: one per image (no mip arrays in a memoized set).
         for (u32 i = 0; i < stage.images.size(); ++i) {
             auto& set_write = set_writes[write_index++];
@@ -3170,6 +3185,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
             }
         }
     }
+    blur_backdrop();
     if (set_ok && image_bindings.size() == stage.images.size() &&
         (!TextureSetRegions() || texture_cache.RegistryGeneration() == bind_generation)) {
         // Remember the set: the same T#s resolve the same way while no image is (un)registered
@@ -4932,6 +4948,8 @@ bool Rasterizer::ReplaceHdrComposite(const Pipeline* pipeline) {
     scheduler.EndRendering();
     std::array<Ue4HdrGrading::CompositeInput, 2> inputs{};
     std::array<vk::Format, 2> formats{};
+    std::array<std::optional<VideoCore::TextureCache::ImageDesc>, 2> descs{};
+    std::array<VAddr, 2> addresses{};
     for (u32 i = 0; i < 2; ++i) {
         const auto& image_desc = fs->images[i];
         const auto tsharp = prepared ? prepared->image_sharps[i] : image_desc.GetSharp(*fs);
@@ -4955,16 +4973,70 @@ bool Rasterizer::ReplaceHdrComposite(const Pipeline* pipeline) {
         }
         inputs[i] = {view, layout};
         formats[i] = desc.view_info.format;
+        descs[i] = desc;
+        addresses[i] = tsharp.Address();
     }
     if (is_8bit(formats[0]) && !is_8bit(formats[1])) {
         std::swap(inputs[0], inputs[1]);
         std::swap(formats[0], formats[1]);
+        std::swap(descs[0], descs[1]);
+        std::swap(addresses[0], addresses[1]);
     }
     if (is_8bit(formats[0]) || !is_8bit(formats[1])) {
         return decline(8, "the inputs are not one 10-bit scene and one 8-bit UI image");
     }
     const bool ui_srgb = formats[1] == vk::Format::eR8G8B8A8Srgb || formats[1] == vk::Format::eB8G8R8A8Srgb;
+    hdr_scene_desc = descs[0];
+    hdr_ui_address = addresses[1];
     return ue4_hdr->RunComposite(cb_descs[0].first, cb_descs[0].second, inputs[0], inputs[1], ui_srgb);
+}
+
+void Rasterizer::PrepareHdrBlur(const Pipeline* pipeline) {
+    hdr_blur_view = VK_NULL_HANDLE;
+    if (!hdr_ui_address || !hdr_scene_desc) {
+        return; // no UI composite of ours seen yet
+    }
+    const auto stages = pipeline->GetStages();
+    const u32 fragment = static_cast<u32>(Shader::SwStage::Fragment);
+    const Shader::Info* fs = fragment < stages.size() ? stages[fragment] : nullptr;
+    if (!fs || !Ue4HdrGrading::IsUiBlurFirstPass(fs->pgm_hash) || fs->images.size() != 1) {
+        return;
+    }
+    const auto& settings = Gow3Settings::Get();
+    if (!settings.hdr_active.load(std::memory_order_relaxed) ||
+        settings.hdr_look.load(std::memory_order_relaxed) != Gow3Settings::HdrLookSdr) {
+        return;
+    }
+    // Only the pass that samples the HDR UI image (the later passes sample the first's output).
+    const PreparedStage* prepared = FindPreparedStage(*fs);
+    const auto tsharp = prepared ? prepared->image_sharps[0] : fs->images[0].GetSharp(*fs);
+    if (tsharp.Address() != hdr_ui_address) {
+        return;
+    }
+    scheduler.EndRendering();
+    // Both inputs through the game's views (true RGB), as in ReplaceHdrComposite.
+    const auto resolve = [&](VideoCore::TextureCache::ImageDesc& desc) -> Ue4HdrGrading::CompositeInput {
+        const VideoCore::ImageId id = texture_cache.FindImage(desc);
+        if (!id) {
+            return {};
+        }
+        auto& image_view = texture_cache.FindTexture(id, desc);
+        auto& image = texture_cache.GetImage(id);
+        runtime.Transit(&image, vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader,
+                        vk::AccessFlagBits2::eShaderRead, desc.view_info.range);
+        image.usage.texture = 1u;
+        vk::ImageView view = *image_view.image_view;
+        vk::ImageLayout layout = image.backing->state.layout;
+        if (upscaler->Enabled()) {
+            upscaler->RedirectSampled(id, image_view.info, view, layout);
+        }
+        return {view, layout};
+    };
+    VideoCore::TextureCache::ImageDesc ui_desc(tsharp, fs->images[0]);
+    VideoCore::TextureCache::ImageDesc scene_desc = *hdr_scene_desc;
+    const auto ui = resolve(ui_desc);
+    const auto scene = resolve(scene_desc);
+    hdr_blur_view = ue4_hdr->RunBackdrop(scene, ui, ui_desc.info.size.width, ui_desc.info.size.height);
 }
 
 bool Rasterizer::ReplaceHdrGrading(const Pipeline* pipeline) {

@@ -401,4 +401,122 @@ bool Ue4HdrGrading::RunComposite(VideoCore::ImageId target, const VideoCore::Tex
     return true;
 }
 
+vk::ImageView Ue4HdrGrading::RunBackdrop(const CompositeInput& scene, const CompositeInput& ui, u32 width,
+                                         u32 height) {
+    constexpr vk::Format format = vk::Format::eR8G8B8A8Unorm;
+    if (composite_failed || !scene.view || !ui.view || !width || !height) {
+        return {};
+    }
+    const vk::Pipeline pipeline = Pipeline(format, Kind::Composite);
+    if (!pipeline) {
+        return {};
+    }
+    const auto device = instance.GetDevice();
+    if (!backdrop_view || backdrop_width != width || backdrop_height != height) {
+        if (backdrop_view) {
+            struct Old {
+                VideoCore::UniqueImage image;
+                vk::UniqueImageView view;
+            };
+            auto old = std::make_shared<Old>(Old{std::move(backdrop), std::move(backdrop_view)});
+            scheduler.DeferOperation([old] {});
+        }
+        backdrop = VideoCore::UniqueImage(device, instance.GetAllocator());
+        backdrop.Create({
+            .imageType = vk::ImageType::e2D,
+            .format = format,
+            .extent = {width, height, 1},
+            .mipLevels = 1,
+            .arrayLayers = 1,
+            .samples = vk::SampleCountFlagBits::e1,
+            .tiling = vk::ImageTiling::eOptimal,
+            .usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
+        });
+        backdrop_view = Check(device.createImageViewUnique({
+            .image = vk::Image(backdrop),
+            .viewType = vk::ImageViewType::e2D,
+            .format = format,
+            .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
+        }));
+        backdrop_width = width;
+        backdrop_height = height;
+    }
+    scheduler.EndRendering();
+    runtime.FlushBarriers(); // the inputs' transitions (PrepareHdrBlur)
+    const auto& settings = Gow3Settings::Get();
+    const CompositePush push{
+        .target_size = {float(width), float(height)},
+        .ui_nits = float(settings.hdr_ui_nits.load(std::memory_order_relaxed)),
+        .gamma = float(settings.hdr_gamma.load(std::memory_order_relaxed)) / 10.0f,
+        .flags = 2u,
+    };
+    const vk::PipelineLayout pipeline_layout = *composite_layout;
+    const vk::Image image = vk::Image(backdrop);
+    const vk::ImageView view = *backdrop_view;
+    scheduler.Record([=](vk::CommandBuffer cmdbuf) {
+        const vk::ImageSubresourceRange range{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+        const vk::ImageMemoryBarrier2 to_write{
+            .srcStageMask = vk::PipelineStageFlagBits2::eFragmentShader,
+            .srcAccessMask = vk::AccessFlagBits2::eShaderRead,
+            .dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+            .dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
+            .oldLayout = vk::ImageLayout::eUndefined, // fully rewritten
+            .newLayout = vk::ImageLayout::eColorAttachmentOptimal,
+            .image = image,
+            .subresourceRange = range,
+        };
+        cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &to_write});
+        const vk::RenderingAttachmentInfo attachment{
+            .imageView = view,
+            .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
+            .loadOp = vk::AttachmentLoadOp::eDontCare,
+            .storeOp = vk::AttachmentStoreOp::eStore,
+        };
+        cmdbuf.beginRendering({
+            .renderArea = {{0, 0}, {width, height}},
+            .layerCount = 1,
+            .colorAttachmentCount = 1,
+            .pColorAttachments = &attachment,
+        });
+        const std::array infos{
+            vk::DescriptorImageInfo{VK_NULL_HANDLE, scene.view, scene.layout},
+            vk::DescriptorImageInfo{VK_NULL_HANDLE, ui.view, ui.layout},
+        };
+        const std::array writes{
+            vk::WriteDescriptorSet{.dstBinding = 0,
+                                   .descriptorCount = 1,
+                                   .descriptorType = vk::DescriptorType::eSampledImage,
+                                   .pImageInfo = &infos[0]},
+            vk::WriteDescriptorSet{.dstBinding = 1,
+                                   .descriptorCount = 1,
+                                   .descriptorType = vk::DescriptorType::eSampledImage,
+                                   .pImageInfo = &infos[1]},
+        };
+        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, writes);
+        cmdbuf.pushConstants(pipeline_layout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(push), &push);
+        cmdbuf.setViewportWithCount(vk::Viewport{0.f, 0.f, float(width), float(height), 0.f, 1.f});
+        cmdbuf.setScissorWithCount(vk::Rect2D{{0, 0}, {width, height}});
+        cmdbuf.draw(3, 1, 0, 0);
+        cmdbuf.endRendering();
+        const vk::ImageMemoryBarrier2 to_read{
+            .srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+            .srcAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
+            .dstStageMask = vk::PipelineStageFlagBits2::eFragmentShader,
+            .dstAccessMask = vk::AccessFlagBits2::eShaderRead,
+            .oldLayout = vk::ImageLayout::eColorAttachmentOptimal,
+            .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+            .image = image,
+            .subresourceRange = range,
+        };
+        cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &to_read});
+    });
+    scheduler.GetDynamicState().Invalidate();
+    if (++backdrop_runs == 1) {
+        std::printf("UE4 HDR UI composite: background blur reads our backdrop (%ux%u, UI %.0f nits)\n", width,
+                    height, push.ui_nits);
+    }
+    return view;
+}
+
 } // namespace Vulkan

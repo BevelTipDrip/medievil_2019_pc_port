@@ -481,6 +481,7 @@ private:
     /// outputs HDR10 and the HDR look is the SDR one. Before BindResources. True: written, skip the draw.
     bool ReplaceHdrGrading(const Pipeline* pipeline);
     bool ReplaceHdrComposite(const Pipeline* pipeline);
+    void PrepareHdrBlur(const Pipeline* pipeline);
     /// gow3 test patterns (gow3_patterns.h "game" mode): after the tonemapper's draw, the patch over its output.
     void PatternAfterTonemap(const GraphicsPipeline* pipeline);
     /// GOW3_GPU_PROFILE: a timestamp where a render pass starts (vk_gpu_profiler.h).
@@ -526,6 +527,11 @@ private:
     std::unique_ptr<TemporalUpscaler> upscaler; // gow3: FSR (docs/upscaler.md)
     std::unique_ptr<Ue4FrameMap> frame_map;     // gow3 U1: null unless GOW3_UE4_FRAME_MAP=1
     std::unique_ptr<Ue4Motion> ue4_motion;      // gow3 U2: null unless GOW3_UE4_MOTION_VIEW or U3
+    // gow3 HDR: the last UI composite's scene view and UI image address (the blur's backdrop needs them), and the
+    // backdrop the current draw's blur pass samples instead of the UI image (null otherwise).
+    std::optional<VideoCore::TextureCache::ImageDesc> hdr_scene_desc;
+    VAddr hdr_ui_address = 0;
+    vk::ImageView hdr_blur_view{};
     std::unique_ptr<Ue4HdrGrading> ue4_hdr;     // gow3 HDR grading pass and the test patterns' game patch
     std::array<u32, Ue4HdrGrading::ParamDwords> pattern_block{}; // the grading block of this frame
     bool pattern_block_ok = false;

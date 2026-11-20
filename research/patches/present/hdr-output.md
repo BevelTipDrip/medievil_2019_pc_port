@@ -9,8 +9,8 @@ default_deck: off
 origin: ours
 class: G
 commits:
-files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.h, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.vert, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.frag, gpu/shadps4/video_core/host_shaders/ue4_grade.glsl, gpu/shadps4/video_core/host_shaders/ue4_hdr_map.glsl, gpu/shadps4/video_core/host_shaders/ue4_ui_composite.frag, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_settings.h, gpu/shadps4/video_core/host_shaders/imgui_hdr.frag, gpu/patches/imgui/0001-vulkan-pipeline-for-another-format-and-fragment-shader.patch, src/runtime_extra.c, run.py, build.sh, gpu/shadps4/core/libraries/videoout/video_out.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_swapchain.cpp, gpu/shim/core/emulator_settings.h, scripts/ue4_override.py, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.cpp, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.h, gpu/shadps4/video_core/host_shaders/post_process.frag, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h
-symbols: Ue4HdrGrading, ReplaceHdrGrading, ReplaceHdrComposite, RunComposite, GradeScene, HdrSceneToNits, HdrRollOff, LutDecodeHdrTexel, Ue4GradeOverride, ApplyUe4Grade, Ue4GradeTarget, HdrPipeline, ImGui_ImplVulkan_CreatePipelineForFormat, ColorTab, GradeAt, GradeKey, RequestHdrUi, RequestHdrCurve, hdr_ui_level, sceVideoOutGetDeviceCapabilityInfo, sceVideoOutConfigureOutputMode_, sceVideoOutRegisterBuffers, FindPresentFormat, Swapchain::SetHDR, IsHdrGameForced, PostProcessingPass::HDR_FRAME_FORMAT, RecreateFrame, MustCompileSync
+files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.h, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.vert, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.frag, gpu/shadps4/video_core/host_shaders/ue4_grade.glsl, gpu/shadps4/video_core/host_shaders/ue4_hdr_map.glsl, gpu/shadps4/video_core/host_shaders/ue4_ui_composite.frag, scripts/save_brightness.py, launcher/medievil_launcher.py, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_settings.h, gpu/shadps4/video_core/host_shaders/imgui_hdr.frag, gpu/patches/imgui/0001-vulkan-pipeline-for-another-format-and-fragment-shader.patch, src/runtime_extra.c, run.py, build.sh, gpu/shadps4/core/libraries/videoout/video_out.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_swapchain.cpp, gpu/shim/core/emulator_settings.h, scripts/ue4_override.py, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.cpp, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.h, gpu/shadps4/video_core/host_shaders/post_process.frag, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h
+symbols: Ue4HdrGrading, ReplaceHdrGrading, ReplaceHdrComposite, RunComposite, PrepareHdrBlur, RunBackdrop, IsUiBlurFirstPass, set_neutral, GradeScene, HdrSceneToNits, HdrRollOff, LutDecodeHdrTexel, Ue4GradeOverride, ApplyUe4Grade, Ue4GradeTarget, HdrPipeline, ImGui_ImplVulkan_CreatePipelineForFormat, ColorTab, GradeAt, GradeKey, RequestHdrUi, RequestHdrCurve, hdr_ui_level, sceVideoOutGetDeviceCapabilityInfo, sceVideoOutConfigureOutputMode_, sceVideoOutRegisterBuffers, FindPresentFormat, Swapchain::SetHDR, IsHdrGameForced, PostProcessingPass::HDR_FRAME_FORMAT, RecreateFrame, MustCompileSync
 switches: GOW3_HDR, GOW3_HDR_GAME, GOW3_UE4_GRADE, GOW3_UE4_LIVE_CVARS
 tests:
 docs: study-hdr.md, plan-work-queue.md
@@ -87,6 +87,14 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
   read through the game's own views (`bgra`: true RGB), the UI decoded at Gamma at UI brightness (`hdr_ui_nits`, live;
   `r.HDR.UI.Level` no longer matters here), BT.709 -> 2020, blended over the scene in the SDR signal, written `.bgr`.
   Movies go the same way. Log once: `UE4 HDR UI composite: ours (...)`, or `the game's kept: <why>`.
+- **Background blur backdrop** (same HDR look): UE's menu blur samples what is drawn so far, in HDR the empty UI
+  image (black menus). Before a blur first pass (`IsUiBlurFirstPass`: `8c6fbe78cd6698bb` full size,
+  `8c6fbe7824203398` half-size downsample) that samples the last composite's UI image, `PrepareHdrBlur` has
+  `RunBackdrop` write the UI so far over the scene in the SDR signal (4K RGBA8, true RGB) and that draw alone samples
+  it. Log once: `background blur reads our backdrop`.
+- **Game brightness** (launcher, Display): "Set to neutral" writes the game's default Brightness (0.3778, display
+  gamma 2.2) into every save slot (`scripts/save_brightness.py`; saves backed up first, file times kept). In HDR the
+  picture ignores the slider but Unreal's UI shaders apply it.
 - **Near-black correction** (`hdr_black_correction`, Display > HDR > Near-black correction; off by default): the
   presenter reads `hdr-black-correction.txt` beside medievil.ini (pairs `requested_nits measured_nits` from the meter
   script's `hdr-nearblack --write-correction`; re-read once a second), inverts the measured response below its last
@@ -102,6 +110,11 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
 
 - The UI composite reads the scene and UI through the game's views and writes `.bgr` (LANDMINES.md 28): through
   identity views the colour maths runs on swapped channels (greens turned mint, H32).
+- The blur backdrop serves one draw: `hdr_blur_view` is cleared right after that draw's `BindResources`, the draw's
+  textures bind on the draw thread (`TexturesBindableOnHelper`), and the kept texture set records the game's view.
+  The backdrop is written in true RGB and sampled through an identity view.
+- `save_brightness.set_neutral` must back up first and keep each save's file times (the game picks its slot by file
+  time, study-save-slots.md).
 
 - The capability still needs `presenter->IsHDRSupported()` (the HDR10 pair offered **and** `GOW3_HDR`): the switch
   never tells the game HDR when the swapchain cannot show it.
@@ -152,7 +165,8 @@ not explained by the raw PQ run after (0.98 at 203): not seen again in H31. H31 
 within 1-4%; Highlights 100 identical up to the knee, smooth above it, flat at the peak (421 nits measured at Peak 450,
 the screen's 0.94 tracking); the user: "it all looks good to me". H32 (2026-11-19): the UI composite; movies and menu
 colours correct after the channel fix (the user); the black blurred-menu background traced to the blur reading the
-empty HDR UI image.
+empty HDR UI image. H33 (2026-11-20): the backdrop; the weapons tab fixed (the user); the map popups' half-size
+first pass found in RenderDoc and added (fix built).
 
 ## History and pitfalls
 

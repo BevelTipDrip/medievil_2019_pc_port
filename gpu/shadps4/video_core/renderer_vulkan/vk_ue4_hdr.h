@@ -35,6 +35,14 @@ public:
     static constexpr u32 ParamDwords = 144;
     /// UE 4.21's HDR UI composite (scene PQ + Slate's UI image -> the display buffer).
     static constexpr u64 UiCompositePs = 0xc401ca35f9bceb8eull;
+    /// UE's background blur (Slate): its first pass samples what is drawn so far, in HDR the empty UI image. Two
+    /// first passes seen (study-hdr.md H32 / H33): the full-size blur (weapons tab, pause menu) and the half-size
+    /// downsample (the map screen's level-select and quit popups, followed by the blur at half size).
+    static constexpr u64 UiBlurPs = 0x8c6fbe78cd6698bbull;
+    static constexpr u64 UiBlurDownsamplePs = 0x8c6fbe7824203398ull;
+    static constexpr bool IsUiBlurFirstPass(u64 hash) {
+        return hash == UiBlurPs || hash == UiBlurDownsamplePs;
+    }
 
     /// A sampled input of the UI composite: its view (identity mapping) and layout.
     struct CompositeInput {
@@ -65,6 +73,10 @@ public:
     bool RunComposite(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc,
                       const CompositeInput& scene, const CompositeInput& ui, bool ui_srgb);
 
+    /// The backdrop the blur's first pass reads instead of the HDR UI image (`width` x `height`, RGBA8, true RGB):
+    /// the UI so far over the scene in the SDR signal. Null when it could not be made.
+    vk::ImageView RunBackdrop(const CompositeInput& scene, const CompositeInput& ui, u32 width, u32 height);
+
 private:
     enum class Kind : u8 { Lut, Patch, Composite };
     vk::Pipeline Pipeline(vk::Format format, Kind kind = Kind::Lut);
@@ -84,6 +96,10 @@ private:
     u64 patch_runs = 0;
     u64 composite_runs = 0;
     bool composite_failed = false;
+    VideoCore::UniqueImage backdrop;
+    vk::UniqueImageView backdrop_view;
+    u32 backdrop_width = 0, backdrop_height = 0;
+    u64 backdrop_runs = 0;
 };
 
 } // namespace Vulkan

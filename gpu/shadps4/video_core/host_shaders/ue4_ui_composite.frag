@@ -20,7 +20,7 @@ layout(push_constant) uniform Push {
     vec2 target_size; ///< the composite's target in pixels
     float ui_nits;    ///< UI white in nits (UI brightness)
     float gamma;      ///< SDR display decode (0 = the sRGB curve)
-    uint flags;       ///< bit 0: the UI view is sRGB (the sample is already linear)
+    uint flags;       ///< bit 0: the UI view is sRGB (the sample is already linear); bit 1: backdrop mode
 } pc;
 
 layout(location = 0) out vec4 color;
@@ -60,6 +60,18 @@ void main() {
     const ivec2 ui_size = textureSize(ui_tex, 0);
     const vec3 scene_pq = texelFetch(scene_tex, min(ivec2(uv * vec2(scene_size)), scene_size - 1), 0).rgb;
     const vec4 ui = texelFetch(ui_tex, min(ivec2(uv * vec2(ui_size)), ui_size - 1), 0);
+    if ((pc.flags & 2u) != 0u) {
+        // Backdrop for UE's background blur (vk_rasterizer.cpp PrepareHdrBlur): what the SDR frame held under the UI,
+        // i.e. the UI so far over the scene in the SDR signal (BT.709, white = UI brightness, so it shows at the
+        // scene's brightness up to UI white once our composite decodes it), opaque, in true RGB (sampled by the blur
+        // through an identity view).
+        const mat3 to_709 = mat3(1.660491, -0.124550, -0.018151,
+                                 -0.587641, 1.132900, -0.100579,
+                                 -0.072850, -0.008349, 1.118730);
+        const vec3 scene = clamp(Encode(max(to_709 * PqDecode(scene_pq), 0.0) / pc.ui_nits), 0.0, 1.0);
+        color = vec4(ui.rgb + scene * (1.0 - clamp(ui.a, 0.0, 1.0)), 1.0);
+        return;
+    }
     if (ui.a <= 0.0 && all(lessThanEqual(ui.rgb, vec3(0.0)))) {
         color = vec4(scene_pq.bgr, 1.0);
         return;
