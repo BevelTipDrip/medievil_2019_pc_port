@@ -477,6 +477,33 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     flag tied to the same setting, so a live HDR look switch changes both (a one-frame mismatch at the switch at
     most). Patching the shader files from the launcher would also work but is fragile and not switchable live; the
     recompiler pass is reversible and per setting.
+  - Fix built (2026-11-21, not run): `HdrLutScalePass` (`shader_recompiler/ir/passes/hdr_lut_scale_pass.cpp`): in
+    the variant with `HwFragmentRuntimeInfo::hdr_lut_x100`, the HDR tonemapper's three `FPMul32 #0.0001` become
+    `#0.01` (exactly three found, else the game's index kept and logged). `PipelineCache::hdr_lut_x100` is set at
+    every scene LUT build by `ReplaceHdrGrading`: true when our pass built it (`Ue4HdrGrading::ScaledIndex()`),
+    false when any path kept the game's draw (ACES look, SDR output, declines, an unknown 32^3 builder); the
+    tonemapper draw picks the variant from it, prepared draws re-check it. Our pass: push flag bit 2, texel scene
+    x 0.01 (`ue4_hdr_lut.frag`). The tonemapper compiles synchronously (`MustCompileSync`), so a variant switch drops
+    no frame. Shader cache versions bumped (binary 15, meta 15, pipeline key 13): the first start recompiles.
+    `GOW3_HDR_LUT_X100=0`: the game's index (A/B, read once). Log: "UE4 HDR grading: LUT index ..." and "HDR
+    tonemapper: LUT index at PQ(scene x 0.01) (3 constants)".
+  - Run 2026-11-21 (launched by the user; build 12:26:15; log: "LUT index PQ(scene x 0.01) (HDR tonemapper
+    variant)", "HDR tonemapper: LUT index at PQ(scene x 0.01) (3 constants)", the tonemapper compiled synchronously).
+    Title screen, 174 nits, gamma 2.2, peak 434: 12.39.48 (brightness only) and 12.42.45 (each colour) against
+    09.37.54 (before, brightness only) and SDR 09.02.38 (png by 2.2), banded by the SDR shot's luminance, 4x4 block
+    means, the centre column and the right quarter left out (animated: they differ between shots of one view;
+    scratchpad `jxrtool/bands_keep.py`, `grid.py`). Darkest 28% (SDR Y < 0.003; SDR red share 0.03-0.05, blue
+    0.77-0.85, ~0.17-0.5 nits at 174): before 0.55-1.1 nits, red 0.20-0.21, blue 0.51-0.52; brightness only
+    0.15-0.35 nits, red 0.07-0.09, blue 0.64-0.69; each colour 0.3-0.7 nits, red 0.14-0.16. Dark areas typically
+    ~0.5x as bright as before (cell medians 0.24-0.8). Contact sheet (`jxrtool/sheet.py`): the "Color" overlay
+    panel in the right quarter of 09.37.54 / 12.42.45, and the menu selection differs (SDR "New Game", the new shots
+    "Load Game"); with the menu text also left out (`bands_keep2.py`): 0.8-1.6 nits (SDR Y 0.003-0.012) red share
+    0.11-0.14 against SDR 0.09-0.12 (before 0.21-0.24); one band (SDR Y 0.025-0.05, ~6 nits) red 0.16 against
+    before 0.11 / SDR 0.06, open (the rain streaks differ between shots). ACES look, same view (13.01.36): shadows
+    0.46-0.68 nits red 0.11; mid-darks darker (7.8 against 9.6 nits) and redder (0.20 against SDR 0.08);
+    highlights brighter (86 against 56 nits) and whiter (blue share 0.22 against SDR 0.14). The user: "shadows a lot more depth,
+    they're no longer blown out and elevated ... higher contrast look without destroying the brightness or altering
+    gamma"; brightness only still looks clearly better than each colour and closer to SDR.
   - The user (2026-11-21): if the ACES look cannot be made good, drop it; any alternative look becomes our own HDR
     grading, not the game's ACES path.
   - Tonemapper cvars (two research agents, 2026-11-21; eboot strings and IR [V], gains [I]):

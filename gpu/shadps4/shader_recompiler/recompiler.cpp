@@ -146,6 +146,7 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
     if (info.sw_stage == SwStage::Fragment) {
         Shader::Optimization::LightGridScalePass(program, runtime_info);
         Shader::Optimization::RefractionScalePass(program, runtime_info);
+        Shader::Optimization::HdrLutScalePass(program, runtime_info);
     }
     Shader::Optimization::CollectShaderInfoPass(program, profile);
     Shader::IR::DumpProgram(program, info);

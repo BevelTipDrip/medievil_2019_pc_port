@@ -305,6 +305,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(PipelineSelection& se
         info.hw.fs.refraction_ref_width = sel.refraction_ref_width;
         info.hw.fs.refraction_ripples = sel.refraction_ripples;
         info.hw.fs.refraction_edge_stretch = sel.refraction_edge_stretch;
+        info.hw.fs.hdr_lut_x100 = sel.hdr_lut_x100;
         u8 stencil_ref_export_enable = regs.depth_shader_control.stencil_op_val_export_enable |
                                        regs.depth_shader_control.stencil_test_val_export_enable;
         info.hw.fs.mrtz_mask = regs.depth_shader_control.z_export_enable |
@@ -765,6 +766,9 @@ static bool MustCompileSync(u64 pgm_hash) {
         // output device changes); dropped, the UI composite samples zeros and every UI element
         // and movie is black (study-hdr.md H6-H10).
         0xc401ca35ab81eb39ull,
+        // ps: UE4's HDR tonemapper; its HdrLutScalePass variant appears when our LUT pass starts or the HDR
+        // look changes: dropped, that frame's scene would be missing (study-hdr.md H38).
+        Shader::Ue4HdrTonemapPs,
     };
     return std::ranges::find(programs, pgm_hash) != std::end(programs);
 }
@@ -802,7 +806,8 @@ const GraphicsPipeline* PipelineCache::TryPreparedPipeline(const PreparedDraw& p
     if (prepared.state.load(std::memory_order_acquire) != PreparedDraw::Ready ||
         prepared.reg_checksum != liverpool->gfx_reg_checksum ||
         prepared.light_grid_scene != g_light_grid_scene.load(std::memory_order_relaxed) ||
-        prepared.refraction_setting != RefractionSetting()) {
+        prepared.refraction_setting != RefractionSetting() ||
+        prepared.hdr_lut_x100 != hdr_lut_x100.load(std::memory_order_relaxed)) {
         return nullptr;
     }
     // Same registers; the stage programs and their flattened user data (which also covers
@@ -1006,6 +1011,7 @@ bool PipelineCache::RefreshGraphicsKey(PipelineSelection& sel) {
     sel.refraction_ripples = false;
     sel.refraction_edge_stretch = 0;
     sel.refraction_setting = RefractionSetting();
+    sel.hdr_lut_x100 = false;
 
     // First pass to fill render target information needed by shader recompiler
     for (s32 cb = 0; cb < AmdGpu::NUM_COLOR_BUFFERS && !skip_cb_binding; ++cb) {
@@ -1097,6 +1103,15 @@ bool PipelineCache::RefreshGraphicsKey(PipelineSelection& sel) {
             (sel.refraction_setting & 1) ? Gow3Settings::RefractionReferenceWidth : 0;
         sel.refraction_ripples = (sel.refraction_setting & 2) != 0;
         sel.refraction_edge_stretch = static_cast<u8>((sel.refraction_setting >> 2) & 3);
+        if (!RefreshGraphicsStages(sel)) {
+            return false;
+        }
+    }
+    // MediEvil: UE4's HDR tonemapper, while our LUT pass built the scene LUT for its x 0.01 index, gets
+    // the variant that indexes it that way (HdrLutScalePass; study-hdr.md H38).
+    if (const auto* fs = sel.infos[static_cast<u32>(Shader::SwStage::Fragment)];
+        fs && fs->pgm_hash == Shader::Ue4HdrTonemapPs && hdr_lut_x100.load(std::memory_order_relaxed)) {
+        sel.hdr_lut_x100 = true;
         if (!RefreshGraphicsStages(sel)) {
             return false;
         }

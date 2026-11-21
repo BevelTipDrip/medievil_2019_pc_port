@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <functional>
 #include <unordered_map>
 #include <shared_mutex>
@@ -113,6 +114,8 @@ struct PipelineSelection {
     bool refraction_ripples = false;
     u8 refraction_edge_stretch = 0;
     int refraction_setting = 0;
+    /// MediEvil: PipelineCache::hdr_lut_x100 as read for this draw (HdrLutScalePass).
+    bool hdr_lut_x100 = false;
     bool compilation_pending = false;
     DrawIndirectParams draw_indirect_params{};
     struct PrepWorker* worker{}; ///< set: read-only selection for a draw-preparation worker
@@ -140,6 +143,11 @@ public:
     explicit PipelineCache(const Instance& instance, Scheduler& scheduler,
                            AmdGpu::Liverpool* liverpool, u32 sparse_page_shift);
     ~PipelineCache();
+
+    /// MediEvil: our grading LUT pass built the latest scene LUT for the HDR tonemapper's x 0.01 index
+    /// (set on the GPU thread at each LUT build, ours or the game's): the tonemapper draws its
+    /// HdrLutScalePass variant (study-hdr.md H38).
+    static inline std::atomic<bool> hdr_lut_x100{false};
 
     /// Loads the pipelines of earlier sessions. gow3: called by the presenter once the window
     /// can show a loading screen; `progress(done, total)` follows the pipelines read.

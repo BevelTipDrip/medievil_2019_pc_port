@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include "gow3_settings.h"
 #include "video_core/buffer_cache/buffer_cache.h"
@@ -149,6 +150,18 @@ bool Ue4HdrGrading::Wanted(const std::array<u32, ParamDwords>& block) {
     return device >= 3 && device <= 6; // the ST-2084 / scRGB devices: the LUT indexed by PQ
 }
 
+bool Ue4HdrGrading::ScaledIndex() {
+    static const bool scaled = [] {
+        const char* env = std::getenv("GOW3_HDR_LUT_X100");
+        const bool on = !(env && env[0] == '0');
+        std::printf("UE4 HDR grading: LUT index %s\n",
+                    on ? "PQ(scene x 0.01) (HDR tonemapper variant)"
+                       : "the game's PQ(scene x 0.0001) (GOW3_HDR_LUT_X100=0)");
+        return on;
+    }();
+    return scaled;
+}
+
 vk::Pipeline Ue4HdrGrading::Pipeline(vk::Format format, Kind kind) {
     for (const auto& [key, pipeline] : pipelines) {
         if (key.first == format && key.second == kind) {
@@ -264,7 +277,8 @@ bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache
         .game_nits = float(settings.hdr_game_nits.load(std::memory_order_relaxed)),
         .gamma = float(settings.hdr_gamma.load(std::memory_order_relaxed)) / 10.0f,
         .lut_size = float(width),
-        .flags = settings.hdr_gamma_per_channel.load(std::memory_order_relaxed) ? 2u : 0u,
+        .flags = (settings.hdr_gamma_per_channel.load(std::memory_order_relaxed) ? 2u : 0u) |
+                 (ScaledIndex() ? 4u : 0u),
         .peak_nits = float(settings.hdr_peak_nits.load(std::memory_order_relaxed)),
         .highlights = float(settings.hdr_highlights.load(std::memory_order_relaxed)) / 100.0f,
     };

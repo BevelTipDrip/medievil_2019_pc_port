@@ -85,6 +85,8 @@ struct PreparedDraw {
     u32 light_grid_scene{};
     /// MediEvil: the refraction settings the key's variants were picked for (the same).
     int refraction_setting{};
+    /// MediEvil: PipelineCache::hdr_lut_x100 the key's tonemapper variant was picked for (the same).
+    bool hdr_lut_x100{};
     GraphicsPipelineKey key{};
     u32 num_stages{};
     std::array<PreparedStage, MaxShaderStages> stages{};

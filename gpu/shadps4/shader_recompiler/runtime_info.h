@@ -13,6 +13,9 @@
 
 namespace Shader {
 
+/// MediEvil: UE 4.21's HDR tonemapper (study-hdr.md; HdrLutScalePass).
+inline constexpr u64 Ue4HdrTonemapPs = 0x12178a9314cb761eull;
+
 enum class HwStage : u32 {
     Fragment,
     Vertex,
@@ -244,6 +247,9 @@ struct HwFragmentRuntimeInfo {
     /// to no shift at the edge; 2: a ripple where the depth test drops the shift, 3: shorter
     /// shifts tested first (RefractionScalePass). 0: the game's.
     u8 refraction_edge_stretch{0};
+    /// MediEvil: UE4's HDR tonemapper indexes its grading LUT at PQ(scene x 0.01) instead of x 0.0001,
+    /// for our LUT built to that index (HdrLutScalePass; study-hdr.md H38).
+    bool hdr_lut_x100{false};
 
     bool operator==(const HwFragmentRuntimeInfo& other) const noexcept {
         return std::ranges::equal(color_buffers, other.color_buffers) &&
@@ -259,6 +265,7 @@ struct HwFragmentRuntimeInfo {
                refraction_ref_width == other.refraction_ref_width &&
                refraction_ripples == other.refraction_ripples &&
                refraction_edge_stretch == other.refraction_edge_stretch &&
+               hdr_lut_x100 == other.hdr_lut_x100 &&
                std::ranges::equal(inputs.begin(), inputs.begin() + num_inputs, other.inputs.begin(),
                                   other.inputs.begin() + num_inputs);
     }

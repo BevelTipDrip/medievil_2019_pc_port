@@ -73,6 +73,10 @@ public:
 
     /// The settings want our LUT for a builder draw whose block selects an HDR output device (3-6).
     static bool Wanted(const std::array<u32, ParamDwords>& block);
+    /// Our LUT is built for the HDR tonemapper indexing it at PQ(scene x 0.01) (its HdrLutScalePass variant)
+    /// instead of the game's x 0.0001: 100x finer near black, no purple shift in dark tones (study-hdr.md H38).
+    /// GOW3_HDR_LUT_X100=0: the game's index (A/B). Read once.
+    static bool ScaledIndex();
 
     /// Records our pass into the builder draw's colour target (`target`, `desc`: the draw's colour buffer 0) from
     /// `block` (the game's parameters in our layout, grading applied) and, for the blend builder, its level LUT

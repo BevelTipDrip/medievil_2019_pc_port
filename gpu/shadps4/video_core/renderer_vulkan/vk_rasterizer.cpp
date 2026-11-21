@@ -5073,6 +5073,7 @@ bool Rasterizer::ReplaceHdrGrading(const Pipeline* pipeline) {
             const auto& d = cb_descs[0].second;
             if (d.view_info.range.extent.layers == 32 && d.info.size.width == 32 && d.info.size.height == 32) {
                 static std::vector<u64> noted;
+                PipelineCache::hdr_lut_x100.store(false, std::memory_order_relaxed); // the game's LUT, its index
                 if (std::ranges::find(noted, fs->pgm_hash) == noted.end() && noted.size() < 16) {
                     noted.push_back(fs->pgm_hash);
                     std::printf("UE4 HDR grading: unknown 32^3 LUT builder fs %016llx: the game's grading kept "
@@ -5084,6 +5085,15 @@ bool Rasterizer::ReplaceHdrGrading(const Pipeline* pipeline) {
         return false;
     }
     const bool blend = fs->pgm_hash == Ue4HdrGrading::LutBuilderBlendPs;
+    // This build's LUT decides the HDR tonemapper's index: ours at x 0.01 (HdrLutScalePass variant), the game's
+    // (any path that keeps its draw) at its own x 0.0001 (study-hdr.md H38).
+    bool ours = false;
+    struct NoteIndex {
+        const bool& ours;
+        ~NoteIndex() {
+            PipelineCache::hdr_lut_x100.store(ours && Ue4HdrGrading::ScaledIndex(), std::memory_order_relaxed);
+        }
+    } note_index{ours};
     // Once per reason: why a builder draw keeps the game's LUT (run 24 declined silently).
     static u32 declined = 0;
     const auto decline = [](u32 bit, const char* why) {
@@ -5124,7 +5134,7 @@ bool Rasterizer::ReplaceHdrGrading(const Pipeline* pipeline) {
     }
     ApplyUe4Grade(reinterpret_cast<u8*>(block.data()));
     if (!blend) {
-        return ue4_hdr->Run(cb_descs[0].first, cb_descs[0].second, block);
+        return ours = ue4_hdr->Run(cb_descs[0].first, cb_descs[0].second, block);
     }
     // The level's grading LUT (image 0): through the game's own view (format and swizzle: true RGB), as its draw.
     if (fs->images.empty()) {
@@ -5143,7 +5153,7 @@ bool Rasterizer::ReplaceHdrGrading(const Pipeline* pipeline) {
                     vk::AccessFlagBits2::eShaderRead, lut_desc.view_info.range);
     lut_image.usage.texture = 1u;
     const Ue4HdrGrading::CompositeInput lut{*lut_view.image_view, lut_image.backing->state.layout};
-    return ue4_hdr->Run(cb_descs[0].first, cb_descs[0].second, block, &lut);
+    return ours = ue4_hdr->Run(cb_descs[0].first, cb_descs[0].second, block, &lut);
 }
 
 bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
