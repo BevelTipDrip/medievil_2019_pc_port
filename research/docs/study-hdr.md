@@ -431,6 +431,74 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     unchanged. The user: "the shadows no longer have the blue push", closer to SDR.
   - The HDR rows moved to the top of the Color tab (`HdrRows`), so the "Adjust while playing" panel shows them; the
     Display tab keeps a pointer. Run: the rows work in the panel (the screenshots above).
+- **H38, the purple shift in dark tones: the grading LUT's resolution near black** (2026-11-21; found, checked
+  offline, plan agreed, not built):
+  - The user's comparison (`Medievil comparison/`, SDR 09.02.38 against HDR "brightness only" 09.37.54, main menu):
+    the dark bands' red share 0.09 -> 0.22, a hue shift of ~+12 degrees towards purple, changing the grade across the
+    image.
+  - Cause [V, IR + simulation]: the HDR tonemapper (`fs 12178a9314cb761e`, IR lines 159-161 / 198-202) indexes the
+    32^3 LUT at `PQ(scene * 0.0001) * 0.96875 + 0.015625` (texels at scene 0, 0.023, 0.108, 0.297, ...) and samples
+    trilinearly; everything darker than scene ~0.02 lands in the first cell, where trilinear blending mixes in texels
+    of other hues, and PQ's steepness near black amplifies the error. The SDR path indexes by log2
+    (`LutDecodeSdrTexel`, ~10 texels below 0.02), so SDR does not show it. Simulation
+    (`research-data/hdr-grading-20261121/port9f6b/lutres.cpp`, menu block, 222 nits, 2.2, peak 435): grey at scene
+    0.01 comes out 6-8x too bright with red share 0.40; dark blue-teal at 0.02 x5.2 with red share 0.188 (exact 0.010).
+  - Candidates simulated (`lutres_v.cpp`, `lutres_shaper.cpp`, `lutres_pt.cpp`, `lutres_x.cpp`):
+    - BT.709 storage only: less red, blacks still lifted. BT.709 plus a shaper: brightness right, teal too blue.
+    - Pass-through LUT plus our own 48^3 log LUT in the composite: colours exact from scene 0.02, but one 10-bit code
+      changes darks by 10-37% and the tonemapper's grain (+-1/512) becomes +-20% at 3 nits (3-6x SDR's); would need a
+      16F target. A bent pass-through (codes per cell 182, 283, 175, 84, ...) keeps steps at 1.2-8%, grain as SDR.
+    - **x100 input scale** (as UE5 and later 4.x, per the research below): the tonemapper's three `#0.0001` -> `0.01`
+      and our pass decoding its texels x100 (`LutDecodeHdrTexel`, `ue4_grade.glsl`): dark blue-teal at 0.02 x1.22
+      with red share 0.015, at 0.04 x1.05 / 0.021; grey at 0.01 x1.36 / 0.345, at 0.02 x1.05; from 0.08 up within 1%.
+      Output precision and grain as today, no per-frame cost. Clips above scene 100: no change at peak 435; at peak
+      1000 highlights past scene 100 stop at 977 nits (exact reaches 1000 at 200); at 2000, 1734 (exact 1872 at 200).
+  - Research (three agents, 2026-11-21) [docs and public mods; Unreal source not read]:
+    - Epic's docs: the film curve is off for HDR output and grading LUTs are SDR-only, by design in every version; the
+      game's HDR (ACES look) drops the level tables for that reason. Our "SDR grading kept" is not overbuilt: an
+      extended-filmic route still needs the grading chain and the 2.2 handling and is less faithful; its one gain is
+      highlight saturation. The quoted `r.LUT.Size=64` line is not in Epic's docs; 32 is baked into both of this
+      game's shaders (builder dispatch and the tonemapper's 0.96875 / 0.015625).
+    - A larger LUT (64^3, the user's question): possible only by patching the tonemapper's constants, allocating our
+      own 64^3 image and rebinding it, and an 8x larger build of our pass; its first texel moves from scene 0.023 to
+      ~0.006 (about 4x finer near black). The x100 scale moves it to ~0.0002 for no cost, so 64^3 is not planned.
+    - RenoDX keeps UE's sampling and upgrades the LUT to 16F, with no fix for the x0.0001 era; Luma lists the issue as
+      a TODO. Later UE versions index `PQ(scene * 0.01)` (UE5 takes LUTScale / LUTOffset from a cbuffer).
+    - The UE 4.21 SDK: its licence forbids combining engine code with GPL code; reading is allowed but the user chose
+      to skip it (2026-11-21): no Unreal source in this work.
+    - SDR by measurement on the user's calibrated display: ~100 patches, per-channel curves plus a 3x3 matrix,
+      Windows HDR off, dark room, ABL settling, meter unreliable below ~0.05 nits. A later option for choosing between
+      "brightness only" and "each colour" gamma, not needed for this fix.
+  - Plan (the user: "sounds like a good plan", 2026-11-21; the exact change proposed before coding): a tonemapper variant through the shader recompiler, as `RefractionScalePass`
+    does for the distortion shaders: an IR pass marks `12178a9314cb761e` (`Info` flag), and in the variant whose
+    `HwFragmentRuntimeInfo` field is set, multiplies the three `FPMul32 #0.0001` (each one use, straight into PQ, no
+    clamp before the sample) by 100. The pipeline cache picks the variant while HDR look is "SDR grading kept"; the
+    ACES look keeps the game's shader, since the game's builder assumes 0.0001. Our pass decodes x100 under a push
+    flag tied to the same setting, so a live HDR look switch changes both (a one-frame mismatch at the switch at
+    most). Patching the shader files from the launcher would also work but is fragile and not switchable live; the
+    recompiler pass is reversible and per setting.
+  - The user (2026-11-21): if the ACES look cannot be made good, drop it; any alternative look becomes our own HDR
+    grading, not the game's ACES path.
+  - Tonemapper cvars (two research agents, 2026-11-21; eboot strings and IR [V], gains [I]):
+    - The grain is `r.Tonemapper.GrainQuantization` (eboot help: "high frequency pixel pattern to fight 8 bit color
+      quantization"): both tonemappers add `fract(sin(...) * 493013) / 256 - 1/512` per channel after LUT x 1.05
+      (HDR IR %131, %209-217; SDR `user/shader/dumps-sdr-20261029/fs_0x3632d4c4faaa85d2`, %131, %182-190), a literal
+      amplitude, no cbuffer gate: a cooked permutation. In HDR it is ~+-2 10-bit PQ codes; Epic's profiling page:
+      "not needed when we output in 10:10:10". Setting the cvar picks another cooked variant (if any; else likely a
+      missing-shader failure) with another hash, which the x100 variant would miss. Removing it in HDR belongs in the
+      same recompiler pass (a separate change and run after x100).
+    - No sharpen path in either tonemapper (four samples: one at a FragCoord UV, one at the interpolated UV, one at it clamped to cb0 dwords 20-23, the LUT; no neighbour taps;
+      a vignette term is present): `r.Tonemapper.Sharpen` has nothing to drive here. Film grain proper is compiled
+      out. TAA cvars in the eboot (`r.TemporalAACatmullRom`, `r.TemporalAAFilterSize`,
+      `r.TemporalAACurrentFrameWeight`) are the leads for a sharpness setting.
+    - Keep tonemapper-variant cvars at their defaults (`r.Tonemapper.Quality`, `GrainQuantization`, `Sharpen`,
+      `ConfigIndexOverride`, `MergeWithUpscale.*`, `r.TonemapperFilm`): each can change the hash the HDR work keys on.
+      Keep `r.EyeAdaptation.PreExposureOverride` 0 (it would shift every LUT index).
+    - FXAA: the game runs TAA (no FXAA pass); the alpha luma is baked into the tonemapper. In HDR the target's alpha
+      has 2 bits, so `ue4_aa=fxaa` with HDR would feed FXAA a useless luma.
+    - Saved outside the repo (third-party pages): `C:\Users\Ty\MediEvil\reference-pages\` (framedsc UE4 4.27 cvar
+      list as HTML and markdown, Epic's 4.27 "feature levels" profiling page, and the agent's findings with an
+      eboot presence check: 1,420 of 4,594 entries present); summary in `notes-ue4-cvars-framedsc.md`.
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.
