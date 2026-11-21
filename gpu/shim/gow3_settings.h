@@ -293,9 +293,6 @@ struct Values {
     /// Display peak (nits) and highlight strength (percent); live.
     std::atomic<int> hdr_peak_nits{HdrPeakNitsDefault};
     std::atomic<int> hdr_highlights{HdrHighlightsDefault};
-    /// HDR near-black correction from a meter measurement (hdr-black-correction.txt beside medievil.ini; the
-    /// presenter's final pass), opt-in: specific to one display and mode.
-    std::atomic<bool> hdr_black_correction{false};
     /// Colour grading (GradeAt), live: read by the renderer at each combine LUT draw.
     std::atomic<float> grade[GradeCount];
 };

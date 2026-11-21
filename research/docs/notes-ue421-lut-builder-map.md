@@ -156,3 +156,21 @@ Other notes:
   code; I reason].
 - The scene LUT stores PQ in what looks like a 10-bit UNORM target (the UI LUT is `A2B10G10R10` [V study H9]; the scene
   LUT's format not checked here); RenoDX upgrades to RGBA16F, not needed for PQ output [I].
+
+## E. The builder with a level grading LUT, fs 9f6bac6cba984956 [V] (2026-11-21, study-hdr.md H36)
+
+Hilltop Mausoleum's grading draw (capture `research-data/hdr-grading-20261121/cap_frame82572.rdc`, eid 15063;
+decompile `research-data/hdr-grading-20261121/port9f6b/lut_9f6b.glsl`). UE 4.21's BLENDCOUNT=2 permutation of a415.
+
+- binding 0: the parameter block, 164 dwords (656 bytes) = a415's 144 with 20 dwords inserted at 45: a415 dword d is
+  9f6b dword d for d <= 44, d + 20 from 45 on (OutputDevice 138 -> 158). The inserted 45-64 are LUTWeights (float4s);
+  read are [0] at 48 and [1] at 52 (captured 0.65 / 0.35). binding 1: the same 448-byte ACES table.
+- image 0: the level LUT, a 256x16 RGBA8 texture (16^3: 16 slices of 16x16 side by side), view swizzle `bgra`;
+  sampler linear / linear / point mip, clamp to edge.
+- Stage, after the film curve (legacy or filmic) and before MappingPolynomial (lines ~1220-1320): clamp 0-1, sRGB
+  encode (`>= 0.00313067`), u = (r 0.9375 + floor(15 b)) / 16 + 1/512, v = 0.9375 g + 1/32; two samples (u and
+  u + 1/16) lerped by fract(15 b); `w1 * lut + w0 * encoded`; max 6.1035e-05; sRGB decode (`0.04045 <` x).
+- Devices >= 1 (the HDR ODTs) read the colour from before the film curve (`_1572` / `_1575` / `_1583`, line 1358 on):
+  the level LUT appears only in SDR (device 0) output.
+- The port: `ue4_grade.glsl` `GradeLutBlend` under `GRADE_LUT_BLEND`, our block in a415's layout with the weights at
+  142 / 143 (`Ue4HdrGrading::RemapBlendBlock`); equal to the game's shader on all 32^3 texels offline (12 cases).

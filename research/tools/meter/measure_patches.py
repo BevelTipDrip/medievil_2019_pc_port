@@ -9,8 +9,7 @@ Sequences:
   sdr-grey       raw SDR codes 0-100% in 10% steps (full range), HCFR's levels
   sdr-nearblack  raw SDR codes 0-4% (and 5-10% in 1% steps)
   hdr-pq         raw HDR10 PQ levels in nits (0 to 1000)
-  hdr-nearblack  raw HDR10 levels 0.005-30 nits; with --write-correction the game's near-black correction file
-                 (hdr-black-correction.txt beside medievil.ini; Display > HDR > Near-black correction)
+  hdr-nearblack  raw HDR10 levels 0.005-30 nits (the display's near-black response)
   game-grey      scene-linear greys through the game's grading (target game only)
   game-highlights  the same from the HDR highlight knee (scene 0.5) up to 256 (Highlights / Peak brightness)
   custom         --values a,b,c (raw: 0-255 codes for SDR / nits for HDR; game: scene-linear)
@@ -41,7 +40,7 @@ SEQUENCES = {
     'sdr-grey': [0, 26, 51, 77, 102, 128, 153, 178, 204, 229, 255],
     'sdr-nearblack': [0, 3, 5, 8, 10, 13, 15, 18, 20, 23, 26],
     'hdr-pq': [0, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 20, 50, 100, 150, 203, 300, 400, 500, 600, 800, 1000],
-    # The display's near-black response in HDR, for the near-black correction (--write-correction).
+    # The display's near-black response in HDR (calibrate the display outside the game; study-hdr.md H36).
     'hdr-nearblack': [0.005, 0.01, 0.02, 0.035, 0.05, 0.075, 0.1, 0.15, 0.2, 0.3, 0.5, 0.75, 1, 1.5, 2, 3, 5, 7.5,
                       10, 15, 20, 30],
     'game-grey': [0, 0.001, 0.003, 0.01, 0.02, 0.05, 0.1, 0.18, 0.3, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0],
@@ -183,8 +182,6 @@ def main():
     ap.add_argument('--keep-scene', action='store_true',
                     help='game: leave the rest of the frame as it is (default: black around the patch)')
     ap.add_argument('--dry-run', action='store_true', help='show the patches only (no meter), 2 s each')
-    ap.add_argument('--write-correction', action='store_true',
-                    help='hdr-nearblack: write hdr-black-correction.txt (requested / measured nits) for the game')
     ap.add_argument('--start-delay', type=float, default=0.0,
                     help='seconds to wait before the first patch (time to switch back to the game window)')
     args = ap.parse_args()
@@ -256,16 +253,6 @@ def main():
             w.writerow(['target', 'kind', 'sequence', 'value', 'signal', 'X', 'Y', 'Z', 'x', 'y', 'readings'])
             w.writerows(rows)
         print('Wrote', path)
-        if args.write_correction and args.sequence == 'hdr-nearblack':
-            target = os.path.join(ROOT, 'hdr-black-correction.txt')
-            with open(target, 'w', newline='\n') as f:
-                f.write('# HDR near-black correction: requested nits, measured nits (raw PQ patches, %s)\n' % stamp)
-                f.write('# from %s; Display > HDR > Near-black correction uses it (re-read while the game runs)\n'
-                        % os.path.basename(path))
-                for row in rows:
-                    if float(row[6]) > 0:
-                        f.write('%s %s\n' % (row[3], row[6]))
-            print('Wrote', target)
 
 
 if __name__ == '__main__':

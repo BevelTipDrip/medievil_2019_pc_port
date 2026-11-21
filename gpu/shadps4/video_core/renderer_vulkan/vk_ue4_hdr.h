@@ -33,6 +33,23 @@ public:
     /// UE 4.21's combine LUT builder (MediEvil 01.00 / 01.02) and its parameter block size.
     static constexpr u64 LutBuilderPs = 0xa4152b3be93c832aull;
     static constexpr u32 ParamDwords = 144;
+    /// The builder with a level grading LUT texture (BLENDCOUNT=2: Hilltop Mausoleum; study-hdr.md H36): our block
+    /// with 20 dwords (LUTWeights) inserted at 45, 164 in all; LUTWeights[0] / [1] at 48 / 52, the LUT a 256x16
+    /// texture (image 0). Its grading is ours plus that blend (ue4_grade.glsl GRADE_LUT_BLEND, checked offline).
+    static constexpr u64 LutBuilderBlendPs = 0x9f6bac6cba984956ull;
+    static constexpr u32 BlendParamDwords = 164;
+    static constexpr bool IsLutBuilder(u64 hash) {
+        return hash == LutBuilderPs || hash == LutBuilderBlendPs;
+    }
+    static constexpr u32 LutBlockDwords(u64 hash) {
+        return hash == LutBuilderBlendPs ? BlendParamDwords : ParamDwords;
+    }
+    /// A dword of our layout (GradeAt, GOW3_UE4_GRADE) in the blend builder's block.
+    static constexpr u32 BlendDword(u32 dword) {
+        return dword >= 45 ? dword + 20 : dword;
+    }
+    /// The blend builder's block in our layout: 0-44 as they are, 65-161 to 45-141, the weights 48 / 52 to 142 / 143.
+    static void RemapBlendBlock(const u32* src, std::array<u32, ParamDwords>& dst);
     /// UE 4.21's HDR UI composite (scene PQ + Slate's UI image -> the display buffer).
     static constexpr u64 UiCompositePs = 0xc401ca35f9bceb8eull;
     /// UE's background blur (Slate): its first pass samples what is drawn so far, in HDR the empty UI image. Two
@@ -58,8 +75,10 @@ public:
     static bool Wanted(const std::array<u32, ParamDwords>& block);
 
     /// Records our pass into the builder draw's colour target (`target`, `desc`: the draw's colour buffer 0) from
-    /// `block` (the game's parameters, grading applied). True: written, the game's draw is to be skipped.
-    bool Run(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc, const std::array<u32, ParamDwords>& block);
+    /// `block` (the game's parameters in our layout, grading applied) and, for the blend builder, its level LUT
+    /// (`level_lut`: the game's view). True: written, the game's draw is to be skipped.
+    bool Run(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc,
+             const std::array<u32, ParamDwords>& block, const CompositeInput* level_lut = nullptr);
 
     /// Test patterns (gow3_patterns.h "game" mode): a centred patch over the tonemapper's output (`target`, `desc`),
     /// scene-linear `scene` graded from `block` (the game's, this frame) as the tonemapper would write it; HDR in our
@@ -78,7 +97,7 @@ public:
     vk::ImageView RunBackdrop(const CompositeInput& scene, const CompositeInput& ui, u32 width, u32 height);
 
 private:
-    enum class Kind : u8 { Lut, Patch, Composite };
+    enum class Kind : u8 { Lut, Patch, Composite, LutBlend };
     vk::Pipeline Pipeline(vk::Format format, Kind kind = Kind::Lut);
 
     const Instance& instance;
@@ -86,9 +105,11 @@ private:
     VideoCore::TextureCache& texture_cache;
     VideoCore::BufferCache& buffer_cache;
     Runtime& runtime;
-    vk::UniqueShaderModule vert, frag, patch_frag, composite_frag;
-    vk::UniqueDescriptorSetLayout set_layout, composite_set_layout;
-    vk::UniquePipelineLayout layout, composite_layout;
+    vk::UniqueShaderModule vert, frag, patch_frag, composite_frag, blend_frag;
+    vk::UniqueDescriptorSetLayout set_layout, composite_set_layout, blend_set_layout;
+    vk::UniquePipelineLayout layout, composite_layout, blend_layout;
+    vk::UniqueSampler lut_sampler; ///< the blend builder's sampler: linear, clamp to edge (as the game's)
+    bool blend_noted = false;
     std::vector<std::pair<std::pair<vk::Format, Kind>, vk::UniquePipeline>> pipelines;
     u64 runs = 0;
     bool failed = false;

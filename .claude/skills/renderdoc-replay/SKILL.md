@@ -38,6 +38,8 @@ subfolder (a stray `dis.py` there once shadowed the standard library).
 | Which events touched a pixel of a target, values before / after | `pixel_history.py` (RD_PIXEL, RD_TARGET) |
 | Every use of one image or buffer | `resource_usage.py` (RD_RESOURCE) |
 | A target after a draw, raw bytes | `save_target.py` |
+| A texture a draw samples, raw bytes (stored order) | `save_texture.py` (RD_CAPTURE, RD_EID, RD_RESOURCE, RD_OUT) |
+| A draw's pipeline state incl. sampler filtering | `draw_state.py` |
 | Render passes in order with PNGs | `pass_images.py` |
 | Shader disassembly + bound buffer floats | `disasm.py` |
 | Per-instruction values at one pixel | `debug_pixel_values.py` |

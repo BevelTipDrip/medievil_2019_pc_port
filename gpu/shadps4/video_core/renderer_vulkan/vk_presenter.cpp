@@ -58,99 +58,6 @@
 namespace Vulkan {
 
 namespace {
-// gow3 HDR near-black correction (pp_pass.h Settings::black_lut): hdr-black-correction.txt beside medievil.ini holds
-// "requested measured" nit pairs from a meter run (measure_patches.py --write-correction); the table maps each input PQ
-// code below the limit to the code whose measured output is the input's luminance. Re-read when the file changes
-// (checked at most once a second).
-struct BlackCorrection {
-    std::filesystem::file_time_type stamp{};
-    std::chrono::steady_clock::time_point checked{};
-    bool valid = false;
-    float limit = 0.0f;
-    std::array<float, HostPasses::PostProcessingPass::BLACK_LUT_SIZE> lut{};
-} black_correction;
-
-float PqFromNits(double nits) {
-    const double y = std::pow(std::clamp(nits / 10000.0, 0.0, 1.0), 0.1593017578125);
-    return float(std::pow((0.8359375 + 18.8515625 * y) / (1.0 + 18.6875 * y), 78.84375));
-}
-double NitsFromPq(double code) {
-    const double p = std::pow(std::clamp(code, 0.0, 1.0), 1.0 / 78.84375);
-    return 10000.0 * std::pow(std::max(p - 0.8359375, 0.0) / (18.8515625 - 18.6875 * p), 1.0 / 0.1593017578125);
-}
-
-void RefreshBlackCorrection() {
-    auto& c = black_correction;
-    const auto now = std::chrono::steady_clock::now();
-    if (now - c.checked < std::chrono::seconds(1)) {
-        return;
-    }
-    c.checked = now;
-    const char* config = std::getenv("GOW3_CONFIG");
-    const auto path = std::filesystem::path(config && config[0] ? config : "medievil.ini").parent_path() /
-                      "hdr-black-correction.txt";
-    std::error_code error;
-    const auto stamp = std::filesystem::last_write_time(path, error);
-    if (error) {
-        c.valid = false;
-        return;
-    }
-    if (c.valid && stamp == c.stamp) {
-        return;
-    }
-    c.stamp = stamp;
-    c.valid = false;
-    std::vector<std::pair<double, double>> points{{0.0, 0.0}}; // requested, measured
-    std::ifstream file(path);
-    for (std::string line; std::getline(file, line);) {
-        if (line.empty() || line[0] == '#') {
-            continue;
-        }
-        std::istringstream in(line);
-        double requested = 0, measured = 0;
-        if (in >> requested >> measured && requested > 0 && measured > 0) {
-            points.emplace_back(requested, measured);
-        }
-    }
-    std::sort(points.begin(), points.end());
-    for (size_t i = 1; i < points.size(); ++i) { // measured output never falls as the request rises
-        points[i].second = std::max(points[i].second, points[i - 1].second);
-    }
-    if (points.size() < 4) {
-        std::printf("HDR near-black correction: %s has too few points; off\n", path.string().c_str());
-        return;
-    }
-    // The limit: the highest request; the table maps to identity there.
-    const double limit_nits = points.back().first;
-    c.limit = PqFromNits(limit_nits);
-    const size_t n = c.lut.size();
-    for (size_t k = 0; k < n; ++k) {
-        const double target = NitsFromPq(double(c.limit) * double(k) / double(n - 1));
-        // The request whose measured output is `target` (interpolated between the measured points).
-        double request = target;
-        for (size_t i = 1; i < points.size(); ++i) {
-            if (target <= points[i].second) {
-                const auto& [r0, m0] = points[i - 1];
-                const auto& [r1, m1] = points[i];
-                request = m1 > m0 ? r0 + (r1 - r0) * (target - m0) / (m1 - m0) : r1;
-                break;
-            }
-        }
-        // Blend to identity over the last 15% of the table, so it joins the uncorrected range without a step.
-        const double w = std::clamp((double(k) / double(n - 1) - 0.85) / 0.15, 0.0, 1.0);
-        request = request * (1.0 - w) + target * w;
-        c.lut[k] = PqFromNits(request);
-    }
-    c.lut[0] = 0.0f;
-    c.valid = true;
-    std::printf("HDR near-black correction: %zu points from %s, up to %.1f nits (1 nit -> sent as %.3f)\n",
-                points.size() - 1, path.string().c_str(), limit_nits,
-                NitsFromPq(c.lut[std::min<size_t>(n - 1, size_t(std::lround(PqFromNits(1.0) / c.limit * (n - 1))))]));
-    std::fflush(stdout);
-}
-} // namespace
-
-namespace {
 // gow3 test patterns (gow3_patterns.h, research/docs/plan-meter-measurement.md): a raw patch written into the swapchain
 // image by a buffer-to-image copy (exact bits, any format), the rest of the frame optionally cleared. Three slots in one
 // host buffer, one per frame in flight, refilled when the patch or the format changes.
@@ -878,23 +785,15 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
         fsr_settings.use_rcas &&
         Gow3Graphics::FsrPassRuns(fsr_settings.enable, true, int(image_size.width), int(image_size.height),
                                   int(frame->width), int(frame->height));
+    // gow3: `hdr` false for HDR frames too: they are PQ, a perceptual encoding like gamma, which EASU / RCAS take as
+    // they are; the pass's HDR mode squares its output, meant for linear input (it crushed PQ frames; study-hdr.md H36).
     image_view = fsr_pass.Render(cmdbuf, image_view, image_size, {frame->width, frame->height},
-                                 fsr_settings, frame->is_hdr);
+                                 fsr_settings, false);
 
     // Vulkan has no sRGB variant of the 10-bit format, so an A2R10G10B10Srgb buffer reaches
     // the post process pass still sRGB encoded and has to be decoded there instead.
     pp_settings.srgb_input =
         attribute.attrib.pixel_format == Libraries::VideoOut::PixelFormat::A2R10G10B10Srgb;
-    // gow3 HDR near-black correction (opt-in, a meter measurement of this display).
-    pp_settings.black_count = 0;
-    if (frame->is_hdr && Gow3Settings::Get().hdr_black_correction.load(std::memory_order_relaxed)) [[unlikely]] {
-        RefreshBlackCorrection();
-        if (black_correction.valid) {
-            pp_settings.black_count = u32(black_correction.lut.size());
-            pp_settings.black_limit = black_correction.limit;
-            std::copy(black_correction.lut.begin(), black_correction.lut.end(), pp_settings.black_lut);
-        }
-    }
     pp_pass.Render(cmdbuf, image_view, image_size, *frame, pp_settings);
     if (frame_dump) {
         // The presented image as the swapchain blit reads it (General after the pass).

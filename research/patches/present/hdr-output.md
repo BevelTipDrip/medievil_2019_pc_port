@@ -9,14 +9,14 @@ default_deck: off
 origin: ours
 class: G
 commits:
-files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.h, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.vert, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.frag, gpu/shadps4/video_core/host_shaders/ue4_grade.glsl, gpu/shadps4/video_core/host_shaders/ue4_hdr_map.glsl, gpu/shadps4/video_core/host_shaders/ue4_ui_composite.frag, scripts/save_brightness.py, launcher/medievil_launcher.py, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_settings.h, gpu/shadps4/video_core/host_shaders/imgui_hdr.frag, gpu/patches/imgui/0001-vulkan-pipeline-for-another-format-and-fragment-shader.patch, src/runtime_extra.c, run.py, build.sh, gpu/shadps4/core/libraries/videoout/video_out.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_swapchain.cpp, gpu/shim/core/emulator_settings.h, scripts/ue4_override.py, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.cpp, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.h, gpu/shadps4/video_core/host_shaders/post_process.frag, gpu/shadps4/video_core/host_shaders/post_process_hdr.frag, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h
-symbols: Ue4HdrGrading, ReplaceHdrGrading, ReplaceHdrComposite, RunComposite, PrepareHdrBlur, RunBackdrop, IsUiBlurFirstPass, set_neutral, GradeScene, HdrSceneToNits, HdrRollOff, LutDecodeHdrTexel, Ue4GradeOverride, ApplyUe4Grade, Ue4GradeTarget, HdrPipeline, ImGui_ImplVulkan_CreatePipelineForFormat, ColorTab, GradeAt, GradeKey, RequestHdrUi, RequestHdrCurve, hdr_ui_level, sceVideoOutGetDeviceCapabilityInfo, sceVideoOutConfigureOutputMode_, sceVideoOutRegisterBuffers, FindPresentFormat, Swapchain::SetHDR, IsHdrGameForced, PostProcessingPass::HDR_FRAME_FORMAT, RecreateFrame, MustCompileSync
+files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.h, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.vert, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.frag, gpu/shadps4/video_core/host_shaders/ue4_grade.glsl, gpu/shadps4/video_core/host_shaders/ue4_hdr_map.glsl, gpu/shadps4/video_core/host_shaders/ue4_ui_composite.frag, scripts/save_brightness.py, launcher/medievil_launcher.py, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_settings.h, gpu/shadps4/video_core/host_shaders/imgui_hdr.frag, gpu/patches/imgui/0001-vulkan-pipeline-for-another-format-and-fragment-shader.patch, src/runtime_extra.c, run.py, build.sh, gpu/shadps4/core/libraries/videoout/video_out.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_swapchain.cpp, gpu/shim/core/emulator_settings.h, scripts/ue4_override.py, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.cpp, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.h, gpu/shadps4/video_core/host_shaders/post_process.frag, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h
+symbols: Ue4HdrGrading, ReplaceHdrGrading, LutBuilderBlendPs, RemapBlendBlock, GradeLutBlend, IsLutBuilder, ReplaceHdrComposite, RunComposite, PrepareHdrBlur, RunBackdrop, IsUiBlurFirstPass, set_neutral, GradeScene, HdrSceneToNits, HdrRollOff, LutDecodeHdrTexel, Ue4GradeOverride, ApplyUe4Grade, Ue4GradeTarget, HdrPipeline, ImGui_ImplVulkan_CreatePipelineForFormat, ColorTab, GradeAt, GradeKey, RequestHdrUi, RequestHdrCurve, hdr_ui_level, sceVideoOutGetDeviceCapabilityInfo, sceVideoOutConfigureOutputMode_, sceVideoOutRegisterBuffers, FindPresentFormat, Swapchain::SetHDR, IsHdrGameForced, PostProcessingPass::HDR_FRAME_FORMAT, RecreateFrame, MustCompileSync
 switches: GOW3_HDR, GOW3_HDR_GAME, GOW3_UE4_GRADE, GOW3_UE4_LIVE_CVARS
 tests:
 docs: study-hdr.md, plan-work-queue.md
 depends_on: particle-curve-sync-compile
 related: ue4-frame-map, mausoleum-diagnostics, renderdoc-capture
-checked: 2026-11-19
+checked: 2026-11-21
 ---
 ## What it does
 
@@ -37,7 +37,8 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
   zero and every UI element and movie was black. The program is in `MustCompileSync`, and a listed pixel program now
   compiles its whole draw on the spot ([particle-curve-sync-compile](../stage-b/particle-curve-sync-compile.md)).
 - **`GOW3_UE4_GRADE="name=value;..."`** (diagnostic, read at start): replaces values of UE 4.21's combine LUT
-  parameters (`fs a4152b3be93c832a` buffer 0, 144 dwords; map in study-hdr.md "LUT parameters") in the constant ring
+  parameters (`fs a4152b3be93c832a` buffer 0, 144 dwords; map in study-hdr.md "LUT parameters"; in the level-LUT
+  builder `9f6bac6cba984956` at the same names, dword + 20 from 45 on) in the constant ring
   copy, or in a patched stream copy when the block is bound outside the ring; ring reuse is skipped for it. Names:
   `film.*`, `wb.temp` / `tint`, `{global,shadows,midtones,highlights}.{saturation,contrast,gamma,gain,offset}[.r|.g|.b|.w]`
   (a bare name sets `.w`), `shadows_max`, `highlights_min`, `blue_correction`, `expand_gamut`, `d<index>`. Log: the parsed
@@ -81,6 +82,11 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
   brightness (203); above a knee at Y(U) = 0.5 the luminance continues the SDR look's slope at the knee (Highlights,
   plan-hdr-sdr-match.md step 2), then a luminance roll-off (identity to half the peak, extended Reinhard reaching the
   peak at 4x); BT.2020 PQ / 1.05. The game's Brightness (dword 5, InverseGamma.y) is forced to 1 in HDR (H26).
+  Levels with their own grading LUT (Hilltop Mausoleum) run a second builder, `fs 9f6bac6cba984956` (164 dwords: ours
+  with 20 at 45, plus a 256x16 LUT texture; notes-ue421-lut-builder-map.md E, H36): its block is remapped to ours
+  (`RemapBlendBlock`), the LUT bound through the game's view with the game's filtering, and `GRADE_LUT_BLEND`
+  (`ue4_hdr_lut_blend_frag`) adds the blend after the film curve. Log once: `the builder with a level grading LUT
+  (fs 9f6bac6cba984956), weights w0 / w1`; another builder into a 32^3 target: `unknown 32^3 LUT builder fs ...`.
   Settings: `hdr_look`, `hdr_game_nits`, `hdr_gamma`, `hdr_peak_nits` (default 1000), `hdr_highlights` (default 100).
 - **UI composite** (same HDR look; plan-hdr-sdr-match.md step 3): the game's composite draw (`fs c401ca35f9bceb8e`) is
   replaced (`Rasterizer::ReplaceHdrComposite`, `Ue4HdrGrading::RunComposite`, `ue4_ui_composite.frag`): scene and UI
@@ -95,12 +101,8 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
 - **Game brightness** (launcher, Display): "Set to neutral" writes the game's default Brightness (0.3778, display
   gamma 2.2) into every save slot (`scripts/save_brightness.py`; saves backed up first, file times kept). In HDR the
   picture ignores the slider but Unreal's UI shaders apply it.
-- **Near-black correction** (`hdr_black_correction`, Display > HDR > Near-black correction; off by default): the
-  presenter reads `hdr-black-correction.txt` beside medievil.ini (pairs `requested_nits measured_nits` from the meter
-  script's `hdr-nearblack --write-correction`; re-read once a second), inverts the measured response below its last
-  point (at most 24 points, blended to identity over the top 15%) and passes it in the post-process push constants
-  (128 bytes); `post_process.frag` applies it per channel in the HDR branch only. Logs one line per load
-  ("HDR near-black correction: N points ...").
+- **FSR1 / RCAS in HDR:** the pass always runs in its SDR mode (`hdr` false): PQ is perceptual like gamma, and the
+  pass's HDR mode squares its output for linear input (it crushed PQ frames, H36).
 - **Release build** (`GOW3_DEV_TOOLS=0`): `GOW3_UE4_GRADE`, the grading coverage counts, `GOW3_UE4_LIVE_CVARS`, the
   frame map (with its shader traces), the image watch and the dropped-draw log are compiled out (strings absent from
   the release exe, present in the dev one). The HDR post-process pipeline is built only with `GOW3_HDR=1`. Kept: the
@@ -109,7 +111,7 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
 ## Invariants
 
 - With HDR off the release build's SDR path is the baseline's: `post_process.frag` is byte-identical to `22744f1`
-  (the near-black correction lives in `post_process_hdr.frag`, HDR pipeline and layout only); `Ue4HdrGrading` exists
+  and serves both pipelines (the near-black correction was removed, H36); `Ue4HdrGrading` exists
   only with "Allow HDR output" or in the dev build (the per-draw test is a null check); new rasterizer members sit
   after the per-draw ones and new settings fields after the older ones (H35). Keep it so: new HDR state goes at the
   ends, HDR work behind `hdr_active` / the null check.
@@ -137,13 +139,12 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
 - Rows that share a name (the four ranges' Saturation ... Offset) need their own `ImGui::PushID` scope: a styled row's
   ID is its name, and shared IDs move every copy at once (H20).
 - Grading is relative: replacing the game's values instead would flatten every area's own post-process grading.
-- The post-process push block is exactly 128 bytes (`static_assert` in `pp_pass.h`, the Vulkan minimum): more
-  correction points need a buffer, not a bigger push block. The correction runs only when `black_count > 1` and the
-  frame is HDR; SDR frames never touch it.
-- The correction file describes one screen at one moment: it goes stale as the panel drifts (re-measure after pixel
-  refreshes) and must be off while a system-wide profile already corrects the same thing.
-- Not finished: RTSS's text reads as 10,000-nit red (its own drawing); FSR1 / RCAS's HDR mode squares PQ values;
-  screenshots save raw PQ; no peak roll-off. Diagnostic runs only until those are done.
+- The grading hooks key on the builder's program hash: `a4152b3be93c832a` and `9f6bac6cba984956` (LANDMINES.md 30).
+  A level with a third version keeps the game's grading there (the HDR rows and the Colour tab doing nothing); the
+  `unknown 32^3 LUT builder` line names it. The 9f6b remap is offline-checked for the captured block layout only.
+- The meter's game patches (`ue4_pattern.frag`) use the a415 chain without the level LUT.
+- Not finished: RTSS's text reads as 10,000-nit red (its own drawing); screenshots save raw PQ; no Windows HDR check
+  at start.
 
 ## Interactions
 
@@ -172,7 +173,10 @@ within 1-4%; Highlights 100 identical up to the knee, smooth above it, flat at t
 the screen's 0.94 tracking); the user: "it all looks good to me". H32 (2026-11-19): the UI composite; movies and menu
 colours correct after the channel fix (the user); the black blurred-menu background traced to the blur reading the
 empty HDR UI image. H33 (2026-11-20): the backdrop; the weapons tab fixed (the user); the map popups' half-size
-first pass found in RenderDoc and added; the user: both popups work.
+first pass found in RenderDoc and added; the user: both popups work. H36 (2026-11-21): FSR1 / RCAS in SDR mode
+for PQ frames, the user: sharper, otherwise the same; the near-black correction removed (calibration outside the
+game); Hilltop's builder `9f6b` ported (offline equal on all 32^3 texels, 12 cases), the user: the Colour tab and
+the HDR settings work in Hilltop, other levels unchanged.
 
 ## History and pitfalls
 

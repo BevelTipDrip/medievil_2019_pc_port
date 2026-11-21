@@ -31,6 +31,16 @@ float GradeParam(uint i) {
     return uintBitsToFloat(params.data[i]);
 }
 
+#ifdef GRADE_LUT_BLEND
+// Built a second time with GRADE_LUT_BLEND=1 (ue4_hdr_lut_blend_frag) for the builder with a level grading LUT
+// (fs 9f6bac6cba984956): the game's own view of its 256x16 LUT texture (bgra swizzle: true RGB here), sampled
+// linear / clamp to edge as the game's sampler; the weights are in params 142 / 143 (vk_rasterizer.cpp remaps the block).
+layout(set = 0, binding = 1) uniform sampler2D grade_lut;
+vec3 GradeLutSample(vec2 uv) {
+    return texture(grade_lut, uv).rgb;
+}
+#endif
+
 #include "ue4_grade.glsl"
 #include "ue4_hdr_map.glsl"
 

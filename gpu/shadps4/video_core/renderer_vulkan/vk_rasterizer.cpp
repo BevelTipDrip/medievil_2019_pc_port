@@ -1,12 +1,14 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <atomic>
 #include <cctype>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <map>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -734,24 +736,28 @@ const Ue4Grade& Ue4GradeOverride() {
 /// The LUT builder's parameter block, when GOW3_UE4_GRADE or the menu's colour grading
 /// (Gow3Settings::GradeAt, live) changes it; otherwise the draw binds as before.
 bool Ue4GradeTarget(const Shader::Info& stage, u32 index, u64 size) {
-    return stage.pgm_hash == Ue4CombineLutPs && index == 0 &&
-           size >= Ue4CombineLutDwords * sizeof(u32) &&
+    return Ue4HdrGrading::IsLutBuilder(stage.pgm_hash) && index == 0 &&
+           size >= Ue4HdrGrading::LutBlockDwords(stage.pgm_hash) * sizeof(u32) &&
            (!Ue4GradeOverride().values.empty() || !Gow3Settings::GradeNeutral());
 }
-void ApplyUe4Grade(u8* block) {
+/// `blend_layout`: the block is the blend builder's (9f6bac6cba984956: ours with 20 dwords at 45), not ours.
+void ApplyUe4Grade(u8* block, bool blend_layout = false) {
+    const auto at = [blend_layout](u32 dword) {
+        return (blend_layout ? Ue4HdrGrading::BlendDword(dword) : dword) * sizeof(u32);
+    };
     auto& grade = const_cast<Ue4Grade&>(Ue4GradeOverride());
     if (!grade.values.empty() && !grade.logged.exchange(true)) {
         std::string line = "UE4 grade: first combine LUT draw, game values:";
         for (const auto& [index, value] : grade.values) {
             float before;
-            std::memcpy(&before, block + index * sizeof(u32), sizeof(float));
+            std::memcpy(&before, block + at(index), sizeof(float));
             line += " d" + std::to_string(index) + " " + std::to_string(before) + " -> " +
                     std::to_string(value);
         }
         std::printf("%s\n", line.c_str());
     }
     for (const auto& [index, value] : grade.values) {
-        std::memcpy(block + index * sizeof(u32), &value, sizeof(float));
+        std::memcpy(block + at(index), &value, sizeof(float));
     }
     // The menu's grading (Color tab), relative to the game's values (or GOW3_UE4_GRADE's, set above).
     static std::atomic<bool> menu_logged{false};
@@ -765,13 +771,13 @@ void ApplyUe4Grade(u8* block) {
         }
         const Gow3Settings::GradeInfo info = Gow3Settings::GradeAt(g);
         float value;
-        std::memcpy(&value, block + info.dword * sizeof(u32), sizeof(float));
+        std::memcpy(&value, block + at(info.dword), sizeof(float));
         const float game = value;
         value = info.add ? value + change : value * change;
         if (info.dword >= 136) { // shadows max, highlights min, blue correction, gamut expansion: 0-1
             value = std::clamp(value, 0.0f, 1.0f);
         }
-        std::memcpy(block + info.dword * sizeof(u32), &value, sizeof(float));
+        std::memcpy(block + at(info.dword), &value, sizeof(float));
         if (log) {
             line += " " + Gow3Settings::GradeKey(g) + " " + std::to_string(game) + " -> " +
                     std::to_string(value);
@@ -842,7 +848,7 @@ void Rasterizer::CollectRingBindings(const Shader::Info& stage, const PreparedDr
             memory->CopySparseMemory(address, dst, size);
         }
         if (grade) {
-            ApplyUe4Grade(dst);
+            ApplyUe4Grade(dst, stage.pgm_hash == Ue4HdrGrading::LutBuilderBlendPs);
             CountUe4Grade(&Ue4Grade::ring);
         }
         constant_ring->Flush(*offset, size);
@@ -2736,9 +2742,11 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, const PreparedStage* pre
                         std::printf("UE4 grade: a combine LUT draw bound its parameters outside the "
                                     "constant ring; patched in a stream copy\n");
                     }
-                    std::array<u8, Ue4CombineLutDwords * sizeof(u32)> block{};
+                    std::array<u8, Ue4HdrGrading::BlendParamDwords * sizeof(u32)> storage{};
+                    const std::span<u8> block(storage.data(),
+                                              Ue4HdrGrading::LutBlockDwords(stage.pgm_hash) * sizeof(u32));
                     memory->CopySparseMemory(vsharp.base_address, block.data(), block.size());
-                    ApplyUe4Grade(block.data());
+                    ApplyUe4Grade(block.data(), stage.pgm_hash == Ue4HdrGrading::LutBuilderBlendPs);
                     CountUe4Grade(&Ue4Grade::stream);
                     auto& vk_buffer = buffer_cache.GetStreamBuffer();
                     const u64 offset = vk_buffer.Copy(block.data(), block.size(), alignment);
@@ -5054,9 +5062,28 @@ bool Rasterizer::ReplaceHdrGrading(const Pipeline* pipeline) {
     const auto stages = pipeline->GetStages();
     const u32 fragment = static_cast<u32>(Shader::SwStage::Fragment);
     const Shader::Info* fs = fragment < stages.size() ? stages[fragment] : nullptr;
-    if (!fs || fs->pgm_hash != Ue4HdrGrading::LutBuilderPs) {
+    if (!fs) {
         return false;
     }
+    if (!Ue4HdrGrading::IsLutBuilder(fs->pgm_hash)) {
+        // Another builder version would keep the game's grading silently (the HDR rows and the Colour tab doing
+        // nothing in its levels, H36): once per shader, a draw into a 32-slice 32x32 target that is not ours.
+        constexpr u64 UiLutBuilderPs = 0xc401ca35ab81eb39ull; // UE's HDR UI composite LUT, also 32^3
+        if (cb_descs[0].first && fs->pgm_hash != UiLutBuilderPs) [[unlikely]] {
+            const auto& d = cb_descs[0].second;
+            if (d.view_info.range.extent.layers == 32 && d.info.size.width == 32 && d.info.size.height == 32) {
+                static std::vector<u64> noted;
+                if (std::ranges::find(noted, fs->pgm_hash) == noted.end() && noted.size() < 16) {
+                    noted.push_back(fs->pgm_hash);
+                    std::printf("UE4 HDR grading: unknown 32^3 LUT builder fs %016llx: the game's grading kept "
+                                "there (HDR rows and Colour tab inactive)\n",
+                                static_cast<unsigned long long>(fs->pgm_hash));
+                }
+            }
+        }
+        return false;
+    }
+    const bool blend = fs->pgm_hash == Ue4HdrGrading::LutBuilderBlendPs;
     // Once per reason: why a builder draw keeps the game's LUT (run 24 declined silently).
     static u32 declined = 0;
     const auto decline = [](u32 bit, const char* why) {
@@ -5072,11 +5099,19 @@ bool Rasterizer::ReplaceHdrGrading(const Pipeline* pipeline) {
     // The game's parameter block (buffer 0) as its draw would bind it, with the Color tab's grading applied.
     const PreparedStage* prepared = FindPreparedStage(*fs);
     const auto vsharp = prepared ? prepared->buffer_sharps[0] : fs->buffers[0].GetSharp(*fs);
-    std::array<u32, Ue4HdrGrading::ParamDwords> block{};
-    if (vsharp.GetSize() < sizeof(block) || !memory->IsValidGpuMapping(vsharp.base_address, sizeof(block))) {
-        return decline(2, "the parameter block is smaller than 576 bytes or not mapped");
+    // Read as the game laid it out (576 bytes, or 656 for the blend builder), then in our layout.
+    std::array<u32, Ue4HdrGrading::BlendParamDwords> raw{};
+    const u32 raw_bytes = Ue4HdrGrading::LutBlockDwords(fs->pgm_hash) * sizeof(u32);
+    if (vsharp.GetSize() < raw_bytes || !memory->IsValidGpuMapping(vsharp.base_address, raw_bytes)) {
+        return decline(2, "the parameter block is smaller than the builder's (576 / 656 bytes) or not mapped");
     }
-    memory->CopySparseMemory(vsharp.base_address, reinterpret_cast<u8*>(block.data()), sizeof(block));
+    memory->CopySparseMemory(vsharp.base_address, reinterpret_cast<u8*>(raw.data()), raw_bytes);
+    std::array<u32, Ue4HdrGrading::ParamDwords> block{};
+    if (blend) {
+        Ue4HdrGrading::RemapBlendBlock(raw.data(), block);
+    } else {
+        std::copy_n(raw.begin(), block.size(), block.begin());
+    }
     if (Gow3Patterns::GameActive()) {
         // The game patch grades with this frame's block (the Color tab applied, as the frame's own grading).
         pattern_block = block;
@@ -5088,7 +5123,27 @@ bool Rasterizer::ReplaceHdrGrading(const Pipeline* pipeline) {
         return false;
     }
     ApplyUe4Grade(reinterpret_cast<u8*>(block.data()));
-    return ue4_hdr->Run(cb_descs[0].first, cb_descs[0].second, block);
+    if (!blend) {
+        return ue4_hdr->Run(cb_descs[0].first, cb_descs[0].second, block);
+    }
+    // The level's grading LUT (image 0): through the game's own view (format and swizzle: true RGB), as its draw.
+    if (fs->images.empty()) {
+        return decline(4, "the blend builder has no LUT texture");
+    }
+    const auto tsharp = prepared ? prepared->image_sharps[0] : fs->images[0].GetSharp(*fs);
+    VideoCore::TextureCache::ImageDesc lut_desc(tsharp, fs->images[0]);
+    const VideoCore::ImageId lut_id = tsharp.Address() ? texture_cache.FindImage(lut_desc) : VideoCore::ImageId{};
+    if (!lut_id) {
+        return decline(8, "the blend builder's LUT texture not found");
+    }
+    scheduler.EndRendering();
+    auto& lut_view = texture_cache.FindTexture(lut_id, lut_desc);
+    auto& lut_image = texture_cache.GetImage(lut_id);
+    runtime.Transit(&lut_image, vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader,
+                    vk::AccessFlagBits2::eShaderRead, lut_desc.view_info.range);
+    lut_image.usage.texture = 1u;
+    const Ue4HdrGrading::CompositeInput lut{*lut_view.image_view, lut_image.backing->state.layout};
+    return ue4_hdr->Run(cb_descs[0].first, cb_descs[0].second, block, &lut);
 }
 
 bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {

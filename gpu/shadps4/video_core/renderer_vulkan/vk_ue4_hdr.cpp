@@ -9,6 +9,7 @@
 #include <cstring>
 #include "gow3_settings.h"
 #include "video_core/buffer_cache/buffer_cache.h"
+#include "video_core/host_shaders/ue4_hdr_lut_blend_frag.h"
 #include "video_core/host_shaders/ue4_hdr_lut_frag.h"
 #include "video_core/host_shaders/ue4_hdr_lut_vert.h"
 #include "video_core/host_shaders/ue4_pattern_frag.h"
@@ -63,6 +64,7 @@ Ue4HdrGrading::Ue4HdrGrading(const Instance& instance_, Scheduler& scheduler_,
     frag = vk::UniqueShaderModule(CompileSPV(UE4_HDR_LUT_FRAG, device), device);
     patch_frag = vk::UniqueShaderModule(CompileSPV(UE4_PATTERN_FRAG, device), device);
     composite_frag = vk::UniqueShaderModule(CompileSPV(UE4_UI_COMPOSITE_FRAG, device), device);
+    blend_frag = vk::UniqueShaderModule(CompileSPV(UE4_HDR_LUT_BLEND_FRAG, device), device);
     const vk::DescriptorSetLayoutBinding binding{0, vk::DescriptorType::eStorageBuffer, 1,
                                                  vk::ShaderStageFlagBits::eFragment};
     set_layout = Check(device.createDescriptorSetLayoutUnique({
@@ -77,6 +79,33 @@ Ue4HdrGrading::Ue4HdrGrading(const Instance& instance_, Scheduler& scheduler_,
         .pSetLayouts = &set,
         .pushConstantRangeCount = 1,
         .pPushConstantRanges = &push,
+    }));
+    // The blend builder: the parameter block and the level LUT (combined image sampler, the game's filtering).
+    const std::array blend_bindings{
+        vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eFragment},
+        vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eCombinedImageSampler, 1,
+                                       vk::ShaderStageFlagBits::eFragment},
+    };
+    blend_set_layout = Check(device.createDescriptorSetLayoutUnique({
+        .flags = vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR,
+        .bindingCount = u32(blend_bindings.size()),
+        .pBindings = blend_bindings.data(),
+    }));
+    const auto blend_set = *blend_set_layout;
+    blend_layout = Check(device.createPipelineLayoutUnique({
+        .setLayoutCount = 1,
+        .pSetLayouts = &blend_set,
+        .pushConstantRangeCount = 1,
+        .pPushConstantRanges = &push,
+    }));
+    lut_sampler = Check(device.createSamplerUnique({
+        .magFilter = vk::Filter::eLinear,
+        .minFilter = vk::Filter::eLinear,
+        .mipmapMode = vk::SamplerMipmapMode::eNearest,
+        .addressModeU = vk::SamplerAddressMode::eClampToEdge,
+        .addressModeV = vk::SamplerAddressMode::eClampToEdge,
+        .addressModeW = vk::SamplerAddressMode::eClampToEdge,
+        .maxLod = 0.0f,
     }));
     // The UI composite: two sampled images (scene, UI; texelFetch, no sampler).
     const std::array composite_bindings{
@@ -99,6 +128,17 @@ Ue4HdrGrading::Ue4HdrGrading(const Instance& instance_, Scheduler& scheduler_,
 }
 
 Ue4HdrGrading::~Ue4HdrGrading() = default;
+
+void Ue4HdrGrading::RemapBlendBlock(const u32* src, std::array<u32, ParamDwords>& dst) {
+    for (u32 i = 0; i <= 44; ++i) {
+        dst[i] = src[i];
+    }
+    for (u32 i = 45; i <= 141; ++i) {
+        dst[i] = src[i + 20];
+    }
+    dst[142] = src[48]; // LUTWeights[0]: the encoded colour
+    dst[143] = src[52]; // LUTWeights[1]: the level LUT
+}
 
 bool Ue4HdrGrading::Wanted(const std::array<u32, ParamDwords>& block) {
     if (Gow3Settings::Get().hdr_look.load(std::memory_order_relaxed) != Gow3Settings::HdrLookSdr) {
@@ -125,6 +165,7 @@ vk::Pipeline Ue4HdrGrading::Pipeline(vk::Format format, Kind kind) {
         vk::PipelineShaderStageCreateInfo{.stage = vk::ShaderStageFlagBits::eFragment,
                                           .module = kind == Kind::Patch       ? *patch_frag
                                                     : kind == Kind::Composite ? *composite_frag
+                                                    : kind == Kind::LutBlend  ? *blend_frag
                                                                               : *frag,
                                           .pName = "main"},
     };
@@ -150,7 +191,9 @@ vk::Pipeline Ue4HdrGrading::Pipeline(vk::Format format, Kind kind) {
                             .pDepthStencilState = &depth_state,
                             .pColorBlendState = &color_blending,
                             .pDynamicState = &dynamic_info,
-                            .layout = kind == Kind::Composite ? *composite_layout : *layout,
+                            .layout = kind == Kind::Composite ? *composite_layout
+                                      : kind == Kind::LutBlend  ? *blend_layout
+                                                                : *layout,
                         });
     if (pipeline.result != vk::Result::eSuccess) {
         std::printf("UE4 HDR grading: pipeline for format %s failed; the game's grading LUT is kept\n",
@@ -164,7 +207,7 @@ vk::Pipeline Ue4HdrGrading::Pipeline(vk::Format format, Kind kind) {
 }
 
 bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc,
-                        const std::array<u32, ParamDwords>& block) {
+                        const std::array<u32, ParamDwords>& block, const CompositeInput* level_lut) {
     if (failed || !target) {
         return false;
     }
@@ -179,10 +222,19 @@ bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache
         failed = true;
         return false;
     }
-    const vk::Pipeline pipeline = Pipeline(desc.view_info.format);
+    const Kind kind = level_lut ? Kind::LutBlend : Kind::Lut;
+    const vk::Pipeline pipeline = Pipeline(desc.view_info.format, kind);
     if (!pipeline) {
         failed = true;
         return false;
+    }
+    if (level_lut && !blend_noted) {
+        blend_noted = true;
+        float w0, w1;
+        std::memcpy(&w0, &block[142], sizeof(w0));
+        std::memcpy(&w1, &block[143], sizeof(w1));
+        std::printf("UE4 HDR grading: the builder with a level grading LUT (fs 9f6bac6cba984956), weights %.3f / %.3f\n",
+                    w0, w1);
     }
     scheduler.EndRendering();
     // As the skipped draw's colour target: GPU-modified, its aliases told, the view the game's draw would render to.
@@ -216,7 +268,9 @@ bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache
         .peak_nits = float(settings.hdr_peak_nits.load(std::memory_order_relaxed)),
         .highlights = float(settings.hdr_highlights.load(std::memory_order_relaxed)) / 100.0f,
     };
-    const vk::PipelineLayout pipeline_layout = *layout;
+    const vk::PipelineLayout pipeline_layout = level_lut ? *blend_layout : *layout;
+    const CompositeInput lut = level_lut ? *level_lut : CompositeInput{};
+    const vk::Sampler sampler = *lut_sampler;
     scheduler.Record([=](vk::CommandBuffer cmdbuf) {
         const vk::RenderingAttachmentInfo attachment{
             .imageView = view,
@@ -231,12 +285,20 @@ bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache
             .pColorAttachments = &attachment,
         });
         const vk::DescriptorBufferInfo info{.buffer = params, .offset = offset, .range = sizeof(block)};
-        const vk::WriteDescriptorSet write{.dstBinding = 0,
-                                           .descriptorCount = 1,
-                                           .descriptorType = vk::DescriptorType::eStorageBuffer,
-                                           .pBufferInfo = &info};
+        const vk::DescriptorImageInfo lut_info{sampler, lut.view, lut.layout};
+        const std::array writes{
+            vk::WriteDescriptorSet{.dstBinding = 0,
+                                   .descriptorCount = 1,
+                                   .descriptorType = vk::DescriptorType::eStorageBuffer,
+                                   .pBufferInfo = &info},
+            vk::WriteDescriptorSet{.dstBinding = 1,
+                                   .descriptorCount = 1,
+                                   .descriptorType = vk::DescriptorType::eCombinedImageSampler,
+                                   .pImageInfo = &lut_info},
+        };
         cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, write);
+        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0,
+                                    vk::ArrayProxy<const vk::WriteDescriptorSet>(lut.view ? 2u : 1u, writes.data()));
         cmdbuf.pushConstants(pipeline_layout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(push), &push);
         cmdbuf.setViewportWithCount(vk::Viewport{0.f, 0.f, float(width), float(height), 0.f, 1.f});
         cmdbuf.setScissorWithCount(vk::Rect2D{{0, 0}, {width, height}});

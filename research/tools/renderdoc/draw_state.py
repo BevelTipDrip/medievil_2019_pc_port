@@ -26,6 +26,8 @@ def fields(obj, names):
             value = getattr(obj, n)
             if hasattr(value, 'Name'):  # ResourceFormat and other SWIG objects: their readable name
                 value = value.Name()
+            elif hasattr(value, 'minify'):  # TextureFilter: its fields (it printed as a SWIG object)
+                value = '{min %s mag %s mip %s %s}' % (value.minify, value.magnify, value.mip, value.filter)
             parts.append(f'{n}={value}')
         except Exception:
             pass

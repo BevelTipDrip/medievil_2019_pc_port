@@ -366,6 +366,37 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     plus repeatable heavy moments (particle bursts from hitting metal): about the same, within run-to-run variance;
     HDR on: works, looks as before; "significantly better than the 2.4.0 release" [V the user]. A finer A/B needs
     the repeatable stress test (work queue).
+- **H36, FSR1 / RCAS in HDR, the near-black correction removed, Hilltop Mausoleum's grading builder** (2026-11-20 /
+  21; captures `research-data/hdr-grading-20261121/cap_frame{7814,16057,22288,24343,82572}.rdc`, not in git):
+  - FSR1 / RCAS: the presenter passed `frame->is_hdr` as the pass's `hdr` flag; that mode expects linear input and
+    squares its output, which crushed PQ frames. PQ is a perceptual encoding like gamma, so the pass now always runs
+    in its SDR mode. Run 2026-11-21: Sharpening and FSR1 in HDR look as without them, only sharper (the user).
+  - The near-black correction (`hdr_black_correction`, `hdr-black-correction.txt`, `post_process_hdr.frag`,
+    `measure_patches.py --write-correction`) removed: the user calibrates the display outside the game, the right
+    place for a per-display fix. `pp_pass` is back to one shader (`post_process.frag`, `22744f1`'s bytes) for both
+    pipelines.
+  - Hilltop Mausoleum: the HDR rows and the Colour tab did nothing there (the user, 2026-11-20). Capture 82572: the
+    level's grading draw (eid 15063) runs `fs 9f6bac6cba984956`, UE 4.21's builder with a level grading LUT
+    (BLENDCOUNT 2) [V]: its block is 164 dwords, a415's with 20 inserted at 45 (LUTWeights; [0] at 48, [1] at 52,
+    captured 0.65 / 0.35), plus a 256x16 RGBA8 texture (a 16^3 LUT unwrapped, `bgra` view) sampled linear / clamp to
+    edge. Between the film curve and MappingPolynomial it clamps the colour to 0-1, sRGB-encodes it, reads two LUT
+    slices lerped by fract(15 b), mixes `w0 * colour + w1 * lut`, floors at 6.1e-5 and decodes sRGB. Its HDR devices
+    (OutputDevice >= 1) read the colour before the film curve [V, `lut_9f6b.glsl` 1358 on reads `_1572` / `_1575` /
+    `_1583`]: the game's ACES output never shows the level LUT.
+  - Port: `ue4_grade.glsl` `GRADE_LUT_BLEND` (`ue4_hdr_lut_blend_frag`); offline harness
+    `research-data/hdr-grading-20261121/port9f6b` (the game's shader decompiled to C++ against the port, all 32^3
+    texels, 12 cases: as captured, LUT only, no LUT, half and half, contrast, shadows gain, mid-tones offset, white
+    temperature, film toe, blue correction, scale / overlay, legacy curve): all match, max |d| 9e-7, no NaN
+    mismatches. Runtime: `ReplaceHdrGrading` and the Colour tab accept both builders; the 9f6b block is remapped to
+    a415's layout (0-44 as is, 65-161 -> 45-141, the weights -> 142 / 143) and the level LUT bound through the
+    game's view; the Colour tab writes the 9f6b block at the shifted dwords. Another 32^3 builder is logged once per
+    shader (`unknown 32^3 LUT builder`). Run 2026-11-21: in Hilltop the Colour tab (SDR and HDR) and the HDR settings
+    work; the Graveyard and the map look as before (the user).
+  - Hilltop's HDR looks brighter than its ACES output, the reverse of other levels (the user). Offline
+    (`port9f6b/highlights9f6b.cpp`, our HDR maths on the captured block): the level LUT lifts dark tones (scene 0.02
+    grey: 0.006 of SDR white with it, 0.002 without) and mid-grey ~5%, and leaves the highlight slope at the knee as
+    it is (0.62 with, 0.63 without; extension ~4% brighter, the mid-tone lift). So that is the level's own SDR haze,
+    which ACES skips [V above]. Open: Hilltop HDR against Hilltop SDR, Highlights 0 and 100 (the user).
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.

@@ -462,6 +462,46 @@ vec3 LegacyTonemap(vec3 c)
 // line 1272). zero_black_clip forces FilmBlackClip (dw43) to 0 in the film curve.
 // ------------------------------------------------------------------------------------------------
 
+#ifdef GRADE_LUT_BLEND
+// ------------------------------------------------------------------------------------------------
+// The level's grading LUT texture (UE 4.21 CombineLUTs BLENDCOUNT=2: fs 9f6bac6cba984956, decompile lines 1219-1301,
+// study-hdr.md H36). The tonemapped colour clamped to 0-1 and sRGB-encoded indexes a 16^3 LUT unwrapped into a 256x16
+// texture (the two blue slices around it, blended); the result is mixed with the encoded colour by LUTWeights[1] and
+// LUTWeights[0], floored and sRGB-decoded. The includer declares vec3 GradeLutSample(vec2 uv) (the game's view of the
+// texture, linear filtering, clamp to edge); the weights are dwords 142 / 143 of this file's layout (the 9f6b block's
+// 48 / 52, moved there by the caller).
+// ------------------------------------------------------------------------------------------------
+
+float GradeLutEncode(float c)
+{
+    return c >= 0.00313066993840038776397705078125
+               ? fma(1.05499994754791259765625, exp2(0.4166666567325592041015625 * log2(c)), -0.054999999701976776123046875)
+               : 12.9200000762939453125 * c;
+}
+
+float GradeLutDecode(float c)
+{
+    return 0.040449999272823333740234375 < c
+               ? exp2(2.400000095367431640625 * log2(fma(0.947867333889007568359375, c, 0.0521326996386051177978515625)))
+               : 0.077399380505084991455078125 * c;
+}
+
+vec3 GradeLutBlend(vec3 tonemapped)
+{
+    vec3 c = clamp(max(vec3(0.0), tonemapped), 0.0, 1.0);
+    vec3 s = vec3(GradeLutEncode(c.x), GradeLutEncode(c.y), GradeLutEncode(c.z));
+    float bz = 15.0 * s.z;
+    float u = fma(s.x * 0.9375 + floor(bz), 0.0625, 0.001953125);
+    float v = fma(0.9375, s.y, 0.03125);
+    vec3 hi = GradeLutSample(vec2(0.0625 + u, v));
+    vec3 lo = GradeLutSample(vec2(u, v));
+    vec3 lut = (hi - lo) * fract(bz) + lo;
+    vec3 m = GradeParam(143u) * lut + GradeParam(142u) * s;
+    m = max(vec3(6.1035199905745685100555419921875e-05), m);
+    return vec3(GradeLutDecode(m.x), GradeLutDecode(m.y), GradeLutDecode(m.z));
+}
+#endif
+
 void GradeScene(vec3 scene_linear, bool zero_black_clip, out vec3 U_srgb, out vec3 G_srgb)
 {
     bool film = floatBitsToUint(GradeParam(39u)) != 0u;                           // integer test (line 407)
@@ -482,6 +522,9 @@ void GradeScene(vec3 scene_linear, bool zero_black_clip, out vec3 U_srgb, out ve
     {
         tonemapped = LegacyTonemap(U_srgb);                                       // lines 1131-1229
     }
+#ifdef GRADE_LUT_BLEND
+    tonemapped = GradeLutBlend(tonemapped);                                       // 9f6b: the level's LUT
+#endif
 
     // MappingPolynomial (lines 1232-1246)
     float pa = GradeParam(0u), pb = GradeParam(1u), pc = GradeParam(2u);

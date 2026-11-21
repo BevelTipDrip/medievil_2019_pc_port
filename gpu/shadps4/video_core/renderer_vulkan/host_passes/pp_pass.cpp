@@ -7,12 +7,9 @@
 #include "core/emulator_settings.h"
 #include "video_core/host_shaders/fs_tri_vert.h"
 #include "video_core/host_shaders/post_process_frag.h"
-#include "video_core/host_shaders/post_process_hdr_frag.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
-
-#include <cstddef>
 
 #include <boost/container/static_vector.hpp>
 
@@ -37,12 +34,10 @@ void PostProcessingPass::Create(vk::Device device, const vk::Format surface_form
     desc_set_layout = Check<"create pp descriptor set layout">(
         device.createDescriptorSetLayoutUnique(desc_layout_ci));
 
-    // gow3: the SDR pipeline's range is the shader's 12 bytes as before HDR; the HDR one (pipeline_layout_hdr) all of
-    // Settings, the near-black correction included.
     const vk::PushConstantRange push_constants{
         .stageFlags = vk::ShaderStageFlagBits::eFragment,
         .offset = 0,
-        .size = u32(offsetof(Settings, black_count)),
+        .size = sizeof(Settings),
     };
 
     const auto& vs_module = CompileSPV(FS_TRI_VERT, device);
@@ -75,17 +70,6 @@ void PostProcessingPass::Create(vk::Device device, const vk::Format surface_form
 
     pipeline_layout =
         Check<"create pp pipeline layout">(device.createPipelineLayoutUnique(layout_info));
-    if (EmulatorSettings.IsHdrAllowed()) {
-        const vk::PushConstantRange push_constants_hdr{
-            .stageFlags = vk::ShaderStageFlagBits::eFragment,
-            .offset = 0,
-            .size = sizeof(Settings),
-        };
-        auto layout_info_hdr = layout_info;
-        layout_info_hdr.pPushConstantRanges = &push_constants_hdr;
-        pipeline_layout_hdr = Check<"create pp pipeline layout (HDR)">(
-            device.createPipelineLayoutUnique(layout_info_hdr));
-    }
 
     std::array pp_color_formats{
         surface_format,
@@ -184,20 +168,10 @@ void PostProcessingPass::Create(vk::Device device, const vk::Format surface_form
     // gow3: the same pass into the 10-bit HDR frame image (the HDR10 swapchain's format), so the
     // game's PQ output keeps its 10 bits on the way to the swapchain (study-hdr.md, step 3). Only
     // with the launcher's "Allow HDR output" (GOW3_HDR=1): without it the swapchain is never HDR10.
-    // Its own shader (post_process_hdr.frag: the near-black correction) and layout: the SDR pipeline is as before HDR.
     if (EmulatorSettings.IsHdrAllowed()) {
         pp_color_formats[0] = HDR_FRAME_FORMAT;
-        const auto& hdr_fs_module = CompileSPV(POST_PROCESS_HDR_FRAG, device);
-        ASSERT(hdr_fs_module);
-        SetObjectName(device, hdr_fs_module, "post_process_hdr.frag");
-        auto hdr_shaders = shaders_ci;
-        hdr_shaders[1].module = hdr_fs_module;
-        auto hdr_info = pipeline_info;
-        hdr_info.pStages = hdr_shaders.data();
-        hdr_info.layout = *pipeline_layout_hdr;
         pipeline_hdr = Check<"create post process pipeline (HDR)">(
-            device.createGraphicsPipelineUnique(/*pipeline_cache*/ {}, hdr_info));
-        device.destroyShaderModule(hdr_fs_module);
+            device.createGraphicsPipelineUnique(/*pipeline_cache*/ {}, pipeline_info));
     }
 
     // Once pipeline is compiled, we don't need the shader module anymore
@@ -265,9 +239,8 @@ void PostProcessingPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
         },
     };
 
-    const bool use_hdr = frame.is_hdr && pipeline_hdr;
-    const vk::PipelineLayout layout = use_hdr ? *pipeline_layout_hdr : *pipeline_layout;
-    cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, use_hdr ? *pipeline_hdr : *pipeline);
+    cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics,
+                        frame.is_hdr && pipeline_hdr ? *pipeline_hdr : *pipeline);
 
     const std::array viewports = {
         vk::Viewport{
@@ -286,10 +259,9 @@ void PostProcessingPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
                              },
                          });
 
-    cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, layout, 0, set_writes);
-    // gow3: the SDR pipeline's 12 bytes as before HDR; the HDR one all of Settings (the near-black correction).
-    const u32 push_size = use_hdr ? u32(sizeof(Settings)) : u32(offsetof(Settings, black_count));
-    cmdbuf.pushConstants(layout, vk::ShaderStageFlagBits::eFragment, 0, push_size, &settings);
+    cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0, set_writes);
+    cmdbuf.pushConstants(*pipeline_layout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(Settings),
+                         &settings);
 
     cmdbuf.beginRendering(rendering_info);
     cmdbuf.draw(3, 1, 0, 0);
