@@ -766,11 +766,19 @@ static bool MustCompileSync(u64 pgm_hash) {
         // output device changes); dropped, the UI composite samples zeros and every UI element
         // and movie is black (study-hdr.md H6-H10).
         0xc401ca35ab81eb39ull,
-        // ps: UE4's HDR tonemapper; its HdrLutScalePass variant appears when our LUT pass starts or the HDR
-        // look changes: dropped, that frame's scene would be missing (study-hdr.md H38).
+        // ps: UE4's HDR tonemappers (the levels', the map screen's); their HdrLutScalePass variant appears when
+        // our LUT pass starts or the HDR look changes: dropped, that frame's scene would be missing (study-hdr.md
+        // H38). Others recognised by structure: Info::uses_hdr_lut_index (MustCompileSyncInfo).
         Shader::Ue4HdrTonemapPs,
+        Shader::Ue4HdrTonemapMapPs,
     };
     return std::ranges::find(programs, pgm_hash) != std::end(programs);
+}
+
+/// MustCompileSync, or a UE4 HDR tonemapper recognised by structure (a pipeline whose fragment stage was compiled
+/// before: an unlisted tonemapper's first variant switch may still drop one frame).
+static bool MustCompileSyncInfo(const Shader::Info* info) {
+    return info && (MustCompileSync(info->pgm_hash) || info->uses_hdr_lut_index);
 }
 
 void PipelineCache::SeedWorkerCaches() {
@@ -861,7 +869,7 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline(const DrawIndirectPar
         return nullptr;
     }
     const bool sync_stage = std::ranges::any_of(
-        sel.infos, [](const Shader::Info* info) { return info && MustCompileSync(info->pgm_hash); });
+        sel.infos, [](const Shader::Info* info) { return MustCompileSyncInfo(info); });
     if (AsyncCompilation() && !sel.regs->stage_enable.hs_en && !EmulatorSettings.IsShaderCollect() &&
         !sync_stage) {
         const auto found = graphics_pipelines.find(sel.graphics_key);
@@ -1107,10 +1115,10 @@ bool PipelineCache::RefreshGraphicsKey(PipelineSelection& sel) {
             return false;
         }
     }
-    // MediEvil: UE4's HDR tonemapper, while our LUT pass built the scene LUT for its x 0.01 index, gets
-    // the variant that indexes it that way (HdrLutScalePass; study-hdr.md H38).
+    // MediEvil: UE4's HDR tonemappers (recognised by HdrLutScalePass), while our LUT pass built the scene LUT for
+    // the x 0.01 index, get the variant that indexes it that way (study-hdr.md H38).
     if (const auto* fs = sel.infos[static_cast<u32>(Shader::SwStage::Fragment)];
-        fs && fs->pgm_hash == Shader::Ue4HdrTonemapPs && hdr_lut_x100.load(std::memory_order_relaxed)) {
+        fs && fs->uses_hdr_lut_index && hdr_lut_x100.load(std::memory_order_relaxed)) {
         sel.hdr_lut_x100 = true;
         if (!RefreshGraphicsStages(sel)) {
             return false;
@@ -1222,7 +1230,7 @@ bool PipelineCache::RefreshGraphicsStages(PipelineSelection& sel) {
     }
 
     const auto* fs_info = sel.infos[static_cast<u32>(SwStage::Fragment)];
-    sel.sync_all = fs_info && MustCompileSync(fs_info->pgm_hash);
+    sel.sync_all = MustCompileSyncInfo(fs_info);
     key.mrt_mask = fs_info ? fs_info->mrt_mask : 0u;
     key.num_color_attachments = std::bit_width(key.mrt_mask);
 

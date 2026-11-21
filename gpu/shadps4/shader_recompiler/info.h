@@ -79,6 +79,8 @@ struct InfoPersistent {
     bool uses_light_grid{};
     /// MediEvil: computes UE4's distortion shift (RefractionScalePass).
     bool uses_refraction_scale{};
+    /// MediEvil: a UE4 HDR tonemapper indexing its grading LUT at PQ(scene x 0.0001) (HdrLutScalePass).
+    bool uses_hdr_lut_index{};
 
     InfoPersistent() = default;
     InfoPersistent(HwStage hw_stage_, SwStage sw_stage_, u64 pgm_hash_)

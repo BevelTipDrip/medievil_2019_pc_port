@@ -13,8 +13,11 @@
 
 namespace Shader {
 
-/// MediEvil: UE 4.21's HDR tonemapper (study-hdr.md; HdrLutScalePass).
+/// MediEvil: UE 4.21's HDR tonemappers seen so far: the levels' and the map screen's (study-hdr.md H38). Others are
+/// recognised by structure (HdrLutScalePass, Info::uses_hdr_lut_index); these also compile synchronously from the
+/// first use.
 inline constexpr u64 Ue4HdrTonemapPs = 0x12178a9314cb761eull;
+inline constexpr u64 Ue4HdrTonemapMapPs = 0x52770387e0d6363aull;
 
 enum class HwStage : u32 {
     Fragment,

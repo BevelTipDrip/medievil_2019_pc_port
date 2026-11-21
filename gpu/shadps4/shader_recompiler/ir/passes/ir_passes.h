@@ -29,7 +29,8 @@ void InterpolatedIntegerPass(IR::Program& program);
 void LightGridScalePass(IR::Program& program, const RuntimeInfo& runtime_info);
 /// MediEvil: UE4's distortion shift at a 1920-wide output's share of the screen (Sleeping Village water).
 void RefractionScalePass(IR::Program& program, const RuntimeInfo& runtime_info);
-/// MediEvil: the HDR tonemapper's LUT index at PQ(scene x 0.01) instead of x 0.0001 (study-hdr.md H38).
+/// MediEvil: UE4's HDR tonemappers (recognised by structure) index their LUT at PQ(scene x 0.01) instead of x 0.0001
+/// (study-hdr.md H38).
 void HdrLutScalePass(IR::Program& program, const RuntimeInfo& runtime_info);
 void ConstantPropagationPass(IR::BlockList& program);
 void FlattenExtendedUserdataPass(IR::Program& program);

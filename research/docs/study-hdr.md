@@ -504,6 +504,26 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     highlights brighter (86 against 56 nits) and whiter (blue share 0.22 against SDR 0.14). The user: "shadows a lot more depth,
     they're no longer blown out and elevated ... higher contrast look without destroying the brightness or altering
     gamma"; brightness only still looks clearly better than each colour and closer to SDR.
+  - **The map screen black with x100 (found, 2026-11-21):** the map draws its scene with a second HDR tonemapper,
+    `fs 52770387e0d6363a` (10 samples instead of 4; the same three `FPMul32 #0.0001` (IR %400 / %404 / %406), the
+    0.96875 / 0.015625 index (%439-441), the 3D LUT sample (%443) and the 493013 grain). `HdrLutScalePass` and the
+    pipeline cache match `12178a9314cb761e` only, so on the map our x100 LUT was read at x 0.0001: ~100x too dark,
+    black under the map's grading (screenshot 13.02.43: 97.5% of pixels exactly 0). Captures
+    (`research-data/hdr-map-20261121/`): `x100off_frame21943.rdc` (`GOW3_HDR_LUT_X100=0`, the map works) and
+    `x100on_frame10168.rdc` (black): one LUT build per frame, ours (eid 7717: our push constants; the map's grading
+    block, WhiteTemp 10828.6, contrast 1.22, gain 0.74 / 0.58 / 0.555 x 1.39, shadow gain 0.56 / 0.16 / 0.23), then
+    the tonemapper (eid 7742, 10 samples, `0.0001` in its SPIR-V), no draw between. The pre-patch map capture
+    (`hdr-blur-menus-20261120/mapmenu_frame20618.rdc`, eids 7500 / 7525) has the same pair. The map's grading through
+    our pass at x100 is valid (lutres_x with that block: no NaN, within 0-18% from scene 0.006).
+    Fix built (2026-11-21 15:13, not run): `HdrLutScalePass` recognises HDR tonemappers by structure (exactly three
+    `FPMul32 #0.0001`, three `FPFma32 #0.96875, x, #0.015625`, the grain's `FPMul32 #493013`; the UI composite
+    `c401ca35f9bceb8e` has six and no grain) and marks them `Info::uses_hdr_lut_index`; the pipeline cache picks the
+    x100 variant by that flag; flagged shaders and both known hashes compile synchronously; near misses are logged
+    ("HDR tonemapper-like shader not patched"); "HDR tonemapper recognised: fs ..." once per program and variant.
+    Shader cache versions: binary / meta 16, pipeline key 14. Run 2026-11-21 ~15:15-15:25 (build 15:13:04): log
+    "HDR tonemapper recognised" for `12178a9314cb761e` and `52770387e0d6363a`, each with its x 0.01 variant; no
+    near-miss line. Map screenshot 15.22.56: 0.05% of pixels exactly 0 (13.02.43: 97.5%), median 2.9 nits. The
+    user: the map is back; other areas and a level not visited before look right.
   - The user (2026-11-21): if the ACES look cannot be made good, drop it; any alternative look becomes our own HDR
     grading, not the game's ACES path.
   - Tonemapper cvars (two research agents, 2026-11-21; eboot strings and IR [V], gains [I]):

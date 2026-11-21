@@ -32,9 +32,9 @@
 
 namespace Serialization {
 /* You should increment versions below once corresponding serialization scheme is changed. */
-static constexpr u32 ShaderBinaryVersion = 15u; // MediEvil: HDR tonemapper LUT index x 0.01 (hdr_lut_x100)
-static constexpr u32 ShaderMetaVersion = 15u; // MediEvil: runtime info hdr_lut_x100
-static constexpr u32 PipelineKeyVersion = 13u; // MediEvil: runtime info layout (hdr_lut_x100)
+static constexpr u32 ShaderBinaryVersion = 16u; // MediEvil: HDR tonemappers recognised by structure (x 0.01 index)
+static constexpr u32 ShaderMetaVersion = 16u; // MediEvil: Info::uses_hdr_lut_index
+static constexpr u32 PipelineKeyVersion = 14u; // MediEvil: Info layout (uses_hdr_lut_index)
 } // namespace Serialization
 
 namespace Vulkan {
