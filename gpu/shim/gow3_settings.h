@@ -279,7 +279,7 @@ struct Values {
     int startup_output_res = OutputDefault;
     int startup_live_resolution = 0;
     // gow3 HDR and colour grading: after the older fields, which keep their places.
-    /// HDR (Display tab > HDR, shown while the game outputs HDR10; study-hdr.md). UI brightness in nits: the
+    /// HDR (Color tab > HDR, shown while the game outputs HDR10; study-hdr.md). UI brightness in nits: the
     /// game's UI (r.HDR.UI.Level = nits / 100, live) and the port's overlay (its HDR pipeline's white). HDR curve:
     /// 0 the game's 1000-nit ACES curve, 1 the 2000-nit one (r.HDR.Display.OutputDevice 3 / 4, live). hdr_active:
     /// set by the presenter, the swapchain is HDR10.
@@ -295,6 +295,9 @@ struct Values {
     std::atomic<int> hdr_highlights{HdrHighlightsDefault};
     /// Colour grading (GradeAt), live: read by the renderer at each combine LUT draw.
     std::atomic<float> grade[GradeCount];
+    /// HDR gamma emulation per channel (as an SDR screen decodes; dark tones turn bluer) instead of brightness only
+    /// (ue4_hdr_map.glsl HdrSdrLook; study-hdr.md H37); live. After the older fields.
+    std::atomic<bool> hdr_gamma_per_channel{false};
 };
 
 Values& Get();

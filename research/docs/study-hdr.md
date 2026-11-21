@@ -397,6 +397,40 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     grey: 0.006 of SDR white with it, 0.002 without) and mid-grey ~5%, and leaves the highlight slope at the knee as
     it is (0.62 with, 0.63 without; extension ~4% brighter, the mid-tone lift). So that is the level's own SDR haze,
     which ACES skips [V above]. Open: Hilltop HDR against Hilltop SDR, Highlights 0 and 100 (the user).
+- **H37, the levels' grading tables, the Graveyard's "blue push", gamma by brightness only; HDR rows in the Color
+  tab** (2026-11-21):
+  - The game's tables [V, pak index + map files, read-only scans in the session scratchpad]: three from the Amplify
+    LUT Pack (`AdditionalPackages/AmplifyLUTPack`: Base/BleachAlternative, PopularLooks/80sPost-ApocalypticAction
+    and -Drama) and `FX/LUTs/LUT_Fall`. Post-process volumes with the table and its intensity switched on
+    (`bOverride_ColorGradingLUT` / `_Intensity`; intensity = LUTWeights[1]): BleachAlternative in 00 DC 0.40 (a
+    local volume, no `bUnbound`), 03 HM 0.35, 08 SV 0.30, 09 AG 0.28, 07 PS 0.25, 21 ZL 0.25, 10 IA 0.10, 19 EH 0.10
+    (all unbound); LUT_Fall 0.30 in the Battlefield cinematic map (`Sequences/.../Level_00_AV/Level_Battlefield`).
+    Named but off: 80sPost-ApocalypticDrama in 01 GY1 / 02 CH / 04 GY2 (no override, or the volume disabled /
+    BlendWeight 0), BleachAlternative in 06 PG (intensity only), 20 TD and `IN_MM` (volume disabled). Not scanned:
+    blueprints or cameras that might set a table at runtime.
+  - What BleachAlternative does (the captured texture; true RGB = stored bytes 2, 1, 0, checked by each output
+    channel following its own input axis): in the sRGB-encoded domain after the film curve, black to 16% signal,
+    mid-grey +21%, white -4%, saturation x0.78 (shadows x0.62, blues x0.64), dark greys slightly pink, yellows and
+    cyans turned ~15 degrees. At Hilltop's 0.35: black 5.6% signal, mid-grey +7%, saturation x0.93 (shadows x0.89,
+    blues x0.87), hue shifts under 5 degrees.
+  - The live grading blocks (menu `eid3495`, Graveyard capture 16057 our pass eid 13215, Hilltop 82572 remapped) are
+    all at the engine defaults (white balance 6500 / 0, every saturation / contrast / gamma / gain 1, offsets 0, film
+    0.88 / 0.55 / 0.26 / 0 / 0.04, blue correction 0.6, expand gamut 1): the levels' only grading is the table. The
+    Graveyard's volume stores a full grade (WhiteTemp 7414, saturation 1.52, warm gains) with only its exposure
+    overrides on. MapScreen's volume grades for real (WhiteTemp 10829, contrast 1.22, gain 0.74 / 0.58 / 0.56 x 1.39,
+    shadow gain 0.56 / 0.16 / 0.23, film slope 0.92 / toe 0.52; LUT override with no texture) [V file; live block
+    not captured].
+  - The Graveyard's "blue push" in dark tones (the user): not the level's grading (neutral, above). Gamma 2.2
+    emulated per channel darkens a colour's dim channels more: for a dark bluish signal (0.10, 0.12, 0.18) at 203
+    nits blue's share is 0.537 through the sRGB curve, 0.594 per channel at 2.2; the same 2.2 luminance with the sRGB
+    curve's colour keeps 0.537; above ~10 nits all three are within ~1%. The user: Gamma Off lessens the blue.
+  - Fix: "Gamma applies to" (`hdr_gamma_mode=brightness|channel`, default brightness): `HdrSdrLook` scales the sRGB
+    colour to the gamma screen's luminance (push flag bit 1 = per channel, as before). Run 2026-11-21, main menu
+    screenshots 09.37.41 (per channel) / 09.37.54 (brightness only), same view: blue share 0.476 -> 0.441 at
+    1.5-3.5 nits, 0.488 -> 0.472 at 0.5-1.5, 0.379 -> 0.361 below 0.5; mean 7.46 / 7.38 nits; above 3.5 nits
+    unchanged. The user: "the shadows no longer have the blue push", closer to SDR.
+  - The HDR rows moved to the top of the Color tab (`HdrRows`), so the "Adjust while playing" panel shows them; the
+    Display tab keeps a pointer. Run: the rows work in the panel (the screenshots above).
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.

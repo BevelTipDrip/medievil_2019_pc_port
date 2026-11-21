@@ -264,7 +264,7 @@ bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache
         .game_nits = float(settings.hdr_game_nits.load(std::memory_order_relaxed)),
         .gamma = float(settings.hdr_gamma.load(std::memory_order_relaxed)) / 10.0f,
         .lut_size = float(width),
-        .flags = 0u,
+        .flags = settings.hdr_gamma_per_channel.load(std::memory_order_relaxed) ? 2u : 0u,
         .peak_nits = float(settings.hdr_peak_nits.load(std::memory_order_relaxed)),
         .highlights = float(settings.hdr_highlights.load(std::memory_order_relaxed)) / 100.0f,
     };
@@ -351,7 +351,7 @@ void Ue4HdrGrading::RunPatch(VideoCore::ImageId target, const VideoCore::Texture
     const PatchPush push{
         .game_nits = float(settings.hdr_game_nits.load(std::memory_order_relaxed)),
         .gamma = float(settings.hdr_gamma.load(std::memory_order_relaxed)) / 10.0f,
-        .flags = hdr_output ? 1u : 0u,
+        .flags = (hdr_output ? 1u : 0u) | (settings.hdr_gamma_per_channel.load(std::memory_order_relaxed) ? 2u : 0u),
         .peak_nits = float(settings.hdr_peak_nits.load(std::memory_order_relaxed)),
         .highlights = float(settings.hdr_highlights.load(std::memory_order_relaxed)) / 100.0f,
         .pad = {},

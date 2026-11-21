@@ -20,7 +20,7 @@ layout(std430, set = 0, binding = 0) readonly buffer Params {
 layout(push_constant) uniform Push {
     float game_nits; ///< HDR: SDR white in nits
     float gamma;     ///< HDR: gamma emulation (0 = none)
-    uint flags;      ///< bit 0: HDR output
+    uint flags;      ///< bit 0: HDR output; bit 1: gamma per channel
     float peak_nits; ///< HDR: the display's peak (roll-off)
     float highlights;///< HDR: 0..1 highlights above the knee
     float pad0;
@@ -39,8 +39,8 @@ float GradeParam(uint i) {
 void main() {
     vec3 value;
     if ((pc.flags & 1u) != 0u) {
-        value = HdrNitsToPq(HdrSceneToNits(pc.scene.rgb, false, pc.game_nits, pc.gamma, pc.peak_nits,
-                                           pc.highlights));
+        value = HdrNitsToPq(HdrSceneToNits(pc.scene.rgb, false, pc.game_nits, pc.gamma, (pc.flags & 2u) != 0u,
+                                           pc.peak_nits, pc.highlights));
     } else {
         vec3 untonemapped, graded;
         GradeScene(pc.scene.rgb, false, untonemapped, graded);

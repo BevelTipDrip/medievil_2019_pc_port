@@ -22,7 +22,7 @@ layout(push_constant) uniform Push {
     float game_nits; ///< SDR white (1.0 of G) in nits
     float gamma;     ///< gamma emulation: the SDR display's gamma (2.2), 0 = none (the sRGB curve as is)
     float lut_size;  ///< 32
-    uint flags;      ///< bit 0: film black clip forced to 0 (RenoDX)
+    uint flags;      ///< bit 0: film black clip forced to 0 (RenoDX); bit 1: gamma per channel
     float peak_nits; ///< the display's peak (roll-off)
     float highlights;///< 0..1: highlights above the knee (0 = the SDR look only)
 } pc;
@@ -48,7 +48,7 @@ void main() {
     // The game's decode of a texel: R and G from the texel centre ((i + 0.5) / size), B from the slice, each to
     // i / (size - 1), then inverse PQ x 10000 (bit-exact with the game's shader: LutDecodeHdrTexel).
     const vec3 scene = LutDecodeHdrTexel(gl_FragCoord.xy / pc.lut_size, uint(slice));
-    const vec3 nits = HdrSceneToNits(scene, (pc.flags & 1u) != 0u, pc.game_nits, pc.gamma, pc.peak_nits,
-                                     pc.highlights);
+    const vec3 nits = HdrSceneToNits(scene, (pc.flags & 1u) != 0u, pc.game_nits, pc.gamma, (pc.flags & 2u) != 0u,
+                                     pc.peak_nits, pc.highlights);
     color = vec4(HdrNitsToPq(nits) / 1.05, 0.0);
 }

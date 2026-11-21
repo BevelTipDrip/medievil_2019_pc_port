@@ -49,11 +49,12 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
   `gpu/patches/imgui`, applied by build.sh) whose `imgui_hdr.frag` decodes gamma 2.2, converts BT.709 to BT.2020 and
   encodes PQ with white at the UI brightness (its one specialization constant, written into the SPIR-V; one pipeline
   per value, kept). Log: `Overlay: HDR10 pipeline ready (PQ, white N nits)`.
-- **UI brightness** (Display > HDR, shown while HDR10 is on; medievil.ini `hdr_ui_nits`, 50-400, default 100): the
+- **HDR rows** (Color tab, top, and so its Color panel; shown while HDR10 is on; until H37 Display > HDR).
+- **UI brightness** (shown while HDR10 is on; medievil.ini `hdr_ui_nits`, 50-400, default 100): the
   game's UI through `r.HDR.UI.Level` = nits / 100 (H19: linear, 1.0 measures ~100-105 nits), live through the
   runtime's cvar table and at boot through the pak (`ue4_override.hdr_ui_level`), and the overlay's white. One setting
   for both: OLED owners keep UI dim against burn-in (the user, 2026-11-17).
-- **HDR curve** (Display > HDR; `hdr_curve` 1000 / 2000): `r.HDR.Display.OutputDevice` 3 / 4, set live only (the
+- **HDR curve** (`hdr_curve` 1000 / 2000): `r.HDR.Display.OutputDevice` 3 / 4, set live only (the
   engine's HDR sink sets it at device-profile priority, above the pak) and only when the game started in HDR.
 - **Color tab** (medievil.ini `grade_*`; `Gow3Settings::GradeAt`): white balance, then saturation / contrast / gamma /
   gain / offset for global, shadows, mid-tones and highlights, the shadow / highlight bounds, blue correction and gamut
@@ -71,7 +72,7 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
   frame in the bottom-right corner (30% of the width, 62% of the height), no dimming, rows 1.35x the frame's scale;
   Circle goes back to the full menu, L1 / R1 do nothing there. The full menu and the panel share `StyledBody` (the
   scrolled list).
-- **HDR look "SDR grading kept"** (Display > HDR > HDR look, default; plan-hdr-sdr-match.md step 1): while the game
+- **HDR look "SDR grading kept"** (HDR look, default; plan-hdr-sdr-match.md step 1): while the game
   outputs HDR10, its grading LUT draw (`fs a4152b3be93c832a`) is replaced (`Rasterizer::ReplaceHdrGrading`, before
   BindResources, like DLSS's TAA replacement) by `Ue4HdrGrading`: a layered draw (3 vertices x 32 instances,
   `gl_Layer`) into the same 32-slice target (`FindRenderTarget`: marked written), from the game's parameter block with
@@ -87,7 +88,9 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
   (`RemapBlendBlock`), the LUT bound through the game's view with the game's filtering, and `GRADE_LUT_BLEND`
   (`ue4_hdr_lut_blend_frag`) adds the blend after the film curve. Log once: `the builder with a level grading LUT
   (fs 9f6bac6cba984956), weights w0 / w1`; another builder into a 32^3 target: `unknown 32^3 LUT builder fs ...`.
-  Settings: `hdr_look`, `hdr_game_nits`, `hdr_gamma`, `hdr_peak_nits` (default 1000), `hdr_highlights` (default 100).
+  Settings: `hdr_look`, `hdr_game_nits`, `hdr_gamma`, `hdr_gamma_mode` (`brightness` default: the gamma screen's
+  luminance with the sRGB curve's colour; `channel`: per channel, dark tones bluer, H37), `hdr_peak_nits` (default
+  1000), `hdr_highlights` (default 100).
 - **UI composite** (same HDR look; plan-hdr-sdr-match.md step 3): the game's composite draw (`fs c401ca35f9bceb8e`) is
   replaced (`Rasterizer::ReplaceHdrComposite`, `Ue4HdrGrading::RunComposite`, `ue4_ui_composite.frag`): scene and UI
   read through the game's own views (`bgra`: true RGB), the UI decoded at Gamma at UI brightness (`hdr_ui_nits`, live;
@@ -176,7 +179,9 @@ empty HDR UI image. H33 (2026-11-20): the backdrop; the weapons tab fixed (the u
 first pass found in RenderDoc and added; the user: both popups work. H36 (2026-11-21): FSR1 / RCAS in SDR mode
 for PQ frames, the user: sharper, otherwise the same; the near-black correction removed (calibration outside the
 game); Hilltop's builder `9f6b` ported (offline equal on all 32^3 texels, 12 cases), the user: the Colour tab and
-the HDR settings work in Hilltop, other levels unchanged.
+the HDR settings work in Hilltop, other levels unchanged. H37 (2026-11-21): gamma by brightness only, the user:
+"the shadows no longer have the blue push" (screenshots: blue share 0.476 -> 0.441 at 1.5-3.5 nits); the HDR rows
+in the Color tab and its panel.
 
 ## History and pitfalls
 

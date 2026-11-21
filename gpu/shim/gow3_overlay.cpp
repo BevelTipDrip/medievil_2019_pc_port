@@ -1443,59 +1443,10 @@ void DisplayTab() {
         EndRows();
     }
 
-    // HDR (study-hdr.md): while the game outputs HDR10. UI brightness sets the game's UI level and the white of
-    // this menu's own HDR pipeline together; the curve is the engine's other HDR output device.
+    // HDR: in the Color tab (HdrRows), where the Color panel can show them while playing.
     if (s.hdr_active) {
         Section("HDR");
-        if (BeginRows("##hdr")) {
-            const int nits = s.hdr_ui_nits;
-            const int next = IntSliderRow("UI brightness", nits, S::HdrUiNitsMin, S::HdrUiNitsMax, 10, "%d nits",
-                                          "Brightness of the game's menus, HUD and subtitles, and of this menu (100 = "
-                                          "the game's own). The game's own Brightness slider (Options > Brightness) "
-                                          "also affects the UI: leave it at its default.");
-            // On steps of 10 (a mouse drag too): each value is its own overlay pipeline (HdrPipeline).
-            if (const int snapped = (next + 5) / 10 * 10; snapped != nits) {
-                s.hdr_ui_nits = snapped;
-                dirty = true;
-                S::RequestHdrUi();
-            }
-            // HDR look (research/docs/plan-hdr-sdr-match.md): the game's SDR grading in HDR (our grading LUT pass) or
-            // the game's own ACES output.
-            static const char* const look_labels[] = {"Game's (ACES)", "SDR grading kept"};
-            ChoiceRow("HDR look", s.hdr_look, look_labels, nullptr, 2,
-                      "SDR grading kept: the game's own colours, contrast and blacks as in SDR, at the game "
-                      "brightness below. Game's: the engine's ACES HDR output (lifted blacks, less contrast).");
-            ImGui::BeginDisabled(s.hdr_look != S::HdrLookSdr);
-            SliderRow("Game brightness", s.hdr_game_nits, S::HdrGameNitsMin, S::HdrGameNitsMax, "%d nits",
-                      "How bright SDR white is in HDR (203 is the HDR standard for paper white). Raises or lowers "
-                      "the whole picture, not the UI.",
-                      1);
-            static const char* const gamma_labels[] = {"Off (sRGB)", "2.0", "2.1", "2.2 (PC monitor)", "2.3",
-                                                       "2.4 (TV)", "2.5", "2.6"};
-            ChoiceRow("Gamma", s.hdr_gamma, gamma_labels, S::HdrGammaValues, int(std::size(S::HdrGammaValues)),
-                      "The gamma of the SDR screen the game was made for: the shadows and blacks as that screen "
-                      "showed them. 2.2 matches a PC monitor; Off keeps the sRGB curve (lighter shadows).");
-            SliderRow("Peak brightness", s.hdr_peak_nits, S::HdrPeakNitsMin, S::HdrPeakNitsMax, "%d nits",
-                      "Your display's peak brightness in this mode: the brightest highlights roll off to it. "
-                      "Measure it or use the display's rating (e.g. ~450 in an HDR 400 mode, ~1000 in a 1000 mode).",
-                      10);
-            SliderRow("Highlights", s.hdr_highlights, 0, 100, "%d%%",
-                      "Highlights above SDR white: 0 keeps the SDR picture (everything above ~half of SDR white "
-                      "compressed as in SDR); 100 gives back the brightness the SDR curve took from lights, fire "
-                      "and the sky.",
-                      5);
-            ImGui::EndDisabled();
-            if (S::HdrGame()) {
-                static const char* const curve_labels[] = {"1000 nits (game default)", "2000 nits"};
-                const int curve = s.hdr_curve;
-                ChoiceRow("HDR curve", s.hdr_curve, curve_labels, nullptr, 2,
-                          "The engine's HDR tone curve: the peak brightness it is made for. The game picks 1000.");
-                if (s.hdr_curve != curve) {
-                    S::RequestHdrCurve();
-                }
-            }
-            EndRows();
-        }
+        Note("The HDR settings are at the top of the Color tab, and in its \"Adjust while playing\" panel.");
     }
 
     Section("Information");
@@ -1835,6 +1786,78 @@ void GradeRow(const char* label, int i, const char* help) {
     NumberRow(label, Gow3Settings::Get().grade[i], info.lo, info.hi, info.step, info.format, GradeClamp(i), help);
 }
 
+// HDR (study-hdr.md): while the game outputs HDR10; at the top of the Color tab, so the Color panel shows them too.
+// UI brightness sets the game's UI level and the white of this menu's own HDR pipeline together; the curve is the
+// engine's other HDR output device.
+void HdrRows() {
+    namespace S = Gow3Settings;
+    auto& s = S::Get();
+    if (s.hdr_active) {
+        Section("HDR");
+        if (BeginRows("##hdr")) {
+            const int nits = s.hdr_ui_nits;
+            const int next = IntSliderRow("UI brightness", nits, S::HdrUiNitsMin, S::HdrUiNitsMax, 10, "%d nits",
+                                          "Brightness of the game's menus, HUD and subtitles, and of this menu (100 = "
+                                          "the game's own). The game's own Brightness slider (Options > Brightness) "
+                                          "also affects the UI: leave it at its default.");
+            // On steps of 10 (a mouse drag too): each value is its own overlay pipeline (HdrPipeline).
+            if (const int snapped = (next + 5) / 10 * 10; snapped != nits) {
+                s.hdr_ui_nits = snapped;
+                dirty = true;
+                S::RequestHdrUi();
+            }
+            // HDR look (research/docs/plan-hdr-sdr-match.md): the game's SDR grading in HDR (our grading LUT pass) or
+            // the game's own ACES output.
+            static const char* const look_labels[] = {"Game's (ACES)", "SDR grading kept"};
+            ChoiceRow("HDR look", s.hdr_look, look_labels, nullptr, 2,
+                      "SDR grading kept: the game's own colours, contrast and blacks as in SDR, at the game "
+                      "brightness below. Game's: the engine's ACES HDR output (lifted blacks, less contrast).");
+            ImGui::BeginDisabled(s.hdr_look != S::HdrLookSdr);
+            SliderRow("Game brightness", s.hdr_game_nits, S::HdrGameNitsMin, S::HdrGameNitsMax, "%d nits",
+                      "How bright SDR white is in HDR (203 is the HDR standard for paper white). Raises or lowers "
+                      "the whole picture, not the UI.",
+                      1);
+            static const char* const gamma_labels[] = {"Off (sRGB)", "2.0", "2.1", "2.2 (PC monitor)", "2.3",
+                                                       "2.4 (TV)", "2.5", "2.6"};
+            ChoiceRow("Gamma", s.hdr_gamma, gamma_labels, S::HdrGammaValues, int(std::size(S::HdrGammaValues)),
+                      "The gamma of the SDR screen the game was made for: the shadows and blacks as that screen "
+                      "showed them. 2.2 matches a PC monitor; Off keeps the sRGB curve (lighter shadows).");
+            ImGui::BeginDisabled(s.hdr_gamma == 0);
+            static const char* const gamma_mode_labels[] = {"Brightness only", "Each colour (as an SDR screen)"};
+            int gamma_mode = s.hdr_gamma_per_channel ? 1 : 0;
+            IndexChoiceRow("Gamma applies to", gamma_mode, gamma_mode_labels, 2,
+                           "Brightness only: the shadows as dark as that screen showed them, in the game's own "
+                           "colours. Each colour: every colour channel through the gamma curve, as a real SDR "
+                           "screen does, which turns dark tones bluer.");
+            if (gamma_mode != (s.hdr_gamma_per_channel ? 1 : 0)) {
+                s.hdr_gamma_per_channel = gamma_mode == 1;
+                dirty = true;
+            }
+            ImGui::EndDisabled();
+            SliderRow("Peak brightness", s.hdr_peak_nits, S::HdrPeakNitsMin, S::HdrPeakNitsMax, "%d nits",
+                      "Your display's peak brightness in this mode: the brightest highlights roll off to it. "
+                      "Measure it or use the display's rating (e.g. ~450 in an HDR 400 mode, ~1000 in a 1000 mode).",
+                      10);
+            SliderRow("Highlights", s.hdr_highlights, 0, 100, "%d%%",
+                      "Highlights above SDR white: 0 keeps the SDR picture (everything above ~half of SDR white "
+                      "compressed as in SDR); 100 gives back the brightness the SDR curve took from lights, fire "
+                      "and the sky.",
+                      5);
+            ImGui::EndDisabled();
+            if (S::HdrGame()) {
+                static const char* const curve_labels[] = {"1000 nits (game default)", "2000 nits"};
+                const int curve = s.hdr_curve;
+                ChoiceRow("HDR curve", s.hdr_curve, curve_labels, nullptr, 2,
+                          "The engine's HDR tone curve: the peak brightness it is made for. The game picks 1000.");
+                if (s.hdr_curve != curve) {
+                    S::RequestHdrCurve();
+                }
+            }
+            EndRows();
+        }
+    }
+}
+
 // Color: UE4's colour grading (the combine LUT's parameters), live, relative to the game's values: each area's own
 // grading stays. In SDR and HDR. Per-channel values (grade_*_r / _g / _b) are in medievil.ini only.
 void ColorTab() {
@@ -1845,8 +1868,9 @@ void ColorTab() {
         return;
     }
     if (!color_panel) {
-        Note("Changes to the game's own colour grading, applied at once in SDR and HDR. 1.00 and +0 keep the game's "
-             "look; each area keeps its own grading. Per-channel (red / green / blue) values are in medievil.ini.");
+        Note("The HDR settings (while the game outputs HDR), then changes to the game's own colour grading, applied at "
+             "once in SDR and HDR. 1.00 and +0 keep the game's look; each area keeps its own grading. Per-channel "
+             "(red / green / blue) values are in medievil.ini.");
         if (styled && BeginRows("##color_panel_open")) {
             static const char* const open_label[] = {"Open"};
             static const bool enabled[] = {true};
@@ -1858,6 +1882,7 @@ void ColorTab() {
             EndRows();
         }
     }
+    HdrRows();
     Section("White balance");
     if (BeginRows("##white_balance")) {
         GradeRow("Temperature", S::GradeWbTemp, "Warmer (+) or cooler (-) than the game's white, in kelvin.");
