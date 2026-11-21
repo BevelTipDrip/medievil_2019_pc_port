@@ -18,6 +18,8 @@
 //   bgR,bgG,bgB;-1,-1,x,y, TESTTEMPLATERAMDISK:HCFR:r,g,b;bgR,bgG,bgB, TESTTEMPLATE:..., QUIT (8-bit codes).
 // GOW3_PATTERN_SERVER=1: TCP 127.0.0.1:GOW3_PATTERN_PORT (21977); =pgen: also TCP 85 on all interfaces and the UDP
 // 1977 discovery answer, for HCFR. Unset: no thread, no socket; the draw paths test one relaxed load.
+// Dev build only (GOW3_DEV_TOOLS): in the release build the checks below are constants and compile away; Start only
+// says that the server needs the dev build.
 
 #pragma once
 
@@ -39,6 +41,7 @@ struct Patch {
 
 /// Reads GOW3_PATTERN_SERVER once and starts the server thread when it is set.
 void Start();
+#if GOW3_DEV_TOOLS
 /// A patch is shown (any mode); the game mode.
 bool Active();
 bool GameActive();
@@ -46,5 +49,17 @@ bool GameActive();
 Patch Current();
 /// The presenter, after each present: answers patches that are now on screen.
 void NotePresented();
+#else
+inline constexpr bool Active() {
+    return false;
+}
+inline constexpr bool GameActive() {
+    return false;
+}
+inline Patch Current() {
+    return {};
+}
+inline void NotePresented() {}
+#endif
 
 } // namespace Gow3Patterns

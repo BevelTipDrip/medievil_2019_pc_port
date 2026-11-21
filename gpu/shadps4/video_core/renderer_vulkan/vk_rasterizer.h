@@ -527,14 +527,6 @@ private:
     std::unique_ptr<TemporalUpscaler> upscaler; // gow3: FSR (docs/upscaler.md)
     std::unique_ptr<Ue4FrameMap> frame_map;     // gow3 U1: null unless GOW3_UE4_FRAME_MAP=1
     std::unique_ptr<Ue4Motion> ue4_motion;      // gow3 U2: null unless GOW3_UE4_MOTION_VIEW or U3
-    // gow3 HDR: the last UI composite's scene view and UI image address (the blur's backdrop needs them), and the
-    // backdrop the current draw's blur pass samples instead of the UI image (null otherwise).
-    std::optional<VideoCore::TextureCache::ImageDesc> hdr_scene_desc;
-    VAddr hdr_ui_address = 0;
-    vk::ImageView hdr_blur_view{};
-    std::unique_ptr<Ue4HdrGrading> ue4_hdr;     // gow3 HDR grading pass and the test patterns' game patch
-    std::array<u32, Ue4HdrGrading::ParamDwords> pattern_block{}; // the grading block of this frame
-    bool pattern_block_ok = false;
     std::unique_ptr<Ue4Upscaler> ue4_upscaler;  // gow3 U3 / F1: null with GOW3_UE4_HOOKS=0
     std::array<float, 2> draw_jitter{};         ///< viewport offset of the current draw, pixels
     std::array<float, 2> target_scale{1.0f, 1.0f}; ///< pass drawn into the upscaler's output-size images
@@ -765,6 +757,16 @@ private:
     std::deque<GpuSignal> gpu_signals;
     std::atomic<u64> newest_urgent_tick{0};
     std::atomic<u64> pending_signals{0};
+    // gow3 HDR (kept after the per-draw members, which keep their places): the grading pass, composite and blur
+    // backdrop (null unless the launcher allows HDR, or in the dev build for the test patterns); the last UI
+    // composite's scene view and UI image address (the blur's backdrop needs them); the backdrop the current draw's
+    // blur pass samples instead of the UI image (null otherwise); the test patterns' grading block of this frame.
+    std::unique_ptr<Ue4HdrGrading> ue4_hdr;
+    vk::ImageView hdr_blur_view{};
+    std::optional<VideoCore::TextureCache::ImageDesc> hdr_scene_desc;
+    VAddr hdr_ui_address = 0;
+    std::array<u32, Ue4HdrGrading::ParamDwords> pattern_block{};
+    bool pattern_block_ok = false;
     std::jthread gpu_signal_thread; ///< last: stopped first
 };
 

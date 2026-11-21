@@ -89,9 +89,12 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
         ue4_upscaler = std::make_unique<Ue4Upscaler>(instance, scheduler, texture_cache, runtime,
                                                      *ue4_motion);
     }
-    // HDR (plan-hdr-sdr-match.md) and the test patterns' game patch (gow3_patterns.h): two shader modules, used only
-    // while the swapchain is HDR10 or a game patch is shown.
-    ue4_hdr = std::make_unique<Ue4HdrGrading>(instance, scheduler, texture_cache, buffer_cache, runtime);
+    // HDR (plan-hdr-sdr-match.md) and the test patterns' game patch (gow3_patterns.h): built only when the launcher
+    // allows HDR output (GOW3_HDR), and in the dev build (the patterns' game patch works in SDR too). Without it the
+    // per-draw HDR test is one null check.
+    if (EmulatorSettings.IsHdrAllowed() || GOW3_DEV_TOOLS) {
+        ue4_hdr = std::make_unique<Ue4HdrGrading>(instance, scheduler, texture_cache, buffer_cache, runtime);
+    }
     if (!EmulatorSettings.IsNullGPU()) {
         liverpool->BindRasterizer(this);
     }
@@ -1405,7 +1408,8 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
             return;
         }
     }
-    // gow3 HDR: two relaxed loads per draw while the swapchain is SDR and no game patch is shown.
+    // gow3 HDR: without "Allow HDR output" a null check; with it one relaxed load while the swapchain is SDR (and,
+    // in the dev build, the test patterns' load).
     if (ue4_hdr && (Gow3Settings::Get().hdr_active.load(std::memory_order_relaxed) || Gow3Patterns::GameActive()))
         [[unlikely]] {
         if (ReplaceHdrGrading(pipeline) || ReplaceHdrComposite(pipeline)) {
@@ -1421,7 +1425,9 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
     draw_inputs = {pipeline, draw_prepared, index_offset, is_indexed, true, false};
     const bool bound = BindResources(pipeline);
     bind_prepared = nullptr; // indirect draws and dispatches bind without prepared sharps
-    hdr_blur_view = VK_NULL_HANDLE; // gow3 HDR: the backdrop serves this draw only
+    if (hdr_blur_view) [[unlikely]] {
+        hdr_blur_view = VK_NULL_HANDLE; // gow3 HDR: the backdrop serves this draw only
+    }
     const bool inputs_resolved = draw_inputs.resolved;
     draw_inputs.pending = false;
     if (!bound) {
@@ -4911,6 +4917,9 @@ void Rasterizer::PatternAfterTonemap(const GraphicsPipeline* pipeline) {
         return;
     }
     const Gow3Patterns::Patch patch = Gow3Patterns::Current();
+    if (!ue4_hdr) {
+        return;
+    }
     ue4_hdr->RunPatch(cb_descs[0].first, cb_descs[0].second, pattern_block, patch.value, patch.area, hdr,
                       patch.neutral_brightness);
 }
@@ -4945,7 +4954,6 @@ bool Rasterizer::ReplaceHdrComposite(const Pipeline* pipeline) {
                format == vk::Format::eB8G8R8A8Unorm || format == vk::Format::eB8G8R8A8Srgb;
     };
     const PreparedStage* prepared = FindPreparedStage(*fs);
-    scheduler.EndRendering();
     std::array<Ue4HdrGrading::CompositeInput, 2> inputs{};
     std::array<vk::Format, 2> formats{};
     std::array<std::optional<VideoCore::TextureCache::ImageDesc>, 2> descs{};
@@ -4960,6 +4968,9 @@ bool Rasterizer::ReplaceHdrComposite(const Pipeline* pipeline) {
         const VideoCore::ImageId id = texture_cache.FindImage(desc);
         if (!id) {
             return decline(4, "an input image not found");
+        }
+        if (i == 0) {
+            scheduler.EndRendering(); // before the first transition, once the inputs are there
         }
         auto& image_view = texture_cache.FindTexture(id, desc);
         auto& image = texture_cache.GetImage(id);

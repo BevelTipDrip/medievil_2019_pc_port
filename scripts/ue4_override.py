@@ -548,7 +548,10 @@ def apply(game, output='1920x1080', scale=100, quality='console', fps=60, debug_
     # HDR10 output, the game's own UE4 path (study-hdr.md, route A): with the HDR checkbox (GOW3_HDR)
     # and GOW3_HDR_GAME=1 the runtime reports an HDR display and these let the engine use it. Read at
     # RHI init, so they go into the pak; without the reported display PreInit sets both back to 0.
-    if os.environ.get('GOW3_HDR') == '1' and os.environ.get('GOW3_HDR_GAME') == '1':
+    def flag(name):  # as the runtime reads it (emulator_settings.h Flag: 1 / y / t)
+        return os.environ.get(name, '')[:1] in ('1', 'y', 't')
+
+    if flag('GOW3_HDR') and flag('GOW3_HDR_GAME'):
         values.update({'r.AllowHDR': '1', 'r.HDR.EnableHDROutput': '1'})
         # UI brightness (study-hdr.md H18 / H19: r.HDR.UI.Level 1.0 puts the UI at ~100 nits, linear): from the
         # first screen; the runtime sets it live as the menu changes it (gow3_settings.cpp RequestHdrUi).

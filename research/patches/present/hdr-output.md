@@ -9,7 +9,7 @@ default_deck: off
 origin: ours
 class: G
 commits:
-files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.h, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.vert, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.frag, gpu/shadps4/video_core/host_shaders/ue4_grade.glsl, gpu/shadps4/video_core/host_shaders/ue4_hdr_map.glsl, gpu/shadps4/video_core/host_shaders/ue4_ui_composite.frag, scripts/save_brightness.py, launcher/medievil_launcher.py, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_settings.h, gpu/shadps4/video_core/host_shaders/imgui_hdr.frag, gpu/patches/imgui/0001-vulkan-pipeline-for-another-format-and-fragment-shader.patch, src/runtime_extra.c, run.py, build.sh, gpu/shadps4/core/libraries/videoout/video_out.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_swapchain.cpp, gpu/shim/core/emulator_settings.h, scripts/ue4_override.py, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.cpp, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.h, gpu/shadps4/video_core/host_shaders/post_process.frag, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h
+files: gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_hdr.h, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.vert, gpu/shadps4/video_core/host_shaders/ue4_hdr_lut.frag, gpu/shadps4/video_core/host_shaders/ue4_grade.glsl, gpu/shadps4/video_core/host_shaders/ue4_hdr_map.glsl, gpu/shadps4/video_core/host_shaders/ue4_ui_composite.frag, scripts/save_brightness.py, launcher/medievil_launcher.py, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3_settings.cpp, gpu/shim/gow3_settings.h, gpu/shadps4/video_core/host_shaders/imgui_hdr.frag, gpu/patches/imgui/0001-vulkan-pipeline-for-another-format-and-fragment-shader.patch, src/runtime_extra.c, run.py, build.sh, gpu/shadps4/core/libraries/videoout/video_out.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_swapchain.cpp, gpu/shim/core/emulator_settings.h, scripts/ue4_override.py, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.cpp, gpu/shadps4/video_core/renderer_vulkan/host_passes/pp_pass.h, gpu/shadps4/video_core/host_shaders/post_process.frag, gpu/shadps4/video_core/host_shaders/post_process_hdr.frag, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.h
 symbols: Ue4HdrGrading, ReplaceHdrGrading, ReplaceHdrComposite, RunComposite, PrepareHdrBlur, RunBackdrop, IsUiBlurFirstPass, set_neutral, GradeScene, HdrSceneToNits, HdrRollOff, LutDecodeHdrTexel, Ue4GradeOverride, ApplyUe4Grade, Ue4GradeTarget, HdrPipeline, ImGui_ImplVulkan_CreatePipelineForFormat, ColorTab, GradeAt, GradeKey, RequestHdrUi, RequestHdrCurve, hdr_ui_level, sceVideoOutGetDeviceCapabilityInfo, sceVideoOutConfigureOutputMode_, sceVideoOutRegisterBuffers, FindPresentFormat, Swapchain::SetHDR, IsHdrGameForced, PostProcessingPass::HDR_FRAME_FORMAT, RecreateFrame, MustCompileSync
 switches: GOW3_HDR, GOW3_HDR_GAME, GOW3_UE4_GRADE, GOW3_UE4_LIVE_CVARS
 tests:
@@ -107,6 +107,12 @@ Route A in [study-hdr.md](../../docs/study-hdr.md): the game's own UE4 HDR10 out
   capped start-up HDR log lines and the one "colour grading on" line.
 
 ## Invariants
+
+- With HDR off the release build's SDR path is the baseline's: `post_process.frag` is byte-identical to `22744f1`
+  (the near-black correction lives in `post_process_hdr.frag`, HDR pipeline and layout only); `Ue4HdrGrading` exists
+  only with "Allow HDR output" or in the dev build (the per-draw test is a null check); new rasterizer members sit
+  after the per-draw ones and new settings fields after the older ones (H35). Keep it so: new HDR state goes at the
+  ends, HDR work behind `hdr_active` / the null check.
 
 - The UI composite reads the scene and UI through the game's views and writes `.bgr` (LANDMINES.md 28): through
   identity views the colour maths runs on swapped channels (greens turned mint, H32).

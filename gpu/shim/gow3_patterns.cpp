@@ -14,6 +14,18 @@
 
 #include "gow3_settings.h"
 
+#if !GOW3_DEV_TOOLS
+namespace Gow3Patterns {
+void Start() {
+    const char* env = std::getenv("GOW3_PATTERN_SERVER");
+    if (env && env[0] && env[0] != '0') {
+        std::printf("Patterns: GOW3_PATTERN_SERVER needs the development build (launcher: Advanced > Diagnostics > "
+                    "Development build); no server\n");
+    }
+}
+} // namespace Gow3Patterns
+#else
+
 #ifdef _WIN32
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -353,3 +365,4 @@ void NotePresented() {
 }
 
 } // namespace Gow3Patterns
+#endif // GOW3_DEV_TOOLS

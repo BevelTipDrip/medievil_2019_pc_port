@@ -3638,7 +3638,6 @@ void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent, b
     }
     ConfirmRestart();
     PollChoiceInput();
-    Gow3Settings::Get().hdr_active.store(hdr, std::memory_order_relaxed); // the menu's HDR rows
     if (open_requested.exchange(false)) {
         SetOpen(true);
     }
@@ -3703,11 +3702,13 @@ void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent, b
         .colorAttachmentCount = 1,
         .pColorAttachments = &attachment,
     });
-    {
+    // HDR: the pipeline for this UI brightness, made outside the submit lock (a new value compiles one). If it could
+    // not be made, the menu is not drawn: the SDR pipeline does not match the 10-bit attachment.
+    const VkPipeline hdr_pipeline = hdr ? HdrPipeline(Gow3Settings::Get().hdr_ui_nits.load()) : VK_NULL_HANDLE;
+    if (!hdr || hdr_pipeline) {
         // Font atlas uploads submit to the graphics queue themselves.
         std::scoped_lock submit_lock{Vulkan::Scheduler::submit_mutex};
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdbuf,
-                                        hdr ? HdrPipeline(Gow3Settings::Get().hdr_ui_nits.load()) : VK_NULL_HANDLE);
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdbuf, hdr_pipeline);
     }
     cmdbuf.endRendering();
 }

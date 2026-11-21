@@ -12,11 +12,6 @@ layout (push_constant) uniform settings {
     float gamma;
     bool hdr;
     bool srgb_input;
-    // gow3 HDR near-black correction (pp_pass.h Settings): PQ codes below black_limit remapped through black_lut.
-    uint black_count;
-    float black_limit;
-    float pad0, pad1, pad2;
-    float black_lut[24];
 } pp;
 
 const float cutoff = 0.0031308, a = 1.055, b = 0.055, d = 12.92;
@@ -38,23 +33,10 @@ vec3 degamma(vec3 rgb) {
     );
 }
 
-// The inverse of the display's measured near-black response, on PQ codes (each channel; identity at the limit).
-float BlackCorrect(float code) {
-    if (code >= pp.black_limit || code <= 0.0) {
-        return code;
-    }
-    const float at = code / pp.black_limit * float(pp.black_count - 1u);
-    const uint i = min(uint(at), pp.black_count - 2u);
-    return mix(pp.black_lut[i], pp.black_lut[i + 1u], at - float(i));
-}
-
 void main() {
     vec4 color_linear = texture(texSampler, uv);
     if (pp.hdr) {
         color = color_linear;
-        if (pp.black_count > 1u) {
-            color.rgb = vec3(BlackCorrect(color.r), BlackCorrect(color.g), BlackCorrect(color.b));
-        }
     } else {
         if (pp.srgb_input) color_linear.rgb = degamma(color_linear.rgb);
         color = vec4(gamma(color_linear.rgb), color_linear.a);

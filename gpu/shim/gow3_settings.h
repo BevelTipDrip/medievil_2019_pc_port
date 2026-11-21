@@ -120,25 +120,6 @@ struct Values {
             grade[i].store(GradeNeutralValue(i), std::memory_order_relaxed);
         }
     }
-    /// HDR (Display tab > HDR, shown while the game outputs HDR10; study-hdr.md). UI brightness in nits: the
-    /// game's UI (r.HDR.UI.Level = nits / 100, live) and the port's overlay (its HDR pipeline's white). HDR curve:
-    /// 0 the game's 1000-nit ACES curve, 1 the 2000-nit one (r.HDR.Display.OutputDevice 3 / 4, live). hdr_active:
-    /// set by the presenter, the swapchain is HDR10.
-    std::atomic<int> hdr_ui_nits{HdrUiNitsDefault};
-    std::atomic<int> hdr_curve{0};
-    std::atomic<bool> hdr_active{false};
-    /// HDR look (HdrLook), game brightness (nits), gamma emulation (tenths, 0 = off); live.
-    std::atomic<int> hdr_look{HdrLookSdr};
-    std::atomic<int> hdr_game_nits{HdrGameNitsDefault};
-    std::atomic<int> hdr_gamma{HdrGammaDefault};
-    /// Display peak (nits) and highlight strength (percent); live.
-    std::atomic<int> hdr_peak_nits{HdrPeakNitsDefault};
-    std::atomic<int> hdr_highlights{HdrHighlightsDefault};
-    /// HDR near-black correction from a meter measurement (hdr-black-correction.txt beside medievil.ini; the
-    /// presenter's final pass), opt-in: specific to one display and mode.
-    std::atomic<bool> hdr_black_correction{false};
-    /// Colour grading (GradeAt), live: read by the renderer at each combine LUT draw.
-    std::atomic<float> grade[GradeCount];
     std::atomic<int> upscaler{UpscalerFsr3};
     std::atomic<int> preset{NativeAA};
     std::atomic<bool> sharpen{true};
@@ -297,6 +278,26 @@ struct Values {
     bool startup_object_motion = true;
     int startup_output_res = OutputDefault;
     int startup_live_resolution = 0;
+    // gow3 HDR and colour grading: after the older fields, which keep their places.
+    /// HDR (Display tab > HDR, shown while the game outputs HDR10; study-hdr.md). UI brightness in nits: the
+    /// game's UI (r.HDR.UI.Level = nits / 100, live) and the port's overlay (its HDR pipeline's white). HDR curve:
+    /// 0 the game's 1000-nit ACES curve, 1 the 2000-nit one (r.HDR.Display.OutputDevice 3 / 4, live). hdr_active:
+    /// set by the presenter, the swapchain is HDR10.
+    std::atomic<int> hdr_ui_nits{HdrUiNitsDefault};
+    std::atomic<int> hdr_curve{0};
+    std::atomic<bool> hdr_active{false};
+    /// HDR look (HdrLook), game brightness (nits), gamma emulation (tenths, 0 = off); live.
+    std::atomic<int> hdr_look{HdrLookSdr};
+    std::atomic<int> hdr_game_nits{HdrGameNitsDefault};
+    std::atomic<int> hdr_gamma{HdrGammaDefault};
+    /// Display peak (nits) and highlight strength (percent); live.
+    std::atomic<int> hdr_peak_nits{HdrPeakNitsDefault};
+    std::atomic<int> hdr_highlights{HdrHighlightsDefault};
+    /// HDR near-black correction from a meter measurement (hdr-black-correction.txt beside medievil.ini; the
+    /// presenter's final pass), opt-in: specific to one display and mode.
+    std::atomic<bool> hdr_black_correction{false};
+    /// Colour grading (GradeAt), live: read by the renderer at each combine LUT draw.
+    std::atomic<float> grade[GradeCount];
 };
 
 Values& Get();

@@ -63,6 +63,15 @@ class SaveBrightnessTest(unittest.TestCase):
         self.assertEqual([p for p, _ in skipped], [path])
         self.assertEqual(path.read_bytes(), odd)
 
+    def test_truncated_save_is_left_alone(self):
+        data = gvas(0.42)
+        cut = data[:data.index(b'FloatProperty') + len(b'FloatProperty\x00') + 5]
+        path = self.slot(1, cut, 1_000_000)
+        self.assertEqual(save_brightness.slots(self.user), [(path, None)])
+        backup, changed, skipped = save_brightness.set_neutral(self.user)
+        self.assertEqual((backup, changed, [p for p, _ in skipped]), (None, 0, [path]))
+        self.assertEqual(path.read_bytes(), cut)
+
     def test_display_gamma(self):
         self.assertAlmostEqual(save_brightness.display_gamma(save_brightness.NEUTRAL), 2.2001, places=4)
 

@@ -19,7 +19,9 @@ related:
 ---
 ## What it does
 
-`GOW3_PATTERN_SERVER=1` starts a thread listening on TCP 127.0.0.1:21977 (`GOW3_PATTERN_PORT`); `=pgen` also listens
+**Dev build only since 2026-11-20** (H35: release has the checks as compile-time constants; there
+`GOW3_PATTERN_SERVER` only logs that it needs the development build; launcher: Advanced > Diagnostics > Development
+build). `GOW3_PATTERN_SERVER=1` starts a thread listening on TCP 127.0.0.1:21977 (`GOW3_PATTERN_PORT`); `=pgen` also listens
 on TCP 85 (all interfaces) and answers HCFR's PGenerator discovery on UDP 1977. Messages end in `\x02\r` (PGenerator
 framing) or a newline; a patch is answered `OK` two presents after it changed.
 

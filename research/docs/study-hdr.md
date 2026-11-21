@@ -347,6 +347,25 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
   is one burst at 115 s (~30 frames 6-14 ms in half a second; `flip_slow_stages.py`: game + stage A +3.8 ms each,
   recording and present unchanged; nothing in the log): cause not found, seen once. Read: SDR within 0.2-0.7% of
   the baseline, HDR output ~1.7% [V run; the user: run-to-run variance].
+- **H35, the SDR path made equal to the baseline by construction; three installs** (2026-11-20):
+  - Review of every change since `22744f1` (two independent reviewers, read-only, plus mine): with HDR off, nothing
+    above a few microseconds a frame; nothing that should be dev-only reaching the release build. Cleanups:
+    `post_process.frag` back to its `22744f1` bytes and 12-byte push range, the near-black correction in
+    `post_process_hdr.frag` with its own layout (HDR pipeline only); `Ue4HdrGrading` created only with "Allow HDR
+    output" (or in the dev build), so the per-draw HDR test is one null check; the HDR / pattern members after the
+    rasterizer's per-draw members and the HDR / grade fields after the older settings (their old offsets back); the
+    test patterns dev-build only (compile-time constants in release); the live cvar poll checks one pending flag and
+    its dev-only rows are compiled out; `hdr_active` stored on a change only. Fixes from the review: the UI level no
+    longer requested in SDR at start, the saved menu tab 5, the overlay's HDR pipeline made outside the submit lock
+    and not drawn with the SDR pipeline if it fails, `GOW3_HDR_GAME` parsed one way, non-finite grade values
+    rejected, the composite's render-pass split after its checks, the launcher's save edit on a cut-off save.
+  - Three side-by-side installs, same ini / saves / shader cache (`C:\Users\Ty\MediEvil`): `medievil_bestrun`
+    (`21886b6` release: the best run's code `e12ffaa` plus off-cost steps 1-2), `medievil_cft` (`22744f1` release),
+    `medievil_2019_pc_port` (this branch, release). The best run (screenshot 2026-11-15 19:28: 1% 233.8, 0.1% 227.9)
+    was `e12ffaa`'s code in a static view with every log off, not `deck-lab`. The user's graveyard runs of all three
+    plus repeatable heavy moments (particle bursts from hitting metal): about the same, within run-to-run variance;
+    HDR on: works, looks as before; "significantly better than the 2.4.0 release" [V the user]. A finer A/B needs
+    the repeatable stress test (work queue).
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.

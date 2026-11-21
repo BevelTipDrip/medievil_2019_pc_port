@@ -1191,7 +1191,9 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
         }
         // gow3: the settings menu / FPS counter over the frame, at display resolution.
         // gow3 HDR: every present, overlay or not (the grading LUT pass and the menu's HDR rows read it).
-        Gow3Settings::Get().hdr_active.store(swapchain.GetHDR(), std::memory_order_relaxed);
+        if (auto& active = Gow3Settings::Get().hdr_active; active.load(std::memory_order_relaxed) != swapchain.GetHDR()) {
+            active.store(swapchain.GetHDR(), std::memory_order_relaxed); // on a change only: the renderer reads it
+        }
         const bool overlay = Gow3Overlay::Visible();
         const std::array post_barriers{
             vk::ImageMemoryBarrier{

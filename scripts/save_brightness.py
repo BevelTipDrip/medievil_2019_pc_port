@@ -39,6 +39,8 @@ def _value_offset(data):
     if data[at:at + len(_TYPE)] != _TYPE:
         raise ValueError('Brightness is not a FloatProperty')
     at += len(_TYPE)
+    if at + 13 > len(data):  # int64 size, the GUID flag byte, the float
+        raise ValueError('the save ends inside the Brightness property')
     size = struct.unpack_from('<q', data, at)[0]
     if size != 4 or data[at + 8] != 0:  # 4-byte payload, no property GUID
         raise ValueError(f'unexpected Brightness payload (size {size})')

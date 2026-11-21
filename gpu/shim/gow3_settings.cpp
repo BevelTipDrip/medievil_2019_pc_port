@@ -4,6 +4,7 @@
 #include "gow3_graphics.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -53,7 +54,8 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         for (int g = 0; g < GradeCount; ++g) {
             if (key == GradeKey(g)) {
                 const GradeInfo info = GradeAt(g);
-                v.grade[g] = value.empty() ? GradeNeutralValue(g) : std::clamp(f, info.lo, info.hi);
+                v.grade[g] = value.empty() || !std::isfinite(f) ? GradeNeutralValue(g)
+                                                                : std::clamp(f, info.lo, info.hi);
                 return;
             }
         }
@@ -181,7 +183,7 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         return;
     }
     if (key == "menu_tab") {
-        v.menu_tab = i >= 0 && i <= 4 ? i : 0;
+        v.menu_tab = i >= 0 && i <= 5 ? i : 0; // gow3_overlay.cpp TabCount 6
         return;
     }
     for (int move = 0; move < CameraMoveCount; ++move) {
@@ -350,9 +352,12 @@ void ResetGrade() {
 
 bool HdrGame() {
     static const bool on = [] {
-        const char* hdr = std::getenv("GOW3_HDR");
-        const char* game = std::getenv("GOW3_HDR_GAME");
-        return hdr && std::strcmp(hdr, "1") == 0 && game && std::strcmp(game, "1") == 0;
+        // As EmulatorSettings' flags read them (1 / y / t), so video-out, the pak (ue4_override.py) and this agree.
+        const auto flag = [](const char* name) {
+            const char* v = std::getenv(name);
+            return v && (v[0] == '1' || v[0] == 'y' || v[0] == 't');
+        };
+        return flag("GOW3_HDR") && flag("GOW3_HDR_GAME");
     }();
     return on;
 }
@@ -546,7 +551,7 @@ void Load() {
     }
     // HDR: the UI level is in the override pak too (run.py), for the screens before the first poll; the curve can
     // only be set live (the engine's HDR sink outranks the pak).
-    if (v.hdr_ui_nits != HdrUiNitsDefault) {
+    if (v.hdr_ui_nits != HdrUiNitsDefault && HdrGame()) { // SDR: the engine's UI level stays untouched
         RequestHdrUi();
     }
     if (v.hdr_curve != 0) {

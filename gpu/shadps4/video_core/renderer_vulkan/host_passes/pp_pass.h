@@ -43,6 +43,7 @@ private:
     vk::UniquePipeline pipeline{};
     vk::UniquePipeline pipeline_hdr{};
     vk::UniquePipelineLayout pipeline_layout{};
+    vk::UniquePipelineLayout pipeline_layout_hdr{}; ///< gow3: Settings in full (the SDR layout: its first 12 bytes)
     vk::UniqueDescriptorSetLayout desc_set_layout{};
     vk::UniqueSampler sampler{};
 };
