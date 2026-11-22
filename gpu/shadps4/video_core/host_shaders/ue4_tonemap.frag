@@ -14,7 +14,8 @@
 layout(location = 0) out vec4 color;
 
 /// The game's constants as its draw binds them: [0, 24) the pixel shader's buffer 0, [24, 32) its buffer 1, [32, 44)
-/// the vertex shader's buffer 0, [44, 60) its buffer 1 (dwords).
+/// the vertex shader's buffer 0, [44, 60) its buffer 1 (dwords); [60, 64) the draw's viewport (x scale, x offset,
+/// y scale, y offset: pixel = offset + NDC x scale).
 layout(std430, set = 0, binding = 0) readonly buffer Constants {
     uint data[];
 } k;
@@ -28,6 +29,7 @@ float P(uint i) { return uintBitsToFloat(k.data[i]); }       // pixel shader buf
 float D(uint i) { return uintBitsToFloat(k.data[24u + i]); } // pixel shader buffer 1 (dirt-mask tint)
 float V0(uint i) { return uintBitsToFloat(k.data[32u + i]); } // vertex shader buffer 0
 float V1(uint i) { return uintBitsToFloat(k.data[44u + i]); } // vertex shader buffer 1
+float VP(uint i) { return uintBitsToFloat(k.data[60u + i]); } // viewport
 
 vec3 PqIndex(vec3 c) {
     // As the game's (abs, the ST.2084 constants, x 0.96875 + 0.015625), at x 0.01 instead of x 0.0001.
@@ -38,14 +40,16 @@ vec3 PqIndex(vec3 c) {
 
 void main() {
     const vec2 frag = gl_FragCoord.xy;
-    // The vertex shader: a unit rectangle u in [0, 1] placed at V0(0..1) * u + V0(2..3) pixels; its UV is
-    // V0(10..11) * (V0(4..5) * u + V0(6..7)). At this pixel:
-    const vec2 u = (frag - vec2(V0(2u), V0(3u))) / vec2(V0(0u), V0(1u));
+    // The viewport back to the vertex shader's NDC (its position y is the negated ndc_y below).
+    const float ndc_x = (frag.x - VP(1u)) / VP(0u);
+    const float ndc_y = -((frag.y - VP(3u)) / VP(2u));
+    // The vertex shader: NDC = 2 * V0(8..9) * p - 1 for its pixel p = V0(0..1) * u + V0(2..3), u in [0, 1] the unit
+    // rectangle; its UV is V0(10..11) * (V0(4..5) * u + V0(6..7)). At this pixel:
+    const vec2 p = (vec2(ndc_x, ndc_y) + 1.0) / (2.0 * vec2(V0(8u), V0(9u)));
+    const vec2 u = (p - vec2(V0(2u), V0(3u))) / vec2(V0(0u), V0(1u));
     const vec2 uv = vec2(V0(10u), V0(11u)) * fma(vec2(V0(4u), V0(5u)), u, vec2(V0(6u), V0(7u)));
     // Its vignette coordinates: NDC x and the flipped NDC y scaled by the aspect (V1(5) * V1(6)), x sqrt(2) /
     // sqrt(1 + aspect^2).
-    const float ndc_x = 2.0 * (V0(8u) * frag.x) - 1.0;
-    const float ndc_y = 2.0 * (V0(9u) * frag.y) - 1.0;
     const float aspect = V1(5u) * V1(6u);
     const float scale = 1.4142 * inversesqrt(aspect * aspect + 1.0);
     const float vig_x = ndc_x * scale;

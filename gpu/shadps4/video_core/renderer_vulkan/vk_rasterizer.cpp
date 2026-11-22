@@ -5061,22 +5061,37 @@ bool Rasterizer::ReplaceHdrTonemap(const Pipeline* pipeline) {
     if (!inputs.dirt_mask.view || !inputs.scene.view || !inputs.bloom.view || !inputs.eye.view) {
         return decline(4, "an input image not found");
     }
-    // The rectangle the game's draw covers: its vertex shader places the unit rectangle at buffer 0's dwords 0-3
-    // (size, offset in pixels).
+    // The draw's viewport as the port maps it (pixel = offset + NDC x scale; UpdateViewportScissorState), after the
+    // buffers: the menu draws its 3812-wide image 14 pixels in (H44).
+    const auto& regs = Regs();
+    const auto& vp = regs.viewports[0];
+    const auto& vp_ctl = regs.viewport_control;
+    const float viewport[4] = {vp_ctl.xscale_enable ? vp.xscale : 1.0f, vp_ctl.xoffset_enable ? vp.xoffset : 0.0f,
+                               vp_ctl.yscale_enable ? vp.yscale : 1.0f, vp_ctl.yoffset_enable ? vp.yoffset : 0.0f};
+    if (viewport[0] == 0.0f || viewport[2] == 0.0f) {
+        return decline(8, "a zero viewport scale");
+    }
+    std::memcpy(&constants[Ue4HdrGrading::TonemapDwords - Ue4HdrGrading::TonemapViewport], viewport,
+                sizeof(viewport));
+    // The rectangle the game's draw covers: its vertex shader places the unit rectangle at buffer 0's dwords 0-1 x u
+    // + 2-3 pixels, NDC = 2 x dwords 8-9 x pixel - 1 (y negated), then the viewport.
     const auto vs0 = [&](u32 i) {
         float v;
         std::memcpy(&v, &constants[Ue4HdrGrading::TonemapPs0 + Ue4HdrGrading::TonemapPs1 + i], sizeof(v));
         return v;
     };
+    const auto screen_x = [&](float u) { return viewport[1] + (2.0f * vs0(8) * (vs0(0) * u + vs0(2)) - 1.0f) * viewport[0]; };
+    const auto screen_y = [&](float v) { return viewport[3] - (2.0f * vs0(9) * (vs0(1) * v + vs0(3)) - 1.0f) * viewport[2]; };
     const auto& target_info = cb_descs[0].second.info;
-    const float x0 = std::clamp(vs0(2), 0.0f, float(target_info.size.width));
-    const float y0 = std::clamp(vs0(3), 0.0f, float(target_info.size.height));
-    const float x1 = std::clamp(vs0(2) + vs0(0), 0.0f, float(target_info.size.width));
-    const float y1 = std::clamp(vs0(3) + vs0(1), 0.0f, float(target_info.size.height));
+    const float x0 = std::clamp(std::min(screen_x(0.0f), screen_x(1.0f)), 0.0f, float(target_info.size.width));
+    const float x1 = std::clamp(std::max(screen_x(0.0f), screen_x(1.0f)), 0.0f, float(target_info.size.width));
+    const float y0 = std::clamp(std::min(screen_y(0.0f), screen_y(1.0f)), 0.0f, float(target_info.size.height));
+    const float y1 = std::clamp(std::max(screen_y(0.0f), screen_y(1.0f)), 0.0f, float(target_info.size.height));
     if (!(x1 > x0 && y1 > y0)) {
-        return decline(8, "an empty rectangle");
+        return decline(16, "an empty rectangle");
     }
-    const vk::Rect2D rect{{s32(x0), s32(y0)}, {u32(x1) - u32(x0), u32(y1) - u32(y0)}};
+    const s32 rx0 = s32(std::lround(x0)), ry0 = s32(std::lround(y0));
+    const vk::Rect2D rect{{rx0, ry0}, {u32(std::lround(x1) - rx0), u32(std::lround(y1) - ry0)}};
     // The target's pending fast clear (CMASK): the game's render pass would start with it (RenderState's is_clear);
     // left pending, EliminateFastClear clears the image later, over our output (H44: the scene black under the UI).
     const auto& col_buf = Regs().color_buffers[0];

@@ -805,6 +805,13 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     to `RunTonemap` (loadOp Clear with the game's clear value) and marks it done (`TouchMeta`). Rule for any pass
     replacing a game draw: take over its target's pending fast clear.
   - Run 2 (2026-11-22, build 08:50 with the fix): the user: it works; levels load, every menu tried.
+  - The user: compared with shots of the old curve in the same places, nothing stands out; the map screen looks off
+    (expected: the game's tonemapper at the coarse index). But the main menu: black columns at the sides in both
+    looks, ours shifted left against ACES (screenshots 18.05.48 / 18.04.47): ACES lights columns 14-3825 (a 3812-wide
+    image, 14 px in each side), ours 14-3811. The menu's draw places its image through the viewport (pixel = offset
+    + NDC x scale): my pass mapped pixels from the vertex shader's constants alone (the levels' viewport is the whole
+    target). Fix (build 18:13): the draw's viewport passed with the constants; the shader inverts it (pixel -> NDC ->
+    the unit rectangle -> UV, the vignette from that NDC), the drawn rectangle from the same mapping.
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.

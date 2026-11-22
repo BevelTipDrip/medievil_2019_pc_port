@@ -55,9 +55,10 @@ public:
     /// UE 4.21's HDR tonemapper (the levels'; study-hdr.md H38, H44): replaced by RunTonemap. The map screen's
     /// (52770387e0d6363a, with sharpening and grain) keeps the game's draw.
     static constexpr u64 TonemapPs = 0x12178a9314cb761eull;
-    /// The constants RunTonemap takes, in dwords: the pixel shader's buffers 0 / 1, the vertex shader's 0 / 1.
-    static constexpr u32 TonemapPs0 = 24, TonemapPs1 = 8, TonemapVs0 = 12, TonemapVs1 = 16;
-    static constexpr u32 TonemapDwords = TonemapPs0 + TonemapPs1 + TonemapVs0 + TonemapVs1;
+    /// The constants RunTonemap takes, in dwords: the pixel shader's buffers 0 / 1, the vertex shader's 0 / 1, then the
+    /// draw's viewport (x scale, x offset, y scale, y offset: pixel = offset + NDC x scale, as the port maps it).
+    static constexpr u32 TonemapPs0 = 24, TonemapPs1 = 8, TonemapVs0 = 12, TonemapVs1 = 16, TonemapViewport = 4;
+    static constexpr u32 TonemapDwords = TonemapPs0 + TonemapPs1 + TonemapVs0 + TonemapVs1 + TonemapViewport;
     /// UE 4.21's HDR UI composite (scene PQ + Slate's UI image -> the display buffer).
     static constexpr u64 UiCompositePs = 0xc401ca35f9bceb8eull;
     /// UE's background blur (Slate): its first pass samples what is drawn so far, in HDR the empty UI image. Two
