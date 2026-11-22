@@ -781,6 +781,29 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
   - Decision (the user, 2026-11-22): the final HDR replaces the game's tonemapper draw with our own pass (the LUT read
     at our own index: no x100 variant, no recognition pass, no prepared-draw check; room for bloom strength, grain,
     FXAA luma), built on copy-fault-trace and regression-tested there. This fix only confirms the mechanism early.
+- **H44, our tonemapper pass (plan-hdr-final.md step 2)** (2026-11-22, branch `hdr-final`):
+  - The game's HDR tonemapper (fs 12178a9314cb761e, IR `user/shader/dumps`): colour = exposure x (bloom x (cb0 dw 12-14
+    + cb1 dw 0-2 x dirt mask) + scene x cb0 dw 8-10) x vignette (1 / (1 + (dw16 x vx)^2 + (dw16 x vy)^2))^2; LUT at
+    PQ(colour x 1e-4) x 0.96875 + 0.015625 (coordinates R, G, B); output LUT x 1.05 + grain, written B, G, R; alpha
+    saturate(0.31395 R + 0.61635 G + 0.1197 B) of the LUT sample. Its vertex shader (vs e76703c6ddfc5f06, RenderDoc
+    `disasm.py`, Hilltop eid 15075): buffer 0 (12 dwords) places the unit rectangle at dw 0-1 x u + dw 2-3 pixels, UV
+    = dw 10-11 x (dw 4-5 x u + dw 6-7), NDC from dw 8-9; exposure = the 1x1 eye-adaptation texel's x; vignette
+    coordinates = NDC x, -NDC y x aspect (buffer 1 dw 5 x dw 6), both x sqrt(2) / sqrt(1 + aspect^2); grain UVs from
+    buffer 1 dw 8-9. The map screen's tonemapper (52770387e0d6363a) is another permutation (four extra scene taps,
+    grain): not replaced; it reads the game's LUT target, which our LUT pass still writes at the game's index.
+  - Built (`e07270f`): `ue4_tonemap.frag` / `Ue4HdrGrading::RunTonemap` / `Rasterizer::ReplaceHdrTonemap`; our LUT a
+    32^3 RGBA16F 3D image (2D-array compatible: rendered as 32 layers), indexed at PQ(scene x 0.01); no grain.
+  - Run 1 (the user): the scene black under the UI (main menu and levels; ACES fine). RenderDoc
+    (`research-data/hdr-final-step2-20261122/menu_frame11835.rdc`, a level; scratchpad `rd_survey/tonemap_probe.py`,
+    `after_tonemap.py`, `img_probe.py`): our pass read sane inputs (exposure 1, bloom 20, vignette 0.71, our LUT
+    filled) and wrote the display buffer (954, 0x4004000000; e.g. 0.45 / 0.38 / 0.39 PQ at the centre), then event
+    10751 `vkCmdClearColorImage` cleared it, before the copy into the scene texture (1058, 0x2006000000) that the UI
+    composite reads (left 0). The game's frame (Hilltop 82572): its tonemapper pass begins `BeginRendering(Clear)` and
+    532 keeps its content until 592 (the same 0x2006000000) has it. Cause: the game fast-clears the target (CMASK);
+    the port applies a pending clear at the target's next render pass; with the game's draw skipped it stayed pending
+    and `EliminateFastClear` cleared the image later. Fix (`7e18d53`): `ReplaceHdrTonemap` hands the pending clear
+    to `RunTonemap` (loadOp Clear with the game's clear value) and marks it done (`TouchMeta`). Rule for any pass
+    replacing a game draw: take over its target's pending fast clear.
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.
