@@ -804,6 +804,7 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     and `EliminateFastClear` cleared the image later. Fix (`7e18d53`): `ReplaceHdrTonemap` hands the pending clear
     to `RunTonemap` (loadOp Clear with the game's clear value) and marks it done (`TouchMeta`). Rule for any pass
     replacing a game draw: take over its target's pending fast clear.
+  - Run 2 (2026-11-22, build 08:50 with the fix): the user: it works; levels load, every menu tried.
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.

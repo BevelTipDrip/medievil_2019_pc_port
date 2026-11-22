@@ -103,6 +103,10 @@ Every log line on these paths is reviewed: release keeps start-up lines only.
   spikes (a frame > 6 ms among fast frames) 3.9 vs 3.7 / min: the rest lie inside slow, GPU-bound stretches (~140-165
   FPS), and the hdr-final run spent one more second in one (7 vs 6 seconds with a mean frame > 5.5 ms). The steady
   capped stretches match (237.2 FPS, 1% ~223 in both). No regression seen.
+- **Step 2** (2026-11-22, `e07270f`, fix `7e18d53`): our tonemapper pass and our own LUT (study-hdr.md H44). Run 1:
+  the scene black under the UI (a pending fast clear of the target; RenderDoc). Run 2 with the fix: works in levels
+  and every menu (the user). Open: the screenshot comparison against the `hdr` build (same curve, the game's
+  tonemapper) for transcription errors; the map screen keeps the game's tonemapper (coarse dark tones).
 
 ## Answers (the user, 2026-11-22)
 
