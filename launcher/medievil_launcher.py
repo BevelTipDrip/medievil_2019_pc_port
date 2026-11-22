@@ -33,6 +33,7 @@ FROZEN = getattr(sys, 'frozen', False)
 PORT_DIR = Path(sys.executable).resolve().parent if FROZEN else Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PORT_DIR / 'scripts'))
 import save_backup  # noqa: E402  (scripts/)
+import save_brightness  # noqa: E402  (scripts/)
 import graphics_options  # noqa: E402  (scripts/)
 WINDOWS = sys.platform == 'win32'
 DATA_DIR = Path(os.environ.get('GOW3_DATA_DIR', PORT_DIR))
@@ -1648,6 +1649,20 @@ class Launcher:
         self.check(f, 'hdr', 'app', _('Allow HDR output', 'Разрешить HDR'),
                    _('When HDR is on in Windows and the display supports it.',
                      'Если HDR включён в Windows и монитор его поддерживает.'))
+        holder = ttk.Frame(f)
+        ttk.Button(holder, text=_('Set to neutral', 'Сделать нейтральной'),
+                   command=self.set_brightness_neutral).pack(side='left')
+        self.brightness_label = ttk.Label(holder, text='', style='Muted.TLabel')
+        self.brightness_label.pack(side='left', padx=(8, 0))
+        self.row(f, _('Game brightness', 'Яркость игры'), holder,
+                 _("The game's own Brightness slider (Options > Screen). In HDR the picture ignores it, but the HUD and "
+                   'menus still follow it; neutral (its default position, gamma 2.2) shows them as in SDR. Sets every '
+                   'save slot to neutral; the saves are backed up first (Save backups). Close the game first.',
+                   'Ползунок яркости самой игры (Options > Screen). В HDR картинка его не учитывает, но интерфейс и '
+                   'меню следуют ему; нейтральное значение (по умолчанию, гамма 2.2) показывает их как в SDR. '
+                   'Ставит нейтральное значение во всех слотах сохранений; сначала делается резервная копия. '
+                   'Сначала закройте игру.'))
+        self.refresh_brightness()
         self.section(f, _('Frame rate', 'Частота кадров'))
         self.row(f, _('Engine frame rate'), self.choice(f, self.engine_cap_var(), None, ENGINE_CAP_CHOICES),
                  _('The highest frame rate MediEvil runs at. The PS4 game stops at 60; 120 and 240 lift '
@@ -1923,6 +1938,44 @@ class Launcher:
                  _('Made before every start, newest first; none are deleted. Restoring backs up the '
                    'current saves first.'))
         self.refresh_backups()
+
+    def refresh_brightness(self):
+        try:
+            slots = save_brightness.slots(self.user_dir())
+        except OSError:
+            slots = []
+        if not slots:
+            text = _('No saves yet.', 'Сохранений пока нет.')
+        elif slots[0][1] is None or abs(slots[0][1] - save_brightness.NEUTRAL) < 1e-6:
+            text = _('Latest save: neutral (2.2).', 'Последнее сохранение: нейтральная (2.2).')
+        else:
+            text = _('Latest save: {:.2f} (neutral 2.2).', 'Последнее сохранение: {:.2f} (нейтральная 2.2).').format(
+                save_brightness.display_gamma(slots[0][1]))
+        self.brightness_label.configure(text=text)
+
+    def set_brightness_neutral(self):
+        if self.process:
+            self.messagebox.showwarning(APP_NAME, _('Close the game before changing its saves.',
+                                                    'Закройте игру перед изменением сохранений.'))
+            return
+        try:
+            backup, changed, skipped = save_brightness.set_neutral(self.user_dir())
+        except (OSError, ValueError) as error:
+            self.messagebox.showerror(APP_NAME, _('Could not change the saves: {}',
+                                                  'Не удалось изменить сохранения: {}').format(error))
+            return
+        if hasattr(self, 'backup_choice'):
+            self.refresh_backups()
+        self.refresh_brightness()
+        if changed:
+            text = _('Brightness set to neutral in {} save slot(s). Previous saves: {}.',
+                     'Нейтральная яркость в {} слотах. Прежние сохранения: {}.').format(changed, backup.name)
+        else:
+            text = _('Every save slot is already at neutral.', 'Все слоты уже нейтральные.')
+        if skipped:
+            text += '\n' + _('Left unchanged (unexpected format): {}', 'Не изменены (неожиданный формат): {}').format(
+                ', '.join(path.parent.name for path, _reason in skipped))
+        self.messagebox.showinfo(APP_NAME, text)
 
     def refresh_backups(self):
         names = save_backup.list_backups(self.user_dir())

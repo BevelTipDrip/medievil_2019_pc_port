@@ -204,6 +204,13 @@ impl-u2-direct-arena-writes.md	98	2	4-switches	4. Switches
 impl-u2-direct-arena-writes.md	106	2	5-stats-gow3_frame_stats1-every-5-s	5. Stats (`GOW3_FRAME_STATS=1`, every 5 s)
 impl-u2-direct-arena-writes.md	125	2	6-risks	6. Risks
 impl-u2-direct-arena-writes.md	152	2	7-deck-test-plan-one-launch-the-users-go	7. Deck test plan (one launch, the user's go)
+notes-ue421-lut-builder-map.md	1	1	medievil-combine-lut-builder-fs-a4152b3be93c832a-and-ui-lut-builder-fs-c401ca35ab81eb39-stage-map	MediEvil combine-LUT builder (fs a4152b3be93c832a) and UI LUT builder (fs c401ca35ab81eb39): stage map
+notes-ue421-lut-builder-map.md	11	2	resources-of-a415-v	Resources of a415 [V]
+notes-ue421-lut-builder-map.md	28	2	stage-map-of-a415	Stage map of a415
+notes-ue421-lut-builder-map.md	61	2	parameter-block-buffer-0-144-dwords-v-reads--captured-value-i-names	Parameter block (buffer 0, 144 dwords) [V reads + captured value; I names]
+notes-ue421-lut-builder-map.md	99	2	b-is-the-sdr-path-complete-in-this-shader-v	B. Is the SDR path complete in this shader? [V]
+notes-ue421-lut-builder-map.md	117	2	c-ui-lut-builder-fs-c401ca35ab81eb39-v	C. UI LUT builder fs c401ca35ab81eb39 [V]
+notes-ue421-lut-builder-map.md	134	2	d-renodx-hook-points-vs-this-shader	D. RenoDX hook points vs this shader
 patches-and-pr-proposal.md	1	1	patches-on-lab-and-a-proposal-for-upstream-pull-requests	Patches on `lab` and a proposal for upstream pull requests
 patches-and-pr-proposal.md	7	2	executive-summary	Executive summary
 patches-and-pr-proposal.md	30	2	how-to-read-this	How to read this
@@ -392,6 +399,14 @@ plan-graphics-settings.md	21	2	where-the-values-come-from-checked-2026-11-07-010
 plan-graphics-settings.md	31	2	the-settings-to-build-after-the-shadow-test	The settings (to build after the shadow test)
 plan-graphics-settings.md	61	2	ps4-shadow-test-prepared-2026-11-08-not-run	PS4 shadow test (prepared 2026-11-08, not run)
 plan-graphics-settings.md	71	3	ps4-shadow-test-result-2026-11-08-0017-0029-pc-launched-by-claude-with-the-users-go-log-datat-ps4-shadows-1log-marks-markstxt	PS4 shadow test, result (2026-11-08 00:17-00:29, PC, launched by Claude with the user's go; log `data/t-ps4-shadows-1.log`, marks `.marks.txt`)
+plan-hdr-sdr-match.md	1	1	hdr-that-keeps-the-sdr-look-our-own-grading-lut-and-ui-composite-design-2026-11-17-step-1-built-and-run-h24-h28	HDR that keeps the SDR look: our own grading LUT and UI composite (design 2026-11-17; step 1 built and run, H24-H28)
+plan-hdr-sdr-match.md	7	2	why	Why
+plan-hdr-sdr-match.md	26	2	how-renodxs-approach-mit-our-own-glsl	How (RenoDX's approach, MIT; our own GLSL)
+plan-hdr-sdr-match.md	31	3	1-grading-lut-pass-replaces-the-a4152b3be93c832a-draw	1. Grading LUT pass (replaces the `a4152b3be93c832a` draw)
+plan-hdr-sdr-match.md	52	3	2-ui-composite-pass-replaces-the-c401ca35f9bceb8e-draw	2. UI composite pass (replaces the `c401ca35f9bceb8e` draw)
+plan-hdr-sdr-match.md	60	2	costs	Costs
+plan-hdr-sdr-match.md	66	2	steps-each-its-own-build-and-run-the-users-go-per-launch	Steps (each its own build and run, the user's go per launch)
+plan-hdr-sdr-match.md	77	2	open-before-step-1	Open before step 1
 plan-linux-deck.md	1	1	plan-linux-build-steam-deck-first-shared-memory-fixes-remote-dev-loop	Plan: Linux build, Steam Deck first, shared-memory fixes, remote dev loop
 plan-linux-deck.md	12	2	answer	Answer
 plan-linux-deck.md	48	2	1-current-state-of-linux	1. Current state of Linux
@@ -493,6 +508,11 @@ plan-live-switches.md	14	2	mechanism-built	Mechanism (built)
 plan-live-switches.md	23	2	done	Done
 plan-live-switches.md	35	2	next-in-order	Next, in order
 plan-live-switches.md	58	2	stays-a-restart-study	Stays a restart (study)
+plan-meter-measurement.md	1	1	measuring-the-games-output-with-the-users-colorimeter-plan-2026-11-17-not-built	Measuring the game's output with the user's colorimeter (plan, 2026-11-17, not built)
+plan-meter-measurement.md	9	2	what-is-on-the-machine	What is on the machine
+plan-meter-measurement.md	21	2	readings-from-a-script	Readings from a script
+plan-meter-measurement.md	28	2	hcfrs-conventions-to-match-its-numbers	HCFR's conventions (to match its numbers)
+plan-meter-measurement.md	41	2	plan	Plan
 plan-roadmap.md	1	1	plan-faster-medievil-with-real-motion-vectors-fsr-3-fg-and-dlss-srfg	Plan: faster MediEvil with real motion vectors, FSR 3 FG and DLSS SR/FG
 plan-roadmap.md	7	2	the-rule	The rule
 plan-roadmap.md	13	2	order-proposed-2026-10-18-the-user-to-confirm	Order (proposed 2026-10-18; the user to confirm)
@@ -948,7 +968,9 @@ study-hdr.md	43	2	the-checkbox-path-today-v	The checkbox path today [V]
 study-hdr.md	71	2	engine-variables-both-builds-register-the-same-set-v	Engine variables (both builds register the same set) [V]
 study-hdr.md	105	2	how-the-port-can-set-them	How the port can set them
 study-hdr.md	123	2	two-routes	Two routes
-study-hdr.md	137	2	open-questions-each-needs-a-run-with-the-users-go	Open questions (each needs a run with the user's go)
+study-hdr.md	137	2	runs-2026-11-17-release-build-of-the-uncommitted-step-1--2-code-4k-windows-hdr-on	Runs (2026-11-17, release build of the uncommitted step 1 + 2 code, 4K, Windows HDR on)
+study-hdr.md	291	2	renodxs-unreal-engine-approach-research-agent-2026-11-17-mit-licence	RenoDX's Unreal Engine approach (research agent, 2026-11-17; MIT licence)
+study-hdr.md	319	2	open-questions-each-needs-a-run-with-the-users-go	Open questions (each needs a run with the user's go)
 study-heavy-frame-map.md	1	1	study-heavy-view-frame-map-2026-10-21	Study: heavy-view frame map (2026-10-21)
 study-heavy-frame-map.md	12	2	1-frame-map	1. Frame map
 study-heavy-frame-map.md	47	2	2-h3-gpu-particle-double-run	2. H3: GPU-particle double run

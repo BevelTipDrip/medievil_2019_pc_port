@@ -17,10 +17,12 @@ MINGW*|MSYS*)
           ! -f gpu/third_party/xbyak/xbyak/xbyak.h ]]; then
         git submodule update --init --recursive
     fi
-    for patch in gpu/patches/fsr-vulkan/*.patch; do
-        if ! git -C gpu/third_party/fsr-vulkan apply --reverse --check "$PWD/$patch" 2>/dev/null; then
-            git -C gpu/third_party/fsr-vulkan apply "$PWD/$patch"
-        fi
+    for module in fsr-vulkan imgui; do
+        for patch in gpu/patches/$module/*.patch; do
+            if ! git -C gpu/third_party/$module apply --reverse --check "$PWD/$patch" 2>/dev/null; then
+                git -C gpu/third_party/$module apply "$PWD/$patch"
+            fi
+        done
     done
     # GOW3_BUILD (study-tooling-off-cost.md step 2): release (default) = GOW3_DEV_TOOLS=OFF in
     # out/gpu-release -> out/medievil-runtime.exe (what the launcher, medievil-play and package.sh use)
@@ -164,14 +166,16 @@ if [[ -z $pgo ]]; then
 fi
 mkdir -p pgo
 # Submodules (git clone --recursive, or: git submodule update --init) and this port's changes
-# to FSR-Vulkan (gpu/patches/fsr-vulkan), applied to its working tree once.
+# to FSR-Vulkan and Dear ImGui (gpu/patches/fsr-vulkan, gpu/patches/imgui), applied to their working trees once.
 if [[ ! -f gpu/third_party/fsr-vulkan/CMakeLists.txt || ! -f gpu/third_party/imgui/imgui.h ]]; then
     git submodule update --init --recursive
 fi
-for patch in gpu/patches/fsr-vulkan/*.patch; do
-    if ! git -C gpu/third_party/fsr-vulkan apply --reverse --check "$PWD/$patch" 2>/dev/null; then
-        git -C gpu/third_party/fsr-vulkan apply "$PWD/$patch"
-    fi
+for module in fsr-vulkan imgui; do
+    for patch in gpu/patches/$module/*.patch; do
+        if ! git -C gpu/third_party/$module apply --reverse --check "$PWD/$patch" 2>/dev/null; then
+            git -C gpu/third_party/$module apply "$PWD/$patch"
+        fi
+    done
 done
 for flavour in "${flavours[@]}"; do
     if [[ $flavour == release ]]; then build=$base-release dev_tools=OFF; else build=$base dev_tools=ON; fi

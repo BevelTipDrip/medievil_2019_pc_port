@@ -23,7 +23,12 @@ def fields(obj, names):
     parts = []
     for n in names:
         try:
-            parts.append(f'{n}={getattr(obj, n)}')
+            value = getattr(obj, n)
+            if hasattr(value, 'Name'):  # ResourceFormat and other SWIG objects: their readable name
+                value = value.Name()
+            elif hasattr(value, 'minify'):  # TextureFilter: its fields (it printed as a SWIG object)
+                value = '{min %s mag %s mip %s %s}' % (value.minify, value.magnify, value.mip, value.filter)
+            parts.append(f'{n}={value}')
         except Exception:
             pass
     return ' '.join(parts)

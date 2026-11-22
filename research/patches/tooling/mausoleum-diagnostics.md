@@ -11,7 +11,7 @@ class: G
 commits: e383f7ec49, be8ee73696, 892a801ef4, 3d4afb280f
 files: gpu/shadps4/video_core/texture_cache/texture_cache.cpp, gpu/shadps4/video_core/texture_cache/texture_cache.h, gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.cpp
 symbols: ImageWatchSpec, ImageWatch, TextureCache::Watched, TextureCache::WatchNote, SkippedTargetLog, LogSkippedTarget, HalfToFloat, NonZeroTexels, readback_log, readback_published, RecordImageDownload, RetireReadbacks, FindRenderTarget, FindTexture, RefreshImage, FrameCapture::Buffer
-switches: GOW3_IMAGE_WATCH, GOW3_IMAGE_WATCH_LINES, GOW3_READBACK_LOG, GOW3_SKIPPED_TARGET_LOG, GOW3_CAPTURE_BUFFER_BYTES
+switches: GOW3_IMAGE_WATCH, GOW3_IMAGE_WATCH_ADDR, GOW3_IMAGE_WATCH_LINES, GOW3_DROP_LOG, GOW3_READBACK_LOG, GOW3_SKIPPED_TARGET_LOG, GOW3_CAPTURE_BUFFER_BYTES
 tests:
 docs: plan-linux-deck.md#hilltop-mausoleum-lighting-pool-pages-leaked-on-linux-2026-11-0607-fixed-7246f88--f74e1a1
 depends_on:
@@ -59,6 +59,12 @@ read). The frame map now ends at a display pass after a scene pass (not at the U
 - upstream-frame-analyzer-fix: `FrameCapture::Buffer`'s null guard and hex flatbuf print; the byte limit here
   caps the same dump.
 - texcache-stats: one run with `GOW3_TEXCACHE_STATS=1` "repaired itself" (memory reuse luck, not reproducible).
+
+2026-11-17 (HDR UI, study-hdr.md H9 / H10): `GOW3_IMAGE_WATCH_ADDR=0xADDR[+0xSIZE]` (size default 0x20000) also
+watches every image of any shape overlapping that guest range, with or without `GOW3_IMAGE_WATCH`; the watch lines
+print depth (3D) and Vulkan format after the size (`32x32x32 A2B10G10R10UnormPack32 L1/1`). `GOW3_DROP_LOG=1`
+(`vk_pipeline_cache.cpp`, `NoteDroppedDraw`): one line per vs / ps pair whose draw async compilation drops
+(`Pipeline: draw dropped while compiling (fs .., vs ..)`, hash 0 for a stage still translating; at most 512).
 
 ## Evidence
 

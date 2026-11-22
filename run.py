@@ -260,7 +260,8 @@ def main():
                                                            graphics_options.graphics_cvars(choices),
                                                            ini.get('button_prompts', ''),
                                                            prompt_controls(env),
-                                                           ini.get('pc_settings_entry', '1') == '1'),
+                                                           ini.get('pc_settings_entry', '1') == '1',
+                                                           ini.get('hdr_ui_nits', '100')),
                   flush=True)
         except (OSError, ValueError) as error:
             print(f'Render resolution: unchanged ({error})', flush=True)

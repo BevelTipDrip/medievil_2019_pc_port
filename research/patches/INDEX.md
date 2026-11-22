@@ -4,7 +4,7 @@ One line per card. Open a card for invariants, interactions and evidence; look u
 reading: `patchmap.py file <path>` / `switch <name>` / `commit <hash>` / `test <id>`.
 Card format and statuses: [README.md](README.md). W / D = default on Windows / Deck.
 
-233 cards.
+235 cards.
 
 ## memory
 
@@ -34,7 +34,7 @@ _loader, HLE libraries, threads, locks, files, audio, input (src/ outside memory
 | ID | Status | W / D | Branch | Switches | Title |
 |---|---|---|---|---|---|
 | [avplayer-join-hang](runtime/avplayer-join-hang.md) | active | on / on | deck-lab |  | Fix the game hanging after the first movie (AvPlayer thread joins, upstream PR #68) |
-| [cond-precise-timeout](runtime/cond-precise-timeout.md) | active | on / n/a | copy-fault-trace | GOW3_COND_PRECISE, GOW3_COND_SPIN_US | Timed guest condition waits end at their deadline (100 ns timeouts, 0.5 ms timer), not rounded up to whole ms; optional spin for short waits |
+| [cond-precise-timeout](runtime/cond-precise-timeout.md) | active | on / n/a | copy-fault-trace,hdr | GOW3_COND_PRECISE, GOW3_COND_SPIN_US | Timed guest condition waits end at their deadline (100 ns timeouts, 0.5 ms timer), not rounded up to whole ms; optional spin for short waits |
 | [crash-dump](runtime/crash-dump.md) | active | on / n/a | lab | GOW3_CRASH_DUMP | Minidump on any fatal fault, with fallbacks to smaller dump types and faults inside winpthreads |
 | [load-list-continue](runtime/load-list-continue.md) | active | on / on | deck-lab |  | Load list: "Continue" (the newest save) in place of the dead "New save" entry; "Slot N" on every save |
 | [load-list-details](runtime/load-list-details.md) | active | on / on | deck-lab |  | Load list: per-save details, level picture and level list (Square), in the game's Options menu look |
@@ -43,7 +43,7 @@ _loader, HLE libraries, threads, locks, files, audio, input (src/ outside memory
 | [pad-hotplug](runtime/pad-hotplug.md) | active | on / on | deck-lab |  | Pads plugged in after start: SDL hotplug hints (fork port, #64) |
 | [quiet-log](runtime/quiet-log.md) | active | off / off | deck-lab | GOW3_FPS_LOG | GOW3_FPS_LOG=0 turns off the periodic log lines (FPS line, particle guard summary) |
 | [R2](runtime/r2.md) | active | on / on | lab |  | Runtime: rwlock handles validated through an open-addressing hash set, not a list walk |
-| [rwlock-fast-path](runtime/rwlock-fast-path.md) | active | on / on | copy-fault-trace |  | Guest rwlocks without a global lock or heap allocation per operation: lock-free handle lookup, per-thread ownership, SRW locks on Windows |
+| [rwlock-fast-path](runtime/rwlock-fast-path.md) | active | on / on | copy-fault-trace,hdr |  | Guest rwlocks without a global lock or heap allocation per operation: lock-free handle lookup, per-thread ownership, SRW locks on Windows |
 | [save-date-last-write](runtime/save-date-last-write.md) | active | on / on | deck-lab |  | A save's date is its last write (param.bin or any save file), so MediEvil saves into the slot it loaded |
 | [save-trace](runtime/save-trace.md) | diagnostic | on / on | deck-lab |  | "Save trace:" log lines for every save call (search, mount, file writes, set param, dialogs) with the guest caller |
 | [settings-menu](runtime/settings-menu.md) | active | on / on | deck-lab | GOW3_MENU_PAD, GOW3_MENU_KEY, GOW3_PRESENT_MODE … | Settings menu in the game's Options menu look, usable with a pad alone (focus rows, L1 / R1 tabs, GOW3_MENU_PAD) |
@@ -81,7 +81,7 @@ _draw recording, rasterizer, pipelines, descriptors, recorder, fences, drains_
 | [bulk-descriptor-copy](stage-b/bulk-descriptor-copy.md) | active | on / on | lab | GOW3_LEAN_BINDING, perf_lean_binding, toggle2:BulkDescriptorCopy | Bulk descriptor copy per push: writes and info arrays copied into the chunk once, pointers rebased |
 | [C1-semaphore-poll](stage-b/c1-semaphore-poll.md) | active | on / on | deck-lab | GOW3_SEMAPHORE_POLL_US, toggle2:SemaphorePollInterval | Stage B polls the GPU's timeline semaphore at most every 100 us for end-of-pipe readback retirement |
 | [cacheline-groups](stage-b/cacheline-groups.md) | active | on / on | deck-lab |  | Deck #6: cache-line groups for draw pipe / scheduler fields written and read by different threads |
-| [deferred-copy-backing](stage-b/deferred-copy-backing.md) | active | on / n/a | copy-fault-trace | GOW3_DEFERRED_COPY_BACKING | Windows: deferred guest copies (recorder, copy threads) read the backing view, never the guest mapping (200% deadlock) |
+| [deferred-copy-backing](stage-b/deferred-copy-backing.md) | active | on / n/a | copy-fault-trace,hdr | GOW3_DEFERRED_COPY_BACKING | Windows: deferred guest copies (recorder, copy threads) read the backing view, never the guest mapping (200% deadlock) |
 | [depth-write-effective](stage-b/depth-write-effective.md) | active | on / on | lab | GOW3_DEPTH_WRITE_EFFECTIVE | A depth target counts as written only with the depth test on or a pending clear (N-6) |
 | [E1](stage-b/e1.md) | active | on / on | lab | GOW3_EOS_DEFERRED, perf_gpu_data_no_waits | End-of-shader fences deferred like end-of-pipe ones (written by the recorder after queued copies) |
 | [frame-cost-dropped-ideas](stage-b/frame-cost-dropped-ideas.md) | rejected | n/a / n/a | - |  | Dropped on analysis (study-frame-cost section 4): mid-frame split submits, idle flush, recorder spin cut, shadow-map rename, shadow flush barrier |
@@ -98,7 +98,7 @@ _draw recording, rasterizer, pipelines, descriptors, recorder, fences, drains_
 | [O2-O3](stage-b/o2-o3.md) | superseded | off / off | lab | GOW3_OCCLUSION, GOW3_OCCLUSION_SUBMIT_US | Real occlusion query results (O2), submitted when their render pass ends, rate-limited (O3) |
 | [own-target-texsets](stage-b/own-target-texsets.md) | rejected | n/a / n/a | - |  | Texture sets that contain the draw's own target made memoizable (study item 4, not built) |
 | [parallel-recording](stage-b/parallel-recording.md) | rejected | n/a / n/a | - |  | Parallel Vulkan recording (several recorder threads, Bloodborne 0.3-0.4; not built) |
-| [particle-curve-sync-compile](stage-b/particle-curve-sync-compile.md) | active | n/a / n/a | deck-lab |  | Compile UE4 particle curve injection synchronously (torch flames on a cold cache, fork port #52) |
+| [particle-curve-sync-compile](stage-b/particle-curve-sync-compile.md) | active | n/a / n/a | deck-lab |  | Compile once-drawn programs synchronously: UE4 particle curve injection (torch flames, fork port #52), HDR UI composite LUT |
 | [pool-small-copies](stage-b/pool-small-copies.md) | rejected | off / off | - | toggle:PoolSmallCopies | Small host copies off the recorder to the copy threads in batches (toggle bit 19 PoolSmallCopies) |
 | [prep-priority](stage-b/prep-priority.md) | active | off / n/a | lab | GOW3_PREP_PRIORITY | GOW3_PREP_PRIORITY=below: draw-preparation scanner and workers below normal instead of idle (Windows) |
 | [record-skip-identical](stage-b/record-skip-identical.md) | rejected | n/a / n/a | - |  | Skip identical setVertexInputEXT / pushConstants records; one ChunkGuard per block (not built) |
@@ -172,6 +172,7 @@ _presentation, frame pacing, limiters, vblank, Reflex, VSync, overlay_
 | [display-trace](present/display-trace.md) | rejected | off / off | lab | GOW3_DISPLAY_TRACE | Display times through VK_KHR_present_wait (GOW3_DISPLAY_TRACE) |
 | [frame-limit-parse](present/frame-limit-parse.md) | active | on / on | lab |  | Any frame limit 20-1000 accepted (an unlisted value such as 119 had become unlimited); 119 / 237 in the menus |
 | [frames-queued-2](present/frames-queued-2.md) | rejected | off / off | - | GOW3_FRAMES_AHEAD | Frames queued 2: stage B's flip stops waiting for the GPU to finish the previous frame |
+| [hdr-output](present/hdr-output.md) | active | off / off | - | GOW3_HDR, GOW3_HDR_GAME, GOW3_UE4_GRADE … | HDR10 output through the game's own UE4 path (route A): log lines, GOW3_HDR_GAME reports an HDR display and sets the pak cvars, a 10-bit frame image, the UI composite LUT compiled on the spot, the overlay in HDR, UI brightness and colour grading in the menu |
 | [inline-present](present/inline-present.md) | active | on / on | lab | present_inline, GOW3_PRESENT_THREAD | Present on the vblank thread instead of a swap thread (default) |
 | [menu-idle-redraw](present/menu-idle-redraw.md) | active | on / on | deck-lab |  | VideoOut: the in-game menu's idle redraws count from the game's last flip |
 | [newest-frame](present/newest-frame.md) | rejected | off / off | lab | GOW3_NEWEST_FRAME, GOW3_PACER_SPIN_US | Newest-frame mode: show the newest finished frame at each cap slot from a dedicated pacer thread |
@@ -278,11 +279,11 @@ _diagnostics, tracing, capture, stats, research tools (no gameplay effect)_
 |---|---|---|---|---|---|
 | [async-log-writer](tooling/async-log-writer.md) | diagnostic | on / on | lab |  | Slow-frame lines and the perf-diag report formatted on a background log writer, not ~30 printf on the flip path |
 | [avplayer-trace](tooling/avplayer-trace.md) | diagnostic | on / on | lab |  | AvPlayer trace: player calls and the frames each player delivered |
-| [clang-pgo](tooling/clang-pgo.md) | rejected | off / off | copy-fault-trace | GOW3_PGO, GOW3_BUILD, GOW3_PROBE | Clang PGO for the Windows release build (GOW3_BUILD=pgo-train, pgo-merge.sh, GOW3_PGO=use); off, the first profile made gameplay spikes and lows worse |
-| [copy-fault-trace](tooling/copy-fault-trace.md) | diagnostic | on / on | copy-fault-trace | GOW3_COPY_FAULT_LOG | GOW3_COPY_FAULT_LOG: a guest fault inside a host copy logged before and after it is handled (thread, copy, protection, age) |
+| [clang-pgo](tooling/clang-pgo.md) | rejected | off / off | copy-fault-trace,hdr | GOW3_PGO, GOW3_BUILD, GOW3_PROBE | Clang PGO for the Windows release build (GOW3_BUILD=pgo-train, pgo-merge.sh, GOW3_PGO=use); off, the first profile made gameplay spikes and lows worse |
+| [copy-fault-trace](tooling/copy-fault-trace.md) | diagnostic | on / on | copy-fault-trace,hdr | GOW3_COPY_FAULT_LOG | GOW3_COPY_FAULT_LOG: a guest fault inside a host copy logged before and after it is handled (thread, copy, protection, age) |
 | [cpu-level-windows](tooling/cpu-level-windows.md) | rejected | off / off | - | GOW3_CPU_LEVEL, GOW3_PROBE | x86-64-v3 (AVX2) and x86-64-v4 (AVX-512) release exes on Windows (GOW3_CPU_LEVEL=v3\|v4); measured, not shipped (the baseline won) |
 | [deck-test-tooling](tooling/deck-test-tooling.md) | diagnostic | off / off | deck-lab | GOW3_TOGGLE_FILE, GOW3_FLIP_TRACE | Clock push-pull tooling: APU trace beside the flip trace, frame alignment, live frame cap as the toggle file's third word |
-| [dev-tools-build](tooling/dev-tools-build.md) | active | on / on | copy-fault-trace | GOW3_DEV_TOOLS, GOW3_BUILD, GOW3_APPIMAGE_DEV … | Release and dev builds (GOW3_DEV_TOOLS): the release build has the diagnostics compiled out; the launcher runs it unless Development build is ticked |
+| [dev-tools-build](tooling/dev-tools-build.md) | active | on / on | copy-fault-trace,hdr | GOW3_DEV_TOOLS, GOW3_BUILD, GOW3_APPIMAGE_DEV … | Release and dev builds (GOW3_DEV_TOOLS): the release build has the diagnostics compiled out; the launcher runs it unless Development build is ticked |
 | [draw-classes](tooling/draw-classes.md) | diagnostic | off / off | deck-lab | GOW3_FRAME_STATS | N0: recorded draws per frame by class; particle sim on the previous run's target |
 | [fence-stats](tooling/fence-stats.md) | diagnostic | off / off | deck-lab | GOW3_FRAME_STATS | Deck gate 2 stats: guest fence waits, submission lock, cache actions, faults by PS4 type, fence lag, invalidations |
 | [flip-trace](tooling/flip-trace.md) | diagnostic | off / off | lab | GOW3_FLIP_TRACE, GOW3_FLIP_TRACE_GPU_READY, present_frame_trace | GOW3_FLIP_TRACE: per-flip timestamps from submit to the game's flip event, gpu_ready, present_start, WPR clock origin |
@@ -290,7 +291,7 @@ _diagnostics, tracing, capture, stats, research tools (no gameplay effect)_
 | [gpu-profiler-fixes](tooling/gpu-profiler-fixes.md) | diagnostic | off / off | lab | GOW3_GPU_PROFILE | GOW3_GPU_PROFILE fixes: frames end at the display pass, one frame per display pass, timestamps read without waiting, slow passes by growth |
 | [host-map-stats](tooling/host-map-stats.md) | diagnostic | off / n/a | lab | GOW3_HOST_MAP_STATS | GOW3_HOST_MAP_STATS: host mapping counts, table edits (bytes moved, time), lock hold time, pool commit / decommit time |
 | [lineage-toggle-file](tooling/lineage-toggle-file.md) | active | on / on | lab | GOW3_TOGGLE_FILE, toggle:NarrowImageStages | Live toggle file: a decimal mask re-read every 250 ms; a set bit switches a fix off (second and third words) |
-| [mausoleum-diagnostics](tooling/mausoleum-diagnostics.md) | diagnostic | off / off | deck-lab | GOW3_IMAGE_WATCH, GOW3_IMAGE_WATCH_LINES, GOW3_READBACK_LOG … | Image watch and readback logs: every event that can set or lose a watched image's contents, skipped targets, first copies |
+| [mausoleum-diagnostics](tooling/mausoleum-diagnostics.md) | diagnostic | off / off | deck-lab | GOW3_IMAGE_WATCH, GOW3_IMAGE_WATCH_ADDR, GOW3_IMAGE_WATCH_LINES … | Image watch and readback logs: every event that can set or lose a watched image's contents, skipped targets, first copies |
 | [mutex-holders](tooling/mutex-holders.md) | diagnostic | off / off | - | GOW3_MUTEX_HOLDERS, GOW3_SAMPLE_THREADS, GOW3_WAIT_TRACE … | GOW3_MUTEX_HOLDERS / GOW3_SAMPLE_THREADS: who holds a guest mutex a thread waits on, and sampled stacks of holders and named threads |
 | [perf-diag](tooling/perf-diag.md) | diagnostic | off / off | lab | GOW3_PERF_DIAG, GOW3_LONG_WAITS, GOW3_FRAME_STATS | GOW3_PERF_DIAG additions: write-fault downloads by guest instruction and owner, host copy waits and pass ends by caller, pass-break barriers, long waits |
 | [profiler-support](tooling/profiler-support.md) | diagnostic | off / n/a | lab | GOW3_SAMPLE_FILE, GOW3_SKIP_TOOL_INFO, GOW3_STDOUT_FILE | Profiling support: VkRecorder samples (GOW3_SAMPLE_FILE), Nsight (skip tool info, stdout file, run-game -Nsys / -Ngfx) |
@@ -299,12 +300,13 @@ _diagnostics, tracing, capture, stats, research tools (no gameplay effect)_
 | [sections](tooling/sections.md) | diagnostic | off / off | lab | GOW3_SECTIONS, GOW3_FRAME_STATS | GOW3_SECTIONS: stage B time per packet by part (rdtsc scopes), Record calls, ordered tasks by function, texture-binding and ObtainBuffer splits |
 | [slow-frames](tooling/slow-frames.md) | diagnostic | off / off | lab | GOW3_SLOW_FRAMES, GOW3_FRAME_STATS | GOW3_SLOW_FRAMES: what slow frames did, against samples; stage A idle, stage B sections, misses and unprepared draws per frame |
 | [stage-b-counters](tooling/stage-b-counters.md) | diagnostic | off / off | lab | GOW3_FRAME_STATS, GOW3_SECTIONS | Stage B counters: texture sets not kept and why, descriptor writes, FindImage time, sleep ms by site, ordered tasks by kind |
-| [stats-counters-gated](tooling/stats-counters-gated.md) | active | on / on | copy-fault-trace | GOW3_FRAME_STATS | Stats counters, packet timing and their switches cost nothing without GOW3_FRAME_STATS=1 (no locked adds per draw or per guest memcpy / lock; switches on cache lines of their own) |
+| [stats-counters-gated](tooling/stats-counters-gated.md) | active | on / on | copy-fault-trace,hdr | GOW3_FRAME_STATS | Stats counters, packet timing and their switches cost nothing without GOW3_FRAME_STATS=1 (no locked adds per draw or per guest memcpy / lock; switches on cache lines of their own) |
+| [test-patterns](tooling/test-patterns.md) | diagnostic | off / off | - | GOW3_PATTERN_SERVER, GOW3_PATTERN_PORT | Test patterns for a colorimeter: a local socket asks for raw patches (written before presentation) or game patches (a scene value through the game's grading over the tonemapper's output); a meter script |
 | [texcache-stats](tooling/texcache-stats.md) | diagnostic | off / off | lab | GOW3_TEXCACHE_STATS | GOW3_TEXCACHE_STATS: per 5 s images created / freed, lookups, overlaps, expands, uploads, re-created and re-uploaded images |
 | [ue4-cvars-tool](tooling/ue4-cvars-tool.md) | diagnostic | off / off | lab |  | UE4 override pak: GOW3_UE4_CVARS adds console variables (opt-in test tool) |
-| [ue4-frame-map](tooling/ue4-frame-map.md) | diagnostic | off / off | deck-lab | GOW3_UE4_FRAME_MAP | UE4 frame map (U1): logs the velocity pass, TAA (draws or compute), the View buffer, tonemap and first UI draw each frame |
+| [ue4-frame-map](tooling/ue4-frame-map.md) | diagnostic | off / off | deck-lab | GOW3_UE4_FRAME_MAP, GOW3_UE4_FRAME_MAP_SHADERS | UE4 frame map (U1): logs the velocity pass, TAA (draws or compute), the View buffer, tonemap and first UI draw each frame |
 | [upstream-frame-analyzer-fix](tooling/upstream-frame-analyzer-fix.md) | active | on / on | - | GOW3_CAPTURE_TRIGGER, GOW3_CAPTURE_DIR | Upstream frame analyzer crash on flatbuf ring bindings (address 0 passed IsValidGpuMapping) |
 | [upstream-screenshots](tooling/upstream-screenshots.md) | active | on / on | - | GOW3_SCREENSHOT_DIR, GOW3_FRAME_DUMP_TRIGGER, GOW3_FRAME_DUMP_COUNT … | Upstream F12 PNG screenshots (Shift+F12 raw dump) |
 | [wait-sites](tooling/wait-sites.md) | diagnostic | off / off | lab | GOW3_WAIT_SITES | GOW3_WAIT_SITES: every guest wait by call site, requested and actual time (pthread exports, event queues) |
-| [wait-trace](tooling/wait-trace.md) | diagnostic | off / off | copy-fault-trace | GOW3_WAIT_TRACE, GOW3_WAIT_TRACE_MIN_US | GOW3_WAIT_TRACE: every guest wait over a threshold as one CSV row (thread, site, requested, actual), lined up with the flip trace |
-| [wpr-capture](tooling/wpr-capture.md) | diagnostic | off / n/a | copy-fault-trace |  | WPR capture scripts: hotkey ring buffer and timed capture, junction-safe trace folder, failed stops reported, a light jitter profile |
+| [wait-trace](tooling/wait-trace.md) | diagnostic | off / off | copy-fault-trace,hdr | GOW3_WAIT_TRACE, GOW3_WAIT_TRACE_MIN_US | GOW3_WAIT_TRACE: every guest wait over a threshold as one CSV row (thread, site, requested, actual), lined up with the flip trace |
+| [wpr-capture](tooling/wpr-capture.md) | diagnostic | off / n/a | copy-fault-trace,hdr |  | WPR capture scripts: hotkey ring buffer and timed capture, junction-safe trace folder, failed stops reported, a light jitter profile |

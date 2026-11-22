@@ -176,6 +176,35 @@ what they could cost: wrong past conclusions first, then latent bugs, then traps
     first, or L2, R1 and A1 break ([L2](memory/l2.md)).
 26. `GOW3_FRAME_STATS` is parsed three ways: `=0` turns on the stage A/B printf lines, `=y` opens the driver block
     with counters reading 0.
+27. Async compilation drops a draw whose pipeline is not built yet (`GetGraphicsPipeline` returns null, nothing logs
+    it without `GOW3_DROP_LOG=1`). A draw the game issues once (a LUT or curve texture built at load) is then lost
+    for good; its pixel program must be in `MustCompileSync`, which makes the whole draw compile on the spot
+    ([particle-curve-sync-compile](stage-b/particle-curve-sync-compile.md); the HDR UI LUT, H6-H13 in study-hdr.md).
+28. **Channel order: RenderDoc's texel values are not what the shader sees** (2026-11-19, study-hdr.md H32). The port
+    stores many images in one channel order and gives the game's shaders views with a swizzle (UE4's tonemapper output
+    and Slate's UI image are read through `bgra` views), and colour-buffer exports swap back. RenderDoc's pixel
+    values, pixel history and saved PNGs show the *stored* order, so a PNG of these images shows red and blue
+    swapped (the title logo looks icy blue in RenderDoc; on screen it is orange). A host pass reading through identity
+    views does its colour maths on swapped channels: the first HDR UI composite build passed the scene through right
+    but ran BT.709 -> 2020 on swapped channels and turned greens mint. Rules: read through the game's own view (keep
+    `view_info.mapping`); write in the order the game's shader writes (its IR: which input channel feeds
+    `RenderTarget0` component 0); `draw_io.py` prints each view's swizzle and flags `<<< CHANNEL ORDER`; judge colours
+    only from the screen or the user's screenshots (logo orange, the title's night sky blue), never from RenderDoc
+    PNGs of swizzled images. Skill: `.claude/skills/renderdoc-replay`.
+29. **The HDR grading pass reads the game's grading block straight from guest memory** ([hdr-output](present/hdr-output.md);
+    `Rasterizer::ReplaceHdrGrading`, 2026-11-20 review, H35). The game's own draw gets the block through the
+    constant ring / buffer cache; ours copies the 576 bytes from guest memory when it records. If the block were ever
+    written on the GPU, or changed after our read but before the GPU used it, our LUT would grade with stale values
+    (colours or brightness off for a frame, or for as long as that lasts; no crash). Today the game writes it from the
+    CPU and every run graded right, so it is left as it is (the user, 2026-11-20). If HDR grading ever looks one
+    frame late or wrong while SDR is right, check here first; the guard would be a buffer-cache "GPU-modified" test
+    on that range, falling back to the game's draw.
+30. **The game has more than one grading LUT builder** (2026-11-21, study-hdr.md H36; [hdr-output](present/hdr-output.md)).
+    `a4152b3be93c832a` (most levels, 144 dwords) and `9f6bac6cba984956` (levels with their own grading LUT, Hilltop
+    Mausoleum: 164 dwords, 20 inserted at 45, plus a LUT texture). Anything keyed on one hash or on a415's dword
+    offsets (`GOW3_UE4_GRADE`, the Colour tab, the HDR grading pass, captures read with the a415 map) silently does
+    nothing, or reads the wrong dwords, in the other's levels: Hilltop's HDR rows and Colour tab did nothing until
+    H36. A test of grading in one level does not cover the others; check the `unknown 32^3 LUT builder` log line.
 
 ## Test IDs that mean more than one run
 
