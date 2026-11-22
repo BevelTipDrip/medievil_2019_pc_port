@@ -14,6 +14,10 @@
 #include "core/platform.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 
+#include <atomic>
+#include <cstdio>
+#include <string>
+
 extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 namespace Libraries::VideoOut {
@@ -136,6 +140,15 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
 
+    // gow3: the display buffers' format (0x80000000 sRGB, 0x88740000 HDR10; study-hdr.md); start-up
+    // and resizes only.
+    static std::atomic<int> logged{0};
+    if (logged.fetch_add(1, std::memory_order_relaxed) < 16) {
+        std::printf("VideoOut: register %d buffers from %d: %s (0x%08x) %ux%u\n", bufferNum,
+                    startIndex, std::string(GetPixelFormatString(attribute->pixel_format)).c_str(),
+                    static_cast<unsigned>(attribute->pixel_format), attribute->width,
+                    attribute->height);
+    }
     return driver->RegisterBuffers(port, startIndex, addresses, bufferNum, attribute);
 }
 
@@ -370,11 +383,20 @@ s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, s64 flip_arg, voi
 s32 PS4_SYSV_ABI sceVideoOutGetDeviceCapabilityInfo(
     s32 handle, SceVideoOutDeviceCapabilityInfo* pDeviceCapabilityInfo) {
     pDeviceCapabilityInfo->capability = 0;
+    const bool sfo_hdr = Common::ElfInfo::Instance().GetPSFAttributes().support_hdr;
     if (presenter->IsHDRSupported()) {
-        auto& game_info = Common::ElfInfo::Instance();
-        if (game_info.GetPSFAttributes().support_hdr) {
+        if (sfo_hdr || EmulatorSettings.IsHdrGameForced()) {
             pDeviceCapabilityInfo->capability |= ORBIS_VIDEO_OUT_DEVICE_CAPABILITY_BT2020_PQ;
         }
+    }
+    // gow3: what the game is told at RHI init (study-hdr.md); a few lines at most.
+    static std::atomic<int> logged{0};
+    if (logged.fetch_add(1, std::memory_order_relaxed) < 4) {
+        std::printf("VideoOut: device capability 0x%llx (HDR10 surface %s, param.sfo HDR %s, "
+                    "GOW3_HDR_GAME %s)\n",
+                    static_cast<unsigned long long>(pDeviceCapabilityInfo->capability),
+                    presenter->IsHDRSupported() ? "usable" : "not usable", sfo_hdr ? "yes" : "no",
+                    EmulatorSettings.IsHdrGameForced() ? "on" : "off");
     }
     return ORBIS_OK;
 }
@@ -446,14 +468,21 @@ s32 PS4_SYSV_ABI sceVideoOutConfigureOutputMode_(s32 handle, u32 reserved, const
         port->is_hdr = false;
         break;
     case OrbisVideoOutColorimetry::Bt2020PQ:
-        if (Common::ElfInfo::Instance().GetPSFAttributes().support_hdr) {
+        if (Common::ElfInfo::Instance().GetPSFAttributes().support_hdr ||
+            EmulatorSettings.IsHdrGameForced()) {
             port->is_hdr = true;
         }
         break;
     default:
+        std::printf("VideoOut: output mode colorimetry %u refused\n", unsigned(mode->colorimetry));
         return ORBIS_VIDEO_OUT_ERROR_INVALID_VALUE;
     }
 
+    static std::atomic<int> logged{0};
+    if (logged.fetch_add(1, std::memory_order_relaxed) < 8) {
+        std::printf("VideoOut: output mode colorimetry %u -> HDR %s\n", unsigned(mode->colorimetry),
+                    port->is_hdr ? "on" : "off");
+    }
     return ORBIS_OK;
 }
 

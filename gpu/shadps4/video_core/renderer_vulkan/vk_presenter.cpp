@@ -232,7 +232,10 @@ void Presenter::RecreateFrame(Frame* frame, u32 width, u32 height) {
         vmaDestroyImage(instance.GetAllocator(), frame->image, frame->allocation);
     }
 
-    const vk::Format format = swapchain.GetSurfaceFormat().format;
+    // gow3: 10-bit while the swapchain is HDR10, so the game's PQ frame is not cut to 8 bits before
+    // the blit (pp_pass draws it with its HDR pipeline; study-hdr.md, step 3).
+    const vk::Format format = swapchain.GetHDR() ? HostPasses::PostProcessingPass::HDR_FRAME_FORMAT
+                                                 : swapchain.GetSurfaceFormat().format;
     const vk::ImageCreateInfo image_info = {
         .flags = vk::ImageCreateFlagBits::eMutableFormat,
         .imageType = vk::ImageType::e2D,
@@ -664,8 +667,10 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
         fsr_settings.use_rcas &&
         Gow3Graphics::FsrPassRuns(fsr_settings.enable, true, int(image_size.width), int(image_size.height),
                                   int(frame->width), int(frame->height));
+    // gow3: `hdr` false for HDR frames too: they are PQ, a perceptual encoding like gamma, which EASU / RCAS take as
+    // they are; the pass's HDR mode squares its output, meant for linear input (it crushed PQ frames; study-hdr.md H36).
     image_view = fsr_pass.Render(cmdbuf, image_view, image_size, {frame->width, frame->height},
-                                 fsr_settings, frame->is_hdr);
+                                 fsr_settings, false);
 
     // Vulkan has no sRGB variant of the 10-bit format, so an A2R10G10B10Srgb buffer reaches
     // the post process pass still sRGB encoded and has to be decoded there instead.
@@ -826,7 +831,7 @@ void Presenter::PresentLoadingFrame() {
                            range);
     barrier(vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eColorAttachmentOptimal,
             vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eColorAttachmentWrite);
-    Gow3Overlay::Render(cmdbuf, swapchain.ImageView(), extent);
+    Gow3Overlay::Render(cmdbuf, swapchain.ImageView(), extent, swapchain.GetHDR());
     barrier(vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR,
             vk::AccessFlagBits::eColorAttachmentWrite, {});
     SubmitInfo info{};
@@ -941,6 +946,10 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
                          MakeImageBlitFit(frame->width, frame->height, extent.width, extent.height),
                          vk::Filter::eLinear);
         // gow3: the settings menu / FPS counter over the frame, at display resolution.
+        // gow3 HDR: every present, overlay or not (the grading LUT pass and the menu's HDR rows read it).
+        if (auto& active = Gow3Settings::Get().hdr_active; active.load(std::memory_order_relaxed) != swapchain.GetHDR()) {
+            active.store(swapchain.GetHDR(), std::memory_order_relaxed); // on a change only: the renderer reads it
+        }
         const bool overlay = Gow3Overlay::Visible();
         const std::array post_barriers{
             vk::ImageMemoryBarrier{
@@ -972,7 +981,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
                                vk::DependencyFlagBits::eByRegion, {}, {}, post_barriers);
         Gow3Overlay::LogPresent();
         if (overlay) {
-            Gow3Overlay::Render(cmdbuf, swapchain.ImageView(), extent);
+            Gow3Overlay::Render(cmdbuf, swapchain.ImageView(), extent, swapchain.GetHDR());
             const vk::ImageMemoryBarrier to_present{
                 .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
                 .dstAccessMask = vk::AccessFlagBits::eNone,

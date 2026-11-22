@@ -505,6 +505,31 @@ std::atomic<u64> g_gow3_snapshot_ns, g_gow3_guest_wait_ns;
 std::atomic<u32> g_gow3_pool_reuses;
 std::atomic<u32> g_gow3_pending_draws;
 namespace {
+// gow3: GOW3_DROP_LOG=1: one line per program pair whose draw is dropped while its pipeline
+// compiles (a once-only draw dropped there is lost; MustCompileSync; study-hdr.md H10). GPU
+// thread only.
+void NoteDroppedDraw(const std::array<const Shader::Info*, MaxShaderStages>& infos) {
+    if constexpr (!GOW3_DEV_TOOLS) {
+        return; // release build
+    }
+    static const bool enabled = [] {
+        const char* env = std::getenv("GOW3_DROP_LOG");
+        return env && env[0] == '1';
+    }();
+    if (!enabled) {
+        return;
+    }
+    const auto* fs = infos[static_cast<u32>(Shader::SwStage::Fragment)];
+    const auto* vs = infos[static_cast<u32>(Shader::SwStage::Vertex)];
+    const u64 fs_hash = fs ? fs->pgm_hash : 0;
+    const u64 vs_hash = vs ? vs->pgm_hash : 0;
+    static std::unordered_set<u64> seen;
+    if (seen.size() >= 512 || !seen.insert(fs_hash * 31 + vs_hash).second) {
+        return;
+    }
+    std::printf("Pipeline: draw dropped while compiling (fs %016llx, vs %016llx)\n",
+                static_cast<unsigned long long>(fs_hash), static_cast<unsigned long long>(vs_hash));
+}
 struct PhaseTimer {
     std::atomic<u64>& counter;
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
@@ -736,6 +761,10 @@ static bool MustCompileSync(u64 pgm_hash) {
     constexpr u64 programs[] = {
         0x113f0c20873a7659ull, // vs: curve injection
         0x1b1e7c76d6a281d3ull, // ps: curve injection
+        // ps: UE4's HDR UI composite LUT (32^3, drawn once when HDR output turns on or its
+        // output device changes); dropped, the UI composite samples zeros and every UI element
+        // and movie is black (study-hdr.md H6-H10).
+        0xc401ca35ab81eb39ull,
     };
     return std::ranges::find(programs, pgm_hash) != std::end(programs);
 }
@@ -822,6 +851,7 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline(const DrawIndirectPar
     if (!RefreshGraphicsKey(sel)) {
         if (sel.compilation_pending) {
             ++g_gow3_pending_draws;
+            NoteDroppedDraw(sel.infos);
         }
         return nullptr;
     }
@@ -864,6 +894,7 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline(const DrawIndirectPar
             }
         }
         ++g_gow3_pending_draws;
+        NoteDroppedDraw(sel.infos);
         return nullptr;
     }
     const auto [it, is_new] = graphics_pipelines.try_emplace(sel.graphics_key);
@@ -1168,6 +1199,7 @@ bool PipelineCache::RefreshGraphicsStages(PipelineSelection& sel) {
 
     sel.infos.fill(nullptr);
     sel.modules.fill(nullptr);
+    sel.sync_all = false;
 
     bind_stage(HwStage::Fragment, SwStage::Fragment);
     if (sel.compilation_pending) {
@@ -1175,6 +1207,7 @@ bool PipelineCache::RefreshGraphicsStages(PipelineSelection& sel) {
     }
 
     const auto* fs_info = sel.infos[static_cast<u32>(SwStage::Fragment)];
+    sel.sync_all = fs_info && MustCompileSync(fs_info->pgm_hash);
     key.mrt_mask = fs_info ? fs_info->mrt_mask : 0u;
     key.num_color_attachments = std::bit_width(key.mrt_mask);
 
@@ -1355,7 +1388,7 @@ PipelineCache::Result PipelineCache::GetProgram(PipelineSelection& sel, HwStage 
     const bool compile_async = AsyncCompilation() && hw_stage != HwStage::Compute &&
                                !sel.regs->stage_enable.hs_en &&
                                !EmulatorSettings.IsShaderCollect() &&
-                               !MustCompileSync(params.hash);
+                               !MustCompileSync(params.hash) && !sel.sync_all;
     if (!compile_async && it_pgm != program_cache.end() && it_pgm->second->pending) {
         {
             PhaseTimer waiting{g_gow3_compile_wait_ns};
@@ -1381,9 +1414,10 @@ PipelineCache::Result PipelineCache::GetProgram(PipelineSelection& sel, HwStage 
         const auto compile_started = std::chrono::steady_clock::now();
         const auto module =
             CompileModule(new_program->info, runtime_info, params.code, 0, binding);
-        if (MustCompileSync(params.hash)) {
+        if (MustCompileSync(params.hash) || sel.sync_all) {
             // gow3: one line per run and program, the evidence the exception was taken.
-            std::printf("gow3: curve injection program %#llx ready synchronously (%.1f ms)\n",
+            std::printf("gow3: %s program %#llx ready synchronously (%.1f ms)\n",
+                        MustCompileSync(params.hash) ? "listed" : "same-draw",
                         static_cast<unsigned long long>(params.hash),
                         std::chrono::duration<double, std::milli>(
                             std::chrono::steady_clock::now() - compile_started).count());

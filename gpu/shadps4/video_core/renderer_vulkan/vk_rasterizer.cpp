@@ -1,8 +1,16 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <atomic>
+#include <cctype>
 #include <chrono>
+#include <cstdio>
+#include <cstdlib>
 #include <map>
+#include <span>
+#include <string>
+#include <vector>
 
 #include <xxhash.h>
 #include "video_core/renderer_vulkan/ui_composition.h"
@@ -68,8 +76,10 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
     camera_motion->SetObjectMotion(object_motion.get());
     upscaler = std::make_unique<TemporalUpscaler>(instance, scheduler, texture_cache, runtime,
                                                   *camera_motion, *scene_targets);
-    if (Ue4FrameMap::Enabled()) {
-        frame_map = std::make_unique<Ue4FrameMap>();
+    if constexpr (GOW3_DEV_TOOLS) { // the frame map (log only) is a dev-build tool
+        if (Ue4FrameMap::Enabled()) {
+            frame_map = std::make_unique<Ue4FrameMap>();
+        }
     }
     if (Ue4Motion::Enabled() || Ue4Upscaler::Enabled()) {
         ue4_motion = std::make_unique<Ue4Motion>(instance, scheduler, texture_cache, runtime);
@@ -79,6 +89,11 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
     if (Ue4Upscaler::Enabled()) {
         ue4_upscaler = std::make_unique<Ue4Upscaler>(instance, scheduler, texture_cache, runtime,
                                                      *ue4_motion);
+    }
+    // HDR (plan-hdr-final.md): built only when the launcher allows HDR output (GOW3_HDR). Without it the per-draw
+    // HDR test is one null check.
+    if (EmulatorSettings.IsHdrAllowed()) {
+        ue4_hdr = std::make_unique<Ue4HdrGrading>(instance, scheduler, texture_cache, buffer_cache, runtime);
     }
     if (!EmulatorSettings.IsNullGPU()) {
         liverpool->BindRasterizer(this);
@@ -616,6 +631,162 @@ static void NoteGuestPipelineBind(vk::Pipeline handle) {
     last = handle;
 }
 
+/// gow3 HDR grading (study-hdr.md "LUT parameters"): GOW3_UE4_GRADE="name=value;..." replaces values in
+/// the parameter block (buffer 0, 144 dwords) of UE 4.21's combine LUT builder (fs a4152b3be93c832a)
+/// as the constant ring copies it; the game's memory is not touched. Names: film.slope / toe /
+/// shoulder / blackclip / whiteclip, wb.temp / tint, {global,shadows,midtones,highlights}.
+/// {saturation,contrast,gamma,gain,offset} (a scalar sets .w: UE4 multiplies rgb by it, or adds it
+/// for offset; .r .g .b .w set one component), shadows_max, highlights_min, blue_correction,
+/// expand_gamut, d<index> (any dword as a float). Read once at start. Dev build only (GOW3_DEV_TOOLS).
+namespace {
+constexpr u64 Ue4CombineLutPs = 0xa4152b3be93c832aull;
+constexpr u32 Ue4CombineLutDwords = 144;
+struct Ue4Grade {
+    std::vector<std::pair<u32, float>> values; ///< dword index, value
+    std::atomic<bool> logged{false};
+    std::atomic<bool> missed{false};
+    /// LUT builder draws patched in the constant ring, in a stream copy (outside the ring), or not.
+    std::atomic<u32> ring{0}, stream{0}, unpatched{0};
+};
+const Ue4Grade& Ue4GradeOverride();
+void CountUe4Grade(std::atomic<u32> Ue4Grade::*path) {
+    if constexpr (!GOW3_DEV_TOOLS) {
+        return; // release build: the coverage counts are a dev-build check
+    }
+    auto& grade = const_cast<Ue4Grade&>(Ue4GradeOverride());
+    (grade.*path).fetch_add(1, std::memory_order_relaxed);
+    const u32 total = grade.ring.load() + grade.stream.load() + grade.unpatched.load();
+    if (total == 600 || total == 6000) {
+        std::printf("UE4 grade: %u combine LUT draws: %u patched in the constant ring, %u in a stream "
+                    "copy, %u not patched\n",
+                    total, grade.ring.load(), grade.stream.load(), grade.unpatched.load());
+    }
+}
+const Ue4Grade& Ue4GradeOverride() {
+    static Ue4Grade grade;
+    static const bool parsed = [] {
+        if constexpr (!GOW3_DEV_TOOLS) {
+            return true; // release build: GOW3_UE4_GRADE is a dev-build tool; the menu's grading stays
+        }
+        const char* env = std::getenv("GOW3_UE4_GRADE");
+        if (!env || !*env) {
+            return true;
+        }
+        static const std::pair<const char*, u32> fixed[] = {
+            {"film.slope", 40},      {"film.toe", 41},        {"film.shoulder", 42},
+            {"film.blackclip", 43},  {"film.whiteclip", 44},  {"wb.temp", 52},
+            {"wb.tint", 53},         {"shadows_max", 136},    {"highlights_min", 137},
+            {"blue_correction", 140}, {"expand_gamut", 141},
+        };
+        static const std::pair<const char*, u32> ranges[] = {
+            {"global", 56}, {"shadows", 76}, {"midtones", 96}, {"highlights", 116}};
+        static const char* const fields[] = {"saturation", "contrast", "gamma", "gain", "offset"};
+        std::string text = env;
+        std::string applied;
+        size_t pos = 0;
+        while (pos <= text.size()) {
+            const size_t end = std::min(text.find(';', pos), text.size());
+            const std::string item = text.substr(pos, end - pos);
+            pos = end + 1;
+            const size_t eq = item.find('=');
+            if (eq == std::string::npos) {
+                continue;
+            }
+            const std::string name = item.substr(0, eq);
+            const float value = std::strtof(item.c_str() + eq + 1, nullptr);
+            int index = -1;
+            if (name.size() > 1 && name[0] == 'd' && std::isdigit(u8(name[1]))) {
+                index = std::atoi(name.c_str() + 1);
+            }
+            for (const auto& [key, dword] : fixed) {
+                if (name == key) {
+                    index = int(dword);
+                }
+            }
+            for (const auto& [range, base] : ranges) {
+                for (u32 f = 0; f < 5; ++f) {
+                    const std::string key = std::string(range) + "." + fields[f];
+                    if (name.rfind(key, 0) != 0) {
+                        continue;
+                    }
+                    const std::string rest = name.substr(key.size());
+                    const u32 component = rest == ".r" ? 0 : rest == ".g" ? 1 : rest == ".b" ? 2 : 3;
+                    if (rest.empty() || rest == ".r" || rest == ".g" || rest == ".b" || rest == ".w") {
+                        index = int(base + f * 4 + component);
+                    }
+                }
+            }
+            if (index < 0 || index >= int(Ue4CombineLutDwords)) {
+                std::printf("UE4 grade: unknown name \"%s\" ignored\n", name.c_str());
+                continue;
+            }
+            grade.values.emplace_back(u32(index), value);
+            applied += (applied.empty() ? "" : ", ") + name + "=" + std::to_string(value) + " (d" +
+                       std::to_string(index) + ")";
+        }
+        std::printf("UE4 grade: %zu values for the combine LUT: %s\n", grade.values.size(),
+                    applied.c_str());
+        return true;
+    }();
+    (void)parsed;
+    return grade;
+}
+/// The LUT builder's parameter block, when GOW3_UE4_GRADE or the menu's colour grading
+/// (Gow3Settings::GradeAt, live) changes it; otherwise the draw binds as before.
+bool Ue4GradeTarget(const Shader::Info& stage, u32 index, u64 size) {
+    return Ue4HdrGrading::IsLutBuilder(stage.pgm_hash) && index == 0 &&
+           size >= Ue4HdrGrading::LutBlockDwords(stage.pgm_hash) * sizeof(u32) &&
+           (!Ue4GradeOverride().values.empty() || !Gow3Settings::GradeNeutral());
+}
+/// `blend_layout`: the block is the blend builder's (9f6bac6cba984956: ours with 20 dwords at 45), not ours.
+void ApplyUe4Grade(u8* block, bool blend_layout = false) {
+    const auto at = [blend_layout](u32 dword) {
+        return (blend_layout ? Ue4HdrGrading::BlendDword(dword) : dword) * sizeof(u32);
+    };
+    auto& grade = const_cast<Ue4Grade&>(Ue4GradeOverride());
+    if (!grade.values.empty() && !grade.logged.exchange(true)) {
+        std::string line = "UE4 grade: first combine LUT draw, game values:";
+        for (const auto& [index, value] : grade.values) {
+            float before;
+            std::memcpy(&before, block + at(index), sizeof(float));
+            line += " d" + std::to_string(index) + " " + std::to_string(before) + " -> " +
+                    std::to_string(value);
+        }
+        std::printf("%s\n", line.c_str());
+    }
+    for (const auto& [index, value] : grade.values) {
+        std::memcpy(block + at(index), &value, sizeof(float));
+    }
+    // The menu's grading (Color tab), relative to the game's values (or GOW3_UE4_GRADE's, set above).
+    static std::atomic<bool> menu_logged{false};
+    const auto& settings = Gow3Settings::Get();
+    std::string line;
+    const bool log = GOW3_DEV_TOOLS && !menu_logged.load(std::memory_order_relaxed); // dev build only
+    for (int g = 0; g < Gow3Settings::GradeCount; ++g) {
+        const float change = settings.grade[g].load(std::memory_order_relaxed);
+        if (change == Gow3Settings::GradeNeutralValue(g)) {
+            continue;
+        }
+        const Gow3Settings::GradeInfo info = Gow3Settings::GradeAt(g);
+        float value;
+        std::memcpy(&value, block + at(info.dword), sizeof(float));
+        const float game = value;
+        value = info.add ? value + change : value * change;
+        if (info.dword >= 136) { // shadows max, highlights min, blue correction, gamut expansion: 0-1
+            value = std::clamp(value, 0.0f, 1.0f);
+        }
+        std::memcpy(block + at(info.dword), &value, sizeof(float));
+        if (log) {
+            line += " " + Gow3Settings::GradeKey(g) + " " + std::to_string(game) + " -> " +
+                    std::to_string(value);
+        }
+    }
+    if (log && !line.empty() && !menu_logged.exchange(true)) {
+        std::printf("UE4 grade: colour grading (menu / medievil.ini) on, first draw:%s\n", line.c_str());
+    }
+}
+} // namespace
+
 void Rasterizer::CollectRingBindings(const Shader::Info& stage, const PreparedDraw* prepared,
                            boost::container::static_vector<RingBinding, Shader::NUM_BUFFERS>& out) {
     const PreparedStage* prepared_stage = nullptr;
@@ -644,7 +815,9 @@ void Rasterizer::CollectRingBindings(const Shader::Info& stage, const PreparedDr
                        liverpool->OnGfxQueue();
     const auto copy = [&](u32 index, const void* source, VAddr address, u64 size) {
         RingReuse* entry = nullptr;
-        if (reuse && address) {
+        // gow3 HDR grading: the LUT builder's patched block is never shared through ring reuse.
+        const bool grade = Ue4GradeTarget(stage, index, size);
+        if (reuse && address && !grade) {
             u64 hash = (address ^ size << 40) * 0x9E3779B97F4A7C15ull;
             entry = &ring_reuse[(hash >> 52) % ring_reuse.size()];
             if (entry->epoch == ring_reuse_epoch && entry->address == address &&
@@ -671,6 +844,10 @@ void Rasterizer::CollectRingBindings(const Shader::Info& stage, const PreparedDr
             std::memcpy(dst, source, size);
         } else {
             memory->CopySparseMemory(address, dst, size);
+        }
+        if (grade) {
+            ApplyUe4Grade(dst, stage.pgm_hash == Ue4HdrGrading::LutBuilderBlendPs);
+            CountUe4Grade(&Ue4Grade::ring);
         }
         constant_ring->Flush(*offset, size);
         if (Gow3Stats::enabled) {
@@ -1235,12 +1412,24 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
             return;
         }
     }
+    // gow3 HDR: without "Allow HDR output" a null check; with it one relaxed load while the swapchain is SDR.
+    if (ue4_hdr && Gow3Settings::Get().hdr_active.load(std::memory_order_relaxed)) [[unlikely]] {
+        if (ReplaceHdrGrading(pipeline) || ReplaceHdrComposite(pipeline)) {
+            bind_prepared = nullptr;
+            ResetBindings(false);
+            return;
+        }
+        PrepareHdrBlur(pipeline);
+    }
     const PreparedDraw* draw_prepared = bind_prepared;
     // gow3: vertex and index buffers are resolved while the helper binds textures (their
     // commands are recorded after BeginRendering, as before).
     draw_inputs = {pipeline, draw_prepared, index_offset, is_indexed, true, false};
     const bool bound = BindResources(pipeline);
     bind_prepared = nullptr; // indirect draws and dispatches bind without prepared sharps
+    if (hdr_blur_view) [[unlikely]] {
+        hdr_blur_view = VK_NULL_HANDLE; // gow3 HDR: the backdrop serves this draw only
+    }
     const bool inputs_resolved = draw_inputs.resolved;
     draw_inputs.pending = false;
     if (!bound) {
@@ -1812,6 +2001,9 @@ bool Rasterizer::HelperEligible(const Pipeline* pipeline) const {
 
 bool Rasterizer::TexturesBindableOnHelper(const Shader::Info& stage,
                                           const PreparedStage* prepared) {
+    if (hdr_blur_view) [[unlikely]] {
+        return false; // gow3 HDR: the blur's backdrop is patched in on the draw thread (BindTextures)
+    }
     const u64 generation = texture_cache.RegistryGeneration();
     for (u32 image_index = 0; image_index < stage.images.size(); ++image_index) {
         const auto& image_desc = stage.images[image_index];
@@ -2534,6 +2726,38 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, const PreparedStage* pre
                     LOG_ERROR(Render, "Clamped size from {} to {} for stage {:#x}",
                               vsharp.GetSize(), size, stage.pgm_hash);
                 }
+                if (Ue4GradeTarget(stage, buffer_index, size) && !desc.is_written &&
+                    memory->IsValidGpuMapping(vsharp.base_address, size)) {
+                    // gow3 HDR grading: outside the constant ring (its region marked GPU-modified, a
+                    // pending write, the ring full): a patched copy from guest memory in the stream
+                    // buffer, as the ring would have made.
+                    if (GOW3_DEV_TOOLS && !const_cast<Ue4Grade&>(Ue4GradeOverride()).missed.exchange(true)) {
+                        std::printf("UE4 grade: a combine LUT draw bound its parameters outside the "
+                                    "constant ring; patched in a stream copy\n");
+                    }
+                    std::array<u8, Ue4HdrGrading::BlendParamDwords * sizeof(u32)> storage{};
+                    const std::span<u8> block(storage.data(),
+                                              Ue4HdrGrading::LutBlockDwords(stage.pgm_hash) * sizeof(u32));
+                    memory->CopySparseMemory(vsharp.base_address, block.data(), block.size());
+                    ApplyUe4Grade(block.data(), stage.pgm_hash == Ue4HdrGrading::LutBuilderBlendPs);
+                    CountUe4Grade(&Ue4Grade::stream);
+                    auto& vk_buffer = buffer_cache.GetStreamBuffer();
+                    const u64 offset = vk_buffer.Copy(block.data(), block.size(), alignment);
+                    push_data.AddOffset(binding.buffer, 0);
+                    buffer_infos.emplace_back(vk_buffer.Handle(), offset, block.size());
+                    auto& set_write = set_writes[write_index++];
+                    set_write.dstSet = VK_NULL_HANDLE;
+                    set_write.dstBinding = binding.unified++;
+                    set_write.dstArrayElement = 0;
+                    set_write.descriptorCount = 1;
+                    set_write.descriptorType = vk::DescriptorType::eStorageBuffer;
+                    set_write.pBufferInfo = &buffer_infos.back();
+                    ++binding.buffer;
+                    continue;
+                }
+                if (Ue4GradeTarget(stage, buffer_index, size)) {
+                    CountUe4Grade(&Ue4Grade::unpatched);
+                }
                 const auto [buffer, offset] = buffer_cache.ObtainBuffer(
                     vsharp.base_address, size, desc.is_written, desc.is_formatted);
                 const u64 offset_aligned = Common::AlignDown(offset, alignment);
@@ -2634,7 +2858,17 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
     GOW3_SECTION(BindTextures);
     const u32 first_image_idx = image_infos.size();
     TextureSetSlot set_slot;
+    // gow3 HDR (PrepareHdrBlur): the background blur's first pass samples our backdrop instead of the HDR UI image.
+    // Its stage has one image; the kept set still records the game's view.
+    const auto blur_backdrop = [&] {
+        if (hdr_blur_view && Ue4HdrGrading::IsUiBlurFirstPass(stage.pgm_hash) && stage.images.size() == 1 &&
+            image_infos.size() > first_image_idx) [[unlikely]] {
+            image_infos[first_image_idx] =
+                vk::DescriptorImageInfo{VK_NULL_HANDLE, hdr_blur_view, vk::ImageLayout::eShaderReadOnlyOptimal};
+        }
+    };
     if (!on_helper && BindTexturesFromSet(stage, prepared, first_image_idx, barrier, set_slot)) {
+        blur_backdrop();
         // Descriptor writes: one per image (no mip arrays in a memoized set).
         for (u32 i = 0; i < stage.images.size(); ++i) {
             auto& set_write = set_writes[write_index++];
@@ -2958,6 +3192,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
             }
         }
     }
+    blur_backdrop();
     if (set_ok && image_bindings.size() == stage.images.size() &&
         (!TextureSetRegions() || texture_cache.RegistryGeneration() == bind_generation)) {
         // Remember the set: the same T#s resolve the same way while no image is (un)registered
@@ -4661,6 +4896,218 @@ void Rasterizer::NoteFrameStart() {
     }
 }
 
+bool Rasterizer::ReplaceHdrComposite(const Pipeline* pipeline) {
+    const auto stages = pipeline->GetStages();
+    const u32 fragment = static_cast<u32>(Shader::SwStage::Fragment);
+    const Shader::Info* fs = fragment < stages.size() ? stages[fragment] : nullptr;
+    if (!fs || fs->pgm_hash != Ue4HdrGrading::UiCompositePs) {
+        return false;
+    }
+    const auto& settings = Gow3Settings::Get();
+    if (!settings.hdr_active.load(std::memory_order_relaxed) ||
+        settings.hdr_look.load(std::memory_order_relaxed) != Gow3Settings::HdrLookSdr) {
+        return false; // the game's composite with the game's HDR look
+    }
+    static u32 declined = 0;
+    const auto decline = [](u32 bit, const char* why) {
+        if (!(declined & bit)) {
+            declined |= bit;
+            std::printf("UE4 HDR UI composite: the game's kept: %s\n", why);
+        }
+        return false;
+    };
+    if (!cb_descs[0].first || fs->images.size() < 2) {
+        return decline(1, "no colour target or fewer than two images");
+    }
+    // Images 0 and 1 (the IR's samples #0 and #65537): the scene (10-bit PQ) and Slate's UI (8-bit), told apart by
+    // format. Read through the game's own views (format and mapping): ue4_ui_composite.frag writes as the game does.
+    const auto is_8bit = [](vk::Format format) {
+        return format == vk::Format::eR8G8B8A8Unorm || format == vk::Format::eR8G8B8A8Srgb ||
+               format == vk::Format::eB8G8R8A8Unorm || format == vk::Format::eB8G8R8A8Srgb;
+    };
+    const PreparedStage* prepared = FindPreparedStage(*fs);
+    std::array<Ue4HdrGrading::CompositeInput, 2> inputs{};
+    std::array<vk::Format, 2> formats{};
+    std::array<std::optional<VideoCore::TextureCache::ImageDesc>, 2> descs{};
+    std::array<VAddr, 2> addresses{};
+    for (u32 i = 0; i < 2; ++i) {
+        const auto& image_desc = fs->images[i];
+        const auto tsharp = prepared ? prepared->image_sharps[i] : image_desc.GetSharp(*fs);
+        if (image_desc.is_written || tsharp.Address() == 0) {
+            return decline(2, "an input is written or has no address");
+        }
+        VideoCore::TextureCache::ImageDesc desc(tsharp, image_desc);
+        const VideoCore::ImageId id = texture_cache.FindImage(desc);
+        if (!id) {
+            return decline(4, "an input image not found");
+        }
+        if (i == 0) {
+            scheduler.EndRendering(); // before the first transition, once the inputs are there
+        }
+        auto& image_view = texture_cache.FindTexture(id, desc);
+        auto& image = texture_cache.GetImage(id);
+        runtime.Transit(&image, vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader,
+                        vk::AccessFlagBits2::eShaderRead, desc.view_info.range);
+        image.usage.texture = 1u;
+        vk::ImageView view = *image_view.image_view;
+        vk::ImageLayout layout = image.backing->state.layout;
+        if (upscaler->Enabled()) {
+            upscaler->RedirectSampled(id, image_view.info, view, layout);
+        }
+        inputs[i] = {view, layout};
+        formats[i] = desc.view_info.format;
+        descs[i] = desc;
+        addresses[i] = tsharp.Address();
+    }
+    if (is_8bit(formats[0]) && !is_8bit(formats[1])) {
+        std::swap(inputs[0], inputs[1]);
+        std::swap(formats[0], formats[1]);
+        std::swap(descs[0], descs[1]);
+        std::swap(addresses[0], addresses[1]);
+    }
+    if (is_8bit(formats[0]) || !is_8bit(formats[1])) {
+        return decline(8, "the inputs are not one 10-bit scene and one 8-bit UI image");
+    }
+    const bool ui_srgb = formats[1] == vk::Format::eR8G8B8A8Srgb || formats[1] == vk::Format::eB8G8R8A8Srgb;
+    hdr_scene_desc = descs[0];
+    hdr_ui_address = addresses[1];
+    return ue4_hdr->RunComposite(cb_descs[0].first, cb_descs[0].second, inputs[0], inputs[1], ui_srgb);
+}
+
+void Rasterizer::PrepareHdrBlur(const Pipeline* pipeline) {
+    hdr_blur_view = VK_NULL_HANDLE;
+    if (!hdr_ui_address || !hdr_scene_desc) {
+        return; // no UI composite of ours seen yet
+    }
+    const auto stages = pipeline->GetStages();
+    const u32 fragment = static_cast<u32>(Shader::SwStage::Fragment);
+    const Shader::Info* fs = fragment < stages.size() ? stages[fragment] : nullptr;
+    if (!fs || !Ue4HdrGrading::IsUiBlurFirstPass(fs->pgm_hash) || fs->images.size() != 1) {
+        return;
+    }
+    const auto& settings = Gow3Settings::Get();
+    if (!settings.hdr_active.load(std::memory_order_relaxed) ||
+        settings.hdr_look.load(std::memory_order_relaxed) != Gow3Settings::HdrLookSdr) {
+        return;
+    }
+    // Only the pass that samples the HDR UI image (the later passes sample the first's output).
+    const PreparedStage* prepared = FindPreparedStage(*fs);
+    const auto tsharp = prepared ? prepared->image_sharps[0] : fs->images[0].GetSharp(*fs);
+    if (tsharp.Address() != hdr_ui_address) {
+        return;
+    }
+    scheduler.EndRendering();
+    // Both inputs through the game's views (true RGB), as in ReplaceHdrComposite.
+    const auto resolve = [&](VideoCore::TextureCache::ImageDesc& desc) -> Ue4HdrGrading::CompositeInput {
+        const VideoCore::ImageId id = texture_cache.FindImage(desc);
+        if (!id) {
+            return {};
+        }
+        auto& image_view = texture_cache.FindTexture(id, desc);
+        auto& image = texture_cache.GetImage(id);
+        runtime.Transit(&image, vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader,
+                        vk::AccessFlagBits2::eShaderRead, desc.view_info.range);
+        image.usage.texture = 1u;
+        vk::ImageView view = *image_view.image_view;
+        vk::ImageLayout layout = image.backing->state.layout;
+        if (upscaler->Enabled()) {
+            upscaler->RedirectSampled(id, image_view.info, view, layout);
+        }
+        return {view, layout};
+    };
+    VideoCore::TextureCache::ImageDesc ui_desc(tsharp, fs->images[0]);
+    VideoCore::TextureCache::ImageDesc scene_desc = *hdr_scene_desc;
+    const auto ui = resolve(ui_desc);
+    const auto scene = resolve(scene_desc);
+    hdr_blur_view = ue4_hdr->RunBackdrop(scene, ui, ui_desc.info.size.width, ui_desc.info.size.height);
+}
+
+bool Rasterizer::ReplaceHdrGrading(const Pipeline* pipeline) {
+    const auto stages = pipeline->GetStages();
+    const u32 fragment = static_cast<u32>(Shader::SwStage::Fragment);
+    const Shader::Info* fs = fragment < stages.size() ? stages[fragment] : nullptr;
+    if (!fs) {
+        return false;
+    }
+    if (!Ue4HdrGrading::IsLutBuilder(fs->pgm_hash)) {
+        // Another builder version would keep the game's grading silently (the HDR rows and the Colour tab doing
+        // nothing in its levels, H36): once per shader, a draw into a 32-slice 32x32 target that is not ours.
+        // Dev build only (a diagnostic, and a per-draw test).
+        constexpr u64 UiLutBuilderPs = 0xc401ca35ab81eb39ull; // UE's HDR UI composite LUT, also 32^3
+        if (GOW3_DEV_TOOLS && cb_descs[0].first && fs->pgm_hash != UiLutBuilderPs) [[unlikely]] {
+            const auto& d = cb_descs[0].second;
+            if (d.view_info.range.extent.layers == 32 && d.info.size.width == 32 && d.info.size.height == 32) {
+                static std::vector<u64> noted;
+                if (std::ranges::find(noted, fs->pgm_hash) == noted.end() && noted.size() < 16) {
+                    noted.push_back(fs->pgm_hash);
+                    std::printf("UE4 HDR grading: unknown 32^3 LUT builder fs %016llx: the game's grading kept "
+                                "there (HDR rows and Colour tab inactive)\n",
+                                static_cast<unsigned long long>(fs->pgm_hash));
+                }
+            }
+        }
+        return false;
+    }
+    // The HDR look set to the game's (ACES): no work here beyond this check (plan-hdr-final.md).
+    if (Gow3Settings::Get().hdr_look.load(std::memory_order_relaxed) != Gow3Settings::HdrLookSdr) {
+        return false;
+    }
+    const bool blend = fs->pgm_hash == Ue4HdrGrading::LutBuilderBlendPs;
+    // Once per reason: why a builder draw keeps the game's LUT (run 24 declined silently). Dev build only.
+    static u32 declined = 0;
+    const auto decline = [](u32 bit, const char* why) {
+        if (GOW3_DEV_TOOLS && !(declined & bit)) {
+            declined |= bit;
+            std::printf("UE4 HDR grading: the game's LUT kept: %s\n", why);
+        }
+        return false;
+    };
+    if (fs->buffers.empty() || !cb_descs[0].first) {
+        return decline(1, "no parameter buffer or no colour target");
+    }
+    // The game's parameter block (buffer 0) as its draw would bind it, with the Color tab's grading applied.
+    const PreparedStage* prepared = FindPreparedStage(*fs);
+    const auto vsharp = prepared ? prepared->buffer_sharps[0] : fs->buffers[0].GetSharp(*fs);
+    // Read as the game laid it out (576 bytes, or 656 for the blend builder), then in our layout.
+    std::array<u32, Ue4HdrGrading::BlendParamDwords> raw{};
+    const u32 raw_bytes = Ue4HdrGrading::LutBlockDwords(fs->pgm_hash) * sizeof(u32);
+    if (vsharp.GetSize() < raw_bytes || !memory->IsValidGpuMapping(vsharp.base_address, raw_bytes)) {
+        return decline(2, "the parameter block is smaller than the builder's (576 / 656 bytes) or not mapped");
+    }
+    memory->CopySparseMemory(vsharp.base_address, reinterpret_cast<u8*>(raw.data()), raw_bytes);
+    std::array<u32, Ue4HdrGrading::ParamDwords> block{};
+    if (blend) {
+        Ue4HdrGrading::RemapBlendBlock(raw.data(), block);
+    } else {
+        std::copy_n(raw.begin(), block.size(), block.begin());
+    }
+    if (!Ue4HdrGrading::Wanted(block)) {
+        return false; // an SDR output device (the game's UI LUTs, a scene capture): normal, not logged
+    }
+    ApplyUe4Grade(reinterpret_cast<u8*>(block.data()));
+    if (!blend) {
+        return ue4_hdr->Run(cb_descs[0].first, cb_descs[0].second, block);
+    }
+    // The level's grading LUT (image 0): through the game's own view (format and swizzle: true RGB), as its draw.
+    if (fs->images.empty()) {
+        return decline(4, "the blend builder has no LUT texture");
+    }
+    const auto tsharp = prepared ? prepared->image_sharps[0] : fs->images[0].GetSharp(*fs);
+    VideoCore::TextureCache::ImageDesc lut_desc(tsharp, fs->images[0]);
+    const VideoCore::ImageId lut_id = tsharp.Address() ? texture_cache.FindImage(lut_desc) : VideoCore::ImageId{};
+    if (!lut_id) {
+        return decline(8, "the blend builder's LUT texture not found");
+    }
+    scheduler.EndRendering();
+    auto& lut_view = texture_cache.FindTexture(lut_id, lut_desc);
+    auto& lut_image = texture_cache.GetImage(lut_id);
+    runtime.Transit(&lut_image, vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader,
+                    vk::AccessFlagBits2::eShaderRead, lut_desc.view_info.range);
+    lut_image.usage.texture = 1u;
+    const Ue4HdrGrading::CompositeInput lut{*lut_view.image_view, lut_image.backing->state.layout};
+    return ue4_hdr->Run(cb_descs[0].first, cb_descs[0].second, block, &lut);
+}
+
 bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
     // GOW3_UPSCALER_STATS: this call's CPU time, whichever way it returns.
     struct HookTimer {
@@ -4679,8 +5126,13 @@ bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
     } else {
         const auto& key = static_cast<const GraphicsPipeline*>(pipeline)->GetGraphicsKey();
         pass.targets = std::popcount(key.mrt_mask);
+        if (key.mrt_mask & 1) {
+            pass.cb0 = regs.color_buffers[0].Address();
+        }
         if ((key.mrt_mask & 1) && cb_descs[0].first) {
             const auto& info = cb_descs[0].second.info;
+            pass.target_layers = info.resources.layers;
+            pass.target_depth = info.size.depth;
             pass.target = {regs.color_buffers[0].Address(), info.size.width, info.size.height};
             pass.target_rg16 = info.pixel_format == vk::Format::eR16G16Unorm;
             pass.target_rgba16f = info.pixel_format == vk::Format::eR16G16B16A16Sfloat;

@@ -4,6 +4,7 @@
 #include "gow3_graphics.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -46,6 +47,61 @@ void Set(Values& v, const std::string& key, const std::string& value) {
     for (int p = 0; p < PerfCount; ++p) {
         if (key == PerfKeys[p]) {
             v.perf[p] = value != "0";
+            return;
+        }
+    }
+    if (key.starts_with("grade_")) {
+        for (int g = 0; g < GradeCount; ++g) {
+            if (key == GradeKey(g)) {
+                const GradeInfo info = GradeAt(g);
+                v.grade[g] = value.empty() || !std::isfinite(f) ? GradeNeutralValue(g)
+                                                                : std::clamp(f, info.lo, info.hi);
+                return;
+            }
+        }
+        return;
+    }
+    if (key == "hdr_ui_nits") {
+        v.hdr_ui_nits = value.empty() ? HdrUiNitsDefault : std::clamp(i, HdrUiNitsMin, HdrUiNitsMax);
+        return;
+    }
+    if (key == "hdr_curve") {
+        v.hdr_curve = value == "2000" ? 1 : 0;
+        return;
+    }
+    if (key == "hdr_look") {
+        v.hdr_look = value == "game" ? HdrLookGame : HdrLookSdr;
+        return;
+    }
+    if (key == "hdr_game_nits") {
+        v.hdr_game_nits = value.empty() ? HdrGameNitsDefault : std::clamp(i, HdrGameNitsMin, HdrGameNitsMax);
+        return;
+    }
+    if (key == "hdr_peak_nits") {
+        v.hdr_peak_nits = value.empty() ? HdrPeakNitsDefault : std::clamp(i, HdrPeakNitsMin, HdrPeakNitsMax);
+        return;
+    }
+    // Our tone curve's controls (H40): an empty value is the default, else clamped to the row's range.
+    struct PwKey {
+        const char* name;
+        std::atomic<int>* target;
+        int lo, hi, def;
+    };
+    const PwKey pw_keys[] = {
+        {"hdr_pw_gamma", &v.hdr_pw_gamma, HdrPwGammaMin, HdrPwGammaMax, HdrPwGammaDefault},
+        {"hdr_pw_toe_clamp", &v.hdr_pw_toe_clamp, 0, HdrPwToeClampMax, HdrPwToeClampDefault},
+        {"hdr_pw_toe_length", &v.hdr_pw_toe_length, HdrPwToeLengthMin, HdrPwToeLengthMax, HdrPwToeLengthDefault},
+        {"hdr_pw_toe_strength", &v.hdr_pw_toe_strength, 0, HdrPwToeStrengthMax, HdrPwToeStrengthDefault},
+        {"hdr_pw_shoulder_start", &v.hdr_pw_shoulder_start, HdrPwShoulderStartMin, HdrPwShoulderStartMax,
+         HdrPwShoulderStartDefault},
+        {"hdr_pw_shoulder_length", &v.hdr_pw_shoulder_length, HdrPwShoulderLengthMin, HdrPwShoulderLengthMax,
+         HdrPwShoulderLengthDefault},
+        {"hdr_pw_shoulder_angle", &v.hdr_pw_shoulder_angle, 0, 100, HdrPwShoulderAngleDefault},
+        {"hdr_pw_saturation", &v.hdr_pw_saturation, 0, 100, HdrPwSaturationDefault},
+    };
+    for (const PwKey& k : pw_keys) {
+        if (key == k.name) {
+            *k.target = value.empty() ? k.def : std::clamp(i, k.lo, k.hi);
             return;
         }
     }
@@ -133,7 +189,7 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         return;
     }
     if (key == "menu_tab") {
-        v.menu_tab = i >= 0 && i <= 4 ? i : 0;
+        v.menu_tab = i >= 0 && i <= 5 ? i : 0; // gow3_overlay.cpp TabCount 6
         return;
     }
     for (int move = 0; move < CameraMoveCount; ++move) {
@@ -271,6 +327,58 @@ void Set(Values& v, const std::string& key, const std::string& value) {
 }
 
 } // namespace
+
+std::string GradeKey(int i) {
+    static constexpr const char* extras[] = {"grade_wb_temp",         "grade_wb_tint",         "grade_shadows_max",
+                                             "grade_highlights_min",  "grade_blue_correction", "grade_expand_gamut"};
+    if (i >= GradeWbTemp) {
+        return extras[std::clamp(i - GradeWbTemp, 0, int(std::size(extras)) - 1)];
+    }
+    static constexpr const char* channels[] = {"_r", "_g", "_b", ""};
+    return std::string("grade_") + GradeRanges[i / (GradeFieldCount * 4)] + "_" + GradeFields[(i / 4) % GradeFieldCount] +
+           channels[i % 4];
+}
+
+bool GradeNeutral() {
+    const auto& v = Get();
+    for (int g = 0; g < GradeCount; ++g) {
+        if (v.grade[g].load(std::memory_order_relaxed) != GradeNeutralValue(g)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void ResetGrade() {
+    auto& v = Get();
+    for (int g = 0; g < GradeCount; ++g) {
+        v.grade[g] = GradeNeutralValue(g);
+    }
+}
+
+bool HdrGame() {
+    static const bool on = [] {
+        // As EmulatorSettings' flags read them (1 / y / t), so video-out, the pak (ue4_override.py) and this agree.
+        const auto flag = [](const char* name) {
+            const char* v = std::getenv(name);
+            return v && (v[0] == '1' || v[0] == 'y' || v[0] == 't');
+        };
+        return flag("GOW3_HDR") && flag("GOW3_HDR_GAME");
+    }();
+    return on;
+}
+
+void RequestHdrUi() {
+    char text[16];
+    std::snprintf(text, sizeof(text), "%.2f", double(Get().hdr_ui_nits.load()) / 100.0);
+    runtime_ue4_request_cvar("r.HDR.UI.Level", text);
+}
+
+void RequestHdrCurve() {
+    if (HdrGame()) {
+        runtime_ue4_request_cvar("r.HDR.Display.OutputDevice", Get().hdr_curve ? "4" : "3");
+    }
+}
 
 void RequestUE4Live(int o, int choice) {
     if (o < 0 || o >= UE4LiveCount || choice < 0 || choice >= UE4LiveOptions[o].count || !UE4LiveOptions[o].live) {
@@ -446,6 +554,30 @@ void Load() {
     }
     if (v.effects_resolution > 0) { // the override pak sets it at boot too (run.py)
         runtime_ue4_request_cvar("r.SeparateTranslucencyScreenPercentage", UE4EffectsKeys[v.effects_resolution]);
+    }
+    // HDR: the UI level is in the override pak too (run.py), for the screens before the first poll; the curve can
+    // only be set live (the engine's HDR sink outranks the pak).
+    if (v.hdr_ui_nits != HdrUiNitsDefault && HdrGame()) { // SDR: the engine's UI level stays untouched
+        RequestHdrUi();
+    }
+    if (v.hdr_curve != 0) {
+        RequestHdrCurve();
+    }
+    // GOW3_UE4_LIVE_CVARS="name=value;..." (tests, research): console variables of the runtime's live table
+    // (src/runtime_extra.c ue4_cvars[]) set once the game reaches its menu, after the device profile. For the
+    // ones a pak cannot set, such as r.HDR.Display.ColorGamut; values up to 15 characters.
+    // Dev build only (GOW3_DEV_TOOLS).
+    if (const char* env = GOW3_DEV_TOOLS ? std::getenv("GOW3_UE4_LIVE_CVARS") : nullptr; env && env[0]) {
+        const std::string text = env;
+        for (std::size_t at = 0; at < text.size();) {
+            const std::size_t end = std::min(text.find(';', at), text.size());
+            const std::string item = text.substr(at, end - at);
+            at = end + 1;
+            if (const auto eq = item.find('='); eq != std::string::npos && eq > 0) {
+                std::printf("Settings: live console variable %s (GOW3_UE4_LIVE_CVARS)\n", item.c_str());
+                runtime_ue4_request_cvar(item.substr(0, eq).c_str(), item.substr(eq + 1).c_str());
+            }
+        }
     }
     // A launch's own switches (run.py from medievil.ini, or a test) show as the patches' state: the first
     // variable of each bundle and its off value (graphics_options.PERF_SWITCHES).
@@ -683,6 +815,20 @@ std::map<std::string, std::string> Serialize(const Values& v) {
            v.refraction_ps4.load(), v.water_ripples_always.load(), v.refraction_edge_stretch.load());
     for (int o = 0; o < UE4LiveCount; ++o) {
         Append(out, "%s=%s\n", UE4LiveOptions[o].key, UE4LiveOptions[o].tokens[v.ue4_live[o]]);
+    }
+    Append(out, "hdr_ui_nits=%d\nhdr_curve=%s\n", v.hdr_ui_nits.load(), v.hdr_curve ? "2000" : "1000");
+    Append(out, "hdr_look=%s\nhdr_game_nits=%d\n", v.hdr_look == HdrLookGame ? "game" : "sdr",
+           v.hdr_game_nits.load());
+    Append(out, "hdr_peak_nits=%d\n", v.hdr_peak_nits.load());
+    Append(out, "hdr_pw_gamma=%d\nhdr_pw_toe_clamp=%d\nhdr_pw_toe_length=%d\nhdr_pw_toe_strength=%d\n",
+           v.hdr_pw_gamma.load(), v.hdr_pw_toe_clamp.load(), v.hdr_pw_toe_length.load(),
+           v.hdr_pw_toe_strength.load());
+    Append(out, "hdr_pw_shoulder_start=%d\nhdr_pw_shoulder_length=%d\nhdr_pw_shoulder_angle=%d\nhdr_pw_saturation=%d\n",
+           v.hdr_pw_shoulder_start.load(), v.hdr_pw_shoulder_length.load(), v.hdr_pw_shoulder_angle.load(),
+           v.hdr_pw_saturation.load());
+    for (int g = 0; g < GradeCount; ++g) {
+        // + 0.0: a negative zero (a value stepped back to 0) is written as 0, not -0.
+        Append(out, "%s=%.4g\n", GradeKey(g).c_str(), double(v.grade[g].load()) + 0.0);
     }
     std::map<std::string, std::string> values;
     std::size_t at = 0;

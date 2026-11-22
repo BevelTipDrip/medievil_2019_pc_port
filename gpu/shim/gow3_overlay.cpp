@@ -11,6 +11,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <iterator>
+#include <map>
 #include <mutex>
 #include <string_view>
 #include <thread>
@@ -40,6 +42,8 @@ extern "C" const char* runtime_file_user_dir(void); // src/runtime_file.c: the s
 #include "imgui.h"
 #include "imgui_internal.h" // RegisterUserTexture (save pictures)
 #include "imgui_impl_vulkan.h"
+#include "video_core/host_shaders/imgui_hdr_frag.h"
+#include "video_core/renderer_vulkan/host_passes/pp_pass.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_frame_capture.h"
@@ -86,6 +90,9 @@ std::atomic<bool> loading{false};
 std::atomic<u32> loading_done{0}, loading_total{0};
 std::atomic<u32> background_done{0}, background_total{0};
 bool dirty = false; // settings changed while open: saved on close
+// The Color tab as a small panel in the bottom-right corner over the undimmed game (ColorPanel; the Color tab's
+// "Adjust while playing"): Circle goes back to the full menu, closing the menu closes both.
+bool color_panel = false;
 int requested_tab = -1; // switch on the next frame (L1/R1, Q/E, menu opened)
 // The game's text dialog (SetTextEntry), guarded by imgui_mutex.
 bool text_entry_active = false;
@@ -157,6 +164,7 @@ void SetOpen(bool value) {
     }
     if (!value) {
         ApplyRenderScale(true);
+        color_panel = false;
     }
     if (!value && dirty) {
         dirty = false;
@@ -267,7 +275,7 @@ void Store(std::atomic<T>& target, T value, bool changed) {
 // The help of the focused row (pad, keys or the mouse over it), shown in the footer.
 const char* footer_help = nullptr;
 
-constexpr int TabCount = 5;
+constexpr int TabCount = 6;
 
 // The PS4 buttons the menu reads (the runtime's bits, runtime_pad.c menu_buttons).
 namespace Ps4 {
@@ -403,12 +411,16 @@ void MenuPress(uint32_t pressed) {
     nav.move += (pressed & Ps4::Up) ? -1 : (pressed & Ps4::Down) ? 1 : 0;
     nav.step += (pressed & Ps4::Left) ? -1 : (pressed & Ps4::Right) ? 1 : 0;
     nav.press |= (pressed & Ps4::Cross) != 0;
-    if (pressed & (Ps4::L1 | Ps4::R1)) {
+    if ((pressed & (Ps4::L1 | Ps4::R1)) && !color_panel) { // the panel shows the Color tab only
         const int from = requested_tab >= 0 ? requested_tab : Gow3Settings::Get().menu_tab.load();
         requested_tab = (from + ((pressed & Ps4::R1) ? 1 : TabCount - 1)) % TabCount;
     }
     if (pressed & Ps4::Circle) {
-        SetOpen(false);
+        if (color_panel) {
+            color_panel = false; // back to the full menu
+        } else {
+            SetOpen(false);
+        }
     }
 }
 
@@ -898,6 +910,26 @@ void SliderRow(const char* label, std::atomic<int>& value, int lo, int hi, const
                int step = 1) {
     const int v = value;
     const int next = IntSliderRow(label, v, lo, hi, step, format, help);
+    Store(value, next, next != v);
+}
+
+// An int setting shown scaled (value x scale through a float format, e.g. a toe length of 33 as "0.033").
+void ScaledSliderRow(const char* label, std::atomic<int>& value, int lo, int hi, float scale, const char* format,
+                     const char* help, int step = 1) {
+    const int v = value;
+    char shown[48];
+    std::snprintf(shown, sizeof(shown), format, double(float(v) * scale));
+    // IntSliderRow (and ImGui's SliderInt) take it as a format: a literal % must be doubled.
+    char escaped[96];
+    size_t o = 0;
+    for (const char* c = shown; *c && o + 2 < sizeof(escaped); ++c) {
+        escaped[o++] = *c;
+        if (*c == '%') {
+            escaped[o++] = '%';
+        }
+    }
+    escaped[o] = '\0';
+    const int next = IntSliderRow(label, v, lo, hi, step, escaped, help);
     Store(value, next, next != v);
 }
 
@@ -1431,6 +1463,12 @@ void DisplayTab() {
         EndRows();
     }
 
+    // HDR: in the Color tab (HdrRows), where the Color panel can show them while playing.
+    if (s.hdr_active) {
+        Section("HDR");
+        Note("The HDR settings are at the top of the Color tab, and in its \"Adjust while playing\" panel.");
+    }
+
     Section("Information");
     if (BeginRows("##information")) {
         char text[96];
@@ -1743,11 +1781,191 @@ void OverlayTab() {
     }
 }
 
+// A grading value kept on its steps and in its range (NumberRow's clamp; one per kind of value).
+template <int I>
+float ClampGrade(float v) {
+    constexpr Gow3Settings::GradeInfo info = Gow3Settings::GradeAt(I);
+    return std::clamp(std::round(v / info.step) * info.step, info.lo, info.hi);
+}
+float (*GradeClamp(int i))(float) {
+    namespace S = Gow3Settings;
+    switch (i) {
+    case S::GradeWbTemp: return &ClampGrade<S::GradeWbTemp>;
+    case S::GradeWbTint: return &ClampGrade<S::GradeWbTint>;
+    case S::GradeShadowsMax: return &ClampGrade<S::GradeShadowsMax>;
+    case S::GradeHighlightsMin: return &ClampGrade<S::GradeHighlightsMin>;
+    case S::GradeBlueCorrection: return &ClampGrade<S::GradeBlueCorrection>;
+    case S::GradeExpandGamut: return &ClampGrade<S::GradeExpandGamut>;
+    default:
+        return S::GradeAt(i).add ? &ClampGrade<S::GradeIndex(0, 4)> : &ClampGrade<S::GradeIndex(0, 0)>;
+    }
+}
+
+void GradeRow(const char* label, int i, const char* help) {
+    const Gow3Settings::GradeInfo info = Gow3Settings::GradeAt(i);
+    NumberRow(label, Gow3Settings::Get().grade[i], info.lo, info.hi, info.step, info.format, GradeClamp(i), help);
+}
+
+// The piecewise tone curve's rows (study-hdr.md H40; vk_ue4_hdr.cpp PiecewiseFromSettings).
+void PiecewiseRows() {
+    namespace S = Gow3Settings;
+    auto& s = S::Get();
+    ScaledSliderRow("Mid contrast", s.hdr_pw_gamma, S::HdrPwGammaMin, S::HdrPwGammaMax, 0.01f, "gamma %.2f",
+                    "The straight middle part's contrast, pivoting on mid grey (which stays at 18% of the game "
+                    "brightness): higher darkens the shadows and brightens lit areas. 1.28 matches the SDR look.");
+    ScaledSliderRow("Toe clamp", s.hdr_pw_toe_clamp, 0, S::HdrPwToeClampMax, 0.0001f, "%.4f",
+                    "The scene level below which everything is black (the scene value: mid grey is 0.18). Fine "
+                    "steps: 0.0032 matches the SDR look; lower lifts the deepest blacks out of black.");
+    ScaledSliderRow("Toe length", s.hdr_pw_toe_length, S::HdrPwToeLengthMin, S::HdrPwToeLengthMax, 0.001f, "%.3f",
+                    "Where the toe ends and the straight middle begins (scene value). Longer: a gentler, longer "
+                    "fall into black.");
+    ScaledSliderRow("Toe strength", s.hdr_pw_toe_strength, 0, S::HdrPwToeStrengthMax, 0.01f, "%.2f",
+                    "How deep the toe pushes the shadows: 0 none (the middle runs down to black), higher crisper, "
+                    "darker blacks. 0.45 matches the SDR look.");
+    SliderRow("Shoulder start", s.hdr_pw_shoulder_start, S::HdrPwShoulderStartMin, S::HdrPwShoulderStartMax,
+              "%d%% of peak",
+              "Where highlights start to bend towards the peak: below it, the curve is exact.", 5);
+    ScaledSliderRow("Shoulder length", s.hdr_pw_shoulder_length, S::HdrPwShoulderLengthMin,
+                    S::HdrPwShoulderLengthMax, 0.1f, "%.1f stops",
+                    "How much brighter than the peak (before the shoulder) light can get before it reaches the "
+                    "peak: longer keeps detail in fire and the sky, shorter makes highlights brighter sooner.");
+    SliderRow("Shoulder angle", s.hdr_pw_shoulder_angle, 0, 100, "%d%%",
+              "0: the shoulder flattens out well before the peak (Hable's shoulder; the top looks clipped). "
+              "100: it keeps rising until the peak (more gradation in the brightest highlights).",
+              5);
+    SliderRow("Highlight saturation", s.hdr_pw_saturation, 0, 100, "%d%%",
+              "0: bright colours fade towards white as in the game's SDR picture. Higher: fire, magic and lit "
+              "colours keep their colour as they get brighter (the colour before the game's film curve).",
+              5);
+}
+
+// HDR (study-hdr.md): while the game outputs HDR10; at the top of the Color tab, so the Color panel shows them too.
+// UI brightness sets the game's UI level and the white of this menu's own HDR pipeline together; the curve is the
+// engine's other HDR output device.
+void HdrRows() {
+    namespace S = Gow3Settings;
+    auto& s = S::Get();
+    if (s.hdr_active) {
+        Section("HDR");
+        if (BeginRows("##hdr")) {
+            const int nits = s.hdr_ui_nits;
+            const int next = IntSliderRow("UI brightness", nits, S::HdrUiNitsMin, S::HdrUiNitsMax, 10, "%d nits",
+                                          "Brightness of the game's menus, HUD and subtitles, and of this menu (100 = "
+                                          "the game's own). The game's own Brightness slider (Options > Brightness) "
+                                          "also affects the UI: leave it at its default.");
+            // On steps of 10 (a mouse drag too): each value is its own overlay pipeline (HdrPipeline).
+            if (const int snapped = (next + 5) / 10 * 10; snapped != nits) {
+                s.hdr_ui_nits = snapped;
+                dirty = true;
+                S::RequestHdrUi();
+            }
+            // HDR look (research/docs/plan-hdr-final.md): ours (the game's grading through our tone curve) or the
+            // game's own ACES output (for debugging; out of the menu before release).
+            static const char* const look_labels[] = {"Game's (ACES)", "Ours"};
+            ChoiceRow("HDR look", s.hdr_look, look_labels, nullptr, 2,
+                      "Ours: the game's colour grading through a filmic tone curve made for HDR (toe, straight "
+                      "middle, shoulder to your display's peak). Game's: the engine's ACES HDR output (lifted "
+                      "blacks, less contrast).");
+            ImGui::BeginDisabled(s.hdr_look != S::HdrLookSdr);
+            SliderRow("Game brightness", s.hdr_game_nits, S::HdrGameNitsMin, S::HdrGameNitsMax, "%d nits",
+                      "How bright SDR white is in HDR (203 is the HDR standard for paper white); mid grey sits at "
+                      "18% of it. Raises or lowers the whole picture, not the UI.",
+                      1);
+            SliderRow("Peak brightness", s.hdr_peak_nits, S::HdrPeakNitsMin, S::HdrPeakNitsMax, "%d nits",
+                      "Your display's peak brightness in this mode: the brightest highlights roll off to it. "
+                      "Measure it or use the display's rating (e.g. ~450 in an HDR 400 mode, ~1000 in a 1000 mode).",
+                      10);
+            PiecewiseRows();
+            ImGui::EndDisabled();
+            if (S::HdrGame()) {
+                static const char* const curve_labels[] = {"1000 nits (game default)", "2000 nits"};
+                const int curve = s.hdr_curve;
+                ChoiceRow("HDR curve", s.hdr_curve, curve_labels, nullptr, 2,
+                          "The engine's HDR tone curve: the peak brightness it is made for. The game picks 1000.");
+                if (s.hdr_curve != curve) {
+                    S::RequestHdrCurve();
+                }
+            }
+            EndRows();
+        }
+    }
+}
+
+// Color: UE4's colour grading (the combine LUT's parameters), live, relative to the game's values: each area's own
+// grading stays. In SDR and HDR. Per-channel values (grade_*_r / _g / _b) are in medievil.ini only.
+void ColorTab() {
+    namespace S = Gow3Settings;
+    if (IsGow3()) {
+        Section("Colour grading");
+        Note("God of War III has no colour grading here.");
+        return;
+    }
+    if (!color_panel) {
+        Note("The HDR settings (while the game outputs HDR), then changes to the game's own colour grading, applied at "
+             "once in SDR and HDR. 1.00 and +0 keep the game's look; each area keeps its own grading. Per-channel "
+             "(red / green / blue) values are in medievil.ini.");
+        if (styled && BeginRows("##color_panel_open")) {
+            static const char* const open_label[] = {"Open"};
+            static const bool enabled[] = {true};
+            if (ButtonsRow("Adjust while playing", open_label, 1, enabled,
+                           "These settings in a small panel in the corner, over the game without dimming it. Circle "
+                           "comes back here.") == 0) {
+                color_panel = true;
+            }
+            EndRows();
+        }
+    }
+    HdrRows();
+    Section("White balance");
+    if (BeginRows("##white_balance")) {
+        GradeRow("Temperature", S::GradeWbTemp, "Warmer (+) or cooler (-) than the game's white, in kelvin.");
+        GradeRow("Tint", S::GradeWbTint, "Towards magenta (+) or green (-).");
+        EndRows();
+    }
+    static constexpr const char* help[S::GradeFieldCount] = {
+        "Colour strength: 0 is grey, 1.00 the game's.",
+        "Spread around mid-grey: higher darkens shadows and brightens highlights.",
+        "Mid-tone brightness curve: higher brightens mid-tones.",
+        "Brightness multiplier.",
+        "Added to every colour: lifts (+) or lowers (-) the blacks.",
+    };
+    for (int range = 0; range < S::GradeRangeCount; ++range) {
+        Section(S::GradeRangeTitles[range]);
+        char id[32];
+        std::snprintf(id, sizeof(id), "##grade_%s", S::GradeRanges[range]);
+        if (BeginRows(id)) {
+            // The four ranges share their row names: an ID scope per range, or the styled rows (whose IDs are
+            // their names) share one slider and number box and a change in one range moves all four (run 20).
+            ImGui::PushID(range);
+            for (int field = 0; field < S::GradeFieldCount; ++field) {
+                GradeRow(S::GradeFieldTitles[field], S::GradeIndex(range, field), help[field]);
+            }
+            ImGui::PopID();
+            EndRows();
+        }
+    }
+    Section("Ranges and gamut");
+    if (BeginRows("##grade_ranges")) {
+        GradeRow("Shadows end", S::GradeShadowsMax, "Where the Shadows controls stop (luminance, the game's 0.09).");
+        GradeRow("Highlights start", S::GradeHighlightsMin,
+                 "Where the Highlights controls begin (luminance, the game's 0.5).");
+        GradeRow("Blue correction", S::GradeBlueCorrection, "UE4's fix for bright blue lights turning purple (the game's 0.6).");
+        GradeRow("Expand gamut", S::GradeExpandGamut, "UE4's widening of saturated colours (the game's 1).");
+        static const char* const reset_label[] = {"Reset"};
+        static const bool enabled[] = {true};
+        if (ButtonsRow("All colour grading", reset_label, 1, enabled, "Back to the game's own grading.") == 0) {
+            S::ResetGrade();
+            dirty = true;
+        }
+        EndRows();
+    }
+}
+
 int RestartChanges() {
     return Gow3Settings::RestartChanges();
 }
 
-// The tab's content: CONTROLS, DISPLAY, GRAPHICS, PERFORMANCE, OVERLAY (2026-11-13). GameTab (God of War
+// The tab's content: CONTROLS, DISPLAY, GRAPHICS, COLOR (2026-11-17), PERFORMANCE, OVERLAY (2026-11-13). GameTab (God of War
 // III's cheats and multipliers) is kept but has no tab for now.
 void TabBody(int tab) {
     nav.in_body = true;
@@ -1755,7 +1973,8 @@ void TabBody(int tab) {
     case 0: ControlsTab(); break;
     case 1: DisplayTab(); break;
     case 2: GraphicsTab(); break;
-    case 3: PerformanceTab(); break;
+    case 3: ColorTab(); break;
+    case 4: PerformanceTab(); break;
     default: OverlayTab(); break;
     }
     nav.in_body = false;
@@ -1800,7 +2019,7 @@ void PlainMenu() {
     }
     const float footer = ImGui::GetFrameHeightWithSpacing() * 2.0f + ImGui::GetTextLineHeightWithSpacing() * 2.0f;
     if (ImGui::BeginTabBar("##tabs")) {
-        static const char* const tabs[TabCount] = {"Controls", "Display", "Graphics", "Performance", "Overlay"};
+        static const char* const tabs[TabCount] = {"Controls", "Display", "Graphics", "Color", "Performance", "Overlay"};
         for (int tab = 0; tab < TabCount; ++tab) {
             const ImGuiTabItemFlags flags = requested_tab == tab ? ImGuiTabItemFlags_SetSelected : 0;
             if (!ImGui::BeginTabItem(tabs[tab], nullptr, flags)) {
@@ -1908,6 +2127,87 @@ constexpr float PromptRule = 714.0f, PromptTop = 722.0f, PromptIcon = 34.0f, Pro
 constexpr float HelpText = 22.0f, HelpLines = 3.0f, HelpTop = PromptRule - 8.0f - HelpLines * HelpText;
 constexpr float BodyBottom = HelpTop - 4.0f;
 
+// The settings menu's (or the Color panel's) scrolled rows at `pos`, `size` screen pixels: tab `tab`'s rows, whole
+// rows only, with a thin scroll bar drawn into `draw` (the frame's list) when they do not fit.
+void StyledBody(ImVec2 pos, ImVec2 size, int tab, ImDrawList* draw) {
+    // The tab's rows, scrolled, whole rows only, with a thin scroll bar (wheel, click or drag) when they do not fit.
+    ImGui::SetCursorScreenPos(pos);
+    PushMenuStyle();
+    ImVec2 body_pos{}, body_size{};
+    float scroll = 0.0f, scroll_max = 0.0f;
+    if (ImGui::BeginChild("##body", size, ImGuiChildFlags_None,
+                          ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar)) {
+        body_pos = ImGui::GetWindowPos();
+        body_size = ImGui::GetWindowSize();
+        // The scroll bar's mouse area first (ImGui gives the hover to the first item), from the last frame's
+        // scroll range: a click on the track jumps there, the thumb drags.
+        scrollbar_hovered = false;
+        if (const float range = ImGui::GetScrollMaxY(); range > 0.0f) {
+            const ImVec2 start = ImGui::GetCursorScreenPos();
+            const float view = body_size.y, bar = std::max(view * view / (view + range), Px(30.0f));
+            const float thumb = body_pos.y + (view - bar) * ImGui::GetScrollY() / range;
+            // Not part of the list's content: placed at the scrolled top, it stretched the scroll range past the
+            // last row a little every frame (T-SM4: blank space, the list creeping on open).
+            ImGuiWindow* body = ImGui::GetCurrentWindow();
+            const ImVec2 content_end = body->DC.CursorMaxPos;
+            ImGui::SetCursorScreenPos(ImVec2(body_pos.x + body_size.x - Px(16.0f), body_pos.y));
+            ImGui::InvisibleButton("##scrollbar", ImVec2(Px(16.0f), view));
+            body->DC.CursorMaxPos = content_end;
+            static float grab = 0.0f; // where the thumb was taken, from its top
+            const float mouse = ImGui::GetIO().MousePos.y;
+            if (ImGui::IsItemActivated()) {
+                grab = mouse >= thumb && mouse <= thumb + bar ? mouse - thumb : bar * 0.5f;
+            }
+            if (ImGui::IsItemActive() && view > bar) {
+                ImGui::SetScrollY(std::clamp((mouse - grab - body_pos.y) / (view - bar), 0.0f, 1.0f) * range);
+            }
+            scrollbar_hovered = ImGui::IsItemHovered() || ImGui::IsItemActive();
+            ImGui::SetCursorScreenPos(start);
+        }
+        body_items.clear();
+        in_styled_body = true;
+        NavStartTab(tab);
+        TabBody(tab);
+        in_styled_body = false;
+        scroll = ImGui::GetScrollY();
+        scroll_max = ImGui::GetScrollMaxY();
+        // Whole items only: the list's drawing is cut at the bottom of the last item that fits and at the top of
+        // the first one wholly in view (the last row was cut mid-text, T-SM1).
+        float cut_top = body_pos.y, cut_bottom = body_pos.y + body_size.y;
+        if (scroll_max > 0.0f && !body_items.empty()) {
+            float top = cut_bottom, bottom = cut_top;
+            for (const auto& [item_top, item_bottom] : body_items) {
+                if (item_top >= cut_top - CutSlack) top = std::min(top, item_top);
+                if (item_bottom <= cut_bottom + CutSlack) bottom = std::max(bottom, item_bottom);
+            }
+            if (bottom > top) {
+                cut_top = top;
+                cut_bottom = bottom;
+                for (ImDrawCmd& cmd : ImGui::GetWindowDrawList()->CmdBuffer) {
+                    cmd.ClipRect.y = std::max(cmd.ClipRect.y, cut_top);
+                    cmd.ClipRect.w = std::min(cmd.ClipRect.w, cut_bottom);
+                }
+            }
+        }
+        body_visible_top = cut_top;
+        body_visible_bottom = cut_bottom;
+    }
+    ImGui::EndChild();
+    PopMenuStyle();
+    if (scroll_max > 0.0f) { // the scroll bar (the frame's draw list: the list's own is cut to whole rows)
+        const float view = body_size.y, bar = std::max(view * view / (view + scroll_max), Px(30.0f));
+        const float top = body_pos.y + (view - bar) * scroll / scroll_max;
+        const float x = body_pos.x + body_size.x - Px(5.0f);
+        if (scrollbar_hovered) {
+            draw->AddRectFilled(ImVec2(x, body_pos.y), ImVec2(x + Px(5.0f), body_pos.y + view),
+                                IM_COL32(200, 196, 190, 40), Px(3.0f));
+        }
+        draw->AddRectFilled(ImVec2(x, top), ImVec2(x + Px(5.0f), top + bar),
+                            IM_COL32(200, 196, 190, scrollbar_hovered ? 200 : 120), Px(3.0f));
+    }
+
+}
+
 void StyledMenu() {
     auto& s = Gow3Settings::Get();
     if (requested_tab >= 0) {
@@ -1966,7 +2266,7 @@ void StyledMenu() {
 
     // The tabs between the L1 and R1 prompts (each clickable); the current one Gold and underlined.
     {
-        static const char* const tabs[TabCount] = {"CONTROLS", "DISPLAY", "GRAPHICS", "PERFORMANCE", "OVERLAY"};
+        static const char* const tabs[TabCount] = {"CONTROLS", "DISPLAY", "GRAPHICS", "COLOR", "PERFORMANCE", "OVERLAY"};
         float size = TextPx(TabPx), icon = Px(TabIcon), gap = Px(22.0f);
         float total = 2.0f * (icon + gap) - gap;
         for (const char* name : tabs) {
@@ -2097,81 +2397,7 @@ void StyledMenu() {
         }
     }
 
-    // The tab's rows, scrolled, whole rows only, with a thin scroll bar (wheel, click or drag) when they do not fit.
-    ImGui::SetCursorScreenPos(P(BodyX, BodyTop));
-    PushMenuStyle();
-    ImVec2 body_pos{}, body_size{};
-    float scroll = 0.0f, scroll_max = 0.0f;
-    if (ImGui::BeginChild("##body", ImVec2(Px(BodyW), Px(BodyBottom + stretch - BodyTop)), ImGuiChildFlags_None,
-                          ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar)) {
-        body_pos = ImGui::GetWindowPos();
-        body_size = ImGui::GetWindowSize();
-        // The scroll bar's mouse area first (ImGui gives the hover to the first item), from the last frame's
-        // scroll range: a click on the track jumps there, the thumb drags.
-        scrollbar_hovered = false;
-        if (const float range = ImGui::GetScrollMaxY(); range > 0.0f) {
-            const ImVec2 start = ImGui::GetCursorScreenPos();
-            const float view = body_size.y, bar = std::max(view * view / (view + range), Px(30.0f));
-            const float thumb = body_pos.y + (view - bar) * ImGui::GetScrollY() / range;
-            // Not part of the list's content: placed at the scrolled top, it stretched the scroll range past the
-            // last row a little every frame (T-SM4: blank space, the list creeping on open).
-            ImGuiWindow* body = ImGui::GetCurrentWindow();
-            const ImVec2 content_end = body->DC.CursorMaxPos;
-            ImGui::SetCursorScreenPos(ImVec2(body_pos.x + body_size.x - Px(16.0f), body_pos.y));
-            ImGui::InvisibleButton("##scrollbar", ImVec2(Px(16.0f), view));
-            body->DC.CursorMaxPos = content_end;
-            static float grab = 0.0f; // where the thumb was taken, from its top
-            const float mouse = ImGui::GetIO().MousePos.y;
-            if (ImGui::IsItemActivated()) {
-                grab = mouse >= thumb && mouse <= thumb + bar ? mouse - thumb : bar * 0.5f;
-            }
-            if (ImGui::IsItemActive() && view > bar) {
-                ImGui::SetScrollY(std::clamp((mouse - grab - body_pos.y) / (view - bar), 0.0f, 1.0f) * range);
-            }
-            scrollbar_hovered = ImGui::IsItemHovered() || ImGui::IsItemActive();
-            ImGui::SetCursorScreenPos(start);
-        }
-        body_items.clear();
-        in_styled_body = true;
-        NavStartTab(tab);
-        TabBody(tab);
-        in_styled_body = false;
-        scroll = ImGui::GetScrollY();
-        scroll_max = ImGui::GetScrollMaxY();
-        // Whole items only: the list's drawing is cut at the bottom of the last item that fits and at the top of
-        // the first one wholly in view (the last row was cut mid-text, T-SM1).
-        float cut_top = body_pos.y, cut_bottom = body_pos.y + body_size.y;
-        if (scroll_max > 0.0f && !body_items.empty()) {
-            float top = cut_bottom, bottom = cut_top;
-            for (const auto& [item_top, item_bottom] : body_items) {
-                if (item_top >= cut_top - CutSlack) top = std::min(top, item_top);
-                if (item_bottom <= cut_bottom + CutSlack) bottom = std::max(bottom, item_bottom);
-            }
-            if (bottom > top) {
-                cut_top = top;
-                cut_bottom = bottom;
-                for (ImDrawCmd& cmd : ImGui::GetWindowDrawList()->CmdBuffer) {
-                    cmd.ClipRect.y = std::max(cmd.ClipRect.y, cut_top);
-                    cmd.ClipRect.w = std::min(cmd.ClipRect.w, cut_bottom);
-                }
-            }
-        }
-        body_visible_top = cut_top;
-        body_visible_bottom = cut_bottom;
-    }
-    ImGui::EndChild();
-    PopMenuStyle();
-    if (scroll_max > 0.0f) { // the scroll bar (the frame's draw list: the list's own is cut to whole rows)
-        const float view = body_size.y, bar = std::max(view * view / (view + scroll_max), Px(30.0f));
-        const float top = body_pos.y + (view - bar) * scroll / scroll_max;
-        const float x = body_pos.x + body_size.x - Px(5.0f);
-        if (scrollbar_hovered) {
-            draw->AddRectFilled(ImVec2(x, body_pos.y), ImVec2(x + Px(5.0f), body_pos.y + view),
-                                IM_COL32(200, 196, 190, 40), Px(3.0f));
-        }
-        draw->AddRectFilled(ImVec2(x, top), ImVec2(x + Px(5.0f), top + bar),
-                            IM_COL32(200, 196, 190, scrollbar_hovered ? 200 : 120), Px(3.0f));
-    }
+    StyledBody(P(BodyX, BodyTop), ImVec2(Px(BodyW), Px(BodyBottom + stretch - BodyTop)), tab, draw);
 
     // Under the list: the focused row's help (up to three lines), else how to open and close the menu.
     {
@@ -2190,12 +2416,97 @@ void StyledMenu() {
     ImGui::End();
 }
 
+// The Color tab as a small panel in the bottom-right corner (color_panel): the game's Options frame scaled down, its
+// middle filled slightly see-through, no dimming of the game, the rows a little larger for the frame's size, the
+// SELECT and GO BACK prompts. The rows, scrolling and pad are the full menu's (StyledBody, tab 3).
+void ColorPanel() {
+    constexpr int ColorTabIndex = 3;
+    constexpr float PanelTextScale = 1.35f;                    // rows and text relative to the frame
+    constexpr float PanelRule = 196.0f, PanelBodyTop = 206.0f; // frame pixels: under the title
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    const float width =
+        std::floor(std::min(std::max(viewport->WorkSize.x * 0.30f, 520.0f), viewport->WorkSize.x * 0.95f));
+    const float frame_u = width / FrameW;
+    const float stretch = std::max(0.0f, viewport->WorkSize.y * 0.62f / frame_u - FrameH);
+    const float height = (FrameH + stretch) * frame_u;
+    const ImVec2 at(std::floor(viewport->WorkPos.x + viewport->WorkSize.x - width - viewport->WorkSize.x * 0.015f),
+                    std::floor(viewport->WorkPos.y +
+                               std::max(viewport->WorkSize.y - height - viewport->WorkSize.y * 0.03f, 0.0f)));
+    const auto P = [&](float x, float y) { return ImVec2(at.x + x * frame_u, at.y + y * frame_u); };
+    const auto B = [&](float x, float y) { return P(x, y + stretch); }; // under the stretched middle
+    ImGui::SetNextWindowPos(at, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(width, height), ImGuiCond_Always);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    const bool shown = ImGui::Begin("##color_panel", nullptr,
+                                    ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
+                                        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
+                                        ImGuiWindowFlags_NoScrollWithMouse);
+    ImGui::PopStyleVar(2);
+    if (!shown) {
+        ImGui::End();
+        return;
+    }
+    ImDrawList* draw = ImGui::GetWindowDrawList();
+    draw->AddRectFilled(P(20, 106), B(1161, 768), IM_COL32(28, 19, 13, 224), 34.0f * frame_u);
+    {
+        const ImTextureRef frame = choice_style.textures[StyleFrame]->GetTexRef();
+        const float top = 300.0f / FrameH, bottom = 600.0f / FrameH;
+        draw->AddImage(frame, P(0, 0), P(FrameW, 300), ImVec2(0.0f, 0.0f), ImVec2(1.0f, top));
+        draw->AddImage(frame, P(0, 300), B(FrameW, 600), ImVec2(0.0f, top), ImVec2(1.0f, bottom));
+        draw->AddImage(frame, B(0, 600), B(FrameW, FrameH), ImVec2(0.0f, bottom), ImVec2(1.0f, 1.0f));
+    }
+    {
+        const char* title = "-COLOR-";
+        const float size = std::max(std::round(TitlePx * frame_u * 1.15f), 10.0f);
+        const float w = choice_style.title->CalcTextSizeA(size, FLT_MAX, 0.0f, title).x;
+        draw->AddText(choice_style.title, size, ImVec2(at.x + (width - w) * 0.5f, P(0, TitleY - 4.0f).y), White, title);
+        draw->AddLine(P(64, PanelRule), P(1117, PanelRule), IM_COL32(245, 196, 30, 70), std::max(2.0f * frame_u, 1.0f));
+    }
+    // SELECT and GO BACK, centred in the frame's bottom (a click presses them).
+    {
+        const float icon = PromptIcon * frame_u * 1.2f;
+        const float label = std::max(std::round(PromptLabel * frame_u * 1.2f), 8.0f);
+        const float pair = 8.0f * frame_u, space = 40.0f * frame_u;
+        struct Prompt {
+            StyleImage icon;
+            const char* label;
+            uint32_t press;
+        };
+        const Prompt prompts[] = {{StyleCross, "SELECT", Ps4::Cross}, {StyleCircle, "GO BACK", Ps4::Circle}};
+        float total = -space;
+        for (const Prompt& prompt : prompts) {
+            total += icon + pair + choice_style.text->CalcTextSizeA(label, FLT_MAX, 0.0f, prompt.label).x + space;
+        }
+        float x = at.x + (width - total) * 0.5f;
+        const float y = B(0, PromptTop).y;
+        draw->AddLine(B(64, PromptRule), B(1117, PromptRule), IM_COL32(245, 196, 30, 70), std::max(2.0f * frame_u, 1.0f));
+        for (const Prompt& prompt : prompts) {
+            const float w = icon + pair + choice_style.text->CalcTextSizeA(label, FLT_MAX, 0.0f, prompt.label).x;
+            draw->AddImage(choice_style.textures[prompt.icon]->GetTexRef(), ImVec2(x, y), ImVec2(x + icon, y + icon));
+            draw->AddText(choice_style.text, label, ImVec2(x + icon + pair, y + (icon - label) * 0.5f - 1.0f), White,
+                          prompt.label);
+            ImGui::SetCursorScreenPos(ImVec2(x, y));
+            if (ImGui::InvisibleButton(prompt.label, ImVec2(w, icon))) {
+                MenuPress(prompt.press);
+            }
+            x += w + space;
+        }
+    }
+    menu_u = frame_u * PanelTextScale; // the rows' sizes (Px, TextPx)
+    const ImVec2 body = P(BodyX, PanelBodyTop);
+    StyledBody(body, ImVec2(BodyW * frame_u, B(0, PromptRule - 10.0f).y - body.y), ColorTabIndex, draw);
+    ImGui::End();
+}
+
 void Menu() {
     ApplyRenderScale(false);
     footer_help = nullptr;
     // The game's look needs its files, and room (a tiny window keeps the plain look).
     styled = choice_style.Ready() && ImGui::GetMainViewport()->WorkSize.y >= 360.0f;
-    if (styled) {
+    if (styled && color_panel) {
+        ColorPanel();
+    } else if (styled) {
         StyledMenu();
     } else {
         PlainMenu();
@@ -3335,7 +3646,43 @@ void LogPresent() {
     }
 }
 
-void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent) {
+/// The overlay's pipeline for an HDR10 swapchain with white at `nits` (the menu's UI brightness; study-hdr.md):
+/// made on its first use for each value and kept (a value's pipeline may still be in a frame in flight, and the
+/// menu's steps give a few dozen at most).
+static VkPipeline HdrPipeline(int nits) {
+    static std::map<int, VkPipeline> pipelines;
+    if (const auto it = pipelines.find(nits); it != pipelines.end()) {
+        return it->second;
+    }
+    // imgui_hdr.frag's one OpSpecConstant (opcode 50, 4 words: type, id, value) gets the value.
+    std::vector<u32> code(std::begin(IMGUI_HDR_FRAG), std::end(IMGUI_HDR_FRAG));
+    bool patched = false;
+    for (std::size_t at = 5; at < code.size();) {
+        const u32 words = code[at] >> 16, opcode = code[at] & 0xffff;
+        if (words == 0) {
+            break;
+        }
+        if (opcode == 50 && words == 4 && at + 3 < code.size()) {
+            const float value = float(nits);
+            std::memcpy(&code[at + 3], &value, sizeof(value));
+            patched = true;
+        }
+        at += words;
+    }
+    VkShaderModuleCreateInfo frag{};
+    frag.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    frag.codeSize = code.size() * sizeof(u32);
+    frag.pCode = code.data();
+    const VkPipeline pipeline = ImGui_ImplVulkan_CreatePipelineForFormat(
+        static_cast<VkFormat>(Vulkan::HostPasses::PostProcessingPass::HDR_FRAME_FORMAT), &frag);
+    std::printf("Overlay: HDR10 pipeline %s (PQ, white %d nits%s)\n",
+                pipeline ? "ready" : "failed; the menu draws in the SDR pipeline", patched ? nits : 100,
+                patched ? "" : ", the shader's default: no specialization constant found");
+    pipelines.emplace(nits, pipeline);
+    return pipeline;
+}
+
+void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent, bool hdr) {
     // Present interval for the FPS readout (measured also while nothing is drawn).
     const auto now = std::chrono::steady_clock::now();
     const float ms = std::chrono::duration<float, std::milli>(now - last_present).count();
@@ -3409,10 +3756,13 @@ void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent) {
         .colorAttachmentCount = 1,
         .pColorAttachments = &attachment,
     });
-    {
+    // HDR: the pipeline for this UI brightness, made outside the submit lock (a new value compiles one). If it could
+    // not be made, the menu is not drawn: the SDR pipeline does not match the 10-bit attachment.
+    const VkPipeline hdr_pipeline = hdr ? HdrPipeline(Gow3Settings::Get().hdr_ui_nits.load()) : VK_NULL_HANDLE;
+    if (!hdr || hdr_pipeline) {
         // Font atlas uploads submit to the graphics queue themselves.
         std::scoped_lock submit_lock{Vulkan::Scheduler::submit_mutex};
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdbuf);
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdbuf, hdr_pipeline);
     }
     cmdbuf.endRendering();
 }

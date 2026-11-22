@@ -19,6 +19,7 @@
 #include "video_core/renderer_vulkan/vk_draw_prep.h"
 #include "video_core/renderer_vulkan/vk_temporal_upscaler.h"
 #include "video_core/renderer_vulkan/vk_ue4_frame_map.h"
+#include "video_core/renderer_vulkan/vk_ue4_hdr.h"
 #include "video_core/renderer_vulkan/vk_ue4_motion.h"
 #include "video_core/renderer_vulkan/vk_ue4_upscaler.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
@@ -476,6 +477,11 @@ private:
     /// or dispatch, for the UE4 frame map's log, and (U2) the UE4 motion vector pass at TAA.
     /// Before BindResources. True: U3's DLSS replaced this TAA draw (skip it).
     bool ObserveFrameMap(const Pipeline* pipeline);
+    /// gow3 HDR (plan-hdr-sdr-match.md): the game's grading LUT draw replaced by Ue4HdrGrading while the game
+    /// outputs HDR10 and the HDR look is the SDR one. Before BindResources. True: written, skip the draw.
+    bool ReplaceHdrGrading(const Pipeline* pipeline);
+    bool ReplaceHdrComposite(const Pipeline* pipeline);
+    void PrepareHdrBlur(const Pipeline* pipeline);
     /// GOW3_GPU_PROFILE: a timestamp where a render pass starts (vk_gpu_profiler.h).
     void MarkPass(const GraphicsPipeline* pipeline, const RenderState& state);
     void BindVertexBuffers(const GraphicsPipeline* pipeline,
@@ -749,6 +755,14 @@ private:
     std::deque<GpuSignal> gpu_signals;
     std::atomic<u64> newest_urgent_tick{0};
     std::atomic<u64> pending_signals{0};
+    // gow3 HDR (kept after the per-draw members, which keep their places): the grading pass, composite and blur
+    // backdrop (null unless the launcher allows HDR); the last UI composite's scene view and UI image address (the
+    // blur's backdrop needs them); the backdrop the current draw's blur pass samples instead of the UI image (null
+    // otherwise).
+    std::unique_ptr<Ue4HdrGrading> ue4_hdr;
+    vk::ImageView hdr_blur_view{};
+    std::optional<VideoCore::TextureCache::ImageDesc> hdr_scene_desc;
+    VAddr hdr_ui_address = 0;
     std::jthread gpu_signal_thread; ///< last: stopped first
 };
 
