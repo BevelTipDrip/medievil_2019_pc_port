@@ -5077,7 +5077,22 @@ bool Rasterizer::ReplaceHdrTonemap(const Pipeline* pipeline) {
         return decline(8, "an empty rectangle");
     }
     const vk::Rect2D rect{{s32(x0), s32(y0)}, {u32(x1) - u32(x0), u32(y1) - u32(y0)}};
-    return ue4_hdr->RunTonemap(cb_descs[0].first, cb_descs[0].second, inputs, constants, rect);
+    // The target's pending fast clear (CMASK): the game's render pass would start with it (RenderState's is_clear);
+    // left pending, EliminateFastClear clears the image later, over our output (H44: the scene black under the UI).
+    const auto& col_buf = Regs().color_buffers[0];
+    const u32 slice = cb_descs[0].second.view_info.range.base.layer;
+    std::optional<vk::ClearColorValue> clear;
+    if (col_buf && texture_cache.IsMetaCleared(col_buf.CmaskAddress(), slice)) {
+        clear = LiverpoolToVK::ColorBufferClearValue(col_buf).color;
+    }
+    if (!ue4_hdr->RunTonemap(cb_descs[0].first, cb_descs[0].second, inputs, constants, rect,
+                             clear ? &*clear : nullptr)) {
+        return false;
+    }
+    if (col_buf) {
+        texture_cache.TouchMeta(col_buf.CmaskAddress(), slice, false);
+    }
+    return true;
 }
 
 void Rasterizer::PrepareHdrBlur(const Pipeline* pipeline) {

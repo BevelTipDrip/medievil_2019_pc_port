@@ -97,10 +97,12 @@ public:
         CompositeInput dirt_mask, scene, bloom, eye;
     };
     /// Records our tonemapper into the game's tonemapper target (`target`, `desc`) from its inputs and constants (the
-    /// game's buffers as its draw binds them, TonemapDwords), within `rect` (the rectangle its draw covers). True:
-    /// written, the game's draw is skipped.
+    /// game's buffers as its draw binds them, TonemapDwords), within `rect` (the rectangle its draw covers). `clear`:
+    /// the target's pending fast clear (its render pass starts with it, as the game's would), or null. True: written,
+    /// the game's draw is skipped.
     bool RunTonemap(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc, const TonemapInputs& in,
-                    const std::array<u32, TonemapDwords>& constants, const vk::Rect2D& rect);
+                    const std::array<u32, TonemapDwords>& constants, const vk::Rect2D& rect,
+                    const vk::ClearColorValue* clear);
 
     /// Records our UI composite into the game's composite target (`target`, `desc`) from the scene (the tonemapper's
     /// PQ output) and Slate's UI image (`ui_srgb`: its view decodes sRGB). True: written, the game's draw is skipped.

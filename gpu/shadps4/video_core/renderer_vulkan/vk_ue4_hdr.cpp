@@ -455,7 +455,7 @@ bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache
 
 bool Ue4HdrGrading::RunTonemap(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc,
                                const TonemapInputs& in, const std::array<u32, TonemapDwords>& constants,
-                               const vk::Rect2D& rect) {
+                               const vk::Rect2D& rect, const vk::ClearColorValue* clear) {
     if (tonemap_failed || !target || !own_lut_built || !in.scene.view || !in.bloom.view || !in.dirt_mask.view ||
         !in.eye.view) {
         return false;
@@ -482,12 +482,15 @@ bool Ue4HdrGrading::RunTonemap(VideoCore::ImageId target, const VideoCore::Textu
     const vk::ImageView lut_view = *own_lut_volume;
     const vk::PipelineLayout pipeline_layout = *tonemap_layout;
     const vk::Rect2D scissor = rect;
+    const bool clear_first = clear != nullptr;
+    const vk::ClearColorValue clear_value = clear ? *clear : vk::ClearColorValue{};
     scheduler.Record([=](vk::CommandBuffer cmdbuf) {
         const vk::RenderingAttachmentInfo attachment{
             .imageView = view,
             .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
-            .loadOp = vk::AttachmentLoadOp::eLoad,
+            .loadOp = clear_first ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
             .storeOp = vk::AttachmentStoreOp::eStore,
+            .clearValue = vk::ClearValue{.color = clear_value},
         };
         cmdbuf.beginRendering({
             .renderArea = {{0, 0}, {width, height}},
