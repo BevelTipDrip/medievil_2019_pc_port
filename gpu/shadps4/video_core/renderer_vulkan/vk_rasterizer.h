@@ -481,6 +481,9 @@ private:
     /// outputs HDR10 and the HDR look is the SDR one. Before BindResources. True: written, skip the draw.
     bool ReplaceHdrGrading(const Pipeline* pipeline);
     bool ReplaceHdrComposite(const Pipeline* pipeline);
+    /// gow3 HDR (plan-hdr-final.md step 2): the game's HDR tonemapper draw replaced by ours (Ue4HdrGrading::RunTonemap)
+    /// while the HDR look is ours and our LUT is built. True: written, skip the draw.
+    bool ReplaceHdrTonemap(const Pipeline* pipeline);
     void PrepareHdrBlur(const Pipeline* pipeline);
     /// GOW3_GPU_PROFILE: a timestamp where a render pass starts (vk_gpu_profiler.h).
     void MarkPass(const GraphicsPipeline* pipeline, const RenderState& state);

@@ -13,6 +13,7 @@
 #include "video_core/host_shaders/ue4_hdr_lut_blend_frag.h"
 #include "video_core/host_shaders/ue4_hdr_lut_frag.h"
 #include "video_core/host_shaders/ue4_hdr_lut_vert.h"
+#include "video_core/host_shaders/ue4_tonemap_frag.h"
 #include "video_core/host_shaders/ue4_ui_composite_frag.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_runtime.h"
@@ -73,6 +74,7 @@ static_assert(sizeof(CompositePush) == 20);
 constexpr float UiGamma = 2.2f;
 constexpr u32 OutputDeviceDword = 138; ///< study-hdr.md "LUT parameters"
 constexpr u32 InverseGammaDword = 5;   ///< the game's Brightness (2.2 / UE display gamma)
+constexpr vk::Format OwnLutFormat = vk::Format::eR16G16B16A16Sfloat;
 } // namespace
 
 Ue4HdrGrading::Ue4HdrGrading(const Instance& instance_, Scheduler& scheduler_,
@@ -145,6 +147,24 @@ Ue4HdrGrading::Ue4HdrGrading(const Instance& instance_, Scheduler& scheduler_,
         .pushConstantRangeCount = 1,
         .pPushConstantRanges = &composite_push,
     }));
+    // Our tonemapper: the game's constants (storage buffer), the dirt mask, scene, bloom, eye adaptation (combined
+    // image samplers: linear, clamp to edge) and our LUT (3D).
+    tonemap_frag = vk::UniqueShaderModule(CompileSPV(UE4_TONEMAP_FRAG, device), device);
+    std::array<vk::DescriptorSetLayoutBinding, 6> tonemap_bindings{};
+    for (u32 i = 0; i < tonemap_bindings.size(); ++i) {
+        tonemap_bindings[i] = {i, i == 0 ? vk::DescriptorType::eStorageBuffer : vk::DescriptorType::eCombinedImageSampler,
+                               1, vk::ShaderStageFlagBits::eFragment};
+    }
+    tonemap_set_layout = Check(device.createDescriptorSetLayoutUnique({
+        .flags = vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR,
+        .bindingCount = u32(tonemap_bindings.size()),
+        .pBindings = tonemap_bindings.data(),
+    }));
+    const auto tonemap_set = *tonemap_set_layout;
+    tonemap_layout = Check(device.createPipelineLayoutUnique({
+        .setLayoutCount = 1,
+        .pSetLayouts = &tonemap_set,
+    }));
 }
 
 Ue4HdrGrading::~Ue4HdrGrading() = default;
@@ -185,6 +205,7 @@ vk::Pipeline Ue4HdrGrading::Pipeline(vk::Format format, Kind kind) {
         vk::PipelineShaderStageCreateInfo{.stage = vk::ShaderStageFlagBits::eFragment,
                                           .module = kind == Kind::Composite ? *composite_frag
                                                     : kind == Kind::LutBlend  ? *blend_frag
+                                                    : kind == Kind::Tonemap   ? *tonemap_frag
                                                                               : *frag,
                                           .pName = "main"},
     };
@@ -212,6 +233,7 @@ vk::Pipeline Ue4HdrGrading::Pipeline(vk::Format format, Kind kind) {
                             .pDynamicState = &dynamic_info,
                             .layout = kind == Kind::Composite ? *composite_layout
                                       : kind == Kind::LutBlend  ? *blend_layout
+                                      : kind == Kind::Tonemap   ? *tonemap_layout
                                                                 : *layout,
                         });
     if (pipeline.result != vk::Result::eSuccess) {
@@ -225,6 +247,49 @@ vk::Pipeline Ue4HdrGrading::Pipeline(vk::Format format, Kind kind) {
         std::printf("UE4 HDR grading: pipeline ready (%s)\n", vk::to_string(format).c_str());
     }
     return result;
+}
+
+bool Ue4HdrGrading::EnsureOwnLut(u32 size) {
+    if (own_lut_failed) {
+        return false;
+    }
+    if (own_lut_layers && own_lut_size == size) {
+        return true;
+    }
+    const auto device = instance.GetDevice();
+    own_lut = VideoCore::UniqueImage(device, instance.GetAllocator());
+    own_lut.Create({
+        .flags = vk::ImageCreateFlagBits::e2DArrayCompatible,
+        .imageType = vk::ImageType::e3D,
+        .format = OwnLutFormat,
+        .extent = {size, size, size},
+        .mipLevels = 1,
+        .arrayLayers = 1,
+        .samples = vk::SampleCountFlagBits::e1,
+        .tiling = vk::ImageTiling::eOptimal,
+        .usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
+    });
+    const vk::Image image = vk::Image(own_lut);
+    if (!image) {
+        std::printf("UE4 HDR grading: our LUT image could not be made; the game's tonemapper is kept\n");
+        own_lut_failed = true;
+        return false;
+    }
+    own_lut_layers = Check(device.createImageViewUnique({
+        .image = image,
+        .viewType = vk::ImageViewType::e2DArray,
+        .format = OwnLutFormat,
+        .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, size},
+    }));
+    own_lut_volume = Check(device.createImageViewUnique({
+        .image = image,
+        .viewType = vk::ImageViewType::e3D,
+        .format = OwnLutFormat,
+        .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1},
+    }));
+    own_lut_size = size;
+    own_lut_built = false;
+    return true;
 }
 
 bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc,
@@ -290,6 +355,13 @@ bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache
     const vk::PipelineLayout pipeline_layout = level_lut ? *blend_layout : *layout;
     const CompositeInput lut = level_lut ? *level_lut : CompositeInput{};
     const vk::Sampler sampler = *lut_sampler;
+    // Our LUT (our tonemapper's, PQ(scene x 0.01)), in the same recording. Without it the game's tonemapper stays.
+    const bool own = EnsureOwnLut(width);
+    const vk::Pipeline own_pipeline = own ? Pipeline(OwnLutFormat, kind) : vk::Pipeline{};
+    const vk::ImageView own_view = own_pipeline ? *own_lut_layers : vk::ImageView{};
+    const vk::Image own_image = own_pipeline ? vk::Image(own_lut) : vk::Image{};
+    LutPush own_push = push;
+    own_push.flags |= 4u;
     scheduler.Record([=](vk::CommandBuffer cmdbuf) {
         const vk::RenderingAttachmentInfo attachment{
             .imageView = view,
@@ -323,7 +395,54 @@ bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache
         cmdbuf.setScissorWithCount(vk::Rect2D{{0, 0}, {width, height}});
         cmdbuf.draw(3, layers, 0, 0);
         cmdbuf.endRendering();
+        if (!own_view) {
+            return;
+        }
+        const vk::ImageSubresourceRange whole{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+        const vk::ImageMemoryBarrier2 to_write{
+            .srcStageMask = vk::PipelineStageFlagBits2::eFragmentShader,
+            .srcAccessMask = vk::AccessFlagBits2::eShaderRead,
+            .dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+            .dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
+            .oldLayout = vk::ImageLayout::eUndefined, // every texel rewritten
+            .newLayout = vk::ImageLayout::eColorAttachmentOptimal,
+            .image = own_image,
+            .subresourceRange = whole,
+        };
+        cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &to_write});
+        const vk::RenderingAttachmentInfo own_attachment{
+            .imageView = own_view,
+            .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
+            .loadOp = vk::AttachmentLoadOp::eDontCare,
+            .storeOp = vk::AttachmentStoreOp::eStore,
+        };
+        cmdbuf.beginRendering({
+            .renderArea = {{0, 0}, {width, height}},
+            .layerCount = layers,
+            .colorAttachmentCount = 1,
+            .pColorAttachments = &own_attachment,
+        });
+        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, own_pipeline);
+        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0,
+                                    vk::ArrayProxy<const vk::WriteDescriptorSet>(lut.view ? 2u : 1u, writes.data()));
+        cmdbuf.pushConstants(pipeline_layout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(own_push), &own_push);
+        cmdbuf.setViewportWithCount(vk::Viewport{0.f, 0.f, float(width), float(height), 0.f, 1.f});
+        cmdbuf.setScissorWithCount(vk::Rect2D{{0, 0}, {width, height}});
+        cmdbuf.draw(3, layers, 0, 0);
+        cmdbuf.endRendering();
+        const vk::ImageMemoryBarrier2 to_read{
+            .srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+            .srcAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
+            .dstStageMask = vk::PipelineStageFlagBits2::eFragmentShader,
+            .dstAccessMask = vk::AccessFlagBits2::eShaderRead,
+            .oldLayout = vk::ImageLayout::eColorAttachmentOptimal,
+            .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+            .image = own_image,
+            .subresourceRange = whole,
+        };
+        cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &to_read});
     });
+    own_lut_built = own_view != vk::ImageView{};
     // The guest pipelines' dynamic state must be emitted again after this pipeline.
     scheduler.GetDynamicState().Invalidate();
     if (GOW3_DEV_TOOLS && ++runs == 1) {
@@ -333,6 +452,83 @@ bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache
     return true;
 }
 
+
+bool Ue4HdrGrading::RunTonemap(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc,
+                               const TonemapInputs& in, const std::array<u32, TonemapDwords>& constants,
+                               const vk::Rect2D& rect) {
+    if (tonemap_failed || !target || !own_lut_built || !in.scene.view || !in.bloom.view || !in.dirt_mask.view ||
+        !in.eye.view) {
+        return false;
+    }
+    const vk::Pipeline pipeline = Pipeline(desc.view_info.format, Kind::Tonemap);
+    if (!pipeline) {
+        tonemap_failed = true;
+        return false;
+    }
+    const auto& range = desc.view_info.range;
+    const u32 width = std::max(desc.info.size.width >> range.base.level, 1u);
+    const u32 height = std::max(desc.info.size.height >> range.base.level, 1u);
+    scheduler.EndRendering();
+    // As the skipped draw's colour target (the inputs were made shader-readable by the caller).
+    const vk::ImageView view = *texture_cache.FindRenderTarget(target, desc).image_view;
+    runtime.Transit(&texture_cache.GetImage(target), vk::ImageLayout::eColorAttachmentOptimal,
+                    vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                    vk::AccessFlagBits2::eColorAttachmentWrite | vk::AccessFlagBits2::eColorAttachmentRead, range);
+    runtime.FlushBarriers();
+    auto& stream = buffer_cache.GetStreamBuffer();
+    const u64 offset = stream.Copy(constants.data(), sizeof(constants), instance.StorageMinAlignment());
+    const vk::Buffer buffer = stream.Handle();
+    const vk::Sampler sampler = *lut_sampler;
+    const vk::ImageView lut_view = *own_lut_volume;
+    const vk::PipelineLayout pipeline_layout = *tonemap_layout;
+    const vk::Rect2D scissor = rect;
+    scheduler.Record([=](vk::CommandBuffer cmdbuf) {
+        const vk::RenderingAttachmentInfo attachment{
+            .imageView = view,
+            .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
+            .loadOp = vk::AttachmentLoadOp::eLoad,
+            .storeOp = vk::AttachmentStoreOp::eStore,
+        };
+        cmdbuf.beginRendering({
+            .renderArea = {{0, 0}, {width, height}},
+            .layerCount = 1,
+            .colorAttachmentCount = 1,
+            .pColorAttachments = &attachment,
+        });
+        const vk::DescriptorBufferInfo info{.buffer = buffer, .offset = offset, .range = sizeof(constants)};
+        const std::array images{
+            vk::DescriptorImageInfo{sampler, in.dirt_mask.view, in.dirt_mask.layout},
+            vk::DescriptorImageInfo{sampler, in.scene.view, in.scene.layout},
+            vk::DescriptorImageInfo{sampler, in.bloom.view, in.bloom.layout},
+            vk::DescriptorImageInfo{sampler, in.eye.view, in.eye.layout},
+            vk::DescriptorImageInfo{sampler, lut_view, vk::ImageLayout::eShaderReadOnlyOptimal},
+        };
+        std::array<vk::WriteDescriptorSet, 6> writes{};
+        writes[0] = {.dstBinding = 0,
+                     .descriptorCount = 1,
+                     .descriptorType = vk::DescriptorType::eStorageBuffer,
+                     .pBufferInfo = &info};
+        for (u32 i = 0; i < images.size(); ++i) {
+            writes[i + 1] = {.dstBinding = i + 1,
+                             .descriptorCount = 1,
+                             .descriptorType = vk::DescriptorType::eCombinedImageSampler,
+                             .pImageInfo = &images[i]};
+        }
+        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, writes);
+        cmdbuf.setViewportWithCount(vk::Viewport{0.f, 0.f, float(width), float(height), 0.f, 1.f});
+        cmdbuf.setScissorWithCount(scissor);
+        cmdbuf.draw(3, 1, 0, 0);
+        cmdbuf.endRendering();
+    });
+    scheduler.GetDynamicState().Invalidate();
+    if (GOW3_DEV_TOOLS && ++tonemap_runs == 1) {
+        std::printf("UE4 HDR tonemapper: ours (%ux%u %s, rect %d,%d %ux%u)\n", width, height,
+                    vk::to_string(desc.view_info.format).c_str(), rect.offset.x, rect.offset.y, rect.extent.width,
+                    rect.extent.height);
+    }
+    return true;
+}
 
 bool Ue4HdrGrading::RunComposite(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc,
                                  const CompositeInput& scene, const CompositeInput& ui, bool ui_srgb) {

@@ -1414,7 +1414,7 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
     }
     // gow3 HDR: without "Allow HDR output" a null check; with it one relaxed load while the swapchain is SDR.
     if (ue4_hdr && Gow3Settings::Get().hdr_active.load(std::memory_order_relaxed)) [[unlikely]] {
-        if (ReplaceHdrGrading(pipeline) || ReplaceHdrComposite(pipeline)) {
+        if (ReplaceHdrGrading(pipeline) || ReplaceHdrTonemap(pipeline) || ReplaceHdrComposite(pipeline)) {
             bind_prepared = nullptr;
             ResetBindings(false);
             return;
@@ -4972,6 +4972,112 @@ bool Rasterizer::ReplaceHdrComposite(const Pipeline* pipeline) {
     hdr_scene_desc = descs[0];
     hdr_ui_address = addresses[1];
     return ue4_hdr->RunComposite(cb_descs[0].first, cb_descs[0].second, inputs[0], inputs[1], ui_srgb);
+}
+
+bool Rasterizer::ReplaceHdrTonemap(const Pipeline* pipeline) {
+    const auto stages = pipeline->GetStages();
+    const u32 fragment = static_cast<u32>(Shader::SwStage::Fragment);
+    const u32 vertex = static_cast<u32>(Shader::SwStage::Vertex);
+    const Shader::Info* fs = fragment < stages.size() ? stages[fragment] : nullptr;
+    if (!fs || fs->pgm_hash != Ue4HdrGrading::TonemapPs) {
+        return false;
+    }
+    const auto& settings = Gow3Settings::Get();
+    if (settings.hdr_look.load(std::memory_order_relaxed) != Gow3Settings::HdrLookSdr || !ue4_hdr->OwnLutReady()) {
+        return false; // the game's look, or our LUT not built yet: the game's draw
+    }
+    static u32 declined = 0;
+    const auto decline = [](u32 bit, const char* why) {
+        if (GOW3_DEV_TOOLS && !(declined & bit)) {
+            declined |= bit;
+            std::printf("UE4 HDR tonemapper: the game's kept: %s\n", why);
+        }
+        return false;
+    };
+    const Shader::Info* vs = vertex < stages.size() ? stages[vertex] : nullptr;
+    if (!vs || !cb_descs[0].first || fs->images.size() < 4 || vs->images.empty()) {
+        return decline(1, "no vertex stage, colour target or the expected images");
+    }
+    // The constants as the draw binds them: each stage's first two guest buffers (study-hdr.md H44).
+    std::array<u32, Ue4HdrGrading::TonemapDwords> constants{};
+    const auto read_buffers = [&](const Shader::Info& stage, u32 at, u32 dwords0, u32 dwords1) {
+        const PreparedStage* prepared = FindPreparedStage(stage);
+        u32 found = 0;
+        for (u32 i = 0; i < stage.buffers.size() && found < 2; ++i) {
+            if (stage.buffers[i].IsSpecial()) {
+                continue;
+            }
+            const auto sharp = prepared ? prepared->buffer_sharps[i] : stage.buffers[i].GetSharp(stage);
+            const u32 bytes = (found == 0 ? dwords0 : dwords1) * sizeof(u32);
+            if (sharp.GetSize() < bytes || !memory->IsValidGpuMapping(sharp.base_address, bytes)) {
+                return false;
+            }
+            memory->CopySparseMemory(sharp.base_address, reinterpret_cast<u8*>(constants.data() + at), bytes);
+            at += found == 0 ? dwords0 : dwords1;
+            ++found;
+        }
+        return found == 2;
+    };
+    if (!read_buffers(*fs, 0, Ue4HdrGrading::TonemapPs0, Ue4HdrGrading::TonemapPs1) ||
+        !read_buffers(*vs, Ue4HdrGrading::TonemapPs0 + Ue4HdrGrading::TonemapPs1, Ue4HdrGrading::TonemapVs0,
+                      Ue4HdrGrading::TonemapVs1)) {
+        return decline(2, "a constant buffer smaller than expected or not mapped");
+    }
+    // The inputs through the game's views, made shader-readable, the upscaler's redirect applied (as BindTextures).
+    bool rendering_ended = false;
+    const auto resolve = [&](const Shader::Info& stage, u32 index) -> Ue4HdrGrading::CompositeInput {
+        const auto& image_desc = stage.images[index];
+        const PreparedStage* prepared = FindPreparedStage(stage);
+        const auto tsharp = prepared ? prepared->image_sharps[index] : image_desc.GetSharp(stage);
+        if (image_desc.is_written || tsharp.Address() == 0) {
+            return {};
+        }
+        VideoCore::TextureCache::ImageDesc desc(tsharp, image_desc);
+        const VideoCore::ImageId id = texture_cache.FindImage(desc);
+        if (!id) {
+            return {};
+        }
+        if (!rendering_ended) {
+            scheduler.EndRendering(); // before the first transition
+            rendering_ended = true;
+        }
+        auto& image_view = texture_cache.FindTexture(id, desc);
+        auto& image = texture_cache.GetImage(id);
+        runtime.Transit(&image, vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader,
+                        vk::AccessFlagBits2::eShaderRead, desc.view_info.range);
+        image.usage.texture = 1u;
+        vk::ImageView view = *image_view.image_view;
+        vk::ImageLayout layout = image.backing->state.layout;
+        if (upscaler->Enabled()) {
+            upscaler->RedirectSampled(id, image_view.info, view, layout);
+        }
+        return {view, layout};
+    };
+    Ue4HdrGrading::TonemapInputs inputs;
+    inputs.dirt_mask = resolve(*fs, 0);
+    inputs.scene = resolve(*fs, 1);
+    inputs.bloom = resolve(*fs, 2);
+    inputs.eye = resolve(*vs, 0);
+    if (!inputs.dirt_mask.view || !inputs.scene.view || !inputs.bloom.view || !inputs.eye.view) {
+        return decline(4, "an input image not found");
+    }
+    // The rectangle the game's draw covers: its vertex shader places the unit rectangle at buffer 0's dwords 0-3
+    // (size, offset in pixels).
+    const auto vs0 = [&](u32 i) {
+        float v;
+        std::memcpy(&v, &constants[Ue4HdrGrading::TonemapPs0 + Ue4HdrGrading::TonemapPs1 + i], sizeof(v));
+        return v;
+    };
+    const auto& target_info = cb_descs[0].second.info;
+    const float x0 = std::clamp(vs0(2), 0.0f, float(target_info.size.width));
+    const float y0 = std::clamp(vs0(3), 0.0f, float(target_info.size.height));
+    const float x1 = std::clamp(vs0(2) + vs0(0), 0.0f, float(target_info.size.width));
+    const float y1 = std::clamp(vs0(3) + vs0(1), 0.0f, float(target_info.size.height));
+    if (!(x1 > x0 && y1 > y0)) {
+        return decline(8, "an empty rectangle");
+    }
+    const vk::Rect2D rect{{s32(x0), s32(y0)}, {u32(x1) - u32(x0), u32(y1) - u32(y0)}};
+    return ue4_hdr->RunTonemap(cb_descs[0].first, cb_descs[0].second, inputs, constants, rect);
 }
 
 void Rasterizer::PrepareHdrBlur(const Pipeline* pipeline) {

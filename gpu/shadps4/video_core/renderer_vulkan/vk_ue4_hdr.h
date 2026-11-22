@@ -4,7 +4,9 @@
 // gow3: our HDR look (research/docs/plan-hdr-final.md). While the game outputs HDR10, its scene grading LUT draw
 // (UE 4.21's combine LUT builder, fs a4152b3be93c832a / 9f6bac6cba984956) is replaced by our own pass
 // (ue4_hdr_lut.vert / .frag): the same 32-slice LUT target, written from the game's parameter block (with the Color
-// tab's changes) through our tone curve (ue4_hdr_map.glsl) in BT.2020 PQ. Its UI composite (fs c401ca35f9bceb8e)
+// tab's changes) through our tone curve (ue4_hdr_map.glsl) in BT.2020 PQ, and our own LUT (32^3 RGBA16F, indexed at
+// PQ(scene x 0.01)) that our tonemapper pass (ue4_tonemap.frag) reads in place of the game's HDR tonemapper draw
+// (fs 12178a9314cb761e; the map screen's variant keeps the game's draw and LUT). Its UI composite (fs c401ca35f9bceb8e)
 // is replaced by ue4_ui_composite.frag: the UI as an SDR screen shows it at the UI brightness, blended as SDR blends.
 // Menu: Color > HDR > HDR look.
 
@@ -50,6 +52,12 @@ public:
     }
     /// The blend builder's block in our layout: 0-44 as they are, 65-161 to 45-141, the weights 48 / 52 to 142 / 143.
     static void RemapBlendBlock(const u32* src, std::array<u32, ParamDwords>& dst);
+    /// UE 4.21's HDR tonemapper (the levels'; study-hdr.md H38, H44): replaced by RunTonemap. The map screen's
+    /// (52770387e0d6363a, with sharpening and grain) keeps the game's draw.
+    static constexpr u64 TonemapPs = 0x12178a9314cb761eull;
+    /// The constants RunTonemap takes, in dwords: the pixel shader's buffers 0 / 1, the vertex shader's 0 / 1.
+    static constexpr u32 TonemapPs0 = 24, TonemapPs1 = 8, TonemapVs0 = 12, TonemapVs1 = 16;
+    static constexpr u32 TonemapDwords = TonemapPs0 + TonemapPs1 + TonemapVs0 + TonemapVs1;
     /// UE 4.21's HDR UI composite (scene PQ + Slate's UI image -> the display buffer).
     static constexpr u64 UiCompositePs = 0xc401ca35f9bceb8eull;
     /// UE's background blur (Slate): its first pass samples what is drawn so far, in HDR the empty UI image. Two
@@ -80,6 +88,20 @@ public:
     bool Run(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc,
              const std::array<u32, ParamDwords>& block, const CompositeInput* level_lut = nullptr);
 
+    /// Our LUT has been built (this session): RunTonemap can replace the game's tonemapper.
+    bool OwnLutReady() const {
+        return own_lut_built;
+    }
+    /// The tonemapper's sampled inputs (the game's views; the eye-adaptation texel is the vertex shader's image).
+    struct TonemapInputs {
+        CompositeInput dirt_mask, scene, bloom, eye;
+    };
+    /// Records our tonemapper into the game's tonemapper target (`target`, `desc`) from its inputs and constants (the
+    /// game's buffers as its draw binds them, TonemapDwords), within `rect` (the rectangle its draw covers). True:
+    /// written, the game's draw is skipped.
+    bool RunTonemap(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc, const TonemapInputs& in,
+                    const std::array<u32, TonemapDwords>& constants, const vk::Rect2D& rect);
+
     /// Records our UI composite into the game's composite target (`target`, `desc`) from the scene (the tonemapper's
     /// PQ output) and Slate's UI image (`ui_srgb`: its view decodes sRGB). True: written, the game's draw is skipped.
     bool RunComposite(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc,
@@ -90,17 +112,19 @@ public:
     vk::ImageView RunBackdrop(const CompositeInput& scene, const CompositeInput& ui, u32 width, u32 height);
 
 private:
-    enum class Kind : u8 { Lut, Composite, LutBlend };
+    enum class Kind : u8 { Lut, Composite, LutBlend, Tonemap };
     vk::Pipeline Pipeline(vk::Format format, Kind kind = Kind::Lut);
+    /// Our LUT image (32^3 RGBA16F, 3D, its slices renderable as a 2D array), made at the first build.
+    bool EnsureOwnLut(u32 size);
 
     const Instance& instance;
     Scheduler& scheduler;
     VideoCore::TextureCache& texture_cache;
     VideoCore::BufferCache& buffer_cache;
     Runtime& runtime;
-    vk::UniqueShaderModule vert, frag, composite_frag, blend_frag;
-    vk::UniqueDescriptorSetLayout set_layout, composite_set_layout, blend_set_layout;
-    vk::UniquePipelineLayout layout, composite_layout, blend_layout;
+    vk::UniqueShaderModule vert, frag, composite_frag, blend_frag, tonemap_frag;
+    vk::UniqueDescriptorSetLayout set_layout, composite_set_layout, blend_set_layout, tonemap_set_layout;
+    vk::UniquePipelineLayout layout, composite_layout, blend_layout, tonemap_layout;
     vk::UniqueSampler lut_sampler; ///< the blend builder's sampler: linear, clamp to edge (as the game's)
     bool blend_noted = false;
     std::vector<std::pair<std::pair<vk::Format, Kind>, vk::UniquePipeline>> pipelines;
@@ -113,6 +137,14 @@ private:
     vk::UniqueImageView backdrop_view;
     u32 backdrop_width = 0, backdrop_height = 0;
     u64 backdrop_runs = 0;
+    VideoCore::UniqueImage own_lut;
+    vk::UniqueImageView own_lut_layers; ///< 2D array view (rendering)
+    vk::UniqueImageView own_lut_volume; ///< 3D view (sampling)
+    u32 own_lut_size = 0;
+    bool own_lut_built = false;
+    bool own_lut_failed = false;
+    bool tonemap_failed = false;
+    u64 tonemap_runs = 0;
 };
 
 } // namespace Vulkan
