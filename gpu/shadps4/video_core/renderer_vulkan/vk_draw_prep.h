@@ -85,8 +85,11 @@ struct PreparedDraw {
     u32 light_grid_scene{};
     /// MediEvil: the refraction settings the key's variants were picked for (the same).
     int refraction_setting{};
-    /// MediEvil: PipelineCache::hdr_lut_x100 the key's tonemapper variant was picked for (the same).
+    /// MediEvil: PipelineCache::hdr_lut_x100 the key's tonemapper variant was picked for (the same), compared only
+    /// when the fragment shader indexes the HDR LUT (hdr_lut_index): every other draw keeps its prepared pipeline
+    /// whatever the flag (study-hdr.md H43: comparing it for all draws sent nearly every draw to the slow path).
     bool hdr_lut_x100{};
+    bool hdr_lut_index{};
     GraphicsPipelineKey key{};
     u32 num_stages{};
     std::array<PreparedStage, MaxShaderStages> stages{};

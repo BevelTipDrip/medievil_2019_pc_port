@@ -815,7 +815,7 @@ const GraphicsPipeline* PipelineCache::TryPreparedPipeline(const PreparedDraw& p
         prepared.reg_checksum != liverpool->gfx_reg_checksum ||
         prepared.light_grid_scene != g_light_grid_scene.load(std::memory_order_relaxed) ||
         prepared.refraction_setting != RefractionSetting() ||
-        prepared.hdr_lut_x100 != hdr_lut_x100.load(std::memory_order_relaxed)) {
+        (prepared.hdr_lut_index && prepared.hdr_lut_x100 != hdr_lut_x100.load(std::memory_order_relaxed))) {
         return nullptr;
     }
     // Same registers; the stage programs and their flattened user data (which also covers

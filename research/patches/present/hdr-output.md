@@ -192,3 +192,9 @@ in the Color tab and its panel.
   oversaturated UI): only a diagnostic.
 - RenderDoc runs: relative `GOW3_RENDERDOC` paths land under `out/` (renderdoccmd's working directory); the port's
   Vulkan object names are absent unless its markers are on, so find draws by event id and outputs.
+- x100 tonemapper variant (H38) and draw preparation (H43, verified 2026-11-22): `TryPreparedPipeline` compared every
+  prepared draw's `hdr_lut_x100` with the global flag, but only the HDR tonemapper's is ever true, so with our LUT
+  pass active (SDR grading kept) nearly every draw lost its prepared pipeline (Graveyard 0.1% low 157.9 vs 210.7 in
+  ACES, a comb of spikes). Now compared only when the fragment shader indexes the HDR LUT (`hdr_lut_index`). Rule: a
+  prepared-draw condition on a global applies only to the draws whose selection reads it. The final HDR design
+  replaces the tonemapper draw (no variant, no such check).

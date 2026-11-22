@@ -470,6 +470,8 @@ void DrawPreparation::WorkerLoop(std::stop_token stop, u32 index) {
                     draw.light_grid_scene = sel.light_grid_scene;
                     draw.refraction_setting = sel.refraction_setting;
                     draw.hdr_lut_x100 = sel.hdr_lut_x100;
+                    const auto* fs = sel.infos[static_cast<u32>(Shader::SwStage::Fragment)];
+                    draw.hdr_lut_index = fs && fs->uses_hdr_lut_index;
                     draw.key = sel.graphics_key;
                     draw.num_stages = static_cast<u32>(prep_worker.stages.size());
                     for (u32 i = 0; i < draw.num_stages; ++i) {
