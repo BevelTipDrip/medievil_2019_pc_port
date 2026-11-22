@@ -93,6 +93,17 @@ Every log line on these paths is reviewed: release keeps start-up lines only.
    panning and combat.
 6. Then: adjustments keyed by grading block (if needed), bloom strength, fog (memory patches), grain / FXAA luma.
 
+## Progress
+
+- **Step 1** (2026-11-22, `e32c55f`, exe 06:05:42): built (release and dev), 221 Python tests pass. **Run: HDR-off A/B
+  against copy-fault-trace** (exe 21:02:09, `medievil_cft`), the user's route, flip traces, both logs quiet (events
+  only). Gameplay after 20 s, loading hitches (> 100 ms) excluded: hdr-final 233 s, average 225.2 FPS, 1% / 0.1% lows
+  126.6 / 51.1, frames > 8 ms 18.8 / min, > 10 ms 17.0 / min, worst 47.1 / 31.6 / 31.6 ms; copy-fault-trace 244 s,
+  224.1, 130.4 / 53.6, 19.7 / min, 17.5 / min, 46.2 / 32.3 / 32.3 ms. Frames > 6 ms 122.4 vs 79.8 / min, but isolated
+  spikes (a frame > 6 ms among fast frames) 3.9 vs 3.7 / min: the rest lie inside slow, GPU-bound stretches (~140-165
+  FPS), and the hdr-final run spent one more second in one (7 vs 6 seconds with a mean frame > 5.5 ms). The steady
+  capped stretches match (237.2 FPS, 1% ~223 in both). No regression seen.
+
 ## Answers (the user, 2026-11-22)
 
 1. **Defaults:** the lowest point of our curve sits at 0 (no black floor: the level LUT's lift is not kept at black),
