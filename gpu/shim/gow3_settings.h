@@ -113,6 +113,28 @@ inline constexpr int HdrGammaDefault = 22;
 /// the highlight strength in percent (0 = the SDR look only, 100 = the full extension above the knee).
 inline constexpr int HdrPeakNitsMin = 250, HdrPeakNitsMax = 4000, HdrPeakNitsDefault = 1000;
 inline constexpr int HdrHighlightsDefault = 100;
+/// HDR curve shape (study-hdr.md H39): where highlights start (Y of the untonemapped colour, percent of SDR white;
+/// 50 = the knee before H39), the contrast they ease into over one stop (log-log slope x 100; 0 = the SDR curve's
+/// own slope at the start, as before) and where the roll-off to the peak starts (percent of the peak; 50 as before).
+/// Ranges widened after the first run (H39): in a night scene the lit areas (p90-p99) sit where the SDR curve already
+/// climbs at 1.3-1.7, so only targets above ~2 from a start near 0.05-0.1 reach them.
+inline constexpr int HdrHighlightStartMin = 5, HdrHighlightStartMax = 50, HdrHighlightStartDefault = 50;
+inline constexpr int HdrHighlightContrastMax = 300, HdrHighlightContrastDefault = 0;
+inline constexpr int HdrRollOffStartMin = 20, HdrRollOffStartMax = 50, HdrRollOffStartDefault = 50;
+/// HDR tone curve (study-hdr.md H40): the SDR look with highlights (above, H39) or a filmic piecewise curve (Hable's
+/// power toe and shoulder; ue4_hdr_map.glsl HdrPiecewiseNits) in place of the game's film curve, the game's graded
+/// colour kept. Stored as integers: mid contrast (gamma x 100), toe clamp (scene x 10000), toe length (scene x 1000),
+/// toe strength / shoulder angle / highlight saturation (x 100), shoulder start (percent of the peak), shoulder length
+/// (stops x 10). Defaults: fitted to the SDR-look curve at game brightness 125, peak 435 (H40).
+enum HdrToneCurve : int { HdrToneCurveSdrLook = 0, HdrToneCurvePiecewise = 1 };
+inline constexpr int HdrPwGammaMin = 80, HdrPwGammaMax = 200, HdrPwGammaDefault = 128;
+inline constexpr int HdrPwToeClampMax = 100, HdrPwToeClampDefault = 32;
+inline constexpr int HdrPwToeLengthMin = 5, HdrPwToeLengthMax = 150, HdrPwToeLengthDefault = 33;
+inline constexpr int HdrPwToeStrengthMax = 90, HdrPwToeStrengthDefault = 45;
+inline constexpr int HdrPwShoulderStartMin = 20, HdrPwShoulderStartMax = 90, HdrPwShoulderStartDefault = 50;
+inline constexpr int HdrPwShoulderLengthMin = 5, HdrPwShoulderLengthMax = 50, HdrPwShoulderLengthDefault = 20;
+inline constexpr int HdrPwShoulderAngleDefault = 50;
+inline constexpr int HdrPwSaturationDefault = 0;
 
 struct Values {
     Values() {
@@ -298,6 +320,20 @@ struct Values {
     /// HDR gamma emulation per channel (as an SDR screen decodes; dark tones turn bluer) instead of brightness only
     /// (ue4_hdr_map.glsl HdrSdrLook; study-hdr.md H37); live. After the older fields.
     std::atomic<bool> hdr_gamma_per_channel{false};
+    /// HDR curve shape (HdrHighlightStart* / HdrHighlightContrast* / HdrRollOffStart*); live.
+    std::atomic<int> hdr_highlight_start{HdrHighlightStartDefault};
+    std::atomic<int> hdr_highlight_contrast{HdrHighlightContrastDefault};
+    std::atomic<int> hdr_rolloff_start{HdrRollOffStartDefault};
+    /// HDR tone curve (HdrToneCurve) and the piecewise curve's controls (HdrPw*); live.
+    std::atomic<int> hdr_tone_curve{HdrToneCurveSdrLook};
+    std::atomic<int> hdr_pw_gamma{HdrPwGammaDefault};
+    std::atomic<int> hdr_pw_toe_clamp{HdrPwToeClampDefault};
+    std::atomic<int> hdr_pw_toe_length{HdrPwToeLengthDefault};
+    std::atomic<int> hdr_pw_toe_strength{HdrPwToeStrengthDefault};
+    std::atomic<int> hdr_pw_shoulder_start{HdrPwShoulderStartDefault};
+    std::atomic<int> hdr_pw_shoulder_length{HdrPwShoulderLengthDefault};
+    std::atomic<int> hdr_pw_shoulder_angle{HdrPwShoulderAngleDefault};
+    std::atomic<int> hdr_pw_saturation{HdrPwSaturationDefault};
 };
 
 Values& Get();

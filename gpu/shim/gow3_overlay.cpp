@@ -913,6 +913,26 @@ void SliderRow(const char* label, std::atomic<int>& value, int lo, int hi, const
     Store(value, next, next != v);
 }
 
+// An int setting shown scaled (value x scale through a float format, e.g. a toe length of 33 as "0.033").
+void ScaledSliderRow(const char* label, std::atomic<int>& value, int lo, int hi, float scale, const char* format,
+                     const char* help, int step = 1) {
+    const int v = value;
+    char shown[48];
+    std::snprintf(shown, sizeof(shown), format, double(float(v) * scale));
+    // IntSliderRow (and ImGui's SliderInt) take it as a format: a literal % must be doubled.
+    char escaped[96];
+    size_t o = 0;
+    for (const char* c = shown; *c && o + 2 < sizeof(escaped); ++c) {
+        escaped[o++] = *c;
+        if (*c == '%') {
+            escaped[o++] = '%';
+        }
+    }
+    escaped[o] = '\0';
+    const int next = IntSliderRow(label, v, lo, hi, step, escaped, help);
+    Store(value, next, next != v);
+}
+
 // A 0.1x to 100x multiplier with a 1x button (the game's look: "<  1.00x  >", a click steps by 1.25).
 // Pad: left / right divide / multiply by 1.1, Cross 1x.
 void MultiplierRow(const char* label, std::atomic<float>& value, const char* help) {
@@ -1786,6 +1806,39 @@ void GradeRow(const char* label, int i, const char* help) {
     NumberRow(label, Gow3Settings::Get().grade[i], info.lo, info.hi, info.step, info.format, GradeClamp(i), help);
 }
 
+// The piecewise tone curve's rows (study-hdr.md H40; vk_ue4_hdr.cpp PiecewiseFromSettings).
+void PiecewiseRows() {
+    namespace S = Gow3Settings;
+    auto& s = S::Get();
+    ScaledSliderRow("Mid contrast", s.hdr_pw_gamma, S::HdrPwGammaMin, S::HdrPwGammaMax, 0.01f, "gamma %.2f",
+                    "The straight middle part's contrast, pivoting on mid grey (which stays at 18% of the game "
+                    "brightness): higher darkens the shadows and brightens lit areas. 1.28 matches the SDR look.");
+    ScaledSliderRow("Toe clamp", s.hdr_pw_toe_clamp, 0, S::HdrPwToeClampMax, 0.0001f, "%.4f",
+                    "The scene level below which everything is black (the scene value: mid grey is 0.18). Fine "
+                    "steps: 0.0032 matches the SDR look; lower lifts the deepest blacks out of black.");
+    ScaledSliderRow("Toe length", s.hdr_pw_toe_length, S::HdrPwToeLengthMin, S::HdrPwToeLengthMax, 0.001f, "%.3f",
+                    "Where the toe ends and the straight middle begins (scene value). Longer: a gentler, longer "
+                    "fall into black.");
+    ScaledSliderRow("Toe strength", s.hdr_pw_toe_strength, 0, S::HdrPwToeStrengthMax, 0.01f, "%.2f",
+                    "How deep the toe pushes the shadows: 0 none (the middle runs down to black), higher crisper, "
+                    "darker blacks. 0.45 matches the SDR look.");
+    SliderRow("Shoulder start", s.hdr_pw_shoulder_start, S::HdrPwShoulderStartMin, S::HdrPwShoulderStartMax,
+              "%d%% of peak",
+              "Where highlights start to bend towards the peak: below it, the curve is exact.", 5);
+    ScaledSliderRow("Shoulder length", s.hdr_pw_shoulder_length, S::HdrPwShoulderLengthMin,
+                    S::HdrPwShoulderLengthMax, 0.1f, "%.1f stops",
+                    "How much brighter than the peak (before the shoulder) light can get before it reaches the "
+                    "peak: longer keeps detail in fire and the sky, shorter makes highlights brighter sooner.");
+    SliderRow("Shoulder angle", s.hdr_pw_shoulder_angle, 0, 100, "%d%%",
+              "0: the shoulder flattens out well before the peak (Hable's shoulder; the top looks clipped). "
+              "100: it keeps rising until the peak (more gradation in the brightest highlights).",
+              5);
+    SliderRow("Highlight saturation", s.hdr_pw_saturation, 0, 100, "%d%%",
+              "0: bright colours fade towards white as in the game's SDR picture. Higher: fire, magic and lit "
+              "colours keep their colour as they get brighter (the colour before the game's film curve).",
+              5);
+}
+
 // HDR (study-hdr.md): while the game outputs HDR10; at the top of the Color tab, so the Color panel shows them too.
 // UI brightness sets the game's UI level and the white of this menu's own HDR pipeline together; the curve is the
 // engine's other HDR output device.
@@ -1817,32 +1870,69 @@ void HdrRows() {
                       "How bright SDR white is in HDR (203 is the HDR standard for paper white). Raises or lowers "
                       "the whole picture, not the UI.",
                       1);
-            static const char* const gamma_labels[] = {"Off (sRGB)", "2.0", "2.1", "2.2 (PC monitor)", "2.3",
-                                                       "2.4 (TV)", "2.5", "2.6"};
-            ChoiceRow("Gamma", s.hdr_gamma, gamma_labels, S::HdrGammaValues, int(std::size(S::HdrGammaValues)),
-                      "The gamma of the SDR screen the game was made for: the shadows and blacks as that screen "
-                      "showed them. 2.2 matches a PC monitor; Off keeps the sRGB curve (lighter shadows).");
-            ImGui::BeginDisabled(s.hdr_gamma == 0);
-            static const char* const gamma_mode_labels[] = {"Brightness only", "Each colour (as an SDR screen)"};
-            int gamma_mode = s.hdr_gamma_per_channel ? 1 : 0;
-            IndexChoiceRow("Gamma applies to", gamma_mode, gamma_mode_labels, 2,
-                           "Brightness only: the shadows as dark as that screen showed them, in the game's own "
-                           "colours. Each colour: every colour channel through the gamma curve, as a real SDR "
-                           "screen does, which turns dark tones bluer.");
-            if (gamma_mode != (s.hdr_gamma_per_channel ? 1 : 0)) {
-                s.hdr_gamma_per_channel = gamma_mode == 1;
-                dirty = true;
+            // The tone curve (study-hdr.md H40): the SDR look with highlights (H39 rows) or the piecewise curve.
+            static const char* const tone_labels[] = {"SDR look + highlights", "Piecewise (filmic)"};
+            ChoiceRow("Tone curve", s.hdr_tone_curve, tone_labels, nullptr, 2,
+                      "SDR look + highlights: the game's SDR picture, extended above SDR white. Piecewise: a "
+                      "filmic curve (toe, straight middle, shoulder; after John Hable) in place of the game's film "
+                      "curve, the game's colour grading kept; its defaults match the SDR look at game brightness "
+                      "125 and peak 435, with more room for lit areas and highlights.");
+            const bool piecewise = s.hdr_tone_curve == S::HdrToneCurvePiecewise;
+            if (!piecewise) {
+                static const char* const gamma_labels[] = {"Off (sRGB)", "2.0", "2.1", "2.2 (PC monitor)", "2.3",
+                                                           "2.4 (TV)", "2.5", "2.6"};
+                ChoiceRow("Gamma", s.hdr_gamma, gamma_labels, S::HdrGammaValues, int(std::size(S::HdrGammaValues)),
+                          "The gamma of the SDR screen the game was made for: the shadows and blacks as that screen "
+                          "showed them. 2.2 matches a PC monitor; Off keeps the sRGB curve (lighter shadows).");
+                ImGui::BeginDisabled(s.hdr_gamma == 0);
+                static const char* const gamma_mode_labels[] = {"Brightness only", "Each colour (as an SDR screen)"};
+                int gamma_mode = s.hdr_gamma_per_channel ? 1 : 0;
+                IndexChoiceRow("Gamma applies to", gamma_mode, gamma_mode_labels, 2,
+                               "Brightness only: the shadows as dark as that screen showed them, in the game's own "
+                               "colours. Each colour: every colour channel through the gamma curve, as a real SDR "
+                               "screen does, which turns dark tones bluer.");
+                if (gamma_mode != (s.hdr_gamma_per_channel ? 1 : 0)) {
+                    s.hdr_gamma_per_channel = gamma_mode == 1;
+                    dirty = true;
+                }
+                ImGui::EndDisabled();
             }
-            ImGui::EndDisabled();
             SliderRow("Peak brightness", s.hdr_peak_nits, S::HdrPeakNitsMin, S::HdrPeakNitsMax, "%d nits",
                       "Your display's peak brightness in this mode: the brightest highlights roll off to it. "
                       "Measure it or use the display's rating (e.g. ~450 in an HDR 400 mode, ~1000 in a 1000 mode).",
                       10);
-            SliderRow("Highlights", s.hdr_highlights, 0, 100, "%d%%",
-                      "Highlights above SDR white: 0 keeps the SDR picture (everything above ~half of SDR white "
-                      "compressed as in SDR); 100 gives back the brightness the SDR curve took from lights, fire "
-                      "and the sky.",
-                      5);
+            if (piecewise) {
+                PiecewiseRows();
+            } else {
+                SliderRow("Highlights", s.hdr_highlights, 0, 100, "%d%%",
+                          "Highlights above SDR white: 0 keeps the SDR picture (everything above ~half of SDR white "
+                          "compressed as in SDR); 100 gives back the brightness the SDR curve took from lights, fire "
+                          "and the sky.",
+                          5);
+                // The curve's shape (ue4_hdr_map.glsl, study-hdr.md H39); the defaults are the curve before H39.
+                ImGui::BeginDisabled(s.hdr_highlights == 0);
+                // Not "Highlights start": the Color tab's grading has a row of that name, and one label is one ImGui id.
+                SliderRow("Highlights begin at", s.hdr_highlight_start, S::HdrHighlightStartMin, S::HdrHighlightStartMax,
+                          "%d%% of white",
+                          "Where highlights begin to get more than SDR gave them, as a share of SDR white in the "
+                          "scene's light. 50 (default) leaves everything darker than about half of SDR white as in SDR; "
+                          "lower values let lit areas, effects and bright colours into the HDR range sooner while the "
+                          "shadows stay as they are.",
+                          5);
+                SliderRow("Highlight contrast", s.hdr_highlight_contrast, 0, S::HdrHighlightContrastMax, "%d%%",
+                          "How steeply highlights climb once they start, eased in over one stop: wherever the SDR curve "
+                          "flattens below this, it is lifted to it. 0 (default) continues the SDR curve's steepness at "
+                          "the start, as before; 100 keeps the scene's contrast. In dark scenes lit areas already climb "
+                          "steeply in SDR: 200-300 with an early start (5-10%) brightens them while the shadows stay.",
+                          5);
+                ImGui::EndDisabled();
+                SliderRow("Roll-off start", s.hdr_rolloff_start, S::HdrRollOffStartMin, S::HdrRollOffStartMax,
+                          "%d%% of peak",
+                          "Where the brightest highlights start to bend towards the peak. 50 (default) keeps them "
+                          "exact up to half the peak with a firm shoulder; lower values bend them in sooner and more "
+                          "gently.",
+                          5);
+            }
             ImGui::EndDisabled();
             if (S::HdrGame()) {
                 static const char* const curve_labels[] = {"1000 nits (game default)", "2000 nits"};

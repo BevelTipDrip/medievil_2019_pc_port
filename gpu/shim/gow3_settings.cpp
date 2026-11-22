@@ -89,6 +89,49 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         v.hdr_gamma_per_channel = value == "channel";
         return;
     }
+    if (key == "hdr_highlight_start") {
+        v.hdr_highlight_start = value.empty() ? HdrHighlightStartDefault
+                                              : std::clamp(i, HdrHighlightStartMin, HdrHighlightStartMax);
+        return;
+    }
+    if (key == "hdr_highlight_contrast") {
+        v.hdr_highlight_contrast =
+            value.empty() ? HdrHighlightContrastDefault : std::clamp(i, 0, HdrHighlightContrastMax);
+        return;
+    }
+    if (key == "hdr_rolloff_start") {
+        v.hdr_rolloff_start =
+            value.empty() ? HdrRollOffStartDefault : std::clamp(i, HdrRollOffStartMin, HdrRollOffStartMax);
+        return;
+    }
+    if (key == "hdr_tone_curve") {
+        v.hdr_tone_curve = value == "piecewise" ? HdrToneCurvePiecewise : HdrToneCurveSdrLook;
+        return;
+    }
+    // The piecewise curve's controls (H40): an empty value is the default, else clamped to the row's range.
+    struct PwKey {
+        const char* name;
+        std::atomic<int>* target;
+        int lo, hi, def;
+    };
+    const PwKey pw_keys[] = {
+        {"hdr_pw_gamma", &v.hdr_pw_gamma, HdrPwGammaMin, HdrPwGammaMax, HdrPwGammaDefault},
+        {"hdr_pw_toe_clamp", &v.hdr_pw_toe_clamp, 0, HdrPwToeClampMax, HdrPwToeClampDefault},
+        {"hdr_pw_toe_length", &v.hdr_pw_toe_length, HdrPwToeLengthMin, HdrPwToeLengthMax, HdrPwToeLengthDefault},
+        {"hdr_pw_toe_strength", &v.hdr_pw_toe_strength, 0, HdrPwToeStrengthMax, HdrPwToeStrengthDefault},
+        {"hdr_pw_shoulder_start", &v.hdr_pw_shoulder_start, HdrPwShoulderStartMin, HdrPwShoulderStartMax,
+         HdrPwShoulderStartDefault},
+        {"hdr_pw_shoulder_length", &v.hdr_pw_shoulder_length, HdrPwShoulderLengthMin, HdrPwShoulderLengthMax,
+         HdrPwShoulderLengthDefault},
+        {"hdr_pw_shoulder_angle", &v.hdr_pw_shoulder_angle, 0, 100, HdrPwShoulderAngleDefault},
+        {"hdr_pw_saturation", &v.hdr_pw_saturation, 0, 100, HdrPwSaturationDefault},
+    };
+    for (const PwKey& k : pw_keys) {
+        if (key == k.name) {
+            *k.target = value.empty() ? k.def : std::clamp(i, k.lo, k.hi);
+            return;
+        }
+    }
     if (key == "hdr_gamma") {
         const int tenths = value == "srgb" ? 0 : int(f * 10.0f + 0.5f);
         v.hdr_gamma = HdrGammaDefault;
@@ -820,6 +863,15 @@ std::map<std::string, std::string> Serialize(const Values& v) {
     }
     Append(out, "hdr_gamma_mode=%s\n", v.hdr_gamma_per_channel ? "channel" : "brightness");
     Append(out, "hdr_peak_nits=%d\nhdr_highlights=%d\n", v.hdr_peak_nits.load(), v.hdr_highlights.load());
+    Append(out, "hdr_highlight_start=%d\nhdr_highlight_contrast=%d\nhdr_rolloff_start=%d\n",
+           v.hdr_highlight_start.load(), v.hdr_highlight_contrast.load(), v.hdr_rolloff_start.load());
+    Append(out, "hdr_tone_curve=%s\n", v.hdr_tone_curve == HdrToneCurvePiecewise ? "piecewise" : "sdr_look");
+    Append(out, "hdr_pw_gamma=%d\nhdr_pw_toe_clamp=%d\nhdr_pw_toe_length=%d\nhdr_pw_toe_strength=%d\n",
+           v.hdr_pw_gamma.load(), v.hdr_pw_toe_clamp.load(), v.hdr_pw_toe_length.load(),
+           v.hdr_pw_toe_strength.load());
+    Append(out, "hdr_pw_shoulder_start=%d\nhdr_pw_shoulder_length=%d\nhdr_pw_shoulder_angle=%d\nhdr_pw_saturation=%d\n",
+           v.hdr_pw_shoulder_start.load(), v.hdr_pw_shoulder_length.load(), v.hdr_pw_shoulder_angle.load(),
+           v.hdr_pw_saturation.load());
     for (int g = 0; g < GradeCount; ++g) {
         // + 0.0: a negative zero (a value stepped back to 0) is written as 0, not -0.
         Append(out, "%s=%.4g\n", GradeKey(g).c_str(), double(v.grade[g].load()) + 0.0);

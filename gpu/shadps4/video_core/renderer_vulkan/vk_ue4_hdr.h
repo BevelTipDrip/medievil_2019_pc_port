@@ -118,6 +118,7 @@ private:
     u64 runs = 0;
     bool failed = false;
     bool brightness_noted = false; ///< the game's Brightness logged once
+    bool piecewise_noted = false;  ///< the piecewise tone curve logged once (H40)
     u64 patch_runs = 0;
     u64 composite_runs = 0;
     bool composite_failed = false;

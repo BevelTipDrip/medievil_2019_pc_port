@@ -26,6 +26,13 @@ layout(push_constant) uniform Push {
     uint flags;      ///< bit 0: film black clip forced to 0 (RenoDX); bit 1: gamma per channel; bit 2: index x 0.01
     float peak_nits; ///< the display's peak (roll-off)
     float highlights;///< 0..1: highlights above the knee (0 = the SDR look only)
+    float knee;      ///< Y(U) where highlights start (ue4_hdr_map.glsl; 0.5 before H39)
+    float target;    ///< the highlights' eased log-log slope (0: the SDR slope at the knee, as before)
+    float rolloff_start; ///< fraction of the peak where the roll-off starts (0.5 before)
+    float pad[3];
+    vec4 pw0;            ///< flag bit 3: the piecewise curve (ue4_hdr_map.glsl HdrPiecewiseNits, study-hdr.md H40)
+    vec4 pw1;
+    vec4 pw2;
 } pc;
 
 float GradeParam(uint i) {
@@ -53,7 +60,10 @@ void main() {
     if ((pc.flags & 4u) != 0u) {
         scene *= 0.01;
     }
-    const vec3 nits = HdrSceneToNits(scene, (pc.flags & 1u) != 0u, pc.game_nits, pc.gamma, (pc.flags & 2u) != 0u,
-                                     pc.peak_nits, pc.highlights);
+    const vec3 nits =
+        (pc.flags & 8u) != 0u
+            ? HdrPiecewiseNits(scene, (pc.flags & 1u) != 0u, pc.pw0, pc.pw1, pc.pw2)
+            : HdrSceneToNits(scene, (pc.flags & 1u) != 0u, pc.game_nits, pc.gamma, (pc.flags & 2u) != 0u,
+                             pc.peak_nits, pc.highlights, pc.knee, pc.target, pc.rolloff_start);
     color = vec4(HdrNitsToPq(nits) / 1.05, 0.0);
 }

@@ -546,6 +546,241 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     - Saved outside the repo (third-party pages): `C:\Users\Ty\MediEvil\reference-pages\` (framedsc UE4 4.27 cvar
       list as HTML and markdown, Epic's 4.27 "feature levels" profiling page, and the agent's findings with an
       eboot presence check: 1,420 of 4,594 entries present); summary in `notes-ue4-cvars-framedsc.md`.
+- **H39, the curve's shape: highlights start, highlight contrast, roll-off start** (2026-11-21; fix built, not run):
+  - The user: volumetric fog flattens the scene and brightens it (SDR too); after a level with milder fog, more about
+    our curve: keep the game's dark night look (game brightness 125 looks like night; 203 does not, screenshots
+    16.15.17 / 16.16.15) but spend the headroom on speculars, lit areas, fire and bright saturated colours; "not much
+    qualifies as a highlight outside of the brightest torches"; the shadow clip point looks right.
+  - The curve (`research-data/hdr-grading-20261121/port9f6b/curve.cpp`, grey ramp, engine-default grading, gamma 2.2
+    brightness only, peak 435): below Y(U) 0.5 HDR is exactly the SDR look x game brightness (mid grey 0.18 -> 31.9
+    nits at 175, 22.8 at 125; black below scene ~0.004; the toe's log-log slope 2-3, mid-tones below 1 from ~0.3);
+    above, the SDR slope at the knee (0.63) continues to the roll-off (from half the peak), the peak at scene ~50.
+  - Where the pixels are (the 125 shot mapped back to scene values through the current curve): p50 scene 0.017, p90
+    0.079 (6 nits), p99 0.21 (28), p99.9 0.46 (62); 0.019% above 100 nits (fire, max 313). The local slope at p90-p99
+    is 1.3-1.7: the SDR curve does not compress this scene's lit areas; they are dim in the game's grading. The knee
+    at 0.5 sees ~0.1% of the pixels.
+  - Variants plotted (scratchpad `curve_variants.py`; at 125, nits at p50 / p90 / p99 / p99.9 / scene 1 / 2 / 5):
+    now 0.18 / 6.1 / 28 / 62 / 102 / 158 / 267; knee 0.25 slope 1.0: 63 / 128 / 250 / 367 above p99; knee 0.1 slope
+    1.25: 75 / 198 / 337 / 425; knee 0.1 slope 1.5: 94 / 278 / 389 / 435; p99 and below unchanged in all. A softer
+    toe (lift below scene 0.1, clip kept) brightened the shadows (scene 0.05 2.6 -> 3.9 nits): dropped. The roll-off
+    is abrupt in every variant (slope from 1.25-1.5 to ~0.3 within a stop near 220 nits).
+  - Built: three live rows under Highlights (Color tab > HDR): **Highlights start** (`hdr_highlight_start`, 10-50% of
+    SDR white in Y(U), default 50), **Highlight contrast** (`hdr_highlight_contrast`, 0-150 = log-log slope x 100;
+    default 0 = the code before H39, the knee's SDR slope continued; > 0: `HdrHighlightBoost` walks the colour's own
+    SDR curve up from the knee in half stops (8 steps, four stops; beyond, the last slope continues) and lifts it
+    wherever its slope falls below the target, eased in over the first stop: up to 9 more GradeScene calls per LUT
+    texel above the knee, none at the default), **Roll-off start** (`hdr_rolloff_start`, 20-50% of the peak, default
+    50; W = (4 peak - knee) / (peak - knee), slope 1 at the knee, the peak at 4x peak as before). Defaults reproduce
+    the curve before H39 exactly. Push constants: LutPush and PatchPush (the pattern shader's pads) carry knee,
+    target, roll-off start. The harness re-states the shader's walk: knee 0.1 / 1.25 -> 74.6 / 197 / 335 / 416 (the
+    plotted design 75.0 / 198 / 337 / 425); 1.5 -> 93.7 / 278 / 388 / 435; 1.25 with roll-off from 30% -> 74.6 / 185
+    / 295 / 404.
+  - Run 1 (2026-11-21 ~17:10, build 17:05:17): the user: the sliders seem to do nothing; some change on very bright
+    things near white only. The build's shader has the new fields (SPIR-V names checked). As the numbers predicted: at
+    125 nits the p90-p99 pixels sit where the SDR slope is 1.3-1.7, so targets up to 1.5 lift only the top ~0.5%
+    (start 10%, contrast 150: p99 x1.03, p99.9 x1.5). Wider: start 8% / contrast 200 / roll-off 40%: p99 x1.37,
+    p99.9 x3.0, scene 1 x3.7; contrast 250: p99 x1.87, p99.9 x4.6; p90 and below unchanged. Ranges widened (build
+    17:28): start 5-50%, contrast 0-300.
+  - Build 17:37:11: the row renamed "Highlights begin at" (the Color tab's grading row "Highlights start",
+    `GradeHighlightsMin`, had the same label; `grade_highlights_min` in the ini stayed at its stored default 0).
+  - Run 2 (2026-11-21, build 17:37): the user: the rows do work; their effect depends strongly on game brightness,
+    peak and where in the level you stand, "Highlights begin at" and "Roll-off start" most. Why: the start picks
+    which pixels are lifted (scene-dependent: a torch-lit room has many above it, a moonlit field few); the roll-off
+    start is in nits (a fraction of the peak), so it only acts on pixels the lift pushes past it, which depends on
+    game brightness x lift (at 125 / 435 only fire reaches 217 nits without a strong lift).
+    Later: the saturation-weighted boost (the 3D LUT can give bright saturated colours more headroom than greys).
+- **H40, a piecewise HDR curve in place of the game's film curve** (2026-11-21; fix built, not run):
+  - The user: the H39 rows depend on each other and on game brightness / peak / the area; wants a toe / straight /
+    shoulder curve with a control per part (their reference plot: toe length / strength, shoulder length / strength,
+    gamma) plus a fine **toe clamp**; agreed: HDR only, the game's colour grading kept, its film curve replaced, the
+    current curve kept as a mode, game brightness pins mid grey (scene 0.18 -> 18% of it).
+  - Reference: Hable, "Filmic Tonemapping with Piecewise Power Curves" (2017), saved in
+    `C:\Users\Ty\MediEvil\reference-pages\filmicworlds-piecewise-power-curves.{html,md}`: toe and shoulder are power
+    curves matched in value and slope to the middle (`B = m x0 / y0`), the shoulder flipped; overshoot (shoulder
+    angle) because the plain flipped shoulder is nearly flat for its last stretch; toe length in a 2.2 power space for
+    fine control; he prefers the curve per channel (bright colours fade to white) over luminance only. The Uncharted 2
+    curve (A-F, W 11.2; the user's note) is the older rational form he replaced (all-or-nothing, odd when pushed).
+  - Offline fit (scratchpad `h40_fit.py`, chart `h40_fit.png`): s' = max(s - clamp, 0); middle G 0.18 ((s' - b) /
+    (0.18 - b))^gamma, b = toe strength x toe length; power toe below toe length (B = gamma / (1 - strength));
+    Hable's flipped shoulder on those nits from r x peak, reaching the peak L stops later. Fit to the current curve at
+    125 / 435 over scene 0.002-0.35: clamp 0.0032, toe length 0.033, strength 0.45, gamma 1.28 (toe power 2.35);
+    rms 0.29% of the PQ range. Nits at p50 / p90 / p99 / p99.9 / scene 1 / 2 / 5: now 0.18 / 6.1 / 28.7 / 62 / 102
+    / 158 / 267; fitted 0.17 / 6.2 / 27.9 / 80 / 222 / 395 / 435. The shoulder without overshoot (B 7 at r 0.5,
+    L 2) is within 1% of the peak from 2x peak unrolled (scene ~2.3): needs Hable's shoulder angle.
+  - Found while building: the level's grading LUT (9f6b builder, LUTWeights 0.65 / 0.35 in the captured block), the
+    mapping polynomial and colour scale / overlay apply after the film curve, so U (before it) lacks them. The colour
+    is therefore G's, re-toned: G x curve(Y(U)) / Y(G of a grey of the same Y(U)) (a grey gets the curve exactly, a
+    colour keeps its luminance relative to grey as the game grades it; one more GradeScene per LUT texel).
+  - Built (2026-11-21 21:20, fix built, not run): **Tone curve** row (`hdr_tone_curve=sdr_look|piecewise`, default the
+    SDR look) and, in Piecewise, Mid contrast (`hdr_pw_gamma` x100, 0.80-2.00, 1.28), Toe clamp (`hdr_pw_toe_clamp`
+    x1e-4, 0-0.0100, 0.0032), Toe length (`hdr_pw_toe_length` x1e-3, 0.005-0.150, 0.033), Toe strength
+    (`hdr_pw_toe_strength` x100, 0-0.90, 0.45), Shoulder start (`hdr_pw_shoulder_start`, 20-90% of peak, 50), Shoulder
+    length (`hdr_pw_shoulder_length` x10 stops, 0.5-5.0, 2.0), Shoulder angle (`hdr_pw_shoulder_angle`, 0-100%, 50:
+    a blend of Hable's flipped power shoulder (0, flat end) and a Reinhard shoulder (100, rises to the peak); both slope
+    1 at the start and reach the peak at the end, so no overshoot solve), Highlight saturation (`hdr_pw_saturation`,
+    0-100%, 0: U's colour blended in by smoothstep(0.4, 0.9, Y(G grey))). Gamma / Gamma applies to / Highlights / H39
+    rows are hidden in Piecewise. Constants derived on the CPU (vk_ue4_hdr.cpp PiecewiseFromSettings), pushed as three
+    vec4s (LutPush and PatchPush 96 bytes); flag bit 3.
+  - Peak limit: a saturated colour could put one channel far above the peak (orange (4, 1.2, 0.2) at saturation 100:
+    R 918 nits at peak 435). Now no channel exceeds the peak: saturation 0 pulls towards the colour's luminance (fades
+    to white), 100 scales the colour down whole (stays orange: 435 / 92 / 7), blended by the saturation.
+  - Checked offline (`port9f6b/h40check.cpp`, the shader's H40 section via `gen_h40.py` over the port's GradeScene):
+    grey ramp within 0.00075 PQ of `h40_fit.py`'s model below scene 2 (angle 0); GLSL compiles (lut, blend, pattern).
+  - Blue push lead: a dark blue (scene 0.02 / 0.03 / 0.08) has U 0.020 / 0.030 / 0.080 but G 0.0052 / 0.0100 /
+    0.0496 (B/R 4 -> 9.5): the film curve's per-channel toe adds saturation in the shadows (Hable notes it), in SDR too.
+    Piecewise keeps G's colour, so it keeps this; a "Shadow saturation" row (U's colour in the toe) would remove it.
+  - Run 1 (2026-11-21 ~21:25, build 21:20:24; log: "piecewise tone curve"; ini: game brightness 175, toe clamp
+    0.0038, the old curve's gamma mode "channel"): the user: looks better already; the asymmetrical chroma push
+    appears reduced or gone; looks more like SDR. Baseline pair old / new: screenshots 21.27.39 and 21.27.58 (.jxr),
+    not yet analysed. (A stray `find /` of ours ran during this run: not a performance run.)
+  - The user, after several levels: looks quite good when adjusted for the level; the settings that look good vary
+    strongly per level (the per-level grading, its LUT likely among the causes; every implementation so far has been a
+    compromise), but the new rows make a good result possible on every level played. Next: per-level settings, or
+    find what differs per level and compensate it (work queue "level grading strength").
+- **H41, what the game varies per level / area: the mechanisms first** (2026-11-21; found [V, static], live check
+  open). The user: find every mechanism before tuning any more settings; settings data only once the mechanisms are
+  known. Plan: (1) static scan of the game's maps + existing captures (no launch), (2) a dev-build event log of the
+  grading block, the tonemapper's constants and exposure, (3) offline analysis per area, (4) then decide on
+  compensation.
+  - Static scan (`research-data/hdr-grading-20261121/pp-scan/`: `pp_scan_all.py` reads every map in the paks, 266, read
+    only; `pp_active.py` keeps the settings whose `bOverride_` flag is on; reports `pp_all.txt`, `pp_active.txt`): 71
+    maps carry post-process or fog settings. Active per level (main unbound volume unless noted; LUT = BleachAlternative
+    intensity):
+    - 00 DC: WhiteTemp 7000, saturation 1.01 (shadows 1.15), gamma 1.1, film slope 0.94 / toe 0.45, bloom 3 (threshold
+      0.1, wide), LUT 0.40 (a local volume, earlier note).
+    - 01 GY1 / 04 GY2: bloom 20 (threshold -0.06 / 0.11), exposure min = max 1.0, vignette 0.71; no grading (the live
+      blocks: engine defaults, matches).
+    - 02 CH: bloom 5 (threshold 0.015), exposure 0.88-1.25 (the only adaptive range), vignette 0.71, shadow contrast 1.02.
+    - 03 HM: LUT 0.35 only (matches the live block).
+    - 06 PG: film 0.9 / 0.6, LUT intensity 0.1 without a table. 07 PS: saturation 0.95, film 1.0 / 0.62, LUT 0.25.
+    - 08 SV: WhiteTemp 5986, contrast 1.1, gamma 0.94, LUT 0.30. 09 AG: film 0.9 / 0.6, LUT 0.28.
+    - 10 IA: an unbound volume (contrast 1.3, exposure 1.0, LUT 0.10) plus seven local volumes, priorities 2-3: each its
+      own white balance (4700-5521 K), gain (0.65-1.05; one warm 0.8 / 0.57 / 0.49), film slope 0.82-0.98 / toe
+      0.55-0.66, bloom 3.
+    - 11 EE: two full grades disabled; active: WhiteTemp 5500, warm gain 1.19 / 1.16 / 1.29, film slope 0.95.
+    - 12 AC: film 0.9 / 0.565. 14 LA: film 0.84 / 0.76 (a volume without bUnbound: local) plus a local volume (blend radius 850): 7580 K,
+      gain 0.64 / 0.77 / 0.95 x 1.55, shadow gain 1.34 / 1.60 / 1.79, shadow offset -0.30 red, film 1.0 / 0.60, bloom 4.1.
+    - 15 CC, 05 SF, 13 PD: no grading (fog only). 16 GG: 5350 K, shadow gain 1.37 / 0.85 / 0.98.
+    - 17 HR: two local volumes (11386 K, gain 0.63, offset -0.01, film slope 1.0; 7800 K, shadow gain 0.69 / 0.82 / 0.71,
+      film 0.886, bloom 1.2 threshold -0.31) and an art volume (8500 K, saturation 0.95, contrast 1.1, gamma 1.05,
+      gain 0.89, bloom 2 threshold 8, vignette 0.5).
+    - 18 GS: 5086 K. 19 EH: 7400 K, contrast 1.05, shadow gain 0.74 / 0.82 / 0.95, film toe 0.43, black clip 0.0002,
+      bloom 4.1 (threshold -0.15, wide), LUT 0.10.
+    - 20 TD: two volumes disabled; active: 5500 K, film 0.95 / 0.52, bloom 7.3. 21 ZL: contrast 1.05, exposure 1.0,
+      LUT 0.25. 22 HH: 7657 K, saturation 1.0 / 0.61 / 0.62 x 1.06, gamma 1.01, gain 1.5 / 1.47 / 1.43, film 0.775 /
+      0.579.
+    - MapScreen: manual exposure (bias 10.35, shutter 140; the method's enum misread by the scanner), the full grade
+      noted earlier, grain 0.1. Main menu (IN_MM): its volume disabled; vignette 1.0 in the persistent map.
+      Battlefield cinematic: bloom 8, grain 0.2, LUT_Fall 0.3.
+    - Fog: every level has its own height fog and most volumetric fog (density, inscattering colour, albedo,
+      extinction), e.g. 14 LA density 2.5 x 10, 08 SV 0.25, 21 ZL 0.25.
+  - Where each acts (ue4_grade.glsl and the tonemapper): white balance, saturation / contrast / gamma / gain / offset
+    (U, before the film curve), bloom (added in the tonemapper before the LUT), fog, vignette and exposure all reach Y(U):
+    both our curves see them. The film curve (slope / toe / black clip) and the table's effect on greys act after: the
+    H40 piecewise curve re-tones greys to its own curve, so in Piecewise **each area's film curve and its table's tone
+    are dropped** (only their colour relative to grey is kept). The levels' film slopes run 0.775-1.0 and toes
+    0.43-0.76 (engine 0.88 / 0.55): one likely reason one set of Piecewise settings does not fit all levels.
+  - Exposure: fixed at 1.0 almost everywhere (project `r.DefaultFeature.AutoExposure=False`; GY / IA / TD / ZL pin min
+    = max 1.0); only CH adapts (0.88-1.25), MapScreen is manual. Likely not a main factor outside CH.
+  - Not covered by the scan: blueprints, cameras and sequences that change post-process at runtime; how volumes blend
+    (local volumes in IA, LA, HR). Next: the live check from existing captures (DC crypt, SV, HH, HM, GY, map): the
+    grading blocks against this table, and the tonemapper's constants (bloom, vignette, exposure) as the GPU sees them.
+  - Live check (2026-11-22, confirmed; `research-data/hdr-grading-20261121/survey/`: scratchpad
+    `rd_survey/grading_survey.py` replays a capture and dumps every grading LUT builder's and tonemapper's buffers and
+    1x1 textures (by pixel shader hash, else any draw reading a 32^3 colour LUT); `decode_survey.py` decodes them; 14
+    captures). Tonemapper inputs per area (SDR tonemapper IR, fs 3632d4c4faaa85d2): scene x scene scale (cb0 dw 8-10)
+    + bloom x (bloom scale dw 12-14 + dirt-mask tint cb1 x dirt mask), x exposure (vertex shader, the 1x1 R32G32
+    eye-adaptation texture) x vignette (dw 16 intensity), then the LUT; the map's variant has the same fields 4 dwords
+    later plus grain (0.1, jitter 0.0005).
+    - The grading blocks equal the static table: DC (LUT 0.40, film 0.94 / 0.45, 7000 K, gamma 1.1, saturation 1.01,
+      shadows 1.15), HH (film 0.7752 / 0.5786, 7657 K / -0.2857, saturation 1.0 / 0.61 / 0.6165 x 1.06, gamma 1.01, gain
+      1.5 / 1.4675 / 1.425), SV in two areas (LUT 0.30, 5986 K, contrast 1.1, gamma 0.94), the Mausoleum and Hilltop
+      (LUT 0.35 only); the Graveyard's known defaults.
+    - The tonemapper: bloom scale = the volume's BloomIntensity (DC 3, Graveyard 20 in three captures, else UE4's
+      0.675), vignette 0.4 (Graveyard 0.7143); scene scale 1 and dirt-mask tint 0 everywhere.
+    - Exposure: 1.0 in every level capture; the map screen 0.991 (its manual exposure). The calibration / menu
+      captures (cft 12411, run28 26066) are defaults.
+    - DC also builds a LUT and tonemaps once more early in the frame (InverseGamma 2.2, bloom 0; 1024^2 targets, also
+      in other captures: a scene capture, not the screen).
+  - Found: everything the game varies per area that reaches the picture is in the grading block (which our pass
+    already reads at every LUT build) plus bloom intensity and vignette (which act on the scene before the LUT, so
+    any curve of ours sees them already); no runtime exposure changes in the levels captured. Not seen yet: CH (the
+    adaptive exposure 0.88-1.25), IA / LA / HR's local volumes blending.
+  - Direction (the user, 2026-11-22): keep our controls (toe length / clamp / strength, mid contrast, game
+    brightness, peak, ...); the game's grading blocks are not applied as they are but fed into our curve per level /
+    area, with the user's adjustments kept on top: the game's raised blacks get exaggerated in HDR, so the toe and mid
+    contrast stay tunable. Bloom and volumetric fog controls wanted too (work queue rows). Adjustments global first;
+    if more granularity is needed, adjustments keyed by grading block (levels sharing a block should look right with
+    the same settings). Bloom / fog after this; fog settings are level data, not cvars (likely memory patches).
+- **H42, our curve against each level's SDR look** (2026-11-22; found, offline; `research-data/hdr-grading-20261121/`
+  `port9f6b/sdrcurve.cpp` (a level's SDR look on a grey ramp from its captured block, the level LUT blended, game
+  brightness 125, gamma 2.2 brightness only), `h42/fit_levels.py`, chart `h42/fit_levels.png`):
+  - The levels' SDR black floor (scene 0) is the level LUT's lift: Dan's Crypt 0.26 nits, Hilltop 0.19, Sleeping
+    Village 0.13 at 125 (0.1-0.2% of SDR white); Graveyard and Hall of Heroes (no LUT) 0. Mid grey (Y(U) 0.18):
+    22.8 nits without a LUT, 24.5-24.9 with (the LUT lifts mid-tones ~8%).
+  - Fit below the SDR shoulder (SDR nits < half of white), as a function of Y(U): our H40 curve as built matches the
+    two levels without a LUT within 0.35-0.38% PQ (Graveyard clamp 0.0042, length 0.052, strength 0.47, gamma 1.10;
+    Hall of Heroes 0.0035 / 0.053 / 0.49 / 1.00: the film slope 0.775 vs 0.88 shows as mid contrast) but the LUT
+    levels only within 1.6-1.8% (it has no black floor). With a black floor added (nits fading out by mid grey) every
+    level fits within 0.30-0.36% PQ: Dan's Crypt floor 0.254, gamma 1.11, strength 0.27, length 0.074; Hilltop 0.189 /
+    1.12 / 0.36 / 0.083; Sleeping Village 0.133 / 1.10 / 0.39 / 0.079.
+  - The fit is not unique: the game's smooth SDR curve does not pin toe length, strength and gamma down separately
+    below the shoulder (the Graveyard fitted gamma 1.28 / length 0.033 in H40 over a shorter range, 1.10 / 0.052 here,
+    both within 0.35%; they differ above grey, where only gamma acts). The controls themselves act differently (the
+    user: toe length / strength add contrast in the shadows without lowering the mid-tones; grey is pinned, while a
+    change to the game's film toe / slope moves the mid-tones too): the derivation needs a convention (e.g. gamma from
+    the curve's slope at and above grey, toe from the shadows with the length fixed) so each slider keeps its meaning.
+  - So our curve's shape can carry every captured level's SDR look below the shoulder; the per-area inputs it needs:
+    black floor, mid-grey level, mid contrast, toe (strength, clamp).
+  - Corrections (the user, 2026-11-22): the clamp is a black point (crushes the deepest tones without lifting
+    anything), the floor a lift (the LUT's); a long relaxed toe (strength 0) is a plain gamma curve. The user's tuning in
+    Piecewise was absolute (it replaced the game's tone; only the colour was the game's), hence different values per
+    level. The LUT rebuild happens every frame (every level capture holds one; Dan's Crypt two): the derivation must
+    be cheap, GPU only (no CPU readback / sync), recomputed only when the block changes (a CPU hash of the 144 dwords).
+  - Derivation by fixed rules, no fit (`h42/derive.py`, chart `h42/derive.png`), anchors on the game's grey curve as
+    a function of Y(U) (at runtime: about six GradeScene calls on greys, the LUT included): floor = the curve at black;
+    grey level = the curve at 0.18 / (0.18 x game brightness); gamma = log-log slope of (curve - floor) from 0.18 to
+    0.36; toe length, strength and clamp = the curve through the game's at Y(U) 0.07, 0.02 and 0.006 (a fixed toe
+    length cannot serve both kinds of level: without a LUT 0.05 fits, with one 0.08-0.10). Result: Graveyard floor 0 /
+    grey x1.01 / gamma 1.17 / toe 0.060 / 0.40 / clamp 0.0043; Hall of Heroes 0 / 1.01 / 1.09 / 0.060 / 0.38 / 0.0043;
+    Dan's Crypt 0.26 nits / 1.11 / 1.08 / 0.128 / 0.27 / 0.0009; Hilltop 0.19 / 1.10 / 1.14 / 0.125 / 0.32 / 0.0009;
+    Sleeping Village 0.13 / 1.09 / 1.14 / 0.102 / 0.34 / 0.0010. Below grey within 0.14-0.41% PQ rms, at most 1.05%;
+    from grey to half of SDR white 0.7-1.0% rms (our curve keeps climbing where the SDR shoulder starts: intended).
+    Fixed (first trial) toe length 0.05: the LUT levels off by up to 1.9% PQ around Y(U) 0.06.
+  - The same adjustments on every level (floor x0.5, gamma x1.1, toe strength +0.1): floor halves everywhere (0.46-
+    0.50), mid grey stays (pinned), Y(U) 0.4 +13-20%, Y(U) 1 +27-38%, Y(U) 0.08 x0.69-0.81: the same direction and
+    similar size per level.
+  - Raised blacks (the user: unpleasant, more visible in HDR on high-contrast screens; removing them is a point of the
+    new curve). Floor 0 removes the black point but not the LUT's lift of the lowest shadows, which the derived long
+    toe carries (Y(U) 0.003 / 0.01, nits at 125: Dan's Crypt with LUT 0.293 / 0.548, ours floor 0 0.036 / 0.311,
+    without the LUT 0.002 / 0.094; Hilltop 0.204 / 0.328, 0.015 / 0.173, 0.000 / 0.027; Sleeping Village 0.148 /
+    0.262, 0.012 / 0.156, 0.000 / 0.027). Derived from the curve without the LUT (`sdrcurve.exe ... 1`: weights 1 / 0)
+    Hilltop and Sleeping Village get the Graveyard's values exactly (floor 0, grey x1.013, gamma 1.17, toe 0.060 /
+    0.40, clamp 0.0043); Dan's Crypt its own film (gamma 1.11, toe 0.057 / 0.31). Proposed: a "level LUT tone" amount
+    (the anchors from a blend of the curve with and without the LUT; the LUT's colour kept): 0 removes the floor and
+    the haze together; costs a second set of anchors, on block changes only.
+  - The user's Hilltop settings (2026-11-22 03:32, screenshot 03.32.24.58; Piecewise, absolute values): game
+    brightness 223, peak 434, mid contrast 1.30, toe clamp 0.0018, toe length 0.028, toe strength 0.57, shoulder start
+    20% of peak, shoulder length 5.0 stops (the row's maximum), shoulder angle 100%, highlight saturation 51%. The
+    lifted shadows resolved; mid contrast could be a little lower, deep blacks / contrast partly the user's taste;
+    "would have been unachievable without the piecewise curve". The shoulder at its range's end: widen it.
+  - To fix when built: grey is pinned at s' = Y - clamp, so the clamp darkens grey ~3% (22.06 vs 22.80 nits): pin it at
+    Y(U) instead. Solver at runtime: a few Newton steps on the analytic curve (no GradeScene) instead of the offline
+    bisections.
+- **H43, frame-time spikes in "SDR grading kept"** (2026-11-22; found by reading the code, fix built 04:47:21,
+  verified by the user the same day: "that was it, the issue is gone"): the user's live switch in the Graveyard (build 21:20:24): SDR grading kept 215.0 avg, 1% / 0.1% lows 171.6 /
+  157.9, a comb of spikes; ACES 214.4, 212.9 / 210.7, flat (screenshots 03.38.41 / 03.38.15). The user suspected the
+  x100 work (043a1ce, the only change since the last verified regression run). Not its shader recognition (compile
+  time only): its prepared-draw check. `TryPreparedPipeline` compared each prepared draw's `hdr_lut_x100` (the
+  variant picked for it: true only for the HDR tonemapper) with the global flag (true whenever our LUT pass built the
+  LUT, i.e. SDR grading kept): every other draw failed and took the full selection and unprepared binding on the GPU
+  thread. ACES: the flag false, all match. Fix: `PreparedDraw::hdr_lut_index` (the fragment shader indexes the HDR LUT),
+  the flag compared only then (not "the flag at prep time": frames with two LUT builds, one the game's, e.g. Dan's
+  Crypt's scene capture, flip it twice a frame). Previous exe kept in `baselines/hdr-piecewise-20261121-2120/`.
+  To confirm: the same live switch on the fixed build (lows and graph equal in both looks).
+  - Decision (the user, 2026-11-22): the final HDR replaces the game's tonemapper draw with our own pass (the LUT read
+    at our own index: no x100 variant, no recognition pass, no prepared-draw check; room for bloom strength, grain,
+    FXAA luma), built on copy-fault-trace and regression-tested there. This fix only confirms the mechanism early.
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.

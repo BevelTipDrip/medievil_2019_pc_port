@@ -23,9 +23,12 @@ layout(push_constant) uniform Push {
     uint flags;      ///< bit 0: HDR output; bit 1: gamma per channel
     float peak_nits; ///< HDR: the display's peak (roll-off)
     float highlights;///< HDR: 0..1 highlights above the knee
-    float pad0;
-    float pad1;
-    float pad2;
+    float knee;      ///< HDR: Y(U) where highlights start (ue4_hdr_map.glsl)
+    float target;    ///< HDR: the highlights' eased log-log slope (0: the SDR slope at the knee)
+    float rolloff_start; ///< HDR: fraction of the peak where the roll-off starts
+    vec4 pw0;        ///< HDR, flag bit 3: the piecewise curve (ue4_hdr_map.glsl HdrPiecewiseNits)
+    vec4 pw1;
+    vec4 pw2;
     vec4 scene;      ///< the patch's scene-linear value (rgb)
 } pc;
 
@@ -39,8 +42,10 @@ float GradeParam(uint i) {
 void main() {
     vec3 value;
     if ((pc.flags & 1u) != 0u) {
-        value = HdrNitsToPq(HdrSceneToNits(pc.scene.rgb, false, pc.game_nits, pc.gamma, (pc.flags & 2u) != 0u,
-                                           pc.peak_nits, pc.highlights));
+        value = HdrNitsToPq((pc.flags & 8u) != 0u
+                                ? HdrPiecewiseNits(pc.scene.rgb, false, pc.pw0, pc.pw1, pc.pw2)
+                                : HdrSceneToNits(pc.scene.rgb, false, pc.game_nits, pc.gamma, (pc.flags & 2u) != 0u,
+                                                 pc.peak_nits, pc.highlights, pc.knee, pc.target, pc.rolloff_start));
     } else {
         vec3 untonemapped, graded;
         GradeScene(pc.scene.rgb, false, untonemapped, graded);

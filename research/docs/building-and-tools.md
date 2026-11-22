@@ -15,6 +15,7 @@ Parent: [START-HERE.md](START-HERE.md). Do not re-install the toolchain or re-de
 | Game (CUSA11227 01.02) | `E:\MediEvil\CUSA11227-0102` (the launcher's game folder); update PKG (dumped from the user's PS4: keep it) in `D:\MediEvil-archive\CUSA11227-patch`, reached through the junction `Game Files\CUSA11227-patch` |
 | Crash dumps | `user\crashdumps` is a junction to `D:\MediEvil-archive\crashdumps` (2026-11-08): new dumps land on D: |
 | Traces and captures | `C:\Users\Ty\MediEvil\research-data` (WPR, RenderDoc, Nsight, symbols, Ghidra) is a junction to `D:\MediEvil-archive\research-data` (2026-11-08) |
+| Port research data | `medievil_2019_pc_port\research-data` (captures, traces, harnesses; not in git) is a junction to `D:\MediEvil-archive\port-research-data` (2026-11-21, C: was full; copied with robocopy, every file checked by path and size before the C: copy was removed) |
 
 ## Toolchain (installed 2026-10-18)
 

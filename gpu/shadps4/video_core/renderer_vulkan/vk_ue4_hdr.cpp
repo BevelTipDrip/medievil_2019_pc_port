@@ -31,6 +31,11 @@ struct LutPush {
     u32 flags;
     float peak_nits;
     float highlights;
+    float knee;          ///< the curve's shape (ue4_hdr_map.glsl, CurveShape)
+    float target;
+    float rolloff_start;
+    float pad[3];
+    float pw[3][4];      ///< the piecewise curve (flag bit 3; PiecewiseFromSettings), offset 48
 };
 /// ue4_pattern.frag's push constants (the layout's range is this size; LutPush fills its start).
 struct PatchPush {
@@ -39,10 +44,56 @@ struct PatchPush {
     u32 flags;
     float peak_nits;
     float highlights;
-    float pad[3];
-    float scene[4]; ///< offset 32 (a vec4 in the shader's block)
+    float knee;
+    float target;
+    float rolloff_start;
+    float pw[3][4];  ///< offset 32 (three vec4s)
+    float scene[4];  ///< offset 80 (a vec4 in the shader's block)
 };
-static_assert(sizeof(PatchPush) == 48 && sizeof(LutPush) <= sizeof(PatchPush));
+/// The HDR curve's shape from the settings (study-hdr.md H39): highlights start (Y(U)), their eased slope, roll-off start.
+struct CurveShape {
+    float knee, target, rolloff_start;
+};
+CurveShape CurrentCurveShape() {
+    const auto& s = Gow3Settings::Get();
+    return {float(s.hdr_highlight_start.load(std::memory_order_relaxed)) / 100.0f,
+            float(s.hdr_highlight_contrast.load(std::memory_order_relaxed)) / 100.0f,
+            float(s.hdr_rolloff_start.load(std::memory_order_relaxed)) / 100.0f};
+}
+/// The piecewise tone curve (study-hdr.md H40; ue4_hdr_map.glsl HdrPiecewiseNits) from the settings, as the shader's
+/// constants: pw0 = (toe clamp, toe length, b, gamma), pw1 = (grey nits, toe power, toe nits, highlight saturation),
+/// pw2 = (shoulder start, shoulder end, peak, shoulder angle). `on`: the curve is selected (flag bit 3).
+struct Piecewise {
+    bool on;
+    float pw[3][4];
+};
+Piecewise PiecewiseFromSettings() {
+    const auto& s = Gow3Settings::Get();
+    const auto get = [](const std::atomic<int>& v) { return float(v.load(std::memory_order_relaxed)); };
+    Piecewise p{};
+    p.on = s.hdr_tone_curve.load(std::memory_order_relaxed) == Gow3Settings::HdrToneCurvePiecewise;
+    const float clamp_ = get(s.hdr_pw_toe_clamp) / 10000.0f;
+    const float length = get(s.hdr_pw_toe_length) / 1000.0f;
+    const float strength = get(s.hdr_pw_toe_strength) / 100.0f;
+    const float gamma = get(s.hdr_pw_gamma) / 100.0f;
+    const float b = strength * length; // < length (strength <= 0.9) and < 0.18 (length <= 0.15)
+    const float grey = 0.18f * get(s.hdr_game_nits);
+    const float peak = get(s.hdr_peak_nits);
+    p.pw[0][0] = clamp_;
+    p.pw[0][1] = length;
+    p.pw[0][2] = b;
+    p.pw[0][3] = gamma;
+    p.pw[1][0] = grey;
+    p.pw[1][1] = gamma * length / (length - b);
+    p.pw[1][2] = grey * std::pow((length - b) / (0.18f - b), gamma);
+    p.pw[1][3] = get(s.hdr_pw_saturation) / 100.0f;
+    p.pw[2][0] = get(s.hdr_pw_shoulder_start) / 100.0f * peak;
+    p.pw[2][1] = peak * std::exp2(get(s.hdr_pw_shoulder_length) / 10.0f);
+    p.pw[2][2] = peak;
+    p.pw[2][3] = get(s.hdr_pw_shoulder_angle) / 100.0f;
+    return p;
+}
+static_assert(sizeof(PatchPush) == 96 && sizeof(LutPush) == 96 && sizeof(LutPush) <= sizeof(PatchPush));
 /// ue4_ui_composite.frag's push constants.
 struct CompositePush {
     float target_size[2];
@@ -273,15 +324,25 @@ bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache
     const u64 offset = stream.Copy(params_block.data(), sizeof(params_block), instance.StorageMinAlignment());
     const vk::Buffer params = stream.Handle();
     const auto& settings = Gow3Settings::Get();
-    const LutPush push{
+    const CurveShape shape = CurrentCurveShape();
+    const Piecewise piecewise = PiecewiseFromSettings();
+    LutPush push{
         .game_nits = float(settings.hdr_game_nits.load(std::memory_order_relaxed)),
         .gamma = float(settings.hdr_gamma.load(std::memory_order_relaxed)) / 10.0f,
         .lut_size = float(width),
         .flags = (settings.hdr_gamma_per_channel.load(std::memory_order_relaxed) ? 2u : 0u) |
-                 (ScaledIndex() ? 4u : 0u),
+                 (ScaledIndex() ? 4u : 0u) | (piecewise.on ? 8u : 0u),
         .peak_nits = float(settings.hdr_peak_nits.load(std::memory_order_relaxed)),
         .highlights = float(settings.hdr_highlights.load(std::memory_order_relaxed)) / 100.0f,
+        .knee = shape.knee,
+        .target = shape.target,
+        .rolloff_start = shape.rolloff_start,
     };
+    std::memcpy(push.pw, piecewise.pw, sizeof(push.pw));
+    if (piecewise.on && !piecewise_noted) {
+        piecewise_noted = true;
+        std::printf("UE4 HDR grading: piecewise tone curve (study-hdr.md H40)\n");
+    }
     const vk::PipelineLayout pipeline_layout = level_lut ? *blend_layout : *layout;
     const CompositeInput lut = level_lut ? *level_lut : CompositeInput{};
     const vk::Sampler sampler = *lut_sampler;
@@ -362,15 +423,21 @@ void Ue4HdrGrading::RunPatch(VideoCore::ImageId target, const VideoCore::Texture
     const u64 offset = stream.Copy(params_block.data(), sizeof(params_block), instance.StorageMinAlignment());
     const vk::Buffer params = stream.Handle();
     const auto& settings = Gow3Settings::Get();
-    const PatchPush push{
+    const CurveShape shape = CurrentCurveShape();
+    const Piecewise piecewise = PiecewiseFromSettings();
+    PatchPush push{
         .game_nits = float(settings.hdr_game_nits.load(std::memory_order_relaxed)),
         .gamma = float(settings.hdr_gamma.load(std::memory_order_relaxed)) / 10.0f,
-        .flags = (hdr_output ? 1u : 0u) | (settings.hdr_gamma_per_channel.load(std::memory_order_relaxed) ? 2u : 0u),
+        .flags = (hdr_output ? 1u : 0u) | (settings.hdr_gamma_per_channel.load(std::memory_order_relaxed) ? 2u : 0u) |
+                 (piecewise.on ? 8u : 0u),
         .peak_nits = float(settings.hdr_peak_nits.load(std::memory_order_relaxed)),
         .highlights = float(settings.hdr_highlights.load(std::memory_order_relaxed)) / 100.0f,
-        .pad = {},
+        .knee = shape.knee,
+        .target = shape.target,
+        .rolloff_start = shape.rolloff_start,
         .scene = {scene[0], scene[1], scene[2], 0.0f},
     };
+    std::memcpy(push.pw, piecewise.pw, sizeof(push.pw));
     const vk::PipelineLayout pipeline_layout = *layout;
     scheduler.Record([=](vk::CommandBuffer cmdbuf) {
         const vk::RenderingAttachmentInfo attachment{
