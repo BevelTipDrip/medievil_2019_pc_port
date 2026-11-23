@@ -106,7 +106,10 @@ Every log line on these paths is reviewed: release keeps start-up lines only.
 - **Step 2** (2026-11-22, `e07270f`, fix `7e18d53`): our tonemapper pass and our own LUT (study-hdr.md H44). Run 1:
   the scene black under the UI (a pending fast clear of the target; RenderDoc). Run 2 with the fix: works in levels
   and every menu (the user). Open: the screenshot comparison against the `hdr` build (same curve, the game's
-  tonemapper) for transcription errors; the map screen keeps the game's tonemapper (coarse dark tones).
+  tonemapper): the user saw nothing off in like-for-like shots. The main menu's viewport offset: fixed (`23bbba4`,
+  confirmed by the user). The map screen keeps the game's tonemapper (coarse dark tones; the user: looks off).
+- **Step 3** (2026-11-22, `1fc38c4`): each area's values on the GPU, the user's adjustments on top (H45). Verified
+  by the user: every level starts out looking good at the defaults; Level LUT tone and black floor work.
 
 ## Answers (the user, 2026-11-22)
 

@@ -813,7 +813,8 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     target). Fix (build 18:13): the draw's viewport passed with the constants; the shader inverts it (pixel -> NDC ->
     the unit rectangle -> UV, the vignette from that NDC), the drawn rectangle from the same mapping.
   - Run 3 (build 18:13): the user confirmed the main menu fixed (aligned with ACES) [V the user].
-- **H45, each area's values on the GPU (plan-hdr-final.md step 3)** (2026-11-22; fix built 19:23, not run):
+- **H45, each area's values on the GPU (plan-hdr-final.md step 3)** (2026-11-22; fix built 19:23, verified by the
+  user):
   - Solver (`h42/gpu_solver.py`, as the GPU runs it): the game's grey curve on a ramp of ~40 scene values, anchors by
     log-log interpolation, floor / grey / gamma read directly, toe length / strength / clamp by at most 12 damped Newton
     steps (finite-difference Jacobian, log residuals at Y(U) 0.07 / 0.02 / 0.006, start 0.08 / 0.35 / 0.002, bounds)
@@ -828,6 +829,11 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     `hdr_adj_toe_strength` (x100, default 0), `hdr_adj_toe_clamp` (x1e4, default 0), `hdr_black_floor` (%, default
     0), `hdr_lut_tone` (%, default 100); the absolute `hdr_pw_gamma` / `_toe_*` keys are gone (the shoulder and
     saturation keys stay). Everything on the GPU, recomputed at each LUT build (step 4: only on change).
+  - Run 1 (build 19:23; ini reset to the defaults, the old keys removed, backup `user/medievil.ini.bak-hdr-final-step3`):
+    the user: "the best it's looked in HDR": a relatively high game brightness (203) with contrast kept and nothing
+    blown out; no re-configuring per level, every level starts out looking good; Level LUT tone removes the haze and
+    keeps the colours; black floor works; "probably better than the HDR implementation in almost every game" [V the
+    user].
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.
