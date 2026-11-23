@@ -113,6 +113,10 @@ Every log line on these paths is reviewed: release keeps start-up lines only.
 - **Step 4** (2026-11-22, `7916bd5`): our area values and LUT rebuilt only when the block, level LUT or settings
   change; the game's LUT target drawn on demand (H46). Run (dev build): in a level 1 rebuild at load, then none; the
   main menu's many rebuilds were the user moving sliders. The user: works as intended.
+- **Map screen** (2026-11-22, `c2879b9`, H47): its tonemapper through our pass (its variant: film grain kept, no
+  dither). **Reference grey fix** (`8605255`, H48): our curve's colour step graded its reference grey twice (map darks
+  ~20x over SDR; Hall of Heroes, Dan's Crypt, Sleeping Village off too). The user: the map correct, Dan's Crypt good,
+  Pumpkin Gorge correct.
 
 ## Answers (the user, 2026-11-22)
 

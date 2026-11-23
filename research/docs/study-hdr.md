@@ -868,7 +868,8 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
   - Run (dev 21:28, the user): the map looked no different. Expected in hindsight: since step 4 the game's map
     tonemapper already read the game's LUT target drawn by our curve; this change only adds near-black precision and
     drops the dither. Its look problem is H48.
-- **H48, the map's darks ~27x over SDR: our reference grey graded twice** (2026-11-22; fix built 22:24, not run):
+- **H48, the map's darks ~27x over SDR: our reference grey graded twice** (2026-11-22; `8605255`, exe 22:24; run,
+  the user: map correct, Dan's Crypt good (shadow detail was crushed before), Pumpkin Gorge correct):
   - The user: on the map "Ours" looks wrong, ACES and SDR alike. Screenshots, same Dan's Crypt view (dev build saves
     to `Videos\NVIDIA\out\`): ours 21.38.29 (JXR), SDR 21.58.54 (PNG, read at white 203 nits, gamma 2.2): fog 1.34 vs
     0.05 nits, land 3.9 vs 2.1, median 4.7 vs 0.6; ACES 21.40.32 median 1.4 [V].
@@ -890,6 +891,8 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     Y(U) through it. Offline: map 1.47 / 1.06 (within 1% from scene 0.1), every level 1.00 (0.998-1.0) at 0.01 /
     0.04. Expected in game: the map near SDR; Hall of Heroes and Dan's Crypt brighter darks, Sleeping Village darker
     mid-darks (each now at its SDR grey curve).
+  - Run [V]: map shot 22.28.40 (JXR, same view) against SDR 21.58.54: median 0.52 vs 0.62 nits, 25% 0.13 vs 0.11, 75%
+    2.5 vs 2.9, 90% 8.8 vs 8.6, fog 0.11 vs 0.05 (before the fix: median 4.7, fog 1.34).
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.
