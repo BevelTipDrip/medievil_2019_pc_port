@@ -4977,11 +4977,23 @@ bool Rasterizer::ReplaceHdrComposite(const Pipeline* pipeline) {
 bool Rasterizer::ReplaceHdrTonemap(const Pipeline* pipeline) {
     const auto stages = pipeline->GetStages();
     const u32 fragment = static_cast<u32>(Shader::SwStage::Fragment);
-    const u32 vertex = static_cast<u32>(Shader::SwStage::Vertex);
     const Shader::Info* fs = fragment < stages.size() ? stages[fragment] : nullptr;
-    if (!fs || fs->pgm_hash != Ue4HdrGrading::TonemapPs) {
+    if (!fs || (fs->pgm_hash != Ue4HdrGrading::TonemapPs && fs->pgm_hash != Ue4HdrGrading::TonemapMapPs)) {
         return false;
     }
+    if (fs->pgm_hash == Ue4HdrGrading::TonemapPs && ReplaceHdrTonemapDraw(pipeline, *fs)) {
+        return true;
+    }
+    // The game's tonemapper draws (the map screen's, or ours declined): it reads the game's LUT target, drawn now if
+    // our LUT pass left it for later (study-hdr.md H46).
+    ue4_hdr->WriteGameLut();
+    return false;
+}
+
+bool Rasterizer::ReplaceHdrTonemapDraw(const Pipeline* pipeline, const Shader::Info& fs_info) {
+    const auto stages = pipeline->GetStages();
+    const u32 vertex = static_cast<u32>(Shader::SwStage::Vertex);
+    const Shader::Info* fs = &fs_info;
     const auto& settings = Gow3Settings::Get();
     if (settings.hdr_look.load(std::memory_order_relaxed) != Gow3Settings::HdrLookSdr || !ue4_hdr->OwnLutReady()) {
         return false; // the game's look, or our LUT not built yet: the game's draw

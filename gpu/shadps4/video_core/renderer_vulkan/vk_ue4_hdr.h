@@ -13,6 +13,7 @@
 #pragma once
 
 #include <array>
+#include <chrono>
 #include <utility>
 #include <vector>
 #include "common/types.h"
@@ -55,6 +56,7 @@ public:
     /// UE 4.21's HDR tonemapper (the levels'; study-hdr.md H38, H44): replaced by RunTonemap. The map screen's
     /// (52770387e0d6363a, with sharpening and grain) keeps the game's draw.
     static constexpr u64 TonemapPs = 0x12178a9314cb761eull;
+    static constexpr u64 TonemapMapPs = 0x52770387e0d6363aull;
     /// The constants RunTonemap takes, in dwords: the pixel shader's buffers 0 / 1, the vertex shader's 0 / 1, then the
     /// draw's viewport (x scale, x offset, y scale, y offset: pixel = offset + NDC x scale, as the port maps it).
     static constexpr u32 TonemapPs0 = 24, TonemapPs1 = 8, TonemapVs0 = 12, TonemapVs1 = 16, TonemapViewport = 4;
@@ -105,6 +107,11 @@ public:
                     const std::array<u32, TonemapDwords>& constants, const vk::Rect2D& rect,
                     const vk::ClearColorValue* clear);
 
+    /// The game's LUT target is drawn on demand (study-hdr.md H46): before a game tonemapper draw that reads it (the
+    /// map screen's, or the levels' when ours declines). Does nothing when the last build's is drawn or there is none.
+    /// The target is found again from its description (an image of an earlier frame may be gone).
+    void WriteGameLut();
+
     /// Records our UI composite into the game's composite target (`target`, `desc`) from the scene (the tonemapper's
     /// PQ output) and Slate's UI image (`ui_srgb`: its view decodes sRGB). True: written, the game's draw is skipped.
     bool RunComposite(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc,
@@ -115,12 +122,42 @@ public:
     vk::ImageView RunBackdrop(const CompositeInput& scene, const CompositeInput& ui, u32 width, u32 height);
 
 private:
+    /// ue4_hdr_lut.frag's push constants: the game brightness, the peak, the user's adjustments to the area's values
+    /// and the shoulder (study-hdr.md H45).
+    struct LutPushData {
+        float lut_size;
+        u32 flags;          ///< bit 0: film black clip forced to 0; bit 2: our LUT's index
+        float game_nits;
+        float peak_nits;
+        float adj0[4];      ///< mid contrast x, toe length x, toe strength +, toe clamp +
+        float adj1[4];      ///< black floor x, Level LUT tone, highlight saturation, 0
+        float shoulder[4];  ///< start (share of the peak), length (stops), angle, 0
+    };
+    static LutPushData LutPushFromSettings(u32 size);
+    /// The last build's game LUT target and what it is drawn from (WriteGameLut). No frame-start reset: the port
+    /// starts a frame at the first draw into a display buffer, which the HDR tonemapper is.
+    struct PendingGameLut {
+        VideoCore::TextureCache::ImageDesc desc{};
+        std::array<u32, ParamDwords> block{};
+        CompositeInput level_lut{};
+        LutPushData push{};
+        u32 size = 0;
+        bool valid = false;
+        bool written = false;
+    };
     enum class Kind : u8 { Lut, Composite, LutBlend, Tonemap, Area, AreaBlend };
     vk::Pipeline Pipeline(vk::Format format, Kind kind = Kind::Lut);
     /// Our LUT image (32^3 RGBA16F, 3D, its slices renderable as a 2D array), made at the first build.
     bool EnsureOwnLut(u32 size);
     /// The area's values image (4x1 RGBA32F, ue4_hdr_area.frag), made at the first build.
     bool EnsureArea();
+    /// Record the area pass / a LUT pass (into our LUT when `own_image` is set: its own barriers) / the game's target.
+    void RecordArea(vk::Pipeline pipeline, vk::PipelineLayout pipeline_layout, vk::Buffer params, u64 offset,
+                    const CompositeInput& lut);
+    void RecordLut(vk::ImageView view, vk::Image own_image, u32 size, vk::Pipeline pipeline,
+                   vk::PipelineLayout pipeline_layout, const LutPushData& push, vk::Buffer params, u64 offset,
+                   const CompositeInput& lut);
+    bool RecordGameLut(const PendingGameLut& job);
 
     const Instance& instance;
     Scheduler& scheduler;
@@ -152,6 +189,10 @@ private:
     VideoCore::UniqueImage area;
     vk::UniqueImageView area_view;
     bool area_failed = false;
+    PendingGameLut pending;
+    u64 built_key = 0;          ///< what our LUT and the area's values were last built from
+    u64 rebuilds = 0;           ///< dev build: rebuilds since the last line
+    std::chrono::steady_clock::time_point last_rebuild_note{};
     u64 tonemap_runs = 0;
 };
 

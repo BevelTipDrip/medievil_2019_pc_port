@@ -834,6 +834,17 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     blown out; no re-configuring per level, every level starts out looking good; Level LUT tone removes the haze and
     keeps the colours; black floor works; "probably better than the HDR implementation in almost every game" [V the
     user].
+- **H46, rebuild only on change (plan-hdr-final.md step 4)** (2026-11-22; fix built 20:02, not run):
+  - The game builds its grading LUT every frame; our area pass and our LUT now only when their key changes: a hash
+    (FNV-1a) of the parameter block (the Color tab applied, the game's Brightness neutral), the level LUT's view and
+    the LUT pass's push constants (game brightness, peak, every adjustment, the shoulder). The game's builder draw is
+    still skipped each frame; our images persist.
+  - The game's LUT target is only read by a game tonemapper (the map screen's; the levels' when ours declines), so it
+    is drawn on demand: `Rasterizer::ReplaceHdrTonemap` calls `Ue4HdrGrading::WriteGameLut` before such a draw; the
+    job (the last build's block, level LUT, settings) finds its target again from the description (`FindImage`).
+    No frame-start reset: the port starts a frame at the first draw into a display buffer, and the HDR tonemapper is
+    such a draw. Without our LUT (it could not be made) the old path stays: the area and the game's LUT every build.
+  - Dev build: a log line when our LUT is rebuilt, at most one a second with the count since (an event log).
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.

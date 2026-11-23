@@ -4,6 +4,7 @@
 #include "video_core/renderer_vulkan/vk_ue4_hdr.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -25,33 +26,6 @@
 namespace Vulkan {
 
 namespace {
-/// ue4_hdr_lut.frag's push constants: the game brightness, the peak, the user's adjustments to the area's values and
-/// the shoulder (study-hdr.md H45).
-struct LutPush {
-    float lut_size;
-    u32 flags;            ///< bit 0: film black clip forced to 0; bit 2: our LUT's index
-    float game_nits;
-    float peak_nits;
-    float adj0[4];        ///< mid contrast x, toe length x, toe strength +, toe clamp +
-    float adj1[4];        ///< black floor x, Level LUT tone, highlight saturation, 0
-    float shoulder[4];    ///< start (share of the peak), length (stops), angle, 0
-};
-LutPush LutPushFromSettings(u32 size) {
-    const auto& s = Gow3Settings::Get();
-    const auto get = [](const std::atomic<int>& v) { return float(v.load(std::memory_order_relaxed)); };
-    return LutPush{
-        .lut_size = float(size),
-        .flags = 0u,
-        .game_nits = get(s.hdr_game_nits),
-        .peak_nits = get(s.hdr_peak_nits),
-        .adj0 = {get(s.hdr_adj_contrast) / 100.0f, get(s.hdr_adj_toe_length) / 100.0f,
-                 get(s.hdr_adj_toe_strength) / 100.0f, get(s.hdr_adj_toe_clamp) / 10000.0f},
-        .adj1 = {get(s.hdr_black_floor) / 100.0f, get(s.hdr_lut_tone) / 100.0f, get(s.hdr_pw_saturation) / 100.0f, 0.0f},
-        .shoulder = {get(s.hdr_pw_shoulder_start) / 100.0f, get(s.hdr_pw_shoulder_length) / 10.0f,
-                     get(s.hdr_pw_shoulder_angle) / 100.0f, 0.0f},
-    };
-}
-static_assert(sizeof(LutPush) == 64);
 /// ue4_ui_composite.frag's push constants.
 struct CompositePush {
     float target_size[2];
@@ -68,6 +42,23 @@ constexpr vk::Format OwnLutFormat = vk::Format::eR16G16B16A16Sfloat;
 constexpr vk::Format AreaFormat = vk::Format::eR32G32B32A32Sfloat; ///< the area's values (ue4_hdr_area.frag)
 constexpr u32 AreaTexels = 4;
 } // namespace
+
+Ue4HdrGrading::LutPushData Ue4HdrGrading::LutPushFromSettings(u32 size) {
+    static_assert(sizeof(LutPushData) == 64); // ue4_hdr_lut.frag's push block
+    const auto& s = Gow3Settings::Get();
+    const auto get = [](const std::atomic<int>& v) { return float(v.load(std::memory_order_relaxed)); };
+    return LutPushData{
+        .lut_size = float(size),
+        .flags = 0u,
+        .game_nits = get(s.hdr_game_nits),
+        .peak_nits = get(s.hdr_peak_nits),
+        .adj0 = {get(s.hdr_adj_contrast) / 100.0f, get(s.hdr_adj_toe_length) / 100.0f,
+                 get(s.hdr_adj_toe_strength) / 100.0f, get(s.hdr_adj_toe_clamp) / 10000.0f},
+        .adj1 = {get(s.hdr_black_floor) / 100.0f, get(s.hdr_lut_tone) / 100.0f, get(s.hdr_pw_saturation) / 100.0f, 0.0f},
+        .shoulder = {get(s.hdr_pw_shoulder_start) / 100.0f, get(s.hdr_pw_shoulder_length) / 10.0f,
+                     get(s.hdr_pw_shoulder_angle) / 100.0f, 0.0f},
+    };
+}
 
 Ue4HdrGrading::Ue4HdrGrading(const Instance& instance_, Scheduler& scheduler_,
                              VideoCore::TextureCache& texture_cache_, VideoCore::BufferCache& buffer_cache_,
@@ -93,7 +84,7 @@ Ue4HdrGrading::Ue4HdrGrading(const Instance& instance_, Scheduler& scheduler_,
         .pBindings = lut_bindings.data(),
     }));
     const auto set = *set_layout;
-    const vk::PushConstantRange push{vk::ShaderStageFlagBits::eFragment, 0, sizeof(LutPush)};
+    const vk::PushConstantRange push{vk::ShaderStageFlagBits::eFragment, 0, sizeof(LutPushData)};
     layout = Check(device.createPipelineLayoutUnique({
         .setLayoutCount = 1,
         .pSetLayouts = &set,
@@ -327,82 +318,27 @@ bool Ue4HdrGrading::EnsureArea() {
     return true;
 }
 
-bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc,
-                        const std::array<u32, ParamDwords>& block, const CompositeInput* level_lut) {
-    if (failed || !target) {
-        return false;
+namespace {
+/// FNV-1a over raw bytes (the rebuild key, study-hdr.md H46).
+u64 HashBytes(u64 h, const void* data, size_t size) {
+    const auto* p = static_cast<const u8*>(data);
+    for (size_t i = 0; i < size; ++i) {
+        h = (h ^ p[i]) * 0x100000001b3ull;
     }
-    const auto& range = desc.view_info.range;
-    const u32 layers = range.extent.layers;
-    const u32 width = std::max(desc.info.size.width >> range.base.level, 1u);
-    const u32 height = std::max(desc.info.size.height >> range.base.level, 1u);
-    if (layers < 2 || width != height || width != layers) {
-        // Not the 32^3 LUT this pass knows (another LUT size or a target without its layers).
-        std::printf("UE4 HDR grading: unexpected LUT target %ux%u, %u layers; the game's grading LUT is kept\n",
-                    width, height, layers);
-        failed = true;
-        return false;
-    }
-    const Kind kind = level_lut ? Kind::LutBlend : Kind::Lut;
-    const vk::Pipeline pipeline = Pipeline(desc.view_info.format, kind);
-    const vk::Pipeline area_pipeline =
-        EnsureArea() ? Pipeline(AreaFormat, level_lut ? Kind::AreaBlend : Kind::Area) : vk::Pipeline{};
-    if (!pipeline || !area_pipeline) {
-        failed = true;
-        return false;
-    }
-    if (GOW3_DEV_TOOLS && level_lut && !blend_noted) {
-        blend_noted = true;
-        float w0, w1;
-        std::memcpy(&w0, &block[142], sizeof(w0));
-        std::memcpy(&w1, &block[143], sizeof(w1));
-        std::printf("UE4 HDR grading: the builder with a level grading LUT (fs 9f6bac6cba984956), weights %.3f / %.3f\n",
-                    w0, w1);
-    }
-    scheduler.EndRendering();
-    // As the skipped draw's colour target: GPU-modified, its aliases told, the view the game's draw would render to.
-    const vk::ImageView view = *texture_cache.FindRenderTarget(target, desc).image_view;
-    runtime.Transit(&texture_cache.GetImage(target), vk::ImageLayout::eColorAttachmentOptimal,
-                    vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite,
-                    range);
-    runtime.FlushBarriers();
+    return h;
+}
+} // namespace
 
-    // The game's Brightness setting (UE's display gamma) is InverseGamma.y = 2.2 / display gamma (dword 5), a power on
-    // the graded colour made for SDR screens. The game's ACES HDR path never applied it; ours would (run 26: 1.354, a
-    // display gamma of 1.625, crushed the shadows). In HDR it is neutral: Game brightness and Gamma take its place.
-    std::array<u32, ParamDwords> params_block = block;
-    if (const u32 game_power = block[InverseGammaDword];
-        GOW3_DEV_TOOLS && game_power != 0x3f800000u && !brightness_noted) {
-        brightness_noted = true;
-        float power;
-        std::memcpy(&power, &game_power, sizeof(power));
-        std::printf("UE4 HDR grading: the game's Brightness (display gamma %.3f, power %.3f) is neutral in HDR\n",
-                    power > 0.0f ? 2.2 / power : 0.0, power);
-    }
-    params_block[InverseGammaDword] = 0x3f800000u; // 1.0f
-    auto& stream = buffer_cache.GetStreamBuffer();
-    const u64 offset = stream.Copy(params_block.data(), sizeof(params_block), instance.StorageMinAlignment());
-    const vk::Buffer params = stream.Handle();
-    const LutPush push = LutPushFromSettings(width);
+void Ue4HdrGrading::RecordArea(vk::Pipeline pipeline, vk::PipelineLayout pipeline_layout, vk::Buffer params, u64 offset,
+                               const CompositeInput& lut) {
+    const vk::Sampler sampler = *lut_sampler;
     const vk::Image area_image = vk::Image(area);
     const vk::ImageView area_image_view = *area_view;
-    const vk::PipelineLayout pipeline_layout = level_lut ? *blend_layout : *layout;
-    const CompositeInput lut = level_lut ? *level_lut : CompositeInput{};
-    const vk::Sampler sampler = *lut_sampler;
-    // Our LUT (our tonemapper's, PQ(scene x 0.01)), in the same recording. Without it the game's tonemapper stays.
-    const bool own = EnsureOwnLut(width);
-    const vk::Pipeline own_pipeline = own ? Pipeline(OwnLutFormat, kind) : vk::Pipeline{};
-    const vk::ImageView own_view = own_pipeline ? *own_lut_layers : vk::ImageView{};
-    const vk::Image own_image = own_pipeline ? vk::Image(own_lut) : vk::Image{};
-    LutPush own_push = push;
-    own_push.flags |= 4u;
     scheduler.Record([=](vk::CommandBuffer cmdbuf) {
-        const vk::DescriptorBufferInfo info{.buffer = params, .offset = offset, .range = sizeof(block)};
+        const vk::DescriptorBufferInfo info{.buffer = params, .offset = offset, .range = ParamDwords * sizeof(u32)};
         const vk::DescriptorImageInfo lut_info{sampler, lut.view, lut.layout};
-        const vk::DescriptorImageInfo area_info{sampler, area_image_view, vk::ImageLayout::eShaderReadOnlyOptimal};
-        // Area pass: the block (and level LUT) in, the area's values out (study-hdr.md H45).
         const vk::ImageSubresourceRange area_range{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
-        const vk::ImageMemoryBarrier2 area_to_write{
+        const vk::ImageMemoryBarrier2 to_write{
             .srcStageMask = vk::PipelineStageFlagBits2::eFragmentShader,
             .srcAccessMask = vk::AccessFlagBits2::eShaderRead,
             .dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
@@ -412,8 +348,8 @@ bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache
             .image = area_image,
             .subresourceRange = area_range,
         };
-        cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &area_to_write});
-        const vk::RenderingAttachmentInfo area_attachment{
+        cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &to_write});
+        const vk::RenderingAttachmentInfo attachment{
             .imageView = area_image_view,
             .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
             .loadOp = vk::AttachmentLoadOp::eDontCare,
@@ -423,9 +359,9 @@ bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache
             .renderArea = {{0, 0}, {AreaTexels, 1}},
             .layerCount = 1,
             .colorAttachmentCount = 1,
-            .pColorAttachments = &area_attachment,
+            .pColorAttachments = &attachment,
         });
-        const std::array area_writes{
+        const std::array writes{
             vk::WriteDescriptorSet{.dstBinding = 0,
                                    .descriptorCount = 1,
                                    .descriptorType = vk::DescriptorType::eStorageBuffer,
@@ -435,14 +371,14 @@ bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache
                                    .descriptorType = vk::DescriptorType::eCombinedImageSampler,
                                    .pImageInfo = &lut_info},
         };
-        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, area_pipeline);
+        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
         cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0,
-                                    vk::ArrayProxy<const vk::WriteDescriptorSet>(lut.view ? 2u : 1u, area_writes.data()));
+                                    vk::ArrayProxy<const vk::WriteDescriptorSet>(lut.view ? 2u : 1u, writes.data()));
         cmdbuf.setViewportWithCount(vk::Viewport{0.f, 0.f, float(AreaTexels), 1.f, 0.f, 1.f});
         cmdbuf.setScissorWithCount(vk::Rect2D{{0, 0}, {AreaTexels, 1}});
         cmdbuf.draw(3, 1, 0, 0);
         cmdbuf.endRendering();
-        const vk::ImageMemoryBarrier2 area_to_read{
+        const vk::ImageMemoryBarrier2 to_read{
             .srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
             .srcAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
             .dstStageMask = vk::PipelineStageFlagBits2::eFragmentShader,
@@ -452,8 +388,30 @@ bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache
             .image = area_image,
             .subresourceRange = area_range,
         };
-        cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &area_to_read});
+        cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &to_read});
+    });
+}
 
+void Ue4HdrGrading::RecordLut(vk::ImageView view, vk::Image own_image, u32 size, vk::Pipeline pipeline,
+                              vk::PipelineLayout pipeline_layout, const LutPushData& push, vk::Buffer params, u64 offset,
+                              const CompositeInput& lut) {
+    const vk::Sampler sampler = *lut_sampler;
+    const vk::ImageView area_image_view = *area_view;
+    scheduler.Record([=](vk::CommandBuffer cmdbuf) {
+        const vk::ImageSubresourceRange whole{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+        if (own_image) { // our LUT: its own barriers (the game's target is transited by the texture cache)
+            const vk::ImageMemoryBarrier2 to_write{
+                .srcStageMask = vk::PipelineStageFlagBits2::eFragmentShader,
+                .srcAccessMask = vk::AccessFlagBits2::eShaderRead,
+                .dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                .dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
+                .oldLayout = vk::ImageLayout::eUndefined, // every texel rewritten
+                .newLayout = vk::ImageLayout::eColorAttachmentOptimal,
+                .image = own_image,
+                .subresourceRange = whole,
+            };
+            cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &to_write});
+        }
         const vk::RenderingAttachmentInfo attachment{
             .imageView = view,
             .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
@@ -461,12 +419,15 @@ bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache
             .storeOp = vk::AttachmentStoreOp::eStore,
         };
         cmdbuf.beginRendering({
-            .renderArea = {{0, 0}, {width, height}},
-            .layerCount = layers,
+            .renderArea = {{0, 0}, {size, size}},
+            .layerCount = size,
             .colorAttachmentCount = 1,
             .pColorAttachments = &attachment,
         });
-        // The LUT passes: the block, the area's values, the level LUT (blend builder only).
+        const vk::DescriptorBufferInfo info{.buffer = params, .offset = offset, .range = ParamDwords * sizeof(u32)};
+        const vk::DescriptorImageInfo lut_info{sampler, lut.view, lut.layout};
+        const vk::DescriptorImageInfo area_info{sampler, area_image_view, vk::ImageLayout::eShaderReadOnlyOptimal};
+        // The block, the area's values, the level LUT (blend builder only).
         const std::array writes{
             vk::WriteDescriptorSet{.dstBinding = 0,
                                    .descriptorCount = 1,
@@ -485,67 +446,156 @@ bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache
         cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0,
                                     vk::ArrayProxy<const vk::WriteDescriptorSet>(lut.view ? 3u : 2u, writes.data()));
         cmdbuf.pushConstants(pipeline_layout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(push), &push);
-        cmdbuf.setViewportWithCount(vk::Viewport{0.f, 0.f, float(width), float(height), 0.f, 1.f});
-        cmdbuf.setScissorWithCount(vk::Rect2D{{0, 0}, {width, height}});
-        cmdbuf.draw(3, layers, 0, 0);
+        cmdbuf.setViewportWithCount(vk::Viewport{0.f, 0.f, float(size), float(size), 0.f, 1.f});
+        cmdbuf.setScissorWithCount(vk::Rect2D{{0, 0}, {size, size}});
+        cmdbuf.draw(3, size, 0, 0);
         cmdbuf.endRendering();
-        if (!own_view) {
-            return;
+        if (own_image) {
+            const vk::ImageMemoryBarrier2 to_read{
+                .srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                .srcAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
+                .dstStageMask = vk::PipelineStageFlagBits2::eFragmentShader,
+                .dstAccessMask = vk::AccessFlagBits2::eShaderRead,
+                .oldLayout = vk::ImageLayout::eColorAttachmentOptimal,
+                .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+                .image = own_image,
+                .subresourceRange = whole,
+            };
+            cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &to_read});
         }
-        const vk::ImageSubresourceRange whole{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
-        const vk::ImageMemoryBarrier2 to_write{
-            .srcStageMask = vk::PipelineStageFlagBits2::eFragmentShader,
-            .srcAccessMask = vk::AccessFlagBits2::eShaderRead,
-            .dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-            .dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
-            .oldLayout = vk::ImageLayout::eUndefined, // every texel rewritten
-            .newLayout = vk::ImageLayout::eColorAttachmentOptimal,
-            .image = own_image,
-            .subresourceRange = whole,
-        };
-        cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &to_write});
-        const vk::RenderingAttachmentInfo own_attachment{
-            .imageView = own_view,
-            .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
-            .loadOp = vk::AttachmentLoadOp::eDontCare,
-            .storeOp = vk::AttachmentStoreOp::eStore,
-        };
-        cmdbuf.beginRendering({
-            .renderArea = {{0, 0}, {width, height}},
-            .layerCount = layers,
-            .colorAttachmentCount = 1,
-            .pColorAttachments = &own_attachment,
-        });
-        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, own_pipeline);
-        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0,
-                                    vk::ArrayProxy<const vk::WriteDescriptorSet>(lut.view ? 3u : 2u, writes.data()));
-        cmdbuf.pushConstants(pipeline_layout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(own_push), &own_push);
-        cmdbuf.setViewportWithCount(vk::Viewport{0.f, 0.f, float(width), float(height), 0.f, 1.f});
-        cmdbuf.setScissorWithCount(vk::Rect2D{{0, 0}, {width, height}});
-        cmdbuf.draw(3, layers, 0, 0);
-        cmdbuf.endRendering();
-        const vk::ImageMemoryBarrier2 to_read{
-            .srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-            .srcAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
-            .dstStageMask = vk::PipelineStageFlagBits2::eFragmentShader,
-            .dstAccessMask = vk::AccessFlagBits2::eShaderRead,
-            .oldLayout = vk::ImageLayout::eColorAttachmentOptimal,
-            .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
-            .image = own_image,
-            .subresourceRange = whole,
-        };
-        cmdbuf.pipelineBarrier2({.imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &to_read});
     });
-    own_lut_built = own_view != vk::ImageView{};
-    // The guest pipelines' dynamic state must be emitted again after this pipeline.
-    scheduler.GetDynamicState().Invalidate();
-    if (GOW3_DEV_TOOLS && ++runs == 1) {
-        std::printf("UE4 HDR grading: our LUT (%ux%ux%u, %s)\n", width, height, layers,
-                    vk::to_string(desc.view_info.format).c_str());
+}
+
+bool Ue4HdrGrading::RecordGameLut(const PendingGameLut& job) {
+    const Kind kind = job.level_lut.view ? Kind::LutBlend : Kind::Lut;
+    const vk::Pipeline pipeline = Pipeline(job.desc.view_info.format, kind);
+    if (!pipeline) {
+        return false;
     }
+    VideoCore::TextureCache::ImageDesc desc = job.desc;
+    const VideoCore::ImageId target = texture_cache.FindImage(desc);
+    if (!target) {
+        return false;
+    }
+    scheduler.EndRendering();
+    // As the skipped draw's colour target: GPU-modified, its aliases told, the view the game's draw would render to.
+    const vk::ImageView view = *texture_cache.FindRenderTarget(target, desc).image_view;
+    runtime.Transit(&texture_cache.GetImage(target), vk::ImageLayout::eColorAttachmentOptimal,
+                    vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite,
+                    job.desc.view_info.range);
+    runtime.FlushBarriers();
+    auto& stream = buffer_cache.GetStreamBuffer();
+    const u64 offset = stream.Copy(job.block.data(), sizeof(job.block), instance.StorageMinAlignment());
+    RecordLut(view, vk::Image{}, job.size, pipeline, job.level_lut.view ? *blend_layout : *layout, job.push,
+              stream.Handle(), offset, job.level_lut);
+    scheduler.GetDynamicState().Invalidate();
     return true;
 }
 
+void Ue4HdrGrading::WriteGameLut() {
+    if (!pending.valid || pending.written) {
+        return;
+    }
+    pending.written = true;
+    RecordGameLut(pending);
+}
+
+bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc,
+                        const std::array<u32, ParamDwords>& block, const CompositeInput* level_lut) {
+    if (failed || !target) {
+        return false;
+    }
+    const auto& range = desc.view_info.range;
+    const u32 layers = range.extent.layers;
+    const u32 width = std::max(desc.info.size.width >> range.base.level, 1u);
+    const u32 height = std::max(desc.info.size.height >> range.base.level, 1u);
+    if (layers < 2 || width != height || width != layers) {
+        // Not the 32^3 LUT this pass knows (another LUT size or a target without its layers).
+        std::printf("UE4 HDR grading: unexpected LUT target %ux%u, %u layers; the game's grading LUT is kept\n",
+                    width, height, layers);
+        failed = true;
+        return false;
+    }
+    const Kind kind = level_lut ? Kind::LutBlend : Kind::Lut;
+    const vk::Pipeline area_pipeline =
+        EnsureArea() ? Pipeline(AreaFormat, level_lut ? Kind::AreaBlend : Kind::Area) : vk::Pipeline{};
+    if (!Pipeline(desc.view_info.format, kind) || !area_pipeline) {
+        failed = true;
+        return false;
+    }
+    if (GOW3_DEV_TOOLS && level_lut && !blend_noted) {
+        blend_noted = true;
+        float w0, w1;
+        std::memcpy(&w0, &block[142], sizeof(w0));
+        std::memcpy(&w1, &block[143], sizeof(w1));
+        std::printf("UE4 HDR grading: the builder with a level grading LUT (fs 9f6bac6cba984956), weights %.3f / %.3f\n",
+                    w0, w1);
+    }
+    // The game's Brightness setting (UE's display gamma) is InverseGamma.y = 2.2 / display gamma (dword 5), a power on
+    // the graded colour made for SDR screens. The game's ACES HDR path never applied it; ours would (run 26: 1.354, a
+    // display gamma of 1.625, crushed the shadows). In HDR it is neutral: Game brightness takes its place.
+    std::array<u32, ParamDwords> params_block = block;
+    if (const u32 game_power = block[InverseGammaDword];
+        GOW3_DEV_TOOLS && game_power != 0x3f800000u && !brightness_noted) {
+        brightness_noted = true;
+        float power;
+        std::memcpy(&power, &game_power, sizeof(power));
+        std::printf("UE4 HDR grading: the game's Brightness (display gamma %.3f, power %.3f) is neutral in HDR\n",
+                    power > 0.0f ? 2.2 / power : 0.0, power);
+    }
+    params_block[InverseGammaDword] = 0x3f800000u; // 1.0f
+    const LutPushData push = LutPushFromSettings(width);
+    const CompositeInput lut = level_lut ? *level_lut : CompositeInput{};
+    // The game's LUT target: only the game's tonemapper reads it (the map screen's; the levels' when ours declines),
+    // so it is drawn on demand, when that draw comes (WriteGameLut), not at every build (study-hdr.md H46).
+    pending = {.desc = desc, .block = params_block, .level_lut = lut, .push = push, .size = width,
+               .valid = true, .written = false};
+    const bool own = EnsureOwnLut(width) && Pipeline(OwnLutFormat, kind);
+    if (!own) {
+        // No LUT of ours: the game's tonemapper stays, and reads its target every frame.
+        auto& stream = buffer_cache.GetStreamBuffer();
+        const u64 offset = stream.Copy(params_block.data(), sizeof(params_block), instance.StorageMinAlignment());
+        scheduler.EndRendering();
+        RecordArea(area_pipeline, level_lut ? *blend_layout : *layout, stream.Handle(), offset, lut);
+        WriteGameLut();
+        return true;
+    }
+    // Our LUT and the area's values are rebuilt only when what they are made from changes: the block (the Color tab
+    // applied), the level LUT, the settings (study-hdr.md H46). The game rebuilds its LUT every frame.
+    u64 key = HashBytes(0xcbf29ce484222325ull, params_block.data(), sizeof(params_block));
+    const u64 lut_view = reinterpret_cast<u64>(static_cast<VkImageView>(lut.view));
+    key = HashBytes(key, &lut_view, sizeof(lut_view));
+    key = HashBytes(key, &push, sizeof(push));
+    if (own_lut_built && key == built_key) {
+        return true; // nothing changed: the game's draw is skipped, our LUT stands
+    }
+    auto& stream = buffer_cache.GetStreamBuffer();
+    const u64 offset = stream.Copy(params_block.data(), sizeof(params_block), instance.StorageMinAlignment());
+    const vk::Buffer params = stream.Handle();
+    scheduler.EndRendering();
+    const vk::PipelineLayout pipeline_layout = level_lut ? *blend_layout : *layout;
+    RecordArea(area_pipeline, pipeline_layout, params, offset, lut);
+    LutPushData own_push = push;
+    own_push.flags |= 4u;
+    RecordLut(*own_lut_layers, vk::Image(own_lut), width, Pipeline(OwnLutFormat, kind), pipeline_layout, own_push,
+              params, offset, lut);
+    own_lut_built = true;
+    built_key = key;
+    // The guest pipelines' dynamic state must be emitted again after these pipelines.
+    scheduler.GetDynamicState().Invalidate();
+    if constexpr (GOW3_DEV_TOOLS) {
+        // Event log, not periodic: a line when our LUT is rebuilt, at most one a second (with the count since).
+        ++rebuilds;
+        const auto now = std::chrono::steady_clock::now();
+        if (now - last_rebuild_note >= std::chrono::seconds(1)) {
+            std::printf("UE4 HDR grading: our LUT rebuilt (%llu since the last line; %ux%ux%u)\n",
+                        static_cast<unsigned long long>(rebuilds), width, height, layers);
+            rebuilds = 0;
+            last_rebuild_note = now;
+        }
+    }
+    return true;
+}
 
 bool Ue4HdrGrading::RunTonemap(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc,
                                const TonemapInputs& in, const std::array<u32, TonemapDwords>& constants,
