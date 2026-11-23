@@ -29,5 +29,6 @@ int runtime_memory_read_backing(uintptr_t, void*, uint64_t) { std::abort(); }
 int runtime_memory_copy_backing(uintptr_t, void*, uint64_t) { std::abort(); }
 int runtime_memory_store_label(uintptr_t, uint64_t, uint32_t) { std::abort(); }
 void runtime_memory_usage(uint64_t* a, uint64_t* b, uint64_t* c) { *a = *b = *c = 0; }
+const char* runtime_saveinfo_level_name(int) { return nullptr; }
 }
 

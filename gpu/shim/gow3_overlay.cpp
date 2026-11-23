@@ -14,6 +14,7 @@
 #include <iterator>
 #include <map>
 #include <mutex>
+#include <string>
 #include <string_view>
 #include <thread>
 #include <utility>
@@ -21,6 +22,7 @@
 
 #include <SDL3/SDL.h>
 #include "gow3_settings.h"
+#include "gow3_levels.h"
 #include "gow3_toggles.h"
 #include "gow3_orbs.h"
 #include "gow3_actors.h"
@@ -398,6 +400,16 @@ int& Focus() {
     return nav.focus[nav.tab];
 }
 
+// The styled dropdown open (DropdownRow): while open it takes the pad and keys (up / down move its highlight,
+// Cross picks, Circle closes it, not the menu).
+struct DropdownState {
+    ImGuiID id = 0;
+    int highlight = 0;
+    int move = 0;
+    bool pick = false;
+    bool close = false;
+} dropdown;
+
 // Whether the next row drawn has the focus.
 bool NextRowFocused() {
     return nav.rows == Focus();
@@ -406,6 +418,12 @@ bool NextRowFocused() {
 // What a press of the menu's buttons does (MenuButtons; SDL events when the runtime gave no input).
 void MenuPress(uint32_t pressed) {
     if (!pressed) {
+        return;
+    }
+    if (dropdown.id) {
+        dropdown.move += (pressed & Ps4::Up) ? -1 : (pressed & Ps4::Down) ? 1 : 0;
+        dropdown.pick |= (pressed & Ps4::Cross) != 0;
+        dropdown.close |= (pressed & Ps4::Circle) != 0;
         return;
     }
     nav.move += (pressed & Ps4::Up) ? -1 : (pressed & Ps4::Down) ? 1 : 0;
@@ -860,6 +878,108 @@ void IndexChoiceRow(const char* label, int& value, const char* const* labels, in
         value = chosen;
         dirty = true;
     }
+}
+
+// A choice from a list that opens below the row (the game's look: the value with a down arrow; the list in the
+// menu's colours and font). Returns the chosen index, -1 when unchanged. Pad: Cross opens it (then up / down,
+// Cross picks, Circle closes), left / right step through the choices without opening it; a click opens it.
+int DropdownRow(const char* label, int current, const std::vector<std::string>& labels, const char* help) {
+    const int count = int(labels.size());
+    int chosen = current;
+    const char* shown = current >= 0 && current < count ? labels[current].c_str() : "";
+    RowNav in;
+    if (styled) {
+        RowArea r = BeginStyledRow(label);
+        StyledRowHit(r);
+        const bool clicked = r.clicked;
+        DrawChoice(r, shown, false);
+        {
+            const float a = Px(8.0f);
+            ImGui::GetWindowDrawList()->AddTriangleFilled(ImVec2(r.right - 2.0f * a, r.mid - a * 0.5f),
+                                                          ImVec2(r.right, r.mid - a * 0.5f),
+                                                          ImVec2(r.right - a, r.mid + a * 0.6f),
+                                                          Col(r.focused ? Gold : Dim));
+        }
+        in = StyledRowEnd(r, help);
+        const ImGuiID id = ImGui::GetID("##list");
+        if ((clicked || in.press) && count > 0 && dropdown.id != id) {
+            ImGui::OpenPopup("##list");
+            dropdown = DropdownState{id, std::max(current, 0)};
+        }
+        in.press = false;
+        ImGui::SetNextWindowPos(ImVec2(r.value_x, r.max.y));
+        ImGui::SetNextWindowSize(ImVec2(r.right - r.value_x, 0.0f));
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, IM_COL32(30, 23, 18, 248));
+        ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(176, 166, 150, 150));
+        ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, Px(10.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, std::max(Px(1.2f), 1.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(Px(6.0f), Px(6.0f)));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
+        if (ImGui::BeginPopup("##list", ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings)) {
+            if (dropdown.id != id) {
+                dropdown = DropdownState{id, std::max(current, 0)};
+            }
+            if (dropdown.move) {
+                dropdown.highlight = ((dropdown.highlight + dropdown.move) % count + count) % count;
+                dropdown.move = 0;
+            }
+            bool close = std::exchange(dropdown.close, false);
+            if (std::exchange(dropdown.pick, false)) {
+                chosen = dropdown.highlight;
+                close = true;
+            }
+            const ImGuiIO& io = ImGui::GetIO();
+            const float h = Px(RowHeight), size = TextPx(RowText), w = ImGui::GetContentRegionAvail().x;
+            ImDrawList* draw = ImGui::GetWindowDrawList();
+            for (int i = 0; i < count; ++i) {
+                const ImVec2 p = ImGui::GetCursorScreenPos();
+                ImGui::PushID(i);
+                if (ImGui::InvisibleButton("##item", ImVec2(w, h))) {
+                    chosen = i;
+                    close = true;
+                }
+                if (ImGui::IsItemHovered() && (io.MouseDelta.x != 0.0f || io.MouseDelta.y != 0.0f)) {
+                    dropdown.highlight = i;
+                }
+                ImGui::PopID();
+                if (i == dropdown.highlight) {
+                    draw->AddRectFilled(p, ImVec2(p.x + w, p.y + h), Col(FocusFill), Px(8.0f));
+                }
+                const ImVec4 clip(p.x, p.y, p.x + w - Px(8.0f), p.y + h);
+                draw->AddText(choice_style.text, size, ImVec2(p.x + Px(10.0f), p.y + h * 0.5f - size * 0.55f),
+                              Col(i == dropdown.highlight ? Gold : i == current ? White : Cream), labels[i].c_str(),
+                              nullptr, 0.0f, &clip);
+            }
+            if (close) {
+                ImGui::CloseCurrentPopup();
+                dropdown = DropdownState{};
+            }
+            ImGui::EndPopup();
+        } else if (dropdown.id == id) {
+            dropdown = DropdownState{}; // closed by a click outside it
+        }
+        ImGui::PopStyleVar(4);
+        ImGui::PopStyleColor(2);
+    } else {
+        Row(label);
+        if (ImGui::BeginCombo("##value", shown)) {
+            for (int i = 0; i < count; ++i) {
+                if (ImGui::Selectable(labels[i].c_str(), i == current)) {
+                    chosen = i;
+                }
+            }
+            ImGui::EndCombo();
+        }
+        in = RowEnd(help);
+        if (in.press && count > 0) {
+            chosen = current < 0 ? 0 : (current + 1) % count;
+        }
+    }
+    if (in.step && count > 0) {
+        chosen = current < 0 ? (in.step > 0 ? 0 : count - 1) : std::clamp(current + in.step, 0, count - 1);
+    }
+    ImGui::PopID();
+    return chosen != current ? chosen : -1;
 }
 
 // An int slider; `plus_minus` adds - / + buttons in the plain look (render scale). Returns the new
@@ -1808,33 +1928,99 @@ void GradeRow(const char* label, int i, const char* help) {
 
 // Our tone curve's rows (study-hdr.md H40-H45): adjustments to each area's own values (the game's grading of that
 // place), the same everywhere; the shoulder and saturation absolute.
+// A per-level row's name: marked when the chosen level overrides it.
+std::string LevelLabel(const char* label, int key) {
+    return Gow3Settings::LevelOverridden(key) ? std::string(label) + " *" : std::string(label);
+}
+
+// Per-level settings (research/docs/plan-hdr-final.md): which values the rows below edit. All levels, the running
+// level, or a level with saved settings; a level's changes are kept for it (marked *), the rest follow All levels.
+void LevelTargetRows() {
+    namespace S = Gow3Settings;
+    const std::string current = S::CurrentLevel();
+    const auto same = [](const std::string& a, const std::string& b) {
+        return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), [](char x, char y) {
+                   return std::tolower(static_cast<unsigned char>(x)) == std::tolower(static_cast<unsigned char>(y));
+               });
+    };
+    std::vector<std::string> labels{"All levels"}, names{""};
+    if (!current.empty()) {
+        labels.push_back("This level: " + Gow3Levels::Title(current));
+        names.push_back(current);
+    }
+    for (const std::string& name : S::LevelsWithOverrides()) {
+        if (!same(name, current)) {
+            labels.push_back(Gow3Levels::Title(name));
+            names.push_back(name);
+        }
+    }
+    const int kind = S::LevelTargetKindNow();
+    const std::string target = S::LevelTarget();
+    int selected = 0;
+    if (kind == S::LevelTargetCurrent && !current.empty()) {
+        selected = 1;
+    } else if (kind != S::LevelTargetAll) {
+        for (int i = 1; i < int(names.size()); ++i) {
+            if (same(names[i], target)) {
+                selected = i;
+            }
+        }
+    }
+    const int chosen = DropdownRow("Adjust", selected, labels, Gow3Levels::Available()
+                                       ? "Which level the settings below change. All levels: every level without "
+                                         "its own value. A level: its own values (marked *), kept for that level."
+                                       : "The game's level names could not be read: the settings apply to every level.");
+    if (chosen >= 0) {
+        if (chosen == 0) {
+            S::SetLevelTarget(S::LevelTargetAll);
+        } else if (!current.empty() && chosen == 1) {
+            S::SetLevelTarget(S::LevelTargetCurrent);
+        } else {
+            S::SetLevelTarget(S::LevelTargetNamed, names[chosen]);
+        }
+    }
+    if (S::LevelTargetKindNow() != S::LevelTargetAll && !S::LevelTarget().empty()) {
+        bool any = false;
+        for (int i = 0; i < S::LevelKeyCount; ++i) {
+            any |= S::LevelOverridden(i);
+        }
+        static const char* const reset_label[] = {"Use All levels"};
+        const bool enabled[] = {any};
+        if (ButtonsRow("This level's values", reset_label, 1, enabled,
+                       "Removes this level's own values: it follows All levels again.") == 0) {
+            S::ResetLevelTarget();
+            dirty = true;
+        }
+    }
+}
+
 void PiecewiseRows() {
     namespace S = Gow3Settings;
     auto& s = S::Get();
-    SliderRow("Bloom strength", s.hdr_bloom, 0, S::HdrBloomMax, "%d%%",
+    SliderRow(LevelLabel("Bloom strength", 8).c_str(), S::LevelEdit(8), 0, S::HdrBloomMax, "%d%%",
               "The glow around bright light, as a share of each area's own bloom: 100 as the game sets it, lower "
               "for less haze around lights and fog, 0 none. Only in our HDR look.",
               5);
-    SliderRow("Level LUT tone", s.hdr_lut_tone, 0, 100, "%d%%",
+    SliderRow(LevelLabel("Level LUT tone", 2).c_str(), S::LevelEdit(2), 0, 100, "%d%%",
               "How much of a level's grading table shapes the brightness (Dan's Crypt, Hilltop, Sleeping Village and "
               "others: it lifts the shadows into a haze). 100: as the game grades it; 0: the haze gone, the "
               "shadows as in levels without a table. Its colour stays either way.",
               5);
-    SliderRow("Black floor", s.hdr_black_floor, 0, 100, "%d%%",
+    SliderRow(LevelLabel("Black floor", 3).c_str(), S::LevelEdit(3), 0, 100, "%d%%",
               "The raised black of a level's grading table: 0 keeps black at black (HDR shows a lifted black "
               "plainly); 100 lifts it as the game does.",
               5);
-    ScaledSliderRow("Mid contrast", s.hdr_adj_contrast, S::HdrAdjContrastMin, S::HdrAdjContrastMax, 0.01f,
+    ScaledSliderRow(LevelLabel("Mid contrast", 4).c_str(), S::LevelEdit(4), S::HdrAdjContrastMin, S::HdrAdjContrastMax, 0.01f,
                     "x%.2f",
                     "Each area's own contrast (its grading's slope through mid grey), times this: higher darkens the "
                     "shadows and brightens lit areas; mid grey stays.");
-    ScaledSliderRow("Toe clamp", s.hdr_adj_toe_clamp, S::HdrAdjToeClampMin, S::HdrAdjToeClampMax, 0.0001f, "%+.4f",
+    ScaledSliderRow(LevelLabel("Toe clamp", 5).c_str(), S::LevelEdit(5), S::HdrAdjToeClampMin, S::HdrAdjToeClampMax, 0.0001f, "%+.4f",
                     "Added to each area's black point (a scene level, mid grey is 0.18): higher crushes more of the "
                     "darkest tones to black; lower brings them back.");
-    ScaledSliderRow("Toe length", s.hdr_adj_toe_length, S::HdrAdjToeLengthMin, S::HdrAdjToeLengthMax, 0.01f,
+    ScaledSliderRow(LevelLabel("Toe length", 6).c_str(), S::LevelEdit(6), S::HdrAdjToeLengthMin, S::HdrAdjToeLengthMax, 0.01f,
                     "x%.2f",
                     "Each area's toe length times this: longer gives a gentler, longer fall into black.");
-    ScaledSliderRow("Toe strength", s.hdr_adj_toe_strength, S::HdrAdjToeStrengthMin, S::HdrAdjToeStrengthMax, 0.01f,
+    ScaledSliderRow(LevelLabel("Toe strength", 7).c_str(), S::LevelEdit(7), S::HdrAdjToeStrengthMin, S::HdrAdjToeStrengthMax, 0.01f,
                     "%+.2f",
                     "Added to each area's toe strength: higher gives crisper, darker shadows without moving mid "
                     "grey.");
@@ -1883,15 +2069,22 @@ void HdrRows() {
                       "middle, shoulder to your display's peak). Game's: the engine's ACES HDR output (lifted "
                       "blacks, less contrast).");
             ImGui::BeginDisabled(s.hdr_look != S::HdrLookSdr);
-            SliderRow("Game brightness", s.hdr_game_nits, S::HdrGameNitsMin, S::HdrGameNitsMax, "%d nits",
+            LevelTargetRows();
+            SliderRow(LevelLabel("Game brightness", 0).c_str(), S::LevelEdit(0), S::HdrGameNitsMin, S::HdrGameNitsMax,
+                      "%d nits",
                       "How bright SDR white is in HDR (203 is the HDR standard for paper white); mid grey sits at "
                       "18% of it. Raises or lowers the whole picture, not the UI.",
                       1);
-            SliderRow("Peak brightness", s.hdr_peak_nits, S::HdrPeakNitsMin, S::HdrPeakNitsMax, "%d nits",
+            SliderRow(LevelLabel("Peak brightness", 1).c_str(), S::LevelEdit(1), S::HdrPeakNitsMin,
+                      S::HdrPeakNitsMax, "%d nits",
                       "Your display's peak brightness in this mode: the brightest highlights roll off to it. "
                       "Measure it or use the display's rating (e.g. ~450 in an HDR 400 mode, ~1000 in a 1000 mode).",
                       10);
             PiecewiseRows();
+            // The rows' edits into All levels or the chosen level (the running values follow).
+            if (S::LevelSyncEdits()) {
+                dirty = true;
+            }
             ImGui::EndDisabled();
             if (S::HdrGame()) {
                 static const char* const curve_labels[] = {"1000 nits (game default)", "2000 nits"};

@@ -452,6 +452,7 @@ extern ABI float gow3_orbs_gain(void *player, float requested);
 extern ABI void medievil_hzb_map(void *tester, void *command_list);
 extern ABI void medievil_hzb_submit(void *tester);
 extern ABI void medievil_level_change(void);
+extern void medievil_level_setup(int suspend_movies, uintptr_t names_global);
 extern ABI int medievil_particle_advance(uintptr_t fx);
 extern ABI int medievil_particle_pre_render(uintptr_t fx);
 extern void medievil_hzb_init(uintptr_t map_results, uintptr_t first_frame_buffer);
@@ -613,14 +614,15 @@ static void install_hzb_remap(Segment *segments, uint64_t count, uint64_t size) 
            "no GPU wait)\n", sites == medievil_hzb_builds ? "01.00" : "01.02");
 }
 
-/* MediEvil: the movies still playing are suspended at each level change (src/level_hook.h): the
- * game never stops its intro after the skip. GOW3_MOVIE_SUSPEND=0: off. */
+/* MediEvil level changes (src/level_hook.h): the movies still playing are suspended (the game never stops its
+ * intro after the skip; GOW3_MOVIE_SUSPEND=0: off), and the level's name is read for the per-level settings. */
 static void install_level_hook(Segment *segments, uint64_t count, uint64_t size) {
     const char *env = getenv("GOW3_MOVIE_SUSPEND");
-    if (env && env[0] == '0') return;
+    const int suspend = !(env && env[0] == '0');
     const MedievilLevelSites *sites = medievil_level_find(image, size);
     if (!sites || !mapped(segments, count, sites->call, 5)) {
         printf("Movies: level-change suspend unavailable (not an analysed MediEvil eboot: 01.00 or 01.02)\n");
+        printf("Levels: level names unavailable (per-level settings use All levels)\n");
         return;
     }
     unsigned char *stub = allocate(page_size);
@@ -629,11 +631,16 @@ static void install_level_hook(Segment *segments, uint64_t count, uint64_t size)
         printf("Movies: level-change suspend unavailable (stub outside relative-call range)\n");
         return;
     }
+    const MedievilNameSites *names = medievil_name_find(image, size);
+    medievil_level_setup(suspend, names ? (uintptr_t)(image + names->names_ptr) : 0);
     medievil_level_build_stub(stub, (uintptr_t)medievil_level_change, (uintptr_t)(image + sites->open_level));
     protect(stub, page_size, 5);
     memcpy(image + sites->call + 1, &rel, 4);
-    printf("Movies: playing movies are suspended at each level change (OpenLevel hook, game build %s)\n",
-           sites == medievil_level_builds ? "01.00" : "01.02");
+    const char *build = sites == medievil_level_builds ? "01.00" : "01.02";
+    if (suspend)
+        printf("Movies: playing movies are suspended at each level change (OpenLevel hook, game build %s)\n", build);
+    printf(names ? "Levels: the level's name is read at each level change (per-level settings; game build %s)\n"
+                 : "Levels: level names unavailable in game build %s (per-level settings use All levels)\n", build);
 }
 
 /* MediEvil debug menu trace (research, plan-work-queue.md item 6): Dan's Blueprint opens the debug

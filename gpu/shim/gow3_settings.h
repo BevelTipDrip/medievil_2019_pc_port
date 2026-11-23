@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <iterator>
 #include <string>
+#include <vector>
 
 namespace Gow3Settings {
 
@@ -322,6 +323,39 @@ struct Values {
 };
 
 Values& Get();
+
+/// Per-level settings (research/docs/plan-hdr-final.md "Per-level settings"): these HDR rows have a value for All
+/// levels (the plain keys, e.g. hdr_bloom) and, per level, overrides (hdr_level.<level>.<key>). The level is the
+/// name the game opens (the OpenLevel hook, gow3_levels.cpp). The Values atomics above hold the running level's
+/// values: what the renderer reads. The menu edits LevelEdit (the chosen target's values); LevelSyncEdits stores them.
+inline constexpr int LevelKeyCount = 9;
+struct LevelKey {
+    const char* key; ///< medievil.ini key (the All levels value)
+    int lo, hi, def;
+};
+const LevelKey& LevelKeyAt(int i);
+/// The running level's value of key i (the renderer's atomic).
+std::atomic<int>& LevelValue(Values& v, int i);
+/// The menu's value of key i for the chosen target.
+std::atomic<int>& LevelEdit(int i);
+/// The game opened `name` (the hook, the game thread): the running values follow.
+void LevelChanged(const char* name);
+/// The running level's name ("" before any is known).
+std::string CurrentLevel();
+/// What the menu edits: All levels, the running level (follows it), or a named level.
+enum LevelTargetKind : int { LevelTargetAll = 0, LevelTargetCurrent = 1, LevelTargetNamed = 2 };
+void SetLevelTarget(int kind, const std::string& name = {});
+int LevelTargetKindNow();
+/// The target's level name ("" for All levels, or the running level when none is known).
+std::string LevelTarget();
+/// Levels with at least one override, by name.
+std::vector<std::string> LevelsWithOverrides();
+/// The target level overrides key i.
+bool LevelOverridden(int i);
+/// Stores the menu's edits into the target (All levels or the level's overrides). True when one changed.
+bool LevelSyncEdits();
+/// Removes the target level's overrides (it uses All levels again).
+void ResetLevelTarget();
 
 /// Reads the file, then the environment overrides. Called once at start.
 void Load();

@@ -4,13 +4,16 @@
 #include "gow3_graphics.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <cstdarg>
 #include <iterator>
+#include <array>
 #include <map>
+#include <mutex>
 #include <set>
 #include <string>
 #include <string_view>
@@ -38,12 +41,110 @@ float Clamp(float v, float lo, float hi) {
 /// The source being read (the file, then the environment) set ue4_upscaler: its older ue4_dlss=1
 /// does not override it.
 bool ue4_upscaler_set = false;
+
+// Per-level settings (LevelKey): All levels' values, each level's overrides, the running level and the menu's target.
+constexpr LevelKey LevelKeys[LevelKeyCount] = {
+    {"hdr_game_nits", HdrGameNitsMin, HdrGameNitsMax, HdrGameNitsDefault},
+    {"hdr_peak_nits", HdrPeakNitsMin, HdrPeakNitsMax, HdrPeakNitsDefault},
+    {"hdr_lut_tone", 0, 100, HdrLutToneDefault},
+    {"hdr_black_floor", 0, 100, HdrBlackFloorDefault},
+    {"hdr_adj_contrast", HdrAdjContrastMin, HdrAdjContrastMax, 100},
+    {"hdr_adj_toe_clamp", HdrAdjToeClampMin, HdrAdjToeClampMax, 0},
+    {"hdr_adj_toe_length", HdrAdjToeLengthMin, HdrAdjToeLengthMax, 100},
+    {"hdr_adj_toe_strength", HdrAdjToeStrengthMin, HdrAdjToeStrengthMax, 0},
+    {"hdr_bloom", 0, HdrBloomMax, HdrBloomDefault},
+};
+constexpr const char* LevelPrefix = "hdr_level.";
+
+struct LevelEntry {
+    std::string name; ///< as first seen (the file's or the game's spelling)
+    std::array<int, LevelKeyCount> value{};
+    std::array<bool, LevelKeyCount> set{};
+    bool Any() const {
+        return std::find(set.begin(), set.end(), true) != set.end();
+    }
+};
+struct LevelState {
+    std::mutex mutex;
+    bool loaded = false; ///< global holds the file's values (Load ran)
+    std::array<int, LevelKeyCount> global{};
+    std::map<std::string, LevelEntry> levels; ///< by lower-case name (names compare case-insensitively)
+    std::string current;
+    int target_kind = LevelTargetAll;
+    std::string target_name;
+    std::array<int, LevelKeyCount> shown{}; ///< the edit values as last set (LevelSyncEdits finds changes)
+};
+LevelState& Levels() {
+    static LevelState state;
+    return state;
+}
+std::atomic<int> level_edit[LevelKeyCount];
+
+std::string Lower(std::string text) {
+    for (char& c : text) {
+        c = char(std::tolower(static_cast<unsigned char>(c)));
+    }
+    return text;
+}
+
+std::string TargetLocked(const LevelState& s) {
+    return s.target_kind == LevelTargetAll ? std::string{}
+           : s.target_kind == LevelTargetCurrent ? s.current
+                                                 : s.target_name;
+}
+
+const LevelEntry* FindLevel(const LevelState& s, const std::string& name) {
+    if (name.empty()) {
+        return nullptr;
+    }
+    const auto it = s.levels.find(Lower(name));
+    return it == s.levels.end() ? nullptr : &it->second;
+}
+
+// The running level's values into the renderer's atomics; the target's into the menu's.
+void ApplyLevelsLocked(LevelState& s) {
+    auto& v = Get();
+    const LevelEntry* running = FindLevel(s, s.current);
+    const LevelEntry* target = FindLevel(s, TargetLocked(s));
+    for (int i = 0; i < LevelKeyCount; ++i) {
+        LevelValue(v, i).store(running && running->set[i] ? running->value[i] : s.global[i]);
+        s.shown[i] = target && target->set[i] ? target->value[i] : s.global[i];
+        level_edit[i].store(s.shown[i]);
+    }
+}
+
+// medievil.ini "hdr_level.<level>.<key>": an override (Load).
+void SetLevelOverride(const std::string& key, const std::string& value) {
+    const std::string rest = key.substr(std::strlen(LevelPrefix));
+    const auto dot = rest.rfind('.');
+    if (dot == std::string::npos || dot == 0 || value.empty()) {
+        return;
+    }
+    const std::string name = rest.substr(0, dot), setting = rest.substr(dot + 1);
+    for (int i = 0; i < LevelKeyCount; ++i) {
+        if (setting == LevelKeys[i].key) {
+            auto& s = Levels();
+            std::lock_guard lock{s.mutex};
+            LevelEntry& entry = s.levels[Lower(name)];
+            if (entry.name.empty()) {
+                entry.name = name;
+            }
+            entry.value[i] = std::clamp(std::atoi(value.c_str()), LevelKeys[i].lo, LevelKeys[i].hi);
+            entry.set[i] = true;
+            return;
+        }
+    }
+}
 // The output this launch started at (output_resolution as loaded: run.py's boot size).
 std::string startup_output_value;
 
 void Set(Values& v, const std::string& key, const std::string& value) {
     const float f = float(std::atof(value.c_str()));
     const int i = std::atoi(value.c_str());
+    if (key.starts_with(LevelPrefix)) {
+        SetLevelOverride(key, value);
+        return;
+    }
     for (int p = 0; p < PerfCount; ++p) {
         if (key == PerfKeys[p]) {
             v.perf[p] = value != "0";
@@ -435,6 +536,125 @@ Values& Get() {
     return values;
 }
 
+const LevelKey& LevelKeyAt(int i) {
+    return LevelKeys[std::clamp(i, 0, LevelKeyCount - 1)];
+}
+
+std::atomic<int>& LevelValue(Values& v, int i) {
+    switch (i) {
+    case 0: return v.hdr_game_nits;
+    case 1: return v.hdr_peak_nits;
+    case 2: return v.hdr_lut_tone;
+    case 3: return v.hdr_black_floor;
+    case 4: return v.hdr_adj_contrast;
+    case 5: return v.hdr_adj_toe_clamp;
+    case 6: return v.hdr_adj_toe_length;
+    case 7: return v.hdr_adj_toe_strength;
+    default: return v.hdr_bloom;
+    }
+}
+
+std::atomic<int>& LevelEdit(int i) {
+    return level_edit[std::clamp(i, 0, LevelKeyCount - 1)];
+}
+
+void LevelChanged(const char* name) {
+    auto& s = Levels();
+    std::lock_guard lock{s.mutex};
+    s.current = name ? name : "";
+    if (s.loaded) {
+        ApplyLevelsLocked(s);
+    }
+}
+
+std::string CurrentLevel() {
+    auto& s = Levels();
+    std::lock_guard lock{s.mutex};
+    return s.current;
+}
+
+void SetLevelTarget(int kind, const std::string& name) {
+    auto& s = Levels();
+    std::lock_guard lock{s.mutex};
+    s.target_kind = std::clamp(kind, int(LevelTargetAll), int(LevelTargetNamed));
+    s.target_name = kind == LevelTargetNamed ? name : std::string{};
+    if (s.loaded) {
+        ApplyLevelsLocked(s);
+    }
+}
+
+int LevelTargetKindNow() {
+    auto& s = Levels();
+    std::lock_guard lock{s.mutex};
+    return s.target_kind;
+}
+
+std::string LevelTarget() {
+    auto& s = Levels();
+    std::lock_guard lock{s.mutex};
+    return TargetLocked(s);
+}
+
+std::vector<std::string> LevelsWithOverrides() {
+    auto& s = Levels();
+    std::lock_guard lock{s.mutex};
+    std::vector<std::string> names;
+    for (const auto& [key, entry] : s.levels) {
+        if (entry.Any()) {
+            names.push_back(entry.name);
+        }
+    }
+    return names;
+}
+
+bool LevelOverridden(int i) {
+    auto& s = Levels();
+    std::lock_guard lock{s.mutex};
+    const LevelEntry* target = FindLevel(s, TargetLocked(s));
+    return target && i >= 0 && i < LevelKeyCount && target->set[i];
+}
+
+bool LevelSyncEdits() {
+    auto& s = Levels();
+    std::lock_guard lock{s.mutex};
+    if (!s.loaded) {
+        return false;
+    }
+    const std::string target = TargetLocked(s);
+    bool changed = false;
+    for (int i = 0; i < LevelKeyCount; ++i) {
+        const int e = std::clamp(level_edit[i].load(), LevelKeys[i].lo, LevelKeys[i].hi);
+        if (e == s.shown[i]) {
+            continue;
+        }
+        if (target.empty()) {
+            s.global[i] = e;
+        } else {
+            LevelEntry& entry = s.levels[Lower(target)];
+            if (entry.name.empty()) {
+                entry.name = target;
+            }
+            entry.value[i] = e;
+            entry.set[i] = true;
+        }
+        changed = true;
+    }
+    if (changed) {
+        ApplyLevelsLocked(s);
+    }
+    return changed;
+}
+
+void ResetLevelTarget() {
+    auto& s = Levels();
+    std::lock_guard lock{s.mutex};
+    const std::string target = TargetLocked(s);
+    if (!target.empty()) {
+        s.levels.erase(Lower(target));
+        ApplyLevelsLocked(s);
+    }
+}
+
 int ParseRenderScale(const std::string& value) {
     // As graphics_options.parse_render_scale: int(float(value)), 25 to 200, else 100.
     const char* text = value.c_str();
@@ -623,6 +843,16 @@ void Load() {
     v.startup_render_scale = v.render_scale;
     v.live_render_scale = v.render_scale; // the override pak's r.ScreenPercentage (run.py)
     v.startup_effects_resolution = v.effects_resolution;
+    {
+        // Per-level settings: the plain keys are All levels' values; the running level's apply from here on.
+        auto& s = Levels();
+        std::lock_guard lock{s.mutex};
+        for (int i = 0; i < LevelKeyCount; ++i) {
+            s.global[i] = LevelValue(v, i).load();
+        }
+        s.loaded = true;
+        ApplyLevelsLocked(s);
+    }
     TakeBaseline();
 }
 
@@ -845,6 +1075,22 @@ std::map<std::string, std::string> Serialize(const Values& v) {
             values[line.substr(0, eq)] = line.substr(eq + 1);
         }
     }
+    // Per-level settings: the plain keys hold All levels' values (the atomics: the running level's), then each
+    // level's overrides.
+    auto& s = Levels();
+    std::lock_guard lock{s.mutex};
+    if (s.loaded) {
+        for (int i = 0; i < LevelKeyCount; ++i) {
+            values[LevelKeys[i].key] = std::to_string(s.global[i]);
+        }
+        for (const auto& [key, entry] : s.levels) {
+            for (int i = 0; i < LevelKeyCount; ++i) {
+                if (entry.set[i]) {
+                    values[std::string(LevelPrefix) + entry.name + "." + LevelKeys[i].key] = std::to_string(entry.value[i]);
+                }
+            }
+        }
+    }
     return values;
 }
 
@@ -873,10 +1119,20 @@ void Save() {
             changes[key] = value;
         }
     }
-    if (changes.empty()) {
+    // A level's overrides reset in the menu: their lines go.
+    std::set<std::string> removed;
+    for (const auto& [key, value] : Baseline()) {
+        if (key.starts_with(LevelPrefix) && !current.contains(key)) {
+            removed.insert(key);
+        }
+    }
+    if (changes.empty() && removed.empty()) {
         return;
     }
     std::vector<std::string> lines = ReadLines(Path());
+    if (!removed.empty()) {
+        std::erase_if(lines, [&](const std::string& line) { return removed.contains(LineKey(line)); });
+    }
     if (lines.empty()) {
         lines.push_back("# MediEvil settings (in-game menu: Insert / R3+L2)");
     }
@@ -904,6 +1160,9 @@ void Save() {
     std::fclose(file);
     for (const auto& [key, value] : changes) {
         Baseline()[key] = value;
+    }
+    for (const std::string& key : removed) {
+        Baseline().erase(key);
     }
 }
 

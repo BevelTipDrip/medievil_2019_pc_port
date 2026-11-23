@@ -423,8 +423,14 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
 
 } // namespace Libraries::AvPlayer
 
-// The guest-facing entry of the level-change hook (src/probe.c, MEDIEVIL_OPEN_LEVEL_CALL): called
-// from guest code, so System V.
-extern "C" void __attribute__((sysv_abi)) medievil_level_change(void) {
-    Libraries::AvPlayer::SuspendPlayersForLevelChange();
+// The guest-facing entry of the level-change hook (src/probe.c install_level_hook): called from guest code with
+// OpenLevel's arguments (the stub keeps them), so System V: the world context and the level's name (an FName).
+extern "C" int gow3_level_movie_suspend(void);     // gpu/shim/gow3_levels.cpp
+extern "C" void gow3_level_opened(uint64_t fname); // gpu/shim/gow3_levels.cpp
+extern "C" void __attribute__((sysv_abi)) medievil_level_change(void* world, uint64_t level_name) {
+    (void)world;
+    if (gow3_level_movie_suspend()) {
+        Libraries::AvPlayer::SuspendPlayersForLevelChange();
+    }
+    gow3_level_opened(level_name);
 }
