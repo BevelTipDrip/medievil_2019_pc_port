@@ -108,6 +108,9 @@ Environment variables and settings already in the port that this work uses (full
 | [study-pc-settings-entry.md](study-pc-settings-entry.md) | How the game's Options and pause menus are built; "PC Settings" in the pause menu (the hidden Button_Controls, translated, opens the settings menu; built 2026-11-12, T-PC1) and the Options-menu row still to do |
 | [study-live-switches.md](study-live-switches.md) | What can be switched live and what needs a restart; cvar objects in the 01.00 eboot |
 | [study-hdr.md](study-hdr.md) | HDR (2026-11-17 research): the checkbox does nothing for MediEvil yet; the game's UE4 HDR10 path and its cvars; what the presenter lacks; routes A (game HDR10) / B (port SDR->HDR) |
+| [plan-hdr-final.md](plan-hdr-final.md) | The final HDR implementation (v2.4.1, branch `hdr-final` from copy-fault-trace): our tonemapper pass, per-area curve values, steps and progress |
+| [plan-queue-v2.4.2.md](plan-queue-v2.4.2.md) | The v2.4.2 queue (2026-11-22): work after v2.4.1; fog controls first |
+| [study-fog.md](study-fog.md) | The game's fog (2026-11-22 research): fog per level, where its values reach the GPU, cvars, the plan for fog density / brightness / glow controls (v2.4.2) |
 | [study-compiler-optimizations.md](study-compiler-optimizations.md) | Compiler-level options left (2026-11-16 research): clang PGO broken and how to fix it, x86-64-v3 (the eboot already needs AVX/BMI1/LZCNT), atrac9 LTO, OpenTuner rejected, ranked candidates |
 | [study-tooling-off-cost.md](study-tooling-off-cost.md) | What every log, trace and stats path costs when switched off (2026-11-16 inventory): unconditional counters, shared cache lines, the `GOW3_DEV_TOOLS` release-build plan and the user's decisions |
 | [study-particle-fixed-step.md](study-particle-fixed-step.md) | The single GPU particle pass's torch / crypt floor bug (2026-11-05): what FixDeltaSeconds changes, the opt-in patch, flip guard and diagnostic, the test |

@@ -92,6 +92,11 @@ Every log line on these paths is reviewed: release keeps start-up lines only.
 5. **Performance A/B** (the user's runs): HDR on (our look) and HDR off against copy-fault-trace; lows, worst frames,
    panning and combat.
 6. Then: adjustments keyed by grading block (if needed), bloom strength, fog (memory patches), grain / FXAA luma.
+   **Update 2026-11-22 (the user):** bloom strength done in our look (H49); fog controls researched and moved to v2.4.2
+   ([study-fog.md](study-fog.md), [plan-queue-v2.4.2.md](plan-queue-v2.4.2.md)); **next: per-level settings**, the
+   last major feature for v2.4.1. Then items 2-5 of the pre-A/B list (local-volume levels, tonemapper GPU time,
+   release cleanliness, periodic logs in release), the performance A/B, decisions on the small HDR items, sharpness and
+   grading strength. What stays in v2.4.1 and what moves to v2.4.2 is decided later.
 
 ## Progress
 

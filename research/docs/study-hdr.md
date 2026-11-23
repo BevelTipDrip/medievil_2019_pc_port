@@ -674,6 +674,8 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
       Battlefield cinematic: bloom 8, grain 0.2, LUT_Fall 0.3.
     - Fog: every level has its own height fog and most volumetric fog (density, inscattering colour, albedo,
       extinction), e.g. 14 LA density 2.5 x 10, 08 SV 0.25, 21 ZL 0.25.
+      **Correction (2026-11-22, study-fog.md):** this scan printed FColor in stored byte order (B,G,R,A), so its fog
+      albedos read B,G,R (CH's is R98 G176 B211, bluish); study-fog.md has the corrected per-level table.
   - Where each acts (ue4_grade.glsl and the tonemapper): white balance, saturation / contrast / gamma / gain / offset
     (U, before the film curve), bloom (added in the tonemapper before the LUT), fog, vignette and exposure all reach Y(U):
     both our curves see them. The film curve (slope / toe / black clip) and the table's effect on greys act after: the
