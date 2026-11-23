@@ -834,7 +834,8 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     blown out; no re-configuring per level, every level starts out looking good; Level LUT tone removes the haze and
     keeps the colours; black floor works; "probably better than the HDR implementation in almost every game" [V the
     user].
-- **H46, rebuild only on change (plan-hdr-final.md step 4)** (2026-11-22; fix built 20:02, not run):
+- **H46, rebuild only on change (plan-hdr-final.md step 4)** (2026-11-22; `7916bd5`, dev exe 20:02:34; run, works
+  as intended [V the user]):
   - The game builds its grading LUT every frame; our area pass and our LUT now only when their key changes: a hash
     (FNV-1a) of the parameter block (the Color tab applied, the game's Brightness neutral), the level LUT's view and
     the LUT pass's push constants (game brightness, peak, every adjustment, the shoulder). The game's builder draw is
@@ -845,6 +846,12 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     No frame-start reset: the port starts a frame at the first draw into a display buffer, and the HDR tonemapper is
     such a draw. Without our LUT (it could not be made) the old path stays: the area and the game's LUT every build.
   - Dev build: a log line when our LUT is rebuilt, at most one a second with the count since (an event log).
+  - Run (dev build, main menu -> map screen -> Cemetery Hill) [V]: start-up 1 + 2 rebuilds; main menu ~40 s with
+    1-79 a second (typically 20-50, ~10-20% of frames at ~240 FPS) while the user moved the HDR sliders (each step
+    a new key, as intended); map screen 2 on entry; Cemetery Hill 1 at load, then none while playing.
+  - The user [V]: the main menu shows the graveyard's grading, so the global adjustments made for the graveyard
+    (blown out by volumetrics / bloom at the game brightness, not curve-fixable) leave the menu very dark. An input
+    for block-keyed adjustments later (if the menu's block differs from the level's).
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.

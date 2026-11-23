@@ -110,6 +110,9 @@ Every log line on these paths is reviewed: release keeps start-up lines only.
   confirmed by the user). The map screen keeps the game's tonemapper (coarse dark tones; the user: looks off).
 - **Step 3** (2026-11-22, `1fc38c4`): each area's values on the GPU, the user's adjustments on top (H45). Verified
   by the user: every level starts out looking good at the defaults; Level LUT tone and black floor work.
+- **Step 4** (2026-11-22, `7916bd5`): our area values and LUT rebuilt only when the block, level LUT or settings
+  change; the game's LUT target drawn on demand (H46). Run (dev build): in a level 1 rebuild at load, then none; the
+  main menu's many rebuilds were the user moving sliders. The user: works as intended.
 
 ## Answers (the user, 2026-11-22)
 
