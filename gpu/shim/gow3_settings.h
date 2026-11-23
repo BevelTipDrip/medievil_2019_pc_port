@@ -120,6 +120,9 @@ inline constexpr int HdrAdjToeLengthMin = 25, HdrAdjToeLengthMax = 400;
 inline constexpr int HdrAdjToeStrengthMin = -50, HdrAdjToeStrengthMax = 50;
 inline constexpr int HdrAdjToeClampMin = -50, HdrAdjToeClampMax = 100;
 inline constexpr int HdrBlackFloorDefault = 0, HdrLutToneDefault = 100;
+/// Bloom strength in our HDR look (percent of the game's bloom; our tonemapper pass scales the game's bloom scale and
+/// dirt-mask tint, H49).
+inline constexpr int HdrBloomMax = 200, HdrBloomDefault = 100;
 inline constexpr int HdrPwShoulderStartMin = 20, HdrPwShoulderStartMax = 90, HdrPwShoulderStartDefault = 50;
 inline constexpr int HdrPwShoulderLengthMin = 5, HdrPwShoulderLengthMax = 80, HdrPwShoulderLengthDefault = 20;
 inline constexpr int HdrPwShoulderAngleDefault = 50;
@@ -315,6 +318,7 @@ struct Values {
     std::atomic<int> hdr_adj_toe_clamp{0};
     std::atomic<int> hdr_black_floor{HdrBlackFloorDefault};
     std::atomic<int> hdr_lut_tone{HdrLutToneDefault};
+    std::atomic<int> hdr_bloom{HdrBloomDefault};
 };
 
 Values& Get();

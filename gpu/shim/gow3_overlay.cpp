@@ -1811,6 +1811,10 @@ void GradeRow(const char* label, int i, const char* help) {
 void PiecewiseRows() {
     namespace S = Gow3Settings;
     auto& s = S::Get();
+    SliderRow("Bloom strength", s.hdr_bloom, 0, S::HdrBloomMax, "%d%%",
+              "The glow around bright light, as a share of each area's own bloom: 100 as the game sets it, lower "
+              "for less haze around lights and fog, 0 none. Only in our HDR look.",
+              5);
     SliderRow("Level LUT tone", s.hdr_lut_tone, 0, 100, "%d%%",
               "How much of a level's grading table shapes the brightness (Dan's Crypt, Hilltop, Sleeping Village and "
               "others: it lifts the shadows into a haze). 100: as the game grades it; 0: the haze gone, the "

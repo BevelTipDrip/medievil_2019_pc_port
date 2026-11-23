@@ -893,6 +893,12 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     mid-darks (each now at its SDR grey curve).
   - Run [V]: map shot 22.28.40 (JXR, same view) against SDR 21.58.54: median 0.52 vs 0.62 nits, 25% 0.13 vs 0.11, 75%
     2.5 vs 2.9, 90% 8.8 vs 8.6, fog 0.11 vs 0.05 (before the fix: median 4.7, fog 1.34).
+- **H49, bloom strength in our HDR look** (2026-11-22; fix built 22:44, not run): the user: bloom in "Ours" only
+  (ACES leaves the menu for the release, SDR stays as it is). `hdr_bloom` (0-200%, default 100; Color tab > HDR,
+  "Bloom strength", live): `ReplaceHdrTonemapDraw` multiplies the game's bloom scale (the levels' ps buffer 0 dwords
+  12-14, the map's 16-18) and the dirt-mask tint (ps buffer 1 dwords 0-2) by it before the upload. Each area's own
+  bloom stays relative (the Graveyard's settings 20, the map 0.675). No shader change; per frame one relaxed load, six
+  multiplies when not 100.
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.

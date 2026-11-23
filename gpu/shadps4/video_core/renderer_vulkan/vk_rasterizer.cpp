@@ -5041,6 +5041,19 @@ bool Rasterizer::ReplaceHdrTonemapDraw(const Pipeline* pipeline, const Shader::I
                       Ue4HdrGrading::TonemapVs1)) {
         return decline(2, "a constant buffer smaller than expected or not mapped");
     }
+    // Bloom strength (H49): the bloom scale (the levels' dwords 12-14, the map's 16-18) and the dirt-mask tint (buffer 1
+    // dwords 0-2) times the setting: the whole bloom term, each area's own bloom kept relative.
+    if (const int bloom = settings.hdr_bloom.load(std::memory_order_relaxed); bloom != Gow3Settings::HdrBloomDefault) {
+        const float k = float(bloom) / 100.0f;
+        u32* scale = map ? map_ps0.data() + 16 : constants.data() + 12;
+        u32* tint = constants.data() + ps1_at;
+        for (u32* d : {scale, scale + 1, scale + 2, tint, tint + 1, tint + 2}) {
+            float v;
+            std::memcpy(&v, d, sizeof(v));
+            v *= k;
+            std::memcpy(d, &v, sizeof(v));
+        }
+    }
     if (map) {
         std::copy_n(map_ps0.begin(), Ue4HdrGrading::TonemapPs0, constants.begin());
         std::copy(map_ps0.begin() + Ue4HdrGrading::TonemapPs0, map_ps0.end(),

@@ -94,6 +94,7 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         {"hdr_adj_toe_clamp", &v.hdr_adj_toe_clamp, HdrAdjToeClampMin, HdrAdjToeClampMax, 0},
         {"hdr_black_floor", &v.hdr_black_floor, 0, 100, HdrBlackFloorDefault},
         {"hdr_lut_tone", &v.hdr_lut_tone, 0, 100, HdrLutToneDefault},
+        {"hdr_bloom", &v.hdr_bloom, 0, HdrBloomMax, HdrBloomDefault},
         {"hdr_pw_shoulder_start", &v.hdr_pw_shoulder_start, HdrPwShoulderStartMin, HdrPwShoulderStartMax,
          HdrPwShoulderStartDefault},
         {"hdr_pw_shoulder_length", &v.hdr_pw_shoulder_length, HdrPwShoulderLengthMin, HdrPwShoulderLengthMax,
@@ -825,7 +826,8 @@ std::map<std::string, std::string> Serialize(const Values& v) {
     Append(out, "hdr_adj_contrast=%d\nhdr_adj_toe_length=%d\nhdr_adj_toe_strength=%d\nhdr_adj_toe_clamp=%d\n",
            v.hdr_adj_contrast.load(), v.hdr_adj_toe_length.load(), v.hdr_adj_toe_strength.load(),
            v.hdr_adj_toe_clamp.load());
-    Append(out, "hdr_black_floor=%d\nhdr_lut_tone=%d\n", v.hdr_black_floor.load(), v.hdr_lut_tone.load());
+    Append(out, "hdr_black_floor=%d\nhdr_lut_tone=%d\nhdr_bloom=%d\n", v.hdr_black_floor.load(), v.hdr_lut_tone.load(),
+           v.hdr_bloom.load());
     Append(out, "hdr_pw_shoulder_start=%d\nhdr_pw_shoulder_length=%d\nhdr_pw_shoulder_angle=%d\nhdr_pw_saturation=%d\n",
            v.hdr_pw_shoulder_start.load(), v.hdr_pw_shoulder_length.load(), v.hdr_pw_shoulder_angle.load(),
            v.hdr_pw_saturation.load());
