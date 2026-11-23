@@ -865,6 +865,31 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     levels' pipeline at the first tonemapper draw), the map's dwords 24-43 at [64, 84) uploaded for the map only;
     the film grain and jitter kept (the user: the map's look), the 8-bit dither left out, sharpen skipped while 0.
     The game's LUT target is now drawn only when ours declines. Dev build: one line naming the map's vertex shader.
+  - Run (dev 21:28, the user): the map looked no different. Expected in hindsight: since step 4 the game's map
+    tonemapper already read the game's LUT target drawn by our curve; this change only adds near-black precision and
+    drops the dither. Its look problem is H48.
+- **H48, the map's darks ~27x over SDR: our reference grey graded twice** (2026-11-22; fix built 22:24, not run):
+  - The user: on the map "Ours" looks wrong, ACES and SDR alike. Screenshots, same Dan's Crypt view (dev build saves
+    to `Videos\NVIDIA\out\`): ours 21.38.29 (JXR), SDR 21.58.54 (PNG, read at white 203 nits, gamma 2.2): fog 1.34 vs
+    0.05 nits, land 3.9 vs 2.1, median 4.7 vs 0.6; ACES 21.40.32 median 1.4 [V].
+  - Not the fit: the map's SDR grey curve (block from `mapmenu_frame20618.rdc` eid 7500, `sdrcurve.exe` ->
+    `h42/sdr_map.csv`) through `gpu_solver.py`: floor 0, grey x1.004, gamma 1.167, toe 0.063 / 0.424, clamp 0.0010,
+    residual 0, within 0.6% PQ: nearly the graveyard's values. The map's darkening is in U: its shadow gains take a
+    scene grey 0.02 to Y(U) 0.005 [V].
+  - Capture of the map in Ours (`research-data/hdr-map-ours-20261122/map_frame7775.rdc`, our tonemapper eid 7677; our
+    LUT not rebuilt that frame, as step 4 intends): our LUT's grey axis at scene 0.022 / 0.036 / 0.058 gives 0.52 /
+    2.6 / 8.2 nits where the map's SDR grey gives 0.04 / 0.30 / 2.6 (at 203); from scene 0.13 up they agree [V].
+  - Cause [V]: `HdrPiecewiseNits` (ue4_hdr_map.glsl) re-tones G by Y(G) of a reference grey made as
+    `GradeScene(vec3(Y(U)))`: Y(U) taken as a scene value and graded again (white balance, colour correction). Near
+    neutral colour correction hides it; the map's shadow gains crush the grey twice, so the divisor is far too small.
+    `port9f6b/retone_check.cpp` (grey ramp, ours / SDR ~ Y(G) / Y(reference)): map 19.4 at scene 0.01, 8.5 at 0.04;
+    also Hall of Heroes 0.51 / 0.54 (darks 2x too dark), Dan's Crypt 0.74 / 0.68, Sleeping Village 1.10 / 1.56;
+    Graveyard, Hilltop and the `ma21929` block 1.00.
+  - Fix: `GradeFromUntonemapped` (ue4_grade.glsl: GradeScene's stages after the colour correction; GradeScene calls
+    it, the 9f6b harness still bit-exact on all cases), and the reference grey = an untonemapped grey of luminance
+    Y(U) through it. Offline: map 1.47 / 1.06 (within 1% from scene 0.1), every level 1.00 (0.998-1.0) at 0.01 /
+    0.04. Expected in game: the map near SDR; Hall of Heroes and Dan's Crypt brighter darks, Sleeping Village darker
+    mid-darks (each now at its SDR grey curve).
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.

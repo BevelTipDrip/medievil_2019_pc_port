@@ -72,8 +72,10 @@ vec3 HdrPiecewiseNits(vec3 scene, bool zero_black_clip, vec4 pw0, vec4 pw1, vec4
         return vec3(0.0);
     }
     const float n = HdrPiecewiseY(yu, pw0, pw1, pw2, pw3);
-    vec3 ug, gg;
-    GradeScene(vec3(yu), zero_black_clip, ug, gg);
+    // The reference grey: an untonemapped grey of luminance Y(U), through the stages after the colour correction only
+    // (not GradeScene(vec3(yu)): that grades it a second time; the map's shadow gains made its darks ~20x too bright,
+    // study-hdr.md H48). sRGB to AP1 keeps a grey grey.
+    const vec3 gg = GradeFromUntonemapped(SrgbToAp1(vec3(yu)), vec3(yu), zero_black_clip);
     const float y_grey = dot(max(gg, vec3(0.0)), HDR_Y709);
     const vec3 g = max(graded, vec3(0.0));
     vec3 nits = (y_grey > 1e-7 && dot(g, HDR_Y709) > 0.0) ? g * (n / y_grey) : u * (n / yu);

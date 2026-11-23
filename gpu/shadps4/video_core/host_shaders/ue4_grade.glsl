@@ -502,15 +502,13 @@ vec3 GradeLutBlend(vec3 tonemapped)
 }
 #endif
 
-void GradeScene(vec3 scene_linear, bool zero_black_clip, out vec3 U_srgb, out vec3 G_srgb)
+// GradeScene's stages after the colour correction: the film curve (or the legacy tonemap), the level LUT blend,
+// MappingPolynomial, ColorScale / Overlay, InverseGamma. From the untonemapped colour in AP1 and in sRGB
+// (U_srgb = Ap1ToSrgb(untonemapped)). Also used alone (ue4_hdr_map.glsl: the graded value of a grey untonemapped
+// colour, study-hdr.md H48).
+vec3 GradeFromUntonemapped(vec3 untonemapped, vec3 U_srgb, bool zero_black_clip)
 {
     bool film = floatBitsToUint(GradeParam(39u)) != 0u;                           // integer test (line 407)
-
-    vec3 ap1 = SrgbToAp1(WhiteBalance(scene_linear));                             // lines 183-434
-    if (film) ap1 = ExpandGamut(ap1, GradeParam(141u));                           // lines 436-497
-    vec3 untonemapped = ColorCorrectAll(ap1);                                     // lines 498-733
-    U_srgb = Ap1ToSrgb(untonemapped);                                             // lines 734-742 (GradedColor)
-
     vec3 tonemapped;
     if (film)
     {
@@ -533,7 +531,18 @@ void GradeScene(vec3 scene_linear, bool zero_black_clip, out vec3 U_srgb, out ve
     vec3 scaled = GradeParam3(45u) * c;
     c = GradeParam(51u) * (GradeParam3(48u) + (-scaled)) + scaled;
     // InverseGamma.y (lines 1266-1272)
-    G_srgb = exp2(GradeParam(5u) * log2(max(vec3(0.0), c)));
+    return exp2(GradeParam(5u) * log2(max(vec3(0.0), c)));
+}
+
+void GradeScene(vec3 scene_linear, bool zero_black_clip, out vec3 U_srgb, out vec3 G_srgb)
+{
+    bool film = floatBitsToUint(GradeParam(39u)) != 0u;                           // integer test (line 407)
+
+    vec3 ap1 = SrgbToAp1(WhiteBalance(scene_linear));                             // lines 183-434
+    if (film) ap1 = ExpandGamut(ap1, GradeParam(141u));                           // lines 436-497
+    vec3 untonemapped = ColorCorrectAll(ap1);                                     // lines 498-733
+    U_srgb = Ap1ToSrgb(untonemapped);                                             // lines 734-742 (GradedColor)
+    G_srgb = GradeFromUntonemapped(untonemapped, U_srgb, zero_black_clip);
 }
 
 void GradeScene(vec3 scene_linear, out vec3 U_srgb, out vec3 G_srgb)
