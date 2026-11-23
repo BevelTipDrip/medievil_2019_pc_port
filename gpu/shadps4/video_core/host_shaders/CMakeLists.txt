@@ -51,6 +51,7 @@ add_host_shader(imgui_hdr.frag imgui_hdr_frag)
 add_host_shader(ue4_hdr_lut.vert ue4_hdr_lut_vert)
 add_host_shader(ue4_hdr_lut.frag ue4_hdr_lut_frag)
 add_host_shader(ue4_tonemap.frag ue4_tonemap_frag)
+add_host_shader(ue4_tonemap.frag ue4_tonemap_map_frag TONEMAP_MAP=1)
 add_host_shader(ue4_hdr_area.frag ue4_hdr_area_frag)
 add_host_shader(ue4_hdr_area.frag ue4_hdr_area_blend_frag GRADE_LUT_BLEND=1)
 

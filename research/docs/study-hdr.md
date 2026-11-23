@@ -852,6 +852,19 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
   - The user [V]: the main menu shows the graveyard's grading, so the global adjustments made for the graveyard
     (blown out by volumetrics / bloom at the game brightness, not curve-fixable) leave the menu very dark. An input
     for block-keyed adjustments later (if the menu's block differs from the level's).
+- **H47, the map screen's tonemapper through our pass** (2026-11-22; fix built 21:27 / dev 21:28, not run):
+  - fs 52770387e0d6363a (SPIR-V dump decompiled with spirv-cross; constants from `mapmenu_frame20618.rdc` eid 7525,
+    vertex shader disassembled there) [V]: the levels' maths with its fields 4 dwords later (scene scale 12-14, bloom
+    scale 16-18, vignette 20), plus UE4's sharpen (21; 4 taps at +1,0 / -1,0 / -1,-1 / -1,1 as the port decodes them),
+    grain intensity (24-25: colour x (0.1 x grain + 0.95) on the map), grain jitter (26: 0.0005), scene UV clamp
+    (28-31), bloom UV clamp (32-35), colour fringe (36-42; amounts 40 / 41 = 0). Images: scene, dirt mask, bloom,
+    LUT. Buffer 0 is 44 dwords (176 B). Its vertex shader has the levels' buffers and maths plus attribute 2 (jitter
+    target uv + (-0.5, +0.5) texel; grain coordinates uv + vs buffer 1 dw 8-9) and 3 (fringe coordinates (uv x size
+    - dw 14-15) / dw 12-13).
+  - Built: `ue4_tonemap.frag` with `TONEMAP_MAP` (the levels' SPIR-V unchanged), `Kind::TonemapMap` (made with the
+    levels' pipeline at the first tonemapper draw), the map's dwords 24-43 at [64, 84) uploaded for the map only;
+    the film grain and jitter kept (the user: the map's look), the 8-bit dither left out, sharpen skipped while 0.
+    The game's LUT target is now drawn only when ours declines. Dev build: one line naming the map's vertex shader.
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.

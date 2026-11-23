@@ -6,7 +6,7 @@
 // (ue4_hdr_lut.vert / .frag): the same 32-slice LUT target, written from the game's parameter block (with the Color
 // tab's changes) through our tone curve (ue4_hdr_map.glsl) in BT.2020 PQ, and our own LUT (32^3 RGBA16F, indexed at
 // PQ(scene x 0.01)) that our tonemapper pass (ue4_tonemap.frag) reads in place of the game's HDR tonemapper draw
-// (fs 12178a9314cb761e; the map screen's variant keeps the game's draw and LUT). Its UI composite (fs c401ca35f9bceb8e)
+// (fs 12178a9314cb761e; the map screen's 52770387e0d6363a too). Its UI composite (fs c401ca35f9bceb8e)
 // is replaced by ue4_ui_composite.frag: the UI as an SDR screen shows it at the UI brightness, blended as SDR blends.
 // Menu: Color > HDR > HDR look.
 
@@ -53,14 +53,17 @@ public:
     }
     /// The blend builder's block in our layout: 0-44 as they are, 65-161 to 45-141, the weights 48 / 52 to 142 / 143.
     static void RemapBlendBlock(const u32* src, std::array<u32, ParamDwords>& dst);
-    /// UE 4.21's HDR tonemapper (the levels'; study-hdr.md H38, H44): replaced by RunTonemap. The map screen's
-    /// (52770387e0d6363a, with sharpening and grain) keeps the game's draw.
+    /// UE 4.21's HDR tonemappers, replaced by RunTonemap: the levels' (study-hdr.md H38, H44) and the map screen's
+    /// (with sharpen, colour fringe, grain jitter and film grain; the same vertex shader; H47).
     static constexpr u64 TonemapPs = 0x12178a9314cb761eull;
     static constexpr u64 TonemapMapPs = 0x52770387e0d6363aull;
     /// The constants RunTonemap takes, in dwords: the pixel shader's buffers 0 / 1, the vertex shader's 0 / 1, then the
     /// draw's viewport (x scale, x offset, y scale, y offset: pixel = offset + NDC x scale, as the port maps it).
     static constexpr u32 TonemapPs0 = 24, TonemapPs1 = 8, TonemapVs0 = 12, TonemapVs1 = 16, TonemapViewport = 4;
     static constexpr u32 TonemapDwords = TonemapPs0 + TonemapPs1 + TonemapVs0 + TonemapVs1 + TonemapViewport;
+    /// The map's pixel shader buffer 0 has 44 dwords: its dwords 24-43 follow the viewport, uploaded for the map only.
+    static constexpr u32 TonemapMapPs0 = 44;
+    static constexpr u32 TonemapMapDwords = TonemapDwords + TonemapMapPs0 - TonemapPs0;
     /// UE 4.21's HDR UI composite (scene PQ + Slate's UI image -> the display buffer).
     static constexpr u64 UiCompositePs = 0xc401ca35f9bceb8eull;
     /// UE's background blur (Slate): its first pass samples what is drawn so far, in HDR the empty UI image. Two
@@ -100,12 +103,12 @@ public:
         CompositeInput dirt_mask, scene, bloom, eye;
     };
     /// Records our tonemapper into the game's tonemapper target (`target`, `desc`) from its inputs and constants (the
-    /// game's buffers as its draw binds them, TonemapDwords), within `rect` (the rectangle its draw covers). `clear`:
-    /// the target's pending fast clear (its render pass starts with it, as the game's would), or null. True: written,
-    /// the game's draw is skipped.
+    /// game's buffers as its draw binds them: TonemapDwords, TonemapMapDwords for the map's), within `rect` (the
+    /// rectangle its draw covers). `clear`: the target's pending fast clear (its render pass starts with it, as the
+    /// game's would), or null. `map`: the map screen's tonemapper. True: written, the game's draw is skipped.
     bool RunTonemap(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc, const TonemapInputs& in,
-                    const std::array<u32, TonemapDwords>& constants, const vk::Rect2D& rect,
-                    const vk::ClearColorValue* clear);
+                    const std::array<u32, TonemapMapDwords>& constants, const vk::Rect2D& rect,
+                    const vk::ClearColorValue* clear, bool map);
 
     /// The game's LUT target is drawn on demand (study-hdr.md H46): before a game tonemapper draw that reads it (the
     /// map screen's, or the levels' when ours declines). Does nothing when the last build's is drawn or there is none.
@@ -145,7 +148,7 @@ private:
         bool valid = false;
         bool written = false;
     };
-    enum class Kind : u8 { Lut, Composite, LutBlend, Tonemap, Area, AreaBlend };
+    enum class Kind : u8 { Lut, Composite, LutBlend, Tonemap, Area, AreaBlend, TonemapMap };
     vk::Pipeline Pipeline(vk::Format format, Kind kind = Kind::Lut);
     /// Our LUT image (32^3 RGBA16F, 3D, its slices renderable as a 2D array), made at the first build.
     bool EnsureOwnLut(u32 size);
@@ -164,7 +167,8 @@ private:
     VideoCore::TextureCache& texture_cache;
     VideoCore::BufferCache& buffer_cache;
     Runtime& runtime;
-    vk::UniqueShaderModule vert, frag, composite_frag, blend_frag, tonemap_frag, area_frag, area_blend_frag;
+    vk::UniqueShaderModule vert, frag, composite_frag, blend_frag, tonemap_frag, area_frag, area_blend_frag,
+        tonemap_map_frag;
     vk::UniqueDescriptorSetLayout set_layout, composite_set_layout, blend_set_layout, tonemap_set_layout;
     vk::UniquePipelineLayout layout, composite_layout, blend_layout, tonemap_layout;
     vk::UniqueSampler lut_sampler; ///< the blend builder's sampler: linear, clamp to edge (as the game's)
@@ -186,6 +190,8 @@ private:
     bool own_lut_built = false;
     bool own_lut_failed = false;
     bool tonemap_failed = false;
+    bool tonemap_map_made = false; ///< the map's pipeline made with the levels' (no compile at the map's first frame)
+    bool tonemap_map_failed = false;
     VideoCore::UniqueImage area;
     vk::UniqueImageView area_view;
     bool area_failed = false;
@@ -194,6 +200,7 @@ private:
     u64 rebuilds = 0;           ///< dev build: rebuilds since the last line
     std::chrono::steady_clock::time_point last_rebuild_note{};
     u64 tonemap_runs = 0;
+    bool map_noted = false; ///< dev build: the map's first run logged
 };
 
 } // namespace Vulkan

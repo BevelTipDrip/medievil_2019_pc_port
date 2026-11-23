@@ -17,6 +17,7 @@
 #include "video_core/host_shaders/ue4_hdr_lut_frag.h"
 #include "video_core/host_shaders/ue4_hdr_lut_vert.h"
 #include "video_core/host_shaders/ue4_tonemap_frag.h"
+#include "video_core/host_shaders/ue4_tonemap_map_frag.h"
 #include "video_core/host_shaders/ue4_ui_composite_frag.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_runtime.h"
@@ -141,6 +142,7 @@ Ue4HdrGrading::Ue4HdrGrading(const Instance& instance_, Scheduler& scheduler_,
     // Our tonemapper: the game's constants (storage buffer), the dirt mask, scene, bloom, eye adaptation (combined
     // image samplers: linear, clamp to edge) and our LUT (3D).
     tonemap_frag = vk::UniqueShaderModule(CompileSPV(UE4_TONEMAP_FRAG, device), device);
+    tonemap_map_frag = vk::UniqueShaderModule(CompileSPV(UE4_TONEMAP_MAP_FRAG, device), device);
     std::array<vk::DescriptorSetLayoutBinding, 6> tonemap_bindings{};
     for (u32 i = 0; i < tonemap_bindings.size(); ++i) {
         tonemap_bindings[i] = {i, i == 0 ? vk::DescriptorType::eStorageBuffer : vk::DescriptorType::eCombinedImageSampler,
@@ -197,6 +199,7 @@ vk::Pipeline Ue4HdrGrading::Pipeline(vk::Format format, Kind kind) {
                                           .module = kind == Kind::Composite ? *composite_frag
                                                     : kind == Kind::LutBlend  ? *blend_frag
                                                     : kind == Kind::Tonemap   ? *tonemap_frag
+                                                    : kind == Kind::TonemapMap ? *tonemap_map_frag
                                                     : kind == Kind::Area      ? *area_frag
                                                     : kind == Kind::AreaBlend ? *area_blend_frag
                                                                               : *frag,
@@ -226,7 +229,7 @@ vk::Pipeline Ue4HdrGrading::Pipeline(vk::Format format, Kind kind) {
                             .pDynamicState = &dynamic_info,
                             .layout = kind == Kind::Composite ? *composite_layout
                                       : kind == Kind::LutBlend || kind == Kind::AreaBlend ? *blend_layout
-                                      : kind == Kind::Tonemap   ? *tonemap_layout
+                                      : kind == Kind::Tonemap || kind == Kind::TonemapMap ? *tonemap_layout
                                                                 : *layout,
                         });
     if (pipeline.result != vk::Result::eSuccess) {
@@ -598,16 +601,21 @@ bool Ue4HdrGrading::Run(VideoCore::ImageId target, const VideoCore::TextureCache
 }
 
 bool Ue4HdrGrading::RunTonemap(VideoCore::ImageId target, const VideoCore::TextureCache::ImageDesc& desc,
-                               const TonemapInputs& in, const std::array<u32, TonemapDwords>& constants,
-                               const vk::Rect2D& rect, const vk::ClearColorValue* clear) {
-    if (tonemap_failed || !target || !own_lut_built || !in.scene.view || !in.bloom.view || !in.dirt_mask.view ||
-        !in.eye.view) {
+                               const TonemapInputs& in, const std::array<u32, TonemapMapDwords>& constants,
+                               const vk::Rect2D& rect, const vk::ClearColorValue* clear, bool map) {
+    if ((map ? tonemap_map_failed : tonemap_failed) || !target || !own_lut_built || !in.scene.view ||
+        !in.bloom.view || !in.dirt_mask.view || !in.eye.view) {
         return false;
     }
-    const vk::Pipeline pipeline = Pipeline(desc.view_info.format, Kind::Tonemap);
+    const vk::Pipeline pipeline = Pipeline(desc.view_info.format, map ? Kind::TonemapMap : Kind::Tonemap);
     if (!pipeline) {
-        tonemap_failed = true;
+        (map ? tonemap_map_failed : tonemap_failed) = true;
         return false;
+    }
+    if (!tonemap_map_made) [[unlikely]] {
+        // The map's pipeline with the first one (the main menu's), not at the map's first frame.
+        tonemap_map_made = true;
+        tonemap_map_failed = !Pipeline(desc.view_info.format, Kind::TonemapMap);
     }
     const auto& range = desc.view_info.range;
     const u32 width = std::max(desc.info.size.width >> range.base.level, 1u);
@@ -620,7 +628,9 @@ bool Ue4HdrGrading::RunTonemap(VideoCore::ImageId target, const VideoCore::Textu
                     vk::AccessFlagBits2::eColorAttachmentWrite | vk::AccessFlagBits2::eColorAttachmentRead, range);
     runtime.FlushBarriers();
     auto& stream = buffer_cache.GetStreamBuffer();
-    const u64 offset = stream.Copy(constants.data(), sizeof(constants), instance.StorageMinAlignment());
+    // The levels' upload is their 64 dwords; the map's adds its buffer 0's dwords 24-43.
+    const u32 bytes = (map ? TonemapMapDwords : TonemapDwords) * sizeof(u32);
+    const u64 offset = stream.Copy(constants.data(), bytes, instance.StorageMinAlignment());
     const vk::Buffer buffer = stream.Handle();
     const vk::Sampler sampler = *lut_sampler;
     const vk::ImageView lut_view = *own_lut_volume;
@@ -642,7 +652,7 @@ bool Ue4HdrGrading::RunTonemap(VideoCore::ImageId target, const VideoCore::Textu
             .colorAttachmentCount = 1,
             .pColorAttachments = &attachment,
         });
-        const vk::DescriptorBufferInfo info{.buffer = buffer, .offset = offset, .range = sizeof(constants)};
+        const vk::DescriptorBufferInfo info{.buffer = buffer, .offset = offset, .range = bytes};
         const std::array images{
             vk::DescriptorImageInfo{sampler, in.dirt_mask.view, in.dirt_mask.layout},
             vk::DescriptorImageInfo{sampler, in.scene.view, in.scene.layout},
@@ -669,8 +679,9 @@ bool Ue4HdrGrading::RunTonemap(VideoCore::ImageId target, const VideoCore::Textu
         cmdbuf.endRendering();
     });
     scheduler.GetDynamicState().Invalidate();
-    if (GOW3_DEV_TOOLS && ++tonemap_runs == 1) {
-        std::printf("UE4 HDR tonemapper: ours (%ux%u %s, rect %d,%d %ux%u)\n", width, height,
+    if (GOW3_DEV_TOOLS && (map ? !std::exchange(map_noted, true) : ++tonemap_runs == 1)) {
+        std::printf("UE4 HDR tonemapper: ours%s (%ux%u %s, rect %d,%d %ux%u)\n", map ? ", the map's" : "", width,
+                    height,
                     vk::to_string(desc.view_info.format).c_str(), rect.offset.x, rect.offset.y, rect.extent.width,
                     rect.extent.height);
     }

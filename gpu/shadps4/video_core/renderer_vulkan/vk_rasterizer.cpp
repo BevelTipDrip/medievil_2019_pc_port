@@ -4981,10 +4981,10 @@ bool Rasterizer::ReplaceHdrTonemap(const Pipeline* pipeline) {
     if (!fs || (fs->pgm_hash != Ue4HdrGrading::TonemapPs && fs->pgm_hash != Ue4HdrGrading::TonemapMapPs)) {
         return false;
     }
-    if (fs->pgm_hash == Ue4HdrGrading::TonemapPs && ReplaceHdrTonemapDraw(pipeline, *fs)) {
+    if (ReplaceHdrTonemapDraw(pipeline, *fs)) {
         return true;
     }
-    // The game's tonemapper draws (the map screen's, or ours declined): it reads the game's LUT target, drawn now if
+    // The game's tonemapper draws (ours declined, or the game's look): it reads the game's LUT target, drawn now if
     // our LUT pass left it for later (study-hdr.md H46).
     ue4_hdr->WriteGameLut();
     return false;
@@ -4994,6 +4994,7 @@ bool Rasterizer::ReplaceHdrTonemapDraw(const Pipeline* pipeline, const Shader::I
     const auto stages = pipeline->GetStages();
     const u32 vertex = static_cast<u32>(Shader::SwStage::Vertex);
     const Shader::Info* fs = &fs_info;
+    const bool map = fs->pgm_hash == Ue4HdrGrading::TonemapMapPs; // the map screen's (study-hdr.md H47)
     const auto& settings = Gow3Settings::Get();
     if (settings.hdr_look.load(std::memory_order_relaxed) != Gow3Settings::HdrLookSdr || !ue4_hdr->OwnLutReady()) {
         return false; // the game's look, or our LUT not built yet: the game's draw
@@ -5010,9 +5011,11 @@ bool Rasterizer::ReplaceHdrTonemapDraw(const Pipeline* pipeline, const Shader::I
     if (!vs || !cb_descs[0].first || fs->images.size() < 4 || vs->images.empty()) {
         return decline(1, "no vertex stage, colour target or the expected images");
     }
-    // The constants as the draw binds them: each stage's first two guest buffers (study-hdr.md H44).
-    std::array<u32, Ue4HdrGrading::TonemapDwords> constants{};
-    const auto read_buffers = [&](const Shader::Info& stage, u32 at, u32 dwords0, u32 dwords1) {
+    // The constants as the draw binds them: each stage's first two guest buffers (study-hdr.md H44). The map's pixel
+    // shader buffer 0 has 44 dwords: 0-23 in place, 24-43 after the viewport.
+    std::array<u32, Ue4HdrGrading::TonemapMapDwords> constants{};
+    std::array<u32, Ue4HdrGrading::TonemapMapPs0> map_ps0{};
+    const auto read_buffers = [&](const Shader::Info& stage, u32* dst0, u32 dwords0, u32* dst1, u32 dwords1) {
         const PreparedStage* prepared = FindPreparedStage(stage);
         u32 found = 0;
         for (u32 i = 0; i < stage.buffers.size() && found < 2; ++i) {
@@ -5024,16 +5027,29 @@ bool Rasterizer::ReplaceHdrTonemapDraw(const Pipeline* pipeline, const Shader::I
             if (sharp.GetSize() < bytes || !memory->IsValidGpuMapping(sharp.base_address, bytes)) {
                 return false;
             }
-            memory->CopySparseMemory(sharp.base_address, reinterpret_cast<u8*>(constants.data() + at), bytes);
-            at += found == 0 ? dwords0 : dwords1;
+            memory->CopySparseMemory(sharp.base_address, reinterpret_cast<u8*>(found == 0 ? dst0 : dst1), bytes);
             ++found;
         }
         return found == 2;
     };
-    if (!read_buffers(*fs, 0, Ue4HdrGrading::TonemapPs0, Ue4HdrGrading::TonemapPs1) ||
-        !read_buffers(*vs, Ue4HdrGrading::TonemapPs0 + Ue4HdrGrading::TonemapPs1, Ue4HdrGrading::TonemapVs0,
+    constexpr u32 ps1_at = Ue4HdrGrading::TonemapPs0, vs0_at = ps1_at + Ue4HdrGrading::TonemapPs1;
+    constexpr u32 vs1_at = vs0_at + Ue4HdrGrading::TonemapVs0;
+    if (!read_buffers(*fs, map ? map_ps0.data() : constants.data(),
+                      map ? Ue4HdrGrading::TonemapMapPs0 : Ue4HdrGrading::TonemapPs0, constants.data() + ps1_at,
+                      Ue4HdrGrading::TonemapPs1) ||
+        !read_buffers(*vs, constants.data() + vs0_at, Ue4HdrGrading::TonemapVs0, constants.data() + vs1_at,
                       Ue4HdrGrading::TonemapVs1)) {
         return decline(2, "a constant buffer smaller than expected or not mapped");
+    }
+    if (map) {
+        std::copy_n(map_ps0.begin(), Ue4HdrGrading::TonemapPs0, constants.begin());
+        std::copy(map_ps0.begin() + Ue4HdrGrading::TonemapPs0, map_ps0.end(),
+                  constants.begin() + Ue4HdrGrading::TonemapDwords);
+        static bool vs_noted = false;
+        if (GOW3_DEV_TOOLS && !std::exchange(vs_noted, true)) {
+            std::printf("UE4 HDR tonemapper: the map's vertex shader vs %016llx\n",
+                        static_cast<unsigned long long>(vs->pgm_hash));
+        }
     }
     // The inputs through the game's views, made shader-readable, the upscaler's redirect applied (as BindTextures).
     bool rendering_ended = false;
@@ -5065,9 +5081,10 @@ bool Rasterizer::ReplaceHdrTonemapDraw(const Pipeline* pipeline, const Shader::I
         }
         return {view, layout};
     };
+    // The levels' images: dirt mask, scene, bloom, LUT; the map's: scene, dirt mask, bloom, LUT.
     Ue4HdrGrading::TonemapInputs inputs;
-    inputs.dirt_mask = resolve(*fs, 0);
-    inputs.scene = resolve(*fs, 1);
+    inputs.dirt_mask = resolve(*fs, map ? 1 : 0);
+    inputs.scene = resolve(*fs, map ? 0 : 1);
     inputs.bloom = resolve(*fs, 2);
     inputs.eye = resolve(*vs, 0);
     if (!inputs.dirt_mask.view || !inputs.scene.view || !inputs.bloom.view || !inputs.eye.view) {
@@ -5113,7 +5130,7 @@ bool Rasterizer::ReplaceHdrTonemapDraw(const Pipeline* pipeline, const Shader::I
         clear = LiverpoolToVK::ColorBufferClearValue(col_buf).color;
     }
     if (!ue4_hdr->RunTonemap(cb_descs[0].first, cb_descs[0].second, inputs, constants, rect,
-                             clear ? &*clear : nullptr)) {
+                             clear ? &*clear : nullptr, map)) {
         return false;
     }
     if (col_buf) {
