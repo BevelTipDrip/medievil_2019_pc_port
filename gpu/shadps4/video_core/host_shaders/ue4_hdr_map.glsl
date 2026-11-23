@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2026 MediEvil PC port
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-// gow3: our HDR tone curve (research/docs/plan-hdr-final.md; study-hdr.md H40-H42). Included by ue4_hdr_lut.frag (the
-// grading LUT). Needs ue4_grade.glsl (GradeScene).
+// gow3: our HDR tone curve (research/docs/plan-hdr-final.md; study-hdr.md H40-H45). Included by ue4_hdr_lut.frag (the
+// grading LUT; its values per area from ue4_hdr_area.frag plus the user's adjustments). Needs ue4_grade.glsl.
 
 const vec3 HDR_Y709 = vec3(0.2126, 0.7152, 0.0722);
 
@@ -16,22 +16,27 @@ vec3 PqEncode(vec3 nits) {
 // at the game brightness instead of white at 1.0, so the peak only moves the shoulder. On the luminance of the graded,
 // untonemapped colour U (scene-linear, 1.0 = SDR white's scene value):
 //   s' = max(Y - toe clamp, 0)
-//   middle (s' >= toe length): grey nits ((s' - b) / (0.18 - b))^gamma; b = toe strength x toe length (where the middle
-//     would reach black: the toe strength)
+//   middle (s' >= toe length): grey nits ((s' - b) / (0.18 - clamp - b))^gamma (grey at Y 0.18 whatever the clamp);
+//     b = toe strength x toe length (where the middle would reach black: the toe strength)
 //   toe (below): a power curve matched to the middle in value and slope (Hable's SolveAB): toe nits (s' / length)^p,
 //     p = gamma length / (length - b)
+//   plus the black floor (the level LUT's lift, H42): floor x (1 - Y / 0.18)^2 below grey
 //   shoulder on those nits from `start` (nits): identity below; above, the span to `end` (the nits where it reaches
 //     the peak) mapped to start..peak by a blend of Hable's flipped power curve (angle 0: it flattens out before the
 //     peak) and a Reinhard curve (angle 1: it keeps rising to the peak, more detail in the brightest highlights); both
 //     have slope 1 at the start and reach the peak at the end.
-// Constants (vk_ue4_hdr.cpp PiecewiseFromSettings): pw0 = (toe clamp, toe length, b, gamma), pw1 = (grey nits, p,
-// toe nits at the toe length, highlight saturation), pw2 = (shoulder start, shoulder end, peak, angle).
-float HdrPiecewiseUnrolled(float y, vec4 pw0, vec4 pw1) {
+// Constants (ue4_hdr_lut.frag AreaCurve): pw0 = (toe clamp, toe length, b, gamma), pw1 = (grey nits, p, toe nits at
+// the toe length, highlight saturation), pw2 = (shoulder start, shoulder end, peak, angle), pw3 = (floor nits, 0, 0, 0).
+float HdrPiecewiseUnrolled(float y, vec4 pw0, vec4 pw1, vec4 pw3) {
     const float s = max(y - pw0.x, 0.0);
+    float n;
     if (s >= pw0.y) {
-        return pw1.x * pow((s - pw0.z) / (0.18 - pw0.z), pw0.w);
+        n = pw1.x * pow((s - pw0.z) / (0.18 - pw0.x - pw0.z), pw0.w);
+    } else {
+        n = s > 0.0 ? pw1.z * pow(s / pw0.y, pw1.y) : 0.0;
     }
-    return s > 0.0 ? pw1.z * pow(s / pw0.y, pw1.y) : 0.0;
+    const float f = max(1.0 - y / 0.18, 0.0);
+    return n + pw3.x * f * f;
 }
 
 float HdrPiecewiseShoulder(float n, vec4 pw2) {
@@ -49,8 +54,8 @@ float HdrPiecewiseShoulder(float n, vec4 pw2) {
     return start + (peak - start) * mix(power, reinhard, pw2.w);
 }
 
-float HdrPiecewiseY(float y, vec4 pw0, vec4 pw1, vec4 pw2) {
-    return HdrPiecewiseShoulder(HdrPiecewiseUnrolled(y, pw0, pw1), pw2);
+float HdrPiecewiseY(float y, vec4 pw0, vec4 pw1, vec4 pw2, vec4 pw3) {
+    return HdrPiecewiseShoulder(HdrPiecewiseUnrolled(y, pw0, pw1, pw3), pw2);
 }
 
 // Scene-linear colour -> linear BT.709 nits with the piecewise curve. The colour is the game's graded colour G (all of
@@ -58,7 +63,7 @@ float HdrPiecewiseY(float y, vec4 pw0, vec4 pw1, vec4 pw2) {
 // of a grey of the same Y(U)): a grey gets the curve exactly, a colour keeps its luminance relative to grey as the
 // game grades it. Highlight saturation (pw1.w) blends in U's colour (before the film curve's fade to white) where the
 // grey's SDR value nears white.
-vec3 HdrPiecewiseNits(vec3 scene, bool zero_black_clip, vec4 pw0, vec4 pw1, vec4 pw2) {
+vec3 HdrPiecewiseNits(vec3 scene, bool zero_black_clip, vec4 pw0, vec4 pw1, vec4 pw2, vec4 pw3) {
     vec3 untonemapped, graded;
     GradeScene(scene, zero_black_clip, untonemapped, graded);
     const vec3 u = max(untonemapped, vec3(0.0));
@@ -66,7 +71,7 @@ vec3 HdrPiecewiseNits(vec3 scene, bool zero_black_clip, vec4 pw0, vec4 pw1, vec4
     if (yu <= 0.0) {
         return vec3(0.0);
     }
-    const float n = HdrPiecewiseY(yu, pw0, pw1, pw2);
+    const float n = HdrPiecewiseY(yu, pw0, pw1, pw2, pw3);
     vec3 ug, gg;
     GradeScene(vec3(yu), zero_black_clip, ug, gg);
     const float y_grey = dot(max(gg, vec3(0.0)), HDR_Y709);

@@ -51,6 +51,8 @@ add_host_shader(imgui_hdr.frag imgui_hdr_frag)
 add_host_shader(ue4_hdr_lut.vert ue4_hdr_lut_vert)
 add_host_shader(ue4_hdr_lut.frag ue4_hdr_lut_frag)
 add_host_shader(ue4_tonemap.frag ue4_tonemap_frag)
+add_host_shader(ue4_hdr_area.frag ue4_hdr_area_frag)
+add_host_shader(ue4_hdr_area.frag ue4_hdr_area_blend_frag GRADE_LUT_BLEND=1)
 
 foreach(BPP IN ITEMS 8 16 32 64 96 128)
     add_host_shader(tiling.comp tiling_micro_${BPP}_comp BITS_PER_PIXEL=${BPP} IS_MACRO_TILED=0)

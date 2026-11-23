@@ -108,15 +108,18 @@ inline constexpr int HdrUiNitsMin = 50, HdrUiNitsMax = 400, HdrUiNitsDefault = 1
 enum HdrLook : int { HdrLookGame = 0, HdrLookSdr = 1 };
 inline constexpr int HdrGameNitsMin = 80, HdrGameNitsMax = 500, HdrGameNitsDefault = 203;
 inline constexpr int HdrPeakNitsMin = 250, HdrPeakNitsMax = 4000, HdrPeakNitsDefault = 1000;
-/// Our tone curve (study-hdr.md H40; ue4_hdr_map.glsl HdrPiecewiseNits): Hable's power toe and shoulder in place of
-/// the game's film curve, the game's graded colour kept. Stored as integers: mid contrast (gamma x 100), toe clamp
-/// (scene x 10000), toe length (scene x 1000), toe strength / shoulder angle / highlight saturation (x 100), shoulder
-/// start (percent of the peak), shoulder length (stops x 10; to 8 stops: the user's Hilltop setting sat at 5, H42).
-/// Defaults: fitted to the SDR look at game brightness 125, peak 435 (H40).
-inline constexpr int HdrPwGammaMin = 80, HdrPwGammaMax = 200, HdrPwGammaDefault = 128;
-inline constexpr int HdrPwToeClampMax = 100, HdrPwToeClampDefault = 32;
-inline constexpr int HdrPwToeLengthMin = 5, HdrPwToeLengthMax = 150, HdrPwToeLengthDefault = 33;
-inline constexpr int HdrPwToeStrengthMax = 90, HdrPwToeStrengthDefault = 45;
+/// Our tone curve (study-hdr.md H40-H45; ue4_hdr_map.glsl HdrPiecewiseNits): Hable's power toe and shoulder in place
+/// of the game's film curve, the game's graded colour kept. Its toe and middle are each area's own (ue4_hdr_area.frag,
+/// from the game's grading block) with these adjustments, the same everywhere: mid contrast and toe length multiply
+/// (x 100), toe strength adds (x 100), toe clamp adds (scene x 10000), black floor scales the area's lift (percent;
+/// 0: black stays black), Level LUT tone blends the area's values without (0) and with (100) its level LUT. The
+/// shoulder and highlight saturation are absolute: shoulder start (percent of the peak), shoulder length (stops x 10; to
+/// 8 stops: the user's Hilltop setting sat at 5, H42), shoulder angle / highlight saturation (x 100).
+inline constexpr int HdrAdjContrastMin = 50, HdrAdjContrastMax = 200;
+inline constexpr int HdrAdjToeLengthMin = 25, HdrAdjToeLengthMax = 400;
+inline constexpr int HdrAdjToeStrengthMin = -50, HdrAdjToeStrengthMax = 50;
+inline constexpr int HdrAdjToeClampMin = -50, HdrAdjToeClampMax = 100;
+inline constexpr int HdrBlackFloorDefault = 0, HdrLutToneDefault = 100;
 inline constexpr int HdrPwShoulderStartMin = 20, HdrPwShoulderStartMax = 90, HdrPwShoulderStartDefault = 50;
 inline constexpr int HdrPwShoulderLengthMin = 5, HdrPwShoulderLengthMax = 80, HdrPwShoulderLengthDefault = 20;
 inline constexpr int HdrPwShoulderAngleDefault = 50;
@@ -301,14 +304,17 @@ struct Values {
     /// Colour grading (GradeAt), live: read by the renderer at each combine LUT draw.
     std::atomic<float> grade[GradeCount];
     /// Our tone curve's controls (HdrPw*); live.
-    std::atomic<int> hdr_pw_gamma{HdrPwGammaDefault};
-    std::atomic<int> hdr_pw_toe_clamp{HdrPwToeClampDefault};
-    std::atomic<int> hdr_pw_toe_length{HdrPwToeLengthDefault};
-    std::atomic<int> hdr_pw_toe_strength{HdrPwToeStrengthDefault};
     std::atomic<int> hdr_pw_shoulder_start{HdrPwShoulderStartDefault};
     std::atomic<int> hdr_pw_shoulder_length{HdrPwShoulderLengthDefault};
     std::atomic<int> hdr_pw_shoulder_angle{HdrPwShoulderAngleDefault};
     std::atomic<int> hdr_pw_saturation{HdrPwSaturationDefault};
+    /// The adjustments to each area's values (HdrAdj*, H45); live.
+    std::atomic<int> hdr_adj_contrast{100};
+    std::atomic<int> hdr_adj_toe_length{100};
+    std::atomic<int> hdr_adj_toe_strength{0};
+    std::atomic<int> hdr_adj_toe_clamp{0};
+    std::atomic<int> hdr_black_floor{HdrBlackFloorDefault};
+    std::atomic<int> hdr_lut_tone{HdrLutToneDefault};
 };
 
 Values& Get();

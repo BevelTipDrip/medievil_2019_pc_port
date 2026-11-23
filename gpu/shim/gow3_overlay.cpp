@@ -1806,22 +1806,34 @@ void GradeRow(const char* label, int i, const char* help) {
     NumberRow(label, Gow3Settings::Get().grade[i], info.lo, info.hi, info.step, info.format, GradeClamp(i), help);
 }
 
-// The piecewise tone curve's rows (study-hdr.md H40; vk_ue4_hdr.cpp PiecewiseFromSettings).
+// Our tone curve's rows (study-hdr.md H40-H45): adjustments to each area's own values (the game's grading of that
+// place), the same everywhere; the shoulder and saturation absolute.
 void PiecewiseRows() {
     namespace S = Gow3Settings;
     auto& s = S::Get();
-    ScaledSliderRow("Mid contrast", s.hdr_pw_gamma, S::HdrPwGammaMin, S::HdrPwGammaMax, 0.01f, "gamma %.2f",
-                    "The straight middle part's contrast, pivoting on mid grey (which stays at 18% of the game "
-                    "brightness): higher darkens the shadows and brightens lit areas. 1.28 matches the SDR look.");
-    ScaledSliderRow("Toe clamp", s.hdr_pw_toe_clamp, 0, S::HdrPwToeClampMax, 0.0001f, "%.4f",
-                    "The scene level below which everything is black (the scene value: mid grey is 0.18). Fine "
-                    "steps: 0.0032 matches the SDR look; lower lifts the deepest blacks out of black.");
-    ScaledSliderRow("Toe length", s.hdr_pw_toe_length, S::HdrPwToeLengthMin, S::HdrPwToeLengthMax, 0.001f, "%.3f",
-                    "Where the toe ends and the straight middle begins (scene value). Longer: a gentler, longer "
-                    "fall into black.");
-    ScaledSliderRow("Toe strength", s.hdr_pw_toe_strength, 0, S::HdrPwToeStrengthMax, 0.01f, "%.2f",
-                    "How deep the toe pushes the shadows: 0 none (the middle runs down to black), higher crisper, "
-                    "darker blacks. 0.45 matches the SDR look.");
+    SliderRow("Level LUT tone", s.hdr_lut_tone, 0, 100, "%d%%",
+              "How much of a level's grading table shapes the brightness (Dan's Crypt, Hilltop, Sleeping Village and "
+              "others: it lifts the shadows into a haze). 100: as the game grades it; 0: the haze gone, the "
+              "shadows as in levels without a table. Its colour stays either way.",
+              5);
+    SliderRow("Black floor", s.hdr_black_floor, 0, 100, "%d%%",
+              "The raised black of a level's grading table: 0 keeps black at black (HDR shows a lifted black "
+              "plainly); 100 lifts it as the game does.",
+              5);
+    ScaledSliderRow("Mid contrast", s.hdr_adj_contrast, S::HdrAdjContrastMin, S::HdrAdjContrastMax, 0.01f,
+                    "x%.2f",
+                    "Each area's own contrast (its grading's slope through mid grey), times this: higher darkens the "
+                    "shadows and brightens lit areas; mid grey stays.");
+    ScaledSliderRow("Toe clamp", s.hdr_adj_toe_clamp, S::HdrAdjToeClampMin, S::HdrAdjToeClampMax, 0.0001f, "%+.4f",
+                    "Added to each area's black point (a scene level, mid grey is 0.18): higher crushes more of the "
+                    "darkest tones to black; lower brings them back.");
+    ScaledSliderRow("Toe length", s.hdr_adj_toe_length, S::HdrAdjToeLengthMin, S::HdrAdjToeLengthMax, 0.01f,
+                    "x%.2f",
+                    "Each area's toe length times this: longer gives a gentler, longer fall into black.");
+    ScaledSliderRow("Toe strength", s.hdr_adj_toe_strength, S::HdrAdjToeStrengthMin, S::HdrAdjToeStrengthMax, 0.01f,
+                    "%+.2f",
+                    "Added to each area's toe strength: higher gives crisper, darker shadows without moving mid "
+                    "grey.");
     SliderRow("Shoulder start", s.hdr_pw_shoulder_start, S::HdrPwShoulderStartMin, S::HdrPwShoulderStartMax,
               "%d%% of peak",
               "Where highlights start to bend towards the peak: below it, the curve is exact.", 5);

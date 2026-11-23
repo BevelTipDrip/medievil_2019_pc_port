@@ -812,6 +812,22 @@ Card: [hdr-output.md](../patches/present/hdr-output.md). Screenshots: the user's
     + NDC x scale): my pass mapped pixels from the vertex shader's constants alone (the levels' viewport is the whole
     target). Fix (build 18:13): the draw's viewport passed with the constants; the shader inverts it (pixel -> NDC ->
     the unit rectangle -> UV, the vignette from that NDC), the drawn rectangle from the same mapping.
+  - Run 3 (build 18:13): the user confirmed the main menu fixed (aligned with ACES) [V the user].
+- **H45, each area's values on the GPU (plan-hdr-final.md step 3)** (2026-11-22; fix built 19:23, not run):
+  - Solver (`h42/gpu_solver.py`, as the GPU runs it): the game's grey curve on a ramp of ~40 scene values, anchors by
+    log-log interpolation, floor / grey / gamma read directly, toe length / strength / clamp by at most 12 damped Newton
+    steps (finite-difference Jacobian, log residuals at Y(U) 0.07 / 0.02 / 0.006, start 0.08 / 0.35 / 0.002, bounds)
+    hits all three anchors exactly on the five captured levels, with and without their LUT, within rounding of the
+    offline search (`derive.py`); below grey 0.14-0.41% PQ rms. Without the LUT, Hilltop and Sleeping Village get the
+    Graveyard's values (0.062 / 0.41 / 0.0042, gamma 1.17), Dan's Crypt its own film (1.11, 0.063 / 0.31).
+  - Built: `ue4_hdr_area.frag` (and its level-LUT variant) draws a 4x1 RGBA32F image in the same recording before the
+    LUT passes (texels 0-1 with the LUT, 2-3 without; a fallback to the engine defaults' values when the residual
+    stays above 0.05); `ue4_hdr_lut.frag` reads it (binding 2), blends the two sets by Level LUT tone and applies the
+    adjustments (mid contrast x, toe length x, toe strength +, toe clamp +, black floor x); grey now pinned at Y(U)
+    0.18 whatever the clamp (the 3% of H42). Settings `hdr_adj_contrast` / `_toe_length` (x100, default 100),
+    `hdr_adj_toe_strength` (x100, default 0), `hdr_adj_toe_clamp` (x1e4, default 0), `hdr_black_floor` (%, default
+    0), `hdr_lut_tone` (%, default 100); the absolute `hdr_pw_gamma` / `_toe_*` keys are gone (the shoulder and
+    saturation keys stay). Everything on the GPU, recomputed at each LUT build (step 4: only on change).
 - Contrast, a lead [I]: in UE 4.21 the HDR output devices (3 / 4) go through the ACES ODT instead of the SDR film curve,
   so the film toe that crushes SDR blacks is not applied; the 8-bit frame image adds banding but should not lift blacks.
   Needs a same-view SDR / HDR capture pair to measure.

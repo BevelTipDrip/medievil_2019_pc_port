@@ -115,17 +115,19 @@ public:
     vk::ImageView RunBackdrop(const CompositeInput& scene, const CompositeInput& ui, u32 width, u32 height);
 
 private:
-    enum class Kind : u8 { Lut, Composite, LutBlend, Tonemap };
+    enum class Kind : u8 { Lut, Composite, LutBlend, Tonemap, Area, AreaBlend };
     vk::Pipeline Pipeline(vk::Format format, Kind kind = Kind::Lut);
     /// Our LUT image (32^3 RGBA16F, 3D, its slices renderable as a 2D array), made at the first build.
     bool EnsureOwnLut(u32 size);
+    /// The area's values image (4x1 RGBA32F, ue4_hdr_area.frag), made at the first build.
+    bool EnsureArea();
 
     const Instance& instance;
     Scheduler& scheduler;
     VideoCore::TextureCache& texture_cache;
     VideoCore::BufferCache& buffer_cache;
     Runtime& runtime;
-    vk::UniqueShaderModule vert, frag, composite_frag, blend_frag, tonemap_frag;
+    vk::UniqueShaderModule vert, frag, composite_frag, blend_frag, tonemap_frag, area_frag, area_blend_frag;
     vk::UniqueDescriptorSetLayout set_layout, composite_set_layout, blend_set_layout, tonemap_set_layout;
     vk::UniquePipelineLayout layout, composite_layout, blend_layout, tonemap_layout;
     vk::UniqueSampler lut_sampler; ///< the blend builder's sampler: linear, clamp to edge (as the game's)
@@ -147,6 +149,9 @@ private:
     bool own_lut_built = false;
     bool own_lut_failed = false;
     bool tonemap_failed = false;
+    VideoCore::UniqueImage area;
+    vk::UniqueImageView area_view;
+    bool area_failed = false;
     u64 tonemap_runs = 0;
 };
 

@@ -88,10 +88,12 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         int lo, hi, def;
     };
     const PwKey pw_keys[] = {
-        {"hdr_pw_gamma", &v.hdr_pw_gamma, HdrPwGammaMin, HdrPwGammaMax, HdrPwGammaDefault},
-        {"hdr_pw_toe_clamp", &v.hdr_pw_toe_clamp, 0, HdrPwToeClampMax, HdrPwToeClampDefault},
-        {"hdr_pw_toe_length", &v.hdr_pw_toe_length, HdrPwToeLengthMin, HdrPwToeLengthMax, HdrPwToeLengthDefault},
-        {"hdr_pw_toe_strength", &v.hdr_pw_toe_strength, 0, HdrPwToeStrengthMax, HdrPwToeStrengthDefault},
+        {"hdr_adj_contrast", &v.hdr_adj_contrast, HdrAdjContrastMin, HdrAdjContrastMax, 100},
+        {"hdr_adj_toe_length", &v.hdr_adj_toe_length, HdrAdjToeLengthMin, HdrAdjToeLengthMax, 100},
+        {"hdr_adj_toe_strength", &v.hdr_adj_toe_strength, HdrAdjToeStrengthMin, HdrAdjToeStrengthMax, 0},
+        {"hdr_adj_toe_clamp", &v.hdr_adj_toe_clamp, HdrAdjToeClampMin, HdrAdjToeClampMax, 0},
+        {"hdr_black_floor", &v.hdr_black_floor, 0, 100, HdrBlackFloorDefault},
+        {"hdr_lut_tone", &v.hdr_lut_tone, 0, 100, HdrLutToneDefault},
         {"hdr_pw_shoulder_start", &v.hdr_pw_shoulder_start, HdrPwShoulderStartMin, HdrPwShoulderStartMax,
          HdrPwShoulderStartDefault},
         {"hdr_pw_shoulder_length", &v.hdr_pw_shoulder_length, HdrPwShoulderLengthMin, HdrPwShoulderLengthMax,
@@ -820,9 +822,10 @@ std::map<std::string, std::string> Serialize(const Values& v) {
     Append(out, "hdr_look=%s\nhdr_game_nits=%d\n", v.hdr_look == HdrLookGame ? "game" : "sdr",
            v.hdr_game_nits.load());
     Append(out, "hdr_peak_nits=%d\n", v.hdr_peak_nits.load());
-    Append(out, "hdr_pw_gamma=%d\nhdr_pw_toe_clamp=%d\nhdr_pw_toe_length=%d\nhdr_pw_toe_strength=%d\n",
-           v.hdr_pw_gamma.load(), v.hdr_pw_toe_clamp.load(), v.hdr_pw_toe_length.load(),
-           v.hdr_pw_toe_strength.load());
+    Append(out, "hdr_adj_contrast=%d\nhdr_adj_toe_length=%d\nhdr_adj_toe_strength=%d\nhdr_adj_toe_clamp=%d\n",
+           v.hdr_adj_contrast.load(), v.hdr_adj_toe_length.load(), v.hdr_adj_toe_strength.load(),
+           v.hdr_adj_toe_clamp.load());
+    Append(out, "hdr_black_floor=%d\nhdr_lut_tone=%d\n", v.hdr_black_floor.load(), v.hdr_lut_tone.load());
     Append(out, "hdr_pw_shoulder_start=%d\nhdr_pw_shoulder_length=%d\nhdr_pw_shoulder_angle=%d\nhdr_pw_saturation=%d\n",
            v.hdr_pw_shoulder_start.load(), v.hdr_pw_shoulder_length.load(), v.hdr_pw_shoulder_angle.load(),
            v.hdr_pw_saturation.load());
