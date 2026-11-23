@@ -135,3 +135,22 @@ Every log line on these paths is reviewed: release keeps start-up lines only.
 4. **Our LUT:** today the game's target: 32^3 `A2B10G10R10` (PQ, 10 bits a channel), sampled by the game's tonemapper
    with trilinear filtering; no banding seen. Ours: 32^3 kept; `RGBA16F` (256 KB) instead of 10-bit, so the LUT adds no
    quantization of its own before the 10-bit PQ output (the only real one). 64^3 only if banding shows.
+
+## Per-level settings (the last major feature for v2.4.1; the user, 2026-11-22)
+
+Decisions (the user):
+
+1. **Keyed by the level's name**: the port's OpenLevel hook (src/level_hook.h, 01.00 and 01.02) gets the level name as
+   an FName; the port resolves it through UE 4.21's name table (research 2026-11-22: its address per build). Not the
+   grading block (it changes continuously on the main menu and as volumes blend) and not a fog fingerprint (defaults
+   shared between levels). The main menu and the map screen are levels of their own.
+2. **Per level**: Game brightness, Peak brightness, Level LUT tone, Black floor, Mid contrast, Toe clamp / length /
+   strength, Bloom strength (fog controls join in v2.4.2). **Global**: UI brightness, Shoulder start / length / angle,
+   Highlight saturation, HDR look.
+3. **Menu**: a dropdown, **Adjust: All levels / This level (name) / every other level with saved settings**, in the
+   menu's own style (the styled look has no dropdown yet: one is made to match). Editing with a level chosen saves an
+   override for that level; overridden rows are marked; **Reset this level** returns it to All levels. A level without
+   overrides uses All levels.
+
+Design: overrides in medievil.ini as `hdr_level.<name>.<key>=<value>` (the launcher keeps keys it does not know). On a
+level change the effective values are swapped in once (one LUT rebuild at the load, as now); nothing per frame.
