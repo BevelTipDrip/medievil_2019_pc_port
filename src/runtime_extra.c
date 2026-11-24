@@ -719,7 +719,6 @@ void runtime_ue4_request_cvar(const char *name, const char *value) {
 #define TOGGLE2_PARTICLE_FIXED_STEP UINT64_C(8192)
 /* 1/30 as the game registers it (float 0x3d088889 in 01.00 and 01.02): 0.0333333 would be 9 ulps off. */
 #define PARTICLE_FIXED_STEP "0.033333335"
-extern uint64_t runtime_disabled_optimizations2; /* runtime_memory.c: the toggle file's second word */
 static int particle_wanted=-1; /* the menu's choice: 1 single pass, 0 fixed step, -1 not drawn yet */
 void runtime_ue4_particle_single_pass(int on) {
     __atomic_store_n(&particle_wanted,on ? 1 : 0,__ATOMIC_RELEASE);
@@ -732,7 +731,7 @@ static void ue4_particle_pass_poll(void) {
     }
     int wanted=__atomic_load_n(&particle_wanted,__ATOMIC_ACQUIRE);
     if (wanted<0) wanted=start; /* menu not opened yet: the ini's choice, as the game started */
-    const int forced=(__atomic_load_n(&runtime_disabled_optimizations2,__ATOMIC_RELAXED)&TOGGLE2_PARTICLE_FIXED_STEP)!=0;
+    const int forced=(runtime_toggle2()&TOGGLE2_PARTICLE_FIXED_STEP)!=0;
     const int on=forced ? 0 : wanted;
     if (on==applied) return;
     applied=on; /* once per switch, also when this eboot has no known address (logged once) */
@@ -760,7 +759,7 @@ static int particle_slot(uintptr_t fx) {
     return -1; /* more FX systems than slots: no guard for this one */
 }
 static int particle_guard_on(void) {
-    return !(__atomic_load_n(&runtime_disabled_optimizations2,__ATOMIC_RELAXED)&TOGGLE2_PARTICLE_FLIP_GUARD_OFF);
+    return !(runtime_toggle2()&TOGGLE2_PARTICLE_FLIP_GUARD_OFF);
 }
 static void particle_guard_report(void) {
     static int last_on=-1, quiet=-1;

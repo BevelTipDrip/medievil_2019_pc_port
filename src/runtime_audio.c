@@ -133,8 +133,9 @@ static ABI int32_t audio_open(int32_t user, int32_t type, int32_t index, uint32_
         if (p->stream) SDL_ResumeAudioStreamDevice(p->stream);
         else fprintf(stderr,"Runtime: SDL audio stream failed (%s); port %d uses the timer sink\n",SDL_GetError(),id);
     }
-    p->stats=getenv("GOW3_AUDIO_STATS")!=NULL;
-    const char *dump=getenv("GOW3_AUDIO_DUMP");
+    /* gow3 P5: GOW3_AUDIO_STATS / GOW3_AUDIO_DUMP are dev-build switches. */
+    p->stats=GOW3_DEV_TOOLS && getenv("GOW3_AUDIO_STATS")!=NULL;
+    const char *dump=GOW3_DEV_TOOLS ? getenv("GOW3_AUDIO_DUMP") : NULL;
     if (dump) {
         char path[4096];
         snprintf(path,sizeof(path),"%s.port%d.%dch.%s",dump,id,p->channels,p->is_float ? "f32" : "s16");
@@ -208,8 +209,8 @@ static int32_t output_port(int32_t handle, const void *data, int pace) {
             if (p->is_float) { float v; memcpy(&v,(const char *)data+from*4,4); v*=gain; memcpy(converted+to*4,&v,4); }
             else { int16_t v; memcpy(&v,(const char *)data+from*2,2); v=(int16_t)((float)v*gain); memcpy(converted+to*2,&v,2); }
         }
-        if (p->dump) fwrite(converted,1,bytes,p->dump);
-        if (p->stats) {
+        if (GOW3_DEV_TOOLS && p->dump) fwrite(converted,1,bytes,p->dump);
+        if (GOW3_DEV_TOOLS && p->stats) {
             uint64_t now=now_ns();
             if (!p->stat_start_ns) { p->stat_start_ns=now; p->stat_min_queued=1<<30; }
             else if (now-p->stat_last_ns>p->stat_max_gap_ns) p->stat_max_gap_ns=now-p->stat_last_ns;

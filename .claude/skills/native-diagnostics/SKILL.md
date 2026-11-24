@@ -42,7 +42,7 @@ Read the card's Invariants before using one: they say what it costs while on and
 | `GOW3_FRAME_STATS=1` | 5 s stats blocks (uploads, faults, region cache, backing copies, fences ...) | log | **periodic**: diagnostic runs only |
 | `GOW3_COPY_FAULT_LOG` (dev build only: default on, `0` off; not in the release build since P5) | a guest fault inside a host copy, before / after handling | log | event only (first 20, then powers of two); off = no per-copy work |
 | `GOW3_WAIT_SITES` | every guest wait by call site, requested vs actual time | log | see card `tooling/wait-sites` |
-| `GOW3_MOUSE_LOG=1` | mouse read / look diagnostics | log | **periodic**, caused frame-time waves |
+| `GOW3_MOUSE_LOG=1` (dev build only since P5) | mouse read / look diagnostics | log | **periodic**, caused frame-time waves |
 | AvPlayer trace (always on) | movie player calls and events | log | events only |
 | Save trace (always on) | every save call with the guest caller | log | events only |
 | `GOW3_CRASH_DUMP` (`0` off, `full`) | a minidump on a host fault | `user/crashdumps/` | on crash only; "Crash dump: type 0x1a65 failed" then 0x1065 written is normal |

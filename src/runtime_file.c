@@ -190,7 +190,7 @@ static File *get(int fd) {
     return &files[fd];
 }
 /* GOW3_AUDIO_TRACE=1: sound file opens and failed reads (missing game sounds). */
-static int audio_trace(void) { static int v=-1; if (v<0) { const char *e=getenv("GOW3_AUDIO_TRACE"); v=e && e[0]=='1'; } return v; }
+static int audio_trace(void) { if (!GOW3_DEV_TOOLS) return 0; /* gow3 P5: dev build only */ static int v=-1; if (v<0) { const char *e=getenv("GOW3_AUDIO_TRACE"); v=e && e[0]=='1'; } return v; }
 /* Game mounts (including linked mod overlays) are read-only. Saves use other mounts. */
 static int game_path(const char *p) {
     if (!p || !*p) return 0;
@@ -240,9 +240,9 @@ static int64_t do_open(const char *guest,int flags,int mode) {
     if (!fstat(host,&s) && S_ISDIR(s.st_mode)) dir=list_directory(path);
 #endif
     /* GOW3_FILE_TRACE=1: every file the game opens (mod and pak override checks). */
-    static int file_trace=-1;
-    if (file_trace<0) { const char *t=getenv("GOW3_FILE_TRACE"); file_trace=t && t[0]=='1'; }
-    if (file_trace) printf("Runtime: open(%s)%s\n",guest,dir ? " [directory]" : "");
+    static int file_trace=-1; /* gow3 P5: GOW3_FILE_TRACE / GOW3_MOD_TRACE are dev-build switches */
+    if (GOW3_DEV_TOOLS && file_trace<0) { const char *t=getenv("GOW3_FILE_TRACE"); file_trace=t && t[0]=='1'; }
+    if (GOW3_DEV_TOOLS && file_trace) printf("Runtime: open(%s)%s\n",guest,dir ? " [directory]" : "");
     if (save_path(guest) && !dir)
         printf("Save trace: open %s for %s, %lld bytes\n",guest,
                !(flags&3) ? "reading" : flags&0x400 ? "writing (truncated)" : "writing",(long long)s.st_size);
@@ -255,7 +255,8 @@ static int64_t do_open(const char *guest,int flags,int mode) {
     ++opens;
     pthread_mutex_unlock(&lock);
     if (audio_trace() && strstr(guest,"sound/")) printf("Audio trace: open(%s) -> fd %d, %lld bytes\n",guest,fd,(long long)s.st_size);
-    const char *mod_trace=getenv("GOW3_MOD_TRACE"), *mod_root=getenv("GOW3_MODS_DIR");
+    const char *mod_trace=GOW3_DEV_TOOLS ? getenv("GOW3_MOD_TRACE") : NULL;
+    const char *mod_root=mod_trace ? getenv("GOW3_MODS_DIR") : NULL;
     if (mod_trace && mod_trace[0]=='1' && mod_root) {
         char actual[PATH_MAX],root[PATH_MAX];
         static unsigned traced;

@@ -80,6 +80,7 @@ static size_t jobs_run, frames_decoded, batches_run;
 /* GOW3_AUDIO_TRACE=1: instance configurations and jobs that return a non-zero result. */
 static int trace_left=-1;
 static int ajm_trace(void) {
+    if (!GOW3_DEV_TOOLS) return 0; /* gow3 P5: dev-build switch */
     if (trace_left<0) { const char *e=getenv("GOW3_AUDIO_TRACE"); trace_left=e && e[0]=='1' ? 400 : 0; }
     return trace_left>0 && trace_left--;
 }

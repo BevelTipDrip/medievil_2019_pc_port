@@ -67,12 +67,11 @@ _Static_assert(sizeof(BatchEntry)==32,"PS4 batch map entry layout");
 static __thread unsigned exclusive_depth;
 /* Odd while a writer holds the lock; readers' region caches are valid for one even value. */
 static uint64_t table_generation;
-/* The toggle file's second word (Gow3Toggle2 in gpu/shim/gow3_toggles.h); 512: D5 off. */
-extern uint64_t runtime_disabled_optimizations2;
+/* The toggle file's second word (runtime_toggle2, runtime.h); 512: D5 off. */
 int runtime_fault_stats_enabled(void);
 #define TOGGLE2_TABLE_LOCK_PLAIN UINT64_C(512)
 static int table_lock_plain(void) {
-    return (__atomic_load_n(&runtime_disabled_optimizations2,__ATOMIC_RELAXED) & TOGGLE2_TABLE_LOCK_PLAIN) != 0;
+    return (runtime_toggle2() & TOGGLE2_TABLE_LOCK_PLAIN) != 0;
 }
 #ifdef _WIN32
 /* Windows: an SRW lock (no system call without contention; winpthreads' rwlock made one per
@@ -93,7 +92,7 @@ static void write_lock(void) {
 }
 static void write_unlock(void) {
     if (!--exclusive_depth) {
-        if (write_lock_start) {
+        if (GOW3_DEV_TOOLS && write_lock_start) { /* gow3 P5: no TLS load per unlock in release */
             __atomic_fetch_add(&write_lock_held_ns,host_now_ns()-write_lock_start,__ATOMIC_RELAXED);
             __atomic_fetch_add(&write_lock_acquires,1,__ATOMIC_RELAXED);
             write_lock_start=0;
@@ -237,9 +236,13 @@ static struct {
 } host_stats; /* atomic */
 static uint64_t host_stats_next; /* atomic */
 static int host_stats_enabled(void) {
+#if GOW3_DEV_TOOLS
     static int enabled=-1;
     if (enabled<0) { const char *v=getenv("GOW3_HOST_MAP_STATS"); enabled=v && v[0]=='1'; }
     return enabled;
+#else
+    return 0; /* gow3 P5: a dev-build switch; its ~30 checks fold in release */
+#endif
 }
 static uint64_t host_now_ns(void) {
     static LARGE_INTEGER frequency;
@@ -1376,7 +1379,7 @@ static int pool_maps_unlocked(void) {
 #ifdef _WIN32
     return 0;
 #else
-    return !(__atomic_load_n(&runtime_disabled_optimizations2,__ATOMIC_RELAXED) & TOGGLE2_POOL_MAPS_LOCKED);
+    return !(runtime_toggle2() & TOGGLE2_POOL_MAPS_LOCKED);
 #endif
 }
 #ifndef _WIN32
@@ -1880,7 +1883,7 @@ static int region_index_wanted(void) {
 }
 static int region_index_on(void) { /* first word 1: no region cache at all */
     return region_index_wanted() && !(__atomic_load_n(&runtime_disabled_optimizations,__ATOMIC_RELAXED) & 1) &&
-           !(__atomic_load_n(&runtime_disabled_optimizations2,__ATOMIC_RELAXED) & TOGGLE2_REGION_INDEX_OFF);
+           !(runtime_toggle2() & TOGGLE2_REGION_INDEX_OFF);
 }
 static unsigned region_slot(uintptr_t address) {
     return (unsigned)(((uint64_t)(address>>16)*UINT64_C(0x9E3779B97F4A7C15))>>54);
@@ -2128,7 +2131,7 @@ static int backing_copy_wanted(void) {
 }
 static int backing_copy_on(void) {
     return backing_copy_wanted() &&
-           !(__atomic_load_n(&runtime_disabled_optimizations2,__ATOMIC_RELAXED) & TOGGLE2_BACKING_COPY_OFF);
+           !(runtime_toggle2() & TOGGLE2_BACKING_COPY_OFF);
 }
 static void backing_copy_count(int what) {
     if (runtime_fault_stats_enabled()) __atomic_fetch_add(&backing_copy_counts[what],1,__ATOMIC_RELAXED);

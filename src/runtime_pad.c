@@ -395,7 +395,7 @@ static void read_inject(void) {
     for (int i=0;i<4;++i) injected.stick[i]=-1;
     char token[64];
     while (fscanf(f,"%63s",token)==1) {
-        if (!strcmp(token,"replay") && replay_armed!=1) { replay_armed=1; replay_start=0; } /* GOW3_PAD_REPLAY */
+        if (GOW3_DEV_TOOLS && !strcmp(token,"replay") && replay_armed!=1) { replay_armed=1; replay_start=0; } /* GOW3_PAD_REPLAY */
         if (!strcmp(token,"touchpad_left") || !strcmp(token,"touchpad_right")) {
             injected.buttons|=BTN_TOUCHPAD;
             injected.touch_side=!strcmp(token,"touchpad_right");
@@ -578,9 +578,10 @@ static uint32_t menu_buttons(void) {
 static void sample(PadData *d) {
     sample_host(d);
     if (gow3gpu_overlay_captures_input()) { hold_after_capture=1; return; }
-    record_sample(d);
+    /* gow3 P5: pad record / replay (GOW3_PAD_RECORD / GOW3_PAD_REPLAY) are dev-build test tools. */
+    if (GOW3_DEV_TOOLS) record_sample(d);
     read_inject();
-    replay_sample(d);
+    if (GOW3_DEV_TOOLS) replay_sample(d);
     d->buttons|=injected.buttons;
     if (injected.touch_side>=0) touch_click(d,injected.touch_side);
     else if ((d->buttons & BTN_TOUCHPAD) && !d->touch_count) touch_click(d,0);

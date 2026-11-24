@@ -667,7 +667,11 @@ static ABI int32_t mouse_open(int32_t user,int32_t type,int32_t index,const void
 static ABI int32_t mouse_read(int32_t handle,unsigned char *data,int32_t count) {
     static atomic_uint_fast64_t reads; static struct timespec first;
     static long long sum_x, sum_y, moving, peak; /* the game thread only */
-    const uint64_t n=atomic_fetch_add(&reads,1)+1;
+    /* gow3 P5: the read count (a seq_cst add per read) and GOW3_MOUSE_LOG are dev-build only; release counts
+     * the first 3 reads for their lines and stops. */
+    uint64_t n;
+    if (GOW3_DEV_TOOLS) n=atomic_fetch_add(&reads,1)+1;
+    else if ((n=atomic_load_explicit(&reads,memory_order_relaxed)+1)<=3) atomic_store_explicit(&reads,n,memory_order_relaxed);
     if (n==1) clock_gettime(CLOCK_MONOTONIC,&first);
     if (!data || count<1) return (int32_t)0x80DF0001;
     memset(data,0,40); /* timestamp 0, connected=false */
@@ -680,8 +684,8 @@ static ABI int32_t mouse_read(int32_t handle,unsigned char *data,int32_t count) 
         sum_x+=llabs(x); sum_y+=llabs(y);
         if (x || y) { moving++; const long long size=llabs(x)>llabs(y) ? llabs(x) : llabs(y); if (size>peak) peak=size; }
     }
-    static int periodic=-1;
-    if (periodic<0) { const char *v=getenv("GOW3_MOUSE_LOG"); periodic=v && v[0]=='1'; }
+    static int periodic=GOW3_DEV_TOOLS ? -1 : 0;
+    if (GOW3_DEV_TOOLS && periodic<0) { const char *v=getenv("GOW3_MOUSE_LOG"); periodic=v && v[0]=='1'; }
     if (n<=3 || (periodic && n%1000==0)) {
         struct timespec now; clock_gettime(CLOCK_MONOTONIC,&now);
         const double s=(double)(now.tv_sec-first.tv_sec)+(now.tv_nsec-first.tv_nsec)/1e9;

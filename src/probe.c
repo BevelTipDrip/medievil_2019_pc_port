@@ -684,6 +684,7 @@ static ABI void debug_menu_trace(void *context, void *stack, void *result) {
     last_ms = ms;
 }
 static void install_debug_menu_trace(Segment *segments, uint64_t count, uint64_t size) {
+    if (!GOW3_DEV_TOOLS) return; /* gow3 P5: GOW3_DEBUG_MENU_TRACE is a dev-build switch */
     const char *env = getenv("GOW3_DEBUG_MENU_TRACE");
     if (!env || env[0] != '1') return;
     for (size_t i = 0; i < sizeof(medievil_debug_menu_sites) / sizeof(medievil_debug_menu_sites[0]); ++i) {
@@ -1013,8 +1014,9 @@ static void camera_look(const void *stack) {
             counts_y += y;
         }
     }
-    if (ms - log_ms >= 5000) {
-        /* GOW3_MOUSE_LOG=1: the 5-second mouse look summary (diagnostics; off: no periodic line). */
+    if (GOW3_DEV_TOOLS && ms - log_ms >= 5000) {
+        /* GOW3_MOUSE_LOG=1: the 5-second mouse look summary (diagnostics; off: no periodic line). gow3 P5: dev
+         * build only; the counters above are then never read and fold away in release. */
         static int summary=-1;
         if (summary<0) { const char *v=getenv("GOW3_MOUSE_LOG"); summary=v && v[0]=='1'; }
         if (log_ms && summary) {

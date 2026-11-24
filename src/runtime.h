@@ -16,6 +16,16 @@ typedef gow3_jmp_buf sigjmp_buf;
 #else
 #include <setjmp.h>
 #endif
+/* The toggle file's second word (runtime_memory.c; Gow3Toggle2 in gpu/shim/gow3_toggles.h). gow3 P5: only the
+ * dev build's watcher writes it, so the release build reads a constant 0 (the loads and their tests fold). */
+extern uint64_t runtime_disabled_optimizations2;
+static inline uint64_t runtime_toggle2(void) {
+#if GOW3_DEV_TOOLS
+    return __atomic_load_n(&runtime_disabled_optimizations2,__ATOMIC_RELAXED);
+#else
+    return 0;
+#endif
+}
 /* Recovery point for speculative guest memory reads on this thread (probe.c fault handler). */
 extern __thread sigjmp_buf *runtime_fault_recover;
 /* Restarts the game (in-game settings menu, render resolution change). */
