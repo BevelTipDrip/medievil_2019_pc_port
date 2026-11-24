@@ -166,6 +166,32 @@ if its gate passes; (5) item 4 if gated in; item 8 last (risky). Then the ring r
 | **Stale Python tests (found 2026-11-10, after other work):** 8 fail on Windows. 6 in `tests/test_patches.py` read `patches/God_of_War_III_Remastered.xml` / profile CUSA01623, deleted upstream in 316f552 ("MediEvil branding"); rewrite against MediEvil's profile (CUSA11227, `patches/MediEvil.xml`). 2 in `tests/test_packaged_vulkan.py` split Linux `:` path lists and break on `C:\` paths; all 7 pass under WSL Debian: skip them off Linux. Done 2026-11-11 (`d75c1c8`, card tooling/python-test-upkeep): rewritten against MediEvil.xml plus an inline rules file, the 2 skipped on Windows, the glyph tests skip without Pillow; Windows 3.14: 170 OK, WSL 3.13: 158 OK | done |
 | **Hang at "quit to main menu" (PC, 2026-11-08, run `u1-frame-map`, render scale 80):** a small guest copy replayed on `gow3:VkRecorder` read-faulted; the recorder is not a GPU-side thread (`IsGpuSideThread`), so the fault waits on the GPU command thread (`SendCommand<true>`), which waits for stage B to drain, which waits for the recorder. UE4's watchdog ended the game after 120 s. Stacks: `data/u1-hang-recorder-fault-20261108.txt`. Not the frame map (not on any stack). One occurrence | found; fix to propose |
 
+## Performance deep dive (2026-11-23)
+
+From [study-perf-deepdive-20261123.md](study-perf-deepdive-20261123.md) (four research agents, traces; their notes in
+`research-data/perf-deepdive-20261123/`). The SDR gap to the 2026-11-15 best run was mostly Windows HDR on the desktop
+(1-2% left on the 0.1% lows; the user: turn to improvements rather than bisect). Release target (v2.4.1 / v2.4.2)
+decided later. One change per launch, each on its own branch or commit, measured against the saved exe.
+
+| # | Item | What is known | State |
+|---|---|---|---|
+| P1 | **Mouse reader polled ~664 times a second** | `MWMO_INPUTAVAILABLE` never blocked; now waits for new input (SDL-style `GetQueueStatus`), counters on their own cache line (card mouse-input). Run: idle ~0 wake-ups, fast movement 245/s for 1,495 reports/s; the user: steadier graph | run (`bf244ca`) |
+| P2 | **HZB results through guest memory** | Each frame 256 KB written into guest memory with two `VirtualProtect` flips only for our hook to read back; serve the hook from a host shadow of the copy, no page watch for that range. Branch `perf-hzb-shadow` | in progress |
+| P3 | `ProcessDownloadImages` on every end-of-pipe (220-330 a frame), two mutexes each | Lock-free early-out when nothing is pending or ready; ~0.05-0.2 ms of stage B a frame [I] | open |
+| P4 | ObserveFrameMap with DLSS on builds frame-map-only data per draw / dispatch | `Pass` fields, `written_desc`, `IsDisplayBuffer`: ~10-30 us a frame [I]; trim in release | open |
+| P5 | Release hygiene bundle | LOG_DEBUG not compiled out (gate in the wrong log.h; 881 `ShouldLog` sites; card `tooling/dev-tools-build` wrong); staging counters' `lock add` per request; `gpu_frames`; runtime-switchable dev diagnostics still in the exe; second toggle word as a constant in C; rdtsc before region searches; setres poll / overlay `xchg`; marker `fmt::format` before the gate | open |
+| P6 | Runtime C log lines one character per write (unbuffered stdout, `__mingw_printf`) and stage-B printfs (Stencil plane copy, Buffer residency) | Write storms at save menus, dialogs, loads; one write per line, stage-B lines async or dev-only. Check first with Process Monitor | open |
+| P7 | HDR pipelines created synchronously at first use | First HDR frame, first Hilltop, first blur menu; the overlay's HDR pipeline per UI-brightness value: pre-create when HDR turns on | open |
+| P8 | **Guest faults that need no GPU work drain the draw pipe** | Twin / finished-page / no-GPU-bytes / unmap-discard branches of `InvalidateRegion` go through stage A with a full drain (~0.3-1 ms on a guest thread, up to ~70-100/s in heavy scenes) [I]; inline them. Medium risk (locking) | open |
+| P9 | Dynamic read-only buffers > 16 KB through the arena | Each upload ends the render pass + transfer barrier: 4-8.6 extra pass ends a frame; a stream-ring path. Measure first (`GOW3_PERF_DIAG`, `GOW3_BUFFER_STATS`) | open |
+| P10 | The game's HDR display-buffer copy and a separate tonemapper / UI composite | ~0.1-0.25 ms a frame [I]; our tonemapper writes the scene texture directly, or one fused pass. RenderDoc study first (event 1058 of `hdr-final-step2-20261122/menu_frame11835.rdc`, readers in between) | open |
+| P11 | Area solve as a parallel compute shader | 40 serial GradeScene + Newton in one fragment (~50-200 us per rebuild); matters if blend-volume levels rebuild often (check Inside the Asylum, Lake, Haunted Ruins) | open |
+| P12 | Small HDR items | Hilltop: key before the level-LUT lookup / pass break; `WriteGameLut` key when ours declines; HDR role byte instead of four hash compares per draw; tonemapper loadOp DontCare when the rect covers the target | open |
+| P13 | HDR automatic and `RequestHdrCurve` | Report HDR only when Windows HDR is on for the monitor (DXGI `GetDesc1`); `RequestHdrCurve` checks env flags, not the real output (would set OutputDevice 4 on an SDR swapchain with `hdr_curve=2000`); fold GOW3_HDR_GAME into Allow HDR output | open |
+| P14 | Smaller memory items | Copy-thread `CopySparseMemory` reading the guest mapping (read the backing: stall / deadlock class); grade / tonemapper blocks from the stage-A ring copy (LANDMINES 29); staging idle trim by time (3000 frames = ~13 s at 237 FPS); warning-only `IsMapped` (recursive lock + allocation) in `UpdatePageWatchers` | open |
+| P15 | Other off-costs | Particle flip-guard summary every ~5 s in default launches; swapchain clear before a covering blit (GPU ~5-35 us); guest mutex lock saves xmm6-15 (ABI, 3-5 ns per lock) | open |
+| P16 | Measure-first questions | Independent flip or composed (PresentMon) in SDR / HDR; pool decommit / recommit churn (`GOW3_HOST_MAP_STATS`); region lock held across uploads; DMA-draw rate (fault buffer); which tiny linear readbacks the CPU ever reads; `IsDisplayBuffer` list growth past 16 | open |
+
 ## From GitHub issues
 
 Made by research/tools/issue2card.py queue N.
