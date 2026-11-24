@@ -46,6 +46,12 @@ of 2026-11-15 (same static spot near the start of Cemetery Hill, RTSS):
 2. Repeat any deciding run (A/A) before trusting a difference under ~3% on RTSS lows.
 3. PresentMon `PresentMode` in SDR and HDR (independent flip or composed).
 
+**Result (the user, 2026-11-23, Windows HDR off):** the current build against the best-run recipe exe
+(`medievil_bestrun`, e12ffaa dev): the gap shrinks to 1-2% on the 0.1% lows, repeatable on steady held views and when
+hunting for the worst camera angle (best-run exe slightly better). Most of the earlier SDR gap was the HDR desktop
+(Windows' SDR-to-HDR path). **Decision (the user):** too small to bisect reliably against run-to-run variance; turn to
+the improvements and clean-up below, which likely cover it or make it irrelevant.
+
 ## Improvement candidates (beyond what was lost), ranked within each area
 
 ### Memory, transfers, synchronisation (memory agent; frame-stats run 2026-11-16)
