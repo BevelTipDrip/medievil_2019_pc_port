@@ -63,3 +63,11 @@ value at start, applied once the game reaches its menu.
   N-19 reopened it and N-20 / N-26 reversed it.
 - `32586bc` was a restart setting with default 100 until judged; `9cc915e` made it live and 75% the default. 75% was
   not measured on its own (the user's judgement of 50% and a guess for 75%).
+- 2026-11-24 (work queue P17): sword sparks on metal drive the RTX 4090 to its 450 W power limit (clocks -150-200 MHz).
+  GPU profile: the growth is this separate translucency pass at 75% (2160x1215 RGBA16F, vs 4679638716af6d38 / ps
+  62aaa0ddeadc0a24): ~2.2 ms median, 3.8 ms in slow frames vs ~0.2 ms calm; overdraw, not simulation or transfers.
+  The user: 50% is quite noticeable and 75% already looks slightly pixelated, so a lower resolution is no fix on its
+  own. Open levers: `r.EmitterSpawnRateScale` (0.75 / 0.5: fewer particles, so less overdraw at the same resolution;
+  framedsc candidate 4; needs a boot test and the user's judgement of the look; a possible "Effect density" option),
+  and a better upsample of the separate translucency target (depth-aware / edge-preserving instead of UE4's
+  bilinear) that would make 50-75% look closer to 100%.
