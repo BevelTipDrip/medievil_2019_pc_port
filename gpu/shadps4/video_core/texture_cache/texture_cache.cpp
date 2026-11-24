@@ -1930,6 +1930,9 @@ namespace {
 // copies back to guest memory (tiled and wider than 8 pixels), with the first bytes the CPU would
 // read there instead, as half floats: a CPU read of such a target sees those bytes.
 bool SkippedTargetLog() {
+    if constexpr (!GOW3_DEV_TOOLS) {
+        return false; // gow3 P5: dev-build switch
+    }
     static const bool on = [] {
         const char* env = std::getenv("GOW3_SKIPPED_TARGET_LOG");
         return env && env[0] == '1';

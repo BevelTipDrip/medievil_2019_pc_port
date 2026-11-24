@@ -106,7 +106,7 @@ void LightGridScalePass(IR::Program& program, const RuntimeInfo& runtime_info) {
     }
     program.info.uses_light_grid = true;
     static u32 logged = 0;
-    if (logged++ < 64) {
+    if (GOW3_DEV_TOOLS && logged++ < 64) { // gow3 P5: dev build only
         std::printf("Shader: light grid lookup in %016llx (%u), scale %.4f x %.4f\n",
                     static_cast<unsigned long long>(program.info.pgm_hash), found,
                     scaled ? scale[0] : 1.0, scaled ? scale[1] : 1.0);

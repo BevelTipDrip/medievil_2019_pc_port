@@ -524,9 +524,11 @@ private:
                                           .memoryTypeIndex = memory_type};
         const auto memory = Vulkan::Check(device.allocateMemory(info));
         u8* host = map ? Map(device, memory) : nullptr;
-        std::printf("Buffer residency: %llu MB chunk %u allocated %s%s\n",
-                    (unsigned long long)((chunk_blocks << block_shift) >> 20), ++chunks, when,
-                    host ? ", mapped" : "");
+        if constexpr (GOW3_DEV_TOOLS) { // gow3 P5: a printf during play, dev build only
+            std::printf("Buffer residency: %llu MB chunk %u allocated %s%s\n",
+                        (unsigned long long)((chunk_blocks << block_shift) >> 20), ++chunks, when,
+                        host ? ", mapped" : "");
+        }
         return {memory, host};
     }
 
@@ -1196,6 +1198,9 @@ u64 RegionKey(VAddr address) {
     return (address >> 28) == 0x104 ? (address >> 20) | (1ull << 40) : address >> 28;
 }
 bool BufferStatsEnabled() {
+    if constexpr (!GOW3_DEV_TOOLS) {
+        return false; // gow3 P5: GOW3_BUFFER_STATS is a dev-build switch
+    }
     static const bool enabled = [] {
         const char* value = std::getenv("GOW3_BUFFER_STATS");
         return value && value[0] == '1';

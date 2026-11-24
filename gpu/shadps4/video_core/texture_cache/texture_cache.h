@@ -520,7 +520,11 @@ private:
 
     /// GOW3_IMAGE_STATS=1: images registered and freed every 5 s (where, which sizes).
     void NoteImageChurn(bool registered, u32 line, const ImageInfo& info);
+#if GOW3_DEV_TOOLS
     const bool image_stats = std::getenv("GOW3_IMAGE_STATS") != nullptr;
+#else
+    static constexpr bool image_stats = false; // gow3 P5: dev-build switch
+#endif
 
 private:
     const Vulkan::Instance& instance;
@@ -580,10 +584,14 @@ private:
     /// A copy read once at a level's load is a first copy: UE4's sky light average brightness
     /// (a 1x1 target at a new address each load) read as leftover bytes, 0 flooded the walls with
     /// reflections (Hall of Heroes teal, 01.00 white; research/patches/caches/readback-first-wait.md).
+#if GOW3_DEV_TOOLS
     const bool readback_log = [] {
         const char* value = std::getenv("GOW3_READBACK_LOG");
         return value && value[0] == '1';
     }();
+#else
+    static constexpr bool readback_log = false; // gow3 P5: dev-build switch
+#endif
     const bool readback_first_wait = stale_readbacks && [] {
         const char* value = std::getenv("GOW3_READBACK_FIRST_WAIT");
         return !(value && value[0] == '0');

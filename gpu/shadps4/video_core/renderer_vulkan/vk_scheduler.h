@@ -740,8 +740,10 @@ public:
         if (recording_threaded && !direct_mode) {
             SyncRecording();
             direct_mode = true;
-            direct_recordings.fetch_add(1, std::memory_order_relaxed);
-            TraceDirectRecording(__builtin_return_address(0));
+            Gow3Stats::Add(direct_recordings, 1); // gow3 P5: read by the frame stats only
+            if constexpr (GOW3_DEV_TOOLS) { // gow3 P5: GOW3_RECORDER_TRACE, dev build only
+                TraceDirectRecording(__builtin_return_address(0));
+            }
         }
         return current_cmdbuf;
     }

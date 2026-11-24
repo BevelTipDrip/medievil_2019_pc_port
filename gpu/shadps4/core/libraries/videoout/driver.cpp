@@ -396,8 +396,10 @@ void VideoOutDriver::Flip(const Request& req) {
     Vulkan::FrameCapture::OnFlip(req.index >= 0 ? req.port->buffer_slots[req.index].address_left
                                                 : 0);
 
-    // gow3: GOW3_FRAME_STATS=1 prints flip rate and frame time spread every 5 seconds.
-    static const bool frame_stats = EmulatorSettingsImpl::Flag("GOW3_FRAME_STATS", false);
+    // gow3: GOW3_FRAME_STATS=1 prints flip rate and frame time spread every 5 seconds (with
+    // GOW3_SLOW_FRAMES). P5: dev build only; release folds the whole block away.
+    static const bool frame_stats =
+        GOW3_DEV_TOOLS && EmulatorSettingsImpl::Flag("GOW3_FRAME_STATS", false);
     if (frame_stats) {
         using Clock = std::chrono::steady_clock;
         static Clock::time_point window_start = Clock::now(), last = window_start;

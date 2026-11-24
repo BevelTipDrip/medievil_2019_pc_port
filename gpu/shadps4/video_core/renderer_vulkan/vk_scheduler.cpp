@@ -204,6 +204,9 @@ void Scheduler::EndRendering(std::source_location caller) {
 }
 
 void Scheduler::TraceDirectRecording(void* caller) {
+    if constexpr (!GOW3_DEV_TOOLS) {
+        return; // gow3 P5: GOW3_RECORDER_TRACE is a dev-build switch
+    }
     static const bool enabled = [] {
         const char* env = std::getenv("GOW3_RECORDER_TRACE");
         return env && env[0] == '1';
@@ -802,6 +805,9 @@ struct LongWaits {
         u64 count = 0, total_ns = 0, max_ns = 0;
     };
     static bool Enabled() {
+        if constexpr (!GOW3_DEV_TOOLS) {
+            return false; // gow3 P5: dev-build switch (was a static guard test per GPU wait)
+        }
         static const bool enabled = [] {
             const char* env = std::getenv("GOW3_LONG_WAITS");
             return env && env[0] == '1';

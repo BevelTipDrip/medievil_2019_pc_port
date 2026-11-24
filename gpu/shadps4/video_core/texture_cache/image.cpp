@@ -307,7 +307,7 @@ private:
                         vmaFreeMemory(allocator, held[type]);
                     }
                     held[type] = spare;
-                    if (++made <= 16) {
+                    if (GOW3_DEV_TOOLS && ++made <= 16) { // gow3 P5: dev build only
                         std::printf("GPU: spare image memory block ready (type %u, %.0f ms)\n", type,
                                     std::chrono::duration<double, std::milli>(
                                         std::chrono::steady_clock::now() - started).count());

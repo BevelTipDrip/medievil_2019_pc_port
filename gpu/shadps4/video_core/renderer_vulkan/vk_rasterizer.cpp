@@ -428,8 +428,11 @@ void Rasterizer::EliminateFastClear() {
     auto& image = texture_cache.GetImage(image_id);
     const auto clear_value = LiverpoolToVK::ColorBufferClearValue(col_buf);
 
-    ScopeMarkerBegin(fmt::format("EliminateFastClear:MRT={:#x}:M={:#x}", col_buf.Address(),
-                                 col_buf.CmaskAddress()));
+    // gow3 P5: the label is formatted only with markers on (ScopeMarkerBegin still drains the pipe).
+    ScopeMarkerBegin(GOW3_DEV_TOOLS && host_markers_enabled
+                         ? fmt::format("EliminateFastClear:MRT={:#x}:M={:#x}", col_buf.Address(),
+                                       col_buf.CmaskAddress())
+                         : std::string{});
     runtime.ClearImage(&image, desc.view_info.range, clear_value);
     ScopeMarkerEnd();
 }
@@ -470,6 +473,9 @@ constexpr u32 AlignPacket(u32 size) {
     return (size + 7) & ~7u;
 }
 u32 VerifyInterval() {
+    if constexpr (!GOW3_DEV_TOOLS) {
+        return 0; // gow3 P5: GOW3_PIPE_VERIFY is a dev-build switch
+    }
     static const u32 interval = [] {
         const char* env = std::getenv("GOW3_PIPE_VERIFY");
         return env ? static_cast<u32>(std::strtoul(env, nullptr, 10)) : 0u;
@@ -1376,9 +1382,11 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
         camera_motion->SetJitter(upscaler->Jitter());
         object_motion->OnFrameStart();
         NoteFrameStart();
-        static const char* scene_debug = std::getenv("GOW3_SCENE_DEBUG");
-        scene_debug_frame = scene_debug && std::remove(scene_debug) == 0;
-        scene_targets->debug = scene_debug_frame;
+        if constexpr (GOW3_DEV_TOOLS) { // gow3 P5: GOW3_SCENE_DEBUG is a dev-build switch
+            static const char* scene_debug = std::getenv("GOW3_SCENE_DEBUG");
+            scene_debug_frame = scene_debug && std::remove(scene_debug) == 0;
+            scene_targets->debug = scene_debug_frame;
+        }
     } else if (!camera_motion->Enabled()) {
         // Without camera motion (MediEvil's default) a frame starts at the first draw into a
         // display buffer (another one each frame while menus draw only there): the GPU profile
@@ -2453,11 +2461,14 @@ void Rasterizer::NoteStencilPlaneWrites(const Pipeline* pipeline) {
                 stencil_plane_writes[plane] = {begin, written, info.pgm_hash};
             } else {
                 // Diagnostics: a plane-sized write elsewhere (another plane, or a misread address).
-                static std::atomic<u32> logged{0};
-                if (logged.fetch_add(1, std::memory_order_relaxed) < 12) {
-                    std::printf("Stencil plane-sized write by shader %#llx at %#llx +%#llx (known plane %#llx)\n",
-                                (unsigned long long)info.pgm_hash, (unsigned long long)begin,
-                                (unsigned long long)written, (unsigned long long)plane);
+                // gow3 P5: dev build only (a printf on stage B during play).
+                if constexpr (GOW3_DEV_TOOLS) {
+                    static std::atomic<u32> logged{0};
+                    if (logged.fetch_add(1, std::memory_order_relaxed) < 12) {
+                        std::printf("Stencil plane-sized write by shader %#llx at %#llx +%#llx (known plane %#llx)\n",
+                                    (unsigned long long)info.pgm_hash, (unsigned long long)begin,
+                                    (unsigned long long)written, (unsigned long long)plane);
+                    }
                 }
             }
         }
@@ -2963,10 +2974,12 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
         const auto& image_desc = stage.images[image_index];
         const auto tsharp =
             prepared ? prepared->image_sharps[image_index] : image_desc.GetSharp(stage);
-        // gow3: a hash lookup per texture per draw for a diagnostic only.
-        static const bool warn_meta = std::getenv("GOW3_WARN_META_TEXTURE") != nullptr;
-        if (warn_meta && texture_cache.IsMeta(tsharp.Address())) {
-            LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a shader (texture)");
+        // gow3: a hash lookup per texture per draw for a diagnostic only (P5: dev build only).
+        if constexpr (GOW3_DEV_TOOLS) {
+            static const bool warn_meta = std::getenv("GOW3_WARN_META_TEXTURE") != nullptr;
+            if (warn_meta && texture_cache.IsMeta(tsharp.Address())) {
+                LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a shader (texture)");
+            }
         }
 
         const auto data_fmt = tsharp.GetDataFmt();
@@ -3008,7 +3021,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, const PreparedStage* pr
                      : CachedImageDescEntry(tsharp, image_desc);
         // GOW3_SCENE_DEBUG: proxied scene targets this binding reads at the native size, and why.
         const auto debug_native = [&](const VideoCore::Image& image) {
-            if (!scene_debug_frame || proxy_candidate || !image.scene_proxy) return;
+            if (!GOW3_DEV_TOOLS || !scene_debug_frame || proxy_candidate || !image.scene_proxy) return;
             std::printf("Scene native read: %s %016llx %s %ux%u needs_native %d written %d "
                         "bindings %u mip_fallback %d\n",
                         stage.sw_stage == Shader::SwStage::Compute ? "cs" : "gfx",
@@ -3781,7 +3794,7 @@ RenderState Rasterizer::BeginRenderingFull(const GraphicsPipeline* pipeline) {
     bool reduced = scene_started && upscaler->RasterScaling() && key.num_samples == 1;
     // GOW3_SCENE_DEBUG=<file>: once the file exists, why the passes of one frame keep the
     // native size (see NoteFrameStart).
-    const bool debug_pass = scene_debug_frame && scene_started;
+    const bool debug_pass = GOW3_DEV_TOOLS && scene_debug_frame && scene_started;
     std::string why;
     if (debug_pass) {
         why = fmt::format("pass vs {:08x} ps {:08x} mrt {:#x} samples {} raster_scaling {}:",
@@ -3968,8 +3981,9 @@ RenderState Rasterizer::BeginRenderingFull(const GraphicsPipeline* pipeline) {
                 const auto [buffer, offset] = buffer_cache.ObtainBufferForImage(plane, u32(plane_size));
                 runtime.CopyBufferToStencil(&image, buffer, offset, image.info.size.width,
                                             image.info.size.height);
+                // gow3 P5: the line (and its counter, a locked add per copy) in the dev build only.
                 static std::atomic<u32> logged{0};
-                if (logged.fetch_add(1, std::memory_order_relaxed) < 24) {
+                if (GOW3_DEV_TOOLS && logged.fetch_add(1, std::memory_order_relaxed) < 24) {
                     std::printf("Stencil plane copy: depth %#llx (image %#llx %ux%u), stencil plane %#llx "
                                 "(%llu bytes, format %u), written by shader %#llx at %#llx +%#llx\n",
                                 (unsigned long long)regs.depth_buffer.DepthAddress(),
@@ -4176,9 +4190,11 @@ void Rasterizer::Resolve() {
     auto& mrt0_image = texture_cache.GetImage(texture_cache.FindImage(mrt0_desc, true));
     auto& mrt1_image = texture_cache.GetImage(texture_cache.FindImage(mrt1_desc, true));
 
-    ScopeMarkerBegin(fmt::format("Resolve:MRT0={:#x}:MRT1={:#x}",
-                                 Regs().color_buffers[0].Address(),
-                                 Regs().color_buffers[1].Address()));
+    ScopeMarkerBegin(GOW3_DEV_TOOLS && host_markers_enabled // gow3 P5: format only with markers on
+                         ? fmt::format("Resolve:MRT0={:#x}:MRT1={:#x}",
+                                       Regs().color_buffers[0].Address(),
+                                       Regs().color_buffers[1].Address())
+                         : std::string{});
     runtime.ResolveImage(&mrt0_image, &mrt1_image, mrt0_desc.view_info.range,
                          mrt1_desc.view_info.range);
     ScopeMarkerEnd();
@@ -4201,10 +4217,13 @@ void Rasterizer::DepthStencilCopy(bool is_depth, bool is_stencil) {
     sub_range.base.layer = Regs().depth_view.slice_start;
     sub_range.extent.layers = Regs().depth_view.NumSlices() - sub_range.base.layer;
 
-    ScopeMarkerBegin(fmt::format(
-        "DepthStencilCopy:DR={:#x}:SR={:#x}:DW={:#x}:SW={:#x}", regs.depth_buffer.DepthAddress(),
-        regs.depth_buffer.StencilAddress(), regs.depth_buffer.DepthWriteAddress(),
-        regs.depth_buffer.StencilWriteAddress()));
+    ScopeMarkerBegin(GOW3_DEV_TOOLS && host_markers_enabled // gow3 P5: format only with markers on
+                         ? fmt::format("DepthStencilCopy:DR={:#x}:SR={:#x}:DW={:#x}:SW={:#x}",
+                                       regs.depth_buffer.DepthAddress(),
+                                       regs.depth_buffer.StencilAddress(),
+                                       regs.depth_buffer.DepthWriteAddress(),
+                                       regs.depth_buffer.StencilWriteAddress())
+                         : std::string{});
 
     runtime.CopyDepthStencil(&read_image, &write_image, sub_range);
 

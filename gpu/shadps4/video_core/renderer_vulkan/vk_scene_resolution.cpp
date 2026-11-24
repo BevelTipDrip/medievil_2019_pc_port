@@ -153,7 +153,7 @@ void SceneTargets::Copy(Entry& e, VideoCore::Image& original, bool to_native) {
     scheduler.EndRendering();
     const Runtime::TransferMark mark{runtime, to_native ? "scene proxy resolve" : "scene proxy fill",
                                      original};
-    if (debug) {
+    if (GOW3_DEV_TOOLS && debug) { // gow3 P5: GOW3_SCENE_DEBUG is dev only
         std::printf("Scene %s: %s %ux%u level %u\n", to_native ? "resolve" : "fill",
                     vk::to_string(original.info.pixel_format).c_str(), original.info.size.width,
                     original.info.size.height, e.level);

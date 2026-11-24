@@ -1277,7 +1277,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
     if (seq != NoSeq && rasterizer) {
         rasterizer->CloseRingReuse(); // constants are reused within one command buffer only
     }
-    static const bool dcb_stats = EmulatorSettingsImpl::Flag("GOW3_DCB_STATS", false);
+    // gow3 P5: GOW3_DCB_STATS is a dev-build switch (release folds the scan away).
+    static const bool dcb_stats = GOW3_DEV_TOOLS && EmulatorSettingsImpl::Flag("GOW3_DCB_STATS", false);
     const int dcb_depth = g_dcb_depth;
     if (dcb_stats) {
         ScanDcb(dcb, dcb_depth);

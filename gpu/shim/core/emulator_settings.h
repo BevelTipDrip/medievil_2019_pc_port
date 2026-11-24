@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <string>
 #include "common/types.h"
+#include "gow3_dev_tools.h"
 
 u32 Gow3DisplayRefreshHz(); // gow3gpu.cpp: primary display refresh rate, 60 when unknown
 
@@ -56,7 +57,12 @@ public:
     }
     bool IsCopyGpuBuffers() { static const auto value = Flag("GOW3_COPY_GPU_BUFFERS", false); return value; }
     bool IsDirectMemoryAccessEnabled() { static const auto value = Flag("GOW3_DIRECT_MEMORY_ACCESS", false); return value; }
+    // gow3 P5: shader dumps and Vulkan debug markers are dev-build switches (constant off in release).
+#if GOW3_DEV_TOOLS
     bool IsDumpShaders() { static const auto value = Flag("GOW3_DUMP_SHADERS", false); return value; }
+#else
+    bool IsDumpShaders() { return false; }
+#endif
     bool IsHdrAllowed() { static const auto value = Flag("GOW3_HDR", false); return value; }
     // gow3: report HDR to the game although its param.sfo declares none (study-hdr.md, route A).
     bool IsHdrGameForced() { static const auto value = Flag("GOW3_HDR_GAME", false); return value; }
@@ -69,8 +75,13 @@ public:
     bool IsShaderCollect() { return false; }
     bool IsUserfaultfdTracking() { return false; }
     bool IsVkCrashDiagnosticEnabled() { return false; }
+#if GOW3_DEV_TOOLS
     bool IsVkGuestMarkersEnabled() { static const auto value = Flag("GOW3_VK_MARKERS", false); return value; }
     bool IsVkHostMarkersEnabled() { static const auto value = Flag("GOW3_VK_MARKERS", false); return value; }
+#else
+    bool IsVkGuestMarkersEnabled() { return false; }
+    bool IsVkHostMarkersEnabled() { return false; }
+#endif
     bool IsVkValidationCoreEnabled() { return true; }
     bool IsVkValidationEnabled() { static const auto value = Flag("GOW3_VK_VALIDATION", false); return value; }
     bool IsVkValidationGpuEnabled() { return false; }
