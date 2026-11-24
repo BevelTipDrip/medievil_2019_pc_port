@@ -5314,7 +5314,8 @@ bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
             pass.target = {regs.color_buffers[0].Address(), info.size.width, info.size.height};
             pass.target_rg16 = info.pixel_format == vk::Format::eR16G16Unorm;
             pass.target_rgba16f = info.pixel_format == vk::Format::eR16G16B16A16Sfloat;
-            pass.display = FrameCapture::IsDisplayBuffer(pass.target.address);
+            // Only the frame map (dev) reads it: no out-of-line lookup per draw otherwise (P4).
+            pass.display = frame_map && FrameCapture::IsDisplayBuffer(pass.target.address);
         }
         if (db_desc.first) {
             pass.depth = regs.depth_buffer.DepthAddress();
@@ -5330,7 +5331,8 @@ bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
                     zfail != AmdGpu::StencilFunc::Keep);
         };
         const auto& sc = regs.stencil_control;
-        if (Ue4Motion::Enabled() && dc.stencil_enable && regs.depth_buffer.StencilValid() &&
+        // A diagnostic (plan-fsr.md F4): dev build only (P4).
+        if (GOW3_DEV_TOOLS && Ue4Motion::Enabled() && dc.stencil_enable && regs.depth_buffer.StencilValid() &&
             !regs.depth_render_control.stencil_clear_enable &&
             (writes_bit3(regs.stencil_ref_front.stencil_write_mask, sc.stencil_fail_front,
                          sc.stencil_zpass_front, sc.stencil_zfail_front) ||
@@ -5397,7 +5399,20 @@ bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
     // upscaler need it for the TAA draws (by hash) and compute dispatches (the TAAU one samples
     // velocity); velocity, scene and colour-target draws are told apart by their targets above. The
     // frame map (GOW3_UE4_FRAME_MAP) logs every pass.
-    const bool need_bindings = frame_map || pass.compute || pass.hash == Ue4FrameMap::TaaNormal ||
+    // P4 (study-perf-deepdive-20261123.md): a compute dispatch is walked only when its shader writes an image (the
+    // TAAU dispatch writes one: its output) or is a known TAAU shader; the ~200 particle simulation dispatches a frame
+    // write buffers and are skipped. Which images a shader writes is known from its info, no lookups.
+    static std::vector<u64> taau_hashes;
+    bool compute_candidate = false;
+    if (pass.compute) {
+        compute_candidate = std::ranges::find(taau_hashes, pass.hash) != taau_hashes.end();
+        for (const auto* stage : pipeline->GetStages()) {
+            if (stage && !compute_candidate) {
+                compute_candidate = std::ranges::any_of(stage->images, [](const auto& d) { return d.is_written; });
+            }
+        }
+    }
+    const bool need_bindings = frame_map || compute_candidate || pass.hash == Ue4FrameMap::TaaNormal ||
                                pass.hash == Ue4FrameMap::TaaResponsive;
     for (const auto* stage : pipeline->GetStages()) {
         if (!stage || !need_bindings) {
@@ -5462,7 +5477,6 @@ bool Rasterizer::ObserveFrameMap(const Pipeline* pipeline) {
     // samples velocity: U1's readers list.)
     bool taau = pass.compute && pass.hash == Ue4FrameMap::TaaCompute;
     if (pass.compute && !taau && ue4_motion) {
-        static std::vector<u64> taau_hashes;
         const VAddr velocity = ue4_motion->VelocityAddress();
         if (std::ranges::find(taau_hashes, pass.hash) != taau_hashes.end()) {
             taau = true;
