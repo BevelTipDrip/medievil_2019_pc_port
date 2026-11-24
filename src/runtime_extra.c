@@ -765,9 +765,10 @@ static void particle_guard_report(void) {
     static int last_on=-1, quiet=-1;
     const int on=particle_guard_on();
     if (particle_sims<1200 && on==last_on) return;
-    if (quiet<0) { /* GOW3_FPS_LOG=0: no periodic log lines (gow3_overlay.cpp LogPresent); a switch still prints */
+    if (quiet<0) { /* gow3 P5: periodic only with GOW3_FPS_LOG=1, as the FPS line (gow3_overlay.cpp FpsLogOn, default
+                    * off); a switch of the guard still prints */
         const char *fps_log=getenv("GOW3_FPS_LOG");
-        quiet=fps_log && !strcmp(fps_log,"0");
+        quiet=!(fps_log && fps_log[0]=='1');
     }
     if (quiet && on==last_on) {
         particle_flips=particle_sims=particle_lone_flips=particle_lone_sims=0;

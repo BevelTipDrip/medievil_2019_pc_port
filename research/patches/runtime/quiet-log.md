@@ -1,6 +1,6 @@
 ---
 id: quiet-log
-title: GOW3_FPS_LOG=0 turns off the periodic log lines (FPS line, particle guard summary)
+title: GOW3_FPS_LOG gates the periodic log lines (FPS line, particle guard summary); default off, =1 on
 area: runtime
 status: active
 platforms: all
@@ -27,7 +27,9 @@ extra-env.txt (run.py's extra-env overrides the launcher's value). Frame stats s
 
 ## Invariants
 
-- Unset or any value but `0`: as before (the launcher's 1 keeps the Perf lines `deck_summary.py --perf` reads).
+- Since 2026-11-16 (dev-tools-build) the FPS line is off unless `GOW3_FPS_LOG=1` (`FpsLogOn`); the launcher no
+  longer sets it. Since P5 (2026-11-24) the particle guard summary follows the same rule: printed only with
+  `GOW3_FPS_LOG=1`, so a default launch has no periodic line (until then it printed unless the value was `0`).
 - A particle guard switch (toggle file) still prints its line when quiet.
 
 ## Interactions
@@ -41,3 +43,5 @@ extra-env.txt (run.py's extra-env overrides the launcher's value). Frame stats s
 ## History and pitfalls
 
 - `getenv(...) != nullptr` made `GOW3_FPS_LOG=0` mean on.
+- 2026-11-16 to P5: the FPS line defaulted off but the particle summary still printed every ~5 s in a default launch
+  (it was quiet only with `0`; offcost/runtime-src.md item 2).
