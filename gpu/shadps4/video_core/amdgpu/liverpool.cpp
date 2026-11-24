@@ -532,9 +532,9 @@ void RunEventWriteEop(Vulkan::Rasterizer& rasterizer, const u8* data) {
         // once the GPU has finished the work before it, as the hardware does, by the signal
         // thread (labels by the GPU itself need U5's guest memory chunks). No wait for the host
         // copies: the submission holding this tick waits for them before it is handed over.
-        Gow3FenceStats::pending_fence_kind = eop.int_sel != InterruptSelect::None
-                                                 ? Gow3FenceStats::FenceEopIrq
-                                                 : Gow3FenceStats::FenceEop; // gate 2: lag ~0
+        Gow3FenceStats::NoteFenceKind(eop.int_sel != InterruptSelect::None
+                                          ? Gow3FenceStats::FenceEopIrq
+                                          : Gow3FenceStats::FenceEop); // gate 2: lag ~0
         const bool label =
             eop.data_sel == DataSelect::Data32Low || eop.data_sel == DataSelect::Data64;
         rasterizer.SignalAfterGpu(
@@ -556,9 +556,9 @@ void RunEventWriteEop(Vulkan::Rasterizer& rasterizer, const u8* data) {
     } else if (Vulkan::DrawPipe::OnStageB() && !Gow3Toggle::Disabled(Gow3Toggle::RecorderFences)) {
         // The draw recording thread does not wait: the Vulkan recording thread signals the
         // fence after the copies queued before it.
-        Gow3FenceStats::pending_fence_kind = eop.int_sel != InterruptSelect::None
-                                                 ? Gow3FenceStats::FenceEopIrq
-                                                 : Gow3FenceStats::FenceEop; // gow3 gate 2: lag
+        Gow3FenceStats::NoteFenceKind(eop.int_sel != InterruptSelect::None
+                                          ? Gow3FenceStats::FenceEopIrq
+                                          : Gow3FenceStats::FenceEop); // gow3 gate 2: lag
         // gow3 (impl-deck-cpu-bundle.md): a label with no interrupt is only polled by the guest
         // (UE4's frame wait is the one with an interrupt): in the recorder's lean mode it does
         // not wake a sleeping recorder by itself (bounded by GOW3_RECORDER_WAKE_US).
@@ -742,7 +742,7 @@ void RunEventWriteEos(Vulkan::Rasterizer& rasterizer, const u8* data) {
         const auto eos = event_eos;
         rasterizer.ProcessDownloadImages();
         if (eos.command != PM4CmdEventWriteEos::Command::GdsStore) {
-            Gow3FenceStats::pending_fence_kind = Gow3FenceStats::FenceEos; // gate 2: lag ~0
+            Gow3FenceStats::NoteFenceKind(Gow3FenceStats::FenceEos); // gate 2: lag ~0
             rasterizer.SignalAfterGpu(
                 [eos] {
                     eos.SignalFence([](void* address, u64 value, u32 num_bytes) {
@@ -779,7 +779,7 @@ void RunEventWriteEos(Vulkan::Rasterizer& rasterizer, const u8* data) {
         Vulkan::DrawPipe::OnStageB() && !Gow3Toggle::Disabled(Gow3Toggle::RecorderFences)) {
         rasterizer.ProcessDownloadImages();
         const auto eos = event_eos;
-        Gow3FenceStats::pending_fence_kind = Gow3FenceStats::FenceEos; // gow3 gate 2: lag
+        Gow3FenceStats::NoteFenceKind(Gow3FenceStats::FenceEos); // gow3 gate 2: lag
         // A polled label (no interrupt): not urgent, as the end-of-pipe ones without one.
         rasterizer.SignalAfterHostCopies([eos] { SignalEos(eos); }, false);
         return;

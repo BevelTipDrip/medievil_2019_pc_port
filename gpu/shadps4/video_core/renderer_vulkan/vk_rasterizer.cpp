@@ -1395,7 +1395,7 @@ void Rasterizer::DrawRecord(const GraphicsPipeline* pipeline, const PreparedDraw
     motion_geometry = 0;
 
     PrepareRenderState(pipeline);
-    if (draw_class.start) { // release build: constant 0, no call
+    if (GOW3_DEV_TOOLS && draw_class.start) { // gow3 P5: folds in release (was a load + test)
         DrawClass(pipeline, draw_class);
     }
     if (upscaler->Enabled() && std::popcount(pipeline->GetGraphicsKey().mrt_mask) == 1) {
@@ -1650,7 +1650,7 @@ void Rasterizer::DrawIndirectRecord(const GraphicsPipeline* pipeline, bool is_in
     motion_draw = false;
     motion_geometry = 0;
     PrepareRenderState(pipeline);
-    if (draw_class.start) { // release build: constant 0, no call
+    if (GOW3_DEV_TOOLS && draw_class.start) { // gow3 P5: folds in release (was a load + test)
         DrawClass(pipeline, draw_class);
     }
     if (upscaler->Enabled() && std::popcount(pipeline->GetGraphicsKey().mrt_mask) == 1) {
@@ -4862,6 +4862,10 @@ void Rasterizer::MarkPass(const GraphicsPipeline* pipeline, const RenderState& s
 void Rasterizer::NoteFrameStart() {
     if (auto* profiler = GpuProfiler::Get()) {
         profiler->BeginFrame();
+    }
+    // gow3 P5: the frame count and the lag histogram are GOW3_BUFFER_STATS only (dev build).
+    if constexpr (!GOW3_DEV_TOOLS) {
+        return;
     }
     const u64 frame = Gow3Stats::gpu_frames.fetch_add(1, std::memory_order_relaxed) + 1;
     // GOW3_BUFFER_STATS=1: how many earlier frames the GPU has not finished when the GPU thread

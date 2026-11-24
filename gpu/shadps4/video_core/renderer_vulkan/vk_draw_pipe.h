@@ -119,11 +119,21 @@ public:
         if (consumed.load(std::memory_order_acquire) == head) {
             return;
         }
+        // gow3 P5: the bookkeeping (counts, rdtsc pair) only for the frame stats, its only reader
+        // (PrintPipeStats, DrainDrawPipe's sites, the Flip report); release folds it away.
+        if (!Gow3Stats::enabled) {
+            if (Gow3DrainWait::Enabled()) {
+                HybridWait();
+            } else {
+                YieldWait();
+            }
+            return;
+        }
         ++drains;
         const u32 slot = reason < NumReasons ? reason : ReasonRasterizer;
         ++drains_by_reason[slot];
         const u64 start = __rdtsc();
-        const u64 start_ns = Gow3Stats::enabled ? Gow3DrainWait::NowNs() : 0;
+        const u64 start_ns = Gow3DrainWait::NowNs();
         if (Gow3DrainWait::Enabled()) {
             HybridWait();
         } else {
@@ -133,11 +143,8 @@ public:
         drain_cycles += waited;
         cycles_by_reason[slot] += waited;
         Gow3Stats::Add(Gow3Stats::stage_a_drain_cycles, waited);
-        if (Gow3Stats::enabled) {
-            Gow3DrainWait::waits.fetch_add(1, std::memory_order_relaxed);
-            Gow3DrainWait::wait_ns.fetch_add(Gow3DrainWait::NowNs() - start_ns,
-                                             std::memory_order_relaxed);
-        }
+        Gow3DrainWait::waits.fetch_add(1, std::memory_order_relaxed);
+        Gow3DrainWait::wait_ns.fetch_add(Gow3DrainWait::NowNs() - start_ns, std::memory_order_relaxed);
     }
 
     /// Stage A: position after the last committed packet; Reached(position) once B ran it.

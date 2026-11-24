@@ -147,6 +147,12 @@ inline std::array<FenceEntry, 4096> fence_ring{};
 inline std::atomic<std::uint64_t> fence_next{0};
 /// Set by the fence's packet handler just before it hands the signal to the scheduler.
 inline thread_local int pending_fence_kind = -1;
+/// gow3 P5: the packet handlers' store, frame stats only (was a TLS store per fence in release).
+inline void NoteFenceKind(int kind) {
+    if (Gow3Stats::enabled) {
+        pending_fence_kind = kind;
+    }
+}
 inline void (*wait_gpu_tick)(void* context, std::uint64_t tick) = nullptr;
 inline void* wait_gpu_context = nullptr;
 inline std::mutex fence_samples_mutex;
@@ -202,8 +208,11 @@ inline void SetGpuWaiter(void* context, void (*wait)(void*, std::uint64_t)) {
 
 /// A fence handed to the scheduler: returns its entry (or ~0 when none is pending).
 inline std::uint64_t BeginFence() {
+    if (!Gow3Stats::enabled) {
+        return ~0ull; // gow3 P5: nothing noted (NoteFenceKind)
+    }
     const int kind = std::exchange(pending_fence_kind, -1);
-    if (kind < 0 || !Gow3Stats::enabled) {
+    if (kind < 0) {
         return ~0ull;
     }
     const std::uint64_t index = fence_next.load(std::memory_order_relaxed);

@@ -83,7 +83,9 @@ static constexpr u32 tessellation_offchip_buffer_size = 0x800000u;
 
 static void ResetSubmissionLock(Platform::InterruptId irq) {
     std::unique_lock lock{m_wait_idle};
-    if (const u64 armed = Gow3FenceStats::lock_armed_at.exchange(0); armed && submission_lock) {
+    // gow3 P5: lock_armed_at is only set with frame stats (SubmitDone); was an xchg per call.
+    if (const u64 armed = Gow3Stats::enabled ? Gow3FenceStats::lock_armed_at.exchange(0) : 0;
+        armed && submission_lock) {
         // gow3 gate 2: how long the lock stayed armed (SubmitDone -> GPU idle IRQ).
         const u64 held = Gow3FenceStats::NowNs() - armed;
         Gow3FenceStats::lock_held_ns += held;
