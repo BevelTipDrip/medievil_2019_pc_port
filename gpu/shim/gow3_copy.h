@@ -3,6 +3,7 @@
 #pragma once
 #include <cstddef>
 #include <functional>
+#include "gow3_dev_tools.h"
 
 namespace Gow3Copy {
 
@@ -52,9 +53,13 @@ struct ReadingGuest {
 };
 extern thread_local ReadingGuest reading_guest;
 
-/// GOW3_COPY_FAULT_LOG (dev build: default on, 0 off; release build: default off, 1 on; off, the scopes below
-/// do nothing). Read once at start.
+/// GOW3_COPY_FAULT_LOG (dev build only: default on, 0 off; off, the scopes below do nothing). Read once at
+/// start. gow3 P5: the release build has no copy-fault trace (constant false: scopes and handler fold away).
+#if GOW3_DEV_TOOLS
 extern const bool fault_log_enabled;
+#else
+inline constexpr bool fault_log_enabled = false;
+#endif
 
 /// Sets reading_guest's range for its lifetime.
 struct ReadingGuestScope {

@@ -1,6 +1,6 @@
 ---
 id: copy-fault-trace
-title: GOW3_COPY_FAULT_LOG: a guest fault inside a host copy logged before and after it is handled (thread, copy, protection, age)
+title: GOW3_COPY_FAULT_LOG: a guest fault inside a host copy logged before and after it is handled (thread, copy, protection, age); dev build only
 area: tooling
 status: diagnostic
 platforms: all
@@ -29,8 +29,12 @@ when the handler returns. A fault line without a "handled" line never came back 
 
 ## Invariants
 
-- `GOW3_COPY_FAULT_LOG=0`: the scopes and the frame capture do nothing (`fault_log_enabled`, a namespace-scope
-  constant read once); one predictable branch per copy remains.
+- **Dev build only (P5, 2026-11-24).** The release build has no copy-fault trace: `fault_log_enabled` is
+  `inline constexpr false` there (gow3_copy.h `#if GOW3_DEV_TOOLS`), so the scopes, the frame capture in
+  `SmallGuestCopy` and `CopyFaultTrace` fold away and `GOW3_COPY_FAULT_LOG` is not read. (Until then: release default
+  off, `=1` on.)
+- Dev build: default on; `GOW3_COPY_FAULT_LOG=0`: the scopes and the frame capture do nothing (`fault_log_enabled`, a
+  namespace-scope constant read once); one predictable branch per copy remains.
 - Lines: the first 20 faults, then each power of two: not periodic, but a run that faults often still shows the count.
 - The "before" line is printed before handling, so it reaches the log even when the thread then blocks.
 - `MayHaveReadback` is the texture cache's lock-free seqlock read: "maybe" also while the span list is republished.

@@ -103,7 +103,7 @@ public:
         start = std::chrono::steady_clock::now();
     }
     ~CopyFaultTrace() {
-        if (number == 0) {
+        if (!Gow3Copy::fault_log_enabled || number == 0) { // gow3 P5: folds in release
             return;
         }
         const double ms =

@@ -239,11 +239,13 @@ thread_local Batch batch;
 
 thread_local ReadingGuest reading_guest;
 
-// Release build: default off (GOW3_COPY_FAULT_LOG=1 turns it on); dev build: default on.
+#if GOW3_DEV_TOOLS
+// Dev build: default on (GOW3_COPY_FAULT_LOG=0 turns it off). Release build: none (gow3_copy.h, P5).
 const bool fault_log_enabled = [] {
     const char* env = std::getenv("GOW3_COPY_FAULT_LOG");
-    return GOW3_DEV_TOOLS ? !(env && env[0] == '0') : (env && env[0] == '1');
+    return !(env && env[0] == '0');
 }();
+#endif
 
 bool Enabled() {
     return GetPool().Enabled() && !Gow3Toggle::Disabled(Gow3Toggle::ParallelCopies);
