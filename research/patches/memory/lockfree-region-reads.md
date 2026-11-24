@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: ours
 class: G
-commits: e15a859, 45eca39, 76de0f5
+commits: e15a859, 45eca39, 76de0f5, 7c92669
 files: src/runtime_memory.c
 symbols: vma_seq, vma_begin, vma_end, vma_optimistic, VMA_FIXED_CAPACITY, OPTIMISTIC_SPIN_CYCLES, optimistic_enabled, clamp_optimistic, region_optimistic, runtime_memory_clamp, runtime_memory_region, vma_insert, vma_erase, split_at, perf_optimistic
 switches: GOW3_OPTIMISTIC_CLAMP, perf_lockfree_memory
@@ -29,6 +29,9 @@ spin through an edit for up to `OPTIMISTIC_SPIN_CYCLES` (400,000 TSC cycles, ~10
 
 ## Invariants
 
+- The spin budget (`OPTIMISTIC_SPIN_CYCLES`, ~100 us) starts when a search first sees a writer (an odd `vma_seq` or a
+  changed one: `optimistic_spent`), not on entry: since P5 (2026-11-24, `7c92669`) an uncontended search reads no
+  clock. The fallback to the locked lookup is unchanged.
 - Every in-place change of an entry's `start`, `end`, `kind` or `phys` must sit inside `vma_begin` / `vma_end`. Today
   only `split_at` edits in place (inside); `protect_locked` writes `prot` / `type` outside, which is fine because no
   lock-free reader reads them. A reader that starts using another field needs that field covered.

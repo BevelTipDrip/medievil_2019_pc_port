@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: ours
 class: G
-commits: 3a84125
+commits: 3a84125, 21f7fe2
 files: gpu/shadps4/video_core/page_manager.cpp, gpu/shim/gow3_copy.h, gpu/shim/gow3_copy.cpp, gpu/shim/gow3gpu.cpp, gpu/shim/gow3_decode_pacing.h, gpu/shim/gow3_decode_pacing.cpp, gpu/shadps4/video_core/texture_cache/texture_cache.h, gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp
 symbols: CopyFaultTrace, ReadingGuest, ReadingGuestScope, QueuedFrameScope, reading_guest, fault_log_enabled, MayHaveReadback, FramesEnded, FramesRetired, GuestFaultSignalHandler
 switches: GOW3_COPY_FAULT_LOG

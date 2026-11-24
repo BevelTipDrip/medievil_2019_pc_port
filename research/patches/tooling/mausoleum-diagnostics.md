@@ -8,7 +8,7 @@ default_windows: off
 default_deck: off
 origin: ours
 class: G
-commits: e383f7ec49, be8ee73696, 892a801ef4, 3d4afb280f
+commits: e383f7ec49, be8ee73696, 892a801ef4, 3d4afb280f, 110be1b
 files: gpu/shadps4/video_core/texture_cache/texture_cache.cpp, gpu/shadps4/video_core/texture_cache/texture_cache.h, gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.cpp
 symbols: ImageWatchSpec, ImageWatch, TextureCache::Watched, TextureCache::WatchNote, SkippedTargetLog, LogSkippedTarget, HalfToFloat, NonZeroTexels, readback_log, readback_published, RecordImageDownload, RetireReadbacks, FindRenderTarget, FindTexture, RefreshImage, FrameCapture::Buffer
 switches: GOW3_IMAGE_WATCH, GOW3_IMAGE_WATCH_ADDR, GOW3_IMAGE_WATCH_LINES, GOW3_DROP_LOG, GOW3_READBACK_LOG, GOW3_SKIPPED_TARGET_LOG, GOW3_CAPTURE_BUFFER_BYTES
@@ -33,6 +33,8 @@ read). The frame map now ends at a display pass after a scene pass (not at the U
 
 ## Invariants
 
+- `GOW3_READBACK_LOG` and `GOW3_SKIPPED_TARGET_LOG` are dev build only since P5 (2026-11-24, `110be1b`): `readback_log`
+  is a `static constexpr false` member and `SkippedTargetLog()` returns false in release.
 - Logging only: no path changes what is uploaded, copied or freed. Off, each site costs a `Watched` call (a static
   spec and a width compare) or a static bool test.
 - `WatchNote` takes a line from the budget by CAS, so the cap holds across threads; a new event site must call

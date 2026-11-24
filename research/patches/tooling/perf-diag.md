@@ -8,7 +8,7 @@ default_windows: off
 default_deck: off
 origin: ours
 class: G
-commits: 537d86e965, 057afc64a0, fde36243a2, 338e0a0353, 2155ba72f9, 450df36a32, 214a52eefb, d6a12857a9, 464d9258d6
+commits: 537d86e965, 057afc64a0, fde36243a2, 338e0a0353, 2155ba72f9, 450df36a32, 214a52eefb, d6a12857a9, 464d9258d6, 110be1b
 files: gpu/shadps4/video_core/renderer_vulkan/vk_wait_diagnostics.h, gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp, gpu/shadps4/video_core/buffer_cache/buffer_cache.h, gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_runtime.cpp, gpu/shadps4/core/libraries/videoout/driver.cpp
 symbols: WaitDiagnostics, HostCopies, RenderPassEnds, PassSwitches, BarrierBreaks, PassReopens, ReportDownloadSites, NoteGpuWriterShader, download_sites, gpu_writers, SwitchReason, InternKey, LongWaits
 switches: GOW3_PERF_DIAG, GOW3_LONG_WAITS, GOW3_FRAME_STATS
@@ -36,6 +36,8 @@ site and thread name, every 5 s.
 
 ## Invariants
 
+- `GOW3_LONG_WAITS` is dev build only since P5 (2026-11-24, `110be1b`): `LongWaits::Enabled()` is constant false in
+  release (was a static-guard test per `Scheduler::Wait`).
 - Measuring only. Each table takes a mutex per event (`WaitDiagnostics::Add`, `download_sites_mutex`) on stage B,
   the GPU thread and faulting game threads. That changes timing: N-23 saw the 8-9 ms frames vanish with it on.
 - The reports print only from `VideoOutDriver::Flip`'s frame-stats block (`WaitDiagnostics::Report`,

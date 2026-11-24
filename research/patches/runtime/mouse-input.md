@@ -8,7 +8,7 @@ default_windows: off
 default_deck: n/a
 origin: ours
 class: M
-commits: f4f13b8, e27103e, 870f584, 88bf535, a7c91f7, b4d9e6f, 5bb45d0, 7449317, 64da6dd, d76d3d0, 95a5487
+commits: f4f13b8, e27103e, 870f584, 88bf535, a7c91f7, b4d9e6f, 5bb45d0, 7449317, 64da6dd, d76d3d0, 95a5487, 00358ca
 files: src/runtime_mouse.c, src/runtime_pad.c, src/mouse_hook.h, src/camera_hook.h, src/probe.c, src/runtime_services.c, gpu/shim/window.cpp, gpu/shim/sdl_window.h, scripts/ue4_override.py
 symbols: runtime_mouse_enabled, runtime_mouse_start, runtime_mouse_capture, runtime_mouse_take, drain, reader_thread, mouse_init, mouse_read, SetMouseCapture, mouse_captured, runtime_mouse_take_camera, medievil_mouse_yaw_find, medievil_mouse_yaw_script_ok, mouse_yaw, mouse_lock_record, install_mouse_yaw, list_mouse_buttons, mouse_map_from, camera_look, camera_look_class, camera_dancam, medievil_camera_pitch, medievil_camera_dancam
 switches: GOW3_MOUSE, GOW3_MOUSE_BUTTONS, GOW3_MOUSE_LOG
@@ -36,6 +36,9 @@ tick path was verified (T-MS10; the user, 2026-11-12).
 
 ## Invariants
 
+- **Diagnostics dev build only since P5 (2026-11-24, `00358ca`).** `GOW3_MOUSE_LOG` (the every-1000th sceMouseRead line
+  and the 5 s mouse-look summary) works in the dev build only. Release: sceMouseRead counts only its first 3 reads
+  (their lines stay; no seq_cst add per read), the mouse-look counters fold away.
 - `sceMouseRead` (game thread, once a frame) must not call into Windows: only atomics (MGS2 3.11: every win32k
   call slowed 20-30x with an 8000 Hz mouse).
 - No SDL relative mode while this reader runs: Windows keeps one raw mouse registration per process, SDL's would

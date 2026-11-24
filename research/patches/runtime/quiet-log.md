@@ -8,7 +8,7 @@ default_windows: off
 default_deck: off
 origin: ours
 class: S
-commits: f53f76b
+commits: f53f76b, 1904c41
 files: gpu/shim/gow3_overlay.cpp, src/runtime_extra.c
 symbols: LogPresent, particle_guard_report
 switches: GOW3_FPS_LOG

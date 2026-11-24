@@ -8,15 +8,15 @@ default_windows: on
 default_deck: on
 origin: ours
 class: G
-commits: 21886b6
-files: gpu/CMakeLists.txt, build.sh, packaging/linux/appimage.sh, tests/test_launcher_controls.py, gpu/shim/gow3_dev_tools.h, gpu/shim/gow3_toggles.h, gpu/shim/gow3_sections.h, gpu/shim/gow3_draw_classes.h, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3_copy.cpp, gpu/shim/gow3_copy.h, gpu/shim/gow3_write_log.cpp, gpu/shadps4/common/logging/log.h, gpu/shadps4/video_core/renderer_vulkan/vk_platform.h, gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.h, gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_gpu_profiler.h, gpu/shadps4/video_core/renderer_vulkan/vk_gpu_profiler.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_wait_diagnostics.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp, gpu/shadps4/video_core/texture_cache/texture_cache.cpp, src/runtime.h, src/runtime_memory.c, src/runtime_waitsites.c, src/probe.c, launcher/medievil_launcher.py
-symbols: DEV_DIAGNOSTICS, dev_diagnostics_off_reason, dev_build_missing, GOW3_DEV_TOOLS, Gow3Stats::enabled, Gow3Toggle::Disabled, Gow3Toggle2::Disabled, Gow3Sections::Enabled, WaitDiagnostics::Enabled, CacheStatsEnabled, Ue4Upscaler::StatsOn, GpuProfiler::Get, FrameCapture::Active, FrameCapture::OnFlip, Gow3Overlay::TakeFrameDumpRequest, Gow3Overlay::FpsLogOn, SetObjectName, LOG_DEBUG, runtime_fault_stats_enabled, runtime_wait_sites_enabled, RUNTIME_WAIT_BEGIN, dev_executable, runtime_executable
+commits: 21886b6, a1bb455, 7d7b848, 110be1b, 21f7fe2, 00358ca
+files: gpu/CMakeLists.txt, build.sh, gpu/shim/common/logging/log.h, gpu/shim/core/emulator_settings.h, packaging/linux/appimage.sh, tests/test_launcher_controls.py, gpu/shim/gow3_dev_tools.h, gpu/shim/gow3_toggles.h, gpu/shim/gow3_sections.h, gpu/shim/gow3_draw_classes.h, gpu/shim/gow3_overlay.cpp, gpu/shim/gow3_overlay.h, gpu/shim/gow3_copy.cpp, gpu/shim/gow3_copy.h, gpu/shim/gow3_write_log.cpp, gpu/shadps4/common/logging/log.h, gpu/shadps4/video_core/renderer_vulkan/vk_platform.h, gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.h, gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_gpu_profiler.h, gpu/shadps4/video_core/renderer_vulkan/vk_gpu_profiler.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_wait_diagnostics.h, gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp, gpu/shadps4/video_core/texture_cache/texture_cache.cpp, src/runtime.h, src/runtime_memory.c, src/runtime_waitsites.c, src/probe.c, launcher/medievil_launcher.py
+symbols: runtime_toggle2, LOG_GENERIC_OFF, DEV_DIAGNOSTICS, dev_diagnostics_off_reason, dev_build_missing, GOW3_DEV_TOOLS, Gow3Stats::enabled, Gow3Toggle::Disabled, Gow3Toggle2::Disabled, Gow3Sections::Enabled, WaitDiagnostics::Enabled, CacheStatsEnabled, Ue4Upscaler::StatsOn, GpuProfiler::Get, FrameCapture::Active, FrameCapture::OnFlip, Gow3Overlay::TakeFrameDumpRequest, Gow3Overlay::FpsLogOn, SetObjectName, LOG_DEBUG, runtime_fault_stats_enabled, runtime_wait_sites_enabled, RUNTIME_WAIT_BEGIN, dev_executable, runtime_executable
 switches: GOW3_DEV_TOOLS, GOW3_BUILD, GOW3_APPIMAGE_DEV, GOW3_FPS_LOG, GOW3_COPY_FAULT_LOG, GOW3_FRAME_DUMP_TRIGGER, dev_build
 tests: launcher-controls
 docs: study-tooling-off-cost.md, plan-work-queue.md
 depends_on: stats-counters-gated
 related: flip-trace, sections, wait-sites, wait-trace, perf-diag, renderdoc-capture, mausoleum-diagnostics, lineage-toggle-file, stage-b-counters
-checked: 2026-11-16
+checked: 2026-11-24
 ---
 ## What it does
 
@@ -39,10 +39,28 @@ Compiled out of the release build (switch compile-time false, so its sites fold 
 - `GOW3_SECTIONS`, `GOW3_PERF_DIAG` (`WaitDiagnostics`), `GOW3_TEXCACHE_STATS`, `GOW3_UPSCALER_STATS`,
   `GOW3_GPU_PROFILE` (`GpuProfiler::Get` null), wait sites and the wait trace (`RUNTIME_WAIT_BEGIN` is 0).
 - The toggle file: no watcher thread (no 250 ms `fopen`), `Gow3Toggle::Disabled` / `Gow3Toggle2::Disabled` false.
-  The runtime C's direct reads of the toggle words stay (loads of a word that stays 0).
+  The runtime C reads the second word through `runtime_toggle2()` (runtime.h), constant 0 in release since P5; the
+  first word's plain reads fold through LTO (nothing writes it).
 - The F11 frame analyzer (`FrameCapture::Active` false, `OnFlip` returns at once: no 250 ms `filesystem::exists` on
   the present thread, no target watch), `GOW3_FRAME_DUMP_TRIGGER`'s file poll, the guest write log (`GOW3_WRITE_LOG`;
-  ring 1 entry instead of 40 MiB), Vulkan object names (`SetObjectName` returns before formatting), `LOG_DEBUG`.
+  ring 1 entry instead of 40 MiB), Vulkan object names (`SetObjectName` returns before formatting).
+- `LOG_TRACE` / `LOG_DEBUG` / `LOG_INFO` (since `a1bb455`, 2026-11-24; **until then this card was wrong**: the 11-16
+  gate went into `gpu/shadps4/common/logging/log.h`, but every GPU file includes `gpu/shim/common/logging/log.h`
+  first, so 881 `Common::Log::ShouldLog` calls stayed in release). Now the shim header compiles them out (arguments
+  still type-checked); `LOG_WARNING` / `LOG_ERROR` / `LOG_CRITICAL` are written without a level check; `GOW3_GPU_LOG`
+  is a dev-build switch.
+- P5 "release hygiene" (2026-11-24, study-perf-deepdive-20261123.md; `7d7b848` to `00358ca`): the staging byte
+  counters, `gpu_frames`, the draw pipe's drain bookkeeping, the fence-kind TLS stores and `lock_armed_at` exchange,
+  `direct_recordings`, the `DrawClass` guard (frame stats only, so they fold); the runtime-switchable diagnostics
+  `GOW3_WARN_META_TEXTURE`, `GOW3_LONG_WAITS`, `GOW3_RECORDER_TRACE`, `GOW3_PIPE_VERIFY`, `GOW3_SCENE_DEBUG`,
+  `GOW3_DCB_STATS`, `GOW3_BUFFER_STATS`, `GOW3_FRAME_STATS` / `GOW3_SLOW_FRAMES` (the whole block in `Flip`),
+  `GOW3_SKIPPED_TARGET_LOG`, `GOW3_READBACK_LOG`, `GOW3_IMAGE_STATS`, `GOW3_VK_MARKERS` (marker labels are formatted
+  only with markers on), `GOW3_DUMP_SHADERS`; the stage-B printf lines "Stencil plane copy" (and its locked add per
+  copy), "Stencil plane-sized write", "Buffer residency ... allocated", the spare image block line, the light grid
+  line; the copy-fault trace (`GOW3_COPY_FAULT_LOG`, card copy-fault-trace); in src/: `GOW3_HOST_MAP_STATS`,
+  `GOW3_MOUSE_LOG` and the per-read mouse statistics, `GOW3_DEBUG_MENU_TRACE`, `GOW3_AUDIO_TRACE` / `_STATS` /
+  `_DUMP`, `GOW3_FILE_TRACE`, `GOW3_MOD_TRACE`, `GOW3_TRACE_SEMA`, pad record / replay (`GOW3_PAD_RECORD` /
+  `GOW3_PAD_REPLAY`; `GOW3_PAD_FILE` stays), and the toggle file's second word (`runtime_toggle2()`, constant 0).
 
 Both builds:
 - Shift+F12 sets `Gow3Overlay::frame_dump_requested`; the presenter takes it at its next frame (a relaxed load per
@@ -53,8 +71,9 @@ Both builds:
 
 Kept in release (functional or user-facing): the flip trace (`present_frame_trace`), F12 screenshots, Shift+F12
 dumps, crash recorders and `GOW3_CRASH_DUMP`, the save trace, the overlay FPS readout, the AvPlayer map,
-`IsDisplayBuffer` / `AddDisplayBuffer`, `recording_thread`, `download_reason`. The copy-fault trace stays but
-defaults **off** in release (`GOW3_COPY_FAULT_LOG=1` on); in dev it stays on by default.
+`IsDisplayBuffer` / `AddDisplayBuffer`, `recording_thread`, `download_reason`, start-up lines, warnings and errors,
+the FPS log (`GOW3_FPS_LOG=1`). The copy-fault trace is dev only since P5 (`21f7fe2`; until then release default
+off, `=1` on); in dev it stays on by default.
 
 ## Invariants
 
@@ -110,6 +129,13 @@ defaults **off** in release (`GOW3_COPY_FAULT_LOG=1` on); in dev it stays on by 
   `vk_instance.cpp`'s out-of-order `.occlusionQueryPrecise` (now in order; new trees use clang, `262bf6f`), and
   `runtime_waitsites.c` lacked `_GNU_SOURCE` for `syscall` since the wait trace (`599380c`): the Linux build had not
   compiled since 2026-11-15. `build.sh --test` still fails (tests/test_pad.c, queue). Not yet run on the Deck.
+
+- P5 (2026-11-24, `perf-hygiene`): both builds clean (no new warnings). `strings`: every switch name above and the
+  lines "Stencil plane copy", "Buffer residency: %llu MB", "Copy fault #", "Long GPU wait", "Mapped writes" absent
+  from the release exe, present in the dev exe; the flip trace, FPS log, save trace and crash dump strings in both.
+  `llvm-objdump`: release 0 `Common::Log::ShouldLog` calls (dev 805), 0 references to the staging counters (dev 17),
+  `lock_armed_at`, `runtime_disabled_optimizations2` or `host_stats` (dev 50 toggle-word references), 46 `rdtsc`
+  (dev 432). Fix built, not run.
 
 ## History and pitfalls
 

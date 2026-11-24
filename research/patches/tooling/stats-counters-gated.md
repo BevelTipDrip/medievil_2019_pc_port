@@ -8,7 +8,7 @@ default_windows: on
 default_deck: on
 origin: ours
 class: G
-commits: fa136ee
+commits: fa136ee, 7d7b848, 110be1b
 files: gpu/shim/gow3_toggles.h, gpu/shadps4/video_core/renderer_vulkan/vk_draw_pipe.h, gpu/shadps4/video_core/amdgpu/liverpool.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp, gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp, gpu/shadps4/video_core/buffer_cache/region_manager.h, gpu/shadps4/video_core/page_manager.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_constant_ring.h, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.h, gpu/shadps4/video_core/renderer_vulkan/vk_draw_prep.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_occlusion.cpp, gpu/shadps4/video_core/texture_cache/texture_cache.cpp, gpu/shim/gow3gpu.cpp, src/runtime.c, src/runtime_mutex.c, src/runtime_memory.c, tests/test_mutex.c
 symbols: Gow3Stats::Add, Gow3Stats::Sub, Gow3Stats::Switch, Gow3Stats::enabled, Gow3Stats::WaitTimer, DrawPipe::Run, count_memory_call, COUNT, runtime_fault_stats_enabled, runtime_mutex_report
 switches: GOW3_FRAME_STATS
@@ -40,6 +40,10 @@ Step 1 of the off-cost work (study-tooling-off-cost.md). Counters the frame-stat
 
 ## Invariants
 
+- P5 (2026-11-24, `7d7b848`, `110be1b`): the last unconditional counters are gated too: the staging upload / download
+  bytes (`StagingBufferPool::Request`, `Gow3Stats::Add`), `gpu_frames` (release returns from `NoteFrameStart` after the
+  GPU profiler), the draw pipe's drain counts and rdtsc pair (`DrawPipe::Drain`, frame stats only),
+  `Scheduler::direct_recordings`, and the `DrawClass` guard (`GOW3_DEV_TOOLS && draw_class.start`).
 - No behaviour depends on these counters: outside the frame-stats block (driver.cpp 401-1163, the pipe stats, the exit
   report) only `gpu_frames` (once a frame, still unconditional), `recorder_lean` (written on change) and
   `buffer_upload_bytes` are read; `buffer_upload_bytes` counts with `GOW3_FRAME_STATS=1` **or** `GOW3_BUFFER_STATS=1`

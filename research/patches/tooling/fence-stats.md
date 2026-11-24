@@ -8,7 +8,7 @@ default_windows: off
 default_deck: off
 origin: ours
 class: G
-commits: 3efee7ab94, 579c9d297c, aec1592c24
+commits: 3efee7ab94, 579c9d297c, aec1592c24, 7d7b848
 files: gpu/shim/gow3_fence_stats.h, gpu/shadps4/core/libraries/kernel/equeue.cpp, gpu/shadps4/core/libraries/gnmdriver/gnmdriver.cpp, gpu/shadps4/video_core/amdgpu/liverpool.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp, src/runtime_memory.c, gpu/shadps4/core/libraries/videoout/driver.cpp
 symbols: Gow3FenceStats, NoteEqueueWait, NoteInvalidate, NoteAcquireMem, FenceProbeLoop, SetGpuWaiter, BeginFence, FenceRecorded, FenceSignaled, pending_fence_kind, lock_armed_at, Report, SignalAfterHostCopies, runtime_fault_stats_enabled, runtime_memory_note_gpu_fault, runtime_memory_fault_report
 switches: GOW3_FRAME_STATS
@@ -35,6 +35,9 @@ by `Gow3FenceStats::Report` from the frame-stats block (`3efee7a`):
 
 ## Invariants
 
+- Since P5 (2026-11-24, `7d7b848`) the packet handlers note a fence's kind through `NoteFenceKind` (frame stats only;
+  `BeginFence` returns at once without them), and `ResetSubmissionLock` exchanges `lock_armed_at` only with frame
+  stats (the only case that sets it). Release: no TLS store per EOP / EOS, no xchg per GPU idle IRQ.
 - Stats only: nothing may change a command stream or a signal's order. `BeginFence` returns `~0` without
   `Gow3Stats::enabled`, and every later call is then a no-op.
 - `pending_fence_kind` is thread-local and consumed by the next `BeginFence` (`std::exchange`): it must be set right

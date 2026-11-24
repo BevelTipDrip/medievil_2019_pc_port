@@ -8,7 +8,7 @@ default_windows: off
 default_deck: off
 origin: ours
 class: G
-commits: 7d3d288833, 53ade79730, 615d583565, 8061698f3a, f9e5d01272, 166557ccc5
+commits: 7d3d288833, 53ade79730, 615d583565, 8061698f3a, f9e5d01272, 166557ccc5, 110be1b
 files: gpu/shadps4/core/libraries/videoout/driver.cpp, gpu/shim/gow3_toggles.h, gpu/shadps4/video_core/renderer_vulkan/vk_draw_pipe.h, gpu/shadps4/video_core/amdgpu/liverpool.cpp, gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp
 symbols: slow_ratio, slow_shown, window_reset, pacing_median, last_sections, stage_b_busy_cycles, occlusion_dumps, gpu_idle_total_ns, stage_a_drain_cycles, texset_misses, unprepared_draws, image_generation_misses, unprep_pending
 switches: GOW3_SLOW_FRAMES, GOW3_FRAME_STATS
@@ -31,6 +31,8 @@ generation-only lookups. With `GOW3_SECTIONS=1` it adds a second line, "stage B 
 
 ## Invariants
 
+- Dev build only (with frame stats). Since P5 (2026-11-24, `110be1b`) the whole GOW3_FRAME_STATS / GOW3_SLOW_FRAMES
+  block in `VideoOutDriver::Flip` folds away in release (`frame_stats` = `GOW3_DEV_TOOLS && Flag(...)`).
 - The code sits inside `if (frame_stats)` in `VideoOutDriver::Flip`, and most counters it reads (misses, fault
   timers) count only under `Gow3Stats::enabled`. So it needs `GOW3_FRAME_STATS=1` as well; alone it prints nothing.
   Exactly `1`: the block opens for `y` / `t` too (`EmulatorSettingsImpl::Flag`), but `Gow3Stats::enabled` does not,

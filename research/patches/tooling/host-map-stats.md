@@ -8,7 +8,7 @@ default_windows: off
 default_deck: n/a
 origin: ours
 class: G
-commits: 2618b9c79c, c7e128e58b
+commits: 2618b9c79c, c7e128e58b, 00358ca
 files: src/runtime_memory.c, research/tools/etw_waits.py
 symbols: host_stats, host_stats_enabled, host_stats_record, host_stats_take, host_now_ns, HOST_STAT_ADD, write_lock_held_ns, write_lock_acquires
 switches: GOW3_HOST_MAP_STATS
@@ -31,6 +31,8 @@ two "Host map stats (5 s)" lines. `2618b9c` also added `research/tools/etw_procs
 
 ## Invariants
 
+- **Dev build only since P5 (2026-11-24, `00358ca`).** Release: `host_stats_enabled()` returns 0 (`#if GOW3_DEV_TOOLS`),
+  so its ~30 checks fold, `write_unlock` no longer loads `write_lock_start`, and `GOW3_HOST_MAP_STATS` is not read.
 - Measuring only. Off, it costs one cached load per host call and no clock read (`write_lock` reads the clock only
   when enabled).
 - The 5 s report is printed by whichever thread makes the host call that crosses the boundary (a CAS on

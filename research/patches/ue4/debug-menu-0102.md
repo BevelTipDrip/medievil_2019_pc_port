@@ -8,7 +8,7 @@ default_windows: off
 default_deck: off
 origin: ours
 class: M
-commits: 4ba06ad, 90255b8, d8d5d5a, 9597d52, 22d3d72
+commits: 4ba06ad, 90255b8, d8d5d5a, 9597d52, 22d3d72, 00358ca
 files: scripts/ue4_override.py, src/probe.c, launcher/medievil_launcher.py, README.md
 symbols: install_debug_menu_trace, debug_menu_trace, medievil_debug_menu_sites
 switches: GOW3_DEBUG_MENU_TRACE
@@ -34,6 +34,8 @@ Blueprint function and object (FFrame Node 0x10, Object 0x18) and the result.
 
 ## Invariants
 
+- The `GOW3_DEBUG_MENU_TRACE` probe is dev build only since P5 (2026-11-24, `00358ca`); the debug menu itself is
+  unchanged in both builds.
 - No `DefaultInput.ini` edit. 01.02's R3 `RecenterCamera` action binding does not consume the key
   (`bConsumeInput` 0), so the key event still runs.
 - The main menu's `MainMenuPawn` R3 event has no debug menu (identical in both builds). Test in a level.
