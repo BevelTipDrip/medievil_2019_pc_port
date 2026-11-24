@@ -117,6 +117,13 @@ tick path was verified (T-MS10; the user, 2026-11-12).
 
 - Found, low priority, left as is: the reader polls ~700 times a second with the mouse still (MGS2's verified
   "Every 1 ms" wait, line for line). Change only with an 8000 Hz A/B (study T-MS2).
+  **2026-11-23 (study-perf-deepdive-20261123.md), fix built 23:56, not run:** the cause is the wait itself:
+  `MWMO_INPUTAVAILABLE` returns while input is still marked queued, and `GetRawInputBuffer` does not clear the mark,
+  so the wait never blocked (every log: ~664 wake-ups/s whatever the report rate). Now `GetQueueStatus` marks the
+  queue seen and the wait (flags 0, raw input and posted messages) blocks until something new arrives, as SDL's raw
+  input thread does; queued input is drained at once; the 1 ms hold-off and the one-call batch stay. The three
+  statistics counters moved to a 64-byte line of their own (they shared one with the region table's sequence word).
+  Check: the `Mouse: ... wake-ups (N/s)` line (idle near 0), and the 8000 Hz A/B above (feel, frame starts).
 
 - Planned first with SDL relative mode; changed before coding because SDL's reader wakes per report at
   TIME_CRITICAL, the pattern that made MGS2's frame starts wobble with an 8000 Hz mouse (study 4.2, revised).

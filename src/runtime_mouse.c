@@ -42,7 +42,9 @@ static atomic_uint shown_buttons;         /* buttons the game sees */
 #define WHEEL_PRESS_MS 60u
 static atomic_ullong wheel_up_until, wheel_down_until; /* GetTickCount64 ms */
 static ULONGLONG wheel_quiet_until;      /* the reader thread only */
-static atomic_ullong reports, wakes, batches; /* statistics for the log */
+/* Statistics for the log, written by the reader: on a cache line of their own (they shared one with the region
+ * table's sequence word, read on every region lookup; research/docs/study-perf-deepdive-20261123.md). */
+static struct { _Alignas(64) atomic_ullong reports; atomic_ullong wakes, batches; } stats;
 static HWND reader_window;
 /* Mouse buttons reach the game only with GOW3_MOUSE_BUTTONS=1: a click the game received moved its
  * focus off the main menu, which then ignored the keyboard and pad (step 2 run, 2026-11-11). Menu
@@ -86,9 +88,9 @@ static void drain(void) {
             n++;
         }
     }
-    atomic_fetch_add_explicit(&batches,1,memory_order_relaxed);
+    atomic_fetch_add_explicit(&stats.batches,1,memory_order_relaxed);
     if (!n) return;
-    atomic_fetch_add_explicit(&reports,(unsigned long long)n,memory_order_relaxed);
+    atomic_fetch_add_explicit(&stats.reports,(unsigned long long)n,memory_order_relaxed);
     const unsigned now=atomic_load(&capture_serial);
     if (now!=serial) { serial=now; blocked=MOUSE_BUTTONS; }
     if (atomic_load(&captured)) {
@@ -123,13 +125,19 @@ static DWORD WINAPI reader_thread(void *unused) {
         return 0;
     }
     reader_window=hwnd;
-    printf("Mouse: Raw Input reader running (batched, at most one wake-up a millisecond, normal priority)\n");
+    printf("Mouse: Raw Input reader running (batched, at most one wake-up a millisecond, waits for new input, normal priority)\n");
     fflush(stdout);
     HANDLE timer=CreateWaitableTimerExW(NULL,NULL,CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,TIMER_ALL_ACCESS);
     MSG msg;
+    /* Raw input and posted messages wake the reader. GetQueueStatus marks what is queued as seen (GetRawInputBuffer
+     * does not), so the wait blocks until something new arrives, as SDL's raw input thread waits; what is already
+     * queued is drained at once. The old wait (MWMO_INPUTAVAILABLE) returned at once every time: ~664 wake-ups a
+     * second with the mouse still, each ~5 Windows calls (study-perf-deepdive-20261123.md). */
+    const UINT wake_on=QS_RAWINPUT|QS_POSTMESSAGE|QS_SENDMESSAGE;
     for (;;) {
-        MsgWaitForMultipleObjectsEx(0,NULL,INFINITE,QS_ALLINPUT,MWMO_INPUTAVAILABLE);
-        atomic_fetch_add_explicit(&wakes,1,memory_order_relaxed);
+        if (!(HIWORD(GetQueueStatus(wake_on))&(QS_RAWINPUT|QS_POSTMESSAGE)))
+            MsgWaitForMultipleObjectsEx(0,NULL,INFINITE,wake_on,0);
+        atomic_fetch_add_explicit(&stats.wakes,1,memory_order_relaxed);
         drain();
         while (PeekMessageW(&msg,NULL,0,WM_INPUT-1,PM_REMOVE) || PeekMessageW(&msg,NULL,WM_INPUT+1,0xFFFFFFFF,PM_REMOVE)) {
             if (msg.message==WM_QUIT) return 0;
@@ -169,7 +177,7 @@ void runtime_mouse_capture(int on) {
         atomic_store(&wheel_up_until,0); atomic_store(&wheel_down_until,0);
     }
     const ULONGLONG now=GetTickCount64();
-    const unsigned long long r=atomic_load(&reports), w=atomic_load(&wakes), b=atomic_load(&batches);
+    const unsigned long long r=atomic_load(&stats.reports), w=atomic_load(&stats.wakes), b=atomic_load(&stats.batches);
     const double s=since ? (double)(now-since)/1000.0 : 0.0;
     RAWINPUTDEVICE devices[8]; UINT count=8; HWND owner=NULL;
     const UINT got=GetRegisteredRawInputDevices(devices,&count,sizeof(RAWINPUTDEVICE));
