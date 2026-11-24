@@ -124,6 +124,10 @@ tick path was verified (T-MS10; the user, 2026-11-12).
   input thread does; queued input is drained at once; the 1 ms hold-off and the one-call batch stay. The three
   statistics counters moved to a 64-byte line of their own (they shared one with the region table's sequence word).
   Check: the `Mouse: ... wake-ups (N/s)` line (idle near 0), and the 8000 Hz A/B above (feel, frame starts).
+  **Run 2026-11-24 00:12 (exe 23:56:13, 13 min):** wake-ups follow the reports: still mouse 9-36/s (one per
+  report, none idle), play 18-56/s, fast movement 1,495 reports/s -> 245 wake-ups/s (~6 reports a drain); the old
+  exe the same evening 530-669/s whatever the rate. The user: frame-time graph more stable; RTSS 1% / 0.1% 224.2 /
+  221.9 at the static view (best run 233.2 / 227.7).
 
 - Planned first with SDL relative mode; changed before coding because SDL's reader wakes per report at
   TIME_CRITICAL, the pattern that made MGS2's frame starts wobble with an 8000 Hz mouse (study 4.2, revised).
