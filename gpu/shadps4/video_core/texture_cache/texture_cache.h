@@ -614,7 +614,14 @@ private:
     struct TrackedReadback {
         VAddr address = 0;
         u64 size = 0, pushed = 0, published = 0;
+        /// gow3 (study-perf-deepdive-20261123.md P2): the newest finished numbered copy. A tracked range's copies go
+        /// here instead of guest memory (no page watch, no TryWriteBacking): only the hook reads them.
+        std::vector<u8> shadow;
     };
+    /// The tracked range a numbered copy of [address, address + size) belongs to, or null. readback_mutex held.
+    TrackedReadback* FindTracked(VAddr address, u64 size);
+    /// A finished copy of a tracked range into its shadow. readback_mutex held. False: not tracked.
+    bool WriteShadow(VAddr address, u64 size, const u8* data);
     std::array<TrackedReadback, 4> tracked_readbacks{}; ///< guarded by readback_mutex
     u64 NoteTrackedPush(VAddr address, u64 size);
     void NoteTrackedPublish(VAddr address, u64 size, u64 seq);

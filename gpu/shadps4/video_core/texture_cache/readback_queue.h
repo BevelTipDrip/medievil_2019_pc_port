@@ -25,11 +25,12 @@ public:
         return entries.size() < 64 && size <= MaxBytes && bytes <= MaxBytes - size;
     }
     void Push(std::uint64_t address, std::uint64_t size, std::uint64_t tick, Payload payload,
-              std::uint64_t seq = 0, bool reads = false) {
+              std::uint64_t seq = 0, bool reads = false, bool watched = true) {
         assert(CanFit(size));
         entries.push_back({address, size, tick, std::move(payload)});
         entries.back().seq = seq;
         entries.back().reads = reads;
+        entries.back().watched = watched;
         bytes += size;
     }
     std::uint64_t RequiredTick(std::uint64_t address, std::uint64_t size) const {
