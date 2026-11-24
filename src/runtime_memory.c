@@ -1974,6 +1974,13 @@ static void cache_region(size_t i) {
 /* A table edit (a memmove of up to ~13,000 entries) takes tens of microseconds; the lock waits for
  * the whole writer section, host calls included. Spin through an edit for up to ~100 us. */
 #define OPTIMISTIC_SPIN_CYCLES (UINT64_C(400000))
+/* gow3 P5: 1 once the spin budget is spent. The clock is read only after a writer was seen (an odd vma_seq or a
+ * changed one): the first call starts the budget. Until then every lookup read rdtsc on entry. */
+static inline int optimistic_spent(uint64_t *deadline) {
+    const uint64_t now=__builtin_ia32_rdtsc();
+    if (!*deadline) { *deadline=now+OPTIMISTIC_SPIN_CYCLES; return 0; }
+    return now>*deadline;
+}
 static int optimistic_enabled(void) {
     int enabled=__atomic_load_n(&perf_optimistic,__ATOMIC_RELAXED);
     if (enabled<0) {
@@ -1986,14 +1993,14 @@ static int optimistic_enabled(void) {
 static int clamp_optimistic(uintptr_t address, uint64_t size, uint64_t *out) {
     if (!optimistic_enabled()) return 0;
     const int index=region_index_on();
-    const uint64_t deadline=__builtin_ia32_rdtsc()+OPTIMISTIC_SPIN_CYCLES;
+    uint64_t deadline=0; /* optimistic_spent */
     for (;;) {
         if (!__atomic_load_n(&vma_optimistic,__ATOMIC_ACQUIRE)) return 0;
         /* R1: the table generation before the search (odd: no fill). */
         const uint64_t generation=index ? __atomic_load_n(&table_generation,__ATOMIC_ACQUIRE) : 1;
         const uint64_t s1=__atomic_load_n(&vma_seq,__ATOMIC_ACQUIRE);
         if (s1 & 1) {
-            if (__builtin_ia32_rdtsc()>deadline) return 0;
+            if (optimistic_spent(&deadline)) return 0;
             __builtin_ia32_pause();
             continue;
         }
@@ -2021,7 +2028,7 @@ static int clamp_optimistic(uintptr_t address, uint64_t size, uint64_t *out) {
             if (stamp) region_slot_fill(address,generation,cs,ce,ck,stamp,cp);
             return 1;
         }
-        if (__builtin_ia32_rdtsc()>deadline) return 0;
+        if (optimistic_spent(&deadline)) return 0;
     }
 }
 /* Mapped length from address, up to size, across adjacent mappings. */
@@ -2046,14 +2053,14 @@ uint64_t runtime_memory_clamp(uintptr_t address, uint64_t size) {
 static int region_optimistic(uintptr_t address, uintptr_t *start, uintptr_t *end, int *mapped, int *found) {
     if (!optimistic_enabled()) return 0;
     const int index=region_index_on();
-    const uint64_t deadline=__builtin_ia32_rdtsc()+OPTIMISTIC_SPIN_CYCLES;
+    uint64_t deadline=0; /* optimistic_spent */
     for (;;) {
         if (!__atomic_load_n(&vma_optimistic,__ATOMIC_ACQUIRE)) return 0;
         /* R1: the table generation before the search (odd: no fill). */
         const uint64_t generation=index ? __atomic_load_n(&table_generation,__ATOMIC_ACQUIRE) : 1;
         const uint64_t s1=__atomic_load_n(&vma_seq,__ATOMIC_ACQUIRE);
         if (s1 & 1) {
-            if (__builtin_ia32_rdtsc()>deadline) return 0;
+            if (optimistic_spent(&deadline)) return 0;
             __builtin_ia32_pause();
             continue;
         }
@@ -2077,7 +2084,7 @@ static int region_optimistic(uintptr_t address, uintptr_t *start, uintptr_t *end
             if (stamp) region_slot_fill(address,generation,s,e,k,stamp,ph);
             return 1;
         }
-        if (__builtin_ia32_rdtsc()>deadline) return 0;
+        if (optimistic_spent(&deadline)) return 0;
     }
 }
 int runtime_memory_region(uintptr_t address, uintptr_t *start, uintptr_t *end, int *mapped) {

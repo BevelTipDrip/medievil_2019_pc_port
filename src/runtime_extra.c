@@ -826,7 +826,9 @@ void runtime_ue4_setres_poll(void) {
     static int automatic_done;
     static unsigned reads;
     if (reads<1200) ++reads;
-    if (__atomic_exchange_n(&ue4_request_pending,0,__ATOMIC_ACQ_REL)) {
+    /* gow3 P5: a plain load first, so the common case (nothing pending) is a load, not a locked xchg. */
+    if (__atomic_load_n(&ue4_request_pending,__ATOMIC_RELAXED) &&
+        __atomic_exchange_n(&ue4_request_pending,0,__ATOMIC_ACQ_REL)) {
         char text[sizeof(ue4_requested)];
         strcpy(text,ue4_requested);
         if (reads>=120) ue4_setres(text);
@@ -837,7 +839,8 @@ void runtime_ue4_setres_poll(void) {
     if (reads>=600) {
         ue4_particle_pass_poll(); /* requests its cvar for the loop below */
         /* Cleared before the entries are read: a request landing meanwhile sets it again for the next poll. */
-        if (__atomic_exchange_n(&ue4_cvar_any_pending,0,__ATOMIC_ACQ_REL))
+        if (__atomic_load_n(&ue4_cvar_any_pending,__ATOMIC_RELAXED) &&
+            __atomic_exchange_n(&ue4_cvar_any_pending,0,__ATOMIC_ACQ_REL))
         for (size_t i=0;i<UE4_CVARS;++i) {
             if (!__atomic_exchange_n(&ue4_cvar_pending[i],0,__ATOMIC_ACQ_REL)) continue;
             char text[sizeof(ue4_cvar_values[0])];

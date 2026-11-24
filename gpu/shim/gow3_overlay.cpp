@@ -3441,22 +3441,28 @@ void ChoiceStep(int move, int finish, bool toggle) {
 uint32_t (*choice_input)() = nullptr;
 
 void PollChoiceInput() {
+    // `open` is written under the lock and read before it: with no list shown and `open` already clear the
+    // locked path would only return (gow3 P5: no mutex per present and per game poll while nothing is shown).
+    static std::atomic<bool> open{false};
+    if (!choice_active && !open.load(std::memory_order_acquire)) {
+        return;
+    }
     static std::mutex poll_mutex; // the present thread and the game thread both poll
     std::scoped_lock poll_lock{poll_mutex};
     static uint32_t previous = 0;
-    static bool open = false;
     static std::chrono::steady_clock::time_point repeat_at{};
     if (!choice_input) {
         return;
     }
     if (!choice_active) {
-        open = false;
+        open.store(false, std::memory_order_release);
         return;
     }
     const uint32_t buttons = choice_input();
     const auto now = std::chrono::steady_clock::now();
-    if (!open) { // buttons held when the list opened (the press that opened it) wait for release
-        open = true;
+    // Buttons held when the list opened (the press that opened it) wait for release.
+    if (!open.load(std::memory_order_relaxed)) {
+        open.store(true, std::memory_order_release);
         previous = buttons;
         return;
     }
@@ -3737,7 +3743,9 @@ std::atomic<bool> screenshot_requested{false};
 std::atomic<bool> frame_dump_requested{false};
 
 bool TakeScreenshotRequest() {
-    return screenshot_requested.exchange(false, std::memory_order_acq_rel);
+    // gow3 P5: a load first, as TakeFrameDumpRequest: no locked exchange per present while nothing is asked for.
+    return screenshot_requested.load(std::memory_order_relaxed) &&
+           screenshot_requested.exchange(false, std::memory_order_acq_rel);
 }
 
 bool TakeFrameDumpRequest() {
@@ -3901,7 +3909,7 @@ void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent, b
     }
     ConfirmRestart();
     PollChoiceInput();
-    if (open_requested.exchange(false)) {
+    if (open_requested.load(std::memory_order_relaxed) && open_requested.exchange(false)) { // gow3 P5: load first
         SetOpen(true);
     }
     if (!Visible()) {
