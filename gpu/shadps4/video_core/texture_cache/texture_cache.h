@@ -539,6 +539,9 @@ private:
     Common::SlotVector<ImageView> slot_image_views;
     tsl::robin_map<u64, Sampler> samplers;
     std::unordered_set<ImageId> download_images;
+    /// gow3 P5: download_images may be non-empty. Set where an image is added, cleared where the set is cleared
+    /// (both under download_images_mutex; an erase leaves it set); read without the lock by ProcessDownloadImages.
+    std::atomic<bool> download_pending{false};
     u64 total_used_memory = 0;
     u64 gc_evictions = 0, gc_downloads = 0; ///< gow3: pressure report
     std::chrono::steady_clock::time_point gc_report_time{};

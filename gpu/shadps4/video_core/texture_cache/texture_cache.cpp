@@ -502,7 +502,18 @@ void TextureCache::ProcessDownloadImages() {
             const char* env = std::getenv("GOW3_EOP_TARGETED");
             return !env || env[0] != '0';
         }();
-        if (targeted && !Gow3Toggle::Disabled(Gow3Toggle::IdleEopSkip)) {
+        const bool w2 = targeted && !Gow3Toggle::Disabled(Gow3Toggle::IdleEopSkip);
+        // gow3 P5 (study-perf-deepdive-20261123.md, the demoted P3): with W2, an end of pipe with no image to
+        // download and no readback queued waits for nothing (empty range list), retires nothing and downloads
+        // nothing: it returns before the two mutexes. Both flags are set under their mutex where the work is
+        // added, so a clear flag means that work comes after this call (as if it had taken the locks first). Any
+        // queued readback, ready or not, still takes the full path (P2 history: never skip real readback work).
+        // The full wait (W2 off) and the dev build's perf-diag report keep the path as before.
+        if (w2 && !download_pending.load(std::memory_order_acquire) &&
+            !has_pending_readbacks.load(std::memory_order_acquire) && !Vulkan::WaitDiagnostics::Enabled()) {
+            return;
+        }
+        if (w2) {
             boost::container::small_vector<std::pair<VAddr, u64>, 16> ranges;
             {
                 std::scoped_lock readback_lock{readback_mutex};
@@ -598,6 +609,7 @@ void TextureCache::ProcessDownloadImages() {
             }
         }
         download_images.clear();
+        download_pending.store(false, std::memory_order_relaxed); // download_images_mutex held
         if (Vulkan::WaitDiagnostics::Enabled()) {
             const auto now = std::chrono::steady_clock::now();
             if (now - readback_report >= std::chrono::seconds(5)) {
@@ -629,6 +641,9 @@ void TextureCache::ProcessDownloadImages() {
         }
         return;
     }
+    if (!download_pending.load(std::memory_order_acquire)) {
+        return; // gow3 P5: nothing to download (download_images empty): no lock
+    }
     std::unique_lock lk{download_images_mutex};
     boost::container::small_vector<PendingDownload, 16> pending;
     for (const ImageId image_id : download_images) {
@@ -637,6 +652,7 @@ void TextureCache::ProcessDownloadImages() {
         }
     }
     download_images.clear();
+    download_pending.store(false, std::memory_order_relaxed);
     if (pending.empty()) {
         return;
     }
@@ -1987,6 +2003,7 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc, Vi
             image.info.guest_address != 0) {
             std::unique_lock lk{download_images_mutex};
             download_images.emplace(image_id);
+            download_pending.store(true, std::memory_order_release);
         } else if (SkippedTargetLog()) {
             LogSkippedTarget(image.info, "storage");
         }
@@ -2027,6 +2044,7 @@ ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& des
                                    (tiny_target_readback && IsTinyTarget(image.info)))) {
         std::unique_lock lk{download_images_mutex};
         download_images.emplace(image_id);
+        download_pending.store(true, std::memory_order_release);
     } else if (SkippedTargetLog()) {
         LogSkippedTarget(image.info, "render target");
     }
