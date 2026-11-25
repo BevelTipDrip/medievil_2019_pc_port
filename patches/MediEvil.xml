@@ -245,16 +245,18 @@
          x86 and the loop stores nothing the fences would order against; the count never rises
          from 0 and the weak reference keeps the controller allocated, so the purge decides the
          same (a path that dies during the read is dropped a frame later, as before). The load
-         stays, the fences become one nop (research/docs/impl-cpu-waste.md). Off by default:
-         run.py GOW3_NAV_PURGE_NOFENCE=1 / 0 switches it on / off (extra-env.txt). -->
+         stays, the fences become one nop (research/docs/impl-cpu-waste.md). On by default since
+         v2.5.0 (the Sleeping Village waves, plan-work-queue.md P18: NPCs keep tens of thousands of
+         paths in the list at high frame rates; ~0.7 ms a frame of the saturated game thread); run.py
+         GOW3_NAV_PURGE_NOFENCE=1 / 0 forces it on / off (extra-env.txt). -->
     <Metadata Title="MediEvil"
               Name="Navigation path purge without fences (CPU)"
-              Note="The game thread checks its navigation paths every frame with a full memory fence around each check. This drops the fences (the check itself is unchanged): less game-thread CPU time, for CPU-limited PCs such as the Steam Deck."
+              Note="The game thread checks its navigation paths every frame with a full memory fence around each check, and with many NPCs the list grows to thousands of entries at high frame rates (Sleeping Village: frame-time waves, GPU usage dropping). This drops the fences (the check itself is unchanged): less game-thread CPU time."
               Author="medievil_pc"
               PatchVer="1.0"
               AppVer="01.00"
               AppElf="eboot.bin"
-              isEnabled="false">
+              isEnabled="true">
         <PatchList>
             <!-- mfence; mov eax, [rax+8]; mfence -> mov eax, [rax+8]; nop word [rax+rax] -->
             <Line Type="bytes" Address="0x03091ddf" Value="8b4008660f1f440000" Original="0faef08b40080faef0"/>
@@ -262,12 +264,12 @@
     </Metadata>
     <Metadata Title="MediEvil"
               Name="Navigation path purge without fences (CPU)"
-              Note="The game thread checks its navigation paths every frame with a full memory fence around each check. This drops the fences (the check itself is unchanged): less game-thread CPU time, for CPU-limited PCs such as the Steam Deck."
+              Note="The game thread checks its navigation paths every frame with a full memory fence around each check, and with many NPCs the list grows to thousands of entries at high frame rates (Sleeping Village: frame-time waves, GPU usage dropping). This drops the fences (the check itself is unchanged): less game-thread CPU time."
               Author="medievil_pc"
               PatchVer="1.0"
               AppVer="01.02"
               AppElf="eboot.bin"
-              isEnabled="false">
+              isEnabled="true">
         <PatchList>
             <!-- mfence; mov eax, [rax+8]; mfence -> mov eax, [rax+8]; nop word [rax+rax] -->
             <Line Type="bytes" Address="0x03094b9f" Value="8b4008660f1f440000" Original="0faef08b40080faef0"/>

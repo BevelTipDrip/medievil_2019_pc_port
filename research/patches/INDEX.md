@@ -208,7 +208,7 @@ _UE4 config overrides, eboot patches, game hooks, particles, render scale, boot 
 | [light-grid-scale](ue4/light-grid-scale.md) | active | on / on | deck-lab |  | UE4 forward light grid lookup scaled in separate translucency below 100% (Dan's Crypt water) |
 | [live-graphics-options](ue4/live-graphics-options.md) | active | on / on | lab |  | Live graphics options: the settings switched in the game through their console variables (Preset removed 2026-11-08) |
 | [movie-suspend](ue4/movie-suspend.md) | active | on / on | lab | GOW3_MOVIE_SUSPEND | Intro movie still playing at a level change is paused (OpenLevel hook, AvPlayer pause) |
-| [nav-purge-nofence](ue4/nav-purge-nofence.md) | rejected | off / off | deck-lab |  | Navigation path purge without the two mfences per refcount read (GOW3_NAV_PURGE_NOFENCE) |
+| [nav-purge-nofence](ue4/nav-purge-nofence.md) | active | on / on | deck-lab |  | Navigation path purge without the two mfences per refcount read (GOW3_NAV_PURGE_NOFENCE) |
 | [no-decal-prepass](ue4/no-decal-prepass.md) | active | on / on | lab | perf_no_decal_prepass, GOW3_DECAL_PREPASS | r.DBuffer=0 + r.EarlyZPass=1: no forced full depth prepass for invisible DBuffer decals |
 | [occlusion-queries-off](ue4/occlusion-queries-off.md) | active | mixed / mixed | lab | GOW3_HZB_REMAP, perf_hzb_occlusion | Occlusion queries off where the HZB remap cannot run (the port answers queries "visible") |
 | [particle-bounds](ue4/particle-bounds.md) | active | on / on | lab |  | GPU particle bounds: a 40 m box for GPU emitters without fixed bounds (eboot patch) |

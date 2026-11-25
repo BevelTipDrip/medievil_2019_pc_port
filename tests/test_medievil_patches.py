@@ -71,7 +71,7 @@ class MedievilPatchTests(unittest.TestCase):
         value = bytes.fromhex('8b4008660f1f440000')
         self.assertEqual(compile_patches(XML, [NAV], '01.00', SEGMENTS), [(0x2c91ddf, value)])
         self.assertEqual(compile_patches(XML, [NAV], '01.02', SEGMENTS), [(0x2c94b9f, value)])
-        self.assertNotIn(NAV, selected_patches(XML, '01.02', ''))
+        self.assertIn(NAV, selected_patches(XML, '01.02', ''))  # on by default since v2.5.0 (P18)
 
     def test_original_bytes_checked(self):
         # A one-segment ELF (file offset 0x1000, vaddr 0x1530000) holding the 01.02 BuildHZB bytes.
@@ -91,8 +91,8 @@ class MedievilPatchTests(unittest.TestCase):
         self.assertEqual(original_mismatches(XML, [HZB], '01.00', elf(dec_r14d, dec_eax)), [HZB])
 
     def test_default_patches(self):
-        self.assertEqual(selected_patches(XML, '01.02', ''), [NAME, BOUNDS])
-        self.assertEqual(selected_patches(XML, '01.00', ''), [NAME, BOUNDS])
+        self.assertEqual(selected_patches(XML, '01.02', ''), [NAME, BOUNDS, NAV])
+        self.assertEqual(selected_patches(XML, '01.00', ''), [NAME, BOUNDS, NAV])
 
 
 if __name__ == '__main__':

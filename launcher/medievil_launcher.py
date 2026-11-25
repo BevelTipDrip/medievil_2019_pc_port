@@ -786,6 +786,27 @@ DECK_SWITCH_ITEMS = graphics_options.DECK_SWITCH_ITEMS
 DECK_SWITCHES = {name: value for *_rest, env, _why in DECK_SWITCH_ITEMS for name, value in env.items()}
 
 
+NAV_PURGE_PATCH = 'Navigation path purge without fences (CPU)'
+
+
+def migrate_nav_purge_default(config=None):
+    """v2.5.0 turns the navigation path purge patch on by default (plan-work-queue.md P18). A selection saved
+    before lists it among the patches the page showed (game_patches_seen), so the new default would not reach
+    it: once, it is taken out of every title's seen list, which makes it a new default patch (on) until the
+    page has shown it again; a later choice on the page stays. settings.json's nav_purge_default marks it done.
+    Returns True when the file was changed."""
+    config = Path(config or CONFIG_FILE)
+    app = load_json(config, None)
+    if not isinstance(app, dict) or app.get('nav_purge_default'):
+        return False
+    for title, names in (app.get('game_patches_seen') or {}).items():
+        if isinstance(names, list) and NAV_PURGE_PATCH in names:
+            app['game_patches_seen'][title] = [n for n in names if n != NAV_PURGE_PATCH]
+    app['nav_purge_default'] = True
+    config.write_text(json.dumps(app, indent=2, ensure_ascii=False), encoding='utf-8')
+    return True
+
+
 def migrate_hdr_setting(config=None, ini=None):
     """settings.json before v2.5.0 kept HDR output as hdr (the launcher's Allow HDR output): written into
     medievil.ini once as hdr_output=1 when it was on and the ini has no hdr_output yet, then dropped from
@@ -3402,6 +3423,7 @@ def main():
     try:  # settings.json's Deck switches (before 2026-11-13) into medievil.ini, once; then the ini's one-time
         migrate_deck_switches()  # steps (settings_version), before anything reads or writes the ini
         migrate_hdr_setting()
+        migrate_nav_purge_default()
         graphics_options.migrate_settings(ini_path())
     except OSError:
         pass

@@ -2,10 +2,10 @@
 id: nav-purge-nofence
 title: Navigation path purge without the two mfences per refcount read (GOW3_NAV_PURGE_NOFENCE)
 area: ue4
-status: rejected
+status: active
 platforms: all
-default_windows: off
-default_deck: off
+default_windows: on
+default_deck: on
 origin: ours
 class: M
 commits: b98df73397
@@ -24,8 +24,10 @@ The Deck profile's top game-thread samples (guest 0x2c94ba2/ba5/ba8, ~6% of the 
 `ANavigationData::TickActor`, which purges `ActivePaths` every frame. Each entry's TWeakPtr reference count is read
 through the PS4 build's AtomicRead, `mfence; mov eax, [rax+8]; mfence`, which serialises the cache misses. The eboot
 patch "Navigation path purge without fences (CPU)" keeps the load and turns the fences into one 9-byte nop (01.00
-0x2c91ddf, 01.02 0x2c94b9f). Opt-in and restart-only: `GOW3_NAV_PURGE_NOFENCE=1` / `0` (run.py, extra-env.txt;
-Python-only, not in switches.tsv) or the launcher's Patches page (`isEnabled="false"`).
+0x2c91ddf, 01.02 0x2c94b9f). On by default since v2.5.0 (`isEnabled="true"`; launcher: Performance, after the
+Steam Deck switches); restart-only; `GOW3_NAV_PURGE_NOFENCE=1` / `0` forces it (run.py, extra-env.txt; Python-only,
+not in switches.tsv). Saved selections that had seen it off get it once (`migrate_nav_purge_default`: it leaves
+every title's `game_patches_seen`, settings.json `nav_purge_default` marks it done).
 
 ## Invariants
 
@@ -50,6 +52,14 @@ Python-only, not in switches.tsv) or the launcher's Patches page (`isEnabled="fa
   ~1.5 FPS cannot be judged; this restart-only result is inside that.
 
 ## History and pitfalls
+
+- **2026-11-25, the Sleeping Village (plan-work-queue.md P18), on by default:** at the user's 237 FPS cap the purge
+  became one of the game thread's top costs in the frame-time waves (GPU usage in the 70s): run 2 (no patch, still
+  camera at the Trolls Head) the game thread 18% -> 100% busy, the loop ~0.7 ms a frame of self time
+  (study-sv-hotspots.md); with the patch (run 4) it fell to 0.02 ms and left the hot list. Why it grows: the NPC
+  Blueprints run up to two path searches per NPC per frame and each path stays in ActivePaths until garbage
+  collection (61 s), so the list grows with frame rate x time (study-npc-tick-rate.md). Waves in fights remain
+  (task graph, PhysX scene queries, Blueprint VM: P18).
 
 - Tried: one launch with the patch against the round's other launches. Measured: no FPS change. Dropped because
   stage B, not the game thread, gates the Deck's frame, and the patch could not be A/B'd live.

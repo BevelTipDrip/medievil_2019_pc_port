@@ -289,6 +289,7 @@ class ControlMapTest(unittest.TestCase):
         from patches import game_profile
         profile = game_profile('CUSA11227', '01.02')
         pool, bounds = 'Native 4K framebuffer pool (512 MB)', 'GPU particle bounds'
+        nav = launcher.NAV_PURGE_PATCH  # a default since v2.5.0 (P18), shown on the page since 2026-11-07
         select = lambda **s: launcher.game_patch_selection(s, 'CUSA11227', profile)
         self.assertIsNone(select())  # no saved selection: run.py uses the file's defaults
         # Saved before game_patches_seen existed: the new default comes on, the chosen ones stay,
@@ -296,14 +297,39 @@ class ControlMapTest(unittest.TestCase):
         self.assertEqual(select(game_patches={'CUSA11227': [pool]}), [pool, bounds])
         self.assertEqual(select(game_patches={'CUSA11227': []}), [bounds])
         # Switched off after the page showed it: stays off.
-        self.assertEqual(select(game_patches={'CUSA11227': []}, game_patches_seen={'CUSA11227': [pool, bounds]}), [])
+        self.assertEqual(select(game_patches={'CUSA11227': []},
+                                game_patches_seen={'CUSA11227': [pool, bounds, nav]}), [])
         # Shown before it became a default (seen): not switched on behind the user's back.
-        self.assertEqual(select(game_patches={'CUSA11227': [pool]}, game_patches_seen={'CUSA11227': [pool]}),
+        self.assertEqual(select(game_patches={'CUSA11227': [pool]}, game_patches_seen={'CUSA11227': [pool, nav]}),
                          [pool, bounds])
         self.assertEqual(select(game_patches={'CUSA11227': [pool]},
-                                game_patches_seen={'CUSA11227': [pool, bounds]}), [pool])
+                                game_patches_seen={'CUSA11227': [pool, bounds, nav]}), [pool])
+        # Taken out of the seen list (migrate_nav_purge_default, once): a new default again, so on.
+        self.assertEqual(select(game_patches={'CUSA11227': [pool]},
+                                game_patches_seen={'CUSA11227': [pool, bounds]}), [pool, nav])
         env = launcher.game_environment({**launcher.APP_DEFAULTS, 'game_dir': '', 'game_patches': {}})
         self.assertNotIn('GOW3_PATCHES_ONLY', {k for k in env if k not in __import__('os').environ})
+
+    def test_nav_purge_default_migration(self):
+        # v2.5.0 (P18): the nav purge patch leaves every seen list once, so saved selections get the new default;
+        # a second run changes nothing, and the page's later choice is kept.
+        import json
+        import tempfile
+        from pathlib import Path
+        nav = launcher.NAV_PURGE_PATCH
+        with tempfile.TemporaryDirectory() as tmp:
+            config = Path(tmp) / 'settings.json'
+            config.write_text(json.dumps({'game_patches': {'CUSA11227': ['GPU particle bounds']},
+                                          'game_patches_seen': {'CUSA11227': ['GPU particle bounds', nav]}}),
+                              encoding='utf-8')
+            self.assertTrue(launcher.migrate_nav_purge_default(config))
+            saved = json.loads(config.read_text(encoding='utf-8'))
+            self.assertEqual(saved['game_patches_seen']['CUSA11227'], ['GPU particle bounds'])
+            self.assertTrue(saved['nav_purge_default'])
+            saved['game_patches_seen']['CUSA11227'].append(nav)  # the page showed it again, the user left it off
+            config.write_text(json.dumps(saved), encoding='utf-8')
+            self.assertFalse(launcher.migrate_nav_purge_default(config))
+            self.assertIn(nav, json.loads(config.read_text(encoding='utf-8'))['game_patches_seen']['CUSA11227'])
 
     def test_settings_keys_kept(self):
         # The redesign hides some options (player name) but keeps every saved setting working (hdr moved to
