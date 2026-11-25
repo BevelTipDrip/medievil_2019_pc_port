@@ -48,7 +48,7 @@ after one `Sync` and numbers copies by a second hook before `Submit` (`medievil_
   0x44) are UE 4.21 as built in this eboot; the hash walk caps steps at 2^22 and indices at 65,536.
 - `r.NumBufferedOcclusionQueries` stays 3 (T-HZ4e: the remaining queries are read 3 frames late, no spin).
 - Results are only as good as the HZB: its mips 5-10 were never rendered until N-22 (micro-mip-targets).
-- P2 host shadow (`23bef86`, fix `P2FIX`): a results copy goes to the tracked slot's host shadow (no page watch, no
+- P2 host shadow (`23bef86`, fix `965a409`): a results copy goes to the tracked slot's host shadow (no page watch, no
   guest write) only when it is exactly the slot's range (address and 256 KB) and the hook read the slot within the
   last 250 ms (`ShadowLive`); the decision is made when the copy is queued (`Entry::shadowed`). Everything else at
   or over the range goes to guest memory with its page watch, and a numbered copy that does drops the shadow (the
