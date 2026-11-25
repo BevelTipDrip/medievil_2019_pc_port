@@ -406,6 +406,47 @@ class DevBuildDiagnosticsTest(unittest.TestCase):
             launcher.dev_executable = saved
 
 
+class PortableModeTest(unittest.TestCase):
+    """The Game page's portable checkbox (switch_portable): portable.txt and the settings folder."""
+
+    def setUp(self):
+        import tempfile
+        self.saved = (launcher.PORTABLE, launcher.CONFIG_DIR, launcher.CONFIG_FILE)
+        self.tmp = tempfile.TemporaryDirectory()
+        self.port = Path(self.tmp.name)
+
+    def tearDown(self):
+        launcher.PORTABLE, launcher.CONFIG_DIR, launcher.CONFIG_FILE = self.saved
+        self.tmp.cleanup()
+
+    def test_on_writes_the_marker_and_moves_the_settings_folder(self):
+        folder = launcher.switch_portable(True, self.port)
+        self.assertTrue((self.port / 'portable.txt').exists())
+        self.assertEqual(folder, self.port / 'launcher-data')
+        self.assertEqual(launcher.CONFIG_FILE, self.port / 'launcher-data' / 'settings.json')
+        self.assertTrue(launcher.PORTABLE)
+
+    def test_on_keeps_old_portable_settings_as_backup(self):
+        data = self.port / 'launcher-data'
+        data.mkdir()
+        (data / 'settings.json').write_text('{"old": 1}', encoding='utf-8')
+        launcher.switch_portable(True, self.port)
+        self.assertEqual((data / 'settings.json.bak').read_text(encoding='utf-8'), '{"old": 1}')
+        self.assertFalse((data / 'settings.json').exists())
+
+    def test_off_removes_the_marker_and_uses_the_user_folder(self):
+        launcher.switch_portable(True, self.port)
+        folder = launcher.switch_portable(False, self.port)
+        self.assertFalse((self.port / 'portable.txt').exists())
+        self.assertEqual(folder, launcher.user_config_dir())
+        self.assertEqual(launcher.CONFIG_FILE, launcher.user_config_dir() / 'settings.json')
+        self.assertFalse(launcher.PORTABLE)
+
+    def test_portable_files_survive_updates(self):
+        self.assertIn('portable.txt', launcher.USER_FILES)
+        self.assertIn('launcher-data', launcher.USER_FILES)
+
+
 class ReleaseVersionTest(unittest.TestCase):
     def test_fork_release_is_newer_than_upstream_and_checks_the_fork(self):
         self.assertEqual(launcher.VERSION, '2.5.0')

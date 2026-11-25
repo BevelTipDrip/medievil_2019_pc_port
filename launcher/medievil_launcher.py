@@ -41,13 +41,42 @@ DATA_DIR = Path(os.environ.get('GOW3_DATA_DIR', PORT_DIR))
 # stay in the launcher folder (launcher-data) instead of %APPDATA% (~/.config on Linux); saves already
 # live there. Inside the read-only AppImage there is no portable.txt, so it never applies there.
 PORTABLE = (PORT_DIR / 'portable.txt').exists()
-if PORTABLE:
-    CONFIG_DIR = PORT_DIR / 'launcher-data'
-elif WINDOWS:
-    CONFIG_DIR = Path(os.environ.get('APPDATA') or os.environ.get('USERPROFILE') or PORT_DIR) / 'medievil-launcher'
-else:
-    CONFIG_DIR = Path(os.environ.get('XDG_CONFIG_HOME') or Path.home() / '.config') / 'medievil-launcher'
+
+
+def user_config_dir():
+    """The per-user settings folder, shared by every copy of the launcher that is not portable."""
+    if WINDOWS:
+        return Path(os.environ.get('APPDATA') or os.environ.get('USERPROFILE') or PORT_DIR) / 'medievil-launcher'
+    return Path(os.environ.get('XDG_CONFIG_HOME') or Path.home() / '.config') / 'medievil-launcher'
+
+
+CONFIG_DIR = PORT_DIR / 'launcher-data' if PORTABLE else user_config_dir()
 CONFIG_FILE = CONFIG_DIR / 'settings.json'
+
+
+def switch_portable(enabled, port_dir=None):
+    """Portable mode on or off from the Game page (2026-11-25): writes or removes portable.txt beside the
+    launcher and points CONFIG_DIR / CONFIG_FILE at where the settings live from now on (launcher-data, or the
+    per-user folder). The caller then saves the current settings there, so nothing is lost either way; a
+    launcher-data/settings.json left from before is kept as settings.json.bak. OSError: the folder is not
+    writable (e.g. under Program Files); nothing is changed then."""
+    global PORTABLE, CONFIG_DIR, CONFIG_FILE
+    port_dir = Path(port_dir or PORT_DIR)
+    marker = port_dir / 'portable.txt'
+    target = port_dir / 'launcher-data' if enabled else user_config_dir()
+    if enabled:
+        target.mkdir(parents=True, exist_ok=True)
+        marker.write_text('Launcher settings and caches are kept in the launcher-data folder beside this file.\n',
+                          encoding='utf-8')
+        old = target / 'settings.json'
+        if old.exists():
+            old.replace(target / 'settings.json.bak')
+    elif marker.exists():
+        marker.unlink()
+    PORTABLE = bool(enabled)
+    CONFIG_DIR = target
+    CONFIG_FILE = target / 'settings.json'
+    return CONFIG_DIR
 MOD_PRESETS = DATA_DIR / 'mods_presets.json'
 APP_NAME = 'MediEvil'
 MAX_LOG_LINES = 6000
@@ -1959,6 +1988,7 @@ class Launcher:
                       'Пусто: {} (там же кэш шейдеров).').format(DATA_DIR / 'user'), on_change=self.refresh_status)
         self.section(f, _('Saves'))
         self.build_save_backups(f)
+        self.build_portable(f)
         self.section(f, _('Language'))
         self.row(f, _('Game language', 'Язык игры'), self.choice(f, 'language', 'app', LANGUAGES))
         self.row(f, _('Voice language'), self.choice(f, 'ue4_voice', 'ini', VOICE_LANGUAGES),
@@ -1976,6 +2006,34 @@ class Launcher:
 
     def user_dir(self):
         return Path(self.var('user_dir', 'app').get() or DATA_DIR / 'user')
+
+    def build_portable(self, f):
+        """Portable mode as a checkbox (switch_portable). Not in the read-only AppImage."""
+        if os.environ.get('APPIMAGE'):
+            return
+        self.section(f, _('Launcher settings'))
+        var = self.tk.BooleanVar(value=PORTABLE)
+        self.check(f, None, None, _('Keep settings in this folder (portable)'),
+                   _('The launcher keeps its settings and caches in {} instead of {}, so this copy does not share '
+                     'them with other copies of the port (an older version, a second install). Switching moves '
+                     'the current settings. Saves stay where the Saves folder above says.').format(
+                       PORT_DIR / 'launcher-data', user_config_dir()), var=var)
+        busy = []
+
+        def toggled(*args):
+            if busy:
+                return
+            busy.append(True)
+            try:
+                switch_portable(var.get())
+                self.collect()
+            except OSError as error:
+                var.set(PORTABLE)
+                self.messagebox.showerror(APP_NAME, _('Portable mode could not be changed: {}').format(error))
+            finally:
+                busy.clear()
+
+        var.trace_add('write', toggled)
 
     def build_pkg_install(self, f):
         """A fake PKG (fPKG) is unpacked once into <its folder>/<TITLE_ID>; that becomes the game folder."""

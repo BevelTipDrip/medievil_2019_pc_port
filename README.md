@@ -189,8 +189,9 @@ Windows 11, RTX 4090, 4K. Some show the port's frame statistics along the top.
 3. On **Game**, either **Choose .pkg…** to install from your package, or **Browse…** to the folder with `eboot.bin`.
 4. Choose an **Output resolution** and **Render scale** on **Home** and press **PLAY**.
 
-`Play MediEvil.exe` starts the game with the saved settings, for shortcuts and Steam. With an empty file
-`portable.txt` next to `MediEvil.exe`, the launcher keeps its settings beside it. More in
+`Play MediEvil.exe` starts the game with the saved settings, for shortcuts and Steam. With **Keep settings in
+this folder (portable)** on the **Game** page (or an empty file `portable.txt` next to `MediEvil.exe`), the
+launcher keeps its settings beside it instead of sharing them with other copies. More in
 [README-Windows.txt](packaging/windows/README-Windows.txt).
 
 **Steam Deck and Linux**: download `MediEvil-x86_64.AppImage` from the same page and follow

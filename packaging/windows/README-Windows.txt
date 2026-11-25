@@ -47,9 +47,9 @@ Next time
 - "Play MediEvil.exe" starts the game straight away with the saved settings (shortcut, Steam).
 - Saves, shader cache and the log: user\ next to MediEvil.exe (keep it when updating).
 - Settings: medievil.ini next to MediEvil.exe; launcher options in %APPDATA%\medievil-launcher.
-- Portable mode (USB stick, several copies): create an empty file portable.txt next to
-  MediEvil.exe and the launcher keeps its options in launcher-data\ there instead. Updates keep
-  both.
+- Portable mode (USB stick, several copies): tick "Keep settings in this folder (portable)" on
+  the launcher's Game page (or create an empty file portable.txt next to MediEvil.exe) and the
+  launcher keeps its options in launcher-data\ there instead. Updates keep both.
 
 If something goes wrong
 - Black screen at start: Advanced > Clear shader cache, then start again.
