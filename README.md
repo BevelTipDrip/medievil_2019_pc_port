@@ -43,6 +43,11 @@ contrast) is not used.
 - The release build has no diagnostics compiled in (they live in a separate development build): about 7 times
   fewer frames over 6 ms in a heavy view than with them in.
 - Guest read/write locks no longer take a global lock or allocate memory on every use.
+- Levels with many NPCs (the Sleeping Village) had waves of uneven frame times, worst in fights. At high frame
+  rates the game's own engine code spent much of each frame on memory fences the PS4 build puts around three
+  checks: its navigation paths, the graphics resources waiting to be deleted, and its task queues. Three built-in
+  game patches remove them (on by default, launcher > Performance). With the navigation one on, the other two
+  cut frames over 6 ms in a test fight from about 64 to 17 a minute; big fights there still dip somewhat.
 - The mouse reader waits for input instead of waking about 660 times a second, and still reads every millisecond
   while the mouse moves.
 - Occlusion culling results stay on the host instead of being written into game memory every frame.

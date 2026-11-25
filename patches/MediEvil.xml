@@ -324,16 +324,16 @@
          operation). Each other fence becomes a 3-byte nop. The loops' exact bytes occur 4 times (Pop) and twice
          (Push) per version, other instantiations of the same template: all patched. 01.02 loop heads: Pop
          0x6e7c22 0x6f09e2 0xa48ac2 0xa48c52, Push 0x6ea2c2 0x6efd82; 01.00: Pop 0x6e5062 0x6ede22 0xa45e42
-         0xa45fd2, Push 0x6e7702 0x6ed1c2 (image offsets). Experimental, off by default (plan-work-queue.md P18 (3)):
-         on by default only after runs without trouble. -->
+         0xa45fd2, Push 0x6e7702 0x6ed1c2 (image offsets). On by default since v2.5.0 (plan-work-queue.md P18 (3);
+         run 5, with the RHI patch: frames over 6 ms in the Sleeping Village ~17 a minute vs ~64, no trouble). -->
     <Metadata Title="MediEvil"
-              Name="Task queue reads without extra fences (CPU, experimental)"
-              Note="Unreal's task queues read their head and tail with a full memory fence around every read, 6-8 fences per attempt, on every thread. This keeps the first fence of each attempt and drops the rest (the reads and the queue's atomic exchanges are unchanged): less CPU time in busy scenes. Experimental: off by default."
+              Name="Task queue reads without extra fences (CPU)"
+              Note="Unreal's task queues read their head and tail with a full memory fence around every read, 6-8 fences per attempt, on every thread. This keeps the first fence of each attempt and drops the rest (the reads and the queue's atomic exchanges are unchanged): less CPU time in busy scenes."
               Author="medievil_pc"
               PatchVer="1.0"
               AppVer="01.00"
               AppElf="eboot.bin"
-              isEnabled="false">
+              isEnabled="true">
         <PatchList>
             <!-- mfence -> nop dword [rax] (the reads stay) -->
             <Line Type="bytes" Address="0x00ae5069" Value="0f1f00" Original="0faef0"/>
@@ -377,13 +377,13 @@
         </PatchList>
     </Metadata>
     <Metadata Title="MediEvil"
-              Name="Task queue reads without extra fences (CPU, experimental)"
-              Note="Unreal's task queues read their head and tail with a full memory fence around every read, 6-8 fences per attempt, on every thread. This keeps the first fence of each attempt and drops the rest (the reads and the queue's atomic exchanges are unchanged): less CPU time in busy scenes. Experimental: off by default."
+              Name="Task queue reads without extra fences (CPU)"
+              Note="Unreal's task queues read their head and tail with a full memory fence around every read, 6-8 fences per attempt, on every thread. This keeps the first fence of each attempt and drops the rest (the reads and the queue's atomic exchanges are unchanged): less CPU time in busy scenes."
               Author="medievil_pc"
               PatchVer="1.0"
               AppVer="01.02"
               AppElf="eboot.bin"
-              isEnabled="false">
+              isEnabled="true">
         <PatchList>
             <!-- mfence -> nop dword [rax] (the reads stay) -->
             <Line Type="bytes" Address="0x00ae7c29" Value="0f1f00" Original="0faef0"/>

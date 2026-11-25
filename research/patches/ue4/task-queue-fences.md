@@ -1,11 +1,11 @@
 ---
 id: task-queue-fences
-title: "Task queue reads without extra fences: UE4's lock-free FIFO Pop / Push keep one mfence per pass (experimental)"
+title: "Task queue reads without extra fences: UE4's lock-free FIFO Pop / Push keep one mfence per pass"
 area: ue4
-status: experimental
+status: active
 platforms: all
-default_windows: off
-default_deck: off
+default_windows: on
+default_deck: on
 origin: ours
 class: M
 commits:
@@ -23,11 +23,12 @@ UE 4.21's `TLockFreePointerListFIFOBase` (the task graph's queues) is a Michael-
 the head's next link and Head again; Push reads Tail, its next link and Tail again; both publish only with
 `lock cmpxchg`. The PS4 build's AtomicRead wraps every read in `mfence; load; mfence`: 8 fences a Pop pass, 6 a
 Push pass, on every thread that uses a task queue. The built-in eboot patch "Task queue reads without extra fences
-(CPU, experimental)" keeps the first fence of each pass and turns the others into `nop dword [rax]` (0f1f00): 7
+(CPU)" keeps the first fence of each pass and turns the others into `nop dword [rax]` (0f1f00): 7
 per Pop copy, 5 per Push copy, 38 per version. The loops' exact bytes occur 4 times (Pop) and twice (Push) per
 version (other instantiations of the template): all patched. Loop heads (image offsets) 01.02: Pop 0x6e7c22,
 0x6f09e2, 0xa48ac2, 0xa48c52, Push 0x6ea2c2, 0x6efd82; 01.00: Pop 0x6e5062, 0x6ede22, 0xa45e42, 0xa45fd2, Push
-0x6e7702, 0x6ed1c2. Off by default; launcher: Performance, after the RHI patch; restart-only.
+0x6e7702, 0x6ed1c2. On by default since v2.5.0 (the user, 2026-11-25, after run 5); launcher: Performance, after
+the RHI patch; restart-only. Renamed from "... (CPU, experimental)": a saved selection gets it as a new default.
 
 ## Invariants
 
@@ -43,7 +44,9 @@ version (other instantiations of the template): all patched. Loop heads (image o
 
 - study-sv-hotspots.md: the game thread's biggest rise in the Sleeping Village fights (task-graph queues 0.65 ->
   1.1-1.3 ms a frame; the FIFO fence groups 0.5-0.8 ms of the game thread, ~1.1 ms across threads).
-- Built 2026-11-25; not run.
+- Built 2026-11-25. Run 5 (with the RHI patch, 15 min in the Sleeping Village): frames over 6 ms ~17 a minute vs
+  ~64 (run 4, navigation patch only); no hang, stall or missing work; GPU usage dips to ~90% instead of the 70s.
+  The same waves exist in the bestrun build (21886b6): the patches reduce them below it (the user).
 
 ## History and pitfalls
 

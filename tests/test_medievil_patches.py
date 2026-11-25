@@ -11,7 +11,7 @@ BOUNDS = 'GPU particle bounds'
 HZB = 'Finer occlusion culling (low render resolutions, Steam Deck)'
 NAV = 'Navigation path purge without fences (CPU)'
 RHI = 'RHI pending-delete check without fences (CPU)'
-TASKQ = 'Task queue reads without extra fences (CPU, experimental)'
+TASKQ = 'Task queue reads without extra fences (CPU)'
 SEGMENTS = [(0, 0x6000000)]
 
 
@@ -85,7 +85,7 @@ class MedievilPatchTests(unittest.TestCase):
             self.assertEqual(len(lines), 38)
             self.assertEqual(lines[0], (first, nop))
             self.assertTrue(all(value == nop for _addr, value in lines))
-        self.assertNotIn(TASKQ, selected_patches(XML, '01.02', ''))  # experimental: off by default
+        self.assertIn(TASKQ, selected_patches(XML, '01.02', ''))  # on by default since v2.5.0
 
     def test_nav_purge_without_fences(self):
         # ANavigationData::TickActor's purge: mfence; mov eax, [rax+8]; mfence -> the load and a nop.
@@ -112,8 +112,8 @@ class MedievilPatchTests(unittest.TestCase):
         self.assertEqual(original_mismatches(XML, [HZB], '01.00', elf(dec_r14d, dec_eax)), [HZB])
 
     def test_default_patches(self):
-        self.assertEqual(selected_patches(XML, '01.02', ''), [NAME, BOUNDS, NAV, RHI])
-        self.assertEqual(selected_patches(XML, '01.00', ''), [NAME, BOUNDS, NAV, RHI])
+        self.assertEqual(selected_patches(XML, '01.02', ''), [NAME, BOUNDS, NAV, RHI, TASKQ])
+        self.assertEqual(selected_patches(XML, '01.00', ''), [NAME, BOUNDS, NAV, RHI, TASKQ])
 
 
 if __name__ == '__main__':

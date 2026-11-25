@@ -222,7 +222,7 @@ _UE4 config overrides, eboot patches, game hooks, particles, render scale, boot 
 | [rhi-pending-deletes-nofence](ue4/rhi-pending-deletes-nofence.md) | active | on / on | - |  | "RHI pending-delete check without the two mfences per NumRefs read (FRHIResource::FlushPendingDeletes)" |
 | [S1-streaming](ue4/s1-streaming.md) | rejected | off / off | - |  | r.Streaming.AmortizeCPUToGPUCopy to split the panning bursts (streaming test S1) |
 | [single-particle-pass](ue4/single-particle-pass.md) | active | on / on | lab | perf_particle_single_pass, GOW3_PARTICLE_FIXED_STEP, toggle2:ParticleFixedStep | Single GPU particle pass (r.GPUParticle.FixDeltaSeconds=0): on by default with the flip guard, live switch |
-| [task-queue-fences](ue4/task-queue-fences.md) | experimental | off / off | - |  | "Task queue reads without extra fences: UE4's lock-free FIFO Pop / Push keep one mfence per pass (experimental)" |
+| [task-queue-fences](ue4/task-queue-fences.md) | active | on / on | - |  | "Task queue reads without extra fences: UE4's lock-free FIFO Pop / Push keep one mfence per pass" |
 | [ue4-dlaa](ue4/ue4-dlaa.md) | diagnostic | off / n/a | deck-lab | GOW3_UE4_DLSS, GOW3_UE4_UPSCALER, GOW3_UE4_HOOKS … | DLSS in place of UE4's TAA - DLAA at render scale 100 (U3), upscaling at the TAAU dispatch below it (U4); F9 switches live |
 | [ue4-fsr](ue4/ue4-fsr.md) | diagnostic | off / off | - | GOW3_FSR | AMD FSR 3.1 in place of UE4's TAA - native AA at render scale 100, upscaling below it; an Ue4Upscaler backend |
 | [ue4-motion-vectors](ue4/ue4-motion-vectors.md) | diagnostic | off / off | deck-lab | GOW3_UE4_MOTION_VIEW | UE4 motion vectors (U2): the game's velocity, else camera motion from depth and ClipToPrevClip, with a debug view (F10) |

@@ -291,6 +291,7 @@ class ControlMapTest(unittest.TestCase):
         pool, bounds = 'Native 4K framebuffer pool (512 MB)', 'GPU particle bounds'
         nav = launcher.NAV_PURGE_PATCH  # a default since v2.5.0 (P18), shown on the page since 2026-11-07
         rhi = 'RHI pending-delete check without fences (CPU)'  # a new default in v2.5.0: never seen before
+        taskq = 'Task queue reads without extra fences (CPU)'  # likewise
         select = lambda **s: launcher.game_patch_selection(s, 'CUSA11227', profile)
         self.assertIsNone(select())  # no saved selection: run.py uses the file's defaults
         # Saved before game_patches_seen existed: the new default comes on, the chosen ones stay,
@@ -299,18 +300,18 @@ class ControlMapTest(unittest.TestCase):
         self.assertEqual(select(game_patches={'CUSA11227': []}), [bounds])
         # Switched off after the page showed it: stays off.
         self.assertEqual(select(game_patches={'CUSA11227': []},
-                                game_patches_seen={'CUSA11227': [pool, bounds, nav, rhi]}), [])
-        # A default the page never showed (rhi) comes on in a saved selection.
+                                game_patches_seen={'CUSA11227': [pool, bounds, nav, rhi, taskq]}), [])
+        # Defaults the page never showed (rhi, taskq) come on in a saved selection.
         self.assertEqual(select(game_patches={'CUSA11227': []},
-                                game_patches_seen={'CUSA11227': [pool, bounds, nav]}), [rhi])
+                                game_patches_seen={'CUSA11227': [pool, bounds, nav]}), [rhi, taskq])
         # Shown before it became a default (seen): not switched on behind the user's back.
         self.assertEqual(select(game_patches={'CUSA11227': [pool]},
-                                game_patches_seen={'CUSA11227': [pool, nav, rhi]}), [pool, bounds])
+                                game_patches_seen={'CUSA11227': [pool, nav, rhi, taskq]}), [pool, bounds])
         self.assertEqual(select(game_patches={'CUSA11227': [pool]},
-                                game_patches_seen={'CUSA11227': [pool, bounds, nav, rhi]}), [pool])
+                                game_patches_seen={'CUSA11227': [pool, bounds, nav, rhi, taskq]}), [pool])
         # Taken out of the seen list (migrate_nav_purge_default, once): a new default again, so on.
         self.assertEqual(select(game_patches={'CUSA11227': [pool]},
-                                game_patches_seen={'CUSA11227': [pool, bounds, rhi]}), [pool, nav])
+                                game_patches_seen={'CUSA11227': [pool, bounds, rhi, taskq]}), [pool, nav])
         env = launcher.game_environment({**launcher.APP_DEFAULTS, 'game_dir': '', 'game_patches': {}})
         self.assertNotIn('GOW3_PATCHES_ONLY', {k for k in env if k not in __import__('os').environ})
 

@@ -287,7 +287,7 @@ BUILTIN_PATCH_ROWS = {
     'Native 4K framebuffer pool (512 MB)': 'perf_4k_memory',
     'Navigation path purge without fences (CPU)': 'deck',
     'RHI pending-delete check without fences (CPU)': 'deck',
-    'Task queue reads without extra fences (CPU, experimental)': 'deck',
+    'Task queue reads without extra fences (CPU)': 'deck',
 }
 
 
