@@ -21,6 +21,17 @@ occlusion, reflections and volumetric fog still on.
 > folder or a fake package (.pkg). This project is not affiliated with Sony Interactive
 > Entertainment or Other Ocean. MediEvil is a trademark of Sony Interactive Entertainment.
 
+## What's new in 2.5.1
+
+- **Fixed: 2.5.0 closed one second after start on some PCs** (2.4.0 started fine on them). A program hooked into
+  the game's graphics calls (an overlay, capture tool or driver) changed a value that the game expects to stay
+  untouched, while the shader cache was starting up; 2.5.0 happened to depend on that value. The port now protects
+  it around those calls. If you turned off **Use pipeline binary cache** to get 2.5.0 running, you can turn it back
+  on. The log now lists the Vulkan layers on your system, to help with crash reports.
+- **Portable mode as a checkbox**: **Keep settings in this folder (portable)** on the launcher's **Game** page keeps
+  this copy's settings beside it, so side-by-side copies (an older version, a second install) no longer share and
+  overwrite each other's settings.
+
 ## What's new in 2.5.0
 
 **HDR.** With **HDR output** on (launcher > Display, or the in-game menu's Display tab) and HDR on in Windows, the
