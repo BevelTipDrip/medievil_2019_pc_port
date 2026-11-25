@@ -133,7 +133,7 @@ tick path was verified (T-MS10; the user, 2026-11-12).
   221.9 at the static view (best run 233.2 / 227.7).
   **Review 2026-11-24 (review-perf-changes-20261124.md 2):** in fast movement the wait alone drained about every
   4 ms (245 wake-ups for 1,495 reports a second), beating against the 4.2 ms frame (uneven steps, up to ~4 ms more
-  lag; frame times do not show it). **Fix built (MOUSEFIX), not run:** `drain()` returns the reports it read; while it
+  lag; frame times do not show it). **Fix built (`2c41b0b`), not run:** `drain()` returns the reports it read; while it
   reads some the loop skips the wait and drains every 1 ms as before P1, and the first empty drain goes back to the
   wait (a still mouse: ~no wake-ups). Check: `GOW3_MOUSE_LOG=1` (dev) about 1,000 wake-ups/s in fast movement, ~0
   still; the user's feel of fast mouse look.
