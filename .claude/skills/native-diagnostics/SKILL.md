@@ -37,7 +37,7 @@ Read the card's Invariants before using one: they say what it costs while on and
 
 | Switch / key | What it gives | Where | Periodic / cost |
 |---|---|---|---|
-| `present_frame_trace=1` (ini; `GOW3_FLIP_TRACE`) | every flip's stages with ns; `start` and `wall` rows for alignment | `user/logs/flip-trace.csv` | per frame (~8 rows) kept in memory, written once at exit (a killed process writes nothing); not the FPS log; tools `flip_*.py` |
+| `present_frame_trace=1` (ini; `GOW3_FLIP_TRACE`) | every flip's stages with ns; `start` and `wall` rows for alignment | `user/logs/flip-traces/flip-trace-<date-time>.csv` (a new file each start, newest 60 kept) | per frame (~8 rows) kept in memory, written once at exit (a killed process writes nothing); not the FPS log; tools `flip_*.py` |
 | `GOW3_FPS_LOG=0` | silences the periodic `Perf:` FPS line | log | keep 0 for perf runs |
 | `GOW3_FRAME_STATS=1` | 5 s stats blocks (uploads, faults, region cache, backing copies, fences ...) | log | **periodic**: diagnostic runs only |
 | `GOW3_COPY_FAULT_LOG` (dev build only: default on, `0` off; not in the release build since P5) | a guest fault inside a host copy, before / after handling | log | event only (first 20, then powers of two); off = no per-copy work |

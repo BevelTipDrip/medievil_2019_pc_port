@@ -427,7 +427,8 @@ PRESENT_SWITCHES = [
 # Advanced > Diagnostics: one CSV line per flip stage (GOW3_FLIP_TRACE, graphics_options.present_environment);
 # not the frame statistics' 5 s summary.
 FRAME_TRACE = ('present_frame_trace', 'Frame timing trace',
-               'Writes every frame\'s timing to user/logs/flip-trace.csv (overwritten at each start).')
+               'Writes every frame\'s timing to a new file each start, user/logs/flip-traces/'
+               'flip-trace-<date-time>.csv (the newest 60 are kept).')
 # One VSync control (vsync_choice_var): On / Off set the vsync key the in-game menu also switches
 # (live); the two special modes set a fixed present_mode, which overrides that switch.
 VSYNC_CHOICES = [('on', ('On',)), ('off', ('Off',)), ('immediate', ('Off, allow tearing',)),

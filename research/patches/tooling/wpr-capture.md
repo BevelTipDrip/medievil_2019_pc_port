@@ -21,7 +21,7 @@ checked:
 ## What it does
 
 `wpr-hotkey.ps1` (elevated) records into WPR's in-memory ring and saves the seconds before a key press
-(`research-data\wpr\<tag>-N.etl` + `.times.txt`); `-Forward` starts a timed capture (`wpr-capture.ps1`) instead.
+(`research-data\wpr\<tag>-<yyyyMMdd-HHmmss>.etl` + `.times.txt`, never overwriting: `Get-UniqueTraceName`, since 2026-11-25; one-click: `wpr-session.ps1`, which elevates itself and runs F8 with the Jitter profile); `-Forward` starts a timed capture (`wpr-capture.ps1`) instead.
 `wpr-common.ps1` (dot-sourced) resolves the trace folder through junctions (`Get-RealPath`), checks free space on
 that drive and picks the ADK's WPR. `wpr-jitter.wprp!Jitter`: context switches and ready-thread events without
 stacks, 1 kHz samples with stacks, DPC and interrupts, 3 GB of buffers (about 90 s at 237 FPS);
@@ -52,5 +52,9 @@ start: a version without them recorded no DxgKrnl event), disk I/O and hard faul
   6 vs 2 per minute against no profiler.
 
 ## History and pitfalls
+
+- 2026-11-25: the hotkey script numbered `<tag>-1`, `-2` ... from 1 each session, so a reused tag replaced an
+  earlier session's capture (run 2's first Sleeping Village capture; its export survived). Names now carry the
+  date and time and are checked against existing files.
 
 - The earlier analyses of spikes-2 (game thread "saturated", push-pull) measured the CPU profile's own cost.

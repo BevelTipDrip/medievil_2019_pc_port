@@ -232,5 +232,32 @@ class SettingsVersionTest(unittest.TestCase):
         self.assertEqual(g.DEFAULTS['stale_readback'], '1')
 
 
+class FlipTracePathTest(unittest.TestCase):
+    """One frame timing trace file per start (2026-11-25): never overwritten, the oldest pruned."""
+
+    def test_new_name_each_start_and_pruning(self):
+        import datetime
+        import os
+        import time
+        with tempfile.TemporaryDirectory() as tmp:
+            now = datetime.datetime(2026, 11, 25, 4, 17, 29)
+            first = g.flip_trace_path(tmp, now)
+            self.assertEqual(first.name, 'flip-trace-20261125-041729.csv')
+            first.parent.mkdir(parents=True)
+            first.write_text('x')
+            self.assertEqual(g.flip_trace_path(tmp, now).name, 'flip-trace-20261125-041729-2.csv')  # same second
+            for i in range(5):
+                f = first.parent / f'flip-trace-2026112{i}-000000.csv'
+                f.write_text('x')
+                os.utime(f, (time.time() - 1000 + i, time.time() - 1000 + i))
+            g.flip_trace_path(tmp, now, keep=3)  # keeps the 2 newest, room for the new one
+            self.assertEqual(len(list(first.parent.glob('flip-trace-*.csv'))), 2)
+            self.assertTrue(first.exists())  # the newest survives
+
+    def test_only_when_the_trace_is_on(self):
+        self.assertNotIn('GOW3_FLIP_TRACE', g.present_environment({'present_frame_trace': '0'}, 'x.csv'))
+        self.assertEqual(g.present_environment({'present_frame_trace': '1'}, 'x.csv')['GOW3_FLIP_TRACE'], 'x.csv')
+
+
 if __name__ == '__main__':
     unittest.main()

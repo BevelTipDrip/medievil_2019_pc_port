@@ -9,8 +9,8 @@
 # in it, i.e. the seconds BEFORE the press (how many depends on the profile's buffers and the load;
 # the trace shows it), then recording restarts. Nothing of an event is lost to start-up time.
 # -Forward: a press starts a -Seconds recording instead (wpr-capture.ps1, at once).
-# Traces: research-data\wpr\<tag>-1.etl, -2, ... (through its real path: wpr-common.ps1);
-# <tag>-N.times.txt holds the save time. One beep: saving / recording; two beeps: saved; one low
+# Traces: research-data\wpr\<tag>-<yyyyMMdd-HHmmss>.etl, one per press, never overwriting an earlier one
+# (Get-UniqueTraceName, wpr-common.ps1; through its real path); <name>.times.txt holds the save time. One beep: saving / recording; two beeps: saved; one low
 # beep: failed (the message says why; recording restarts). Presses while saving are ignored.
 # Ctrl+C here ends it.
 param([string]$Key = 'F9', [string]$Tag = 'capture', [string]$WprProfile = 'CPU', [switch]$Forward,
@@ -64,17 +64,18 @@ try {
         [console]::Beep(880, 200)
         try {
             if ($Forward) {
-                & $capture -Seconds $Seconds -Tag "$Tag-$n" -WprProfile $WprProfile -Delay 0 -MinFreeGB $MinFreeGB
+                & $capture -Seconds $Seconds -Tag $Tag -WprProfile $WprProfile -Delay 0 -MinFreeGB $MinFreeGB
             } else {
-                $etl = Join-Path $dir "$Tag-$n.etl"
+                $name = Get-UniqueTraceName $Tag
+                $etl = Join-Path $dir "$name.etl"
                 "saved $(Get-Date -Format 'HH:mm:ss.fff') (ring buffer: the trace ends here)" |
-                    Out-File -Encoding utf8 (Join-Path $dir "$Tag-$n.times.txt")
-                & $wpr -stop $etl "MediEvil $Tag-$n" -skipPdbGen
+                    Out-File -Encoding utf8 (Join-Path $dir "$name.times.txt")
+                & $wpr -stop $etl "MediEvil $name" -skipPdbGen
                 if ($LASTEXITCODE -ne 0) {
                     # A failed stop leaves the profile running: cancel it, or every later start fails
                     # with "The profiles are already running" (0xc5583001).
                     $code = $LASTEXITCODE
-                    "stop failed ($code)" | Out-File -Encoding utf8 -Append (Join-Path $dir "$Tag-$n.times.txt")
+                    "stop failed ($code)" | Out-File -Encoding utf8 -Append (Join-Path $dir "$name.times.txt")
                     & $wpr -cancel 2>$null | Out-Null
                     Start-Ring
                     throw "wpr -stop failed ($code): nothing saved; recording restarted."

@@ -163,13 +163,16 @@ def main():
         print(f'Deck switches: {deck_summary}', flush=True)
     # Presentation settings (launcher > Performance > Presentation); derived, so an in-game
     # restart takes the new values.
-    trace = PORT / 'user' / 'logs' / 'flip-trace.csv'
+    # A new frame timing trace file each start (graphics_options.flip_trace_path); chosen only when the trace is on.
+    trace = (graphics_options.flip_trace_path(PORT / 'user' / 'logs')
+             if ini_values.get('present_frame_trace') == '1' else None)
     for key, value in graphics_options.present_environment(ini_values, trace).items():
         if key not in env:
             env[key] = value
             derived.append(key)
     if 'GOW3_FLIP_TRACE' in derived:
-        trace.parent.mkdir(parents=True, exist_ok=True)
+        Path(env['GOW3_FLIP_TRACE']).parent.mkdir(parents=True, exist_ok=True)
+        print(f"Flip trace: this run's file is {env['GOW3_FLIP_TRACE']}", flush=True)
     if not env.get('GOW3_FSR411_DIR') and not (PORT / 'fsr4_411').is_dir() and (data / 'fsr4_411').is_dir():
         env['GOW3_FSR411_DIR'] = str(data / 'fsr4_411')
     # FSR 4's v07 model files (tools/fetch_fsr4_assets.sh): beside the port, else in the data directory

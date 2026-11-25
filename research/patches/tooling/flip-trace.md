@@ -53,7 +53,9 @@ at the window-close exit (`gow3gpu.cpp`, before `std::_Exit`, which skips atexit
 - The `start` row's ns must stay the absolute origin (not 0), and later rows relative to it: `flip_toggle_ab.py`
   (and `frame_clocks.py`, `state_power.py`) and WPR alignment read it. It carries `flip_arg` 0, so tools that key by
   `flip_arg` (`flip_stages.py`) file it under frame tag 0. It is captured when `Get()` first runs.
-- The launcher's file is opened with `"w"`: each start overwrites `user/logs/flip-trace.csv`.
+- One file per start since 2026-11-25: run.py picks `user/logs/flip-traces/flip-trace-<yyyymmdd-hhmmss>.csv`
+  (`graphics_options.flip_trace_path`; -2, -3 ... if taken; the newest 60 kept) and prints it ("Flip trace: this
+  run's file is ..."). Before, `user/logs/flip-trace.csv` was opened with `"w"` and each start overwrote it.
 
 ## Interactions
 

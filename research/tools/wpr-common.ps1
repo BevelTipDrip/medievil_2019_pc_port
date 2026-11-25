@@ -23,6 +23,20 @@ $TraceDir = 'C:\Users\Ty\MediEvil\research-data\wpr'
 New-Item -ItemType Directory -Force $TraceDir | Out-Null
 $TraceDir = Get-RealPath $TraceDir
 
+# A trace name no earlier capture has: <tag>-<yyyyMMdd-HHmmss>, with -2, -3 ... if that exists too. Captures
+# are never overwritten (2026-11-25: a reused tag restarted the numbering at 1 and replaced an earlier session's
+# trace). Returns the base name; <base>.etl and <base>.times.txt go into $TraceDir.
+function Get-UniqueTraceName([string]$Tag) {
+    $base = "$Tag-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+    $name = $base
+    $n = 2
+    while ((Test-Path (Join-Path $TraceDir "$name.etl")) -or (Test-Path (Join-Path $TraceDir "$name.times.txt"))) {
+        $name = "$base-$n"
+        $n++
+    }
+    $name
+}
+
 # Free space where the traces go (GB).
 function Get-TraceFreeGB { (Get-PSDrive $TraceDir.Substring(0, 1)).Free / 1GB }
 

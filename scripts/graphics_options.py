@@ -646,6 +646,31 @@ PRESENT_LIMITERS = {
 }
 
 
+FLIP_TRACES_KEPT = 60  # newest flip-trace-*.csv files kept (each ~1 MB a minute of play)
+
+
+def flip_trace_path(logs, now=None, keep=FLIP_TRACES_KEPT):
+    """A new frame timing trace file for this start (2026-11-25: one per session, never overwritten):
+    <logs>/flip-traces/flip-trace-<yyyymmdd-hhmmss>.csv (-2, -3 ... if taken). The oldest files beyond `keep`
+    are deleted. The game writes the file at exit; the run log names it ("Flip trace: N rows written to ...")."""
+    import datetime
+    folder = Path(logs) / 'flip-traces'
+    stamp = (now or datetime.datetime.now()).strftime('%Y%m%d-%H%M%S')
+    path = folder / f'flip-trace-{stamp}.csv'
+    n = 2
+    while path.exists():
+        path = folder / f'flip-trace-{stamp}-{n}.csv'
+        n += 1
+    if folder.is_dir():
+        old = sorted(folder.glob('flip-trace-*.csv'), key=lambda p: p.stat().st_mtime)
+        for stale in old[:max(0, len(old) - (keep - 1))]:
+            try:
+                stale.unlink()
+            except OSError:
+                pass
+    return path
+
+
 def present_environment(ini, trace_path=None):
     """The environment of the presentation settings in medievil.ini."""
     env = {}

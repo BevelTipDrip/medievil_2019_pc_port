@@ -27,16 +27,29 @@ Cards: `research/patches/tooling/flip-trace.md`, `tooling/wpr-capture.md`.
 - The flip trace itself fsyncs nothing but flushes every 2,048 lines (~1.2 s): it was present in flat stretches
   too, so it is not the cause of spikes; keep it in mind for very fine effects.
 - No heavy work (exports, builds) while the game runs; the user's frames are the measurement.
+- **Every capture and every frame timing trace has its own name; nothing is ever overwritten** (2026-11-25: a
+  reused WPR tag restarted the numbering at 1 and replaced an earlier session's capture; the flip trace was one
+  file replaced at each start, so a restart lost the previous session's frames). WPR traces are
+  `<tag>-<yyyyMMdd-HHmmss>.etl` (+ `.times.txt`), flip traces `user\logs\flip-traces\flip-trace-<yyyymmdd-hhmmss>.csv`
+  (the newest 60 kept; the run log names the file: "Flip trace: this run's file is ..."). Match a capture to its
+  flip trace by time.
+- Big exports (an xperf CSV is ~60 MB a second) go under `research-data\...` (D:), never the scratchpad (C: is
+  nearly full).
 
 ## Setup (user's go for the launch; the user runs WPR, it needs admin)
 
-1. `medievil.ini`: `present_frame_trace=1` (writes `user\logs\flip-trace.csv`, replaced each start). Byte-safe
-   CRLF edit with a backup (see the build-ab skill). `extra-env.txt`: no periodic logging
+1. `medievil.ini`: `present_frame_trace=1` (launcher: Advanced > Diagnostics > Frame timing trace; a new
+   `user\logs\flip-traces\flip-trace-<date-time>.csv` each start, written at exit). Byte-safe edit with a backup
+   (see the build-ab skill), or have the user tick it (the launcher rewrites the ini). `extra-env.txt`: no periodic logging
    (`GOW3_FPS_LOG=0`, no `GOW3_FRAME_STATS`, `GOW3_COPY_FAULT_LOG=0` if the copy-fault trace is not wanted).
-2. The user, in an elevated PowerShell, after the profiler-free stretch:
-   `powershell -ExecutionPolicy Bypass -File C:\Users\Ty\MediEvil\medievil_2019_pc_port\research\tools\wpr-hotkey.ps1 -Key F8 -Tag <tag> -WprProfile "C:\Users\Ty\MediEvil\medievil_2019_pc_port\research\tools\wpr-jitter.wprp!Jitter"`
-   It prints `Traces go to D:\MediEvil-archive\research-data\wpr` (the junction's real path: WPR refuses a path
-   through a junction). Press F8 right after seeing the effect; two beeps = saved, a low beep = failed (message).
+2. The user, after the profiler-free stretch, runs `research\tools\wpr-session.ps1` (right-click > Run with
+   PowerShell; it asks for administrator rights itself; F8 and the Jitter profile by default; `-Tag <name>`
+   optional):
+   `powershell -ExecutionPolicy Bypass -File C:\Users\Ty\MediEvil\medievil_2019_pc_port\research\tools\wpr-session.ps1 -Tag <tag>`
+   (it runs `wpr-hotkey.ps1 -Key F8 -WprProfile <tools>\wpr-jitter.wprp!Jitter`). It prints
+   `Traces go to D:\MediEvil-archive\research-data\wpr` (the junction's real path: WPR refuses a path through a
+   junction). Press F8 right after seeing the effect; two beeps = saved (`<tag>-<date-time>.etl`), a low beep =
+   failed (message).
 3. Record the time of each user message as it arrives (`date +%H:%M:%S >> <scratchpad>/run-notes.txt`): the user's
    messages carry no timestamps on our side. Ctrl+C the script when done (the ring restarts after each save).
 
