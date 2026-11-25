@@ -7,18 +7,18 @@
  * one character at a time: ~60-70 us a line into the pipe vs ~1.5 us for one write (measured 2026-11-24). The link
  * wraps both families (-Wl,--wrap=..., gpu/CMakeLists.txt, medievil-runtime only): a line for stdout / stderr is
  * formatted into a buffer by the same family's formatter and written with one fwrite, so the stream stays
- * unbuffered, the text is the same, and a line is no longer split between threads. Other streams go to the real
- * function. puts / fputs / fwrite already write once per call. Linux: glibc writes once per call (not built). */
+ * unbuffered, the text is the same, and a line is no longer split between threads. puts / fputs / fwrite already
+ * write once per call. Linux: glibc writes once per call (not built).
+ *
+ * Every stream goes the same way (files too: one fwrite into the stream's buffer, the same bytes). No __real_*
+ * call: with LTO, lld resolved __real___mingw_vfprintf back into the wrapper itself, whose "other stream" branch then
+ * jumped into its own body with a released stack frame; the first fprintf to a file crashed (the wait trace,
+ * 2026-11-25; the flip trace's writer would have too). */
 #define __USE_MINGW_ANSI_STDIO 0
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-int __real_printf(const char *format, ...);
-int __real_fprintf(FILE *stream, const char *format, ...);
-int __real_vprintf(const char *format, va_list args);
-int __real_vfprintf(FILE *stream, const char *format, va_list args);
-int __real___mingw_vfprintf(FILE *stream, const char *format, va_list args);
 int __mingw_vsnprintf(char *buffer, size_t size, const char *format, va_list args);
 
 /* Formats with `format_fn` (vsnprintf semantics) and writes the result with one fwrite. */
@@ -48,17 +48,12 @@ static int write_line(FILE *stream, FormatFn format_fn, const char *format, va_l
     return written;
 }
 
-static int is_console_stream(FILE *stream) {
-    return stream == stdout || stream == stderr;
-}
-
 static int ucrt_format(char *buffer, size_t size, const char *format, va_list args) {
     return vsnprintf(buffer, size, format, args);
 }
 
 /* UCRT family (C++ code, C files without _GNU_SOURCE). */
 int __wrap_vfprintf(FILE *stream, const char *format, va_list args) {
-    if (!is_console_stream(stream)) return __real_vfprintf(stream, format, args);
     return write_line(stream, ucrt_format, format, args);
 }
 int __wrap_vprintf(const char *format, va_list args) {
@@ -81,7 +76,6 @@ int __wrap_printf(const char *format, ...) {
 
 /* mingw family (runtime C files with _GNU_SOURCE: printf / fprintf / vfprintf are __mingw_* there). */
 int __wrap___mingw_vfprintf(FILE *stream, const char *format, va_list args) {
-    if (!is_console_stream(stream)) return __real___mingw_vfprintf(stream, format, args);
     return write_line(stream, __mingw_vsnprintf, format, args);
 }
 int __wrap___mingw_vprintf(const char *format, va_list args) {

@@ -29,7 +29,8 @@ formatted text one character at a time:
 
 The link wraps all eight (`-Wl,--wrap=...`, `medievil-runtime` only). For stdout / stderr a wrapper formats the line
 into a 2 KB stack buffer (heap when longer) with the same family's formatter (`vsnprintf` / `__mingw_vsnprintf`) and
-writes it with one `fwrite`. Other streams go to the real function. The streams stay unbuffered.
+writes it with one `fwrite`. Every stream goes this way (files too: one `fwrite` into the stream's buffer). The
+streams stay unbuffered.
 
 ## Invariants
 
@@ -51,5 +52,16 @@ Where it shows in release: each save (~50 save-trace lines, ~3 ms on the game th
 warning on a GPU thread (~70 us each). The dev build's periodic diagnostics paid it on every line.
 
 ## History and pitfalls
+
+- **Crash in the first version (`6352211`, found 2026-11-25):** other streams went to `__real___mingw_vfprintf` /
+  `__real_vfprintf`. In the game's LTO link lld resolved that back into the wrapper: its "other stream" branch
+  restored its registers and jumped into its own body (disassembly of `__wrap___mingw_vfprintf`). The first
+  `fprintf` to a file crashed: the wait trace's first row (`GOW3_WAIT_TRACE`, dev run, SceFiosIO thread, fault
+  in `__mingw_pformat` reading 0xffffffffffffffff); the flip trace's writer would have too. Every run until then
+  printed to the console only; the first test programs wrote stdout only, and a small LTO program with the old
+  wrapper did not reproduce it. Fixed by having no `__real_*` call at all. Check after any change here: both exes'
+  wrappers call only the formatters, `fwrite`, `malloc` / `free` and the stdout lookup, and no `jmp` follows an
+  epilogue (`llvm-objdump --disassemble-symbols=__wrap_...`); test programs for stdout, stderr and a buffered file
+  in both families, LTO and the same `--wrap` flags, byte-identical to unwrapped builds.
 
 - Defining `__USE_MINGW_ANSI_STDIO=0` alone does not help: UCRT's printf on an unbuffered stream is per character too.
