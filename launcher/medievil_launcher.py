@@ -1374,6 +1374,7 @@ class Launcher:
             upscaler.trace_add('write', follow)
             aa.trace_add('write', follow)
             choice.trace_add('write', pick)
+            choice.store = 'derived'  # saved through ue4_upscaler and ue4_aa (collect skips it)
             self.vars['aa_upscaler'] = choice
         return self.vars['aa_upscaler']
 
