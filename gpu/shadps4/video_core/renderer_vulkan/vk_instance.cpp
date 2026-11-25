@@ -16,6 +16,7 @@
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_dlss.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
+#include "video_core/renderer_vulkan/vk_preserving_call.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
 
 #include <vk_mem_alloc.h>
@@ -250,7 +251,12 @@ bool InitializePipelineBinaryCache(vk::Device device, bool supported,
         LOG_WARNING(Render_Vulkan, "Pipeline binary cache functions unavailable; using normal compilation");
         return false;
     }
-    const auto result = device.getPipelineKeyKHR(nullptr, &global_key);
+    // gow3: through PreservingCall (vk_preserving_call.h): the v2.5.0 start-up crash was a
+    // register overwritten inside this call on some systems.
+    const auto result = static_cast<vk::Result>(
+        PreservingCall(dispatch.vkGetPipelineKeyKHR, static_cast<VkDevice>(device),
+                       static_cast<const VkPipelineCreateInfoKHR*>(nullptr),
+                       reinterpret_cast<VkPipelineBinaryKeyKHR*>(&global_key)));
     if (result != vk::Result::eSuccess || !global_key.keySize ||
         global_key.keySize > VK_MAX_PIPELINE_BINARY_KEY_SIZE_KHR) {
         const auto key_size = global_key.keySize;

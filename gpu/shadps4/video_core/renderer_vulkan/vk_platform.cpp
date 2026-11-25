@@ -13,6 +13,8 @@
 #define VK_USE_PLATFORM_XLIB_KHR
 #endif
 
+#include <cstdio>
+#include <string>
 #include <vector>
 #include <fmt/ranges.h>
 
@@ -228,6 +230,17 @@ std::vector<const char*> GetInstanceLayers(bool enable_validation, bool enable_c
         LOG_ERROR(Render_Vulkan, "Failed to query layer properties: {}",
                   vk::to_string(properties_result));
         return {};
+    }
+    // gow3: one start-up line naming the layers the loader offers (implicit ones such as OBS's,
+    // RivaTuner's or Steam's load into the game on their own), for crash reports (v2.5.0 start-up
+    // crash: a component in the Vulkan call chain overwrote a callee-saved register).
+    {
+        std::string names;
+        for (const auto& prop : properties) {
+            names += names.empty() ? "" : ", ";
+            names += prop.layerName.data();
+        }
+        std::printf("Vulkan: layers available: %s\n", names.c_str());
     }
 
     std::vector<const char*> layers;

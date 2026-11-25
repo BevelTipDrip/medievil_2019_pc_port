@@ -27,6 +27,7 @@
 #include "video_core/cache_storage.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
+#include "video_core/renderer_vulkan/vk_preserving_call.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 #include "video_core/renderer_vulkan/vk_warmup_inbox.h"
 
@@ -292,7 +293,11 @@ vk::ResultValue<vk::UniquePipeline> CreateCachedGraphicsPipeline(
     vk::PipelineCreateInfoKHR key_info{.pNext = &captured_info};
     vk::PipelineBinaryKeyKHR pipeline_key;
     const auto key_started = std::chrono::steady_clock::now();
-    const auto key_result = device.getPipelineKeyKHR(&key_info, &pipeline_key);
+    // gow3: every pipeline-binary call goes through PreservingCall (vk_preserving_call.h).
+    const auto key_result = static_cast<vk::Result>(PreservingCall(
+        dispatch.vkGetPipelineKeyKHR, static_cast<VkDevice>(device),
+        reinterpret_cast<const VkPipelineCreateInfoKHR*>(&key_info),
+        reinterpret_cast<VkPipelineBinaryKeyKHR*>(&pipeline_key)));
     binary_key_ns += ElapsedNs(key_started);
     if (key_result != vk::Result::eSuccess ||
         !ValidKey(global) || !ValidKey(BinaryKey(pipeline_key))) {
@@ -311,7 +316,8 @@ vk::ResultValue<vk::UniquePipeline> CreateCachedGraphicsPipeline(
     const auto destroy = [&] {
         for (auto handle : handles) {
             if (handle) {
-                dispatch.vkDestroyPipelineBinaryKHR(device, handle, nullptr);
+                PreservingCall(dispatch.vkDestroyPipelineBinaryKHR, static_cast<VkDevice>(device),
+                               handle, static_cast<const VkAllocationCallbacks*>(nullptr));
             }
         }
         handles.clear();
@@ -346,8 +352,10 @@ vk::ResultValue<vk::UniquePipeline> CreateCachedGraphicsPipeline(
             output.pipelineBinaryCount = u32(handles.size());
             output.pPipelineBinaries = handles.data();
             const auto handles_started = std::chrono::steady_clock::now();
-            const auto handles_result =
-                dispatch.vkCreatePipelineBinariesKHR(device, &binary_info, nullptr, &output);
+            const auto handles_result = PreservingCall(
+                dispatch.vkCreatePipelineBinariesKHR, static_cast<VkDevice>(device),
+                static_cast<const VkPipelineBinaryCreateInfoKHR*>(&binary_info),
+                static_cast<const VkAllocationCallbacks*>(nullptr), &output);
             binary_handles_ns += ElapsedNs(handles_started);
             if (handles_result == VK_SUCCESS) {
                 VkPipelineBinaryInfoKHR restored{VK_STRUCTURE_TYPE_PIPELINE_BINARY_INFO_KHR};
@@ -384,7 +392,9 @@ vk::ResultValue<vk::UniquePipeline> CreateCachedGraphicsPipeline(
         VK_STRUCTURE_TYPE_RELEASE_CAPTURED_PIPELINE_DATA_INFO_KHR};
     release.pipeline = *result.value;
     SCOPE_EXIT {
-        if (dispatch.vkReleaseCapturedPipelineDataKHR(device, &release, nullptr) != VK_SUCCESS) {
+        if (PreservingCall(dispatch.vkReleaseCapturedPipelineDataKHR, static_cast<VkDevice>(device),
+                           static_cast<const VkReleaseCapturedPipelineDataInfoKHR*>(&release),
+                           static_cast<const VkAllocationCallbacks*>(nullptr)) != VK_SUCCESS) {
             ++binary_errors;
         }
     };
@@ -393,16 +403,20 @@ vk::ResultValue<vk::UniquePipeline> CreateCachedGraphicsPipeline(
             VK_STRUCTURE_TYPE_PIPELINE_BINARY_CREATE_INFO_KHR};
         binary_info.pipeline = *result.value;
         VkPipelineBinaryHandlesInfoKHR output{VK_STRUCTURE_TYPE_PIPELINE_BINARY_HANDLES_INFO_KHR};
-        if (dispatch.vkCreatePipelineBinariesKHR(device, &binary_info, nullptr, &output) !=
-                VK_SUCCESS ||
+        if (PreservingCall(dispatch.vkCreatePipelineBinariesKHR, static_cast<VkDevice>(device),
+                           static_cast<const VkPipelineBinaryCreateInfoKHR*>(&binary_info),
+                           static_cast<const VkAllocationCallbacks*>(nullptr),
+                           &output) != VK_SUCCESS ||
             !output.pipelineBinaryCount || output.pipelineBinaryCount > MaxBinaries) {
             ++binary_errors;
             return result;
         }
         handles.resize(output.pipelineBinaryCount);
         output.pPipelineBinaries = handles.data();
-        if (dispatch.vkCreatePipelineBinariesKHR(device, &binary_info, nullptr, &output) !=
-            VK_SUCCESS) {
+        if (PreservingCall(dispatch.vkCreatePipelineBinariesKHR, static_cast<VkDevice>(device),
+                           static_cast<const VkPipelineBinaryCreateInfoKHR*>(&binary_info),
+                           static_cast<const VkAllocationCallbacks*>(nullptr),
+                           &output) != VK_SUCCESS) {
             ++binary_errors;
             return result;
         }
@@ -414,8 +428,9 @@ vk::ResultValue<vk::UniquePipeline> CreateCachedGraphicsPipeline(
             vk::PipelineBinaryKeyKHR binary_key;
             size_t size = 0;
             auto* raw_key = reinterpret_cast<VkPipelineBinaryKeyKHR*>(&binary_key);
-            if (dispatch.vkGetPipelineBinaryDataKHR(device, &data_info, raw_key, &size, nullptr) !=
-                    VK_SUCCESS ||
+            if (PreservingCall(dispatch.vkGetPipelineBinaryDataKHR, static_cast<VkDevice>(device),
+                               static_cast<const VkPipelineBinaryDataInfoKHR*>(&data_info), raw_key,
+                               &size, static_cast<void*>(nullptr)) != VK_SUCCESS ||
                 !size || size > MaxFileSize || total_size + size > MaxFileSize ||
                 !ValidKey(BinaryKey(binary_key))) {
                 ++binary_errors;
@@ -423,8 +438,9 @@ vk::ResultValue<vk::UniquePipeline> CreateCachedGraphicsPipeline(
             }
             total_size += size;
             Binary binary{BinaryKey(binary_key), std::vector<u8>(size)};
-            if (dispatch.vkGetPipelineBinaryDataKHR(device, &data_info, raw_key, &size,
-                                                    binary.data.data()) != VK_SUCCESS ||
+            if (PreservingCall(dispatch.vkGetPipelineBinaryDataKHR, static_cast<VkDevice>(device),
+                               static_cast<const VkPipelineBinaryDataInfoKHR*>(&data_info), raw_key,
+                               &size, static_cast<void*>(binary.data.data())) != VK_SUCCESS ||
                 size > binary.data.size()) {
                 ++binary_errors;
                 return result;
