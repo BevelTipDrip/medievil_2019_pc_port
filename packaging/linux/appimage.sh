@@ -160,6 +160,8 @@ mkdir -p "$share/bin" "$lib/compat" "$app/usr/share/fonts" "$app/usr/share/appli
 # The port: scripts, launcher, patches, docs (no build tree, no Windows packaging).
 cp -r run.py scripts launcher patches LICENSE README.md "$share/"
 [[ -d docs ]] && cp -r docs "$share/"
+# README and release-note images only (13 MB for 2.5.0's alone); nothing in the app shows them.
+rm -rf "$share/docs/screenshots"
 mkdir -p "$share/gpu/third_party" && cp -r gpu/third_party/fonts "$share/gpu/third_party/"
 # Button prompt icons (CC0) for scripts/ue4_glyphs.py.
 mkdir -p "$share/third_party" && cp -r third_party/input-prompts "$share/third_party/"
