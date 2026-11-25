@@ -4,7 +4,7 @@ One line per card. Open a card for invariants, interactions and evidence; look u
 reading: `patchmap.py file <path>` / `switch <name>` / `commit <hash>` / `test <id>`.
 Card format and statuses: [README.md](README.md). W / D = default on Windows / Deck.
 
-235 cards.
+236 cards.
 
 ## memory
 
@@ -47,6 +47,7 @@ _loader, HLE libraries, threads, locks, files, audio, input (src/ outside memory
 | [save-date-last-write](runtime/save-date-last-write.md) | active | on / on | deck-lab |  | A save's date is its last write (param.bin or any save file), so MediEvil saves into the slot it loaded |
 | [save-trace](runtime/save-trace.md) | diagnostic | on / on | deck-lab |  | "Save trace:" log lines for every save call (search, mount, file writes, set param, dialogs) with the guest caller |
 | [settings-menu](runtime/settings-menu.md) | active | on / on | deck-lab | GOW3_MENU_PAD, GOW3_MENU_KEY, GOW3_PRESENT_MODE … | Settings menu in the game's Options menu look, usable with a pad alone (focus rows, L1 / R1 tabs, GOW3_MENU_PAD) |
+| [stdio-one-write-per-line](runtime/stdio-one-write-per-line.md) | active | on / n/a | - |  | "Windows: formatted stdout / stderr lines in one write each (link-wrapped printf families; streams stay unbuffered)" |
 | [upstream-audio-input](runtime/upstream-audio-input.md) | active | on / on | - | GOW3_AUDIO_SDL_DOWNMIX, GOW3_STICK_RANGE | Upstream audio and input: 7.1 -> stereo downmix, every controller merged, background pad events, stick range |
 | [upstream-hitch-work](runtime/upstream-hitch-work.md) | active | on / mixed | - | GOW3_TIMER_RES, GOW3_POWER_THROTTLE, GOW3_SPARE_IMAGE_BLOCK … | Upstream hitch work: 1 ms timer, no power throttling, spare GPU block, pageable memory, futex condvars, merged barrier ranges |
 

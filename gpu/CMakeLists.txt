@@ -311,7 +311,7 @@ endif()
 if (WIN32)
     enable_language(RC)
     add_executable(medievil-runtime ../src/probe.c ${GOW3_RUNTIME} ../src/compat_win.c ../src/vulkan_smoke.c
-        ../packaging/windows/medievil-runtime.rc)
+        ../src/stdio_lines_win.c ../packaging/windows/medievil-runtime.rc)
     set_target_properties(medievil-runtime PROPERTIES C_STANDARD 11 C_EXTENSIONS OFF)
     target_compile_options(medievil-runtime PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wall -Wextra -Werror -Wno-unknown-warning-option -Wno-unused-but-set-global>)
     target_include_directories(medievil-runtime PRIVATE .. ../src)
@@ -319,6 +319,11 @@ if (WIN32)
     # The PS4 range (64 GiB - 1 TiB) must stay free: no high-entropy ASLR for heaps and stacks.
     # The guest main thread runs on the process stack: 16 MiB, committed (no stack probes).
     target_link_options(medievil-runtime PRIVATE -Wl,--disable-high-entropy-va "SHELL:-Xlinker --stack -Xlinker 16777216,16777216")
+    # gow3 P6: formatted stdout / stderr lines in one write each (src/stdio_lines_win.c; card
+    # runtime/stdio-one-write-per-line). Both printf families: UCRT's and mingw's.
+    target_link_options(medievil-runtime PRIVATE
+        -Wl,--wrap=printf,--wrap=fprintf,--wrap=vprintf,--wrap=vfprintf
+        -Wl,--wrap=__mingw_printf,--wrap=__mingw_fprintf,--wrap=__mingw_vprintf,--wrap=__mingw_vfprintf)
     # gow3: runtime unit tests (ninja -C out/gpu mp3-test videodec-test services-test).
     add_executable(mp3-test EXCLUDE_FROM_ALL ../tests/test_mp3.c ../src/runtime_mp3.c ../src/compat_win.c)
     add_executable(videodec-test EXCLUDE_FROM_ALL ../tests/test_videodec.c ../src/compat_win.c)
