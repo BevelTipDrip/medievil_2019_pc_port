@@ -286,6 +286,7 @@ BUILTIN_PATCH_ROWS = {
     'GPU particle fixed step in the single pass': 'perf_particle_flip_guard',
     'Native 4K framebuffer pool (512 MB)': 'perf_4k_memory',
     'Navigation path purge without fences (CPU)': 'deck',
+    'RHI pending-delete check without fences (CPU)': 'deck',
 }
 
 

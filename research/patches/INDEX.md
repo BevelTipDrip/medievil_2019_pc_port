@@ -4,7 +4,7 @@ One line per card. Open a card for invariants, interactions and evidence; look u
 reading: `patchmap.py file <path>` / `switch <name>` / `commit <hash>` / `test <id>`.
 Card format and statuses: [README.md](README.md). W / D = default on Windows / Deck.
 
-236 cards.
+237 cards.
 
 ## memory
 
@@ -219,6 +219,7 @@ _UE4 config overrides, eboot patches, game hooks, particles, render scale, boot 
 | [preshadows-live](ue4/preshadows-live.md) | active | off / on | lab |  | Preshadows (r.Shadow.Preshadows) as a live switch through the game's console variable |
 | [R4a](ue4/r4a.md) | rejected | off / off | - |  | r.NumBufferedOcclusionQueries=2 (rejected) |
 | [refraction-scale](ue4/refraction-scale.md) | active | on / on | deck-lab |  | UE4 distortion (refraction) shift scaled to the PS4's 1080p share of the screen (Sleeping Village water) |
+| [rhi-pending-deletes-nofence](ue4/rhi-pending-deletes-nofence.md) | active | on / on | - |  | "RHI pending-delete check without the two mfences per NumRefs read (FRHIResource::FlushPendingDeletes)" |
 | [S1-streaming](ue4/s1-streaming.md) | rejected | off / off | - |  | r.Streaming.AmortizeCPUToGPUCopy to split the panning bursts (streaming test S1) |
 | [single-particle-pass](ue4/single-particle-pass.md) | active | on / on | lab | perf_particle_single_pass, GOW3_PARTICLE_FIXED_STEP, toggle2:ParticleFixedStep | Single GPU particle pass (r.GPUParticle.FixDeltaSeconds=0): on by default with the flip guard, live switch |
 | [ue4-dlaa](ue4/ue4-dlaa.md) | diagnostic | off / n/a | deck-lab | GOW3_UE4_DLSS, GOW3_UE4_UPSCALER, GOW3_UE4_HOOKS … | DLSS in place of UE4's TAA - DLAA at render scale 100 (U3), upscaling at the TAAU dispatch below it (U4); F9 switches live |

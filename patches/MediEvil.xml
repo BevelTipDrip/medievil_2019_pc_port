@@ -275,6 +275,45 @@
             <Line Type="bytes" Address="0x03094b9f" Value="8b4008660f1f440000" Original="0faef08b40080faef0"/>
         </PatchList>
     </Metadata>
+    <!-- UE 4.21's FRHIResource::FlushPendingDeletes (render thread; 01.02 0xf7c1d8 / 0xf7c348 / 0xf7c498,
+         01.00 0xf79558 / 0xf796c8 / 0xf79818, image offsets): for each resource in the pending-delete list it
+         reads NumRefs; 0: delete it, else MarkedForDelete = 0 and a full barrier (lock or, kept). The PS4
+         build's AtomicRead puts an mfence before and after the load (mfence; mov eax, [rdi+8]; mfence), the
+         same shape as the navigation purge above. On x86 a load is not reordered with later loads or stores
+         (the second fence orders nothing); the first only keeps this thread's earlier stores (CurrentlyDeleting,
+         a debug aid no shipping code reads to decide about NumRefs) ahead of it. The aligned 32-bit load stays;
+         the decision is the same. Study: research/docs/study-sv-hotspots.md (0.03 ms a frame calm, 0.17-0.21 in
+         the Sleeping Village fights); plan-work-queue.md P18 (2). On by default. -->
+    <Metadata Title="MediEvil"
+              Name="RHI pending-delete check without fences (CPU)"
+              Note="The render thread checks every resource waiting to be deleted with a full memory fence around each check. This drops the fences (the check itself is unchanged): less render-thread CPU time in busy scenes."
+              Author="medievil_pc"
+              PatchVer="1.0"
+              AppVer="01.00"
+              AppElf="eboot.bin"
+              isEnabled="true">
+        <PatchList>
+            <!-- mfence; mov eax, [rdi+8]; mfence -> mov eax, [rdi+8]; nop word [rax+rax] -->
+            <Line Type="bytes" Address="0x01379558" Value="8b4708660f1f440000" Original="0faef08b47080faef0"/>
+            <Line Type="bytes" Address="0x013796c8" Value="8b4708660f1f440000" Original="0faef08b47080faef0"/>
+            <Line Type="bytes" Address="0x01379818" Value="8b4708660f1f440000" Original="0faef08b47080faef0"/>
+        </PatchList>
+    </Metadata>
+    <Metadata Title="MediEvil"
+              Name="RHI pending-delete check without fences (CPU)"
+              Note="The render thread checks every resource waiting to be deleted with a full memory fence around each check. This drops the fences (the check itself is unchanged): less render-thread CPU time in busy scenes."
+              Author="medievil_pc"
+              PatchVer="1.0"
+              AppVer="01.02"
+              AppElf="eboot.bin"
+              isEnabled="true">
+        <PatchList>
+            <!-- mfence; mov eax, [rdi+8]; mfence -> mov eax, [rdi+8]; nop word [rax+rax] -->
+            <Line Type="bytes" Address="0x0137c1d8" Value="8b4708660f1f440000" Original="0faef08b47080faef0"/>
+            <Line Type="bytes" Address="0x0137c348" Value="8b4708660f1f440000" Original="0faef08b47080faef0"/>
+            <Line Type="bytes" Address="0x0137c498" Value="8b4708660f1f440000" Original="0faef08b47080faef0"/>
+        </PatchList>
+    </Metadata>
     <!-- The single GPU particle pass (r.GPUParticle.FixDeltaSeconds 0, the in-game menu's
          "Single GPU particle pass") without losing the fixed step of emitters whose local vector
          field asks for it (bUseFixDT, flag 8 at Simulation+0x1cc: PS_air_sparkles in Dan's crypt,

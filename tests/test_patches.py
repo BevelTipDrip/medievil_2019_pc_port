@@ -85,9 +85,10 @@ class GameProfileTests(unittest.TestCase):
 
     def test_defaults_and_extras(self):
         nav = 'Navigation path purge without fences (CPU)'  # a default since v2.5.0 (P18)
-        self.assertEqual(selected_patches(MEDIEVIL, '01.02', ''), [POOL, BOUNDS, nav])
+        rhi = 'RHI pending-delete check without fences (CPU)'  # likewise
+        self.assertEqual(selected_patches(MEDIEVIL, '01.02', ''), [POOL, BOUNDS, nav, rhi])
         self.assertEqual(selected_patches(MEDIEVIL, '01.02', 'Boot display size 2560x1440; ' + BOUNDS),
-                         [POOL, BOUNDS, nav, 'Boot display size 2560x1440'])
+                         [POOL, BOUNDS, nav, rhi, 'Boot display size 2560x1440'])
         self.assertEqual(selected_patches(MEDIEVIL, '01.01', ''), [])
         # The launcher's selection is exact: unchecked defaults stay off.
         self.assertEqual(selected_patches(MEDIEVIL, '01.02', BOUNDS, only=True), [BOUNDS])

@@ -10,6 +10,7 @@ NAME = 'Native 4K framebuffer pool (512 MB)'
 BOUNDS = 'GPU particle bounds'
 HZB = 'Finer occlusion culling (low render resolutions, Steam Deck)'
 NAV = 'Navigation path purge without fences (CPU)'
+RHI = 'RHI pending-delete check without fences (CPU)'
 SEGMENTS = [(0, 0x6000000)]
 
 
@@ -66,6 +67,15 @@ class MedievilPatchTests(unittest.TestCase):
         self.assertEqual(compile_patches(XML, [HZB], '01.02', SEGMENTS),
                          [(0x153843a, bytes.fromhex('0f1f00')), (0x1538492, bytes.fromhex('6690'))])
 
+    def test_rhi_pending_deletes_without_fences(self):
+        # FRHIResource::FlushPendingDeletes: mfence; mov eax, [rdi+8]; mfence -> the load and a nop, three sites.
+        value = bytes.fromhex('8b4708660f1f440000')
+        self.assertEqual(compile_patches(XML, [RHI], '01.00', SEGMENTS),
+                         [(0xf79558, value), (0xf796c8, value), (0xf79818, value)])
+        self.assertEqual(compile_patches(XML, [RHI], '01.02', SEGMENTS),
+                         [(0xf7c1d8, value), (0xf7c348, value), (0xf7c498, value)])
+        self.assertIn(RHI, selected_patches(XML, '01.02', ''))
+
     def test_nav_purge_without_fences(self):
         # ANavigationData::TickActor's purge: mfence; mov eax, [rax+8]; mfence -> the load and a nop.
         value = bytes.fromhex('8b4008660f1f440000')
@@ -91,8 +101,8 @@ class MedievilPatchTests(unittest.TestCase):
         self.assertEqual(original_mismatches(XML, [HZB], '01.00', elf(dec_r14d, dec_eax)), [HZB])
 
     def test_default_patches(self):
-        self.assertEqual(selected_patches(XML, '01.02', ''), [NAME, BOUNDS, NAV])
-        self.assertEqual(selected_patches(XML, '01.00', ''), [NAME, BOUNDS, NAV])
+        self.assertEqual(selected_patches(XML, '01.02', ''), [NAME, BOUNDS, NAV, RHI])
+        self.assertEqual(selected_patches(XML, '01.00', ''), [NAME, BOUNDS, NAV, RHI])
 
 
 if __name__ == '__main__':
