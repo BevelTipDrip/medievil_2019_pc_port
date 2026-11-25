@@ -23,7 +23,7 @@ occlusion, reflections and volumetric fog still on.
 
 ## What's new in 2.5.0
 
-**HDR.** With **Allow HDR output** on (launcher > Display) and HDR on in Windows, the game outputs HDR10 through
+**HDR.** With **HDR output** on (launcher > Display, or the in-game menu's Display tab) and HDR on in Windows, the game outputs HDR10 through
 its own colour grading and a tone curve made for HDR: a toe for the shadows, a straight middle and a shoulder that
 rolls the highlights off to your display's peak. The engine's own HDR output (ACES: lifted blacks, flat
 contrast) is not used.
