@@ -556,7 +556,7 @@ PERF_DEFAULT_OFF = set()
 # they match). Until 2026-11-13 they were launcher settings (deck_switches / deck_switches_off), which an
 # in-game restart could not change. (key, title, hint, variables, why it does nothing on Windows or None):
 # A1 and thread nice are Linux code, U2 is off on Windows anyway (buffer_cache.cpp HostVisibleArenaType);
-# the others run on both and are untested on Windows (research/patches/deck).
+# the others run on both; on Windows they are on by default since v2.5.0 (DECK_WINDOWS_DEFAULT_ON).
 DECK_SWITCH_ITEMS = [
     ('early_frame_eop', 'Early frame end signals',
      "The frame's end signal at decode instead of after recording (stage A runs ahead).",
@@ -582,6 +582,18 @@ DECK_SWITCH_ITEMS = [
      'already off on Windows'),
 ]
 DECK_SWITCH_KEYS = tuple('deck_' + key for key, *_rest in DECK_SWITCH_ITEMS)
+# v2.5.0 (the user, 2026-11-24): on by default on Windows. The user's PC ran with them on for every test since
+# 2026-11-13 (the ini migration), so this is the configuration the PC releases were measured with; an explicit 0
+# stays off. Linux and the Deck keep them off unless set (the Deck Optimized preset turns them on).
+DECK_WINDOWS_DEFAULT_ON = ('early_frame_eop', 'decode_pacing', 'drain_hybrid', 'texset_wide', 'region_index',
+                           'pending_filter', 'reg_hash_paired')
+
+
+def deck_default(key, windows=None):
+    """medievil.ini's default for deck_<key> ('1' or '0') on this platform."""
+    import sys
+    windows = sys.platform == 'win32' if windows is None else windows
+    return '1' if windows and key.removeprefix('deck_') in DECK_WINDOWS_DEFAULT_ON else '0'
 
 
 def deck_environment(ini, windows=None):
@@ -591,7 +603,7 @@ def deck_environment(ini, windows=None):
     windows = sys.platform == 'win32' if windows is None else windows
     env, on, skipped = {}, [], []
     for key, _title, _hint, variables, windows_reason in DECK_SWITCH_ITEMS:
-        if ini.get('deck_' + key, '0') != '1':
+        if ini.get('deck_' + key, deck_default(key, windows)) != '1':
             continue
         if windows and windows_reason:
             skipped.append(f'{key} ({windows_reason})')
@@ -601,8 +613,6 @@ def deck_environment(ini, windows=None):
     if not on and not skipped:
         return {}, ''
     summary = f'{len(on)} on: {", ".join(on) or "none"}' + (f'; left out: {", ".join(skipped)}' if skipped else '')
-    if windows and on:
-        summary += '; Windows: untested'
     return env, summary
 
 

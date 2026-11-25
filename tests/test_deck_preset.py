@@ -84,10 +84,10 @@ class DeckPresetTest(unittest.TestCase):
             'GOW3_ARENA_HOST_VISIBLE': '0', 'GOW3_DRAIN_HYBRID': '1', 'GOW3_TEXSET_WIDE': '1',
             'GOW3_REGION_INDEX': '1', 'GOW3_BACKING_COPY': '1', 'GOW3_PENDING_FILTER': '1',
             'GOW3_REG_HASH_PAIRED': '1', 'GOW3_THREAD_NICE': '1'})
-        for key in graphics_options.DECK_SWITCH_KEYS:  # off in a fresh install
-            self.assertEqual(launcher.INI_DEFAULTS[key], '0')
+        for key in graphics_options.DECK_SWITCH_KEYS:  # off in a fresh install, the tested set on Windows (2.5.0)
+            self.assertEqual(launcher.INI_DEFAULTS[key], graphics_options.deck_default(key))
             self.assertIn(key, launcher.INI_FLAGS)
-        self.assertEqual(graphics_options.deck_environment(launcher.INI_DEFAULTS, windows=False), ({}, ''))
+        self.assertEqual(graphics_options.deck_environment({}, windows=False), ({}, ''))
         # The launcher no longer passes them: run.py derives them from medievil.ini (an in-game restart too).
         added = lambda env: {k: v for k, v in env.items() if k not in os.environ}
         plain = added(launcher.game_environment({**launcher.APP_DEFAULTS}))
@@ -122,7 +122,18 @@ class DeckSwitchItemsTest(unittest.TestCase):
         for name in ('GOW3_BACKING_COPY', 'GOW3_THREAD_NICE', 'GOW3_ARENA_HOST_VISIBLE'):
             self.assertNotIn(name, env)
         self.assertEqual(len(env), len(launcher.DECK_SWITCHES) - 3)
-        self.assertIn('Windows: untested', summary)
+        self.assertNotIn('untested', summary)
+
+    def test_windows_defaults_are_the_tested_set(self):
+        # v2.5.0: a fresh ini on Windows runs the 7 switches the PC was tested with; Linux none; an explicit 0 wins.
+        env, summary = graphics_options.deck_environment({}, windows=True)
+        self.assertTrue(summary.startswith('7 on'), summary)
+        for name in ('GOW3_BACKING_COPY', 'GOW3_THREAD_NICE', 'GOW3_ARENA_HOST_VISIBLE'):
+            self.assertNotIn(name, env)
+        self.assertEqual(graphics_options.deck_environment({}, windows=False), ({}, ''))
+        env, _summary = graphics_options.deck_environment({'deck_decode_pacing': '0'}, windows=True)
+        self.assertNotIn('GOW3_DECODE_PACING', env)
+        self.assertEqual(graphics_options.deck_default('deck_thread_nice', windows=True), '0')
 
     def test_unchecked_ones_are_left_out(self):
         env, summary = graphics_options.deck_environment(

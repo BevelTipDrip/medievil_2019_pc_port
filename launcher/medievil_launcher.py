@@ -383,9 +383,10 @@ PERF_PATCHES = [
 INI_FLAGS.update(entry[0] for entry in PERF_PATCHES)
 INI_DEFAULTS.update({entry[0]: '0' if entry[0] in graphics_options.PERF_DEFAULT_OFF else '1'
                      for entry in PERF_PATCHES})
-# The Steam Deck switches (graphics_options.DECK_SWITCH_ITEMS): medievil.ini deck_<key>, off by default.
+# The Steam Deck switches (graphics_options.DECK_SWITCH_ITEMS): medievil.ini deck_<key>; off by default, except the
+# tested set on Windows since v2.5.0 (graphics_options.DECK_WINDOWS_DEFAULT_ON).
 INI_FLAGS.update(graphics_options.DECK_SWITCH_KEYS)
-INI_DEFAULTS.update({key: '0' for key in graphics_options.DECK_SWITCH_KEYS})
+INI_DEFAULTS.update({key: graphics_options.deck_default(key) for key in graphics_options.DECK_SWITCH_KEYS})
 # A new ini starts at the current settings_version: its one-time steps are for older files (migrate_settings).
 INI_DEFAULTS['settings_version'] = str(graphics_options.SETTINGS_VERSION)
 
@@ -1292,8 +1293,8 @@ class Launcher:
         arrow = ttk.Button(holder, text=_('Show the switches ▸'))
         arrow.pack(side='left', padx=(12, 0))
         self.row(parent, _('Steam Deck performance switches'), holder,
-                 _('Measured on the Steam Deck, applied at start; on with Deck Optimized. On Windows untested, '
-                   'and the Linux-only ones are left out. The in-game menu (Performance) switches them too.'),
+                 _('Measured on the Steam Deck, applied at start; on with Deck Optimized. On Windows on by default '
+                   'since 2.5.0; the Linux-only ones are left out. The in-game menu (Performance) switches them too.'),
                  restart=True)
         slot = ttk.Frame(parent)  # always in the grid, empty while the list is hidden
         slot.grid(row=self.next_row(parent), column=0, columnspan=2, sticky='w', padx=(24, 0))
