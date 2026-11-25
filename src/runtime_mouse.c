@@ -67,7 +67,8 @@ static unsigned apply_buttons(unsigned held,USHORT flags) {
 /* Every queued report in one batch. The physical buttons are followed even without capture; a
  * capture blocks the buttons held at that moment (the click that took the mouse) until each is let
  * go, so the game never sees half a click. */
-static void drain(void) {
+/* Returns the number of mouse reports read (0: nothing queued). */
+static long long drain(void) {
     static uint64_t buffer[8*1024]; /* 64 KiB, 8-byte aligned as Raw Input blocks are */
     static unsigned held, blocked, serial;
     long long dx=0, dy=0, wheel=0, n=0;
@@ -89,7 +90,7 @@ static void drain(void) {
         }
     }
     atomic_fetch_add_explicit(&stats.batches,1,memory_order_relaxed);
-    if (!n) return;
+    if (!n) return 0;
     atomic_fetch_add_explicit(&stats.reports,(unsigned long long)n,memory_order_relaxed);
     const unsigned now=atomic_load(&capture_serial);
     if (now!=serial) { serial=now; blocked=MOUSE_BUTTONS; }
@@ -107,6 +108,7 @@ static void drain(void) {
         atomic_store(&shown_buttons,0);
     }
     blocked&=held;
+    return n;
 }
 
 static DWORD WINAPI reader_thread(void *unused) {
@@ -133,12 +135,17 @@ static DWORD WINAPI reader_thread(void *unused) {
      * does not), so the wait blocks until something new arrives, as SDL's raw input thread waits; what is already
      * queued is drained at once. The old wait (MWMO_INPUTAVAILABLE) returned at once every time: ~664 wake-ups a
      * second with the mouse still, each ~5 Windows calls (study-perf-deepdive-20261123.md). */
+    /* While the mouse moves (the last drain read reports) the reader drains every millisecond without the wait, as
+     * before the wait existed: the wait alone drained about every 4 ms in fast movement (245 wake-ups a second for
+     * 1,495 reports, ~6 a batch; review-perf-changes-20261124.md 2), beating against the frame. The first drain that
+     * finds nothing goes back to the wait, so a still mouse still costs ~no wake-ups. */
     const UINT wake_on=QS_RAWINPUT|QS_POSTMESSAGE|QS_SENDMESSAGE;
+    long long last=0;
     for (;;) {
-        if (!(HIWORD(GetQueueStatus(wake_on))&(QS_RAWINPUT|QS_POSTMESSAGE)))
+        if (!last && !(HIWORD(GetQueueStatus(wake_on))&(QS_RAWINPUT|QS_POSTMESSAGE)))
             MsgWaitForMultipleObjectsEx(0,NULL,INFINITE,wake_on,0);
         atomic_fetch_add_explicit(&stats.wakes,1,memory_order_relaxed);
-        drain();
+        last=drain();
         while (PeekMessageW(&msg,NULL,0,WM_INPUT-1,PM_REMOVE) || PeekMessageW(&msg,NULL,WM_INPUT+1,0xFFFFFFFF,PM_REMOVE)) {
             if (msg.message==WM_QUIT) return 0;
             DispatchMessageW(&msg);

@@ -131,6 +131,12 @@ tick path was verified (T-MS10; the user, 2026-11-12).
   report, none idle), play 18-56/s, fast movement 1,495 reports/s -> 245 wake-ups/s (~6 reports a drain); the old
   exe the same evening 530-669/s whatever the rate. The user: frame-time graph more stable; RTSS 1% / 0.1% 224.2 /
   221.9 at the static view (best run 233.2 / 227.7).
+  **Review 2026-11-24 (review-perf-changes-20261124.md 2):** in fast movement the wait alone drained about every
+  4 ms (245 wake-ups for 1,495 reports a second), beating against the 4.2 ms frame (uneven steps, up to ~4 ms more
+  lag; frame times do not show it). **Fix built (MOUSEFIX), not run:** `drain()` returns the reports it read; while it
+  reads some the loop skips the wait and drains every 1 ms as before P1, and the first empty drain goes back to the
+  wait (a still mouse: ~no wake-ups). Check: `GOW3_MOUSE_LOG=1` (dev) about 1,000 wake-ups/s in fast movement, ~0
+  still; the user's feel of fast mouse look.
 
 - Planned first with SDL relative mode; changed before coding because SDL's reader wakes per report at
   TIME_CRITICAL, the pattern that made MGS2's frame starts wobble with an 8000 Hz mouse (study 4.2, revised).
