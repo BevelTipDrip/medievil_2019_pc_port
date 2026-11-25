@@ -15,7 +15,8 @@ import subprocess
 
 XPERF = r'C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\xperf.exe'
 SYMBOLIZER = r'C:\msys64\clang64\bin\llvm-symbolizer.exe'
-RUNTIME = os.path.join(os.path.dirname(__file__), '..', '..', 'out', 'medievil-runtime.exe')
+# The exe the capture ran: GOW3_ETW_RUNTIME for another one (the dev build: out/medievil-runtime-dev.exe).
+RUNTIME = os.environ.get('GOW3_ETW_RUNTIME') or os.path.join(os.path.dirname(__file__), '..', '..', 'out', 'medievil-runtime.exe')
 IMAGE_BASE = 0x140000000          # the exe's preferred base (llvm-objdump -p)
 GUEST_LO, GUEST_HI = 0x800000000, 0x820000000
 
@@ -50,7 +51,7 @@ def rows(dump):
             yield k.split(',')[0], [x.strip() for x in line.split(',')]
 
 
-def detect_pid(dump, name='medievil-runtime.exe'):
+def detect_pid(dump, name=os.path.basename(RUNTIME)):
     c = collections.Counter()
     for kind, p in rows(dump):
         if kind == 'SampledProfile' and p[2].startswith(name):
