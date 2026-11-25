@@ -21,61 +21,41 @@ occlusion, reflections and volumetric fog still on.
 > folder or a fake package (.pkg). This project is not affiliated with Sony Interactive
 > Entertainment or Other Ocean. MediEvil is a trademark of Sony Interactive Entertainment.
 
-## What's new in 2.4.0
+## What's new in 2.5.0
 
-**A settings menu in the game's own look.** Open it with Insert or R3+L2, or pick **PC Settings** in the game's
-pause menu. The menu uses the game's Options frame, fonts and button prompts, and works with the controller, the
-keyboard and the mouse.
+**HDR.** With **Allow HDR output** on (launcher > Display) and HDR on in Windows, the game outputs HDR10 through
+its own colour grading and a tone curve made for HDR: a toe for the shadows, a straight middle and a shoulder that
+rolls the highlights off to your display's peak. The engine's own HDR output (ACES: lifted blacks, flat
+contrast) is not used.
 
-- Five tabs: **Controls, Display, Graphics, Performance, Overlay**. Most rows apply at once; rows marked RESTART
-  wait, and holding **Square + Touchpad** for 5 seconds (or holding the mouse on the prompt) applies them and
-  restarts the game.
-- The menu and the Load list follow the buttons you bound in the launcher. The arrow keys and Enter always work
-  too, as fallbacks.
-- The Load list works with the mouse the same way as the menu, and DETAILS has its own button (Triangle).
-- With PlayStation prompts, a button bound to another pad button shows that button's picture (the touchpad bound
-  to Share shows SHARE).
-- Older settings files are updated once, to turn on fixes those versions shipped off by mistake
-  (single GPU particle pass, the particle flip guard, "Game reads GPU data without waiting"). Anything you turn
-  off afterwards stays off.
+- The settings are at the top of the in-game menu's new **Color** tab, and in its "Adjust while playing" panel:
+  **UI brightness** (menus, HUD and subtitles), **Game brightness** (SDR white in HDR, 203 nits by default),
+  **Peak brightness** (your display's peak in its current mode), **Bloom strength**, and the curve's shape
+  (level LUT tone, black floor, contrast, toe, shoulder, highlight saturation).
+- **Per-level settings.** The **Adjust** dropdown picks All levels or the level you are in; a level's own values
+  override the shared ones (marked with *), and **Use All levels** removes them again.
+- The map screen goes through the same curve, with its film grain and sharpening.
+- Bloom strength tames levels whose bloom looks blown out in HDR (the Graveyard).
 
-| | |
-|---|---|
-| ![PC Settings in the game's pause menu](docs/screenshots/pause-pc-settings.jpg) | ![The settings menu's Display tab](docs/screenshots/settings-display-upscaler.jpg) |
-| **PC Settings** in the game's pause menu | Display: upscaler, render scale and sharpening |
-
-**AMD FSR 3.1.** Upscaling for every graphics card: at render scale 100% it is a native-resolution
-anti-aliasing, below 100% it upscales. Pick it under Display > Anti-aliasing / upscaler, in the launcher or live
-in the game. FSR has its own sharpening slider (AMD FSR sharpening, default 25%). NVIDIA DLSS and FSR now share
-one upscaler front end, and its CPU time per frame was cut from about 120 to about 52 microseconds.
-
-*Advanced:* **AMD FSR 4** (v07, INT8) works too, but its model files are not part of the download. Run
-`tools/fetch_fsr4_assets.sh` from this repository (Git Bash or WSL) (it downloads AMD's MIT-licensed model files) and put the
-`fsr4_shaders` folder next to `run.py`; "AMD FSR 4" then appears in the upscaler list. It is meant for AMD's
-newer cards; on an RTX 4090 it costs about 2.7 ms a frame at 4K.
-
-**Sleeping Village water fixed.** Above 1080p the water's refraction overflowed: Dan, his sword or a money bag
-were copied into the pond, a hard line cut across it, and the water in the town centre flickered. The water now
-shifts the image by the same share of the screen as the PS4 at 1080p. Three rows under Graphics > Effects
-resolution, all on by default, each with the game's behaviour as the other choice:
-
-- **Refraction scale**: PS4 scale (the fix) or Game.
-- **Water ripples**: Always keeps the water rippling, so the copied scene never shows clearly as an upright copy;
-  Game cycle is the game's 5 seconds rippling, 5 seconds still.
-- **Refraction edge**: near the top of the screen and under objects in front of the water (the stone arch over
-  the pond), the game showed the bare pond bed past a hard line. Stretch fills it with a stretched, rippling image
-  instead.
-
-![The Sleeping Village pond](docs/screenshots/sleeping-village-pond.jpg)
+**Steadier frame times.** All the performance work since 2.4.0 is in this release:
+- Timed waits in the game's threads end at their deadline instead of rounding up to whole milliseconds. With
+  the frame cap on, the 0.1% lows went from 193.7 to 227.7 FPS and the 1% lows from 220.4 to 233.2 FPS.
+- The release build has no diagnostics compiled in (they live in a separate development build): about 7 times
+  fewer frames over 6 ms in a heavy view than with them in.
+- Guest read/write locks no longer take a global lock or allocate memory on every use.
+- The mouse reader waits for input instead of waking about 660 times a second, and still reads every millisecond
+  while the mouse moves.
+- Occlusion culling results stay on the host instead of being written into game memory every frame.
+- Log lines are written in one go instead of one character at a time.
+- On Windows, the seven Steam Deck switches that also run on PCs are now on by default (launcher > Performance >
+  Steam Deck performance switches; in the game, Performance > Deck tuned); they are what this release was tested
+  with. You can still turn each one off.
 
 **Also:**
-- Steam Deck switches are stored in `medievil.ini`, so the in-game menu (Performance > Deck tuned) and
-  "Apply and restart" change them.
-- The mouse no longer writes diagnostic lines to the log every few seconds while you play. A tester's recurring
-  frame-time dips went away with it.
-- The frame buffer size (Display) applies at the next start; changing it live is gone.
-
-![The Graveyard at night, 4K](docs/screenshots/graveyard-night.jpg)
+- A deadlock between GPU threads that could freeze the game at very high render scales has a fix.
+- The 100% ending's Hall of Heroes movie plays through and the game moves on.
+- Every run's log is kept in `user/logs/runs` (the newest 200), with the build, system and game at the top, so a
+  bug report can include the run where something happened.
 
 ## Roadmap
 
@@ -101,6 +81,7 @@ What this fork has done, and what is next. Checked items are in a release or on 
 
 **Graphics**
 - [x] Graphics quality levels (Ultra to Low, Deck Optimized) with 18 individual settings, Console = the PS4's values
+- [x] HDR output through the game's grading and an HDR tone curve, per-level settings
 - [x] Real Unreal motion vectors and camera-cut detection for temporal upscalers
 - [x] NVIDIA DLAA and DLSS upscaling, in the launcher, the in-game menu and on F9
 - [ ] DLSS model (preset) per quality mode

@@ -2062,12 +2062,14 @@ void HdrRows() {
                 S::RequestHdrUi();
             }
             // HDR look (research/docs/plan-hdr-final.md): ours (the game's grading through our tone curve) or the
-            // game's own ACES output (for debugging; out of the menu before release).
-            static const char* const look_labels[] = {"Game's (ACES)", "Ours"};
-            ChoiceRow("HDR look", s.hdr_look, look_labels, nullptr, 2,
-                      "Ours: the game's colour grading through a filmic tone curve made for HDR (toe, straight "
-                      "middle, shoulder to your display's peak). Game's: the engine's ACES HDR output (lifted "
-                      "blacks, less contrast).");
+            // game's own ACES output: a dev-build comparison only since v2.5.0 (release always uses ours).
+            if constexpr (GOW3_DEV_TOOLS) {
+                static const char* const look_labels[] = {"Game's (ACES)", "Ours"};
+                ChoiceRow("HDR look", s.hdr_look, look_labels, nullptr, 2,
+                          "Ours: the game's colour grading through a filmic tone curve made for HDR (toe, straight "
+                          "middle, shoulder to your display's peak). Game's: the engine's ACES HDR output (lifted "
+                          "blacks, less contrast).");
+            }
             ImGui::BeginDisabled(s.hdr_look != S::HdrLookSdr);
             LevelTargetRows();
             SliderRow(LevelLabel("Game brightness", 0).c_str(), S::LevelEdit(0), S::HdrGameNitsMin, S::HdrGameNitsMax,

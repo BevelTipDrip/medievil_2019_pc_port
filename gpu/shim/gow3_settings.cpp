@@ -171,7 +171,9 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         return;
     }
     if (key == "hdr_look") {
-        v.hdr_look = value == "game" ? HdrLookGame : HdrLookSdr;
+        // The game's ACES look is a dev-build comparison since v2.5.0 (out of the release menu): release always
+        // uses ours, also for an ini that still says "game".
+        v.hdr_look = GOW3_DEV_TOOLS && value == "game" ? HdrLookGame : HdrLookSdr;
         return;
     }
     if (key == "hdr_game_nits") {

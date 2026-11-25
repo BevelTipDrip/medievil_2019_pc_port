@@ -375,9 +375,9 @@ class DevBuildDiagnosticsTest(unittest.TestCase):
 
 class ReleaseVersionTest(unittest.TestCase):
     def test_fork_release_is_newer_than_upstream_and_checks_the_fork(self):
-        self.assertEqual(launcher.VERSION, '2.4.0')
+        self.assertEqual(launcher.VERSION, '2.5.0')
         self.assertGreater(launcher.version_tuple(launcher.VERSION), launcher.version_tuple('v1.4.0'))  # upstream's newest
-        self.assertGreater(launcher.version_tuple('v2.4.1'), launcher.version_tuple(launcher.VERSION))
+        self.assertGreater(launcher.version_tuple('v2.5.1'), launcher.version_tuple(launcher.VERSION))
         self.assertIn('/repos/BevelTipDrip/', launcher.RELEASES_API)
 
     def test_first_start_is_in_english(self):
