@@ -1583,10 +1583,14 @@ void DisplayTab() {
         EndRows();
     }
 
-    // HDR: in the HDR tab (HdrRows), where its panel can show them while playing.
-    if (s.hdr_active) {
-        Section("HDR");
-        Note("The HDR settings are in the HDR tab, and in its \"Adjust while playing\" panel.");
+    // HDR output (medievil.ini hdr_output): its settings are in the HDR tab (HdrRows).
+    Section("HDR");
+    if (BeginRows("##hdr_output")) {
+        CheckRow("HDR output", s.hdr_output,
+                 "Needs HDR on in Windows and an HDR display. Its settings are in the HDR tab. Applies after "
+                 "restart.");
+        Restart();
+        EndRows();
     }
 
     Section("Information");
@@ -2116,8 +2120,7 @@ void ColorTab() {
     // comparison only: they worked unevenly across levels, and the HDR rows cover the look (the user, 2026-11-24).
     if (!s.hdr_active && !GOW3_DEV_TOOLS) {
         Section("HDR");
-        Note("HDR is off. Turn on HDR in Windows (Settings > System > Display), then Allow HDR output in the launcher "
-             "(Display) and restart the game.");
+        Note("HDR is off: turn on HDR output (Display tab) and HDR in Windows, then restart.");
         return;
     }
     if (!color_panel) {

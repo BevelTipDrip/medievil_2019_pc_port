@@ -398,6 +398,8 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         v.deferred_readback = i != 0;
     } else if (key == "stale_readback") {
         v.stale_readback = i != 0;
+    } else if (key == "hdr_output") {
+        v.hdr_output = i != 0;
     } else if (key == "restart_unconfirmed") {
         v.restart_unconfirmed = i != 0;
     } else if (key == "enemy_health_bar") {
@@ -769,6 +771,9 @@ void Load() {
     v.startup_engine_fps = v.engine_fps;
     v.startup_deferred_readback = v.deferred_readback;
     v.startup_stale_readback = v.stale_readback;
+    // HDR output: what this run started with (GOW3_HDR + GOW3_HDR_GAME, from hdr_output or extra-env.txt).
+    v.hdr_output = HdrGame();
+    v.startup_hdr_output = v.hdr_output;
     // Live console variables off in the ini: set once the game reaches its menu (the runtime
     // checks the eboot first).
     if (!v.preshadows) {
@@ -876,7 +881,7 @@ int RestartChanges() {
     const auto& v = Get();
     int changes = (v.render_resolution != v.startup_render_resolution) + (v.engine_fps != v.startup_engine_fps) +
                   (v.deferred_readback != v.startup_deferred_readback) +
-                  (v.stale_readback != v.startup_stale_readback) +
+                  (v.stale_readback != v.startup_stale_readback) + (v.hdr_output != v.startup_hdr_output) +
                   OutputNeedsRestart() + RenderScaleNeedsRestart();
     // Graphics quality itself needs no restart any more: the settings it set do, if they are not live.
     for (int o = 0; o < UE4LiveCount; ++o) {
@@ -1026,13 +1031,13 @@ std::map<std::string, std::string> Serialize(const Values& v) {
            "display_mode=%s\nvsync=%d\nfps_limit=%d\ndisplay_vrr=%d\nasync_shaders=%d\n"
            "fsr1=%d\nrcas=%d\nrcas_strength=%d\nframes_queued=%d\n"
            "render_resolution=%s\nengine_fps=%d\ndeferred_readback=%d\nstale_readback=%d\n"
-           "restart_unconfirmed=%d\n",
+           "restart_unconfirmed=%d\nhdr_output=%d\n",
            Gow3Graphics::DisplayModeKeys[std::clamp(v.display_mode.load(), 0, 2)].data(),
            int(v.vsync.load()), v.fps_limit.load(), int(v.display_vrr.load()), int(v.async_shaders.load()),
            int(v.fsr1.load()), int(v.rcas.load()), v.rcas_strength.load(), v.frames_queued.load(),
            Gow3Graphics::Resolutions[std::clamp(v.render_resolution.load(), 0, int(Gow3Graphics::Resolutions.size()) - 1)].data(),
            v.engine_fps.load(), int(v.deferred_readback.load()), int(v.stale_readback.load()),
-           int(v.restart_unconfirmed.load()));
+           int(v.restart_unconfirmed.load()), int(v.hdr_output.load()));
     Append(out, "ue4_upscaler=%s\nfsr_sharpness=%d\nfsr_reactive=%d\n",
            Ue4UpscalerKeys[std::clamp(v.ue4_upscaler.load(), 0, Ue4UpscalerCount - 1)], v.fsr_sharpness.load(),
            v.fsr_reactive.load());

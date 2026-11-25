@@ -306,13 +306,15 @@ class ControlMapTest(unittest.TestCase):
         self.assertNotIn('GOW3_PATCHES_ONLY', {k for k in env if k not in __import__('os').environ})
 
     def test_settings_keys_kept(self):
-        # The redesign hides some options (player name) but keeps every saved setting working.
-        for key in ('game_dir', 'user_dir', 'mods_dir', 'patches_dir', 'language', 'player_name', 'hdr',
+        # The redesign hides some options (player name) but keeps every saved setting working (hdr moved to
+        # medievil.ini's hdr_output in v2.5.0, copied once: test_hdr_output).
+        for key in ('game_dir', 'user_dir', 'mods_dir', 'patches_dir', 'language', 'player_name',
                     'draw_pipe', 'readbacks', 'background_warmup', 'parallel_warmup', 'controls', 'pad_style'):
             self.assertIn(key, launcher.APP_DEFAULTS)
         env = launcher.game_environment({**launcher.APP_DEFAULTS, 'player_name': ' Kratos '})
         self.assertEqual(env['GOW3_USER_NAME'], 'Kratos')
-        for key in ('display_mode', 'fps_limit', 'output_resolution', 'render_scale', 'engine_fps', 'rcas_strength'):
+        for key in ('display_mode', 'fps_limit', 'output_resolution', 'render_scale', 'engine_fps', 'rcas_strength',
+                    'hdr_output'):
             self.assertIn(key, launcher.INI_DEFAULTS)
 
     def test_graphics_defaults_match_the_game(self):

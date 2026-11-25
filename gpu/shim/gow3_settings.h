@@ -220,6 +220,10 @@ struct Values {
     std::atomic<bool> restart_unconfirmed{false};
     int startup_render_resolution = 0, startup_engine_fps = 60;
     bool startup_deferred_readback = true, startup_stale_readback = true;
+    /// HDR output (medievil.ini hdr_output; run.py turns it into GOW3_HDR + GOW3_HDR_GAME): at the next start. The
+    /// startup value is what this run has (HdrGame).
+    std::atomic<bool> hdr_output{false};
+    bool startup_hdr_output = false;
     /// Performance patches (PerfKeys): on by default; live ones apply at once, the others with
     /// "Apply and restart" (run.py: graphics_options.PERF_SWITCHES / PERF_ON_SWITCHES).
     std::atomic<bool> perf[PerfPatchCount] = {true, true, true, true, true, true, true,

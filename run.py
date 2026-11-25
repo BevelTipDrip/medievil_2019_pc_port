@@ -151,6 +151,11 @@ def main():
     # The Steam Deck switches (medievil.ini deck_*: launcher > Performance, in-game menu > Performance > Deck
     # tuned); a variable already set (a test, extra-env.txt) wins. Derived, so "Apply and restart" takes the
     # menu's new choice.
+    # HDR output (medievil.ini hdr_output: launcher > Display, in-game menu > Display): both switches the game's
+    # HDR path needs (v2.5.0; before, GOW3_HDR_GAME was never set by the launcher). A variable already set
+    # (extra-env.txt, a test) wins.
+    for key, value in graphics_options.hdr_environment(ini_values).items():
+        env.setdefault(key, value)
     deck_env, deck_summary = graphics_options.deck_environment(ini_values)
     for key, value in deck_env.items():
         env.setdefault(key, value)

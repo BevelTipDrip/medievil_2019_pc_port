@@ -179,7 +179,7 @@ FPS_LIMITS = [('-2', ('Auto: refresh (VRR: below it, Reflex rule)',)), ('-3', ('
               ('0', ('Unlimited',)), ('-1', ('Half display refresh (fixed refresh)',))]
 APP_DEFAULTS = {'ui_language': 'en', 'game_dir': os.environ.get('GOW3_GAME_DIR', str(PORT_DIR.parent / 'medieval' / 'CUSA11227') if WINDOWS else ''), 'user_dir': '',
                 'mods_dir': '', 'mods_enabled': True, 'patches_dir': '', 'language': '1',
-                'player_name': '', 'hdr': False, 'draw_pipe': '', 'readbacks': '', 'vulkan_compat': False,
+                'player_name': '', 'draw_pipe': '', 'readbacks': '', 'vulkan_compat': False,
                 'background_warmup': True, 'parallel_warmup': True, 'pipeline_binary_cache': True, 'perf_diag': False, 'frame_capture_key': False, 'frame_stats': False, 'gpu_profile': False, 'dev_build': False,
                 'vk_validation': False, 'close_on_play': False, 'prep_workers': '', 'stage_b_core': False,
                 'update_check': True, 'game_patches': {}, 'game_patches_seen': {}, 'controls': {}, 'pad_style': 'playstation', 'stick_range': '',
@@ -403,6 +403,10 @@ INI_DEFAULTS.update({entry[0]: '0' if entry[0] in graphics_options.PERF_DEFAULT_
 # The Steam Deck switches (graphics_options.DECK_SWITCH_ITEMS): medievil.ini deck_<key>; off by default, except the
 # tested set on Windows since v2.5.0 (graphics_options.DECK_WINDOWS_DEFAULT_ON).
 INI_FLAGS.update(graphics_options.DECK_SWITCH_KEYS)
+# HDR output (v2.5.0: a medievil.ini key, so the in-game menu's Display switch and "Apply and restart" change it;
+# run.py sets GOW3_HDR + GOW3_HDR_GAME from it). Off by default.
+INI_FLAGS.add('hdr_output')
+INI_DEFAULTS['hdr_output'] = '0'
 INI_DEFAULTS.update({key: graphics_options.deck_default(key) for key in graphics_options.DECK_SWITCH_KEYS})
 # A new ini starts at the current settings_version: its one-time steps are for older files (migrate_settings).
 INI_DEFAULTS['settings_version'] = str(graphics_options.SETTINGS_VERSION)
@@ -593,8 +597,7 @@ def game_environment(s):
     env['GOW3_LANGUAGE'] = s['language']
     if str(s['player_name']).strip():
         env['GOW3_USER_NAME'] = str(s['player_name']).strip()
-    if s['hdr']:
-        env['GOW3_HDR'] = '1'
+    # HDR output is medievil.ini's hdr_output since v2.5.0: run.py sets GOW3_HDR and GOW3_HDR_GAME from it.
     for key, name in (('draw_pipe', 'GOW3_DRAW_PIPE'), ('readbacks', 'GOW3_READBACKS')):
         if s[key] and not (key == 'readbacks' and s[key] == '2'):
             env[name] = s[key]
@@ -781,6 +784,24 @@ INI_OPTIONAL_KEYS = ('preshadows',)
 # of them until then: it is the performance patch perf_particle_flip_guard now, on by default.
 DECK_SWITCH_ITEMS = graphics_options.DECK_SWITCH_ITEMS
 DECK_SWITCHES = {name: value for *_rest, env, _why in DECK_SWITCH_ITEMS for name, value in env.items()}
+
+
+def migrate_hdr_setting(config=None, ini=None):
+    """settings.json before v2.5.0 kept HDR output as hdr (the launcher's Allow HDR output): written into
+    medievil.ini once as hdr_output=1 when it was on and the ini has no hdr_output yet, then dropped from
+    settings.json. Returns the medievil.ini keys written."""
+    config = Path(config or CONFIG_FILE)
+    app = load_json(config, None)
+    if not isinstance(app, dict) or 'hdr' not in app:
+        return {}
+    on = bool(app.pop('hdr'))
+    updates = {}
+    path = Path(ini or ini_path())
+    if on and 'hdr_output' not in graphics_options.read_ini(path):
+        updates = {'hdr_output': '1'}
+        graphics_options.write_keys(path, updates)
+    config.write_text(json.dumps(app, indent=2, ensure_ascii=False), encoding='utf-8')
+    return updates
 
 
 def migrate_deck_switches(config=None, ini=None):
@@ -1727,9 +1748,11 @@ class Launcher:
                                                         custom=self.custom_label('output_resolution')),
                  _(OUTPUT_HINT), restart=True)
         self.row(f, _('VSync'), self.choice(f, self.vsync_choice_var(), None, VSYNC_CHOICES), _(VSYNC_HINT))
-        self.check(f, 'hdr', 'app', _('Allow HDR output', 'Разрешить HDR'),
-                   _('When HDR is on in Windows and the display supports it.',
-                     'Если HDR включён в Windows и монитор его поддерживает.'))
+        self.check(f, 'hdr_output', 'ini', _('HDR output', 'Вывод HDR'),
+                   _('Needs HDR on in Windows and an HDR display. Its settings are in the in-game menu\'s HDR '
+                     'tab. Applies at start.',
+                     'Нужен HDR в Windows и HDR-монитор. Настройки во вкладке HDR игрового меню. '
+                     'Применяется при запуске.'), restart=True)
         holder = ttk.Frame(f)
         ttk.Button(holder, text=_('Set to neutral', 'Сделать нейтральной'),
                    command=self.set_brightness_neutral).pack(side='left')
@@ -3377,6 +3400,7 @@ def main():
         sys.exit(run_role(args))
     try:  # settings.json's Deck switches (before 2026-11-13) into medievil.ini, once; then the ini's one-time
         migrate_deck_switches()  # steps (settings_version), before anything reads or writes the ini
+        migrate_hdr_setting()
         graphics_options.migrate_settings(ini_path())
     except OSError:
         pass

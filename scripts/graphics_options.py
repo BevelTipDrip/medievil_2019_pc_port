@@ -596,6 +596,13 @@ def deck_default(key, windows=None):
     return '1' if windows and key.removeprefix('deck_') in DECK_WINDOWS_DEFAULT_ON else '0'
 
 
+def hdr_environment(ini):
+    """The variables of medievil.ini's hdr_output (v2.5.0): HDR output needs GOW3_HDR (the presenter's HDR10
+    surface) and GOW3_HDR_GAME (the game told the display is HDR, its own HDR path). With Windows HDR off the
+    surface is not usable, the game is not told and stays SDR."""
+    return {'GOW3_HDR': '1', 'GOW3_HDR_GAME': '1'} if ini.get('hdr_output', '0') == '1' else {}
+
+
 def deck_environment(ini, windows=None):
     """(variables, summary) of the Steam Deck switches on in medievil.ini (deck_<key>=1), leaving out the ones
     that do nothing on this platform; the summary is what run.py logs ('' when none is on)."""
