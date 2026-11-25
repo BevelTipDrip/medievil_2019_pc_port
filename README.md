@@ -28,7 +28,7 @@ its own colour grading and a tone curve made for HDR: a toe for the shadows, a s
 rolls the highlights off to your display's peak. The engine's own HDR output (ACES: lifted blacks, flat
 contrast) is not used.
 
-- The settings are at the top of the in-game menu's new **Color** tab, and in its "Adjust while playing" panel:
+- The settings are in the in-game menu's new **HDR** tab and its "Adjust while playing" panel:
   **UI brightness** (menus, HUD and subtitles), **Game brightness** (SDR white in HDR, 203 nits by default),
   **Peak brightness** (your display's peak in its current mode), **Bloom strength**, and the curve's shape
   (level LUT tone, black floor, contrast, toe, shoulder, highlight saturation).
@@ -53,6 +53,11 @@ contrast) is not used.
 
 **Also:**
 - A deadlock between GPU threads that could freeze the game at very high render scales has a fix.
+- The launcher's settings are regrouped: Output resolution, one Anti-aliasing / upscaler list (the game's TAA,
+  FXAA, Off, DLSS, FSR) and Render scale under Display; Graphics quality at the top of Performance; the game's
+  built-in patches next to the settings they belong with instead of on the Patches page.
+- The in-game menu's colour grading sliders (white balance, shadows / midtones / highlights) are gone: they acted
+  differently in every level, and the HDR settings cover the look. Values set in 2.4 are no longer applied.
 - The 100% ending's Hall of Heroes movie plays through and the game moves on.
 - Every run's log is kept in `user/logs/runs` (the newest 200), with the build, system and game at the top, so a
   bug report can include the run where something happened.

@@ -270,6 +270,23 @@ def menu_key(settings):
 # What replaces the game's TAA (medievil.ini ue4_upscaler, gow3_settings Ue4UpscalerKeys; F9 in the game).
 UPSCALERS = [('taa', ("The game's TAA",)), ('dlss', ('NVIDIA DLSS',)), ('fsr', ('AMD FSR 3.1',)),
              ('fsr4', ('AMD FSR 4',))]
+# The launcher's one anti-aliasing / upscaler list (v2.5.0): the game's own AA choices (medievil.ini ue4_aa) and the
+# upscalers (ue4_upscaler) in one drop-down. The game's ones keep ue4_upscaler=taa; an upscaler keeps ue4_aa=taa.
+AA_UPSCALER_CHOICES = [('taa', ("The game's TAA",)), ('fxaa', ('FXAA (sharper)',)),
+                       ('off', ('Off (sharpest, jagged edges)',)), ('dlss', ('NVIDIA DLSS',)),
+                       ('fsr', ('AMD FSR 3.1',)), ('fsr4', ('AMD FSR 4',))]
+GAME_AA = ('taa', 'fxaa', 'off')
+
+# Built-in game patches (patches/*.xml) shown with the settings they belong with (v2.5.0; before: the Patches page),
+# still stored as the game's patch selection (settings game_patches): the patch's name -> the Performance patch row
+# it follows, 'graphics' (Graphics settings) or 'deck' (after the Steam Deck switches).
+BUILTIN_PATCH_ROWS = {
+    'GPU particle bounds': 'graphics',
+    'Finer occlusion culling (low render resolutions, Steam Deck)': 'perf_hzb_occlusion',
+    'GPU particle fixed step in the single pass': 'perf_particle_flip_guard',
+    'Native 4K framebuffer pool (512 MB)': 'perf_4k_memory',
+    'Navigation path purge without fences (CPU)': 'deck',
+}
 
 
 # Mouse buttons a game button can take (GOW3_MOUSE_MAP, src/runtime_pad.c), next to its key: the names the
@@ -1279,6 +1296,66 @@ class Launcher:
             self.ttk.Label(cell, text=_('applies at next start'), style='Restart.TLabel').pack(side='left', padx=(8, 0))
         return cell
 
+    def builtin_patch_rows(self, parent, place):
+        """The built-in game patches placed here (BUILTIN_PATCH_ROWS): a checkbox each, greyed out until a game
+        that has the patch is picked (refresh_game_patches sets its state and its note from the patch file)."""
+        if not hasattr(self, 'builtin_patch_vars'):
+            self.builtin_patch_vars, self.builtin_patch_widgets = {}, {}
+        for name, where in BUILTIN_PATCH_ROWS.items():
+            if where != place:
+                continue
+            var = self.builtin_patch_vars[name] = self.tk.BooleanVar(value=False)
+            r = self.next_row(parent)
+            self.title_cell(parent, name, True).grid(row=r, column=0, sticky='w', padx=(0, 18), pady=(8, 0))
+            box = self.ttk.Checkbutton(parent, variable=var)
+            box.grid(row=r, column=1, sticky='w', pady=(5, 0))
+            box.state(['disabled'])
+            hint = self.ttk.Label(parent, text='', style='Muted.TLabel', wraplength=self.px(640), justify='left')
+            hint.grid(row=r + 1, column=0, columnspan=2, sticky='w', pady=(1, 2))
+            self.builtin_patch_widgets[name] = (box, hint)
+
+    def aa_upscaler_var(self):
+        """The Display page's one anti-aliasing / upscaler list (AA_UPSCALER_CHOICES) over medievil.ini's
+        ue4_upscaler and ue4_aa: picking the game's TAA, FXAA or Off sets ue4_upscaler=taa and ue4_aa; picking an
+        upscaler sets it and ue4_aa=taa. Follows either key changed elsewhere (the in-game menu, F9)."""
+        if 'aa_upscaler' not in self.vars:
+            upscaler, aa = self.var('ue4_upscaler', 'ini'), self.var('ue4_aa', 'ini')
+
+            def shown():
+                if upscaler.get() in ('dlss', 'fsr', 'fsr4'):
+                    return upscaler.get()
+                return aa.get() if aa.get() in GAME_AA else 'taa'
+            choice = self.tk.StringVar(value=shown())
+            busy = [False]
+
+            def follow(*_args):  # a key changed: the list shows it
+                if not busy[0] and shown() != choice.get():
+                    busy[0] = True
+                    try:
+                        choice.set(shown())
+                    finally:
+                        busy[0] = False
+
+            def pick(*_args):  # the list changed: both keys
+                if busy[0]:
+                    return
+                busy[0] = True
+                try:
+                    value = choice.get()
+                    if value in GAME_AA:
+                        upscaler.set('taa')
+                        aa.set(value)
+                    else:
+                        upscaler.set(value)
+                        aa.set('taa')
+                finally:
+                    busy[0] = False
+            upscaler.trace_add('write', follow)
+            aa.trace_add('write', follow)
+            choice.trace_add('write', pick)
+            self.vars['aa_upscaler'] = choice
+        return self.vars['aa_upscaler']
+
     def deck_switch_rows(self, parent):
         """Steam Deck performance switches (medievil.ini deck_*, DECK_SWITCH_ITEMS; the in-game menu's Performance
         > Deck tuned shows the same keys): the checkbox is checked while all of them are on and turns them all on
@@ -1646,6 +1723,9 @@ class Launcher:
         self.section(f, _('Window', 'Окно'), top=4)
         self.row(f, _('Display mode'), self.choice(f, 'display_mode', 'ini', DISPLAY_MODES),
                  _('Borderless covers the screen without changing the display mode.'))
+        self.row(f, _('Output resolution'), self.choice(f, 'output_resolution', 'ini', OUTPUT_CHOICES,
+                                                        custom=self.custom_label('output_resolution')),
+                 _(OUTPUT_HINT), restart=True)
         self.row(f, _('VSync'), self.choice(f, self.vsync_choice_var(), None, VSYNC_CHOICES), _(VSYNC_HINT))
         self.check(f, 'hdr', 'app', _('Allow HDR output', 'Разрешить HDR'),
                    _('When HDR is on in Windows and the display supports it.',
@@ -1697,7 +1777,7 @@ class Launcher:
             self.check(f, key, 'ini', _(title), _(hint), restart=True)
         self.section(f, _('Scaling and sharpening'))
         self.check(f, 'fsr1', 'ini', _('Upscale with FSR 1'),
-                   _('Enlarges a game image smaller than the window (Output resolution, Performance) with AMD FSR 1; '
+                   _('Enlarges a game image smaller than the window (Output resolution, Window) with AMD FSR 1; '
                      'at the size of the window it does nothing.'))
         self.check(f, 'rcas', 'ini', _('Final image sharpening (RCAS)'),
                    _('Sharpens the final image with the game\'s TAA or NVIDIA DLSS. Off while AMD FSR runs: FSR has '
@@ -1717,15 +1797,18 @@ class Launcher:
             return holder
 
         self.row(f, _('Sharpening strength'), percent_slider('rcas_strength'))
-        self.row(f, _('Anti-aliasing / upscaler'), self.choice(f, 'ue4_upscaler', 'ini', UPSCALERS),
-                 _('Replaces the game\'s anti-aliasing: native anti-aliasing at Render scale 100, upscaling below '
-                   'it (NVIDIA DLSS: Quality / Balanced / Performance from the scale). AMD FSR sharpens by its own '
-                   'strength, DLSS and the game\'s TAA with the sharpening above. DLSS needs an NVIDIA RTX GPU and '
-                   'gow3_dlss.dll + nvngx_dlss.dll next to '
-                   'medievil-runtime.exe (the bin folder; nvngx_dlss.dll is not included: see README-Windows.txt). '
-                   'AMD FSR 4 needs its model files (tools/fetch_fsr4_assets.sh, not included) and costs more '
-                   'than FSR 3.1. One the system cannot run falls back to the game\'s TAA. F9 switches it in the '
-                   'game.'))
+        self.row(f, _('Anti-aliasing / upscaler'), self.choice(f, self.aa_upscaler_var(), None, AA_UPSCALER_CHOICES),
+                 _("The game's TAA smooths edges but blurs a little in motion; FXAA is sharper; Off shows raw "
+                   'pixels (best with a render scale above 100%). A render scale below 100% always uses temporal AA '
+                   "or an upscaler. NVIDIA DLSS and AMD FSR replace the game's TAA: native anti-aliasing at "
+                   'Render scale 100, upscaling below it (DLSS: Quality / Balanced / Performance from the scale). '
+                   "AMD FSR sharpens by its own strength, DLSS and the game's TAA with the sharpening above. DLSS "
+                   'needs an NVIDIA RTX GPU and gow3_dlss.dll + nvngx_dlss.dll next to medievil-runtime.exe (the bin '
+                   'folder; nvngx_dlss.dll is not included: see README-Windows.txt). AMD FSR 4 needs its model files '
+                   '(tools/fetch_fsr4_assets.sh, not included) and costs more than FSR 3.1. One the system cannot '
+                   "run falls back to the game's TAA. F9 switches the upscaler in the game; the game's AA choices "
+                   'apply at start.'))
+        self.row(f, _('Render scale'), self.render_scale_control(f), _(RENDER_SCALE_HINT), restart=True)
         self.row(f, _('AMD FSR sharpening'), percent_slider('fsr_sharpness'),
                  _('FSR\'s own sharpening while AMD FSR runs, apart from the RCAS strength. 0 turns it off.'))
         self.section(f, _('Overlay'))
@@ -1742,45 +1825,40 @@ class Launcher:
     def build_performance(self):
         f = self.scrolled_page('performance', _('Performance'), _('Graphics and speed options.'))
         self.section(f, _('Graphics settings'), top=4)
-        self.note(f, _('Graphics quality (below) sets all of these; changing one makes it Custom. "PS4 default" '
+        self.row(f, _('Graphics quality'), self.choice(f, self.quality_choice_var(), None, QUALITY_PRESETS,
+                                                       custom=lambda _value: _('Custom')),
+                 _('Sets every graphics setting below. Console: exactly the PS4. High and Ultra go beyond it: '
+                   'sharper filtering, farther view and detail, better reflections, for strong graphics cards. Medium '
+                   'and Low lower shadows, effects and distances: for integrated graphics (Radeon 780M, Intel Arc) '
+                   'and older cards. Custom: some settings changed by hand.') + ' ' +
+                 _('Deck Optimized: the Steam Deck settings of a flat 60 FPS (720p, 80% render scale, Low with '
+                   'volumetric fog, a 60 FPS limit, VSync off) and the Steam Deck performance switches '
+                   '(Performance patches).'),
+                 restart=True)
+        note, show = self.deck_note(f)
+        note.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(4, 2))
+        show()
+        self.note(f, _('Graphics quality (above) sets all of these; changing one makes it Custom. "PS4 default" '
                        'marks the value the PS4 itself uses. The in-game menu switches most of them while playing.'),
                   top=2)
         for key, title, hint, choices in GRAPHICS_OPTIONS:
             self.row(f, _(title), self.choice(f, key, 'ini', [(value, (label,)) for value, label in choices]),
                      _(hint), restart=True)
-        self.section(f, _('Performance patches'))
-        self.note(f, _('All on by default. Switch one off to compare, or if '
-                       'something looks wrong; applied at the next start (the in-game menu switches several of '
-                       'them at once).'), top=2)
-        for key, title, hint, _off in PERF_PATCHES:
-            self.check(f, key, 'ini', _(title), _(hint), restart=True)
-        self.section(f, _('Resolution and quality'))
-        self.row(f, _('Graphics quality'), self.choice(f, self.quality_choice_var(), None, QUALITY_PRESETS,
-                                                       custom=lambda _value: _('Custom')),
-                 _('Sets every graphics setting above. Console: exactly the PS4. High and Ultra go beyond it: '
-                   'sharper filtering, farther view and detail, better reflections, for strong graphics cards. Medium '
-                   'and Low lower shadows, effects and distances: for integrated graphics (Radeon 780M, Intel Arc) '
-                   'and older cards. Custom: some settings changed by hand.') + ' ' +
-                 _('Deck Optimized: the Steam Deck settings of a flat 60 FPS (720p, 80% render scale, Low with '
-                   'volumetric fog, a 60 FPS limit, VSync off) and the Steam Deck performance switches below.'),
-                 restart=True)
-        note, show = self.deck_note(f)
-        note.grid(row=self.next_row(f), column=0, columnspan=2, sticky='w', pady=(4, 2))
-        show()
-        self.deck_switch_rows(f)
         self.row(f, _('Effects resolution'), self.choice(f, 'effects_resolution', 'ini', EFFECTS_CHOICES),
                  _('Smoke, fire and enemy death effects drawn at a lower resolution and blended in. At 4K '
                    'several enemy deaths at once cost 2-3 ms a frame at 100%; 50% matches the effect detail '
                    'of the PS4 at 1080p. The cost grows with the render resolution. Applied at start; the in-game menu '
                    'also switches it while playing.'), restart=True)
-        self.row(f, _('Output resolution'), self.choice(f, 'output_resolution', 'ini', OUTPUT_CHOICES,
-                                                        custom=self.custom_label('output_resolution')),
-                 _(OUTPUT_HINT), restart=True)
-        self.row(f, _('Render scale'), self.render_scale_control(f), _(RENDER_SCALE_HINT), restart=True)
-        self.row(f, _('Anti-aliasing'), self.choice(f, 'ue4_aa', 'ini', AA_CHOICES),
-                 _("The game's temporal AA smooths edges but blurs a little in motion. FXAA is sharper, Off "
-                   'shows raw pixels (best with a render scale above 100%). A render scale below 100% always '
-                   'uses temporal AA. Applied at start.'), restart=True)
+        self.builtin_patch_rows(f, 'graphics')
+        self.section(f, _('Performance patches'))
+        self.note(f, _('Switch one off to compare, or if something looks wrong; applied at the next start (the '
+                       'in-game menu switches several of them at once). The game patches among them come from the '
+                       "game's patch file and follow the game you picked."), top=2)
+        for key, title, hint, _off in PERF_PATCHES:
+            self.check(f, key, 'ini', _(title), _(hint), restart=True)
+            self.builtin_patch_rows(f, key)
+        self.deck_switch_rows(f)
+        self.builtin_patch_rows(f, 'deck')
         self.section(f, _('Shaders'))
         self.check(f, 'pipeline_binary_cache', 'app', _('Use pipeline binary cache (A/B test)'),
                    _('Reuse saved Vulkan pipelines. Disable to compare FPS with normal compilation. '
@@ -2031,6 +2109,11 @@ class Launcher:
         folder = self.var('game_dir', 'app').get()
         title_id, profile = game_profile_of(folder)
         self.game_patch_title, self.game_patch_vars = None, {}
+        for name, (box, hint) in getattr(self, 'builtin_patch_widgets', {}).items():
+            # Placed on Performance: greyed out unless this game's patch file has them (below).
+            self.builtin_patch_vars[name].set(False)
+            box.state(['disabled'])
+            hint.configure(text=_("Not in this game's patch file."))
         if not profile:
             self.note(f, _('No built-in patches for this game.', 'Для этой игры нет встроенных патчей.'), top=0)
             return
@@ -2039,18 +2122,31 @@ class Launcher:
         chosen = game_patch_selection(self.app, title_id, profile)
         on = set(chosen) if chosen is not None else {m.get('Name') for m in metas
                                                          if m.get('isEnabled', 'false').lower() == 'true'}
-        self.note(f, _('{} · version {} · {}. Resolution and frame rate patches follow Performance.',
+        self.note(f, _('{} · version {} · {}. Resolution and frame rate patches follow Display; the others are on '
+                       'the Performance page, with the settings they belong to.',
                        '{} · версия {} · {}.').format(title_id, version, xml.name), top=0)
+        shown_here = 0
         for meta in metas:
             name = meta.get('Name')
             # Chosen by run.py: the resolution and frame rate patches, and the output size ones
-            # (Performance > Output resolution).
+            # (Display > Output resolution).
             if chosen_by_run_py(name):
                 continue
+            if name in getattr(self, 'builtin_patch_vars', {}):  # shown on Performance (BUILTIN_PATCH_ROWS)
+                var = self.builtin_patch_vars[name]
+                var.set(name in on)
+                box, hint = self.builtin_patch_widgets[name]
+                box.state(['!disabled'])
+                hint.configure(text=meta.get('Note') or '')
+                self.game_patch_vars[name] = var
+                continue
+            shown_here += 1
             var = tk.BooleanVar(value=name in on)
             self.game_patch_vars[name] = var
             author = meta.get('Author')
             self.check(f, None, None, name + (f'  ({author})' if author else ''), meta.get('Note'), var=var)
+        if not shown_here:
+            self.note(f, _('No other built-in patches.'), top=6)
         self.game_patch_title = title_id
 
     def store_game_patches(self):
@@ -2549,8 +2645,7 @@ class Launcher:
         title = info[0] if info else APP_NAME
         self.root.title(WINDOW_TITLE.format(title, VERSION))
         self.side_title.configure(text=title.upper())
-        if self.current_page == 'patches':
-            self.refresh_game_patches()
+        self.refresh_game_patches()  # Performance shows the built-in ones (BUILTIN_PATCH_ROWS)
         self.banner_source = None
         self.draw_banner()
         self.set_icon()

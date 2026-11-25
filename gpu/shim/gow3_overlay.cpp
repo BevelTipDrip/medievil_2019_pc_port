@@ -1583,10 +1583,10 @@ void DisplayTab() {
         EndRows();
     }
 
-    // HDR: in the Color tab (HdrRows), where the Color panel can show them while playing.
+    // HDR: in the HDR tab (HdrRows), where its panel can show them while playing.
     if (s.hdr_active) {
         Section("HDR");
-        Note("The HDR settings are at the top of the Color tab, and in its \"Adjust while playing\" panel.");
+        Note("The HDR settings are in the HDR tab, and in its \"Adjust while playing\" panel.");
     }
 
     Section("Information");
@@ -2106,16 +2106,28 @@ void HdrRows() {
 // grading stays. In SDR and HDR. Per-channel values (grade_*_r / _g / _b) are in medievil.ini only.
 void ColorTab() {
     namespace S = Gow3Settings;
+    const auto& s = S::Get();
     if (IsGow3()) {
         Section("Colour grading");
         Note("God of War III has no colour grading here.");
         return;
     }
+    // v2.5.0: the HDR tab. The game's own colour grading rows (white balance, the four ranges, gamut) are a dev-build
+    // comparison only: they worked unevenly across levels, and the HDR rows cover the look (the user, 2026-11-24).
+    if (!s.hdr_active && !GOW3_DEV_TOOLS) {
+        Section("HDR");
+        Note("HDR is off. Turn on HDR in Windows (Settings > System > Display), then Allow HDR output in the launcher "
+             "(Display) and restart the game.");
+        return;
+    }
     if (!color_panel) {
-        Note("The HDR settings (while the game outputs HDR), then changes to the game's own colour grading, applied at "
-             "once in SDR and HDR. 1.00 and +0 keep the game's look; each area keeps its own grading. Per-channel "
-             "(red / green / blue) values are in medievil.ini.");
-        if (styled && BeginRows("##color_panel_open")) {
+        Note(GOW3_DEV_TOOLS ? "The HDR settings (while the game outputs HDR), then changes to the game's own colour "
+                              "grading (dev build), applied at once in SDR and HDR. 1.00 and +0 keep the game's look; "
+                              "each area keeps its own grading. Per-channel (red / green / blue) values are in "
+                              "medievil.ini."
+                            : "The HDR picture: brightness, the tone curve and bloom. Each level can keep its own "
+                              "values (Adjust).");
+        if (styled && s.hdr_active && BeginRows("##color_panel_open")) {
             static const char* const open_label[] = {"Open"};
             static const bool enabled[] = {true};
             if (ButtonsRow("Adjust while playing", open_label, 1, enabled,
@@ -2127,6 +2139,9 @@ void ColorTab() {
         }
     }
     HdrRows();
+    if constexpr (!GOW3_DEV_TOOLS) {
+        return; // the game's own grading: dev build only (above)
+    }
     Section("White balance");
     if (BeginRows("##white_balance")) {
         GradeRow("Temperature", S::GradeWbTemp, "Warmer (+) or cooler (-) than the game's white, in kelvin.");
@@ -2230,7 +2245,7 @@ void PlainMenu() {
     }
     const float footer = ImGui::GetFrameHeightWithSpacing() * 2.0f + ImGui::GetTextLineHeightWithSpacing() * 2.0f;
     if (ImGui::BeginTabBar("##tabs")) {
-        static const char* const tabs[TabCount] = {"Controls", "Display", "Graphics", "Color", "Performance", "Overlay"};
+        static const char* const tabs[TabCount] = {"Controls", "Display", "Graphics", "HDR", "Performance", "Overlay"};
         for (int tab = 0; tab < TabCount; ++tab) {
             const ImGuiTabItemFlags flags = requested_tab == tab ? ImGuiTabItemFlags_SetSelected : 0;
             if (!ImGui::BeginTabItem(tabs[tab], nullptr, flags)) {
@@ -2477,7 +2492,7 @@ void StyledMenu() {
 
     // The tabs between the L1 and R1 prompts (each clickable); the current one Gold and underlined.
     {
-        static const char* const tabs[TabCount] = {"CONTROLS", "DISPLAY", "GRAPHICS", "COLOR", "PERFORMANCE", "OVERLAY"};
+        static const char* const tabs[TabCount] = {"CONTROLS", "DISPLAY", "GRAPHICS", "HDR", "PERFORMANCE", "OVERLAY"};
         float size = TextPx(TabPx), icon = Px(TabIcon), gap = Px(22.0f);
         float total = 2.0f * (icon + gap) - gap;
         for (const char* name : tabs) {
@@ -2668,7 +2683,7 @@ void ColorPanel() {
         draw->AddImage(frame, B(0, 600), B(FrameW, FrameH), ImVec2(0.0f, bottom), ImVec2(1.0f, 1.0f));
     }
     {
-        const char* title = "-COLOR-";
+        const char* title = "-HDR-";
         const float size = std::max(std::round(TitlePx * frame_u * 1.15f), 10.0f);
         const float w = choice_style.title->CalcTextSizeA(size, FLT_MAX, 0.0f, title).x;
         draw->AddText(choice_style.title, size, ImVec2(at.x + (width - w) * 0.5f, P(0, TitleY - 4.0f).y), White, title);

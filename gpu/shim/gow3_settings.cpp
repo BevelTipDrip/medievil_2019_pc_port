@@ -152,6 +152,11 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         }
     }
     if (key.starts_with("grade_")) {
+        // v2.5.0: the game's own colour grading is a dev-build setting (out of the release menu); release keeps the
+        // game's grading, also for an ini changed by an earlier version.
+        if (!GOW3_DEV_TOOLS) {
+            return;
+        }
         for (int g = 0; g < GradeCount; ++g) {
             if (key == GradeKey(g)) {
                 const GradeInfo info = GradeAt(g);
