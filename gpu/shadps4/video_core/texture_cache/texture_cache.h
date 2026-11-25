@@ -628,12 +628,34 @@ private:
         /// gow3 (study-perf-deepdive-20261123.md P2): the newest finished numbered copy. A tracked range's copies go
         /// here instead of guest memory (no page watch, no TryWriteBacking): only the hook reads them.
         std::vector<u8> shadow;
+        /// gow3 P2 fix (review-perf-changes-20261124.md 1): the last SnapshotReadback. A slot the hook has not read
+        /// for ShadowLive is not live: copies of its range go to guest memory again, and the slot can be reused.
+        std::chrono::steady_clock::time_point used{};
     };
-    /// The tracked range a numbered copy of [address, address + size) belongs to, or null. readback_mutex held.
-    TrackedReadback* FindTracked(VAddr address, u64 size);
-    /// A finished copy of a tracked range into its shadow. readback_mutex held. False: not tracked.
+    static constexpr auto ShadowLive = std::chrono::milliseconds(250);
+    /// The slot a copy may go to instead of guest memory: exactly the tracked range (address and size) and live.
+    /// readback_mutex held. Anything else (an overlap, another size, a slot the hook stopped reading) is written
+    /// to guest memory with its page watch, as before P2.
+    TrackedReadback* ShadowTarget(VAddr address, u64 size, std::chrono::steady_clock::time_point now);
+    /// A finished copy queued for the shadow: into the slot of exactly that range if one is still there (live or
+    /// not: the copy was queued without a page watch). False: none, the caller writes guest memory.
     bool WriteShadow(VAddr address, u64 size, const u8* data);
+    /// A numbered copy of a tracked range went to guest memory instead: its slot's shadow is older than the
+    /// number it publishes, so the snapshot reads guest memory until the next shadow copy.
+    void DropShadow(VAddr address, u64 size);
     std::array<TrackedReadback, 4> tracked_readbacks{}; ///< guarded by readback_mutex
+
+public:
+    /// gow3 P2 fix: dev counters for the HZB line of the frame stats (taken and cleared).
+    struct ShadowStats {
+        u64 copies = 0;     ///< copies written to a shadow
+        u64 to_guest = 0;   ///< numbered copies of a tracked range written to guest memory (not exact or not live)
+        u64 reclaimed = 0;  ///< slots reused for another range after the hook stopped reading them
+    };
+    ShadowStats TakeShadowStats();
+
+private:
+    ShadowStats shadow_stats; ///< guarded by readback_mutex
     u64 NoteTrackedPush(VAddr address, u64 size);
     void NoteTrackedPublish(VAddr address, u64 size, u64 seq);
     std::atomic<bool> has_pending_readbacks{false};

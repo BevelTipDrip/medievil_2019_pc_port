@@ -20,17 +20,19 @@ public:
         bool watched = true; ///< still protects its pages (see ReleaseOutside)
         std::uint64_t seq = 0; ///< gow3: copy number of a tracked range (TextureCache::SnapshotReadback), 0 if none
         bool reads = false; ///< gow3: its pages also watch CPU reads (a first copy, GOW3_READBACK_FIRST_WAIT)
+        bool shadowed = false; ///< gow3 P2: queued for a tracked range's host shadow (no page watch, no guest write)
     };
     bool CanFit(std::uint64_t size) const {
         return entries.size() < 64 && size <= MaxBytes && bytes <= MaxBytes - size;
     }
     void Push(std::uint64_t address, std::uint64_t size, std::uint64_t tick, Payload payload,
-              std::uint64_t seq = 0, bool reads = false, bool watched = true) {
+              std::uint64_t seq = 0, bool reads = false, bool watched = true, bool shadowed = false) {
         assert(CanFit(size));
         entries.push_back({address, size, tick, std::move(payload)});
         entries.back().seq = seq;
         entries.back().reads = reads;
         entries.back().watched = watched;
+        entries.back().shadowed = shadowed;
         bytes += size;
     }
     std::uint64_t RequiredTick(std::uint64_t address, std::uint64_t size) const {

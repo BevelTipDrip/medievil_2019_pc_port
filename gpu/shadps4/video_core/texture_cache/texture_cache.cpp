@@ -288,10 +288,12 @@ void TextureCache::RetireReadbacks(bool polled) {
         [this](auto& entry) {
             if (entry.valid) {
                 entry.payload.Invalidate();
-                // P2: a numbered copy of a tracked range (the HZB hook's) goes to its host shadow, not guest memory.
-                if (!entry.seq || !WriteShadow(entry.address, entry.size, entry.payload.mapped)) {
+                // P2: a copy queued for a tracked range's host shadow (the HZB hook's) goes there, not to guest
+                // memory; the decision was made when it was queued (it has no page watch).
+                if (!entry.shadowed || !WriteShadow(entry.address, entry.size, entry.payload.mapped)) {
                     Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(entry.address),
                         entry.payload.mapped, entry.size);
+                    if (entry.seq) DropShadow(entry.address, entry.size);
                 }
                 if (entry.watched) UnwatchReadback(entry);
                 if (entry.seq) NoteTrackedPublish(entry.address, entry.size, entry.seq);
@@ -395,19 +397,37 @@ u64 TextureCache::NoteTrackedPush(VAddr address, u64 size) {
     return 0;
 }
 
-TextureCache::TrackedReadback* TextureCache::FindTracked(VAddr address, u64 size) {
+TextureCache::TrackedReadback* TextureCache::ShadowTarget(VAddr address, u64 size,
+                                                          std::chrono::steady_clock::time_point now) {
     for (auto& t : tracked_readbacks) {
-        if (t.size && address < t.address + t.size && t.address < address + size) return &t;
+        if (t.size && t.address == address && t.size == size && now - t.used < ShadowLive) return &t;
     }
     return nullptr;
 }
 
 bool TextureCache::WriteShadow(VAddr address, u64 size, const u8* data) {
-    TrackedReadback* t = FindTracked(address, size);
-    if (!t || address != t->address || !data) return false;
-    t->shadow.resize(t->size);
-    std::memcpy(t->shadow.data(), data, std::min(size, t->size));
-    return true;
+    for (auto& t : tracked_readbacks) {
+        if (t.size && t.address == address && t.size == size && data) {
+            t.shadow.assign(data, data + size);
+            ++shadow_stats.copies;
+            return true;
+        }
+    }
+    return false;
+}
+
+void TextureCache::DropShadow(VAddr address, u64 size) {
+    for (auto& t : tracked_readbacks) {
+        if (t.size && address < t.address + t.size && t.address < address + size) {
+            t.shadow.clear();
+            ++shadow_stats.to_guest;
+        }
+    }
+}
+
+TextureCache::ShadowStats TextureCache::TakeShadowStats() {
+    std::scoped_lock lock{readback_mutex};
+    return std::exchange(shadow_stats, {});
 }
 
 void TextureCache::NoteTrackedPublish(VAddr address, u64 size, u64 seq) {
@@ -423,15 +443,24 @@ TextureCache::ReadbackSnapshot TextureCache::SnapshotReadback(VAddr address, u64
                                                               u64 copy_size, bool restart) {
     if (!deferred_readbacks || !size) return {};
     std::scoped_lock lock{readback_mutex};
+    const auto now = std::chrono::steady_clock::now();
     auto it = std::ranges::find_if(tracked_readbacks, [&](const TrackedReadback& t) {
         return t.address == address && t.size == size;
     });
     if (it == tracked_readbacks.end()) {
         // Copies queued before this call carry no number: their bytes count as copy 0.
         it = std::ranges::find(tracked_readbacks, u64{0}, &TrackedReadback::size);
-        if (it == tracked_readbacks.end()) return {};
-        *it = {address, size, 0, 0, {}};
+        if (it == tracked_readbacks.end()) {
+            // P2 fix: a slot the hook stopped reading (its view or results texture is gone) is reused.
+            it = std::ranges::find_if(tracked_readbacks,
+                                      [&](const TrackedReadback& t) { return now - t.used >= ShadowLive; });
+            if (it == tracked_readbacks.end()) return {};
+            ++shadow_stats.reclaimed;
+            pending_readbacks.ClearSeq(it->address, it->size);
+        }
+        *it = {address, size, 0, 0, {}, now};
     }
+    it->used = now;
     RetireReadbacks();
     if (restart) {
         it->pushed = it->published = 0; // the shadow stays: its bytes are a finished copy
@@ -549,9 +578,12 @@ void TextureCache::ProcessDownloadImages() {
                     scheduler.Finish();
                     copy->staging.Invalidate();
                     const u64 seq = NoteTrackedPush(copy->guest_address, copy->size);
-                    if (!seq || !WriteShadow(copy->guest_address, copy->size, copy->staging.mapped)) {
+                    const bool shadowed = seq && ShadowTarget(copy->guest_address, copy->size,
+                                                              std::chrono::steady_clock::now());
+                    if (!shadowed || !WriteShadow(copy->guest_address, copy->size, copy->staging.mapped)) {
                         Core::Memory::Instance()->TryWriteBacking(
                             std::bit_cast<u8*>(copy->guest_address), copy->staging.mapped, copy->size);
+                        if (seq) DropShadow(copy->guest_address, copy->size);
                     }
                     if (seq) {
                         NoteTrackedPublish(copy->guest_address, copy->size, seq);
@@ -563,11 +595,13 @@ void TextureCache::ProcessDownloadImages() {
                     // logged, and with GOW3_READBACK_FIRST_WAIT its pages watch CPU reads too.
                     const bool first = stale_readbacks &&
                                        !readback_published.contains(copy->guest_address);
-                    // P2: a copy of the hook's tracked range is numbered and goes to the shadow: no page watch
-                    // (two VirtualProtect calls a frame saved; only the hook reads these bytes).
+                    // P2: a copy of exactly the hook's tracked range, while the hook reads it, is numbered and
+                    // goes to the shadow: no page watch (two VirtualProtect calls a frame saved; only the hook
+                    // reads these bytes). Anything else at or over that range goes to guest memory as before
+                    // (review-perf-changes-20261124.md 1: a reused address must not lose its copy).
                     const u64 seq = NoteTrackedPush(copy->guest_address, copy->size);
-                    const TrackedReadback* tracked = seq ? FindTracked(copy->guest_address, copy->size) : nullptr;
-                    const bool shadowed = tracked && tracked->address == copy->guest_address;
+                    const bool shadowed = seq && ShadowTarget(copy->guest_address, copy->size,
+                                                              std::chrono::steady_clock::now());
                     const bool reads = first && readback_first_wait && !shadowed;
                     if (reads) {
                         tracker.UpdatePageWatchers<true, true>(copy->guest_address, copy->size);
@@ -599,7 +633,7 @@ void TextureCache::ProcessDownloadImages() {
                         }
                     }
                     pending_readbacks.Push(copy->guest_address, copy->size,
-                        scheduler.CurrentTick(), copy->staging, seq, reads, !shadowed);
+                        scheduler.CurrentTick(), copy->staging, seq, reads, !shadowed, shadowed);
                     PublishReadbackSpans(); // C5: before any pre-check may skip the lock
                     has_pending_readbacks.store(true, std::memory_order_release);
                     ++readbacks_queued;

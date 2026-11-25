@@ -48,6 +48,13 @@ after one `Sync` and numbers copies by a second hook before `Submit` (`medievil_
   0x44) are UE 4.21 as built in this eboot; the hash walk caps steps at 2^22 and indices at 65,536.
 - `r.NumBufferedOcclusionQueries` stays 3 (T-HZ4e: the remaining queries are read 3 frames late, no spin).
 - Results are only as good as the HZB: its mips 5-10 were never rendered until N-22 (micro-mip-targets).
+- P2 host shadow (`23bef86`, fix `P2FIX`): a results copy goes to the tracked slot's host shadow (no page watch, no
+  guest write) only when it is exactly the slot's range (address and 256 KB) and the hook read the slot within the
+  last 250 ms (`ShadowLive`); the decision is made when the copy is queued (`Entry::shadowed`). Everything else at
+  or over the range goes to guest memory with its page watch, and a numbered copy that does drops the shadow (the
+  snapshot reads guest memory until the next shadow copy). Slots the hook stopped reading are reused; tester slots
+  idle for 5 s too (`TesterIdle`). Dev frame stats: "HZB shadow (5 s)" (copies to the shadow, numbered copies to guest
+  memory, slots / testers reused); in play expect about one shadow copy per frame and 0 to guest memory.
 
 ## Interactions
 
@@ -71,5 +78,8 @@ after one `Sync` and numbers copies by a second hook before `Submit` (`medievil_
 
 - T-HZ1 (stale readbacks): the user, "Dan himself gets culled, sometimes the ground or enemies". T-HZ2b (precise):
   "Nothing is failing to draw now" but 110-116 FPS; T-HZ3 (+R1): ~125, HZB rejected until the remap.
+- P2 first version (`23bef86`, 2026-11-24) matched copies by start address only and never freed slots: a later
+  readback at a freed results address would have reached only the shadow (the game reading old bytes; review
+  review-perf-changes-20261124.md 1, found statically, not seen in a run). Fixed by the exact-and-live rule above.
 - Default since `57dc5c4` (2026-10-20); 01.02 rows and run.py's version choice in `1e8150f` / `3cf6d69`. Not live
   (study: install the hooks always and switch `r.AllowOcclusionQueries`; not built, by the user's scope).

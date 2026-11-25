@@ -73,7 +73,11 @@ struct Tester {
     std::array<Frame, 6> ring;
     std::vector<std::uint8_t> source, served;
     std::vector<Key> hidden_keys; ///< stats: keys read hidden in the last map, sorted
+    std::chrono::steady_clock::time_point used{}; ///< last Map / Submit (P2 fix: idle slots are reused)
 };
+/// gow3 P2 fix (review-perf-changes-20261124.md 1): a tester slot unused this long is reused for a new tester
+/// (a view state that went away at a level change), so new views keep their occlusion.
+constexpr auto TesterIdle = std::chrono::seconds(5);
 
 struct Stats {
     std::uint64_t calls = 0, invalid = 0, remapped = 0, syncs = 0, unavailable = 0, drift = 0;
@@ -81,6 +85,7 @@ struct Stats {
     std::uint64_t keys = 0, unmatched = 0, hidden = 0, hides = 0, unhides = 0;
     std::uint64_t hidden_min = ~std::uint64_t{0}, hidden_max = 0; // per map
     double us_total = 0, us_max = 0;
+    std::uint64_t testers_reused = 0;
 };
 
 using MapResultsFn = void(__attribute__((sysv_abi))*)(void*, void*);
@@ -92,13 +97,28 @@ std::vector<Entry> scratch;
 Stats stats;
 auto report_time = std::chrono::steady_clock::now();
 
-Tester* Find(std::uint8_t* tester, bool create) {
+Tester* Find(std::uint8_t* tester, bool create, std::chrono::steady_clock::time_point now) {
     const auto key = reinterpret_cast<std::uintptr_t>(tester);
     auto state = std::ranges::find(testers, key, &Tester::tester);
-    if (state != testers.end() || !create) return state != testers.end() ? &*state : nullptr;
+    if (state != testers.end()) {
+        state->used = now;
+        return &*state;
+    }
+    if (!create) return nullptr;
     state = std::ranges::find(testers, std::uintptr_t{0}, &Tester::tester);
-    if (state == testers.end()) return nullptr;
+    if (state == testers.end()) {
+        state = std::ranges::min_element(testers, {}, &Tester::used);
+        if (now - state->used < TesterIdle) return nullptr;
+        // P2 fix: an idle slot is reused (its buffers kept).
+        ++stats.testers_reused;
+        auto source = std::move(state->source);
+        auto served = std::move(state->served);
+        *state = Tester{};
+        state->source = std::move(source);
+        state->served = std::move(served);
+    }
     state->tester = key;
+    state->used = now;
     state->source.resize(ResultsBytes);
     state->served.resize(ResultsBytes);
     return &*state;
@@ -139,6 +159,16 @@ bool CollectKeys(const std::uint8_t* view_state, std::uint32_t frame, std::vecto
 void Report(std::chrono::steady_clock::time_point now) {
     if (!Gow3Stats::enabled || now - report_time < std::chrono::seconds(5)) return;
     const auto& s = stats;
+    if (auto* rasterizer = Core::Memory::Instance()->GetRasterizer()) {
+        // P2 fix: where the results copies went (shadow / guest memory) and slot reuse.
+        const auto shadow = rasterizer->GetTextureCache().TakeShadowStats();
+        std::printf("HZB shadow (5 s): %llu copies to the shadow, %llu numbered copies to guest memory, %llu "
+                    "slots reused, %llu testers reused\n",
+                    static_cast<unsigned long long>(shadow.copies),
+                    static_cast<unsigned long long>(shadow.to_guest),
+                    static_cast<unsigned long long>(shadow.reclaimed),
+                    static_cast<unsigned long long>(s.testers_reused));
+    }
     const auto u = [](std::uint64_t v) { return static_cast<unsigned long long>(v); };
     std::printf("HZB remap (5 s): %llu maps (%llu invalid, %llu remapped, %llu syncs, %llu drift, "
                 "%llu unavailable); age 0/1/2/3/4/>4/none %llu/%llu/%llu/%llu/%llu/%llu/%llu; keys %llu "
@@ -181,8 +211,8 @@ void Sync(std::uint8_t* tester, void* command_list, Tester& state) {
     ServeVisible(tester, state); // the guest copy is stale (T-HZ1); the remap starts next frame
 }
 
-void Map(std::uint8_t* tester, void* command_list) {
-    Tester* state = Find(tester, true);
+void Map(std::uint8_t* tester, void* command_list, std::chrono::steady_clock::time_point time) {
+    Tester* state = Find(tester, true, time);
     if (!state) {
         ++stats.unavailable;
         map_results(tester, command_list);
@@ -304,7 +334,7 @@ extern "C" void __attribute__((sysv_abi)) medievil_hzb_map(void* tester, void* c
     std::scoped_lock lock{mutex};
     ++stats.calls;
     const auto remapped = stats.remapped;
-    Map(static_cast<std::uint8_t*>(tester), command_list);
+    Map(static_cast<std::uint8_t*>(tester), command_list, start);
     const auto now = std::chrono::steady_clock::now();
     if (stats.remapped != remapped) {
         const double us = std::chrono::duration<double, std::micro>(now - start).count();
@@ -317,5 +347,7 @@ extern "C" void __attribute__((sysv_abi)) medievil_hzb_map(void* tester, void* c
 /// Before FHZBOcclusionTester::Submit: one results copy follows.
 extern "C" void __attribute__((sysv_abi)) medievil_hzb_submit(void* tester) {
     std::scoped_lock lock{mutex};
-    if (Tester* state = Find(static_cast<std::uint8_t*>(tester), true)) ++state->submits;
+    if (Tester* state = Find(static_cast<std::uint8_t*>(tester), true, std::chrono::steady_clock::now())) {
+        ++state->submits;
+    }
 }
