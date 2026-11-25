@@ -11,6 +11,7 @@ BOUNDS = 'GPU particle bounds'
 HZB = 'Finer occlusion culling (low render resolutions, Steam Deck)'
 NAV = 'Navigation path purge without fences (CPU)'
 RHI = 'RHI pending-delete check without fences (CPU)'
+TASKQ = 'Task queue reads without extra fences (CPU, experimental)'
 SEGMENTS = [(0, 0x6000000)]
 
 
@@ -75,6 +76,16 @@ class MedievilPatchTests(unittest.TestCase):
         self.assertEqual(compile_patches(XML, [RHI], '01.02', SEGMENTS),
                          [(0xf7c1d8, value), (0xf7c348, value), (0xf7c498, value)])
         self.assertIn(RHI, selected_patches(XML, '01.02', ''))
+
+    def test_task_queue_fences(self):
+        # TLockFreePointerListFIFOBase Pop / Push: 38 fences per version become nops, the loop heads' fences stay.
+        nop = bytes.fromhex('0f1f00')
+        for ver, first in (('01.00', 0x6e5069), ('01.02', 0x6e7c29)):
+            lines = compile_patches(XML, [TASKQ], ver, SEGMENTS)
+            self.assertEqual(len(lines), 38)
+            self.assertEqual(lines[0], (first, nop))
+            self.assertTrue(all(value == nop for _addr, value in lines))
+        self.assertNotIn(TASKQ, selected_patches(XML, '01.02', ''))  # experimental: off by default
 
     def test_nav_purge_without_fences(self):
         # ANavigationData::TickActor's purge: mfence; mov eax, [rax+8]; mfence -> the load and a nop.
