@@ -23,19 +23,23 @@ occlusion, reflections and volumetric fog still on.
 
 ## What's new in 2.5.0
 
-**HDR.** With **HDR output** on (launcher > Display, or the in-game menu's Display tab) and HDR on in Windows, the game outputs HDR10 through
-its own colour grading and a tone curve made for HDR: a toe for the shadows, a straight middle and a shoulder that
-rolls the highlights off to your display's peak. The engine's own HDR output (ACES: lifted blacks, flat
-contrast) is not used.
+**HDR.** With **HDR output** on (launcher > Display, or the in-game menu's Display tab) and HDR on in Windows, the
+game outputs HDR10 through its own colour grading and a tone curve made for HDR: deep blacks, natural contrast, and
+highlights that roll off to your display's peak. The engine's own HDR output (ACES: lifted blacks, flat contrast)
+is not used.
 
-- The settings are in the in-game menu's new **HDR** tab and its "Adjust while playing" panel:
-  **UI brightness** (menus, HUD and subtitles), **Game brightness** (SDR white in HDR, 203 nits by default),
-  **Peak brightness** (your display's peak in its current mode), **Bloom strength**, and the curve's shape
-  (level LUT tone, black floor, contrast, toe, shoulder, highlight saturation).
+- **Tune it while you play.** The in-game menu's new **HDR** tab has an **Adjust while playing** panel that shows
+  the game behind it as you move the sliders: **UI brightness** (menus, HUD and subtitles), **Game brightness**
+  (SDR white in HDR, 203 nits by default), **Peak brightness** (your display's peak in its current mode),
+  **Bloom strength**, and the curve's shape (level LUT tone, black floor, contrast, toe, shoulder, highlight
+  saturation).
 - **Per-level settings.** The **Adjust** dropdown picks All levels or the level you are in; a level's own values
   override the shared ones (marked with *), and **Use All levels** removes them again.
 - The map screen goes through the same curve, with its film grain and sharpening.
 - Bloom strength tames levels whose bloom looks blown out in HDR (the Graveyard).
+- In HDR the picture ignores the game's own Brightness slider, but its HUD and menus still follow it: the
+  launcher's **Game brightness: Set to neutral** (Display) puts every save's Brightness back to the default
+  (saves are backed up first).
 
 **Steadier frame times.** All the performance work since 2.4.0 is in this release:
 - Timed waits in the game's threads end at their deadline instead of rounding up to whole milliseconds. With
@@ -43,29 +47,31 @@ contrast) is not used.
 - The release build has no diagnostics compiled in (they live in a separate development build): about 7 times
   fewer frames over 6 ms in a heavy view than with them in.
 - Guest read/write locks no longer take a global lock or allocate memory on every use.
-- Levels with many NPCs (the Sleeping Village) had waves of uneven frame times, worst in fights. At high frame
-  rates the game's own engine code spent much of each frame on memory fences the PS4 build puts around three
-  checks: its navigation paths, the graphics resources waiting to be deleted, and its task queues. Three built-in
-  game patches remove them (on by default, launcher > Performance). With the navigation one on, the other two
-  cut frames over 6 ms in a test fight from about 64 to 17 a minute; big fights there still dip somewhat.
-- The mouse reader waits for input instead of waking about 660 times a second, and still reads every millisecond
-  while the mouse moves.
-- Occlusion culling results stay on the host instead of being written into game memory every frame.
+- **Busy levels.** Levels with many enemies, like the Sleeping Village, had waves of uneven frame times. Three
+  built-in game patches (on by default, launcher > Performance) remove needless waits the PS4 build makes in the
+  engine's navigation, graphics clean-up and task code. The waves are much smaller; big fights there can still dip.
+- Occlusion culling results stay on the host instead of being written into game memory every frame: steadier
+  frames in combat.
+- With mouse controls on, the mouse reader waits for input instead of waking about 660 times a second.
 - Log lines are written in one go instead of one character at a time.
-- On Windows, the seven Steam Deck switches that also run on PCs are now on by default (launcher > Performance >
-  Steam Deck performance switches; in the game, Performance > Deck tuned); they are what this release was tested
-  with. You can still turn each one off.
+- **Steam Deck switches on Windows.** The seven Steam Deck switches that also run on PCs are now on by default on
+  Windows (launcher > Performance > Steam Deck performance switches; in the game, Performance > Deck tuned): this
+  release was tested with them on, on one PC. If you copy your `medievil.ini` from an earlier version, they stay
+  as they were (most likely off): turn them on there. Please compare on and off on your PC and tell us what you
+  see (launcher > **Submit Bug Report**, the issue tracker or Discord): other hardware is what these need.
 
 **Also:**
-- A deadlock between GPU threads that could freeze the game at very high render scales has a fix.
+- **The Hall of Heroes movie plays.** On the 100% ending, the Hall of Heroes movie showed a black screen with
+  only its sound; it now plays through and the credits follow.
+- A deadlock between GPU threads that could freeze the game on a level load at very high render scales has a
+  fix. **At 4K, keep the render scale at 125% or below:** at 200% the game can run out of graphics memory and
+  close on a level load; 150% has run without trouble here but is not fully tested.
 - The launcher's settings are regrouped: Output resolution, one Anti-aliasing / upscaler list (the game's TAA,
   FXAA, Off, DLSS, FSR) and Render scale under Display; Graphics quality at the top of Performance; the game's
   built-in patches next to the settings they belong with instead of on the Patches page.
-- The in-game menu's colour grading sliders (white balance, shadows / midtones / highlights) are gone: they acted
-  differently in every level, and the HDR settings cover the look. Values set in 2.4 are no longer applied.
-- The 100% ending's Hall of Heroes movie plays through and the game moves on.
 - Every run's log is kept in `user/logs/runs` (the newest 200), with the build, system and game at the top, so a
   bug report can include the run where something happened.
+- The Linux AppImage is a release build too (no diagnostics compiled in).
 
 ## Roadmap
 
@@ -163,6 +169,13 @@ Windows 11, RTX 4090, 4K. Some show the port's frame statistics along the top.
 - Mouse look and mouse buttons are Windows only for now; fixed and scripted camera areas keep the game's camera.
 - Going back to the main menu from a level can hang the game (the cause is found, not fixed yet).
 - Rarely the game closes during start-up; starting it again works.
+- At 4K, render scales above 125% can run out of graphics memory and close the game on a level load.
+- FXAA does not work properly with HDR on: use the game's TAA, DLSS or FSR.
+- F12 screenshots taken in HDR may not look right; use your GPU overlay's or Windows' screenshot instead.
+- A short hitch the first time HDR, the Hilltop Mausoleum or a blurred menu appears.
+- The RivaTuner (RTSS) overlay's text looks very bright in HDR (it draws outside the normal colour range).
+- In the Sleeping Village, Dan can get stuck in some walls.
+- Above about 79 FPS, Dan cannot walk out of the Grain Grinder: set the Frame rate limit to 60 for that part.
 - **Radeon RX 400/500 and Vega** (older AMD drivers): some crash when the main menu loads. Try launcher >
   Performance > Safe GPU mode (older AMD GPUs), and send a bug report from the launcher.
 - Installing from .pkg files: if your 01.02 update package holds only the changed files, unpack the base game's
