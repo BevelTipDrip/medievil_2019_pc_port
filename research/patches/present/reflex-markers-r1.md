@@ -1,6 +1,6 @@
 ---
 id: reflex-markers-r1
-title: "Reflex R1 (experimental): per-frame IDs from stage A as present IDs, every queue submission tagged, render-submit markers at stage A and `queued`"
+title: "Reflex R1 (tabled, no gain): per-frame IDs from stage A as present IDs, every queue submission tagged, render-submit markers at stage A and `queued`"
 area: present
 status: active
 platforms: all
@@ -59,9 +59,15 @@ sleep / at the present, with the frame's ID).
 
 ## Evidence
 
-- Fix built (not committed, not run): release build 2026-11-25 (`build.sh exit: 0`); `reflex-ids-test` passed.
-- Launch checks: the start-up line; no Vulkan errors / device loss; NVIDIA overlay latency (PC latency, render
-  latency) present and plausible; frame times vs Reflex without the switch (A/B, same scene).
+- Fix built: release build 2026-11-25 (`build.sh exit: 0`); `reflex-ids-test` passed (commit `c06d354`).
+- **Run, no gain; tabled (the user, 2026-11-25).** A/B in the Sleeping Village, same route (steady, wall swinging,
+  steady), flip traces in `user/logs/flip-traces`: A off (21:42), B `=1` (22:06), C `=2` (22:17, graphs in
+  `research-data/reflex-r1-20261125`). No Vulkan errors, the cap held, menus / loads without stutter. Pacing
+  unchanged: wall swinging 166-218 FPS in all three with 8-79 frames over 6 ms a second; in those seconds the
+  release -> present_start wait (Reflex's sleep) falls to ~0.1 ms in every run: frames arrive late from the game
+  thread, which markers cannot change. Steady stretches: the same banding (late frames 4.3-4.45 ms from the
+  game's frame start, catch-up frames after them) with and without. The code stays, off by default; branch
+  `reflex-markers` keeps it for a later look (e.g. together with R2 or a faster game thread).
 
 ## History and pitfalls
 
