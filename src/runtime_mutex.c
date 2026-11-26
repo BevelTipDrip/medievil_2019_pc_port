@@ -14,6 +14,14 @@
 typedef struct { int type; } GuestAttr;
 typedef struct {
     pthread_mutex_t native;
+    /* S1 boot crash (study-s1-boot-crash.md, 2026-11-25): the game's libc.prx sets a flag in libkernel's own
+     * mutex structure right after pthread_mutex_init in its malloc / mspace setup, `[handle + 0x20] |= 0x100`
+     * (libc.prx 0x5ebed, 0x5ee91, 0x60aa2; every boot). On the PS4 that struct is larger; here the handle is this
+     * record, 8 bytes in the release build, so the write hit a neighbouring heap block: a winpthread mutex
+     * object or another record (found under the page heap). The record now spans the PS4 struct's first 0x40
+     * bytes; nothing reads ps4_layout. Only libc does this, only on mutex handles (scan of libc, Fios2,
+     * NpToolkit2 and the eboot). */
+    unsigned char ps4_layout[0x40 - sizeof(pthread_mutex_t)];
 #if GOW3_DEV_TOOLS
     /* GOW3_MUTEX_HOLDERS (card tooling/mutex-holders): written by the holder while it holds the lock, read by
      * waiters without the lock (relaxed). depth: the holder's recursion depth as this code saw it. */
@@ -24,6 +32,7 @@ typedef struct {
     unsigned depth;
 #endif
 } GuestMutex;
+_Static_assert(sizeof(GuestMutex) >= 0x40, "libc.prx writes the flag at +0x20 of a guest mutex handle");
 /* locks / unlocks / waits / wakeups: GOW3_FRAME_STATS only (2026-11-16). Every thread wrote them on
  * every call, and they shared cache lines with the region table's vma_seq / vma_count / vmas, which the
  * GPU threads read on every lookup (study-tooling-off-cost.md). */
