@@ -153,53 +153,75 @@ static void describe_address(char *out, size_t size, uintptr_t address) {
     }
     snprintf(out,size,"%p",(void *)address);
 }
-/* Crash dumps (GOW3_CRASH_DUMP: 0 off, full = all memory, default = host memory without the
- * guest's mapped section): fatal_exception ends the process inside the first-chance handler, so
- * Windows Error Reporting never writes one. <user dir>\crashdumps, set in main. */
+/* Crash dumps (GOW3_CRASH_DUMP: 0 off; default = a small dump; full = the small dump, then a second file with
+ * all memory): fatal_exception ends the process inside the first-chance handler, so Windows Error Reporting never
+ * writes one. <user dir>\crashdumps, set in main.
+ * S1 study (2026-11-25): the large type 0x1a65 (private read-write memory, 1.6-2.4 GB) was tried first and took
+ * so long that players and the user closed the "not responding" game during it (exit 0xCFFFFFFF): every crash
+ * since 11-03 left an unusable, half-written file and the 0x1065 fallback never ran. The small types come first
+ * now (a few seconds), and the full dump, only on request, goes to its own file after the small one is safe. */
 static char crash_dump_dir[MAX_PATH];
-static void write_crash_dump(EXCEPTION_POINTERS *info) {
-    const char *mode=getenv("GOW3_CRASH_DUMP");
-    if (!crash_dump_dir[0] || (mode && !strcmp(mode,"0"))) return;
-    typedef BOOL (WINAPI *WriteDump)(HANDLE, DWORD, HANDLE, MINIDUMP_TYPE, PMINIDUMP_EXCEPTION_INFORMATION,
-                                     PMINIDUMP_USER_STREAM_INFORMATION, PMINIDUMP_CALLBACK_INFORMATION);
-    HMODULE dbghelp=LoadLibraryA("dbghelp.dll");
-    WriteDump write_dump=dbghelp ? (WriteDump)(void *)GetProcAddress(dbghelp,"MiniDumpWriteDump") : NULL;
-    if (!write_dump) { fputs("Crash dump: dbghelp.dll unavailable\n",stderr); return; }
-    /* Private read-write memory is the host's heaps and stacks (recorded commands, GPU state);
-     * guest memory is a mapped section view and stays out unless "full". In game the memory-walking
-     * types failed with E_INVALIDARG (the address space holds placeholder reservations and mapped
-     * views): each failure falls back to a smaller type, down to stacks and threads only. */
-    const MINIDUMP_TYPE base=(MINIDUMP_TYPE)(MiniDumpWithDataSegs|MiniDumpWithHandleData|MiniDumpWithThreadInfo|
-                                             MiniDumpWithUnloadedModules);
-    MINIDUMP_TYPE types[]={
-        (MINIDUMP_TYPE)(base|MiniDumpWithPrivateReadWriteMemory|MiniDumpWithFullMemoryInfo|
-                        MiniDumpWithIndirectlyReferencedMemory),
-        (MINIDUMP_TYPE)(base|MiniDumpWithIndirectlyReferencedMemory),
-        base,
-        MiniDumpNormal,
-    };
-    if (mode && !strcmp(mode,"full")) types[0]=(MINIDUMP_TYPE)(types[0]|MiniDumpWithFullMemory);
-    CreateDirectoryA(crash_dump_dir,NULL);
-    SYSTEMTIME now; GetLocalTime(&now);
-    char path[MAX_PATH+64];
-    snprintf(path,sizeof(path),"%s\\medievil-%04u%02u%02u-%02u%02u%02u-%lu.dmp",crash_dump_dir,now.wYear,now.wMonth,
-             now.wDay,now.wHour,now.wMinute,now.wSecond,GetCurrentProcessId());
+typedef BOOL (WINAPI *WriteDumpFn)(HANDLE, DWORD, HANDLE, MINIDUMP_TYPE, PMINIDUMP_EXCEPTION_INFORMATION,
+                                   PMINIDUMP_USER_STREAM_INFORMATION, PMINIDUMP_CALLBACK_INFORMATION);
+/* Writes path with the first of types that works (the file is truncated before each try, deleted if all fail). */
+static int write_dump_file(WriteDumpFn write_dump, const char *path, const MINIDUMP_TYPE *types, size_t count,
+                           EXCEPTION_POINTERS *info) {
     HANDLE file=CreateFileA(path,GENERIC_WRITE,0,NULL,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
-    if (file==INVALID_HANDLE_VALUE) { fprintf(stderr,"Crash dump: cannot create %s (%lu)\n",path,GetLastError()); return; }
+    if (file==INVALID_HANDLE_VALUE) { fprintf(stderr,"Crash dump: cannot create %s (%lu)\n",path,GetLastError()); return 0; }
     MINIDUMP_EXCEPTION_INFORMATION exception={GetCurrentThreadId(),info,FALSE};
     /* Written from the faulting thread while the others run: good enough for diagnostics. */
-    for (size_t i=0;i<sizeof(types)/sizeof(types[0]);++i) {
+    for (size_t i=0;i<count;++i) {
         SetFilePointer(file,0,NULL,FILE_BEGIN);
         SetEndOfFile(file);
         if (write_dump(GetCurrentProcess(),GetCurrentProcessId(),file,types[i],&exception,NULL,NULL)) {
             CloseHandle(file);
             fprintf(stderr,"Crash dump: %s (type 0x%x)\n",path,(unsigned)types[i]);
-            return;
+            fflush(stderr);
+            return 1;
         }
         fprintf(stderr,"Crash dump: type 0x%x failed (0x%08lx)\n",(unsigned)types[i],GetLastError());
     }
     CloseHandle(file);
     DeleteFileA(path);
+    return 0;
+}
+static void write_crash_dump(EXCEPTION_POINTERS *info) {
+    const char *mode=getenv("GOW3_CRASH_DUMP");
+    if (!crash_dump_dir[0] || (mode && !strcmp(mode,"0"))) return;
+    HMODULE dbghelp=LoadLibraryA("dbghelp.dll");
+    WriteDumpFn write_dump=dbghelp ? (WriteDumpFn)(void *)GetProcAddress(dbghelp,"MiniDumpWriteDump") : NULL;
+    if (!write_dump) { fputs("Crash dump: dbghelp.dll unavailable\n",stderr); return; }
+    /* Guest memory is a mapped section view: only the pages that stack values point at come in through
+     * indirectly referenced memory. The full type adds the host's heaps (private read-write memory) and, with
+     * MiniDumpWithFullMemory, everything; in game its memory walk has also failed with E_INVALIDARG (placeholder
+     * reservations and mapped views), so it keeps the small types as its own fallbacks. */
+    const MINIDUMP_TYPE base=(MINIDUMP_TYPE)(MiniDumpWithDataSegs|MiniDumpWithHandleData|MiniDumpWithThreadInfo|
+                                             MiniDumpWithUnloadedModules);
+    const MINIDUMP_TYPE small[]={
+        (MINIDUMP_TYPE)(base|MiniDumpWithIndirectlyReferencedMemory),
+        base,
+        MiniDumpNormal,
+    };
+    const MINIDUMP_TYPE full[]={
+        (MINIDUMP_TYPE)(base|MiniDumpWithPrivateReadWriteMemory|MiniDumpWithFullMemoryInfo|
+                        MiniDumpWithIndirectlyReferencedMemory|MiniDumpWithFullMemory),
+        (MINIDUMP_TYPE)(base|MiniDumpWithPrivateReadWriteMemory|MiniDumpWithFullMemoryInfo|
+                        MiniDumpWithIndirectlyReferencedMemory),
+    };
+    CreateDirectoryA(crash_dump_dir,NULL);
+    SYSTEMTIME now; GetLocalTime(&now);
+    char path[MAX_PATH+64];
+    snprintf(path,sizeof(path),"%s\\medievil-%04u%02u%02u-%02u%02u%02u-%lu.dmp",crash_dump_dir,now.wYear,now.wMonth,
+             now.wDay,now.wHour,now.wMinute,now.wSecond,GetCurrentProcessId());
+    write_dump_file(write_dump,path,small,sizeof(small)/sizeof(small[0]),info);
+    if (mode && !strcmp(mode,"full")) {
+        snprintf(path,sizeof(path),"%s\\medievil-%04u%02u%02u-%02u%02u%02u-%lu-full.dmp",crash_dump_dir,now.wYear,
+                 now.wMonth,now.wDay,now.wHour,now.wMinute,now.wSecond,GetCurrentProcessId());
+        fputs("Crash dump: writing the full dump too (GOW3_CRASH_DUMP=full; can take minutes; closing the game "
+              "now keeps the small one)\n",stderr);
+        fflush(stderr);
+        write_dump_file(write_dump,path,full,sizeof(full)/sizeof(full[0]),info);
+    }
 }
 static int fatal_reported;
 static LONG fatal_exception(EXCEPTION_POINTERS *info) {
