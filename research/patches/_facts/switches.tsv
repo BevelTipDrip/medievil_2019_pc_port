@@ -211,6 +211,7 @@ GOW3_RECORDER_TRACE	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler
 GOW3_RECORDER_WAKE_US	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp:548
 GOW3_RECORD_DATA_FIX	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.h:803
 GOW3_REFLEX	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1500 gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:364
+GOW3_REFLEX_MARKERS	ours	gpu/shim/gow3_reflex.h:25
 GOW3_REFLEX_SLEEP_BEFORE_PRESENT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.h:129
 GOW3_REGION_BUCKETS	upstream	src/runtime_memory.c:1858
 GOW3_REGION_INDEX	upstream	gpu/shim/gow3_settings.h:413 src/runtime_memory.c:1878 tests/test_runtime.c:483
