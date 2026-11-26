@@ -450,12 +450,21 @@ static GuestMutex *retired[RETIRED];
 static size_t retired_next;
 static pthread_mutex_t retired_lock = PTHREAD_MUTEX_INITIALIZER;
 static ABI int32_t mutex_destroy(GuestMutex **mutex) {
-    if (!mutex || (uintptr_t)*mutex == 2) return orbis_error(EINVAL);
-    if ((uintptr_t)*mutex < 2) return 0;
-    GuestMutex *dead = *mutex;
+    if (!mutex) return orbis_error(EINVAL);
+    /* The handle is claimed in one atomic step (2026-11-25, S1 study): two threads destroying the same mutex at
+     * once both read it, and both retired it before, so the ring freed it twice 8192 destroys later. Now only
+     * the thread whose compare-exchange turns this record into 2 retires it; the other gets EINVAL (as libkernel
+     * answers a second destroy). The busy check stays first, on the record as read, so a held mutex is never
+     * marked dead, not even for a moment (its holder's unlock would fail). */
+    GuestMutex *dead = (GuestMutex *)__atomic_load_n((uintptr_t *)mutex, __ATOMIC_ACQUIRE);
+    if ((uintptr_t)dead == 2) return orbis_error(EINVAL);
+    if ((uintptr_t)dead < 2) return 0;
     if (pthread_mutex_trylock(&dead->native)) return orbis_error(EBUSY); /* still held */
     pthread_mutex_unlock(&dead->native);
-    *mutex = (GuestMutex *)(uintptr_t)2;
+    uintptr_t expected = (uintptr_t)dead;
+    if (!__atomic_compare_exchange_n((uintptr_t *)mutex, &expected, (uintptr_t)2, 0, __ATOMIC_ACQ_REL,
+                                     __ATOMIC_ACQUIRE))
+        return orbis_error(EINVAL); /* another destroy claimed it first */
     pthread_mutex_lock(&retired_lock);
     GuestMutex *oldest = retired[retired_next];
     retired[retired_next] = dead;
@@ -518,8 +527,9 @@ static ABI int32_t cond_destroy(GuestCond **cond) {
     /* Retired like mutexes: a woken waiter may still be returning through it. */
     static GuestCond *retired_conds[RETIRED];
     static size_t next;
-    GuestCond *dead = *cond;
-    *cond = NULL;
+    /* Claimed in one atomic step, as mutex_destroy: a second destroyer gets NULL and retires nothing. */
+    GuestCond *dead = (GuestCond *)__atomic_exchange_n((uintptr_t *)cond, (uintptr_t)0, __ATOMIC_ACQ_REL);
+    if ((uintptr_t)dead < 2) return 0;
     pthread_mutex_lock(&retired_lock);
     GuestCond *oldest = retired_conds[next];
     retired_conds[next] = dead;

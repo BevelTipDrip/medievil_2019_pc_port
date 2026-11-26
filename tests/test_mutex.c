@@ -321,6 +321,43 @@ static void *consumer(void *p) {
         CHECK(punlock(&s->m) == OK);
     }
 }
+/* Two threads destroying the same mutex / condition at once (2026-11-25, S1 study): exactly one may succeed, the
+ * other gets EINVAL (mutex) or 0 with nothing retired (condition); before, both retired the record and the ring
+ * freed it twice 8192 destroys later. Both threads wait at a start flag so the destroys overlap. */
+static atomic_int destroy_go;
+typedef struct { void **object; int is_cond; int32_t result; } DestroyJob;
+static void *destroy_job(void *p) {
+    DestroyJob *job = p;
+    while (!atomic_load(&destroy_go)) {}
+    job->result = job->is_cond ? cdestroy(job->object) : destroy(job->object);
+    return NULL;
+}
+static void concurrent_destroy(void) {
+    enum { ROUNDS = 2000 };
+    for (int round = 0; round < ROUNDS; ++round) {
+        const int is_cond = round & 1;
+        void *object = NULL;
+        if (is_cond) CHECK(cinit(&object, NULL, "destroy race") == OK);
+        else object = make(1);
+        DestroyJob a = {&object, is_cond, -1}, c = {&object, is_cond, -1};
+        pthread_t ta, tc;
+        atomic_store(&destroy_go, 0);
+        CHECK(pthread_create(&ta, NULL, destroy_job, &a) == 0 && pthread_create(&tc, NULL, destroy_job, &c) == 0);
+        atomic_store(&destroy_go, 1);
+        CHECK(pthread_join(ta, NULL) == 0 && pthread_join(tc, NULL) == 0);
+        if (is_cond) {
+            CHECK(a.result == OK && c.result == OK && object == NULL);
+        } else {
+            const int ok = (a.result == OK) + (c.result == OK);
+            /* the loser: EINVAL (claimed first) or EBUSY (its busy check met the winner's momentary trylock) */
+            const int lost = ((uint32_t)a.result == EINVAL_ || (uint32_t)a.result == EBUSY_) +
+                             ((uint32_t)c.result == EINVAL_ || (uint32_t)c.result == EBUSY_);
+            CHECK(ok == 1 && lost == 1 && (uintptr_t)object == 2);
+        }
+    }
+    printf("  concurrent destroy: ok (%d rounds)\n", ROUNDS);
+}
+
 static void stress(void) {
     Pc s = { 0 };
     CHECK(pinit(&s.m, NULL) == OK && pcinit(&s.not_empty, NULL) == OK && pcinit(&s.not_full, NULL) == OK);
@@ -345,6 +382,7 @@ static void stress(void) {
 }
 
 /* ---- GOW3_MUTEX_HOLDERS rows (dev build) ---- */
+#if GOW3_DEV_TOOLS /* the release build compiles holder_rows' body out; -Werror would reject an unused helper */
 static void *hold_20ms(void *p) {
     void **m = p;
     CHECK(lock(m) == OK);
@@ -354,6 +392,7 @@ static void *hold_20ms(void *p) {
     CHECK(unlock(m) == OK);
     return NULL;
 }
+#endif
 static void holder_rows(void) {
 #if GOW3_DEV_TOOLS
 #ifdef _WIN32
@@ -407,7 +446,7 @@ static void holder_rows(void) {
 
 /* GOW3_SAMPLE_THREADS: a thread named mutex-test:pinned is found by name (t row) and sampled (s rows) without
  * anyone waiting on it. The sampler looks for names every ~2 s: up to 6 s. */
-#ifdef _WIN32
+#if GOW3_DEV_TOOLS && defined(_WIN32) /* as pinned_rows' body */
 static atomic_int pinned_stop;
 static atomic_ulong pinned_tid;
 static void *pinned_spin(void *unused) {
@@ -731,6 +770,7 @@ int main(int argc, char **argv) {
     conditions();
     timed_wake();
     stress();
+    concurrent_destroy();
     holder_rows();
     pinned_rows();
     puts("mutex-test: all passed");
