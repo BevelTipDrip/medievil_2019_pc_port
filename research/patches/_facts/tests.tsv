@@ -228,3 +228,9 @@ T-SV2	study-save-slots.md	38	t-sv2-load-a-slot-that-is-not-the-newest-2026-11-10
 T-SV3	study-save-slots.md	44	t-sv3-the-date-fix-2026-11-10-launched-by-claude-with-the-users-go-log-datasave-trace-3-0102log	T-SV3: the date fix (2026-11-10, launched by Claude with the user's go, log `data/save-trace-3-0102.
 T-SV4	study-save-slots.md	57	t-sv4-continue-and-slot-numbers-in-the-load-list-2026-11-10-launched-by-claude-with-the-users-go-log-datasave-continue-1-0102log	T-SV4: "Continue" and slot numbers in the Load list (2026-11-10, launched by Claude with the user's 
 T-SV5	study-save-slots.md	66	t-sv5-details-level-pictures-and-the-games-menu-look-2026-11-10-launched-by-claude-with-the-users-go-logs-dataload-details-1-0102log-dataload-style-1-0102log-dataload-style-2-0102log	T-SV5: details, level pictures and the game's menu look (2026-11-10, launched by Claude with the use
+run 5	study-sv-critical-path.md	1	study-sleeping-village-critical-path-per-frame-run-5-2026-11-25	Study: Sleeping Village critical path per frame, run 5 (2026-11-25)
+run 5	study-sv-critical-path.md	79	11-threads-run-5-tids	1.1 Threads (run 5 tids)
+run 6	study-sv-gpu-gaps.md	1	study-sleeping-village-gpu-gaps-per-frame-run-6-2026-11-25	Study: Sleeping Village GPU gaps per frame, run 6 (2026-11-25)
+Run 2	study-sv-hotspots.md	109	busy-per-thread--of-wall-time-ms-per-frame	Run 2 (trolls, no patch): game-thread bound.** Only the game thread changes.
+Run 4	study-sv-hotspots.md	110	busy-per-thread--of-wall-time-ms-per-frame	Run 4 (a fight with effects, nav patch on): everything rises together.** The game thread is still th
+run 2	study-sv-hotspots.md	340	7-waits-run-2-wait-trace-cap1-windows-ms-of-wait-per-game-frame-waits-per-frame	7. Waits (run 2 wait trace, cap1 windows; ms of wait per game frame, waits per frame)

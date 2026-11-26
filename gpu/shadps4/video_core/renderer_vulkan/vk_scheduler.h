@@ -77,6 +77,9 @@ struct SubmitInfo {
     vk::Fence fence;
     u32 num_wait_semas;
     u32 num_signal_semas;
+    /// gow3 Reflex R1 (gow3_reflex.h): the presentID this submission carries (0: the frame stage
+    /// B records, Gow3Reflex::SubmitFrame).
+    u64 reflex_frame = 0;
 
     void AddWait(vk::Semaphore semaphore, u64 tick = 1) {
         wait_semas[num_wait_semas] = semaphore;

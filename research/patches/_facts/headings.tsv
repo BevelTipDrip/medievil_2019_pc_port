@@ -640,7 +640,7 @@ plan-work-queue.md	45	2	the-users-order-2026-10-30	The user's order (2026-10-30)
 plan-work-queue.md	74	2	pending-fixes-research-2026-10-29-ranked-there-state-now	Pending fixes (research 2026-10-29, ranked there; state now)
 plan-work-queue.md	102	2	found-on-the-way-2026-10-30	Found on the way (2026-10-30)
 plan-work-queue.md	169	2	performance-deep-dive-2026-11-23	Performance deep dive (2026-11-23)
-plan-work-queue.md	196	2	from-github-issues	From GitHub issues
+plan-work-queue.md	198	2	from-github-issues	From GitHub issues
 pr-checklist.md	1	1	pr-checklist-the-bar-for-anything-proposed-upstream	PR checklist: the bar for anything proposed upstream
 pr-checklist.md	7	2	scope	Scope
 pr-checklist.md	14	2	code	Code
@@ -665,6 +665,44 @@ repo-boundaries.md	1	1	repo-boundaries	Repo boundaries
 repo-boundaries.md	5	2	remotes-set-2026-10-18	Remotes (set 2026-10-18)
 repo-boundaries.md	12	2	branches	Branches
 repo-boundaries.md	22	2	other-repos	Other repos
+review-active-patches-20261124.md	1	1	review-the-active-patches-the-user-can-toggle-2026-11-24	Review: the active patches the user can toggle (2026-11-24)
+review-active-patches-20261124.md	11	2	summary	Summary
+review-active-patches-20261124.md	35	2	1-inventory	1. Inventory
+review-active-patches-20261124.md	37	3	1a-performance-patches-launcher--performance-in-game-menu--performance-medievilini-perf_	1a. Performance patches (launcher > Performance, in-game menu > Performance; `medievil.ini perf_*`)
+review-active-patches-20261124.md	59	3	1b-steam-deck-switches-medievilini-deck_-launcher-performance--deck-tuned-deck-optimized-preset	1b. Steam Deck switches (`medievil.ini deck_*`; launcher Performance > Deck tuned; Deck Optimized preset)
+review-active-patches-20261124.md	78	3	1c-presentation-and-frame-rate-launcher--performance--display-present_-fps_limit-vsync	1c. Presentation and frame rate (launcher > Performance / Display; `present_*`, `fps_limit`, `vsync`)
+review-active-patches-20261124.md	90	3	1d-other-launcher-settings-that-gate-patch-code	1d. Other launcher settings that gate patch code
+review-active-patches-20261124.md	100	3	1e-default-on-switches-with-no-launcher-control-environment-only-relevant-to-section-2	1e. Default-on switches with no launcher control (environment only; relevant to section 2)
+review-active-patches-20261124.md	116	2	2-what-checking-a-switch-costs	2. What checking a switch costs
+review-active-patches-20261124.md	118	3	2a-how-each-kind-compiles-in-the-release-exe-v	2a. How each kind compiles in the release exe [V]
+review-active-patches-20261124.md	151	3	2b-cache-lines-v-layout-i-cost	2b. Cache lines [V layout, I cost]
+review-active-patches-20261124.md	167	3	2c-frequencies-and-an-honest-estimate	2c. Frequencies and an honest estimate
+review-active-patches-20261124.md	182	3	2d-recommendation-compile-time-constants-in-release	2d. Recommendation: compile-time constants in release
+review-active-patches-20261124.md	199	2	3-improvements-ranked-by-expected-value-and-risk	3. Improvements, ranked by expected value and risk
+review-active-patches-20261124.md	225	2	method	Method
+review-perf-changes-20261124.md	1	1	review-performance-changes-p1-p2-p4-p5-p6-2026-11-24	Review: performance changes P1, P2, P4, P5, P6 (2026-11-24)
+review-perf-changes-20261124.md	11	2	findings-most-severe-first	Findings, most severe first
+review-perf-changes-20261124.md	13	3	1-p2-a-tracked-range-is-never-released-and-every-later-readback-that-starts-at-its-address-goes-to-the-shadow-plausible-high-impact-if-hit	1. P2: a tracked range is never released, and every later readback that starts at its address goes to the shadow (plausible, high impact if hit)
+review-perf-changes-20261124.md	39	3	2-p1-under-mouse-motion-the-reader-drains-about-every-4-ms-instead-of-about-every-15-ms-plausible-input-feel	2. P1: under mouse motion the reader drains about every 4 ms instead of about every 1.5 ms (plausible, input feel)
+review-perf-changes-20261124.md	55	3	3-the-dlss-report-nothing-in-p4--p5-adds-dlss-only-work-the-dlss-part-of-each-session-carried-the-one-off-costs-plausible-explanation-pre-existing	3. The DLSS report: nothing in P4 / P5 adds DLSS-only work; the DLSS part of each session carried the one-off costs (plausible explanation, pre-existing)
+review-perf-changes-20261124.md	82	3	4-p5-8n-p3-the-early-return-in-processdownloadimages-rarely-fires-in-play-nit-no-wrong-behaviour-gain-probably-near-zero	4. P5 (8/n, P3): the early return in `ProcessDownloadImages` rarely fires in play (nit: no wrong behaviour, gain probably near zero)
+review-perf-changes-20261124.md	93	3	5-missed-by-p5-in-p14-the-warning-only-ismapped-in-updatepagewatchers-nit-off-cost-and-a-log-line-in-play	5. Missed by P5 (in P14): the warning-only `IsMapped` in `UpdatePageWatchers` (nit, off-cost and a log line in play)
+review-perf-changes-20261124.md	100	3	6-p2-copies-that-lose-their-number-on-a-restart-are-written-to-guest-memory-unwatched-while-the-shadow-stays-the-snapshot-source-nit	6. P2: copies that lose their number on a restart are written to guest memory unwatched, while the shadow stays the snapshot source (nit)
+review-perf-changes-20261124.md	108	3	7-p4-work-left-in-the-observer-nit	7. P4: work left in the observer (nit)
+review-perf-changes-20261124.md	118	3	8-p6-printf-wrappers-nit-formats-and-varargs-are-correct	8. P6: printf wrappers (nit; formats and varargs are correct)
+review-perf-changes-20261124.md	127	3	9-other-release-off-costs-of-the-same-kind-still-in-the-exe-nit	9. Other release off-costs of the same kind still in the exe (nit)
+review-perf-changes-20261124.md	137	2	checked-and-found-correct	Checked and found correct
+review-unacted-perf-items-20261124.md	1	1	review-performance-items-from-2026-11-14-to-11-18-that-were-never-acted-on-2026-11-24-static	Review: performance items from 2026-11-14 to 11-18 that were never acted on (2026-11-24, static)
+review-unacted-perf-items-20261124.md	15	2	items	Items
+review-unacted-perf-items-20261124.md	17	3	compiler-study-compiler-optimizationsmd-queued-by-the-user-2026-11-16-2231-utc-que-them-up-along-with-pgo	Compiler (study-compiler-optimizations.md, queued by the user 2026-11-16 22:31 UTC "Que them up along with PGO")
+review-unacted-perf-items-20261124.md	32	3	diagnostics-that-cost-when-off-study-tooling-off-costmd-the-user-11-15-1453-add-it-to-our-to-do-list	Diagnostics that cost when off (study-tooling-off-cost.md; the user 11-15 14:53 "add it to our to do list")
+review-unacted-perf-items-20261124.md	46	3	guest-locks-and-waits-the-static-view-spikes-2026-11-1516	Guest locks and waits (the static-view spikes, 2026-11-15/16)
+review-unacted-perf-items-20261124.md	61	3	spikes-stalls-and-tracing	Spikes, stalls and tracing
+review-unacted-perf-items-20261124.md	82	3	steam-deck-and-fsr	Steam Deck and FSR
+review-unacted-perf-items-20261124.md	96	3	shipping	Shipping
+review-unacted-perf-items-20261124.md	102	3	non-performance-request-found-on-the-way	Non-performance request found on the way
+review-unacted-perf-items-20261124.md	110	2	asked-for-by-the-user-with-no-trace-in-the-docs	Asked for by the user with no trace in the docs
+review-unacted-perf-items-20261124.md	121	2	worth-doing-now-ranked	Worth doing now (ranked)
 study-bloodborne-07-memory.md	1	1	study-bloodborne-07s-one-memory-model-and-what-ports-to-deck-lab	Study: Bloodborne 0.7's "one memory model", and what ports to `deck-lab`
 study-bloodborne-07-memory.md	17	2	answer	Answer
 study-bloodborne-07-memory.md	47	2	1-07s-memory-model-piece-by-piece	1. 0.7's memory model, piece by piece
@@ -715,6 +753,22 @@ study-compiler-optimizations.md	32	2	findings	Findings
 study-compiler-optimizations.md	63	2	rejected	Rejected
 study-compiler-optimizations.md	72	2	ranked-candidates	Ranked candidates
 study-compiler-optimizations.md	88	2	scratch-material	Scratch material
+study-debug-menu-automation.md	1	1	study-the-debug-menu-ue4-facilities-and-an-automated-benchmark-2026-11-24	Study: the debug menu, UE4 facilities and an automated benchmark (2026-11-24)
+study-debug-menu-automation.md	11	2	summary	Summary
+study-debug-menu-automation.md	47	2	1-the-debug-menu-debughud-in-full	1. The debug menu (DebugHUD) in full
+study-debug-menu-automation.md	64	3	pages-and-options-label--what-it-calls	Pages and options (label → what it calls)
+study-debug-menu-automation.md	102	3	level-list-levelsenum-leveldatatable-debugleveldatatable	Level list (`LevelsEnum`, `LevelDataTable`, `DebugLevelDataTable`)
+study-debug-menu-automation.md	128	3	other-cheats-in-the-game	Other "cheats" in the game
+study-debug-menu-automation.md	138	2	2-engine-facilities-in-the-shipping-eboot	2. Engine facilities in the shipping eboot
+study-debug-menu-automation.md	162	3	the-fixed-time-step-in-detail-the-determinism-source	The fixed time step in detail (the determinism source)
+study-debug-menu-automation.md	192	3	natives-reachable-by-the-port-fnamenativeptrpair-table-slots-image-offsets-pair--name-exec	Natives reachable by the port (`FNameNativePtrPair` table slots, image offsets; pair = {name, exec})
+study-debug-menu-automation.md	206	2	3-how-the-port-could-drive-these	3. How the port could drive these
+study-debug-menu-automation.md	222	2	4-proposed-automated-benchmark	4. Proposed automated benchmark
+study-debug-menu-automation.md	227	3	pipeline-ranked-by-effort-and-determinism	Pipeline (ranked by effort and determinism)
+study-debug-menu-automation.md	248	3	making-runs-comparable	Making runs comparable
+study-debug-menu-automation.md	258	2	open-questions	Open questions
+study-debug-menu-automation.md	275	2	test-steps-for-the-user-each-launch-needs-your-go-one-change-per-launch	Test steps for the user (each launch needs your go; one change per launch)
+study-debug-menu-automation.md	293	2	files-and-tools	Files and tools
 study-deck-apu-deep-dive.md	1	1	study-the-decks-apu-and-linux-platform-in-depth-for-stage-b	Study: the Deck's APU and Linux platform, in depth, for stage B
 study-deck-apu-deep-dive.md	19	2	answer	Answer
 study-deck-apu-deep-dive.md	65	2	1-the-core-and-memory-seen-from-stage-b	1. The core and memory, seen from stage B
@@ -845,6 +899,22 @@ study-deck-rescore-rejected.md	64	2	b-built-measured-and-reverted-or-dropped-no-
 study-deck-rescore-rejected.md	74	2	c-analysed-gated-or-ranked-never-built	C. Analysed, gated or ranked, never built
 study-deck-rescore-rejected.md	95	2	d-linux-only-items-from-the-spacepepperoni-review-verdict-adopt-not-ported	D. Linux-only items from the spacepepperoni review (verdict "Adopt", not ported)
 study-deck-rescore-rejected.md	107	2	ranked-shortlist-for-the-deck-cheapest-first	Ranked shortlist for the Deck (cheapest first)
+study-early-display-release.md	1	1	study-releasing-a-display-buffers-vo-label-earlier-effective-triple-buffering	Study: releasing a display buffer's VO label earlier (effective triple buffering)
+study-early-display-release.md	7	2	summary	Summary
+study-early-display-release.md	38	2	1-the-frame-path-today-default-windows-settings	1. The frame path today (default Windows settings)
+study-early-display-release.md	68	3	11-every-path-that-could-read-the-guest-buffer-question-1	1.1 Every path that could read the guest buffer (question 1)
+study-early-display-release.md	91	2	2-where-the-release-can-move-question-2	2. Where the release can move (question 2)
+study-early-display-release.md	93	3	21-what-safe-needs	2.1 What "safe" needs
+study-early-display-release.md	113	3	22-candidate-release-points	2.2 Candidate release points
+study-early-display-release.md	135	3	23-what-the-guest-sees-flip-status-events-current_buffer	2.3 What the guest sees (flip status, events, `current_buffer`)
+study-early-display-release.md	159	2	3-interactions-question-3	3. Interactions (question 3)
+study-early-display-release.md	190	2	4-design-question-4	4. Design (question 4)
+study-early-display-release.md	192	3	41-the-change-behind-a-switch	4.1 The change, behind a switch
+study-early-display-release.md	223	3	42-counting-it-dev-build-only-gow3statsenabled-gow3_dev_tools-nothing-in-release	4.2 Counting it (dev build only: `Gow3Stats::enabled`, `GOW3_DEV_TOOLS`; nothing in release)
+study-early-display-release.md	243	3	43-rejected-alternatives	4.3 Rejected alternatives
+study-early-display-release.md	253	2	5-risks	5. Risks
+study-early-display-release.md	279	2	6-test-plan-needs-the-users-go-dev-build-for-the-stats-one-change-per-launch	6. Test plan (needs the user's go; dev build for the stats; one change per launch)
+study-early-display-release.md	314	2	files-read	Files read
 study-eop-wait-site.md	1	1	study-what-the-per-frame-eop-wait-at-guest0x68af47-protects-and-whether-early-signalling-stays-safe-with-in-place-reads	Study: what the per-frame EOP wait at guest+0x68af47 protects, and whether early signalling stays safe with in-place reads
 study-eop-wait-site.md	18	2	answer	Answer
 study-eop-wait-site.md	70	2	1-the-wait-and-its-callers	1. The wait and its callers
@@ -1168,6 +1238,32 @@ study-native-render-paths.md	96	2	2-fast-paths-inside-stage-b-vs-a-separate-nati
 study-native-render-paths.md	124	2	3-what-bloodbornes-own-renderer-replaced-question-3	3. What Bloodborne's "own renderer" replaced (question 3)
 study-native-render-paths.md	169	2	4-ranked-plan-question-4	4. Ranked plan (question 4)
 study-native-render-paths.md	192	2	how-this-was-checked	How this was checked
+study-npc-tick-rate.md	1	1	study-npc--ai--movement-tick-rate-at-237-fps-2026-11-25	Study: NPC / AI / movement tick rate at 237 FPS (2026-11-25)
+study-npc-tick-rate.md	14	2	summary	Summary
+study-npc-tick-rate.md	48	2	1-what-runs-every-frame-and-how-it-depends-on-dt	1. What runs every frame and how it depends on dt
+study-npc-tick-rate.md	66	3	engine-wide-frame-controls-none-of-them-separate-the-game-tick-from-rendering	Engine-wide frame controls (none of them separate the game tick from rendering)
+study-npc-tick-rate.md	77	3	what-the-paks-set-0102	What the paks set (01.02)
+study-npc-tick-rate.md	104	2	2-how-the-port-can-apply-each-lever	2. How the port can apply each lever
+study-npc-tick-rate.md	122	2	3-frame-rate-dependent-bugs-found	3. Frame-rate-dependent bugs found
+study-npc-tick-rate.md	124	3	3a-navigation-paths-kept-alive-until-gc-p18-the-3-ms-purge-asset--ue-421--inferred	3a. Navigation paths kept alive until GC (P18, the 3 ms purge) [asset + UE 4.21 + inferred]
+study-npc-tick-rate.md	144	3	3b-grain-grinder-pull-the-scarecrow-fields-obstacle-probably-asset--eboot	3b. Grain Grinder pull (the Scarecrow Fields obstacle, probably) [asset + eboot]
+study-npc-tick-rate.md	173	3	3c-pushables-slow-down-above-667-fps-asset	3c. Pushables slow down above 66.7 FPS [asset]
+study-npc-tick-rate.md	182	3	3d-dan-stuck-in-walls-p19-no-frame-rate-cause-found	3d. Dan stuck in walls (P19): no frame-rate cause found
+study-npc-tick-rate.md	200	2	4-ranked-experiments-one-change-per-launch-each-needs-the-users-go	4. Ranked experiments (one change per launch, each needs the user's go)
+study-npc-tick-rate.md	224	2	open-questions	Open questions
+study-p8-history.md	1	1	study-p8-history-guest-write-faults-that-need-no-gpu-work-drain-the-draw-pipe	Study: P8 history (guest write faults that need no GPU work drain the draw pipe)
+study-p8-history.md	8	2	verdict-in-short	Verdict in short
+study-p8-history.md	28	2	1-timeline-everything-related	1. Timeline: everything related
+study-p8-history.md	52	2	2-why-the-command-and-the-drain-exist	2. Why the command and the drain exist
+study-p8-history.md	76	2	3-concrete-hazards-hit-so-far-what-a-change-here-must-not-repeat	3. Concrete hazards hit so far (what a change here must not repeat)
+study-p8-history.md	87	2	4-reference-ports	4. Reference ports
+study-p8-history.md	100	2	5-critique-of-the-proposed-design	5. Critique of the proposed design
+study-p8-history.md	107	3	51-what-is-right	5.1 What is right
+study-p8-history.md	117	3	52-problems	5.2 Problems
+study-p8-history.md	178	3	53-alternatives	5.3 Alternatives
+study-p8-history.md	198	2	6-recommended-shape-if-built	6. Recommended shape if built
+study-p8-history.md	215	2	7-open-points-found-on-the-way	7. Open points found on the way
+study-p8-history.md	226	2	sources	Sources
 study-particle-fixed-step.md	1	1	study-the-single-gpu-particle-pass-without-the-torch--crypt-floor-bug-2026-11-05	Study: the single GPU particle pass without the torch / crypt floor bug (2026-11-05)
 study-particle-fixed-step.md	9	2	answer	Answer
 study-particle-fixed-step.md	48	2	evidence	Evidence
@@ -1202,6 +1298,39 @@ study-perf-deepdive-20261123.md	57	3	memory-transfers-synchronisation-memory-age
 study-perf-deepdive-20261123.md	78	3	off-costs-in-the-release-build-off-cost-agent-release-exe-disassembled	Off-costs in the release build (off-cost agent; release exe disassembled)
 study-perf-deepdive-20261123.md	96	3	hdr-path-hdr-agent	HDR path (HDR agent)
 study-perf-deepdive-20261123.md	117	2	incidents-during-the-research	Incidents during the research
+study-physics-ai-tick.md	1	1	study-physics-ai-and-collision-ticks-at-237-fps-2026-11-25	Study: physics, AI and collision ticks at 237 FPS (2026-11-25)
+study-physics-ai-tick.md	16	2	summary	Summary
+study-physics-ai-tick.md	49	2	1-physics-in-ue-421-and-what-this-eboot-has	1. Physics in UE 4.21 and what this eboot has
+study-physics-ai-tick.md	51	3	11-where-physx-runs-ue-421-frame-ue-421	1.1 Where PhysX runs (UE 4.21 frame) [UE 4.21]
+study-physics-ai-tick.md	82	3	12-settings-and-switches-in-this-build	1.2 Settings and switches in this build
+study-physics-ai-tick.md	123	3	13-what-changing-each-does-at-237-fps	1.3 What changing each does at 237 FPS
+study-physics-ai-tick.md	134	2	2-lower-tick-rates-with-interpolation-what-421-offers-what-the-game-uses	2. Lower tick rates with interpolation: what 4.21 offers, what the game uses
+study-physics-ai-tick.md	136	3	21-engine-features-vs-this-game	2.1 Engine features vs this game
+study-physics-ai-tick.md	152	3	22-decide-at-30-60-hz-move-every-frame	2.2 Decide at 30-60 Hz, move every frame
+study-physics-ai-tick.md	202	3	23-gameplay-risks-of-any-tick-change	2.3 Gameplay risks of any tick change
+study-physics-ai-tick.md	213	3	24-how-the-port-can-apply-each-lever	2.4 How the port can apply each lever
+study-physics-ai-tick.md	224	2	3-physx-on-the-gpu	3. PhysX on the GPU
+study-physics-ai-tick.md	253	2	4-physx-on-its-own-threads	4. PhysX on its own thread(s)
+study-physics-ai-tick.md	275	2	5-collision-and-character-movement-at-small-steps-p19	5. Collision and character movement at small steps (P19)
+study-physics-ai-tick.md	312	2	6-ranked-experiments-and-changes	6. Ranked experiments and changes
+study-physics-ai-tick.md	318	3	no-code-cvar--ini--command-line	No code (cvar / ini / command line)
+study-physics-ai-tick.md	328	3	small-patches	Small patches
+study-physics-ai-tick.md	337	3	medium-projects	Medium projects
+study-physics-ai-tick.md	345	3	large-or-not-feasible	Large or not feasible
+study-physics-ai-tick.md	355	2	open-questions	Open questions
+study-physics-ai-tick.md	365	2	files-research-dataphysics-ai-research-20261125	Files (`research-data/physics-ai-research-20261125/`)
+study-s1-boot-crash.md	1	1	study-s1-the-start-up-crash-in-pthread_mutex_lock	Study: S1, the start-up crash in `pthread_mutex_lock`
+study-s1-boot-crash.md	12	2	answer	Answer
+study-s1-boot-crash.md	39	2	evidence	Evidence
+study-s1-boot-crash.md	41	3	the-fault-winpthread-pthread_mutex_lock-read-in-the-dll	The fault (winpthread `pthread_mutex_lock`, read in the DLL)
+study-s1-boot-crash.md	57	3	every-s1-with-data	Every S1 with data
+study-s1-boot-crash.md	96	3	guest-call-sites-eboot-outebootelf-image-offset--vaddr-plt-read-from-the-dynamic-table	Guest call sites (eboot `out/eboot.elf`, image offset = vaddr; PLT read from the dynamic table)
+study-s1-boot-crash.md	107	3	our-code-paths-srcruntime_mutexc-found	Our code paths (`src/runtime_mutex.c`, **found**)
+study-s1-boot-crash.md	119	3	todays-runs-and-dumps	Today's runs and dumps
+study-s1-boot-crash.md	135	2	mechanism	Mechanism
+study-s1-boot-crash.md	155	2	what-would-confirm-it-proposals-each-launch-needs-the-users-go	What would confirm it (proposals; each launch needs the user's go)
+study-s1-boot-crash.md	173	2	proposed-fix	Proposed fix
+study-s1-boot-crash.md	197	2	update-2026-11-25-evening-the-writer-found-under-the-page-heap	Update 2026-11-25 evening: the writer found under the page heap
 study-save-slots.md	1	1	save-slots-why-a-save-went-into-another-slot	Save slots: why a save went into another slot
 study-save-slots.md	6	2	the-problem	The problem
 study-save-slots.md	13	2	how-medievil-picks-the-slot-it-saves-into	How MediEvil picks the slot it saves into
@@ -1226,6 +1355,65 @@ study-stage-b-per-draw.md	124	2	3-what-runs-as-tasks-on-stage-b	3. What runs as 
 study-stage-b-per-draw.md	159	2	4-ranked-cuts	4. Ranked cuts
 study-stage-b-per-draw.md	247	2	5-implemented-c1-f03ee52	5. Implemented: C1 (`f03ee52`)
 study-stage-b-per-draw.md	267	2	6-the-deck-test-one-launch-the-users-go	6. The Deck test (one launch, the user's go)
+study-sv-critical-path.md	1	1	study-sleeping-village-critical-path-per-frame-run-5-2026-11-25	Study: Sleeping Village critical path per frame, run 5 (2026-11-25)
+study-sv-critical-path.md	15	2	summary	Summary
+study-sv-critical-path.md	77	2	1-question-1-critical-path-per-frame	1. Question 1: critical path per frame
+study-sv-critical-path.md	79	3	11-threads-run-5-tids	1.1 Threads (run 5 tids)
+study-sv-critical-path.md	100	3	12-the-frame-loop-from-ready-events-timelinepy	1.2 The frame loop, from ready events (`timeline.py`)
+study-sv-critical-path.md	129	3	13-who-waits-on-whom-ms-per-frame-waitmatrixpy-waits-split-by-the-thread-that-readied-the-waiter	1.3 Who waits on whom, ms per frame (`waitmatrix.py`; waits split by the thread that readied the waiter)
+study-sv-critical-path.md	160	3	14-what-bounded-each-slow-frame-classifypy	1.4 What bounded each slow frame (`classify.py`)
+study-sv-critical-path.md	194	3	15-answer-to-is-our-pipeline-serialised-behind-the-game-thread	1.5 Answer to "is our pipeline serialised behind the game thread?"
+study-sv-critical-path.md	217	2	2-question-2-stage-as-bursts	2. Question 2: stage A's bursts
+study-sv-critical-path.md	246	2	3-question-3-gpu-usage-dips	3. Question 3: GPU usage dips
+study-sv-critical-path.md	286	2	4-question-4-the-mouse	4. Question 4: the mouse
+study-sv-critical-path.md	288	3	41-the-reader-thread-in-the-capture-mousetxt-mouse2txt-irq-stealtxt	4.1 The reader thread in the capture (`mouse.txt`, `mouse2.txt`, `irq-steal.txt`)
+study-sv-critical-path.md	321	3	42-frame-chain-with-the-mouse-moving-vs-still-per-secondtxt-4-162-s	4.2 Frame chain with the mouse moving vs still (`per-second.txt`; 4-162 s)
+study-sv-critical-path.md	354	3	43-static-review-of-the-per-read-costs-game-thread	4.3 Static review of the per-read costs (game thread)
+study-sv-critical-path.md	377	3	44-the-hitch-at-24-s-one-off-but-mouse-related	4.4 The hitch at 2.4 s (one-off, but mouse-related)
+study-sv-critical-path.md	389	2	5-what-is-ours-vs-the-games	5. What is ours vs the game's
+study-sv-critical-path.md	401	2	6-candidate-fixes-ranked-proposals-only-no-code-each-needs-the-users-go-and-one-change-per-launch	6. Candidate fixes, ranked (proposals only, no code; each needs the user's go and one change per launch)
+study-sv-critical-path.md	446	2	7-limits-of-this-study	7. Limits of this study
+study-sv-critical-path.md	455	2	files-research-datasv-hunt-20261125analysis-run5	Files (`research-data/sv-hunt-20261125/analysis-run5/`)
+study-sv-gpu-gaps.md	1	1	study-sleeping-village-gpu-gaps-per-frame-run-6-2026-11-25	Study: Sleeping Village GPU gaps per frame, run 6 (2026-11-25)
+study-sv-gpu-gaps.md	24	2	summary	Summary
+study-sv-gpu-gaps.md	88	2	0-how-gpu-time-is-measured-without-gpu-events	0. How GPU time is measured without GPU events
+study-sv-gpu-gaps.md	118	2	1-question-1-the-frame-per-state	1. Question 1: the frame, per state
+study-sv-gpu-gaps.md	164	2	2-question-2-condition-1-mouse-movement-in-a-light-view	2. Question 2: condition 1, mouse movement in a light view
+study-sv-gpu-gaps.md	209	2	3-question-3-condition-2-the-fight-against-the-wall	3. Question 3: condition 2, the fight against the wall
+study-sv-gpu-gaps.md	254	3	31-the-game-thread-in-the-fight-gamecat-c4txt-gamecat-c5txt-ms-per-frame-exclusive-by-code-area	3.1 The game thread in the fight (`gamecat-c4.txt`, `gamecat-c5.txt`; ms per frame, exclusive by code area)
+study-sv-gpu-gaps.md	279	2	4-question-4-what-the-early-display-buffer-release-and-the-game-thread-account-for	4. Question 4: what the early display-buffer release and the game thread account for
+study-sv-gpu-gaps.md	304	2	5-the-users-readings-tested	5. The user's readings, tested
+study-sv-gpu-gaps.md	314	2	6-fixes-ranked-proposals-only-each-needs-the-users-go-one-change-per-launch	6. Fixes, ranked (proposals only; each needs the user's go; one change per launch)
+study-sv-gpu-gaps.md	358	2	7-limits	7. Limits
+study-sv-gpu-gaps.md	371	2	files-research-datasv-hunt-20261125analysis-run6	Files (`research-data/sv-hunt-20261125/analysis-run6/`)
+study-sv-hotspots.md	1	1	study-sleeping-village-hotspots-flat-vs-wave-2026-11-25	Study: Sleeping Village hotspots, flat vs wave (2026-11-25)
+study-sv-hotspots.md	7	2	summary	Summary
+study-sv-hotspots.md	43	2	1-data-and-method	1. Data and method
+study-sv-hotspots.md	72	2	2-which-thread-is-which	2. Which thread is which
+study-sv-hotspots.md	94	3	busy-per-thread--of-wall-time-ms-per-frame	Busy per thread (% of wall time; ms per frame)
+study-sv-hotspots.md	113	2	3-game-thread	3. Game thread
+study-sv-hotspots.md	115	3	by-area-ms-per-frame-exclusive	By area (ms per frame; exclusive)
+study-sv-hotspots.md	134	3	hottest-functions-ms-per-frame	Hottest functions (ms per frame)
+study-sv-hotspots.md	160	3	what-the-lock-free-loop-at-0x6e7c22-is-and-who-calls-it	What the lock-free loop at 0x6e7c22 is, and who calls it
+study-sv-hotspots.md	198	2	4-how-much-of-the-wave-is-npc-related-estimate	4. How much of the wave is NPC-related (estimate)
+study-sv-hotspots.md	239	2	5-other-threads	5. Other threads
+study-sv-hotspots.md	272	2	6-fenced-atomic-reads-mfence-load-mfence	6. Fenced atomic reads (`mfence; load; mfence`)
+study-sv-hotspots.md	340	2	7-waits-run-2-wait-trace-cap1-windows-ms-of-wait-per-game-frame-waits-per-frame	7. Waits (run 2 wait trace, cap1 windows; ms of wait per game frame, waits per frame)
+study-sv-hotspots.md	367	2	8-next-steps-ideas-each-launch-needs-the-users-go-one-change-per-launch	8. Next steps (ideas; each launch needs the user's go, one change per launch)
+study-sv-hotspots.md	383	2	files	Files
+study-sv-vs-other-level.md	1	1	study-sleeping-village-game-thread-cost-against-another-level-2026-11-25	Study: Sleeping Village game-thread cost against another level (2026-11-25)
+study-sv-vs-other-level.md	13	2	summary	Summary
+study-sv-vs-other-level.md	57	2	1-captures-and-windows	1. Captures and windows
+study-sv-vs-other-level.md	93	2	2-method	2. Method
+study-sv-vs-other-level.md	124	2	3-game-thread-ms-per-frame-comparetxt-gamecatx--maintxt	3. Game thread, ms per frame (`compare.txt`, `gamecatx-*-main.txt`)
+study-sv-vs-other-level.md	153	3	31-physx-on-the-game-thread-by-sub-area-ms-per-frame	3.1 PhysX on the game thread by sub-area (ms per frame)
+study-sv-vs-other-level.md	173	3	32-pathing-the-nav-purge-as-a-path-counter	3.2 Pathing: the nav purge as a path counter
+study-sv-vs-other-level.md	189	2	4-other-threads-ms-per-frame-gamecatx--renderthreadtxt--taskgraphtxt-waits-maintxt	4. Other threads (ms per frame; `gamecatx-*-RenderThread.txt`, `-TaskGraph.txt`, `waits-main.txt`)
+study-sv-vs-other-level.md	203	2	5-the-users-hypothesis-tested	5. The user's hypothesis, tested
+study-sv-vs-other-level.md	213	2	6-what-these-captures-cannot-answer	6. What these captures cannot answer
+study-sv-vs-other-level.md	228	2	7-a-targeted-capture-that-would-answer-it-proposal-each-launch-needs-the-users-go	7. A targeted capture that would answer it (proposal; each launch needs the user's go)
+study-sv-vs-other-level.md	249	2	where-this-left-off-2026-11-25-after-the-v250-release	Where this left off (2026-11-25, after the v2.5.0 release)
+study-sv-vs-other-level.md	290	2	files-research-datasv-hunt-20261125analysis-crosslevel	Files (`research-data/sv-hunt-20261125/analysis-crosslevel/`)
 study-taau-frame-map.md	1	1	study-frame-map-under-temporal-upsampling-step-u0-of-the-dlss--fsr-plan	Study: frame map under temporal upsampling (step U0 of the DLSS / FSR plan)
 study-taau-frame-map.md	14	2	answer-in-short	Answer in short
 study-taau-frame-map.md	45	2	1-taa-draws-or-compute-inputs-outputs	1. TAA: draws or compute, inputs, outputs

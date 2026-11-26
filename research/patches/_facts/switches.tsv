@@ -1,16 +1,16 @@
 # name	origin	sites  (origin: upstream = also in upstream/main; generated)
-GOW3_ARENA_HOST_VISIBLE	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:638 gpu/shim/gow3_settings.h:421
-GOW3_ASYNC_FENCES	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:551
-GOW3_ASYNC_SHADERS	upstream	gpu/shim/gow3_settings.cpp:746 tests/test_graphics_settings.cpp:47 tests/test_graphics_settings.cpp:82
+GOW3_ARENA_HOST_VISIBLE	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:643 gpu/shim/gow3_settings.h:425
+GOW3_ASYNC_FENCES	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:552
+GOW3_ASYNC_SHADERS	upstream	gpu/shim/gow3_settings.cpp:755 tests/test_graphics_settings.cpp:47 tests/test_graphics_settings.cpp:82
 GOW3_AUDIO	upstream	src/runtime_audio.c:66
 GOW3_AUDIO_DUMP	upstream	src/runtime_audio.c:138
 GOW3_AUDIO_SDL_DOWNMIX	upstream	src/runtime_audio.c:126
 GOW3_AUDIO_STATS	upstream	src/runtime_audio.c:137
 GOW3_AUDIO_TRACE	upstream	src/runtime_ajm.c:84 src/runtime_file.c:193
-GOW3_BACKGROUND_WARMUP	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:184
-GOW3_BACKING_COPY	upstream	gpu/shim/gow3_settings.h:416 src/runtime_memory.c:2133 tests/test_runtime.c:483
+GOW3_BACKGROUND_WARMUP	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:186
+GOW3_BACKING_COPY	upstream	gpu/shim/gow3_settings.h:420 src/runtime_memory.c:2133 tests/test_runtime.c:483
 GOW3_BARRIER_MERGE	upstream	gpu/shadps4/video_core/texture_cache/image.cpp:643
-GOW3_BUFFER_STATS	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:1205 gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:4893
+GOW3_BUFFER_STATS	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:1210 gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:4893
 GOW3_BUNDLED_VK_DRIVER_FILES	upstream	launcher/vulkan_check.py:64 tests/test_packaged_vulkan.py:29 tests/test_packaged_vulkan.py:49 tests/test_packaged_vulkan.py:98
 GOW3_CAPTURE_BUFFER_BYTES	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.cpp:373
 GOW3_CAPTURE_DIR	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.cpp:99
@@ -18,64 +18,64 @@ GOW3_CAPTURE_ON_TARGET	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_frame_
 GOW3_CAPTURE_ON_TARGET_COUNT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.cpp:237
 GOW3_CAPTURE_TRIGGER	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.cpp:163
 GOW3_CLEAR_SKIPS_UPLOAD	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:3875
-GOW3_CMASK_FILL	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:2043
-GOW3_COND_PRECISE	ours	src/runtime_mutex.c:551 tests/test_mutex.c:704 tests/test_mutex.c:704
-GOW3_COND_SPIN_US	ours	src/runtime_mutex.c:558 tests/test_mutex.c:705 tests/test_mutex.c:705
+GOW3_CMASK_FILL	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:2048
+GOW3_COND_PRECISE	ours	src/runtime_mutex.c:570 tests/test_mutex.c:743 tests/test_mutex.c:743
+GOW3_COND_SPIN_US	ours	src/runtime_mutex.c:577 tests/test_mutex.c:744 tests/test_mutex.c:744
 GOW3_CONFIG	upstream	gpu/shim/gow3_settings.cpp:33 tests/test_graphics_settings.cpp:46 tests/test_orb_multiplier.cpp:97 tests/test_orb_multiplier.cpp:99 tests/test_perf_overlay.cpp:57 tests/test_stat_multipliers.cpp:130 tests/test_stat_multipliers.cpp:132 tests/test_upscaler_support.cpp:16
 GOW3_CONSTANT_RING_MB	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_constant_ring.h:35
 GOW3_COPY_FAULT_LOG	ours	gpu/shim/gow3_copy.cpp:245
 GOW3_COPY_GPU_BUFFERS	upstream	gpu/shim/core/emulator_settings.h:58
 GOW3_COPY_MERGE_KB	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_shader_hle.cpp:176
 GOW3_COPY_THREADS	upstream	gpu/shim/gow3_copy.cpp:30
-GOW3_CRASH_DUMP	upstream	src/probe.c:161
+GOW3_CRASH_DUMP	upstream	src/probe.c:189
 GOW3_CURVE_SYNC	ours	gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp:755
 GOW3_DATA_DIR	upstream	launcher/vulkan_check.py:80 tests/test_mods.py:147 tests/test_packaged_vulkan.py:28
-GOW3_DCB_STATS	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:1281
-GOW3_DEBUG_MENU_TRACE	upstream	src/probe.c:688
+GOW3_DCB_STATS	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:1318
+GOW3_DEBUG_MENU_TRACE	upstream	src/probe.c:710
 GOW3_DEBUG_MOTION	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_camera_motion.cpp:54
-GOW3_DECAL_PREPASS	upstream	gpu/shim/gow3_settings.cpp:808
-GOW3_DECODE_PACING	upstream	gpu/shim/gow3_decode_pacing.cpp:149 gpu/shim/gow3_settings.h:403 tests/test_graphics_settings.cpp:208
+GOW3_DECAL_PREPASS	upstream	gpu/shim/gow3_settings.cpp:820
+GOW3_DECODE_PACING	upstream	gpu/shim/gow3_decode_pacing.cpp:149 gpu/shim/gow3_settings.h:407 tests/test_graphics_settings.cpp:208
 GOW3_DECODE_PACING_LEAD	upstream	gpu/shim/gow3_decode_pacing.cpp:26 gpu/shim/gow3_decode_pacing.cpp:159
-GOW3_DECOMMIT_KEEP_ACCESS	upstream	gpu/shim/gow3_settings.cpp:810 src/runtime_memory.c:177
-GOW3_DEFERRED_COPY_BACKING	ours	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:805
-GOW3_DEFERRED_READBACK	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.h:560 gpu/shim/gow3_settings.cpp:746
+GOW3_DECOMMIT_KEEP_ACCESS	upstream	gpu/shim/gow3_settings.cpp:822 src/runtime_memory.c:177
+GOW3_DEFERRED_COPY_BACKING	ours	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:810
+GOW3_DEFERRED_READBACK	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.h:560 gpu/shim/gow3_settings.cpp:755
 GOW3_DEPTH_SAMPLE_IN_PLACE	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:4037 gpu/shadps4/video_core/renderer_vulkan/vk_runtime.cpp:222
 GOW3_DEPTH_WRITE_EFFECTIVE	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:4004
 GOW3_DIRECT_MEMORY_ACCESS	upstream	gpu/shim/core/emulator_settings.h:59
-GOW3_DISPLAY_TRACE	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:347
+GOW3_DISPLAY_TRACE	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:354
 GOW3_DLSS	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_dlss.cpp:89
 GOW3_DMEM_MB	upstream	src/runtime_memory.c:32
-GOW3_DRAIN_HYBRID	upstream	gpu/shim/gow3_drain_wait.h:33 gpu/shim/gow3_settings.h:405 tests/test_draw_pipe_drain.cpp:54
+GOW3_DRAIN_HYBRID	upstream	gpu/shim/gow3_drain_wait.h:33 gpu/shim/gow3_settings.h:409 tests/test_draw_pipe_drain.cpp:54
 GOW3_DRAIN_SLEEP	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_draw_pipe.h:424
 GOW3_DRAIN_SPIN_US	upstream	gpu/shim/gow3_drain_wait.h:47 tests/test_draw_pipe_drain.cpp:55 tests/test_draw_pipe_drain.cpp:56
 GOW3_DRAIN_WAKE_AHEAD	upstream	gpu/shim/gow3_drain_wait.h:59
 GOW3_DRAW_PIPE	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:488
 GOW3_DROP_LOG	ours	gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp:516
-GOW3_DUMP_DIR	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:478 gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:88
+GOW3_DUMP_DIR	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:480 gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:88
 GOW3_DUMP_FRAMES	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:67
 GOW3_DUMP_SHADERS	upstream	gpu/shim/core/emulator_settings.h:62
 GOW3_DUMP_TRIGGER	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:58
-GOW3_EARLY_FRAME_EOP	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:498 gpu/shim/gow3_settings.h:401 tests/test_graphics_settings.cpp:207 tests/test_graphics_settings.cpp:222
-GOW3_EARLY_FRAME_EOP_LEAD	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:505
-GOW3_EOP_TARGETED	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:502
-GOW3_EOS_DEFERRED	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:775
-GOW3_FAULT_PAGE_DOWNLOAD	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:1007
-GOW3_FAULT_WINDOW	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:842
+GOW3_EARLY_FRAME_EOP	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:499 gpu/shim/gow3_settings.h:405 tests/test_graphics_settings.cpp:207 tests/test_graphics_settings.cpp:222
+GOW3_EARLY_FRAME_EOP_LEAD	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:506
+GOW3_EOP_TARGETED	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:531
+GOW3_EOS_DEFERRED	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:783
+GOW3_FAULT_PAGE_DOWNLOAD	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:1012
+GOW3_FAULT_WINDOW	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:847
 GOW3_FILE_TRACE	upstream	src/runtime_file.c:244
-GOW3_FLIP_DEFERRED	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:625
+GOW3_FLIP_DEFERRED	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:633
 GOW3_FLIP_TRACE	upstream	gpu/shim/gow3_flip_trace.h:53 tests/bench_flip_trace.cpp:71 tests/bench_flip_trace.cpp:73
 GOW3_FLIP_TRACE_GPU_READY	ours	gpu/shim/gow3_flip_trace.h:84
 GOW3_FORCE_ANISO	upstream	gpu/shadps4/video_core/texture_cache/sampler.cpp:20
 GOW3_FPS_CAP	upstream	gpu/shim/core/emulator_settings.h:53
-GOW3_FPS_LIMIT	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1480 gpu/shim/core/emulator_settings.h:47
-GOW3_FPS_LOG	upstream	gpu/shim/gow3_overlay.cpp:3838 src/runtime_extra.c:770
-GOW3_FRAMES_AHEAD	upstream	gpu/shim/gow3_settings.cpp:748 tests/test_graphics_settings.cpp:104 tests/test_graphics_settings.cpp:113
-GOW3_FRAME_CAPTURE_KEY	upstream	gpu/shim/gow3_overlay.cpp:3555
-GOW3_FRAME_DUMP_COUNT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:504
-GOW3_FRAME_DUMP_TRIGGER	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:500
-GOW3_FRAME_STATS	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:402 gpu/shim/gow3_toggles.h:328 src/runtime_memory.c:2245
+GOW3_FPS_LIMIT	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1490 gpu/shim/core/emulator_settings.h:47
+GOW3_FPS_LOG	upstream	gpu/shim/gow3_overlay.cpp:3858 src/runtime_extra.c:770
+GOW3_FRAMES_AHEAD	upstream	gpu/shim/gow3_settings.cpp:757 tests/test_graphics_settings.cpp:104 tests/test_graphics_settings.cpp:113
+GOW3_FRAME_CAPTURE_KEY	upstream	gpu/shim/gow3_overlay.cpp:3575
+GOW3_FRAME_DUMP_COUNT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:506
+GOW3_FRAME_DUMP_TRIGGER	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:502
+GOW3_FRAME_STATS	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:405 gpu/shim/gow3_toggles.h:328 src/runtime_memory.c:2245
 GOW3_FSR	ours	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_fsr.cpp:170
-GOW3_FSR1	upstream	gpu/shim/gow3_settings.cpp:747
+GOW3_FSR1	upstream	gpu/shim/gow3_settings.cpp:756
 GOW3_FSR4	ours	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_fsr4.cpp:393
 GOW3_FSR411_DIR	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_fsr4.cpp:240 gpu/tools/fsr4_bench.cpp:497
 GOW3_FSR4_DIR	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_fsr4.cpp:25 gpu/shadps4/video_core/renderer_vulkan/vk_ue4_fsr4.cpp:43 gpu/tools/fsr4_bench.cpp:295
@@ -83,46 +83,46 @@ GOW3_FSR4_DRS	ours	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_fsr4.cpp:98
 GOW3_FSR4_OPT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_fsr4.cpp:125 gpu/shadps4/video_core/renderer_vulkan/vk_ue4_fsr4.cpp:253 gpu/tools/fsr4_bench.cpp:300
 GOW3_FSR4_PROFILE	upstream	gpu/patches/fsr-vulkan/0001-FSR-4-v07-provider-GOW3_FSR4_PROFILE-pass-timings-GOW3_F.patch:172 gpu/shadps4/video_core/renderer_vulkan/fsr411/fsr411.cpp:258 gpu/tools/fsr4_bench.cpp:279
 GOW3_FSR4_STATS	upstream	gpu/patches/fsr-vulkan/0001-FSR-4-v07-provider-GOW3_FSR4_PROFILE-pass-timings-GOW3_F.patch:87 gpu/tools/fsr4_bench.cpp:281
-GOW3_FSR_SHARPNESS	upstream	gpu/shim/gow3_settings.cpp:742
+GOW3_FSR_SHARPNESS	upstream	gpu/shim/gow3_settings.cpp:751
 GOW3_FULLSCREEN	upstream	gpu/shim/window.cpp:83
-GOW3_FUTEX_COND	upstream	src/runtime_mutex.c:532 tests/test_mutex.c:703 tests/test_mutex.c:703
-GOW3_GC_BUDGET_MB	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:2527
-GOW3_GC_STARTUP_RULE	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:2531
+GOW3_FUTEX_COND	upstream	src/runtime_mutex.c:551 tests/test_mutex.c:742 tests/test_mutex.c:742
+GOW3_GC_BUDGET_MB	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:2561
+GOW3_GC_STARTUP_RULE	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:2565
 GOW3_GC_TOTAL_MB	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:207
 GOW3_GPU_FENCES	upstream	gpu/shim/gow3_gpu_fences.h:26
 GOW3_GPU_ID	upstream	gpu/shim/core/emulator_settings.h:25
 GOW3_GPU_LOG	upstream	gpu/shim/common/logging/log.cpp:11
 GOW3_GPU_PROFILE	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_gpu_profiler.cpp:14
 GOW3_GPU_USER_DIR	upstream	gpu/shadps4/common/path_util.cpp:89 gpu/shadps4/video_core/renderer_vulkan/vk_dlss.cpp:123 gpu/shadps4/video_core/renderer_vulkan/vk_frame_capture.cpp:102 gpu/shim/gow3gpu.cpp:331 gpu/shim/gow3gpu.cpp:331 gpu/shim/gow3gpu.cpp:333
-GOW3_GPU_WRITE_SUBRESOURCES	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:1141
-GOW3_GPU_WRITE_TWINS	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:324
-GOW3_GPU_WRITE_TWINS_MAX	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:332
-GOW3_HDR	upstream	gpu/shim/core/emulator_settings.h:66 gpu/shim/gow3_settings.cpp:470
-GOW3_HDR_GAME	ours	gpu/shim/core/emulator_settings.h:68 gpu/shim/gow3_settings.cpp:470
+GOW3_GPU_WRITE_SUBRESOURCES	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:1175
+GOW3_GPU_WRITE_TWINS	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:329
+GOW3_GPU_WRITE_TWINS_MAX	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:337
+GOW3_HDR	upstream	gpu/shim/core/emulator_settings.h:66 gpu/shim/gow3_settings.cpp:479
+GOW3_HDR_GAME	ours	gpu/shim/core/emulator_settings.h:68 gpu/shim/gow3_settings.cpp:479
 GOW3_HOST_MAP_STATS	upstream	src/runtime_memory.c:241
 GOW3_HOT_PAGES	upstream	gpu/shadps4/video_core/buffer_cache/region_manager.h:229
-GOW3_HZB_REMAP	upstream	gpu/shim/gow3_settings.cpp:808 src/probe.c:593
-GOW3_IDLE_EOP_SKIP	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:477
+GOW3_HZB_REMAP	upstream	gpu/shim/gow3_settings.cpp:820 src/probe.c:615
+GOW3_IDLE_EOP_SKIP	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:506
 GOW3_IMAGE_RELEASE_THREAD	upstream	gpu/shadps4/video_core/texture_cache/image.cpp:178
 GOW3_IMAGE_STATS	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.h:524
 GOW3_IMAGE_SUBALLOC	upstream	gpu/shadps4/video_core/texture_cache/image.cpp:352
-GOW3_IMAGE_WATCH	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:1024
-GOW3_IMAGE_WATCH_ADDR	ours	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:1027
-GOW3_IMAGE_WATCH_LINES	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:1034
+GOW3_IMAGE_WATCH	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:1058
+GOW3_IMAGE_WATCH_ADDR	ours	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:1061
+GOW3_IMAGE_WATCH_LINES	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:1068
 GOW3_IME_TEXT	upstream	src/runtime_services.c:506
 GOW3_INTERNAL_HEIGHT	upstream	gpu/shim/core/emulator_settings.h:27
 GOW3_INTERNAL_WIDTH	upstream	gpu/shim/core/emulator_settings.h:26
 GOW3_INTERP_INT_FIX	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp:454
-GOW3_JITTER	upstream	gpu/shim/gow3_settings.cpp:742
+GOW3_JITTER	upstream	gpu/shim/gow3_settings.cpp:751
 GOW3_KEY_MAP	upstream	src/runtime_pad.c:239
 GOW3_LANGUAGE	upstream	src/runtime_services.c:75
 GOW3_LEAK_LIMIT_MB	upstream	gpu/shim/gow3_gpu_fences.cpp:45
 GOW3_LEAK_WATCH	upstream	gpu/shim/gow3_gpu_fences.cpp:36
-GOW3_LEAN_BINDING	upstream	gpu/shim/gow3_settings.cpp:811
-GOW3_LIMIT_AFTER_PRESENT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:1024
-GOW3_LIMIT_HOLD	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1553
-GOW3_LIMIT_IN_PRESENT	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1549
-GOW3_LONG_WAITS	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp:812
+GOW3_LEAN_BINDING	upstream	gpu/shim/gow3_settings.cpp:823
+GOW3_LIMIT_AFTER_PRESENT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:1035
+GOW3_LIMIT_HOLD	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1563
+GOW3_LIMIT_IN_PRESENT	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1559
+GOW3_LONG_WAITS	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp:813
 GOW3_MENU_KEY	ours	gpu/shim/gow3_overlay.cpp:181
 GOW3_MENU_PAD	ours	gpu/shim/gow3_overlay.cpp:204
 GOW3_MICRO_MIP_TARGETS	upstream	gpu/shadps4/video_core/texture_cache/image_info.cpp:217
@@ -130,48 +130,48 @@ GOW3_MODS_DIR	upstream	src/runtime_file.c:259
 GOW3_MOD_TRACE	upstream	src/runtime_file.c:258
 GOW3_MOTION_SELECT_LOG	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp:1051
 GOW3_MOUSE	ours	gpu/shim/gow3_overlay.cpp:1353 src/runtime_mouse.c:18
-GOW3_MOUSE_BUTTONS	ours	src/runtime_mouse.c:159
-GOW3_MOUSE_LOG	ours	src/probe.c:1021 src/runtime_services.c:688
+GOW3_MOUSE_BUTTONS	ours	src/runtime_mouse.c:166
+GOW3_MOUSE_LOG	ours	src/probe.c:1043 src/runtime_services.c:688
 GOW3_MOUSE_MAP	ours	src/runtime_pad.c:240
 GOW3_MOVIE_END_EVENT	ours	gpu/shadps4/core/libraries/avplayer/avplayer_state.cpp:399
-GOW3_MOVIE_SUSPEND	upstream	src/probe.c:620
+GOW3_MOVIE_SUSPEND	upstream	src/probe.c:642
 GOW3_MUTEX_HOLDERS	ours	src/runtime_waitsites.c:152
 GOW3_NARROW_IMAGE_STAGES	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:2854
 GOW3_NEO	upstream	src/runtime_extra.c:173
-GOW3_NEWEST_FRAME	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:106 gpu/shadps4/core/libraries/videoout/driver.cpp:1536
-GOW3_NEW_IMAGES_UNDEFINED	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:1863
-GOW3_NO_2D_VIEW_OF_3D	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:456
+GOW3_NEWEST_FRAME	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:107 gpu/shadps4/core/libraries/videoout/driver.cpp:1546
+GOW3_NEW_IMAGES_UNDEFINED	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:1897
+GOW3_NO_2D_VIEW_OF_3D	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:471
 GOW3_NO_FRAME_CAP	upstream	gpu/shim/core/emulator_settings.h:51
-GOW3_NO_MAINTENANCE5	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:336
-GOW3_NO_MAINTENANCE8	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:342
+GOW3_NO_MAINTENANCE5	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:343
+GOW3_NO_MAINTENANCE8	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:349
 GOW3_NULL_GPU	upstream	gpu/shim/core/emulator_settings.h:69
 GOW3_NVIDIA_LIB_DIR	upstream	launcher/vulkan_check.py:67 tests/test_packaged_vulkan.py:110
-GOW3_OBJECT_MOTION	upstream	gpu/shim/gow3_settings.cpp:745
+GOW3_OBJECT_MOTION	upstream	gpu/shim/gow3_settings.cpp:754
 GOW3_OBJECT_MOTION_ALL	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_cache.cpp:1072 gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:1480
 GOW3_OCCLUSION	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_occlusion.cpp:25
 GOW3_OCCLUSION_SUBMIT_US	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_occlusion.cpp:128
-GOW3_ONE_CLOCK	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1589
+GOW3_ONE_CLOCK	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1599
 GOW3_ONSUBMIT_STAGE_B	upstream	gpu/shim/gow3_decode_pacing.cpp:255
-GOW3_OPTIMISTIC_CLAMP	upstream	gpu/shim/gow3_settings.cpp:809 src/runtime_memory.c:1987
+GOW3_OPTIMISTIC_CLAMP	upstream	gpu/shim/gow3_settings.cpp:821 src/runtime_memory.c:1987
 GOW3_OUTPUT_RES	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:184
-GOW3_PACER_SPIN_US	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1267 gpu/shadps4/core/libraries/videoout/driver.cpp:1557 gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:1031
+GOW3_PACER_SPIN_US	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1270 gpu/shadps4/core/libraries/videoout/driver.cpp:1567 gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:1042
 GOW3_PAD_FILE	upstream	src/runtime_pad.c:375 tests/test_pad.c:26
 GOW3_PAD_HOTPLUG	ours	gpu/shim/window.cpp:32 src/runtime_pad.c:104
 GOW3_PAD_MAP	upstream	src/runtime_pad.c:238
 GOW3_PAD_RECORD	upstream	src/runtime_pad.c:420
 GOW3_PAD_REPLAY	upstream	src/runtime_pad.c:452
-GOW3_PAGEABLE_MEMORY	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:391
-GOW3_PARALLEL_WARMUP	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_serialization.cpp:503
-GOW3_PARK_UNMAPPED	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:1199
-GOW3_PARTICLE_FIXED_STEP	upstream	gpu/shim/gow3_settings.cpp:808 src/runtime_extra.c:729
-GOW3_PARTICLE_FLIP_GUARD	upstream	gpu/shim/gow3_settings.cpp:823 src/probe.c:1193 tests/test_graphics_settings.cpp:209 tests/test_graphics_settings.cpp:223
-GOW3_PC_SETTINGS_OPEN	ours	src/probe.c:822
-GOW3_PENDING_FILTER	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:853 gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:574 gpu/shim/gow3_settings.h:411
+GOW3_PAGEABLE_MEMORY	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:406
+GOW3_PARALLEL_WARMUP	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_pipeline_serialization.cpp:519
+GOW3_PARK_UNMAPPED	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:1233
+GOW3_PARTICLE_FIXED_STEP	upstream	gpu/shim/gow3_settings.cpp:820 src/runtime_extra.c:729
+GOW3_PARTICLE_FLIP_GUARD	upstream	gpu/shim/gow3_settings.cpp:835 src/probe.c:1215 tests/test_graphics_settings.cpp:209 tests/test_graphics_settings.cpp:223
+GOW3_PC_SETTINGS_OPEN	ours	src/probe.c:844
+GOW3_PENDING_FILTER	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:856 gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:574 gpu/shim/gow3_settings.h:415
 GOW3_PERF_DIAG	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_wait_diagnostics.h:50
-GOW3_PIPELINE_BINARIES	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:217 gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:168 tests/test_pipeline_binary_initialization.cpp:22 tests/test_pipeline_binary_initialization.cpp:24 tests/test_pipeline_binary_initialization.cpp:25
-GOW3_PIPELINE_BINARY_ISOLATED	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:170
+GOW3_PIPELINE_BINARIES	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:219 gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:170 tests/test_pipeline_binary_initialization.cpp:22 tests/test_pipeline_binary_initialization.cpp:24 tests/test_pipeline_binary_initialization.cpp:25
+GOW3_PIPELINE_BINARY_ISOLATED	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:172
 GOW3_PIPELINE_CACHE	upstream	gpu/shim/core/emulator_settings.h:72
-GOW3_PIPELINE_CAPTURE_ONLY	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:171
+GOW3_PIPELINE_CAPTURE_ONLY	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:173
 GOW3_PIPE_SPIN_US	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_draw_pipe.h:334 tests/test_draw_pipe_drain.cpp:58 tests/test_draw_pipe_drain.cpp:59
 GOW3_PIPE_VERIFY	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:480
 GOW3_POOL_KEEP_PAGES	upstream	src/runtime_memory.c:1242 tests/test_runtime.c:194
@@ -180,63 +180,63 @@ GOW3_POOL_PREFILL_MB	upstream	src/runtime_memory.c:1013
 GOW3_POOL_ZERO_DECOMMIT	upstream	src/runtime_memory.c:1343
 GOW3_POOL_ZERO_FOREIGN	upstream	src/runtime_memory.c:1178
 GOW3_POWER_THROTTLE	upstream	src/compat_win.c:128
-GOW3_PRECISE_LIMIT	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1540
-GOW3_PRECISE_TICK	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1565
-GOW3_PRECISE_WRITE_RELEASE	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:1685
+GOW3_PRECISE_LIMIT	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1550
+GOW3_PRECISE_TICK	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1575
+GOW3_PRECISE_WRITE_RELEASE	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:1690
 GOW3_PREP_PRIORITY	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_draw_prep.cpp:333
 GOW3_PREP_WORKERS	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_draw_prep.cpp:51
 GOW3_PRESENT_DUMP_COUNT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:1903
 GOW3_PRESENT_DUMP_TRIGGER	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:1901
-GOW3_PRESENT_MODE	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_swapchain.cpp:335 gpu/shim/core/emulator_settings.h:28 gpu/shim/gow3_overlay.cpp:1513
-GOW3_PRESENT_PRIORITY	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:118
-GOW3_PRESENT_THREAD	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:100
+GOW3_PRESENT_MODE	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_swapchain.cpp:389 gpu/shim/core/emulator_settings.h:28 gpu/shim/gow3_overlay.cpp:1513
+GOW3_PRESENT_PRIORITY	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:119
+GOW3_PRESENT_THREAD	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:101
 GOW3_PRESET_FILE	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:271
 GOW3_PROMPTS_PREFER_MOUSE	ours	run.py:105
-GOW3_PS4_MEMORY	upstream	gpu/shim/gow3_settings.cpp:810
-GOW3_RCAS	upstream	gpu/shim/gow3_settings.cpp:748
-GOW3_REACTIVE	upstream	gpu/shim/gow3_settings.cpp:743
-GOW3_REACTIVE_MAX	upstream	gpu/shim/gow3_settings.cpp:744
-GOW3_REACTIVE_SCALE	upstream	gpu/shim/gow3_settings.cpp:743
-GOW3_REACTIVE_THRESHOLD	upstream	gpu/shim/gow3_settings.cpp:744
+GOW3_PS4_MEMORY	upstream	gpu/shim/gow3_settings.cpp:822
+GOW3_RCAS	upstream	gpu/shim/gow3_settings.cpp:757
+GOW3_REACTIVE	upstream	gpu/shim/gow3_settings.cpp:752
+GOW3_REACTIVE_MAX	upstream	gpu/shim/gow3_settings.cpp:753
+GOW3_REACTIVE_SCALE	upstream	gpu/shim/gow3_settings.cpp:752
+GOW3_REACTIVE_THRESHOLD	upstream	gpu/shim/gow3_settings.cpp:753
 GOW3_READBACKS	upstream	gpu/shim/core/emulator_settings.h:31
 GOW3_READBACK_FIRST_WAIT	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.h:599
 GOW3_READBACK_LINEAR	upstream	gpu/shim/core/emulator_settings.h:73
 GOW3_READBACK_LOG	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.h:592
-GOW3_READBACK_QUEUE	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:216 gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:520 gpu/shim/gow3_settings.cpp:810
+GOW3_READBACK_QUEUE	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:217 gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:535 gpu/shim/gow3_settings.cpp:822
 GOW3_READBACK_SUBMIT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:4378
-GOW3_RECORDER_HANDOFF_KB	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp:552
-GOW3_RECORDER_LEAN	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp:532
-GOW3_RECORDER_SPIN_US	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp:561
-GOW3_RECORDER_TRACE	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp:211
-GOW3_RECORDER_WAKE_US	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp:547
-GOW3_RECORD_DATA_FIX	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.h:800
-GOW3_REFLEX	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1490 gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:357
+GOW3_RECORDER_HANDOFF_KB	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp:553
+GOW3_RECORDER_LEAN	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp:533
+GOW3_RECORDER_SPIN_US	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp:562
+GOW3_RECORDER_TRACE	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp:212
+GOW3_RECORDER_WAKE_US	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp:548
+GOW3_RECORD_DATA_FIX	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.h:803
+GOW3_REFLEX	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1500 gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:364
 GOW3_REFLEX_SLEEP_BEFORE_PRESENT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.h:129
 GOW3_REGION_BUCKETS	upstream	src/runtime_memory.c:1858
-GOW3_REGION_INDEX	upstream	gpu/shim/gow3_settings.h:409 src/runtime_memory.c:1878 tests/test_runtime.c:483
-GOW3_REG_HASH_PAIRED	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:1032 gpu/shim/gow3_settings.h:413
-GOW3_RENDER_RES	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:193 gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:193 gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:196 gpu/shim/gow3_settings.cpp:919 tests/test_upscaler_support.cpp:19 tests/test_upscaler_support.cpp:62 tests/test_upscaler_support.cpp:77 tests/test_upscaler_support.cpp:79
-GOW3_RESIDENCY_CHUNK_MB	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:464
-GOW3_RESTART_COMMAND	upstream	gpu/shim/gow3_overlay.cpp:337 src/probe.c:1307 src/probe.c:1324
-GOW3_RING_REUSE	upstream	gpu/shim/gow3_settings.cpp:812
+GOW3_REGION_INDEX	upstream	gpu/shim/gow3_settings.h:413 src/runtime_memory.c:1878 tests/test_runtime.c:483
+GOW3_REG_HASH_PAIRED	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:1040 gpu/shim/gow3_settings.h:417
+GOW3_RENDER_RES	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:193 gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:193 gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:196 gpu/shim/gow3_settings.cpp:931 tests/test_upscaler_support.cpp:19 tests/test_upscaler_support.cpp:62 tests/test_upscaler_support.cpp:77 tests/test_upscaler_support.cpp:79
+GOW3_RESIDENCY_CHUNK_MB	upstream	gpu/shadps4/video_core/buffer_cache/buffer_cache.cpp:469
+GOW3_RESTART_COMMAND	upstream	gpu/shim/gow3_overlay.cpp:337 src/probe.c:1329 src/probe.c:1346
+GOW3_RING_REUSE	upstream	gpu/shim/gow3_settings.cpp:824
 GOW3_SAMPLE_FILE	upstream	gpu/shim/gow3_sampler.cpp:117
-GOW3_SAMPLE_THREADS	ours	src/runtime_mutex.c:170
+GOW3_SAMPLE_THREADS	ours	src/runtime_mutex.c:179
 GOW3_SCENE_DEBUG	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:1386
 GOW3_SCENE_STENCIL_BITS	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scene_resolution.cpp:25
-GOW3_SCREENSHOT_DIR	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:393
+GOW3_SCREENSHOT_DIR	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_presenter.cpp:395
 GOW3_SECTIONS	upstream	gpu/shim/gow3_sections.h:111
-GOW3_SEMAPHORE_POLL_US	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.h:970
+GOW3_SEMAPHORE_POLL_US	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.h:973
 GOW3_SIGNAL_DRAIN_FLUSH	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_gpu_signals.cpp:132
 GOW3_SIGNAL_FLUSH_US	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_gpu_signals.cpp:129
 GOW3_SIGNAL_IDLE_BACKLOG	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_gpu_signals.cpp:130
 GOW3_SIGNAL_IDLE_FLUSH	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_gpu_signals.cpp:131
-GOW3_SIGNAL_IDLE_US	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:168
+GOW3_SIGNAL_IDLE_US	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:169
 GOW3_SIGNAL_SLEEP	upstream	gpu/shim/gow3_signal_wait.h:32
 GOW3_SIGNAL_SPIN_US	upstream	gpu/shim/gow3_signal_wait.h:46
-GOW3_SKIPPED_TARGET_LOG	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:1953
-GOW3_SKIP_READ_BARRIERS	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:4023 gpu/shadps4/video_core/texture_cache/image.cpp:554 gpu/shim/gow3_settings.cpp:811
-GOW3_SKIP_TOOL_INFO	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:996
-GOW3_SLOW_FRAMES	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:570
+GOW3_SKIPPED_TARGET_LOG	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:1987
+GOW3_SKIP_READ_BARRIERS	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:4023 gpu/shadps4/video_core/texture_cache/image.cpp:554 gpu/shim/gow3_settings.cpp:823
+GOW3_SKIP_TOOL_INFO	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:1011
+GOW3_SLOW_FRAMES	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:573
 GOW3_SPARE_IMAGE_BLOCK	upstream	gpu/shadps4/video_core/texture_cache/image.cpp:245
 GOW3_SQUARE_PASS	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:4586
 GOW3_SSE4A_EMULATE	upstream	src/runtime_sse4a.c:20
@@ -245,62 +245,62 @@ GOW3_STAGE_B_CORE_SCHED	upstream	gpu/shim/gow3_linux_sched.cpp:52
 GOW3_STAGE_B_SPIN	upstream	gpu/shim/gow3_stage_b_wait.h:50
 GOW3_STAGE_B_SPIN_US	upstream	gpu/shim/gow3_stage_b_wait.h:63
 GOW3_STAGING_KEEP_MB	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_staging_buffer_pool.cpp:43
-GOW3_STALE_READBACK	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.h:569 gpu/shim/gow3_settings.cpp:747
-GOW3_STDOUT_FILE	upstream	src/probe.c:1343
+GOW3_STALE_READBACK	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.h:569 gpu/shim/gow3_settings.cpp:756
+GOW3_STDOUT_FILE	upstream	src/probe.c:1365
 GOW3_STICK_RANGE	upstream	src/runtime_pad.c:289
-GOW3_STREAM_CLEAN	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1075 gpu/shim/gow3_settings.cpp:809 gpu/shim/gow3_settings.cpp:836
-GOW3_STRICT_HANDLES	upstream	src/probe.c:1428
+GOW3_STREAM_CLEAN	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1078 gpu/shim/gow3_settings.cpp:821 gpu/shim/gow3_settings.cpp:848
+GOW3_STRICT_HANDLES	upstream	src/probe.c:1450
 GOW3_SUBMIT_AHEAD	upstream	gpu/shim/gow3_decode_pacing.cpp:37 gpu/shim/gow3_gpu_fences.cpp:24
 GOW3_SUBMIT_LOCK	upstream	gpu/shim/gow3_gpu_fences.h:37
 GOW3_TAA_DIAGNOSTICS	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:681 gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:682 gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:1673
 GOW3_TEXCACHE_STATS	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:99
-GOW3_TEXSET_REGIONS	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:3322 gpu/shim/gow3_settings.cpp:809
+GOW3_TEXSET_REGIONS	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:3322 gpu/shim/gow3_settings.cpp:821
 GOW3_TEXSET_TWO_WAY	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:3357
-GOW3_TEXSET_WIDE	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:828 gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:3428 gpu/shim/gow3_settings.h:407
+GOW3_TEXSET_WIDE	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:831 gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:3428 gpu/shim/gow3_settings.h:411
 GOW3_TEXTURE_HELPER	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:1975
-GOW3_THREAD_NICE	upstream	gpu/shim/gow3_linux_sched.cpp:61 gpu/shim/gow3_settings.h:418
-GOW3_TICK_SPIN_US	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1569
+GOW3_THREAD_NICE	upstream	gpu/shim/gow3_linux_sched.cpp:61 gpu/shim/gow3_settings.h:422
+GOW3_TICK_SPIN_US	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1579
 GOW3_TIMER_RES	upstream	src/compat_win.c:123
 GOW3_TINY_TARGET_READBACK	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.h:608
 GOW3_TOGGLE_FILE	upstream	src/runtime_memory.c:1769
 GOW3_TRACE_SEMA	upstream	src/runtime_sema.c:75
 GOW3_TRACKER_MERGE_GAP	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_barrier_tracker.cpp:36
-GOW3_UE4_DLSS	upstream	gpu/shim/gow3_settings.cpp:749
+GOW3_UE4_DLSS	upstream	gpu/shim/gow3_settings.cpp:758
 GOW3_UE4_FRAME_MAP	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.cpp:66
 GOW3_UE4_FRAME_MAP_SHADERS	ours	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_frame_map.cpp:74
 GOW3_UE4_GRADE	ours	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:677
 GOW3_UE4_HOOKS	ours	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp:146
-GOW3_UE4_LIVE_CVARS	ours	gpu/shim/gow3_settings.cpp:793
+GOW3_UE4_LIVE_CVARS	ours	gpu/shim/gow3_settings.cpp:805
 GOW3_UE4_MOTION_VIEW	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_motion.cpp:112
 GOW3_UE4_SETRES	upstream	src/runtime_extra.c:864
 GOW3_UE4_SETRES_CVAR	upstream	src/runtime_extra.c:599
-GOW3_UE4_UPSCALER	ours	gpu/shim/gow3_settings.cpp:749
+GOW3_UE4_UPSCALER	ours	gpu/shim/gow3_settings.cpp:758
 GOW3_UFFD	upstream	gpu/shadps4/video_core/page_manager.cpp:473 gpu/shadps4/video_core/page_manager.cpp:473
 GOW3_UI_TRIGGER_VS	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:181
 GOW3_UNDEFINED_GPU_FREED	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.h:502
-GOW3_UPSCALER	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_camera_motion.cpp:56 gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:176 gpu/shim/gow3_settings.cpp:735 tests/test_upscaler_support.cpp:17
+GOW3_UPSCALER	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_camera_motion.cpp:56 gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:176 gpu/shim/gow3_settings.cpp:744 tests/test_upscaler_support.cpp:17
 GOW3_UPSCALER_STATS	ours	gpu/shadps4/video_core/renderer_vulkan/vk_ue4_upscaler.cpp:219
 GOW3_UPSCALE_BEFORE_CS	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_temporal_upscaler.cpp:178
-GOW3_UPSCALE_PRESET	upstream	gpu/shim/gow3_settings.cpp:745 tests/test_upscaler_support.cpp:18
+GOW3_UPSCALE_PRESET	upstream	gpu/shim/gow3_settings.cpp:754 tests/test_upscaler_support.cpp:18
 GOW3_USER_NAME	upstream	src/runtime_services.c:60 src/runtime_services.c:60 src/runtime_services.c:510
 GOW3_VBLANK_HZ	upstream	gpu/shim/core/emulator_settings.h:39 gpu/shim/core/emulator_settings.h:54
-GOW3_VBLANK_SYNC	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1578
+GOW3_VBLANK_SYNC	upstream	gpu/shadps4/core/libraries/videoout/driver.cpp:1588
 GOW3_VK_MARKERS	upstream	gpu/shim/core/emulator_settings.h:79 gpu/shim/core/emulator_settings.h:80
-GOW3_VK_RECORD_THREAD	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp:47
+GOW3_VK_RECORD_THREAD	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_scheduler.cpp:48
 GOW3_VK_VALIDATION	upstream	gpu/shim/core/emulator_settings.h:86
 GOW3_VK_VALIDATION_SYNC	upstream	gpu/shim/core/emulator_settings.h:88
-GOW3_VOLUME_VIEWS	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:1409
-GOW3_VO_LABEL_DRAIN	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:1871 gpu/shim/gow3_decode_pacing.cpp:331
+GOW3_VOLUME_VIEWS	upstream	gpu/shadps4/video_core/texture_cache/texture_cache.cpp:1443
+GOW3_VO_LABEL_DRAIN	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:1911 gpu/shim/gow3_decode_pacing.cpp:331
 GOW3_VULKANINFO	upstream	launcher/vulkan_check.py:122
-GOW3_VULKAN_COMPAT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:230
-GOW3_WAIT_REG_MEM_GIVEUP_MS	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:850
+GOW3_VULKAN_COMPAT	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_instance.cpp:232
+GOW3_WAIT_REG_MEM_GIVEUP_MS	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:858
 GOW3_WAIT_SITES	upstream	src/runtime_waitsites.c:55
 GOW3_WAIT_TRACE	ours	src/runtime_waitsites.c:60
 GOW3_WAIT_TRACE_MIN_US	ours	src/runtime_waitsites.c:78
 GOW3_WARN_META_TEXTURE	upstream	gpu/shadps4/video_core/renderer_vulkan/vk_rasterizer.cpp:2979
 GOW3_WINDOW_ICON	upstream	gpu/shim/window.cpp:56
-GOW3_WORK_RETIRED	upstream	gpu/shadps4/video_core/amdgpu/liverpool.h:126
-GOW3_WRITEDATA_DEFERRED	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:681
+GOW3_WORK_RETIRED	upstream	gpu/shadps4/video_core/amdgpu/liverpool.h:127
+GOW3_WRITEDATA_DEFERRED	upstream	gpu/shadps4/video_core/amdgpu/liverpool.cpp:689
 GOW3_WRITE_LOG	upstream	gpu/shim/gow3_write_log.cpp:41
 toggle:RegionCache	toggle-upstream	gpu/shim/gow3_toggles.h:30
 toggle:FetchShaderCache	toggle-upstream	gpu/shim/gow3_toggles.h:31
@@ -393,10 +393,10 @@ perf_4k_memory	ini-upstream	scripts/graphics_options.py:536
 perf_lean_barriers	ini-upstream	scripts/graphics_options.py:537
 perf_lean_binding	ini-upstream	scripts/graphics_options.py:538
 perf_ring_reuse	ini-upstream	scripts/graphics_options.py:539
-present_limiter	ini-upstream	scripts/graphics_options.py:614
-present_tick_hz	ini-upstream	scripts/graphics_options.py:614
-present_precise_tick	ini-upstream	scripts/graphics_options.py:614
-present_inline	ini-upstream	scripts/graphics_options.py:615
-present_no_frame_caps	ini-upstream	scripts/graphics_options.py:615
-present_mode	ini-upstream	scripts/graphics_options.py:615
-present_frame_trace	ini-upstream	scripts/graphics_options.py:616
+present_limiter	ini-upstream	scripts/graphics_options.py:631
+present_tick_hz	ini-upstream	scripts/graphics_options.py:631
+present_precise_tick	ini-upstream	scripts/graphics_options.py:631
+present_inline	ini-upstream	scripts/graphics_options.py:632
+present_no_frame_caps	ini-upstream	scripts/graphics_options.py:632
+present_mode	ini-upstream	scripts/graphics_options.py:632
+present_frame_trace	ini-upstream	scripts/graphics_options.py:633

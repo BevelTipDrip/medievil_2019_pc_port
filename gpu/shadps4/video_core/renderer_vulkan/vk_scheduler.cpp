@@ -18,6 +18,7 @@
 #include <functional>
 
 #include "gow3_copy.h"
+#include "gow3_reflex.h"
 #include "gow3_sampler.h"
 #include "gow3_stage_b_wait.h"
 #include "video_core/renderer_vulkan/vk_gpu_profiler.h"
@@ -975,8 +976,14 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
         .pSignalSemaphoreValues = info.signal_ticks.data(),
     };
 
+    // gow3 Reflex R1 (GOW3_REFLEX_MARKERS): the driver learns which frame this work belongs to.
+    vk::LatencySubmissionPresentIdNV latency_id{.pNext = &timeline_si};
+    if (Gow3Reflex::On()) {
+        latency_id.presentID = info.reflex_frame ? info.reflex_frame : Gow3Reflex::SubmitFrame();
+    }
+
     const vk::SubmitInfo submit_info = {
-        .pNext = &timeline_si,
+        .pNext = latency_id.presentID ? static_cast<const void*>(&latency_id) : &timeline_si,
         .waitSemaphoreCount = info.num_wait_semas,
         .pWaitSemaphores = info.wait_semas.data(),
         .pWaitDstStageMask = wait_stage_masks.data(),

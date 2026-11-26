@@ -35,7 +35,9 @@ public:
     bool AcquireNextImage();
 
     /// Presents the current image and move to the next one
-    bool Present();
+    /// gow3 Reflex R1: `reflex_frame` is the game frame's ID from stage A (0: none), its present ID
+    /// with GOW3_REFLEX_MARKERS (gow3_reflex.h FrameIds).
+    bool Present(u64 reflex_frame = 0);
 
     /// gow3 flip trace: the guest flip argument of the next present (-1: not a game flip).
     void SetPresentTag(s64 tag) {
@@ -49,8 +51,9 @@ public:
     /// applied now and to every recreated swapchain.
     void SetLatencyInterval(u32 interval_us);
     /// gow3 Reflex: blocks until the driver says the next frame should start, then marks its
-    /// simulation start. False without Reflex.
-    bool LatencySleep();
+    /// simulation start (R1: for `next_id` when given, else the last present ID + 1). False
+    /// without Reflex.
+    bool LatencySleep(u64 next_id = 0);
 
     vk::SurfaceKHR GetSurface() const {
         return surface;

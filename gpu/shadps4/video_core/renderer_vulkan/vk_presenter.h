@@ -136,6 +136,11 @@ public:
     void SetPresentTag(s64 tag) {
         swapchain.SetPresentTag(tag);
     }
+    /// gow3 Reflex R1 (gow3_reflex.h): the game frame's ID from stage A for the next Present
+    /// (taken by it; 0: not a game frame).
+    void SetPresentFrame(u64 id) {
+        present_frame = id;
+    }
 
     /// gow3 newest-frame mode (GOW3_NEWEST_FRAME): waits until the frame's image is finished on
     /// the GPU or `until` passes; true when finished. Frames finish in the order prepared.
@@ -195,6 +200,7 @@ private:
     std::condition_variable_any gpu_ready_cv;
     std::deque<GpuReadyEntry> gpu_ready_queue;
     std::chrono::steady_clock::time_point present_deadline{}; ///< SetPresentDeadline
+    u64 present_frame = 0;                                    ///< SetPresentFrame
     std::jthread gpu_ready_thread; ///< last: stopped first
 };
 

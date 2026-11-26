@@ -15,7 +15,7 @@ switches: GOW3_REFLEX, GOW3_REFLEX_SLEEP_BEFORE_PRESENT, present_limiter
 tests: T-F16, T-F17, T-F18, T-F19, T-F23, T-F24, T-F25, T-F26, T-F27
 docs: fix-inventory.md#6-frame-pacing-and-present, plan-stage-b-split.md#t-f2-which-barriers-break-the-passes-log-t-f2-barrier-breaks-trace-33, plan-stage-b-split.md#t-f27-the-capped-mode-that-works-and-the-launcher-consolidation-2026-10-25, study-deck-patch-audit.md#16-presentation-and-pacing
 depends_on:
-related: precise-limiter, precise-tick, inline-present, vrr-auto-limits, frame-limit-parse, upstream-vsync-limit-rule, present-side-limiter, one-clock, menu-idle-redraw, display-trace, vsync-control, deck-preset
+related: precise-limiter, precise-tick, inline-present, vrr-auto-limits, frame-limit-parse, upstream-vsync-limit-rule, present-side-limiter, one-clock, menu-idle-redraw, display-trace, vsync-control, deck-preset, reflex-markers-r1
 checked: 2026-11-07
 ---
 ## What it does
@@ -82,4 +82,5 @@ limiter steps aside, and `immediate_flips` sends each frame to the presenter as 
 - Reflex alone did not fix the VRR flicker; the 119 cap with VSync on did.
 - The latency markers: `eSimulationStart` (id `present_id + 1`) goes out right after the sleep and the frame's
   present follows at once, so the driver sees a near-zero "simulation". Only `minimumIntervalUs` paces. Good enough
-  for pacing; the markers do not describe the game's frame [code reading].
+  for pacing; the markers do not describe the game's frame [code reading]. reflex-markers-r1 (`GOW3_REFLEX_MARKERS`,
+  off by default) gives them stage A frame IDs and tags the queue submissions.

@@ -446,6 +446,10 @@ add_executable(depth-stencil-state-test EXCLUDE_FROM_ALL ../tests/test_depth_ste
 add_executable(async-compiler-test EXCLUDE_FROM_ALL ../tests/test_async_compiler.cpp)
 target_compile_options(async-compiler-test PRIVATE -UNDEBUG)
 target_include_directories(async-compiler-test PRIVATE shadps4)
+# gow3 Reflex R1 frame IDs (gow3_reflex.h): ninja -C out/gpu reflex-ids-test.
+add_executable(reflex-ids-test EXCLUDE_FROM_ALL ../tests/test_reflex_ids.cpp)
+target_compile_options(reflex-ids-test PRIVATE -UNDEBUG -Wall -Wextra -Werror)
+target_include_directories(reflex-ids-test PRIVATE shim)
 add_executable(warmup-inbox-test EXCLUDE_FROM_ALL ../tests/test_warmup_inbox.cpp)
 target_compile_options(warmup-inbox-test PRIVATE -UNDEBUG -Wall -Wextra -Werror)
 target_include_directories(warmup-inbox-test PRIVATE shadps4)

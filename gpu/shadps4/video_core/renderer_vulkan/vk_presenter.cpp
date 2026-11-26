@@ -9,6 +9,7 @@
 #include "common/debug.h"
 #include "common/thread.h"
 #include "gow3_flip_trace.h"
+#include "gow3_reflex.h"
 #include "gow3_stage_b_wait.h"
 #include "common/elf_info.h"
 #include "common/io_file.h"
@@ -34,6 +35,7 @@
 #include <atomic>
 #include <cctype>
 #include <chrono>
+#include <utility>
 #include <cmath>
 #include <csetjmp>
 #include <cstring>
@@ -837,6 +839,9 @@ void Presenter::PresentLoadingFrame() {
     SubmitInfo info{};
     info.AddWait(swapchain.GetImageAcquiredSemaphore());
     info.AddSignal(swapchain.GetPresentReadySemaphore());
+    if (Gow3Reflex::On()) {
+        info.reflex_frame = Gow3Reflex::Ids().Peek(0); // gow3 Reflex R1: this present's ID
+    }
     present_scheduler.Flush(info);
     {
         std::scoped_lock submit_lock{Scheduler::submit_mutex};
@@ -847,6 +852,9 @@ void Presenter::PresentLoadingFrame() {
 }
 
 void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame) {
+    // gow3 Reflex R1: the frame's ID from stage A (0: not a game frame); dropped if this returns
+    // before the present.
+    const u64 reflex_frame = std::exchange(present_frame, 0);
     // Free the frame for reuse
     const auto free_frame = [&] {
         if (!is_reusing_frame) {
@@ -1008,6 +1016,9 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
     info.AddWait(frame->ready_semaphore, frame->ready_tick);
     info.AddSignal(swapchain.GetPresentReadySemaphore());
     info.AddSignal(frame->present_done);
+    if (Gow3Reflex::On()) {
+        info.reflex_frame = Gow3Reflex::Ids().Peek(reflex_frame); // gow3 Reflex R1: this present's ID
+    }
     scheduler.Flush(info);
 
     // gow3 GOW3_LIMIT_IN_PRESENT: the frame limit's slot, waited for here, after the variable
@@ -1052,7 +1063,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
     // gow3 Reflex sleep before the present (T-F23: sleeping after it made the frame starts exact
     // but left the presents +-0.4 ms off, with flicker; RTSS sleeps in its present hook).
     if (is_game_frame && ReflexSleepBeforePresent()) {
-        swapchain.LatencySleep();
+        swapchain.LatencySleep(Gow3Reflex::On() ? Gow3Reflex::Ids().Peek(reflex_frame) : 0);
     }
     // Present to swapchain.
     {
@@ -1063,7 +1074,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
         if (swapchain.PresentTag() >= 0) {
             Gow3FlipTrace::Note("present_start", swapchain.PresentTag()); // flip trace only
         }
-        if (!swapchain.Present() && window.GetWidth() != 0 && window.GetHeight() != 0) {
+        if (!swapchain.Present(reflex_frame) && window.GetWidth() != 0 && window.GetHeight() != 0) {
             swapchain.Recreate(window.GetWidth(), window.GetHeight());
         }
     }

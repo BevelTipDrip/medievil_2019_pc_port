@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "gow3_flip_trace.h"
+#include "gow3_reflex.h"
 #include <algorithm>
 #include <string_view>
 #include <cstdio>
@@ -22,6 +23,13 @@ static constexpr vk::SurfaceFormatKHR SURFACE_FORMAT_HDR = {
     .colorSpace = vk::ColorSpaceKHR::eHdr10St2084EXT,
 };
 
+static_assert(Gow3Reflex::SimulationStart == int(vk::LatencyMarkerNV::eSimulationStart) &&
+              Gow3Reflex::SimulationEnd == int(vk::LatencyMarkerNV::eSimulationEnd) &&
+              Gow3Reflex::RendersubmitStart == int(vk::LatencyMarkerNV::eRendersubmitStart) &&
+              Gow3Reflex::RendersubmitEnd == int(vk::LatencyMarkerNV::eRendersubmitEnd) &&
+              Gow3Reflex::PresentStart == int(vk::LatencyMarkerNV::ePresentStart) &&
+              Gow3Reflex::PresentEnd == int(vk::LatencyMarkerNV::ePresentEnd));
+
 Swapchain::Swapchain(const Instance& instance_, const Frontend::WindowSDL& window_)
     : instance{instance_}, window{window_}, surface{CreateSurface(instance.GetInstance(), window)} {
     FindPresentFormat();
@@ -29,6 +37,20 @@ Swapchain::Swapchain(const Instance& instance_, const Frontend::WindowSDL& windo
 
     Create(window.GetWidth(), window.GetHeight());
     ImGui::Core::Initialize(instance, window, image_count, surface_format.format);
+    // gow3 Reflex R1: markers from stage A / stage B reach this swapchain through the sink, which
+    // reads the handle under the sink lock (Create / Destroy replace it under the same lock).
+    if (Gow3Reflex::On()) {
+        Gow3Reflex::SetSink(
+            [](void* self, int marker, u64 id) {
+                const auto& chain = *static_cast<const Swapchain*>(self);
+                if (chain.swapchain) {
+                    const vk::SetLatencyMarkerInfoNV info = {
+                        .presentID = id, .marker = static_cast<vk::LatencyMarkerNV>(marker)};
+                    chain.instance.GetDevice().setLatencyMarkerNV(chain.swapchain, &info);
+                }
+            },
+            this);
+    }
 }
 
 void Swapchain::DisplayWaitThread(std::stop_token token) {
@@ -61,6 +83,9 @@ void Swapchain::DisplayWaitThread(std::stop_token token) {
 
 Swapchain::~Swapchain() {
     display_wait_thread = {};
+    if (Gow3Reflex::On()) {
+        Gow3Reflex::SetSink(nullptr, nullptr);
+    }
     Destroy();
     instance.GetInstance().destroySurfaceKHR(surface);
 }
@@ -108,7 +133,12 @@ void Swapchain::Create(u32 width_, u32 height_) {
     auto [swapchain_result, chain] = instance.GetDevice().createSwapchainKHR(swapchain_info);
     ASSERT_MSG(swapchain_result == vk::Result::eSuccess, "Failed to create swapchain: {}",
                vk::to_string(swapchain_result));
-    swapchain = chain;
+    if (Gow3Reflex::On()) {
+        std::scoped_lock reflex_lock{Gow3Reflex::SinkMutex()}; // gow3 Reflex R1: see the sink
+        swapchain = chain;
+    } else {
+        swapchain = chain;
+    }
 
     SetupImages();
     RefreshSemaphores();
@@ -135,6 +165,10 @@ void Swapchain::ApplyLatencyMode() {
 }
 
 void Swapchain::LatencyMarker(vk::LatencyMarkerNV marker, u64 id) {
+    if (Gow3Reflex::On()) {
+        Gow3Reflex::SetMarker(static_cast<int>(marker), id); // gow3 Reflex R1: one lock for all
+        return;
+    }
     if (!instance.IsLowLatency2Enabled() || !swapchain) {
         return;
     }
@@ -142,7 +176,7 @@ void Swapchain::LatencyMarker(vk::LatencyMarkerNV marker, u64 id) {
     instance.GetDevice().setLatencyMarkerNV(swapchain, &info);
 }
 
-bool Swapchain::LatencySleep() {
+bool Swapchain::LatencySleep(u64 next_id) {
     if (!instance.IsLowLatency2Enabled() || !swapchain) {
         return false;
     }
@@ -163,7 +197,13 @@ bool Swapchain::LatencySleep() {
             .semaphoreCount = 1, .pSemaphores = &latency_semaphore, .pValues = &latency_value};
         (void)device.waitSemaphores(&wait, 100'000'000); // at most 100 ms
     }
-    LatencyMarker(vk::LatencyMarkerNV::eSimulationStart, present_id + 1);
+    // gow3 Reflex R1: the ID of the present that follows (GOW3_REFLEX_MARKERS=1; with =2 stage A
+    // marks the simulation).
+    if (!Gow3Reflex::On()) {
+        LatencyMarker(vk::LatencyMarkerNV::eSimulationStart, present_id + 1);
+    } else if (!Gow3Reflex::SimulationAtStageA()) {
+        LatencyMarker(vk::LatencyMarkerNV::eSimulationStart, next_id ? next_id : present_id + 1);
+    }
     return true;
 }
 
@@ -216,7 +256,7 @@ bool Swapchain::AcquireNextImage() {
     return !needs_recreation;
 }
 
-bool Swapchain::Present() {
+bool Swapchain::Present(u64 reflex_frame) {
     vk::PresentInfoKHR present_info = {
         .waitSemaphoreCount = 1,
         .pWaitSemaphores = &present_ready[image_index],
@@ -224,7 +264,11 @@ bool Swapchain::Present() {
         .pSwapchains = &swapchain,
         .pImageIndices = &image_index,
     };
-    const u64 id = ++present_id;
+    // gow3 Reflex R1 (GOW3_REFLEX_MARKERS): the frame's own ID from stage A, or a fresh one above
+    // the last (a present that is no game frame, or a frame one of those overtook): FrameIds.
+    const bool reflex_frames = Gow3Reflex::On();
+    const u64 id = reflex_frames ? (present_id = Gow3Reflex::Ids().Present(reflex_frame))
+                                 : ++present_id;
     const vk::PresentIdKHR present_id_info = {
         .swapchainCount = 1,
         .pPresentIds = &id,
@@ -234,9 +278,19 @@ bool Swapchain::Present() {
         present_info.pNext = &present_id_info;
     }
     // gow3 Reflex markers of this frame (its simulation started after the last LatencySleep).
-    LatencyMarker(vk::LatencyMarkerNV::eSimulationEnd, id);
-    LatencyMarker(vk::LatencyMarkerNV::eRendersubmitStart, id);
-    LatencyMarker(vk::LatencyMarkerNV::eRendersubmitEnd, id);
+    // R1: a frame that keeps its stage A ID had its render submit marked at stage A and at
+    // `queued` (and with GOW3_REFLEX_MARKERS=2 its simulation too); any other ID gets them here.
+    const bool staged = reflex_frames && id == reflex_frame;
+    if (!staged || !Gow3Reflex::SimulationAtStageA()) {
+        if (reflex_frames && !staged && Gow3Reflex::SimulationAtStageA()) {
+            LatencyMarker(vk::LatencyMarkerNV::eSimulationStart, id);
+        }
+        LatencyMarker(vk::LatencyMarkerNV::eSimulationEnd, id);
+    }
+    if (!staged) {
+        LatencyMarker(vk::LatencyMarkerNV::eRendersubmitStart, id);
+        LatencyMarker(vk::LatencyMarkerNV::eRendersubmitEnd, id);
+    }
     LatencyMarker(vk::LatencyMarkerNV::ePresentStart, id);
     if (track) {
         if (!display_wait_thread.joinable()) {
@@ -414,7 +468,12 @@ void Swapchain::Destroy() {
     }
     images_view.clear();
 
-    if (swapchain) {
+    if (swapchain && Gow3Reflex::On()) {
+        // gow3 Reflex R1: no marker from another thread names the handle while it goes.
+        std::scoped_lock reflex_lock{Gow3Reflex::SinkMutex()};
+        device.destroySwapchainKHR(swapchain);
+        swapchain = nullptr;
+    } else if (swapchain) {
         device.destroySwapchainKHR(swapchain);
     }
 

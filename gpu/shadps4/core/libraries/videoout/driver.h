@@ -105,6 +105,8 @@ private:
         bool eop;
         /// gow3 newest-frame mode: the guest's flip completed when the frame was queued.
         bool completed = false;
+        /// gow3 Reflex R1 (gow3_reflex.h): the frame's ID from stage A, its present ID (0: none).
+        u64 reflex_frame = 0;
 
         operator bool() const noexcept {
             return frame != nullptr;

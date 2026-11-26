@@ -20,6 +20,7 @@
 #include <magic_enum/magic_enum.hpp>
 #include "gow3_copy.h"
 #include "gow3_decode_pacing.h"
+#include "gow3_reflex.h"
 #include "gow3_sections.h"
 #include "gow3_toggles.h"
 #include "gow3_settings.h"
@@ -242,7 +243,11 @@ public:
             .stageMask = vk::PipelineStageFlagBits2::eTransfer,
         };
         const vk::CommandBufferSubmitInfo command{.commandBuffer = cmdbuf};
+        // gow3 Reflex R1 (GOW3_REFLEX_MARKERS): the frame stage B records, as on the graphics queue.
+        const vk::LatencySubmissionPresentIdNV latency_id{
+            .presentID = Gow3Reflex::On() ? Gow3Reflex::SubmitFrame() : 0};
         const vk::SubmitInfo2 submit{
+            .pNext = latency_id.presentID ? &latency_id : nullptr,
             .waitSemaphoreInfoCount = 1,
             .pWaitSemaphoreInfos = &wait,
             .commandBufferInfoCount = 1,

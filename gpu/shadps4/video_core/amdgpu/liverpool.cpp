@@ -12,6 +12,7 @@
 #include "gow3_decode_pacing.h"
 #include "gow3_fence_stats.h"
 #include "gow3_gpu_fences.h"
+#include "gow3_reflex.h"
 #include "gow3_sections.h"
 #include "gow3_toggles.h"
 #include "gow3_stage_a.h"
@@ -607,8 +608,15 @@ void RunDmaData(Vulkan::Rasterizer& rasterizer, const u8* data) {
     }
 }
 
-void SignalFlip(Vulkan::Rasterizer& rasterizer, const u8*) {
+void SignalFlip(Vulkan::Rasterizer& rasterizer, const u8* data) {
     GOW3_SECTION(TaskFlip);
+    // gow3 Reflex R1: the flipped frame's ID (from stage A) for the guest's flip handler, which
+    // queues the flip request (VideoOutDriver::SubmitFlipInternal) inside the interrupt below.
+    if (Gow3Reflex::On()) {
+        u64 frame;
+        std::memcpy(&frame, data, sizeof(frame));
+        Gow3Reflex::SetFlipFrame(frame);
+    }
     // gow3 GOW3_GPU_FENCES: the flip stays at recording time (as in Bloodborne 0.7); counted when
     // GPU-ordered labels before it are still pending (it reaches the guest first).
     if (Gow3GpuFences::Enabled() && rasterizer.HasPendingSignals()) {
@@ -1265,9 +1273,38 @@ void ScanDcb(std::span<const u32> dcb, int depth) {
 }
 } // namespace
 
+void Liverpool::OpenReflexFrame() {
+    // gow3 Reflex R1 (gow3_reflex.h): the frame's ID, also its present ID. Its render submit
+    // starts here (stage A's first packet of the frame); stage B tags the queue submissions it
+    // makes from this point of the stream with it.
+    const u64 frame = Gow3Reflex::Ids().Reserve();
+    reflex_frame = frame;
+    if (Gow3Reflex::SimulationAtStageA()) {
+        Gow3Reflex::SetMarker(Gow3Reflex::SimulationStart, frame);
+        Gow3Reflex::SetMarker(Gow3Reflex::SimulationEnd, frame);
+    }
+    Gow3Reflex::SetMarker(Gow3Reflex::RendersubmitStart, frame);
+    if (!rasterizer) {
+        Gow3Reflex::SetSubmitFrame(frame);
+        return;
+    }
+    rasterizer->RunInOrder(
+        [](Vulkan::Rasterizer&, const u8* data) {
+            u64 id;
+            std::memcpy(&id, data, sizeof(id));
+            Gow3Reflex::SetSubmitFrame(id);
+        },
+        &frame, sizeof(frame));
+}
+
 Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb,
                                            u64 seq) {
     FIBER_ENTER(dcb_task_name);
+    // gow3 Reflex R1 (GOW3_REFLEX_MARKERS): a frame starts with the first top-level submission
+    // after the previous flip.
+    if (seq != NoSeq && reflex_frame == 0 && Gow3Reflex::On()) {
+        OpenReflexFrame();
+    }
     // Top-level buffers enqueued for the draw preparation workers (nested IBs are not).
     Vulkan::DrawPreparation* draw_prep =
         seq != NoSeq && rasterizer ? &rasterizer->GetDrawPreparation() : nullptr;
@@ -1346,7 +1383,10 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     // gow3: after the writes before it (the buffer label: WriteData, which
                     // may still be queued on the draw recording thread).
                     if (rasterizer) {
-                        rasterizer->RunInOrder(&SignalFlip, header, sizeof(u32),
+                        // gow3 Reflex R1: the flip ends stage A's frame and carries its ID (0
+                        // with the switch off; same packet size as the header word before).
+                        const u64 flip_frame = std::exchange(reflex_frame, 0);
+                        rasterizer->RunInOrder(&SignalFlip, &flip_frame, sizeof(flip_frame),
                                                Gow3Toggle::PipelinedMemoryWrites);
                     } else {
                         Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxFlip);

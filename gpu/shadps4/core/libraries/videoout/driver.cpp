@@ -32,6 +32,7 @@ extern "C" void runtime_memory_fault_report(char* out, size_t size, unsigned fra
 extern "C" void runtime_memory_lock_report(char* out, size_t size, unsigned frames);
 #include "gow3_sections.h"
 #include "gow3_flip_trace.h"
+#include "gow3_reflex.h"
 #include <x86intrin.h>
 #include "gow3_settings.h"
 #include "gow3_graphics.h"
@@ -382,10 +383,12 @@ void VideoOutDriver::Flip(const Request& req) {
     Gow3FlipTrace::Note("release", req.flip_arg);
     // Update HDR status before presenting, then present the frame (gow3: on the swap thread).
     const auto deadline = std::exchange(flip_deadline, {});
-    RunPresenter([this, frame = req.frame, hdr = req.port->is_hdr, flip_arg = req.flip_arg, deadline] {
+    RunPresenter([this, frame = req.frame, hdr = req.port->is_hdr, flip_arg = req.flip_arg, deadline,
+                  reflex_frame = req.reflex_frame] {
         presenter->SetHDR(hdr);
         presenter->SetPresentTag(flip_arg);
         presenter->SetPresentDeadline(deadline);
+        presenter->SetPresentFrame(reflex_frame);
         presenter->Present(frame);
         // gow3 Reflex: the driver's sleep before the game's next frame (the flip completes after it).
         if (!Vulkan::Presenter::ReflexSleepBeforePresent() && presenter->LatencySleep()) {
@@ -1418,6 +1421,11 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
     // its flip completes now: the guest's next frame no longer waits for the cap (T-L5: with
     // completion at present, the game waited for its buffer and no frame was ever dropped).
     const bool early = newest_active.load(std::memory_order_relaxed);
+    // gow3 Reflex R1: an EOP flip's frame comes from SignalFlip (stage B, in stream order); a
+    // direct flip runs on stage A as a queued command and ends the frame stage A has open.
+    const u64 reflex_frame = !Gow3Reflex::On() ? 0
+                             : is_eop          ? Gow3Reflex::TakeFlipFrame()
+                                               : liverpool->TakeReflexFrame();
     const Request request{
         .frame = frame,
         .port = port,
@@ -1425,12 +1433,14 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
         .index = index,
         .eop = is_eop,
         .completed = early,
+        .reflex_frame = reflex_frame,
     };
     {
         std::scoped_lock lock{mutex};
         requests.push_back(request);
         Gow3FlipTrace::Note("queued", flip_arg);
     }
+    Gow3Reflex::SetMarker(Gow3Reflex::RendersubmitEnd, reflex_frame); // 0: nothing
     if (early) {
         CompleteFlip(request);
         DropOlderFinished(); // frames back to the pool at once (the pool bounds the game)

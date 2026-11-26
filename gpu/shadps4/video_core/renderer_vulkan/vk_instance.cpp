@@ -10,6 +10,7 @@
 #include "common/assert.h"
 #include "common/debug.h"
 #include "common/types.h"
+#include "gow3_reflex.h"
 #include "imgui/renderer/imgui_core.h"
 #include "sdl_window.h"
 #include "video_core/texture_cache/image.h"
@@ -369,6 +370,14 @@ bool Instance::CreateDevice() {
         std::printf("Vulkan: NVIDIA Reflex (VK_NV_low_latency2) %s\n",
                     low_latency2 ? "enabled" : "not available");
     }
+    // gow3 Reflex R1 (gow3_reflex.h): frame IDs from stage A, tagged submissions, markers at the
+    // pipeline's stages. One line whatever the switch.
+    Gow3Reflex::SetActive(low_latency2);
+    std::printf("Vulkan: Reflex frame markers R1 (GOW3_REFLEX_MARKERS) %s, VK_NV_low_latency2 %s\n",
+                Gow3Reflex::Mode() == 2 ? "on, simulation markers at stage A"
+                : Gow3Reflex::Mode()    ? "on"
+                                        : "off",
+                low_latency2 ? "active" : "not active");
     present_id = present_id || present_wait;
     attachment_feedback_loop =
         !VulkanCompat() && add_extension(VK_EXT_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_EXTENSION_NAME);

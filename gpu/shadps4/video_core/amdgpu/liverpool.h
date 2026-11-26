@@ -13,6 +13,7 @@
 #include <semaphore>
 #include <span>
 #include <thread>
+#include <utility>
 #include <vector>
 #include <queue>
 
@@ -167,6 +168,12 @@ public:
         gfx_queue.dcb_buffer.reserve(GfxReservedSize);
     }
 
+    /// gow3 Reflex R1 (gow3_reflex.h), stage A: ends the frame stage A has open and returns its ID
+    /// (0: none). A direct flip (VideoOutDriver::SubmitFlipInternal as a queued command) takes it.
+    u64 TakeReflexFrame() {
+        return std::exchange(reflex_frame, 0);
+    }
+
     /// gow3: the command processor is running the graphics queue (not an async compute queue).
     bool OnGfxQueue() const {
         return curr_qid == static_cast<s32>(GfxQueueId);
@@ -311,6 +318,10 @@ private:
     u32 gpu_tid{};
 #endif
     s32 curr_qid{-1};
+    /// gow3 Reflex R1, stage A only: the open frame's ID (0: none; the next top-level graphics
+    /// submission opens one, its flip ends it).
+    u64 reflex_frame{};
+    void OpenReflexFrame();
 };
 
 } // namespace AmdGpu
